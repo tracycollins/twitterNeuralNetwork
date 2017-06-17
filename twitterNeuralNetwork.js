@@ -59,7 +59,11 @@ var descriptionArraysFile = "descriptionArraysFile_" + testObj.testRunId + ".jso
 
 function initDescriptionArrays(callback){
 
+  console.log(chalkTwitter("INIT DESCRIPTION ARRAYS"));
+
   async.each([descriptionWordsFile, descriptionMentionsFile, descriptionHashtagsFile], function(file, cb){
+
+    console.log("INIT " + file);
 
     loadFile(dropboxConfigDefaultFolder, file, function(err, loadedArrayObj){
       if (!err) {
