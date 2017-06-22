@@ -251,8 +251,8 @@ function evolve (params, callback){
   };
 
   console.log("EVOLVE"
-    + " | INPUTS: " + statsObj.training.numInputs
-    + " | OUTPUTS: " + statsObj.training.numOutputs
+    + " | INPUTS: " + statsObj.training.trainingSet.numInputs
+    + " | OUTPUTS: " + statsObj.training.trainingSet.numOutputs
     + " | SET: " + params.trainingSet.length + " DATA POINTS"
     + " | ITERATIONS: " + options.iterations
     // + "\nOPTIONS\n" + jsonPrint(options)
@@ -262,7 +262,7 @@ function evolve (params, callback){
   statsObj.training.evolve.options = {};
   statsObj.training.evolve.options = options;
 
-  network = new neataptic.Network(numInputs, numOutputs);
+  network = new neataptic.Network(statsObj.training.trainingSet.numInputs, statsObj.training.trainingSet.numOutputs);
 
   network.evolve(params.trainingSet, options);
   

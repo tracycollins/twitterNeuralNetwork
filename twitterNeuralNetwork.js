@@ -658,8 +658,8 @@ function initialize(cnf, callback){
   cnf.twitterConfigFile = process.env.DROPBOX_TNN_DEFAULT_TWITTER_CONFIG_FILE 
     || "twitterConfig_altThreecee00TwitterTest.json";
 
-  cnf.classifiedUsersFile = process.env.TNN_CLASSIFIED_USERS_FILE || "classifiedUsers_" + hostname + ".json";
-
+  cnf.classifiedUsersFile = process.env.TNN_CLASSIFIED_USERS_FILE || "classifiedUsers.json";
+  cnf.classifiedUsersFolder = dropboxConfigHostFolder + "/classifiedUsers";
   cnf.statsUpdateIntervalTime = process.env.TNN_STATS_UPDATE_INTERVAL || 60000;
 
   debug(chalkWarn("dropboxConfigFolder: " + dropboxConfigFolder));
@@ -1432,7 +1432,7 @@ function initTimeout(){
           cnf.normalization = loadedNetworkObj.normalization;
           var loadedNetwork = neataptic.Network.fromJSON(loadedNetworkObj.network);
 
-          loadFile(dropboxConfigHostFolder, cnf.classifiedUsersFile, function(err, clUsObj){
+          loadFile(cnf.classifiedUsersFolder, cnf.classifiedUsersFile, function(err, clUsObj){
             classifiedUserHashmap = clUsObj;
 
             console.log(chalkAlert("INITIALIZED CLASSIFIED USERS"
@@ -1463,7 +1463,7 @@ function initTimeout(){
       });
     }
     else {
-      loadFile(dropboxConfigHostFolder, cnf.classifiedUsersFile, function(err, clUsObj){
+      loadFile(cnf.classifiedUsersFolder, cnf.classifiedUsersFile, function(err, clUsObj){
         if (!err) {
 
           debug(jsonPrint(clUsObj));

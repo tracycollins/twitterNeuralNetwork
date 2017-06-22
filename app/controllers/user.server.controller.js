@@ -31,6 +31,7 @@ exports.findOneUser = function (user, params, callback) {
 			threeceeFollowing: user.threeceeFollowing,
 			tags: user.tags,
 			entities: user.entities,
+			keywordsAuto: user.keywordsAuto,
 			isTwitterUser: user.isTwitterUser,
 			screenName: user.screenName,
 			name: user.name,
@@ -51,11 +52,11 @@ exports.findOneUser = function (user, params, callback) {
 			sessionId: user.sessionId,
 			sessions: user.sessions,
 			lastSession: user.lastSession,
+			languageAnalyzed: user.languageAnalyzed,
 			lastSeen: moment().valueOf()
 		},
 		"$max": {
 			keywords: user.keywords,
-			keywordsAuto: user.keywordsAuto,
 			languageAnalysis: user.languageAnalysis
 		}
 	};
@@ -95,6 +96,7 @@ exports.findOneUser = function (user, params, callback) {
 					+ " | Ts: " + us.statusesCount 
 					+ " | FLRs: " + us.followersCount 
 					+ " | Ms: " + us.mentions 
+					+ " | LAd: " + us.languageAnalyzed 
 					+ " | LS: " + moment(new Date(us.lastSeen)).format(compactDateTimeFormat) 
 				);
 				var mentionsString = us.mentions.toString() ;
