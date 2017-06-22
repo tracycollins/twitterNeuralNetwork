@@ -250,16 +250,17 @@ function evolve (params, callback){
     mutationRate: 0.5
   };
 
-  var numInputs = params.trainingSet[0]["input"].length;
-  var numOutputs = params.trainingSet[0]["output"].length;
-
   console.log("EVOLVE"
-    + " | INPUTS: " + numInputs
-    + " | OUTPUTS: " + numOutputs
+    + " | INPUTS: " + statsObj.training.numInputs
+    + " | OUTPUTS: " + statsObj.training.numOutputs
     + " | SET: " + params.trainingSet.length + " DATA POINTS"
     + " | ITERATIONS: " + options.iterations
     // + "\nOPTIONS\n" + jsonPrint(options)
   );
+
+  statsObj.training.evolve = {};
+  statsObj.training.evolve.options = {};
+  statsObj.training.evolve.options = options;
 
   network = new neataptic.Network(numInputs, numOutputs);
 
@@ -298,6 +299,9 @@ process.on('message', function(m) {
       statsObj.training.startTime = moment().valueOf();
       statsObj.training.trainingSet = {};
       statsObj.training.trainingSet.length = trainingSet.length;
+      statsObj.training.trainingSet.numInputs = trainingSet[0]["input"].length;
+      statsObj.training.trainingSet.numOutputs = trainingSet[0]["output"].length;
+
 
       console.log(chalkAlert("NN CHILD: NEURAL NET EVOLVE"
         + " | " + trainingSet.length + " TRAINING DATA POINTS"

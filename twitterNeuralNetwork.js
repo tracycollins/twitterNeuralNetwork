@@ -1370,12 +1370,12 @@ function initTimeout(){
           + " | DROPOUT: " + m.networkObj.network.dropout
           + " | NODES: " + m.networkObj.network.nodes.length
           + " | CONNECTIONS: " + m.networkObj.network.connections.length
-          + " | NORMALIZATION: MAG: min/max" 
+          + " | NORMALIZATION: MAG: min/max "
           + m.networkObj.normalization.magnitude.min.toFixed(3) 
-          + "/" + m.networkObj.normalization.magnitude.min.toFixed(3)
+          + "/" + m.networkObj.normalization.magnitude.max.toFixed(3)
           + " | SCORE: min/max" 
           + m.networkObj.normalization.score.min.toFixed(3) 
-          + "/" + m.networkObj.normalization.score.min.toFixed(3)
+          + "/" + m.networkObj.normalization.score.max.toFixed(3)
           // + "\nNETWORK\n" + jsonPrint(m.network)
         ));
 
