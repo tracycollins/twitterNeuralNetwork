@@ -19,7 +19,6 @@ hostname = hostname.replace(/.at.net/g, "");
 hostname = hostname.replace(/.fios-router.home/g, "");
 hostname = hostname.replace(/word0-instance-1/g, "google");
 
-var neuralNetworkFile = "neuralNetwork_" + hostname + ".json";
 
 // var neataptic = require("./js/neataptic/neataptic.js");
 var neataptic = require("neataptic");
@@ -374,6 +373,9 @@ console.log("DROPBOX_WORD_ASSO_APP_KEY :" + DROPBOX_WORD_ASSO_APP_KEY);
 console.log("DROPBOX_WORD_ASSO_APP_SECRET :" + DROPBOX_WORD_ASSO_APP_SECRET);
 
 var dropboxClient = new Dropbox({ accessToken: DROPBOX_WORD_ASSO_ACCESS_TOKEN });
+
+var neuralNetworkFolder = dropboxConfigHostFolder + "/neuralNetwork";
+var neuralNetworkFile = "neuralNetwork.json";
 
 function getTimeStamp(inputTime) {
   var currentTimeStamp ;
@@ -1379,7 +1381,7 @@ function initTimeout(){
           // + "\nNETWORK\n" + jsonPrint(m.network)
         ));
 
-        network = neataptic.Network.fromJSON(m.networkObj.network);
+        let network = neataptic.Network.fromJSON(m.networkObj.network);
 
         testNetwork(network, testObj, function(err, results){
 
@@ -1409,11 +1411,11 @@ function initTimeout(){
 
       var nnFile;
       if (cnf.loadNeuralNetworkFilePID) {
-        folder = dropboxConfigHostFolder;
+        folder = neuralNetworkFolder;
         nnFile = neuralNetworkFile.replace(".json", "_" + cnf.loadNeuralNetworkFilePID + ".json");
       }
       else {
-        folder = dropboxConfigDefaultFolder;
+        folder = neuralNetworkFolder;
         nnFile = neuralNetworkFile;
       }
 
