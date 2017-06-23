@@ -1070,6 +1070,7 @@ function parseDescription(description, callback){
   );
 }
 
+// FUTURE: break up into updateClassifiedUsers and createTrainingSet
 function updateClassifiedUsers(cnf, callback){
 
 
@@ -1177,9 +1178,21 @@ function updateClassifiedUsers(cnf, callback){
           sentimentObj.score
         ];
 
-        if (user.description){
+        if (user.status || user.description){
 
-          parseDescription(user.description, function(err, histogram){
+          var text;
+
+          if (user.status && user.description) {
+            text = user.description + " " + user.status.text;
+          }
+          else if (user.status) {
+            text = user.status.text;
+          }
+          else if (user.description) {
+            text = user.description;
+          }
+
+          parseDescription(text, function(err, histogram){
 
             debug("user.description\n" + jsonPrint(user.description));
 
