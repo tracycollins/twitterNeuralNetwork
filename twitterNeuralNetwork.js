@@ -3,16 +3,16 @@
 
 const version = 0.47;
 
-var DEFAULT_EVOLVE_ITERATIONS = 100;
+const DEFAULT_EVOLVE_ITERATIONS = 100;
 
-var ONE_SECOND = 1000 ;
+const ONE_SECOND = 1000 ;
 
-var os = require("os");
-var util = require("util");
-var moment = require("moment");
-var Dropbox = require("dropbox");
+const os = require("os");
+const util = require("util");
+const moment = require("moment");
+const Dropbox = require("dropbox");
 
-var hostname = os.hostname();
+let hostname = os.hostname();
 hostname = hostname.replace(/.local/g, "");
 hostname = hostname.replace(/.home/g, "");
 hostname = hostname.replace(/.at.net/g, "");
@@ -20,40 +20,40 @@ hostname = hostname.replace(/.fios-router.home/g, "");
 hostname = hostname.replace(/word0-instance-1/g, "google");
 
 
-// var neataptic = require("./js/neataptic/neataptic.js");
-var neataptic = require("neataptic");
-var network;
-var evolveNeuralNetwork;
+// let neataptic = require("./js/neataptic/neataptic.js");
+const neataptic = require("neataptic");
+let network;
+let evolveNeuralNetwork;
 
-var cp = require("child_process");
-var keywordExtractor = require("keyword-extractor");
+const cp = require("child_process");
+const keywordExtractor = require("keyword-extractor");
 
-var mentionsRegex = require('mentions-regex');
-var hashtagRegex = require('hashtag-regex');
+const mentionsRegex = require("mentions-regex");
+const hashtagRegex = require("hashtag-regex");
 
-var defaultDateTimeFormat = "YYYY-MM-DD HH:mm:ss ZZ";
-var compactDateTimeFormat = "YYYYMMDD_HHmmss";
+const defaultDateTimeFormat = "YYYY-MM-DD HH:mm:ss ZZ";
+const compactDateTimeFormat = "YYYYMMDD_HHmmss";
 
-var classifiedUserHashmap = {};
+let classifiedUserHashmap = {};
 
-var trainingSet = [];
-var trainingSetNormalized = [];
+let trainingSet = [];
+let trainingSetNormalized = [];
 
-var testObj = {};
+let testObj = {};
 testObj.testRunId = hostname + "_" + process.pid + "_" + moment().format(compactDateTimeFormat);
 testObj.testSet = [];
 
-var descriptionWordsFile = "defaultDescriptionWords.json";
-var descriptionWordsArray = [];
+let descriptionWordsFile = "defaultDescriptionWords.json";
+let descriptionWordsArray = [];
 
-var descriptionMentionsFile = "defaultDescriptionMentions.json";
-var descriptionMentionsArray = [];
+let descriptionMentionsFile = "defaultDescriptionMentions.json";
+let descriptionMentionsArray = [];
 
-var descriptionHashtagsFile = "defaultDescriptionHashtags.json";
-var descriptionHashtagsArray = [];
+let descriptionHashtagsFile = "defaultDescriptionHashtags.json";
+let descriptionHashtagsArray = [];
 
-var descriptionArrays = [];
-var descriptionArraysFile = "descriptionArraysFile_" + testObj.testRunId + ".json";
+let descriptionArrays = [];
+let descriptionArraysFile = "descriptionArraysFile_" + testObj.testRunId + ".json";
 
 
 function initDescriptionArrays(callback){
@@ -67,16 +67,16 @@ function initDescriptionArrays(callback){
     loadFile(dropboxConfigDefaultFolder, file, function(err, loadedArrayObj){
       if (!err) {
         debug(jsonPrint(loadedArrayObj));
-        if (loadedArrayObj["words"] !== undefined) { 
-          descriptionWordsArray = loadedArrayObj["words"].sort();
+        if (loadedArrayObj.words !== undefined) { 
+          descriptionWordsArray = loadedArrayObj.words.sort();
           console.log(chalkAlert("LOADED WORDS ARRAY | " + descriptionWordsArray.length + " WORDS"));
         }
-        if (loadedArrayObj["mentions"] !== undefined) { 
-          descriptionMentionsArray = loadedArrayObj["mentions"].sort();
+        if (loadedArrayObj.mentions !== undefined) { 
+          descriptionMentionsArray = loadedArrayObj.mentions.sort();
           console.log(chalkAlert("LOADED MENTIONS ARRAY | " + descriptionMentionsArray.length + " MENTIONS"));
         }
-        if (loadedArrayObj["hashtags"] !== undefined) { 
-          descriptionHashtagsArray = loadedArrayObj["hashtags"].sort();
+        if (loadedArrayObj.hashtags !== undefined) { 
+          descriptionHashtagsArray = loadedArrayObj.hashtags.sort();
           console.log(chalkAlert("LOADED HASHTAGS ARRAY | " + descriptionHashtagsArray.length + " HASHTAGS"));
         }
         cb();
@@ -89,7 +89,7 @@ function initDescriptionArrays(callback){
   }, function(err){
     if (err){
       console.log(chalkError("ERR\n" + jsonPrint(err)));
-      return(callback(err));
+      callback(err);
     }
     else {
       descriptionArrays.push({type: "mentions", array: descriptionMentionsArray});
@@ -101,29 +101,29 @@ function initDescriptionArrays(callback){
       saveFile(statsFolder, descriptionArraysFile, descriptionArrays, function(){
         statsObj.descriptionArraysFile = descriptionArraysFile;
         debug("descriptionArrays\n" + jsonPrint(descriptionArrays));
-        return(callback(null));
+        callback(null);
       });
     }
   });
 }
 
-var EventEmitter2 = require("eventemitter2").EventEmitter2;
-var configEvents = new EventEmitter2({
+const EventEmitter2 = require("eventemitter2").EventEmitter2;
+const configEvents = new EventEmitter2({
   wildcard: true,
   newListener: true,
   maxListeners: 20,
   verboseMemoryLeak: true
 });
 
-var userReadyTransmitted = false;
-var userReadyAck = false;
-var serverConnected = false;
+let userReadyTransmitted = false;
+let userReadyAck = false;
+let serverConnected = false;
 
-var stdin;
+let stdin;
 
-var cursorTweet;
+let cursorTweet;
 
-var configuration = {};
+let configuration = {};
 configuration.normalization = null;
 configuration.cursorTweetPause = false;
 configuration.verbose = false;
@@ -153,51 +153,51 @@ configuration.twitterConfigs.ninjathreecee = {
   "CONSUMER_KEY": "KTDtT7IouFrskZBcjeI9x45kk",
   "CONSUMER_SECRET": "6jHURX5dMx9ubXNZcMQ3qszAVPTyge4UK3YUPqvEKPw3dQfdF3",
   "TOKEN": "1118058524-pjFKKdB1htLvyMLvuzzkjaOphewOcKUmj2VGVCR",
-  "TOKEN_SECRET": "qT5RoHUgoE768ztcGO4EccrSf6HrxDHD075f4L41zxrme",
+  "TOKEN_SECRET": "qT5RoHUgoE768ztcGO4EccrSf6HrxDHD075f4L41zxrme"
 };
 
 
-var socket;
+let socket;
 
-var async = require("async");
+const async = require("async");
 
-var chalk = require("chalk");
-var chalkAlert = chalk.red;
-var chalkTwitter = chalk.blue;
-var chalkRed = chalk.red;
-var chalkRedBold = chalk.bold.red;
-var chalkError = chalk.bold.red;
-var chalkWarn = chalk.red;
-var chalkLog = chalk.gray;
-var chalkInfo = chalk.black;
-var chalkConnect = chalk.green;
-var chalkDisconnect = chalk.yellow;
+const chalk = require("chalk");
+const chalkAlert = chalk.red;
+const chalkTwitter = chalk.blue;
+const chalkRed = chalk.red;
+const chalkRedBold = chalk.bold.red;
+const chalkError = chalk.bold.red;
+const chalkWarn = chalk.red;
+const chalkLog = chalk.gray;
+const chalkInfo = chalk.black;
+const chalkConnect = chalk.green;
+const chalkDisconnect = chalk.yellow;
 
-var debug = require("debug")("twm");
-var debugCache = require("debug")("cache");
-var debugQ = require("debug")("queue");
+const debug = require("debug")("twm");
+const debugCache = require("debug")("cache");
+const debugQ = require("debug")("queue");
 
-var socketKeepaliveInterval;
+let socketKeepaliveInterval;
 
-var HashMap = require("hashmap").HashMap;
+const HashMap = require("hashmap").HashMap;
 
-var searchTermHashMap = new HashMap();
-var twitterUserHashMap = new HashMap();
+let searchTermHashMap = new HashMap();
+let twitterUserHashMap = new HashMap();
 
-var Tweet;
+let Tweet;
 
-var resetInProgressFlag = false;
+let resetInProgressFlag = false;
 
-var mongoose;
-var db;
-var userServer;
-var User;
+let mongoose;
+let db;
+let userServer;
+let User;
 
 function reset(cause, callback){
 
   if (!resetInProgressFlag) {
 
-    var c = cause;
+    let c = cause;
     resetInProgressFlag = true;
 
     setTimeout(function(){
@@ -210,7 +210,7 @@ function reset(cause, callback){
   }
 }
 
-var jsonPrint = function (obj){
+const jsonPrint = function (obj){
   if (obj) {
     return JSON.stringify(obj, null, 2);
   }
@@ -219,10 +219,10 @@ var jsonPrint = function (obj){
   }
 };
 
-var USER_ID = "TNN_" + hostname + "_" + process.pid;
-var SCREEN_NAME = "TNN_" + hostname + "_" + process.pid;
+const USER_ID = "TNN_" + hostname + "_" + process.pid;
+const SCREEN_NAME = "TNN_" + hostname + "_" + process.pid;
 
-var userObj = { 
+let userObj = { 
   name: USER_ID, 
   nodeId: USER_ID, 
   userId: USER_ID, 
@@ -241,19 +241,19 @@ userObj.tags.mode = "muxed";
 userObj.tags.channel = "twitter";
 userObj.tags.url = "https://www.twitter.com";
 
-var commandLineArgs = require("command-line-args");
+const commandLineArgs = require("command-line-args");
 
-var enableStdin = { name: "enableStdin", alias: "i", type: Boolean, defaultValue: true };
-var quitOnError = { name: "quitOnError", alias: "q", type: Boolean, defaultValue: true };
-var verbose = { name: "verbose", alias: "v", type: Boolean };
+const enableStdin = { name: "enableStdin", alias: "i", type: Boolean, defaultValue: true };
+const quitOnError = { name: "quitOnError", alias: "q", type: Boolean, defaultValue: true };
+const verbose = { name: "verbose", alias: "v", type: Boolean };
 
-var testMode = { name: "testMode", alias: "T", type: Boolean, defaultValue: false };
-var loadNeuralNetworkFilePID = { name: "loadNeuralNetworkFilePID", alias: "N", type: Number };
-var evolveIterations = { name: "evolveIterations", alias: "I", type: Number};
+const testMode = { name: "testMode", alias: "T", type: Boolean, defaultValue: false };
+const loadNeuralNetworkFilePID = { name: "loadNeuralNetworkFilePID", alias: "N", type: Number };
+const evolveIterations = { name: "evolveIterations", alias: "I", type: Number};
 
-var optionDefinitions = [enableStdin, quitOnError, verbose, evolveIterations, testMode, loadNeuralNetworkFilePID];
+const optionDefinitions = [enableStdin, quitOnError, verbose, evolveIterations, testMode, loadNeuralNetworkFilePID];
 
-var commandLineConfig = commandLineArgs(optionDefinitions);
+const commandLineConfig = commandLineArgs(optionDefinitions);
 console.log(chalkInfo("COMMAND LINE CONFIG\n" + jsonPrint(commandLineConfig)));
 console.log("COMMAND LINE OPTIONS\n" + jsonPrint(commandLineConfig));
 
@@ -278,10 +278,10 @@ process.on("message", function(msg) {
 });
 
 function msToTime(duration) {
-  var seconds = parseInt((duration / 1000) % 60);
-  var minutes = parseInt((duration / (1000 * 60)) % 60);
-  var hours = parseInt((duration / (1000 * 60 * 60)) % 24);
-  var days = parseInt(duration / (1000 * 60 * 60 * 24));
+  let seconds = parseInt((duration / 1000) % 60);
+  let minutes = parseInt((duration / (1000 * 60)) % 60);
+  let hours = parseInt((duration / (1000 * 60 * 60)) % 24);
+  let days = parseInt(duration / (1000 * 60 * 60 * 24));
   days = (days < 10) ? "0" + days : days;
   hours = (hours < 10) ? "0" + hours : hours;
   minutes = (minutes < 10) ? "0" + minutes : minutes;
@@ -289,7 +289,7 @@ function msToTime(duration) {
   return days + ":" + hours + ":" + minutes + ":" + seconds;
 }
 
-var statsObj = {};
+let statsObj = {};
 
 statsObj.commandLineConfig = commandLineConfig;
 
@@ -344,19 +344,19 @@ statsObj.normalization.magnitude.max = -Infinity;
 // DROPBOX
 // ==================================================================
 
-var DROPBOX_WORD_ASSO_ACCESS_TOKEN = process.env.DROPBOX_WORD_ASSO_ACCESS_TOKEN ;
-var DROPBOX_WORD_ASSO_APP_KEY = process.env.DROPBOX_WORD_ASSO_APP_KEY ;
-var DROPBOX_WORD_ASSO_APP_SECRET = process.env.DROPBOX_WORD_ASSO_APP_SECRET;
-var DROPBOX_TNN_CONFIG_FILE = process.env.DROPBOX_TNN_CONFIG_FILE || "twitterNeuralNetworkConfig.json";
-var DROPBOX_TNN_STATS_FILE = process.env.DROPBOX_TNN_STATS_FILE || "twitterNeuralNetworkStats.json";
+const DROPBOX_WORD_ASSO_ACCESS_TOKEN = process.env.DROPBOX_WORD_ASSO_ACCESS_TOKEN ;
+const DROPBOX_WORD_ASSO_APP_KEY = process.env.DROPBOX_WORD_ASSO_APP_KEY ;
+const DROPBOX_WORD_ASSO_APP_SECRET = process.env.DROPBOX_WORD_ASSO_APP_SECRET;
+const DROPBOX_TNN_CONFIG_FILE = process.env.DROPBOX_TNN_CONFIG_FILE || "twitterNeuralNetworkConfig.json";
+const DROPBOX_TNN_STATS_FILE = process.env.DROPBOX_TNN_STATS_FILE || "twitterNeuralNetworkStats.json";
 
-var dropboxConfigFolder = "/config/utility";
-var dropboxConfigDefaultFolder = "/config/utility/default";
-var dropboxConfigHostFolder = "/config/utility/" + hostname;
+const dropboxConfigFolder = "/config/utility";
+const dropboxConfigDefaultFolder = "/config/utility/default";
+const dropboxConfigHostFolder = "/config/utility/" + hostname;
 
-var dropboxConfigFile = hostname + "_" + DROPBOX_TNN_CONFIG_FILE;
-var statsFolder = "/stats/" + hostname;
-var statsFile = "twitterNeuralNetworkStats_" + hostname + "_" + process.pid + ".json";
+const dropboxConfigFile = hostname + "_" + DROPBOX_TNN_CONFIG_FILE;
+const statsFolder = "/stats/" + hostname;
+const statsFile = "twitterNeuralNetworkStats_" + hostname + "_" + process.pid + ".json";
 
 console.log("DROPBOX_TNN_CONFIG_FILE: " + DROPBOX_TNN_CONFIG_FILE);
 console.log("DROPBOX_TNN_STATS_FILE : " + DROPBOX_TNN_STATS_FILE);
@@ -372,13 +372,13 @@ console.log("DROPBOX_WORD_ASSO_ACCESS_TOKEN :" + DROPBOX_WORD_ASSO_ACCESS_TOKEN)
 console.log("DROPBOX_WORD_ASSO_APP_KEY :" + DROPBOX_WORD_ASSO_APP_KEY);
 console.log("DROPBOX_WORD_ASSO_APP_SECRET :" + DROPBOX_WORD_ASSO_APP_SECRET);
 
-var dropboxClient = new Dropbox({ accessToken: DROPBOX_WORD_ASSO_ACCESS_TOKEN });
+let dropboxClient = new Dropbox({ accessToken: DROPBOX_WORD_ASSO_ACCESS_TOKEN });
 
-var neuralNetworkFolder = dropboxConfigHostFolder + "/neuralNetwork";
-var neuralNetworkFile = "neuralNetwork.json";
+let neuralNetworkFolder = dropboxConfigHostFolder + "/neuralNetwork";
+let neuralNetworkFile = "neuralNetwork.json";
 
 function getTimeStamp(inputTime) {
-  var currentTimeStamp ;
+  let currentTimeStamp ;
 
   if (inputTime  === undefined) {
     currentTimeStamp = moment().format(defaultDateTimeFormat);
@@ -399,10 +399,10 @@ function indexOfMax(arr) {
     return -1;
   }
 
-  var max = arr[0];
-  var maxIndex = 0;
+  let max = arr[0]; let maxIndex = 0;
+  let i;
 
-  for (var i = 1; i < arr.length; i++) {
+  for (let i = 1; i < arr.length; i++) {
     if (arr[i] > max) {
       maxIndex = i;
       max = arr[i];
@@ -441,7 +441,7 @@ function quit(){
   process.exit();
 }
 
-process.on( 'SIGINT', function() {
+process.on( "SIGINT", function() {
   if (evolveNeuralNetwork !== undefined) { evolveNeuralNetwork.kill("SIGINT"); }
   quit("SIGINT");
 });
@@ -452,13 +452,13 @@ process.on("exit", function() {
 
 function saveFile (path, file, jsonObj, callback){
 
-  var fullPath = path + "/" + file;
+  const fullPath = path + "/" + file;
 
   debug(chalkInfo("LOAD FOLDER " + path));
   debug(chalkInfo("LOAD FILE " + file));
   debug(chalkInfo("FULL PATH " + fullPath));
 
-  var options = {};
+  let options = {};
 
   options.contents = JSON.stringify(jsonObj, null, 2);
   options.path = fullPath;
@@ -487,7 +487,7 @@ function loadFile(path, file, callback) {
   console.log(chalkInfo("LOAD FILE " + file));
   console.log(chalkInfo("FULL PATH " + path + "/" + file));
 
-  var fileExists = false;
+  let fileExists = false;
 
   dropboxClient.filesListFolder({path: path})
     .then(function(response) {
@@ -518,11 +518,11 @@ function loadFile(path, file, callback) {
                   + " | LOADING FILE FROM DROPBOX FILE: " + path + "/" + file
                 ));
 
-                var payload = data.fileBinary;
+                let payload = data.fileBinary;
                 debug(payload);
 
                 if (file.match(/\.json$/gi)) {
-                  var fileObj = JSON.parse(payload);
+                  let fileObj = JSON.parse(payload);
                   return(callback(null, fileObj));
                 }
                 else {
@@ -561,7 +561,7 @@ function loadFile(path, file, callback) {
     });
 }
 
-var statsUpdateInterval;
+let statsUpdateInterval;
 function initStatsUpdate(cnf, callback){
 
   console.log(chalkAlert("INIT STATS UPDATE INTERVAL | " + cnf.statsUpdateIntervalTime + " MS"));
@@ -604,14 +604,14 @@ function initTwitterUsers(cnf, callback){
   }
   else {
 
-    var twitterUsers = Object.keys(cnf.twitterUsers);
+    let twitterUsers = Object.keys(cnf.twitterUsers);
 
     console.log(chalkTwitter("INIT TWITTER USERS | USERS FOUND: " + twitterUsers.length));
     debug(chalkTwitter("cnf\n" + jsonPrint(cnf)));
 
     twitterUsers.forEach(function(userId){
 
-      var twitterUserObj = {};
+      let twitterUserObj = {};
       twitterUserObj.trackingNumber = 0;
 
       console.log("userId: " + userId);
@@ -669,8 +669,8 @@ function initialize(cnf, callback){
 
   loadFile(dropboxConfigHostFolder, dropboxConfigFile, function(err, loadedConfigObj){
 
-    var commandLineConfigKeys;
-    var configArgs;
+    let commandLineConfigKeys;
+    let configArgs;
 
     if (!err) {
       console.log(dropboxConfigFile + "\n" + jsonPrint(loadedConfigObj));
@@ -988,9 +988,9 @@ configEvents.on("INIT_COMPLETE", function(cnf){
   }, 3000);
 });
 
-var mRegEx = mentionsRegex();
-var hRegEx = hashtagRegex();
-var wordExtractionOptions = {
+let mRegEx = mentionsRegex();
+let hRegEx = hashtagRegex();
+let wordExtractionOptions = {
   language:"english",
   remove_digits: true,
   return_changed_case: true,
@@ -998,10 +998,10 @@ var wordExtractionOptions = {
 };
 
 function parseDescription(description, callback){
-  var histogram = {};
-  var mentionArray = mRegEx.exec(description);
-  var hashtagArray = hRegEx.exec(description);
-  var wordArray = keywordExtractor.extract(description, wordExtractionOptions);
+  let histogram = {};
+  let mentionArray = mRegEx.exec(description);
+  let hashtagArray = hRegEx.exec(description);
+  let wordArray = keywordExtractor.extract(description, wordExtractionOptions);
  
   async.parallel(
     [
@@ -1073,11 +1073,11 @@ function parseDescription(description, callback){
 function updateClassifiedUsers(cnf, callback){
 
 
-  var classifiedUserIds = Object.keys(classifiedUserHashmap);
-  var minMagnitude = 0;
-  var maxMagnitude = 0;
-  // var minScore = Infinity;
-  // var maxScore = 0;
+  let classifiedUserIds = Object.keys(classifiedUserHashmap);
+  let minMagnitude = 0;
+  let maxMagnitude = 0;
+  // let minScore = Infinity;
+  // let maxScore = 0;
 
   console.log(chalkAlert("UPDATE CLASSIFIED USERS: " + classifiedUserIds.length));
 
@@ -1096,9 +1096,9 @@ function updateClassifiedUsers(cnf, callback){
         return(cb0());
       }
 
-      var sentimentText;
+      let sentimentText;
 
-      var sentimentObj = {};
+      let sentimentObj = {};
       sentimentObj.magnitude = 0;
       sentimentObj.score = 0;
 
@@ -1119,16 +1119,16 @@ function updateClassifiedUsers(cnf, callback){
       sentimentText = "M: " + (sentimentObj.magnitude).toFixed(2)
         + " S: " + (sentimentObj.score).toFixed(2);
 
-      var keywordArray = Object.keys(user.keywords);
+      let keywordArray = Object.keys(user.keywords);
 
-      var classification = (keywordArray[0] !== undefined) ? keywordArray[0] : false;
-      var threeceeFollowing = (user.threeceeFollowing) ? user.threeceeFollowing.screenName : "-";
+      let classification = (keywordArray[0] !== undefined) ? keywordArray[0] : false;
+      let threeceeFollowing = (user.threeceeFollowing) ? user.threeceeFollowing.screenName : "-";
 
       // if (classification && (!cnf.zeroSentiment && (sentiment !== undefined))) {
       if (classification) {
 
-        var classText = "";
-        var currentChalk = chalkLog;
+        let classText = "";
+        let currentChalk = chalkLog;
 
         switch (classification) {
           case "left":
@@ -1170,7 +1170,7 @@ function updateClassifiedUsers(cnf, callback){
           // + " | " + jsonPrint(user.keywords)
         ));
 
-        var trainingSetDatum = {};
+        let trainingSetDatum = {};
 
         trainingSetDatum.input = [
           sentimentObj.magnitude, 
@@ -1185,7 +1185,7 @@ function updateClassifiedUsers(cnf, callback){
 
             async.eachSeries(descriptionArrays, function(descArray, cb1){
 
-              var type = descArray.type;
+              let type = descArray.type;
 
               debug(chalkAlert("START ARRAY: " + type + " | " + descArray.array.length));
 
@@ -1274,8 +1274,8 @@ function updateClassifiedUsers(cnf, callback){
       statsObj.normalization.magnitude.max = maxMagnitude;
 
       trainingSet.forEach(function(datum){
-        var normMagnitude = datum.input[0]/maxMagnitude;
-        // var normScore = (datum.input[1] - minScore)/(maxScore - minScore);
+        let normMagnitude = datum.input[0]/maxMagnitude;
+        // let normScore = (datum.input[1] - minScore)/(maxScore - minScore);
         datum.input[0] = normMagnitude;
         // datum.input[1] = normScore;
         if (configuration.testMode) {
@@ -1300,10 +1300,10 @@ function testNetwork(nw, testObj, callback){
     + " | " + testObj.testSet.length + " TEST DATA POINTS"
   ));
 
-  var numTested = 0;
-  var numSkipped = 0;
-  var numPassed = 0;
-  var successRate = 0;
+  let numTested = 0;
+  let numSkipped = 0;
+  let numPassed = 0;
+  let successRate = 0;
 
   testObj.testSet.forEach(function(testDatum){
 
@@ -1313,20 +1313,20 @@ function testNetwork(nw, testObj, callback){
       return;
     }
 
-    var testOutput = nw.activate(testDatum.input); // 0.0275
+    let testOutput = nw.activate(testDatum.input); // 0.0275
 
     numTested += 1;
 
-    var testMaxOutputIndex = indexOfMax(testOutput);
-    var expectedMaxOutputIndex = indexOfMax(testDatum.output);
+    let testMaxOutputIndex = indexOfMax(testOutput);
+    let expectedMaxOutputIndex = indexOfMax(testDatum.output);
 
-    var passed = (testMaxOutputIndex === expectedMaxOutputIndex);
+    let passed = (testMaxOutputIndex === expectedMaxOutputIndex);
 
     numPassed = passed ? numPassed+1 : numPassed;
 
     successRate = 100 * numPassed/numTested;
 
-    var currentChalk = passed ? chalkLog : chalkAlert;
+    let currentChalk = passed ? chalkLog : chalkAlert;
 
     console.log(currentChalk("\n-----\nTEST RESULT: " + passed + " | " + successRate.toFixed(3) + "%"
       + "\n" + testOutput[0].toFixed(3) + " " + testOutput[1].toFixed(3) + " " + testOutput[2].toFixed(3)
@@ -1400,7 +1400,7 @@ function initTimeout(){
       }
     });
 
-    var evolveMessageObj = {
+    let evolveMessageObj = {
       op: "INIT",
       testRunId: testObj.testRunId
     };
@@ -1409,7 +1409,7 @@ function initTimeout(){
 
     if (cnf.testMode) {
 
-      var nnFile;
+      let nnFile;
       if (cnf.loadNeuralNetworkFilePID) {
         folder = neuralNetworkFolder;
         nnFile = neuralNetworkFile.replace(".json", "_" + cnf.loadNeuralNetworkFilePID + ".json");
@@ -1432,7 +1432,7 @@ function initTimeout(){
         else {
 
           cnf.normalization = loadedNetworkObj.normalization;
-          var loadedNetwork = neataptic.Network.fromJSON(loadedNetworkObj.network);
+          let loadedNetwork = neataptic.Network.fromJSON(loadedNetworkObj.network);
 
           loadFile(cnf.classifiedUsersFolder, cnf.classifiedUsersFile, function(err, clUsObj){
             classifiedUserHashmap = clUsObj;
@@ -1478,7 +1478,7 @@ function initTimeout(){
 
           updateClassifiedUsers(cnf, function(err){
 
-            var evolveMessageObj = {};
+            let evolveMessageObj = {};
 
             console.log(chalkAlert("TRAINING SET NORMALIZED"
               + " | " + trainingSetNormalized.length + " DATA POINTS"
