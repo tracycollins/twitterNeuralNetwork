@@ -399,10 +399,10 @@ function indexOfMax(arr) {
     return -1;
   }
 
-  let max = arr[0]; let maxIndex = 0;
-  let i;
+  let max = arr[0]; 
+  let maxIndex = 0;
 
-  for (let i = 1; i < arr.length; i++) {
+  for (let i = 1; i < arr.length; i+=1) {
     if (arr[i] > max) {
       maxIndex = i;
       max = arr[i];
@@ -1328,9 +1328,18 @@ function testNetwork(nw, testObj, callback){
 
     let currentChalk = passed ? chalkLog : chalkAlert;
 
-    console.log(currentChalk("\n-----\nTEST RESULT: " + passed + " | " + successRate.toFixed(3) + "%"
-      + "\n" + testOutput[0].toFixed(3) + " " + testOutput[1].toFixed(3) + " " + testOutput[2].toFixed(3)
-      + "\n" + testDatum.output[0].toFixed(3) + " " + testDatum.output[1].toFixed(3) + " " + testDatum.output[2].toFixed(3)
+    console.log(currentChalk("\n-----\nTEST RESULT: " + passed 
+      + " | " + successRate.toFixed(2) + "%"
+      // + "\n" + "TO: " + testOutput 
+      + "\n" + testOutput[0].toFixed(10)
+      + " " + testOutput[1].toFixed(10) 
+      + " " + testOutput[2].toFixed(10) 
+      + " | TMOI: " + testMaxOutputIndex
+      // + "\n" + "EO: " + testDatum.output 
+      + "\n" + testDatum.output[0].toFixed(10) 
+      + " " + testDatum.output[1].toFixed(10) 
+      + " " + testDatum.output[2].toFixed(10) 
+      + " | EMOI: " + expectedMaxOutputIndex
     ));
   });
 
