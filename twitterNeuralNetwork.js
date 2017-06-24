@@ -1318,17 +1318,17 @@ function updateClassifiedUsers(cnf, callback){
           sentimentObj.score
         ];
 
-        if (user.status || user.description){
+        if ((user.status !== undefined) || (user.description !== undefined)){
 
-          var text;
+          var text = "";
 
-          if (user.status && user.description) {
+          if ((user.status !== undefined) && (user.description !== undefined)){
             text = user.description + " " + user.status.text;
           }
-          else if (user.status) {
+          else if (user.status !== undefined){
             text = user.status.text;
           }
-          else if (user.description) {
+          else if (user.description !== undefined){
             text = user.description;
           }
 
