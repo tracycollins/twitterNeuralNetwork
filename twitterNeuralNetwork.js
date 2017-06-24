@@ -30,9 +30,19 @@ const keywordExtractor = require("keyword-extractor");
 
 const mentionsRegex = require("mentions-regex");
 const hashtagRegex = require("hashtag-regex");
+const getUrls = require("get-urls");
+const Regex = require("regex");
+const ignoreWordRegex = new Regex(/(#|=|&amp|http)/igm);
 
 const defaultDateTimeFormat = "YYYY-MM-DD HH:mm:ss ZZ";
 const compactDateTimeFormat = "YYYYMMDD_HHmmss";
+
+let histograms = {};
+histograms.words = {};
+histograms.urls = {};
+histograms.hashtags = {};
+histograms.mentions = {};
+
 
 let classifiedUserHashmap = {};
 
@@ -43,42 +53,45 @@ let testObj = {};
 testObj.testRunId = hostname + "_" + process.pid + "_" + moment().format(compactDateTimeFormat);
 testObj.testSet = [];
 
-let descriptionWordsFile = "defaultDescriptionWords.json";
-let descriptionWordsArray = [];
+// let descriptionWordsFile = "defaultDescriptionWords.json";
+// let descriptionWordsArray = [];
 
-let descriptionMentionsFile = "defaultDescriptionMentions.json";
-let descriptionMentionsArray = [];
+// let descriptionMentionsFile = "defaultDescriptionMentions.json";
+// let descriptionMentionsArray = [];
 
-let descriptionHashtagsFile = "defaultDescriptionHashtags.json";
-let descriptionHashtagsArray = [];
+// let descriptionHashtagsFile = "defaultDescriptionHashtags.json";
+// let descriptionHashtagsArray = [];
 
-let descriptionArrays = [];
-let descriptionArraysFile = "descriptionArraysFile_" + testObj.testRunId + ".json";
+// let descriptionArrays = [];
+// let descriptionArraysFile = "descriptionArraysFile_" + testObj.testRunId + ".json";
 
+let inputArrays = [];
 
-function initDescriptionArrays(callback){
+const jsUcfirst = function(string) {
+  return string.charAt(0).toUpperCase() + string.slice(1);
+};
 
-  console.log(chalkTwitter("INIT DESCRIPTION ARRAYS"));
+const inputTypes = ["hashtags", "mentions", "urls", "words"];
 
-  async.each([descriptionWordsFile, descriptionMentionsFile, descriptionHashtagsFile], function(file, cb){
+function initInputArrays(callback){
 
-    console.log("INIT " + file);
+  console.log(chalkTwitter("INIT INPUT ARRAYS"));
 
-    loadFile(dropboxConfigDefaultFolder, file, function(err, loadedArrayObj){
+  async.each(inputTypes, function(inputType, cb){
+
+    const inputFile = "defaultInput" + jsUcfirst(inputType) + ".json";
+
+    console.log("INIT " + inputType.toUpperCase() + " INPUT ARRAY: " + inputFile);
+
+    loadFile(dropboxConfigDefaultFolder, inputFile, function(err, inputArrayObj){
       if (!err) {
-        debug(jsonPrint(loadedArrayObj));
-        if (loadedArrayObj.words !== undefined) { 
-          descriptionWordsArray = loadedArrayObj.words.sort();
-          console.log(chalkAlert("LOADED WORDS ARRAY | " + descriptionWordsArray.length + " WORDS"));
-        }
-        if (loadedArrayObj.mentions !== undefined) { 
-          descriptionMentionsArray = loadedArrayObj.mentions.sort();
-          console.log(chalkAlert("LOADED MENTIONS ARRAY | " + descriptionMentionsArray.length + " MENTIONS"));
-        }
-        if (loadedArrayObj.hashtags !== undefined) { 
-          descriptionHashtagsArray = loadedArrayObj.hashtags.sort();
-          console.log(chalkAlert("LOADED HASHTAGS ARRAY | " + descriptionHashtagsArray.length + " HASHTAGS"));
-        }
+        debug(jsonPrint(inputArrayObj));
+
+        inputArrays.push(inputArrayObj);
+
+        console.log(chalkAlert("LOADED " + inputType.toUpperCase() + " ARRAY"
+          + " | " + inputArrayObj[inputType].length + " " + inputType.toUpperCase()
+        ));
         cb();
       }
       else {
@@ -89,19 +102,15 @@ function initDescriptionArrays(callback){
   }, function(err){
     if (err){
       console.log(chalkError("ERR\n" + jsonPrint(err)));
-      callback(err);
+      return(callback(err));
     }
     else {
-      descriptionArrays.push({type: "mentions", array: descriptionMentionsArray});
-      descriptionArrays.push({type: "hashtags", array: descriptionHashtagsArray});
-      descriptionArrays.push({type: "words", array: descriptionWordsArray});
+      console.log(chalkAlert("LOADED INPUT ARRAY FILES"));
 
-      console.log(chalkAlert("LOADED DESCRIPTION ARRAY FILES"));
-
-      saveFile(statsFolder, descriptionArraysFile, descriptionArrays, function(){
-        statsObj.descriptionArraysFile = descriptionArraysFile;
-        debug("descriptionArrays\n" + jsonPrint(descriptionArrays));
-        callback(null);
+      saveFile(dropboxConfigHostFolder, inputArraysFile, inputArrays, function(){
+        statsObj.inputArraysFile = inputArraysFile;
+        debug("descriptionArrays\n" + jsonPrint(inputArrays));
+        return(callback(null));
       });
     }
   });
@@ -373,6 +382,9 @@ console.log("DROPBOX_WORD_ASSO_APP_KEY :" + DROPBOX_WORD_ASSO_APP_KEY);
 console.log("DROPBOX_WORD_ASSO_APP_SECRET :" + DROPBOX_WORD_ASSO_APP_SECRET);
 
 let dropboxClient = new Dropbox({ accessToken: DROPBOX_WORD_ASSO_ACCESS_TOKEN });
+
+const inputArraysFolder = dropboxConfigHostFolder + "/inputArrays";
+const inputArraysFile = "inputArraysFile_" + statsObj.runId + ".json";
 
 let neuralNetworkFolder = dropboxConfigHostFolder + "/neuralNetwork";
 let neuralNetworkFile = "neuralNetwork.json";
@@ -825,7 +837,7 @@ function initialize(cnf, callback){
             + "\n" + jsonPrint(cnf2.twitterConfig )
           ));
 
-          initDescriptionArrays(function(err){
+          initInputArrays(function(err){
             return(callback(err, cnf2));
           });
 
@@ -997,78 +1009,204 @@ let wordExtractionOptions = {
   remove_duplicates: true
 };
 
-function parseDescription(description, callback){
-  let histogram = {};
-  let mentionArray = mRegEx.exec(description);
-  let hashtagArray = hRegEx.exec(description);
-  let wordArray = keywordExtractor.extract(description, wordExtractionOptions);
+// function parseDescription(description, callback){
+//   let histogram = {};
+//   let mentionArray = mRegEx.exec(description);
+//   let hashtagArray = hRegEx.exec(description);
+//   let wordArray = keywordExtractor.extract(description, wordExtractionOptions);
  
-  async.parallel(
-    [
-      function(cbp){
-        if (!wordArray) { return(cbp()); }
-        async.each(wordArray, function(word, cb){
-          word = word.toLowerCase();
-          histogram[word] = (histogram[word] === undefined) ? 1 : histogram[word]+1;
-          debug(chalkAlert("->- DESC Ws"
-            + " | " + histogram[word]
-            + " | " + word
-          ));
-          cb();
-        }, function(err){
-          cbp();
-        });
-      },
+//   async.parallel(
+//     [
+//       function(cbp){
+//         if (!wordArray) { return(cbp()); }
+//         async.each(wordArray, function(word, cb){
+//           word = word.toLowerCase();
+//           histogram[word] = (histogram[word] === undefined) ? 1 : histogram[word]+1;
+//           debug(chalkAlert("->- DESC Ws"
+//             + " | " + histogram[word]
+//             + " | " + word
+//           ));
+//           cb();
+//         }, function(err){
+//           cbp();
+//         });
+//       },
 
-      function(cbp){
-        if (!mentionArray) { return(cbp()); }
-        async.each(mentionArray, function(userId, cb){
-          if (!userId.match("@")) { return(cb()); }
-          userId = "@" + userId.toLowerCase();
-          histogram[userId] = (histogram[userId] === undefined) ? 1 : histogram[userId]+1;
-          debug(chalkAlert("->- DESC Ms"
-            + " | " + histogram[userId]
-            + " | " + userId
-          ));
-          cb();
-        }, function(err){
-          cbp();
-        });
-      },
+//       function(cbp){
+//         if (!mentionArray) { return(cbp()); }
+//         async.each(mentionArray, function(userId, cb){
+//           if (!userId.match("@")) { return(cb()); }
+//           userId = "@" + userId.toLowerCase();
+//           histogram[userId] = (histogram[userId] === undefined) ? 1 : histogram[userId]+1;
+//           debug(chalkAlert("->- DESC Ms"
+//             + " | " + histogram[userId]
+//             + " | " + userId
+//           ));
+//           cb();
+//         }, function(err){
+//           cbp();
+//         });
+//       },
 
-      function(cbp){
-        if (!hashtagArray) { return(cbp()); }
-        async.each(hashtagArray, function(hashtag, cb){
+//       function(cbp){
+//         if (!hashtagArray) { return(cbp()); }
+//         async.each(hashtagArray, function(hashtag, cb){
+//           hashtag = hashtag.toLowerCase();
+//           histogram[hashtag] = (histogram[hashtag] === undefined) ? 1 : histogram[hashtag]+1;
+//           debug(chalkAlert("->- DESC Hs"
+//             + " | " + histogram[hashtag]
+//             + " | " + hashtag
+//           ));
+//           cb();
+//         }, function(err){
+//           cbp();
+//         });
+//       }
+
+//     ],
+//     function(err, results) {
+//       if (err) {
+//         console.log(chalkError("\n" + moment().format(compactDateTimeFormat) 
+//           + " | !!! parseDescription ERROR: " + err
+//         ));
+//         callback(err, null);
+//       } 
+//       else {
+//         debug(chalkAlert("\n" + moment().format(compactDateTimeFormat) 
+//           + " | parseDescription RESULTS\n" + jsonPrint(histogram)
+//         ));
+//         callback(null, histogram);
+//       }
+//     }
+
+//   );
+// }
+
+function parseText(text, callback){
+
+  const mRegEx = mentionsRegex();
+  const hRegEx = hashtagRegex();
+
+  const mentionArray = mRegEx.exec(text);
+  const hashtagArray = hRegEx.exec(text);
+  const urlArray = Array.from(getUrls(text));
+  const wordArray = keywordExtractor.extract(text, wordExtractionOptions);
+
+  async.parallel({
+    mentions: function(cb){
+      if (mentionArray) {
+        const histogram = histograms.mentions;
+        mentionArray.forEach(function(userId){
+          if (!userId.match("@")) {
+            userId = "@" + userId.toLowerCase();
+            histogram[userId] = (histogram[userId] === undefined) ? 1 : histogram[userId]+1;
+            debug(chalkAlert("->- DESC Ms"
+              + " | " + histogram[userId]
+              + " | " + userId
+            ));
+          }
+        });
+        cb(null, histogram);
+      }
+      else {
+        cb(null, histograms.mentions);
+      }
+    },
+    hashtags: function(cb){
+      if (hashtagArray) {
+        const histogram = histograms.hashtags;
+        hashtagArray.forEach(function(hashtag){
           hashtag = hashtag.toLowerCase();
           histogram[hashtag] = (histogram[hashtag] === undefined) ? 1 : histogram[hashtag]+1;
           debug(chalkAlert("->- DESC Hs"
             + " | " + histogram[hashtag]
             + " | " + hashtag
           ));
-          cb();
-        }, function(err){
-          cbp();
         });
+        cb(null, histogram);
       }
-
-    ],
-    function(err, results) {
-      if (err) {
-        console.log(chalkError("\n" + moment().format(compactDateTimeFormat) 
-          + " | !!! parseDescription ERROR: " + err
-        ));
-        callback(err, null);
-      } 
       else {
-        debug(chalkAlert("\n" + moment().format(compactDateTimeFormat) 
-          + " | parseDescription RESULTS\n" + jsonPrint(histogram)
-        ));
-        callback(null, histogram);
+        cb(null, histograms.hashtags);
+      }
+    },
+    words: function(cb){
+      if (wordArray) {
+
+        const histogram = histograms.words;
+
+        wordArray.forEach(function(w){
+          const word = w.toLowerCase();
+          const m = mRegEx.exec(word);
+          const h = hRegEx.exec(word);
+          const rgx = ignoreWordRegex.test(word);
+          const u = (Array.from(getUrls(text)).length > 0) ? Array.from(getUrls(text)) : null;
+          if (m || h || u || rgx 
+            || (word === "/") 
+            || word.includes("--") 
+            || word.includes("|") 
+            || word.includes("#") 
+            || word.includes("w/") 
+            || word.includes("≠") 
+            || word.includes("http") 
+            || word.includes("+")) {
+            if (rgx) { console.log(chalkAlert("-- REGEX SKIP WORD"
+              + " | M: " + m
+              + " | H: " + h
+              + " | U: " + u
+              + " | RGX: " + rgx
+              + " | " + word
+            )) };
+            debug(chalkAlert("-- SKIP WORD"
+              + " | M: " + m
+              + " | H: " + h
+              + " | U: " + u
+              + " | RGX: " + rgx
+              + " | " + word
+            ));
+          }
+          else {
+            histogram[word] = (histogram[word] === undefined) ? 1 : histogram[word]+1;
+            debug(chalkAlert("->- DESC Ws"
+              + " | " + histogram[word]
+              + " | " + word
+            ));
+          }
+        });
+
+        cb(null, histogram);
+      }
+      else {
+        cb(null, histograms.words);
+      }
+    },
+    urls: function(cb){
+      if (urlArray) {
+        const histogram = histograms.urls;
+        urlArray.forEach(function(url){
+          url = url.toLowerCase();
+          histogram[url] = (histogram[url] === undefined) ? 1 : histogram[url]+1;
+          debug(chalkAlert("->- DESC Us"
+            + " | " + histogram[url]
+            + " | " + url
+          ));
+        });
+        cb(null, histogram);
+      }
+      else {
+        cb(null, histograms.urls);
       }
     }
-
-  );
+  }, function(err, results){
+    let text = "HISTOGRAMS";
+    // console.log("PARSE TEXT RESULTS");
+    Object.keys(results).forEach(function(key){
+      if (results[key]) {text = text + " | " + key.toUpperCase() + ": " + Object.keys(results[key]).length;}
+    });
+    console.log(chalkLog(text));
+    callback(err, results);
+  });
 }
+
 
 // FUTURE: break up into updateClassifiedUsers and createTrainingSet
 function updateClassifiedUsers(cnf, callback){
@@ -1192,19 +1330,51 @@ function updateClassifiedUsers(cnf, callback){
             text = user.description;
           }
 
-          parseDescription(text, function(err, histogram){
+          // parseText(text, function(err, histogram){
 
-            debug("user.description\n" + jsonPrint(user.description));
+          //   debug("user.description\n" + jsonPrint(user.description));
 
-            async.eachSeries(descriptionArrays, function(descArray, cb1){
+          //   async.eachSeries(descriptionArrays, function(descArray, cb1){
 
-              let type = descArray.type;
+          //     let type = descArray.type;
 
-              debug(chalkAlert("START ARRAY: " + type + " | " + descArray.array.length));
+          //     debug(chalkAlert("START ARRAY: " + type + " | " + descArray.array.length));
 
-              async.eachSeries(descArray.array, function(element, cb2){
-                if (histogram[element]) {
-                  // console.log("ARRAY: " + descArray.type + " | + " + element);
+          //     async.eachSeries(descArray.array, function(element, cb2){
+          //       if (histogram[element]) {
+          //         // console.log("ARRAY: " + descArray.type + " | + " + element);
+          //         trainingSetDatum.input.push(1);
+          //         cb2();
+          //       }
+          //       else {
+          //         // console.log("ARRAY: " + descArray.type + " | - " + element);
+          //         trainingSetDatum.input.push(0);
+          //         cb2();
+          //       }
+          //     }, function(err){
+          //       debug(chalkAlert("DONE ARRAY: " + type));
+          //       cb1();
+          //     });
+
+          //   }, function(err){
+          //     debug(chalkAlert("PARSE DESC COMPLETE"));
+          //   });
+
+          // });
+
+          parseText(text, function(err, histogram){
+
+            debug("user.description + status\n" + jsonPrint(text));
+
+            async.eachSeries(inputArrays, function(inputArray, cb1){
+
+              const type = Object.keys(inputArray)[0];
+
+              debug(chalkAlert("START ARRAY: " + type + " | " + inputArray[type].length));
+
+              async.eachSeries(inputArray[type], function(element, cb2){
+                if (histogram[type][element]) {
+                  debug("ARRAY: " + type + " | " + element + " | " + histogram[type][element]);
                   trainingSetDatum.input.push(1);
                   cb2();
                 }
@@ -1223,16 +1393,24 @@ function updateClassifiedUsers(cnf, callback){
             });
 
           });
+
         }
         else {
-          descriptionWordsArray.forEach(function(word){
-            trainingSetDatum.input.push(0);
-          });
-          descriptionMentionsArray.forEach(function(word){
-            trainingSetDatum.input.push(0);
-          });
-          descriptionHashtagsArray.forEach(function(word){
-            trainingSetDatum.input.push(0);
+          // descriptionWordsArray.forEach(function(word){
+          //   trainingSetDatum.input.push(0);
+          // });
+          // descriptionMentionsArray.forEach(function(word){
+          //   trainingSetDatum.input.push(0);
+          // });
+          // descriptionHashtagsArray.forEach(function(word){
+          //   trainingSetDatum.input.push(0);
+          // });
+          async.eachSeries(inputArrays, function(inputArray, cb1){
+            const type = Object.keys(inputArray)[0];
+            inputArray[type].forEach(function(){
+              debug("ARRAY: " + type + " | 0");
+              trainingSetDatum.input.push(0);
+            });
           });
         }
 
