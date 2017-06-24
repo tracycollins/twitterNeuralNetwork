@@ -1089,7 +1089,9 @@ function parseText(text, callback){
 
   const mentionArray = mRegEx.exec(text);
   const hashtagArray = hRegEx.exec(text);
-  const urlArray = Array.from(getUrls(text));
+  const urlSet = getUrls(text);
+  console.log("urlSet\n" + jsonPrint(urlSet));
+  const urlArray = Array.from(urlSet);
   const wordArray = keywordExtractor.extract(text, wordExtractionOptions);
 
   async.parallel({
