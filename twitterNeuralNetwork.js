@@ -1318,22 +1318,17 @@ function updateClassifiedUsers(cnf, callback){
           sentimentObj.score
         ];
 
-        if ((user.status !== undefined) || (user.description !== undefined)){
+        if (user.status || user.description){
 
-          var text = "";
+          var text;
 
-          if ((user.status !== undefined) && (user.description !== undefined)){
-              if (user.status.text) {
-                text = user.description + " " + user.status.text; 
-              }
-              else {
-                text = user.description ;
-              }
+          if (user.status && user.description) {
+            text = user.description + " " + user.status.text;
           }
-          else if ((user.status !== undefined) && user.status.text){
+          else if (user.status) {
             text = user.status.text;
           }
-          else if (user.description !== undefined){
+          else if (user.description) {
             text = user.description;
           }
 
