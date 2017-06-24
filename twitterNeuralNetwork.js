@@ -1009,79 +1009,6 @@ let wordExtractionOptions = {
   remove_duplicates: true
 };
 
-// function parseDescription(description, callback){
-//   let histogram = {};
-//   let mentionArray = mRegEx.exec(description);
-//   let hashtagArray = hRegEx.exec(description);
-//   let wordArray = keywordExtractor.extract(description, wordExtractionOptions);
- 
-//   async.parallel(
-//     [
-//       function(cbp){
-//         if (!wordArray) { return(cbp()); }
-//         async.each(wordArray, function(word, cb){
-//           word = word.toLowerCase();
-//           histogram[word] = (histogram[word] === undefined) ? 1 : histogram[word]+1;
-//           debug(chalkAlert("->- DESC Ws"
-//             + " | " + histogram[word]
-//             + " | " + word
-//           ));
-//           cb();
-//         }, function(err){
-//           cbp();
-//         });
-//       },
-
-//       function(cbp){
-//         if (!mentionArray) { return(cbp()); }
-//         async.each(mentionArray, function(userId, cb){
-//           if (!userId.match("@")) { return(cb()); }
-//           userId = "@" + userId.toLowerCase();
-//           histogram[userId] = (histogram[userId] === undefined) ? 1 : histogram[userId]+1;
-//           debug(chalkAlert("->- DESC Ms"
-//             + " | " + histogram[userId]
-//             + " | " + userId
-//           ));
-//           cb();
-//         }, function(err){
-//           cbp();
-//         });
-//       },
-
-//       function(cbp){
-//         if (!hashtagArray) { return(cbp()); }
-//         async.each(hashtagArray, function(hashtag, cb){
-//           hashtag = hashtag.toLowerCase();
-//           histogram[hashtag] = (histogram[hashtag] === undefined) ? 1 : histogram[hashtag]+1;
-//           debug(chalkAlert("->- DESC Hs"
-//             + " | " + histogram[hashtag]
-//             + " | " + hashtag
-//           ));
-//           cb();
-//         }, function(err){
-//           cbp();
-//         });
-//       }
-
-//     ],
-//     function(err, results) {
-//       if (err) {
-//         console.log(chalkError("\n" + moment().format(compactDateTimeFormat) 
-//           + " | !!! parseDescription ERROR: " + err
-//         ));
-//         callback(err, null);
-//       } 
-//       else {
-//         debug(chalkAlert("\n" + moment().format(compactDateTimeFormat) 
-//           + " | parseDescription RESULTS\n" + jsonPrint(histogram)
-//         ));
-//         callback(null, histogram);
-//       }
-//     }
-
-//   );
-// }
-
 function parseText(text, callback){
 
   const mRegEx = mentionsRegex();
@@ -1331,40 +1258,6 @@ function updateClassifiedUsers(cnf, callback){
           else if (user.description) {
             text = user.description;
           }
-
-  console.log("text\n" + jsonPrint(text));
-
-          // parseText(text, function(err, histogram){
-
-          //   debug("user.description\n" + jsonPrint(user.description));
-
-          //   async.eachSeries(descriptionArrays, function(descArray, cb1){
-
-          //     let type = descArray.type;
-
-          //     debug(chalkAlert("START ARRAY: " + type + " | " + descArray.array.length));
-
-          //     async.eachSeries(descArray.array, function(element, cb2){
-          //       if (histogram[element]) {
-          //         // console.log("ARRAY: " + descArray.type + " | + " + element);
-          //         trainingSetDatum.input.push(1);
-          //         cb2();
-          //       }
-          //       else {
-          //         // console.log("ARRAY: " + descArray.type + " | - " + element);
-          //         trainingSetDatum.input.push(0);
-          //         cb2();
-          //       }
-          //     }, function(err){
-          //       debug(chalkAlert("DONE ARRAY: " + type));
-          //       cb1();
-          //     });
-
-          //   }, function(err){
-          //     debug(chalkAlert("PARSE DESC COMPLETE"));
-          //   });
-
-          // });
 
           parseText(text, function(err, histogram){
 
