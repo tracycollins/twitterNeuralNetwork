@@ -1024,7 +1024,7 @@ function parseText(text, callback){
   async.parallel({
     mentions: function(cb){
       if (mentionArray) {
-        const histogram = histograms.mentions;
+        let histogram = {};
         mentionArray.forEach(function(userId){
           if (!userId.match("@")) {
             userId = "@" + userId.toLowerCase();
@@ -1043,7 +1043,7 @@ function parseText(text, callback){
     },
     hashtags: function(cb){
       if (hashtagArray) {
-        const histogram = histograms.hashtags;
+        let histogram = {};
         hashtagArray.forEach(function(hashtag){
           hashtag = hashtag.toLowerCase();
           histogram[hashtag] = (histogram[hashtag] === undefined) ? 1 : histogram[hashtag]+1;
@@ -1061,7 +1061,7 @@ function parseText(text, callback){
     words: function(cb){
       if (wordArray) {
 
-        const histogram = histograms.words;
+        let histogram = {};
 
         wordArray.forEach(function(w){
           const word = w.toLowerCase();
@@ -1110,7 +1110,7 @@ function parseText(text, callback){
     },
     urls: function(cb){
       if (urlArray) {
-        const histogram = histograms.urls;
+        let histogram = {};
         urlArray.forEach(function(url){
           url = url.toLowerCase();
           histogram[url] = (histogram[url] === undefined) ? 1 : histogram[url]+1;
@@ -1136,6 +1136,39 @@ function parseText(text, callback){
   });
 }
 
+
+function printDatum(datum){
+
+  let row = "";
+  let col = 0;
+  let rowNum = 0;
+  const COLS = 50;
+
+  datum.input.forEach(function(bit, i){
+    if (i == 0) {
+      row = row + bit.toFixed(10) + " | " ;
+    }
+    else if (i == 1) {
+      row = row + bit.toFixed(10);
+    }
+    else if (i == 2) {
+      console.log("ROW " + rowNum + " | " + row);
+      row = bit ? "X" : ".";
+      col = 1;
+      rowNum += 1;
+    }
+    else if (col < COLS){
+      row = row + (bit ? "X" : ".");
+      col += 1;
+    }
+    else {
+      console.log("ROW " + rowNum + " | " + row);
+      row = bit ? "X" : ".";
+      col = 1;
+      rowNum += 1;
+    }
+  });
+}
 
 // FUTURE: break up into updateClassifiedUsers and createTrainingSet
 function updateClassifiedUsers(cnf, callback){
@@ -1271,12 +1304,12 @@ function updateClassifiedUsers(cnf, callback){
 
               async.eachSeries(inputArray[type], function(element, cb2){
                 if (histogram[type][element]) {
-                  debug("ARRAY: " + type + " | " + element + " | " + histogram[type][element]);
+                  console.log(chalkTwitter("+++ DATUM BIT: " + type + " | " + element + " | " + histogram[type][element]));
                   trainingSetDatum.input.push(1);
                   cb2();
                 }
                 else {
-                  // console.log("ARRAY: " + descArray.type + " | - " + element);
+                  debug(chalkInfo("--- DATUM BIT: " + type + " | " + element + " | " + histogram[type][element]));
                   trainingSetDatum.input.push(0);
                   cb2();
                 }
@@ -1330,6 +1363,7 @@ function updateClassifiedUsers(cnf, callback){
         trainingSet.push(trainingSetDatum);
         debug("trainingSetDatum INPUT:  " + trainingSetDatum.input);
         debug("trainingSetDatum OUTPUT: " + trainingSetDatum.output);
+        printDatum(trainingSetDatum);
         cb0();
       }
       else {
