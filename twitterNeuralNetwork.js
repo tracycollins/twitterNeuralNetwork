@@ -1325,7 +1325,7 @@ function updateClassifiedUsers(cnf, callback){
           if (user.status && user.description) {
             text = user.description + " " + user.status.text;
           }
-          else if (user.status) {
+          else if (user.status.text) {
             text = user.status.text;
           }
           else if (user.description) {
