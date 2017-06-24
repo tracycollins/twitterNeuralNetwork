@@ -1323,9 +1323,14 @@ function updateClassifiedUsers(cnf, callback){
           var text = "";
 
           if ((user.status !== undefined) && (user.description !== undefined)){
-            text = user.description + " " + user.status.text;
+              if (user.status.text) {
+                text = user.description + " " + user.status.text; 
+              }
+              else {
+                text = user.description ;
+              }
           }
-          else if (user.status !== undefined){
+          else if ((user.status !== undefined) && user.status.text){
             text = user.status.text;
           }
           else if (user.description !== undefined){
