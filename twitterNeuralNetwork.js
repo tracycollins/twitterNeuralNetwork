@@ -1050,6 +1050,7 @@ function updateClassifiedUsers(cnf, callback){
 
   let classifiedUserIds = Object.keys(classifiedUserHashmap);
   let maxMagnitude = 0;
+  let totalInputHits = 0;
 
   console.log(chalkAlert("UPDATE CLASSIFIED USERS: " + classifiedUserIds.length));
 
@@ -1140,6 +1141,7 @@ function updateClassifiedUsers(cnf, callback){
         ));
 
         let trainingSetDatum = {};
+        trainingSetDatum.inputHits = 0;
 
         trainingSetDatum.input = [
           sentimentObj.magnitude, 
@@ -1172,16 +1174,26 @@ function updateClassifiedUsers(cnf, callback){
 
               const type = Object.keys(inputArray)[0];
 
+              let inputHitsSum = 0;
+
               debug(chalkAlert("START ARRAY: " + type + " | " + inputArray[type].length));
 
               async.eachSeries(inputArray[type], function(element, cb2){
                 if (histogram[type][element]) {
-                  console.log(chalkTwitter("+++ DATUM BIT: " + type + " | " + element + " | " + histogram[type][element]));
+                  trainingSetDatum.inputHits += 1;
+                  console.log(chalkTwitter("+++ DATUM BIT: " + type
+                    + " | INPUT HITS: " + trainingSetDatum.inputHits 
+                    + " | " + element 
+                    + " | " + histogram[type][element]
+                  ));
                   trainingSetDatum.input.push(1);
                   cb2();
                 }
                 else {
-                  debug(chalkInfo("--- DATUM BIT: " + type + " | " + element + " | " + histogram[type][element]));
+                  debug(chalkInfo("--- DATUM BIT: " + type
+                    + " | " + element 
+                    + " | " + histogram[type][element]
+                  ));
                   trainingSetDatum.input.push(0);
                   cb2();
                 }
@@ -1216,10 +1228,13 @@ function updateClassifiedUsers(cnf, callback){
             cb3();
 
           }, function(err){
-             if (err) {
-                console.error("*** INIT INPUT ARRAY ERROR\n" + err);
-              }
-            console.log(chalkAlert("INIT INPUT ARRAY COMPLETE: " + trainingSetDatum.input.length + " INPUTS"));
+            if (err) {
+              console.error("*** INIT INPUT ARRAY ERROR\n" + err);
+            }
+            console.log(chalkAlert("INIT INPUT ARRAY COMPLETE"
+              + " | " + trainingSetDatum.input.length + " INPUTS"
+              + " | " + trainingSetDatum.inputHits + " INPUT HITS"
+            ));
           });
         }
 
@@ -1239,10 +1254,15 @@ function updateClassifiedUsers(cnf, callback){
             trainingSetDatum.output = [0,0,0];
         }
 
+        totalInputHits += trainingSetDatum.inputHits;
+
         trainingSet.push(trainingSetDatum);
+
         debug("trainingSetDatum INPUT:  " + trainingSetDatum.input);
         debug("trainingSetDatum OUTPUT: " + trainingSetDatum.output);
+
         printDatum(trainingSetDatum);
+
         cb0();
       }
       else {
@@ -1263,8 +1283,15 @@ function updateClassifiedUsers(cnf, callback){
     });
   }, function(err){
 
-      console.log(chalkAlert("MAX MAGNITUDE: " + maxMagnitude));
+      let inputHitAverage = totalInputHits/trainingSet.length;
+
+      console.log(chalkAlert("MAX MAGNITUDE:        " + maxMagnitude));
+      console.log(chalkAlert("TOTAL INPUT HITS:     " + totalInputHits));
+      console.log(chalkAlert("AVE INPUT HITS/DATUM: " + inputHitAverage.toFixed(3)));
       statsObj.normalization.magnitude.max = maxMagnitude;
+
+      testObj.inputHits = totalInputHits;
+      testObj.inputHitAverage = inputHitAverage;
 
       trainingSet.forEach(function(datum){
         let normMagnitude = datum.input[0]/maxMagnitude;
