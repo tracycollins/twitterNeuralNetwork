@@ -1,11 +1,6 @@
 /*jslint node: true */
 "use strict";
-
-const version = 0.47;
-
 const DEFAULT_EVOLVE_ITERATIONS = 100;
-
-const ONE_SECOND = 1000 ;
 
 const os = require("os");
 const util = require("util");
@@ -19,10 +14,7 @@ hostname = hostname.replace(/.at.net/g, "");
 hostname = hostname.replace(/.fios-router.home/g, "");
 hostname = hostname.replace(/word0-instance-1/g, "google");
 
-
-// let neataptic = require("./js/neataptic/neataptic.js");
 const neataptic = require("neataptic");
-let network;
 let evolveNeuralNetwork;
 
 const cp = require("child_process");
@@ -49,22 +41,6 @@ let classifiedUserHashmap = {};
 let trainingSet = [];
 let trainingSetNormalized = [];
 
-let testObj = {};
-testObj.testRunId = hostname + "_" + process.pid + "_" + moment().format(compactDateTimeFormat);
-testObj.testSet = [];
-
-// let descriptionWordsFile = "defaultDescriptionWords.json";
-// let descriptionWordsArray = [];
-
-// let descriptionMentionsFile = "defaultDescriptionMentions.json";
-// let descriptionMentionsArray = [];
-
-// let descriptionHashtagsFile = "defaultDescriptionHashtags.json";
-// let descriptionHashtagsArray = [];
-
-// let descriptionArrays = [];
-// let descriptionArraysFile = "descriptionArraysFile_" + testObj.testRunId + ".json";
-
 let inputArrays = [];
 
 const jsUcfirst = function(string) {
@@ -73,48 +49,6 @@ const jsUcfirst = function(string) {
 
 const inputTypes = ["hashtags", "mentions", "urls", "words"];
 
-function initInputArrays(callback){
-
-  console.log(chalkTwitter("INIT INPUT ARRAYS"));
-
-  async.each(inputTypes, function(inputType, cb){
-
-    const inputFile = "defaultInput" + jsUcfirst(inputType) + ".json";
-
-    console.log("INIT " + inputType.toUpperCase() + " INPUT ARRAY: " + inputFile);
-
-    loadFile(dropboxConfigDefaultFolder, inputFile, function(err, inputArrayObj){
-      if (!err) {
-        debug(jsonPrint(inputArrayObj));
-
-        inputArrays.push(inputArrayObj);
-
-        console.log(chalkAlert("LOADED " + inputType.toUpperCase() + " ARRAY"
-          + " | " + inputArrayObj[inputType].length + " " + inputType.toUpperCase()
-        ));
-        cb();
-      }
-      else {
-        console.log(chalkError("ERROR: loadFile: " + dropboxConfigFolder + "/" + file));
-        cb(err);
-      }
-    });
-  }, function(err){
-    if (err){
-      console.log(chalkError("ERR\n" + jsonPrint(err)));
-      return(callback(err));
-    }
-    else {
-      console.log(chalkAlert("LOADED INPUT ARRAY FILES"));
-
-      saveFile(dropboxConfigHostFolder, inputArraysFile, inputArrays, function(){
-        statsObj.inputArraysFile = inputArraysFile;
-        debug("descriptionArrays\n" + jsonPrint(inputArrays));
-        return(callback(null));
-      });
-    }
-  });
-}
 
 const EventEmitter2 = require("eventemitter2").EventEmitter2;
 const configEvents = new EventEmitter2({
@@ -124,17 +58,10 @@ const configEvents = new EventEmitter2({
   verboseMemoryLeak: true
 });
 
-let userReadyTransmitted = false;
-let userReadyAck = false;
-let serverConnected = false;
-
 let stdin;
-
-let cursorTweet;
 
 let configuration = {};
 configuration.normalization = null;
-configuration.cursorTweetPause = false;
 configuration.verbose = false;
 configuration.testMode = false; // per tweet test mode
 configuration.testSetRatio = 0.05;
@@ -165,59 +92,28 @@ configuration.twitterConfigs.ninjathreecee = {
   "TOKEN_SECRET": "qT5RoHUgoE768ztcGO4EccrSf6HrxDHD075f4L41zxrme"
 };
 
-
-let socket;
-
 const async = require("async");
 
 const chalk = require("chalk");
 const chalkAlert = chalk.red;
 const chalkTwitter = chalk.blue;
-const chalkRed = chalk.red;
 const chalkRedBold = chalk.bold.red;
 const chalkError = chalk.bold.red;
 const chalkWarn = chalk.red;
 const chalkLog = chalk.gray;
 const chalkInfo = chalk.black;
-const chalkConnect = chalk.green;
-const chalkDisconnect = chalk.yellow;
 
 const debug = require("debug")("twm");
 const debugCache = require("debug")("cache");
 const debugQ = require("debug")("queue");
 
-let socketKeepaliveInterval;
-
 const HashMap = require("hashmap").HashMap;
 
-let searchTermHashMap = new HashMap();
 let twitterUserHashMap = new HashMap();
-
-let Tweet;
-
-let resetInProgressFlag = false;
 
 let mongoose;
 let db;
-let userServer;
 let User;
-
-function reset(cause, callback){
-
-  if (!resetInProgressFlag) {
-
-    let c = cause;
-    resetInProgressFlag = true;
-
-    setTimeout(function(){
-      resetInProgressFlag = false;
-      console.log(chalkError(moment().format(compactDateTimeFormat) + " | RESET: " + c));
-      clearInterval(socketKeepaliveInterval);
-      if (callback) { callback(); }
-    }, 1*ONE_SECOND);
-
-  }
-}
 
 const jsonPrint = function (obj){
   if (obj) {
@@ -228,28 +124,6 @@ const jsonPrint = function (obj){
   }
 };
 
-const USER_ID = "TNN_" + hostname + "_" + process.pid;
-const SCREEN_NAME = "TNN_" + hostname + "_" + process.pid;
-
-let userObj = { 
-  name: USER_ID, 
-  nodeId: USER_ID, 
-  userId: USER_ID, 
-  utilId: USER_ID, 
-  url: "https://www.twitter.com", 
-  screenName: SCREEN_NAME, 
-  namespace: "util", 
-  type: "util", 
-  mode: "muxstream",
-  tags: {},
-  stats: {}
-} ;
-
-userObj.tags.entity = "muxstream_" + hostname + "_" + process.pid;
-userObj.tags.mode = "muxed";
-userObj.tags.channel = "twitter";
-userObj.tags.url = "https://www.twitter.com";
-
 const commandLineArgs = require("command-line-args");
 
 const enableStdin = { name: "enableStdin", alias: "i", type: Boolean, defaultValue: true };
@@ -257,20 +131,14 @@ const quitOnError = { name: "quitOnError", alias: "q", type: Boolean, defaultVal
 const verbose = { name: "verbose", alias: "v", type: Boolean };
 
 const testMode = { name: "testMode", alias: "T", type: Boolean, defaultValue: false };
-const loadNeuralNetworkFilePID = { name: "loadNeuralNetworkFilePID", alias: "N", type: Number };
+const loadNeuralNetworkFileRunID = { name: "loadNeuralNetworkFileRunID", alias: "N", type: Number };
 const evolveIterations = { name: "evolveIterations", alias: "I", type: Number};
 
-const optionDefinitions = [enableStdin, quitOnError, verbose, evolveIterations, testMode, loadNeuralNetworkFilePID];
+const optionDefinitions = [enableStdin, quitOnError, verbose, evolveIterations, testMode, loadNeuralNetworkFileRunID];
 
 const commandLineConfig = commandLineArgs(optionDefinitions);
 console.log(chalkInfo("COMMAND LINE CONFIG\n" + jsonPrint(commandLineConfig)));
 console.log("COMMAND LINE OPTIONS\n" + jsonPrint(commandLineConfig));
-
-console.log("\n\n=================================");
-console.log("HOST:          " + hostname);
-console.log("PROCESS ID:    " + process.pid);
-console.log("PROCESS ARGS:  " + util.inspect(process.argv, {showHidden: false, depth: 1}));
-console.log("=================================");
 
 process.on("message", function(msg) {
   if (msg === "shutdown") {
@@ -307,11 +175,7 @@ statsObj.pid = process.pid;
 statsObj.heap = process.memoryUsage().heapUsed/(1024*1024);
 statsObj.maxHeap = process.memoryUsage().heapUsed/(1024*1024);
 
-statsObj.tests = {};
-statsObj.tests[testObj.testRunId] = {};
-statsObj.tests[testObj.testRunId].results = {};
-statsObj.tests[testObj.testRunId].network = {};
-
+statsObj.startTimeMoment = moment();
 statsObj.startTime = moment().valueOf();
 statsObj.elapsed = msToTime(moment().valueOf() - statsObj.startTime);
 
@@ -349,6 +213,29 @@ statsObj.normalization.score.min = -1.0;
 statsObj.normalization.score.max = 1.0;
 statsObj.normalization.magnitude.min = 0;
 statsObj.normalization.magnitude.max = -Infinity;
+
+const TNN_RUN_ID = hostname + "_" + process.pid + "_" + statsObj.startTimeMoment.format(compactDateTimeFormat);
+statsObj.runId = TNN_RUN_ID;
+console.log(chalkAlert("RUN ID: " + statsObj.runId));
+
+
+let testObj = {};
+testObj.testRunId = statsObj.runId;
+testObj.testSet = [];
+
+statsObj.tests = {};
+statsObj.tests[statsObj.runId] = {};
+statsObj.tests[statsObj.runId].results = {};
+statsObj.tests[statsObj.runId].network = {};
+
+
+console.log("\n\n=================================");
+console.log("HOST:          " + hostname);
+console.log("PROCESS ID:    " + process.pid);
+console.log("RUN ID:        " + statsObj.runId);
+console.log("PROCESS ARGS:  " + util.inspect(process.argv, {showHidden: false, depth: 1}));
+console.log("=================================");
+
 // ==================================================================
 // DROPBOX
 // ==================================================================
@@ -365,7 +252,10 @@ const dropboxConfigHostFolder = "/config/utility/" + hostname;
 
 const dropboxConfigFile = hostname + "_" + DROPBOX_TNN_CONFIG_FILE;
 const statsFolder = "/stats/" + hostname;
-const statsFile = "twitterNeuralNetworkStats_" + hostname + "_" + process.pid + ".json";
+const statsFile = "twitterNeuralNetworkStats_" + statsObj.runId + ".json";
+debug("statsFolder : " + statsFolder);
+debug("statsFile : " + statsFile);
+
 
 console.log("DROPBOX_TNN_CONFIG_FILE: " + DROPBOX_TNN_CONFIG_FILE);
 console.log("DROPBOX_TNN_STATS_FILE : " + DROPBOX_TNN_STATS_FILE);
@@ -373,9 +263,6 @@ console.log("DROPBOX_TNN_STATS_FILE : " + DROPBOX_TNN_STATS_FILE);
 debug("dropboxConfigFolder : " + dropboxConfigFolder);
 debug("dropboxConfigHostFolder : " + dropboxConfigHostFolder);
 debug("dropboxConfigFile : " + dropboxConfigFile);
-
-debug("statsFolder : " + statsFolder);
-debug("statsFile : " + statsFile);
 
 console.log("DROPBOX_WORD_ASSO_ACCESS_TOKEN :" + DROPBOX_WORD_ASSO_ACCESS_TOKEN);
 console.log("DROPBOX_WORD_ASSO_APP_KEY :" + DROPBOX_WORD_ASSO_APP_KEY);
@@ -406,21 +293,30 @@ function getTimeStamp(inputTime) {
   }
 }
 
+function allZeros(array){
+  let i = 0;
+  for (i = 0; i < array.length; i +=1){
+    if (array[i] !== 0) { return false; }
+  }
+  if (i === array.length) { return true; }
+}
+
 function indexOfMax(arr) {
-  if (arr.length === 0) {
+  if (allZeros(arr) || (arr.length === 0)) {
     return -1;
   }
 
   let max = arr[0]; 
   let maxIndex = 0;
+  let i=1;
 
-  for (let i = 1; i < arr.length; i+=1) {
+  for (i = 1; i < arr.length; i+=1) {
     if (arr[i] > max) {
       maxIndex = i;
       max = arr[i];
     }
   }
-  return maxIndex;
+  if (i === arr.length) { return maxIndex; }
 }
 
 function showStats(options){
@@ -591,18 +487,7 @@ function initStatsUpdate(cnf, callback){
 
   }, cnf.statsUpdateIntervalTime);
 
-
   callback(null, cnf);
-
-  // loadFile(statsFolder, statsFile, function(err, loadedStatsObj){
-  //   if (!err) {
-  //     debug(jsonPrint(loadedStatsObj));
-  //   }
-  //   else {
-  //     console.log(chalkError("ERROR: loadFile: " + statsFolder + "/" + statsFile));
-  //     return(callback(err, cnf));
-  //   }
-  // });
 }
 
 function initTwitterUsers(cnf, callback){
@@ -646,6 +531,49 @@ function initTwitterUsers(cnf, callback){
 
     callback(null);
   }
+}
+
+function initInputArrays(callback){
+
+  console.log(chalkTwitter("INIT INPUT ARRAYS"));
+
+  async.each(inputTypes, function(inputType, cb){
+
+    const inputFile = "defaultInput" + jsUcfirst(inputType) + ".json";
+
+    console.log("INIT " + inputType.toUpperCase() + " INPUT ARRAY: " + inputFile);
+
+    loadFile(dropboxConfigDefaultFolder, inputFile, function(err, inputArrayObj){
+      if (!err) {
+        debug(jsonPrint(inputArrayObj));
+
+        inputArrays.push(inputArrayObj);
+
+        console.log(chalkAlert("LOADED " + inputType.toUpperCase() + " ARRAY"
+          + " | " + inputArrayObj[inputType].length + " " + inputType.toUpperCase()
+        ));
+        cb();
+      }
+      else {
+        console.log(chalkError("ERROR: loadFile: " + dropboxConfigFolder + "/" + inputFile));
+        cb(err);
+      }
+    });
+  }, function(err){
+    if (err){
+      console.log(chalkError("ERR\n" + jsonPrint(err)));
+      callback(err);
+    }
+    else {
+      console.log(chalkAlert("LOADED INPUT ARRAY FILES"));
+
+      saveFile(inputArraysFolder, inputArraysFile, inputArrays, function(){
+        statsObj.inputArraysFile = inputArraysFolder + "/" + inputArraysFile;
+        debug("descriptionArrays\n" + jsonPrint(inputArrays));
+        callback(null);
+      });
+    }
+  });
 }
 
 function initialize(cnf, callback){
@@ -702,9 +630,9 @@ function initialize(cnf, callback){
         cnf.testMode = loadedConfigObj.TNN_TEST_MODE;
       }
 
-      if (loadedConfigObj.TNN_NEURAL_NETWORK_FILE_PID  !== undefined){
-        console.log("LOADED TNN_NEURAL_NETWORK_FILE_PID: " + loadedConfigObj.TNN_NEURAL_NETWORK_FILE_PID);
-        cnf.loadNeuralNetworkFilePID = loadedConfigObj.TNN_NEURAL_NETWORK_FILE_PID;
+      if (loadedConfigObj.TNN_NEURAL_NETWORK_FILE_RUNID  !== undefined){
+        console.log("LOADED TNN_NEURAL_NETWORK_FILE_RUNID: " + loadedConfigObj.TNN_NEURAL_NETWORK_FILE_RUNID);
+        cnf.loadNeuralNetworkFileRunID = loadedConfigObj.TNN_NEURAL_NETWORK_FILE_RUNID;
       }
 
       if (loadedConfigObj.TNN_ENABLE_STDIN  !== undefined){
@@ -748,8 +676,6 @@ function initialize(cnf, callback){
         console.log("--> COMMAND LINE CONFIG | " + arg + ": " + cnf[arg]);
       });
 
-      console.log(chalkLog("USER\n" + jsonPrint(userObj)));
-
       configArgs = Object.keys(cnf);
 
       configArgs.forEach(function(arg){
@@ -771,17 +697,6 @@ function initialize(cnf, callback){
           switch (key) {
             case "\u0003":
               process.exit();
-            break;
-
-            case "c":
-              configuration.cursorTweetPause = !configuration.cursorTweetPause;
-              if (configuration.cursorTweetPause) {
-                cursorTweet.pause();
-              }
-              else {
-                cursorTweet.resume();
-              }
-              console.log(chalkRedBold("CURSOR TWEET PAUSE: " + configuration.cursorTweetPause));
             break;
 
             // case "d":
@@ -821,6 +736,8 @@ function initialize(cnf, callback){
           console.log(chalkError("ERROR initStatsUpdate\n" + err));
         }
 
+        debug("initStatsUpdate cnf2\n" + jsonPrint(cnf2));
+
         loadFile(cnf2.twitterConfigFolder, cnf2.twitterConfigFile, function(err, tc){
           if (err){
             console.error(chalkError("*** TWITTER CONFIG LOAD ERROR\n" + err));
@@ -859,8 +776,6 @@ function initialize(cnf, callback){
           debug("--> COMMAND LINE CONFIG | " + arg + ": " + cnf[arg]);
         });
 
-        console.log(chalkLog("USER\n" + jsonPrint(userObj)));
-
         configArgs = Object.keys(cnf);
 
         configArgs.forEach(function(arg){
@@ -882,17 +797,6 @@ function initialize(cnf, callback){
             switch (key) {
               case "\u0003":
                 process.exit();
-              break;
-
-              case "c":
-                configuration.cursorTweetPause = !configuration.cursorTweetPause;
-                if (configuration.cursorTweetPause) {
-                  cursorTweet.pause();
-                }
-                else {
-                  cursorTweet.resume();
-                }
-                console.log(chalkRedBold("CURSOR TWEET PAUSE: " + configuration.cursorTweetPause));
               break;
 
               // case "d":
@@ -929,9 +833,10 @@ function initialize(cnf, callback){
           if (err) {
             console.log(chalkError("ERROR initStatsUpdate\n" + jsonPrint(err)));
           }
+          debug("initStatsUpdate cnf2\n" + jsonPrint(cnf2));
         });
       }
-      initDescriptionArrays(function(err){
+      initInputArrays(function(err){
         return(callback(err, cnf));
       });
      }
@@ -967,41 +872,9 @@ configEvents.once("INIT_MONGODB", function(){
     console.log(chalkError("*** DB DISCONNECT"));
   });
 
-  // tweetServer = require("./app/controllers/tweets.server.controller");
-  userServer = require("./app/controllers/user.server.controller");
-
-  // Tweet = require("mongoose").model("Tweet");
   User = require("mongoose").model("User");
 });
 
-configEvents.on("INIT_COMPLETE", function(cnf){
-  console.log(chalkError("INIT_COMPLETE"));
-  setInterval(function(){
-    if (!userReadyAck 
-      && (statsObj.userReadyAckWait > 1) 
-      && (statsObj.userReadyAckWait % 10 === 0)){
-      socket.emit("USER_READY", userObj, function(userId){
-        console.log("R< USER_READY ACK | USER ID: " + userId); // data will be "woot"
-        userReadyAck = true ;
-
-        console.log(chalkConnect("RX USER_READY_ACK"
-          + " | " + socket.id
-          + " | USER ID: " + userId
-          + " | " + moment().format(defaultDateTimeFormat)
-        ));
-
-        initKeepalive(userObj, cnf.keepaliveInterval);
-      }); 
-    }
-    else if (!userReadyAck) {
-      statsObj.userReadyAckWait += 1;
-      console.log(chalkDisconnect("... WAITING FOR USER_READY_ACK ..."));
-    }
-  }, 3000);
-});
-
-let mRegEx = mentionsRegex();
-let hRegEx = hashtagRegex();
 let wordExtractionOptions = {
   language:"english",
   remove_digits: true,
@@ -1078,13 +951,15 @@ function parseText(text, callback){
             || word.includes("≠") 
             || word.includes("http") 
             || word.includes("+")) {
-            if (rgx) { console.log(chalkAlert("-- REGEX SKIP WORD"
-              + " | M: " + m
-              + " | H: " + h
-              + " | U: " + u
-              + " | RGX: " + rgx
-              + " | " + word
-            )) };
+            if (rgx) { 
+              console.log(chalkAlert("-- REGEX SKIP WORD"
+                + " | M: " + m
+                + " | H: " + h
+                + " | U: " + u
+                + " | RGX: " + rgx
+                + " | " + word
+              )); 
+            }
             debug(chalkAlert("-- SKIP WORD"
               + " | M: " + m
               + " | H: " + h
@@ -1126,12 +1001,11 @@ function parseText(text, callback){
       }
     }
   }, function(err, results){
-    let text = "HISTOGRAMS";
-    // console.log("PARSE TEXT RESULTS");
+    let t = "HISTOGRAMS";
     Object.keys(results).forEach(function(key){
-      if (results[key]) {text = text + " | " + key.toUpperCase() + ": " + Object.keys(results[key]).length;}
+      if (results[key]) {t = t + " | " + key.toUpperCase() + ": " + Object.keys(results[key]).length;}
     });
-    console.log(chalkLog(text));
+    console.log(chalkLog(t));
     callback(err, results);
   });
 }
@@ -1145,13 +1019,13 @@ function printDatum(datum){
   const COLS = 50;
 
   datum.input.forEach(function(bit, i){
-    if (i == 0) {
+    if (i === 0) {
       row = row + bit.toFixed(10) + " | " ;
     }
-    else if (i == 1) {
+    else if (i === 1) {
       row = row + bit.toFixed(10);
     }
-    else if (i == 2) {
+    else if (i === 2) {
       console.log("ROW " + rowNum + " | " + row);
       row = bit ? "X" : ".";
       col = 1;
@@ -1175,10 +1049,7 @@ function updateClassifiedUsers(cnf, callback){
 
 
   let classifiedUserIds = Object.keys(classifiedUserHashmap);
-  let minMagnitude = 0;
   let maxMagnitude = 0;
-  // let minScore = Infinity;
-  // let maxScore = 0;
 
   console.log(chalkAlert("UPDATE CLASSIFIED USERS: " + classifiedUserIds.length));
 
@@ -1210,10 +1081,7 @@ function updateClassifiedUsers(cnf, callback){
         sentimentObj.score = user.languageAnalysis.sentiment.score;
 
         if (!cnf.normalization) {
-          // minMagnitude = Math.min(minMagnitude, sentimentObj.magnitude);
           maxMagnitude = Math.max(maxMagnitude, sentimentObj.magnitude);
-          // minScore = Math.min(minScore, sentimentObj.score);
-          // maxScore = Math.max(maxScore, sentimentObj.score);
         }
       }
 
@@ -1280,7 +1148,7 @@ function updateClassifiedUsers(cnf, callback){
 
         if (user.status || user.description){
 
-          var text = "";
+          let text = "";
 
           if (user.status && user.description) {
             text = user.description + " " + user.status.text;
@@ -1293,6 +1161,10 @@ function updateClassifiedUsers(cnf, callback){
           }
 
           parseText(text, function(err, histogram){
+
+            if (err) {
+              console.error("*** PARSE TEXT ERROR\n" + err);
+            }
 
             debug("user.description + status\n" + jsonPrint(text));
 
@@ -1314,11 +1186,17 @@ function updateClassifiedUsers(cnf, callback){
                   cb2();
                 }
               }, function(err){
+               if (err) {
+                  console.error("*** PARSE TEXT ERROR\n" + err);
+                }
                 debug(chalkAlert("DONE ARRAY: " + type));
                 cb1();
               });
 
             }, function(err){
+             if (err) {
+                console.error("*** PARSE TEXT ERROR\n" + err);
+              }
               debug(chalkAlert("PARSE DESC COMPLETE"));
             });
 
@@ -1326,21 +1204,22 @@ function updateClassifiedUsers(cnf, callback){
 
         }
         else {
-          // descriptionWordsArray.forEach(function(word){
-          //   trainingSetDatum.input.push(0);
-          // });
-          // descriptionMentionsArray.forEach(function(word){
-          //   trainingSetDatum.input.push(0);
-          // });
-          // descriptionHashtagsArray.forEach(function(word){
-          //   trainingSetDatum.input.push(0);
-          // });
-          async.eachSeries(inputArrays, function(inputArray, cb1){
+          async.eachSeries(inputArrays, function(inputArray, cb3){
+
             const type = Object.keys(inputArray)[0];
+
             inputArray[type].forEach(function(){
               debug("ARRAY: " + type + " | 0");
               trainingSetDatum.input.push(0);
             });
+
+            cb3();
+
+          }, function(err){
+             if (err) {
+                console.error("*** INIT INPUT ARRAY ERROR\n" + err);
+              }
+            console.log(chalkAlert("INIT INPUT ARRAY COMPLETE: " + trainingSetDatum.input.length + " INPUTS"));
           });
         }
 
@@ -1384,22 +1263,12 @@ function updateClassifiedUsers(cnf, callback){
     });
   }, function(err){
 
-      // console.log(chalkError("minMagnitude: " + minMagnitude));
       console.log(chalkAlert("MAX MAGNITUDE: " + maxMagnitude));
-      // console.log(chalkError("minScore:     " + minScore));
-      // console.log(chalkError("maxScore:     " + maxScore));
-
-      // statsObj.normalization.score.min = minScore;
-      // statsObj.normalization.score.max = maxScore;
-
-      // statsObj.normalization.magnitude.min = minMagnitude;
       statsObj.normalization.magnitude.max = maxMagnitude;
 
       trainingSet.forEach(function(datum){
         let normMagnitude = datum.input[0]/maxMagnitude;
-        // let normScore = (datum.input[1] - minScore)/(maxScore - minScore);
         datum.input[0] = normMagnitude;
-        // datum.input[1] = normScore;
         if (configuration.testMode) {
           testObj.testSet.push(datum);
         }
@@ -1429,13 +1298,13 @@ function testNetwork(nw, testObj, callback){
 
   testObj.testSet.forEach(function(testDatum){
 
-    if (testDatum.output === [0,0,0]) {
-      console.log(chalkError("NO TEST OUTPUT ... SKIPPING | " + testOutput));
+    let testOutput = nw.activate(testDatum.input); // 0.0275
+
+    if (allZeros(testDatum.output)) {
+      console.log(chalkError("??? NO TEST OUTPUT ... SKIPPING | " + testOutput));
       numSkipped += 1;
       return;
     }
-
-    let testOutput = nw.activate(testDatum.input); // 0.0275
 
     numTested += 1;
 
@@ -1516,6 +1385,10 @@ function initTimeout(){
 
         testNetwork(network, testObj, function(err, results){
 
+          if (err) {
+            console.error("*** TEST NETWORK ERROR ***\n" + jsonPrint(err));
+          }
+
           statsObj.tests[testObj.testRunId] = {};
           statsObj.tests[testObj.testRunId].results = results;
 
@@ -1541,23 +1414,25 @@ function initTimeout(){
     if (cnf.testMode) {
 
       let nnFile;
-      if (cnf.loadNeuralNetworkFilePID) {
-        folder = neuralNetworkFolder;
-        nnFile = neuralNetworkFile.replace(".json", "_" + cnf.loadNeuralNetworkFilePID + ".json");
+      if (cnf.loadNeuralNetworkFileRunID) {
+        // folder = neuralNetworkFolder;
+        nnFile = neuralNetworkFile.replace(".json", "_" + cnf.loadNeuralNetworkFileRunID + ".json");
       }
       else {
-        folder = neuralNetworkFolder;
+        // folder = neuralNetworkFolder;
         nnFile = neuralNetworkFile;
       }
 
       statsObj.test.neuralNetworkFile = nnFile;
 
-      console.log(chalkAlert("LOAD NEURAL NETWORK FILE: " + nnFile));
+      console.log(chalkAlert("LOAD NEURAL NETWORK FILE: " + neuralNetworkFolder + "/" + nnFile));
 
-      loadFile(dropboxConfigHostFolder, nnFile, function(err, loadedNetworkObj){
+      loadFile(neuralNetworkFolder, nnFile, function(err, loadedNetworkObj){
 
         if (err) {
-          console.log(chalkError("ERROR: loadFile: " + statsFolder + "/" + statsFile));
+          console.log(chalkError("ERROR: LOAD NEURAL NETWORK FILE: "
+            + neuralNetworkFolder + "/" + statsFile
+          ));
           quit("LOAD FILE ERROR");
         }
         else {
@@ -1566,6 +1441,11 @@ function initTimeout(){
           let loadedNetwork = neataptic.Network.fromJSON(loadedNetworkObj.network);
 
           loadFile(cnf.classifiedUsersFolder, cnf.classifiedUsersFile, function(err, clUsObj){
+
+            if (err) {
+              console.error("*** LOAD CLASSIFIED USER FILE ERROR ***\n" + jsonPrint(err));
+            }
+
             classifiedUserHashmap = clUsObj;
 
             console.log(chalkAlert("INITIALIZED CLASSIFIED USERS"
@@ -1579,6 +1459,11 @@ function initTimeout(){
               }
 
               testNetwork(loadedNetwork, testObj, function(err, results){
+
+                if (err) {
+                  console.error("*** TEST NETWORK ERROR ***\n" + jsonPrint(err));
+                }
+
                 statsObj.test.results = results;
                 console.log(chalkAlert("\nNETWORK TEST COMPLETE\n==================="
                   + "\n  TESTS:   " + results.numTests
@@ -1609,7 +1494,11 @@ function initTimeout(){
 
           updateClassifiedUsers(cnf, function(err){
 
-            let evolveMessageObj = {};
+            if (err) {
+              console.error("*** UPDATE CLASSIFIED USER ERROR ***\n" + jsonPrint(err));
+            }
+
+            evolveMessageObj = {};
 
             console.log(chalkAlert("TRAINING SET NORMALIZED"
               + " | " + trainingSetNormalized.length + " DATA POINTS"
