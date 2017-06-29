@@ -11,9 +11,6 @@ hostname = hostname.replace(/\.local/g, "");
 hostname = hostname.replace(/\.fios-router\.home/g, "");
 hostname = hostname.replace(/word0-instance-1/g, "google");
 
-// let defaultNeuralNetworkFile = "neuralNetwork.json";
-let neuralNetworkFile = "neuralNetwork_" + hostname + "_" + process.pid + ".json";
-
 const defaultDateTimeFormat = "YYYY-MM-DD HH:mm:ss ZZ";
 const compactDateTimeFormat = "YYYYMMDD HHmmss";
 
@@ -164,6 +161,8 @@ console.log("DROPBOX_WORD_ASSO_APP_SECRET :" + DROPBOX_WORD_ASSO_APP_SECRET);
 
 const dropboxClient = new Dropbox({ accessToken: DROPBOX_WORD_ASSO_ACCESS_TOKEN });
 
+const neuralNetworkFolder = dropboxConfigFolder + "/neuralNetworks";
+
 function getTimeStamp(inputTime) {
   let currentTimeStamp ;
 
@@ -281,9 +280,9 @@ function evolve (params, callback){
 
   network = new neataptic.Network(statsObj.training.trainingSet.numInputs, statsObj.training.trainingSet.numOutputs);
 
-  network.evolve(params.trainingSet, options);
+  let results = network.evolve(params.trainingSet, options);
   
-  if (callback !== undefined) { callback(); }
+  if (callback !== undefined) { callback(results); }
 }
 
 process.on("message", function(m) {
@@ -299,11 +298,12 @@ process.on("message", function(m) {
 
     case "INIT":
       statsObj.testRunId = m.testRunId;
-      neuralNetworkFile = "neuralNetwork_" + m.testRunId + ".json";
       statsObj.neuralNetworkFile = "neuralNetwork_" + m.testRunId + ".json";
+      statsObj.defaultNeuralNetworkFile = "neuralNetwork.json";
       console.log(chalkInfo("NEURAL NET INIT"
-        + " | TEST RUN ID: " + m.testRunId
-        + " | NEURAL NETWORK FILE: " + neuralNetworkFile
+        + " | TEST RUN ID: " + statsObj.testRunId
+        + " | NEURAL NETWORK FILE: " + statsObj.neuralNetworkFile
+        + " | DEFAULT NEURAL NETWORK FILE: " + statsObj.defaultNeuralNetworkFile
       ));
     break;
 
@@ -316,11 +316,14 @@ process.on("message", function(m) {
       trainingSet = m.trainingSet;
 
       statsObj.training.startTime = moment().valueOf();
+      statsObj.training.testRunId = m.testRunId;
+      statsObj.training.iterations = m.iterations;
       statsObj.training.trainingSet = {};
       statsObj.training.trainingSet.length = trainingSet.length;
       statsObj.training.trainingSet.numInputs = trainingSet[0]["input"].length;
       statsObj.training.trainingSet.numOutputs = trainingSet[0]["output"].length;
 
+      statsObj.inputArraysFile = m.inputArraysFile;
 
       console.log(chalkAlert("NN CHILD: NEURAL NET EVOLVE"
         + " | " + trainingSet.length + " TRAINING DATA POINTS"
@@ -331,11 +334,13 @@ process.on("message", function(m) {
         iterations: m.iterations
       };
 
-      evolve(evolveParams, function(err){
+      evolve(evolveParams, function(results){
 
-        if (err){
-          console.error(chalkError("*** EVOLVE ERROR\n" + err));
-        }
+        console.log(chalkAlert("EVOLVE RESULTS\n" + jsonPrint(results)));
+
+        // if (err){
+        //   console.error(chalkError("*** EVOLVE ERROR\n" + err));
+        // }
 
         statsObj.training.endTime = moment().valueOf();
         statsObj.training.elapsed = moment().valueOf() - statsObj.training.startTime;
@@ -343,24 +348,46 @@ process.on("message", function(m) {
         let exportedNetwork = network.toJSON();
 
         let networkObj = {};
+        networkObj.evolveParams = {};
+        networkObj.evolveParams = evolveParams;
+        networkObj.networkId = statsObj.testRunId;
+        networkObj.testRunId = statsObj.testRunId;
+        networkObj.neuralNetworkFile = statsObj.neuralNetworkFile;
+        networkObj.inputArraysFile = statsObj.inputArraysFile;
         networkObj.normalization = {};
         networkObj.normalization = m.normalization;
         networkObj.network = {};
         networkObj.network = exportedNetwork;
+        networkObj.training = {};
+        networkObj.training = statsObj.training;
 
         console.log(chalkAlert("TRAINING COMPLETE"));
         console.log(chalkAlert("NORMALIZATION\n" + jsonPrint(networkObj.normalization)));
 
-        saveFile(dropboxConfigFolder, neuralNetworkFile, networkObj, function(err){
+        saveFile(neuralNetworkFolder, statsObj.defaultNeuralNetworkFile, networkObj, function(err){
           if (err){
-            console.error(chalkError("SAVE NEURAL NETWORK FILE ERROR | " + neuralNetworkFile + " | " + err));
+            console.error(chalkError("*** SAVE DEFAULT NEURAL NETWORK FILE ERROR | " + defaultNeuralNetworkFile + " | " + err));
           }
           else {
-            statsObj.neuralNetworkFile = neuralNetworkFile;
-            console.log(chalkLog("SAVED NEURAL NETWORK FILE | " + dropboxConfigFolder + "/" + neuralNetworkFile));
+            console.log(chalkLog("SAVED DEFAULT NEURAL NETWORK FILE"
+              + " | " + neuralNetworkFolder + "/" + statsObj.defaultNeuralNetworkFile
+            ));
           }
-          process.send({op:"EVOLVE_COMPLETE", networkObj: networkObj, statsObj: statsObj});
+
+          saveFile(neuralNetworkFolder, statsObj.neuralNetworkFile, networkObj, function(err){
+            if (err){
+              console.error(chalkError("*** SAVE NEURAL NETWORK FILE ERROR | " + neuralNetworkFile + " | " + err));
+            }
+            else {
+              console.log(chalkLog("SAVED NEURAL NETWORK FILE"
+                + " | " + neuralNetworkFolder + "/" + statsObj.neuralNetworkFile
+              ));
+            }
+            process.send({op:"EVOLVE_COMPLETE", networkObj: networkObj, statsObj: statsObj});
+          });
+
         });
+
         showStats();
       });
     break;
