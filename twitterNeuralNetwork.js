@@ -870,139 +870,6 @@ let wordExtractionOptions = {
   remove_duplicates: true
 };
 
-// function parseText(text, callback){
-
-//   console.log("TEXT: " + text);
-
-//   // const mRegEx = mentionsRegex();
-//   // const hRegEx = hashtagRegex();
-
-//   const mentionArray = mentionsRegex().exec(text);
-//   const hashtagArray = hashtagRegex().exec(text);
-//   const urlSet = getUrls(text);
-//   // console.log("urlSet\n" + jsonPrint(urlSet));
-//   const urlArray = Array.from(urlSet);
-//   const wordArray = keywordExtractor.extract(text, wordExtractionOptions);
-
-//   async.parallel({
-//     mentions: function(cb){
-//       if (mentionArray) {
-//         let histogram = {};
-//         mentionArray.forEach(function(userId){
-//           if (!userId.match("@")) {
-//             userId = "@" + userId.toLowerCase();
-//             histogram[userId] = (histogram[userId] === undefined) ? 1 : histogram[userId]+1;
-//             debug(chalkAlert("->- DESC Ms"
-//               + " | " + histogram[userId]
-//               + " | " + userId
-//             ));
-//           }
-//         });
-//         cb(null, histogram);
-//       }
-//       else {
-//         cb(null, histograms.mentions);
-//       }
-//     },
-//     hashtags: function(cb){
-//       if (hashtagArray) {
-//         let histogram = {};
-//         hashtagArray.forEach(function(hashtag){
-//           hashtag = hashtag.toLowerCase();
-//           histogram[hashtag] = (histogram[hashtag] === undefined) ? 1 : histogram[hashtag]+1;
-//           debug(chalkAlert("->- DESC Hs"
-//             + " | " + histogram[hashtag]
-//             + " | " + hashtag
-//           ));
-//         });
-//         cb(null, histogram);
-//       }
-//       else {
-//         cb(null, histograms.hashtags);
-//       }
-//     },
-//     words: function(cb){
-//       if (wordArray) {
-
-//         let histogram = {};
-
-//         wordArray.forEach(function(w){
-//           let word = w.toLowerCase();
-//           word = word.replace(/&amp/gi, "");
-//           word = word.replace(/…/gi, "");
-//           word = word.replace(/'s/gi, "");
-//           const m = mentionsRegex().exec(word);
-//           const h = hashtagRegex().exec(word);
-//           const rgx = ignoreWordRegex.test(word);
-//           const u = (Array.from(getUrls(text)).length > 0) ? Array.from(getUrls(text)) : null;
-//           if (m || h || u || rgx 
-//             || (word === "/") 
-//             || word.includes("--") 
-//             || word.includes("|") 
-//             || word.includes("#") 
-//             || word.includes("w/") 
-//             || word.includes("≠") 
-//             || word.includes("http") 
-//             || word.includes("+")) {
-//             if (rgx) { 
-//               console.log(chalkAlert("-- REGEX SKIP WORD"
-//                 + " | M: " + m
-//                 + " | H: " + h
-//                 + " | U: " + u
-//                 + " | RGX: " + rgx
-//                 + " | " + word
-//               )); 
-//             }
-//             debug(chalkAlert("-- SKIP WORD"
-//               + " | M: " + m
-//               + " | H: " + h
-//               + " | U: " + u
-//               + " | RGX: " + rgx
-//               + " | " + word
-//             ));
-//           }
-//           else {
-//             histogram[word] = (histogram[word] === undefined) ? 1 : histogram[word]+1;
-//             debug(chalkAlert("->- DESC Ws"
-//               + " | " + histogram[word]
-//               + " | " + word
-//             ));
-//           }
-//         });
-
-//         cb(null, histogram);
-//       }
-//       else {
-//         cb(null, histograms.words);
-//       }
-//     },
-//     urls: function(cb){
-//       if (urlArray) {
-//         let histogram = {};
-//         urlArray.forEach(function(url){
-//           url = url.toLowerCase();
-//           histogram[url] = (histogram[url] === undefined) ? 1 : histogram[url]+1;
-//           debug(chalkAlert("->- DESC Us"
-//             + " | " + histogram[url]
-//             + " | " + url
-//           ));
-//         });
-//         cb(null, histogram);
-//       }
-//       else {
-//         cb(null, histograms.urls);
-//       }
-//     }
-//   }, function(err, results){
-//     let t = "HISTOGRAMS";
-//     Object.keys(results).forEach(function(key){
-//       if (results[key]) {t = t + " | " + key.toUpperCase() + ": " + Object.keys(results[key]).length;}
-//     });
-//     console.log(chalkLog(t));
-//     callback(err, results);
-//   });
-// }
-
 var parser = new Autolinker( {
   email: false,
   urls: true,
@@ -1019,8 +886,6 @@ function parseText(text, options, callback){
   }
 
   const parseResults = parser.parse(text);
-
-  // console.log(chalk.blue("parseResults\n" + jsonPrint(parseResults) + "\n"));
 
   let urlArray = [];
   let mentionArray = [];
@@ -1050,9 +915,6 @@ function parseText(text, options, callback){
         cb();
     }
    }, function(err){
-    // const mentionArray = mentionsRegex().exec(text);
-    // const hashtagArray = hashtagRegex().exec(text);
-    // const urlArray = Array.from(getUrls(text));
     const wordArray = keywordExtractor.extract(text, wordExtractionOptions);
 
     const userHistograms = {};
@@ -1064,7 +926,6 @@ function parseText(text, options, callback){
     async.parallel({
       mentions: function(cb){
         if (mentionArray) {
-          // mentionArray.forEach(function(userId){
           async.each(mentionArray, function(userId, cb2){
             if (!userId.match("@")) {
               userId = "@" + userId.toLowerCase();
@@ -1081,8 +942,6 @@ function parseText(text, options, callback){
           }, function(err){
             cb(null, userHistograms.mentions);
           });
-
-          // });
         }
         else {
           cb(null, userHistograms.mentions);
@@ -1126,18 +985,18 @@ function parseText(text, options, callback){
               || word.includes("≠") 
               || word.includes("http") 
               || word.includes("+")) {
-              if (rgx) { console.log(chalkAlert("-- REGEX SKIP WORD"
-                + " | M: " + m
-                + " | H: " + h
-                + " | U: " + u
-                + " | RGX: " + rgx
-                + " | " + word
-              )) };
+              // if (rgx) { console.log(chalkAlert("-- REGEX SKIP WORD"
+              //   + " | M: " + m
+              //   + " | H: " + h
+              //   + " | U: " + u
+              //   + " | RGX: " + rgx
+              //   + " | " + word
+              // )) };
               debug(chalkAlert("-- SKIP WORD"
                 + " | M: " + m
                 + " | H: " + h
                 + " | U: " + u
-                + " | RGX: " + rgx
+                // + " | RGX: " + rgx
                 + " | " + word
               ));
             }
