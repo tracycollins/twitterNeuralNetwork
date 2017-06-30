@@ -7,6 +7,7 @@ const util = require("util");
 const moment = require("moment");
 const Dropbox = require("dropbox");
 const pick = require("object.pick");
+const arrayUnique = require('array-unique');
 
 let hostname = os.hostname();
 hostname = hostname.replace(/.local/g, "");
@@ -132,7 +133,7 @@ const quitOnError = { name: "quitOnError", alias: "q", type: Boolean, defaultVal
 const verbose = { name: "verbose", alias: "v", type: Boolean };
 
 const testMode = { name: "testMode", alias: "T", type: Boolean, defaultValue: false };
-const loadNeuralNetworkFileRunID = { name: "loadNeuralNetworkFileRunID", alias: "N", type: Number };
+const loadNeuralNetworkFileRunID = { name: "loadNeuralNetworkFileRunID", alias: "N", type: String };
 const evolveIterations = { name: "evolveIterations", alias: "I", type: Number};
 
 const optionDefinitions = [enableStdin, quitOnError, verbose, evolveIterations, testMode, loadNeuralNetworkFileRunID];
@@ -245,7 +246,7 @@ console.log("DROPBOX_WORD_ASSO_APP_SECRET :" + DROPBOX_WORD_ASSO_APP_SECRET);
 let dropboxClient = new Dropbox({ accessToken: DROPBOX_WORD_ASSO_ACCESS_TOKEN });
 
 const inputArraysFolder = dropboxConfigHostFolder + "/inputArrays";
-const inputArraysFile = "inputArraysFile_" + statsObj.runId + ".json";
+const inputArraysFile = "inputArrays_" + statsObj.runId + ".json";
 
 let neuralNetworkFolder = dropboxConfigHostFolder + "/neuralNetworks";
 let neuralNetworkFile = "neuralNetwork.json";
@@ -528,6 +529,10 @@ function initInputArrays(callback){
     loadFile(dropboxConfigDefaultFolder, inputFile, function(err, inputArrayObj){
       if (!err) {
         debug(jsonPrint(inputArrayObj));
+
+        arrayUnique(inputArrayObj[inputType]);
+
+        inputArrayObj[inputType].sort();
 
         inputArrays.push(inputArrayObj);
 
@@ -919,7 +924,10 @@ function parseText(text, callback){
         let histogram = {};
 
         wordArray.forEach(function(w){
-          const word = w.toLowerCase();
+          let word = w.toLowerCase();
+          word = word.replace(/&amp/gi, "");
+          word = word.replace(/…/gi, "");
+          word = word.replace(/'s/gi, "");
           const m = mRegEx.exec(word);
           const h = hRegEx.exec(word);
           const rgx = ignoreWordRegex.test(word);
@@ -1129,18 +1137,20 @@ function updateClassifiedUsers(cnf, callback){
           sentimentObj.score
         ];
 
-        if (user.status || user.description){
+        if (user.status || user.retweeted_status || user.description){
 
           let text = "";
 
-          if (user.status && user.description) {
-            text = user.description + " " + user.status.text;
-          }
-          else if (user.status && user.status.text) {
+          if (user.status) {
             text = user.status.text;
           }
-          else if (user.description) {
-            text = user.description;
+          
+          if (user.retweeted_status) {
+            text = text + " " + user.retweeted_status.text;
+          }
+
+          if (user.description) {
+            text = text + " " + user.description;
           }
 
           parseText(text, function(err, histogram){
@@ -1149,6 +1159,7 @@ function updateClassifiedUsers(cnf, callback){
               console.error("*** PARSE TEXT ERROR\n" + err);
             }
 
+            console.log(chalkLog("user.description + status histogram\n" + jsonPrint(histogram)));
             debug("user.description + status\n" + jsonPrint(text));
 
             async.eachSeries(inputArrays, function(inputArray, cb1){
@@ -1303,7 +1314,7 @@ function activateNetwork(n, input, callback){
       clearInterval(activateInterval);
       callback(output);
     }
-  });
+  }, 100);
 
   output = n.activate(input);
 }
@@ -1323,6 +1334,9 @@ function testNetwork(nw, testObj, callback){
 
 
   async.eachSeries(testObj.testSet, function(testDatum, cb){
+
+    printDatum(testDatum);
+
     activateNetwork(nw, testDatum.input, function(testOutput){
 
       if (allZeros(testOutput)) {
@@ -1465,7 +1479,8 @@ function initTimeout(){
         nnFile = neuralNetworkFile;
       }
 
-      statsObj.test.neuralNetworkFile = nnFile;
+      statsObj.tests[testObj.testRunId].neuralNetworkFile = nnFile;
+      // statsObj.test.neuralNetworkFile = nnFile;
 
       console.log(chalkAlert("LOAD NEURAL NETWORK FILE: " + neuralNetworkFolder + "/" + nnFile));
 
@@ -1506,7 +1521,7 @@ function initTimeout(){
                   console.error("*** TEST NETWORK ERROR ***\n" + jsonPrint(err));
                 }
 
-                statsObj.test.results = results;
+                statsObj.tests[testObj.testRunId].results = results;
                 console.log(chalkAlert("\nNETWORK TEST COMPLETE\n==================="
                   + "\n  TESTS:   " + results.numTests
                   + "\n  PASSED:  " + results.numPassed
