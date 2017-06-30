@@ -290,15 +290,15 @@ function getTimeStamp(inputTime) {
   let currentTimeStamp ;
 
   if (inputTime  === undefined) {
-    currentTimeStamp = moment().format(defaultDateTimeFormat);
+    currentTimeStamp = moment().format(compactDateTimeFormat);
     return currentTimeStamp;
   }
   else if (moment.isMoment(inputTime)) {
-    currentTimeStamp = moment(inputTime).format(defaultDateTimeFormat);
+    currentTimeStamp = moment(inputTime).format(compactDateTimeFormat);
     return currentTimeStamp;
   }
   else {
-    currentTimeStamp = moment(parseInt(inputTime)).format(defaultDateTimeFormat);
+    currentTimeStamp = moment(parseInt(inputTime)).format(compactDateTimeFormat);
     return currentTimeStamp;
   }
 }
