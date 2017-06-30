@@ -252,6 +252,25 @@ process.on("SIGINT", function() {
   quit("SIGINT");
 });
 
+function train (params, callback){
+
+  network = new neataptic.Architect.Perceptron(
+    statsObj.training.trainingSet.numInputs, 
+    statsObj.training.trainingSet.numInputs+statsObj.training.trainingSet.numOutputs, 
+    statsObj.training.trainingSet.numOutputs
+  );
+
+  let options = {
+    log: 1,
+    error: 0.03,
+    iterations: params.iterations,
+    rate: 0.3
+  };
+
+  let results = network.train(params.trainingSet, options);
+
+  if (callback !== undefined) { callback(results); }
+}
 
 function evolve (params, callback){
 
@@ -309,6 +328,83 @@ process.on("message", function(m) {
 
     case "STATS":
       showStats(m.options);
+    break;
+
+    case "TRAIN":
+
+      trainingSet = m.trainingSet;
+
+      statsObj.training.startTime = moment().valueOf();
+      statsObj.training.testRunId = m.testRunId;
+      statsObj.training.iterations = m.iterations;
+      statsObj.training.trainingSet = {};
+      statsObj.training.trainingSet.length = trainingSet.length;
+      statsObj.training.trainingSet.numInputs = trainingSet[0]["input"].length;
+      statsObj.training.trainingSet.numOutputs = trainingSet[0]["output"].length;
+
+      statsObj.inputArraysFile = m.inputArraysFile;
+
+      console.log(chalkAlert("NN CHILD: NEURAL NET TRAIN"
+        + " | " + trainingSet.length + " TRAINING DATA POINTS"
+      ));
+
+      let trainParams = {
+        trainingSet: trainingSet,
+        iterations: m.iterations
+      };
+
+      train(trainParams, function(results){
+
+        console.log(chalkAlert("TRAIN RESULTS\n" + jsonPrint(results)));
+
+        statsObj.training.endTime = moment().valueOf();
+        statsObj.training.elapsed = moment().valueOf() - statsObj.training.startTime;
+
+        let exportedNetwork = network.toJSON();
+
+        let networkObj = {};
+        networkObj.trainParams = {};
+        networkObj.trainParams = trainParams;
+        networkObj.networkId = statsObj.testRunId;
+        networkObj.testRunId = statsObj.testRunId;
+        networkObj.neuralNetworkFile = statsObj.neuralNetworkFile;
+        networkObj.inputArraysFile = statsObj.inputArraysFile;
+        networkObj.normalization = {};
+        networkObj.normalization = m.normalization;
+        networkObj.network = {};
+        networkObj.network = exportedNetwork;
+        networkObj.training = {};
+        networkObj.training = statsObj.training;
+
+        console.log(chalkAlert("TRAINING COMPLETE"));
+        console.log(chalkAlert("NORMALIZATION\n" + jsonPrint(networkObj.normalization)));
+
+        saveFile(neuralNetworkFolder, statsObj.defaultNeuralNetworkFile, networkObj, function(err){
+          if (err){
+            console.error(chalkError("*** SAVE DEFAULT NEURAL NETWORK FILE ERROR | " + defaultNeuralNetworkFile + " | " + err));
+          }
+          else {
+            console.log(chalkLog("SAVED DEFAULT NEURAL NETWORK FILE"
+              + " | " + neuralNetworkFolder + "/" + statsObj.defaultNeuralNetworkFile
+            ));
+          }
+
+          saveFile(neuralNetworkFolder, statsObj.neuralNetworkFile, networkObj, function(err){
+            if (err){
+              console.error(chalkError("*** SAVE NEURAL NETWORK FILE ERROR | " + neuralNetworkFile + " | " + err));
+            }
+            else {
+              console.log(chalkLog("SAVED NEURAL NETWORK FILE"
+                + " | " + neuralNetworkFolder + "/" + statsObj.neuralNetworkFile
+              ));
+            }
+            process.send({op:"TRAIN_COMPLETE", networkObj: networkObj, statsObj: statsObj});
+          });
+        });
+
+        showStats();
+      });
+
     break;
 
     case "EVOLVE":
@@ -394,7 +490,7 @@ process.on("message", function(m) {
     default:
       console.log(chalkError("NEURAL NETIZE UNKNOWN OP ERROR"
         + " | " + m.op
-        + "\n" + jsonPrint(m)
+        // + "\n" + jsonPrint(m)
       ));
   }
 });
