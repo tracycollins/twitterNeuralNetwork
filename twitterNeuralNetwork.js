@@ -1012,9 +1012,14 @@ var parser = new Autolinker( {
 
 function parseText(text, options, callback){
 
-  const parseResults = parser.parse( text );
-
   console.log(chalk.blue("\ntext\n" + text));
+
+  if (text === "undefined") {
+    console.error(chalkError("*** PARSER TEXT UNDEFINED"));
+  }
+
+  const parseResults = parser.parse(text);
+
   // console.log(chalk.blue("parseResults\n" + jsonPrint(parseResults) + "\n"));
 
   let urlArray = [];
@@ -1324,7 +1329,9 @@ function updateClassifiedUsers(cnf, callback){
           sentimentObj.score
         ];
 
-        if (user.status || user.retweeted_status || user.description){
+        if ((user.status !== undefined) 
+          || (user.retweeted_status !== undefined) 
+          || (user.description !== undefined)){
 
           let text = "";
 
