@@ -1390,7 +1390,7 @@ function updateClassifiedUsers(cnf, callback){
             }
           ], function (error, text) {
 
-            if (!text) { text = " "; }
+            if (!text || (text === undefined)) { text = " "; }
 
             parseText(text, {updateGlobalHistograms: false}, function(err, histogram){
 
