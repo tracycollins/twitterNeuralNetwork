@@ -6,7 +6,7 @@
     "cwd": "/home/tc/twitterNeuralNetwork",
     "out_file"    : "/home/tc/logs/tnn.log",
     "error_file"  : "/home/tc/logs/tnn.log",
-    "autorestart": false,
+    "autorestart": true,
     "env": {
       "NODE_ENV": "production",
       "GCLOUD_PROJECT": "graphic-tangent-627",
@@ -14,7 +14,7 @@
       "DROPBOX_WORD_ASSO_ACCESS_TOKEN": "nknEWsIkD5UAAAAAAAQouTDFRBKfwsFzuS8PPi2Q_JVYnpotNuaHiddNtmG4mUTi",
       "DROPBOX_WORD_ASSO_APP_KEY": "qlb9k4dp01t9iqk",
       "DROPBOX_WORD_ASSO_APP_SECRET": "wqslhe2t95zfn19",
-      "TNN_EVOLVE_ITERATIONS": 1000
+      "TNN_EVOLVE_ITERATIONS": 500
     }
   }]
 }

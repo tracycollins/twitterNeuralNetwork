@@ -13,7 +13,9 @@
     "mongoose-paginate": "^5.0.3",
     "neataptic": "^1.2.32",
     "object.pick": "^1.2.0",
-    "regex": "^0.1.1"
+    "regex": "^0.1.1",
+    "slack": "^8.3.1",
+    "slack-node": "^0.1.8"
   },
   "devDependencies": {},
   "scripts": {

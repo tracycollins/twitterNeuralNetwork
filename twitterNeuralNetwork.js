@@ -8,12 +8,15 @@ const moment = require("moment");
 const Dropbox = require("dropbox");
 const pick = require("object.pick");
 const arrayUnique = require("array-unique");
-var Autolinker = require( "autolinker" );
+const Autolinker = require( "autolinker" );
+// const slack = require("slack");
+var Slack = require("slack-node");
 
 let hostname = os.hostname();
 hostname = hostname.replace(/.local/g, "");
 hostname = hostname.replace(/.home/g, "");
 hostname = hostname.replace(/.at.net/g, "");
+hostname = hostname.replace(/.fios-router/g, "");
 hostname = hostname.replace(/.fios-router.home/g, "");
 hostname = hostname.replace(/word0-instance-1/g, "google");
 
@@ -67,7 +70,7 @@ let configuration = {};
 configuration.normalization = null;
 configuration.verbose = false;
 configuration.testMode = false; // per tweet test mode
-configuration.testSetRatio = 0.05;
+configuration.testSetRatio = 0.02;
 
 configuration.twitterConfigs = {};
 
@@ -126,6 +129,37 @@ const jsonPrint = function (obj){
     return "UNDEFINED";
   }
 };
+
+const slackClientId = "3708084981.206468503075";
+const slackClientSecret = "6d37b4140cda113786da8e3b9c4c25ef";
+const slackVerificationToken = "lIPm555BSbBHufS6xLbQ4twj";
+const slackOAuthAccessToken = "xoxp-3708084981-3708084993-206468961315-ec62db5792cd55071a51c544acf0da55";
+const slackChannel = "#word";
+
+var slack = new Slack(slackOAuthAccessToken);
+
+function slackPostMessage(channel, text, callback){
+  slack.api('chat.postMessage', {
+    text: text,
+    channel: channel
+  }, function(err, response){
+    console.log(response);
+    callback(err, response);
+  });
+}
+
+// slackPostMessage("#word", "TESTING...", function(err, results){});
+
+
+// slack.api.test({hello:"world"}, function(err, results){
+//   console.log(chalkAlert("SLACK TEST ERROR\n" + jsonPrint(err)));
+//   console.log(chalkAlert("SLACK TEST RESULTS\n" + jsonPrint(results)));
+// });
+
+// slack.auth.test({slackVerificationToken}, function(err, data){
+//   console.log(chalkAlert("SLACK AUTH TEST ERROR: " + err));
+//   console.log(chalkAlert("SLACK AUTH TEST DATA\n" + jsonPrint(data)));
+// });
 
 const commandLineArgs = require("command-line-args");
 
@@ -327,10 +361,55 @@ function showStats(options){
 }
 
 function quit(){
+
   console.log( "\n... QUITTING ..." );
-  showStats(true);
-  if (evolveNeuralNetwork !== undefined) { evolveNeuralNetwork.kill("SIGINT"); }
-  process.exit();
+
+  let slackText = "";
+
+  if (statsObj.tests[testObj.testRunId].results) {
+    console.log("RESULTS\n" + jsonPrint(statsObj.tests[testObj.testRunId].results));
+    slackText = "\nTEST RUN ID: " + statsObj.testRunId;
+    slackText = slackText + "\n" + statsObj.tests[testObj.testRunId].results.numTests + " TESTS";
+    slackText = slackText + "\n" + statsObj.tests[testObj.testRunId].results.numPassed + " PASSED";
+    slackText = slackText + "\n" + statsObj.tests[testObj.testRunId].results.numSkipped + " SKIPPED";
+    slackText = slackText + "\n" + statsObj.tests[testObj.testRunId].results.successRate.toFixed(3) + " %";
+  }
+  else {
+    slackText = "QUIT | " + getTimeStamp() + " | " + statsObj.runId;
+  }
+
+  slackPostMessage("#word", slackText, function(err, results){
+  });
+
+  showStats();
+
+  setTimeout(function(){
+    if (evolveNeuralNetwork !== undefined) { evolveNeuralNetwork.kill("SIGINT"); }
+    process.exit();
+  }, 3000);
+}
+
+function sendDirectMessage(user, message, callback) {
+  
+  twit.post("direct_messages/new", {screen_name: user, text:message}, function twitPostComplete(error, response){
+
+    if(error) {
+      console.log(chalkError("!!!!! TWITTER SEND DIRECT MESSAGE ERROR: " 
+        + moment().format(compactDateTimeFormat) 
+        + "\nERROR\n"  + jsonPrint(error)
+        + "\nRESPONSE\n"  + jsonPrint(response)
+      ));
+      if (callback !== undefined) { callback(error, message); }
+    }
+    else{
+      console.log(chalkTwitter(moment().format(compactDateTimeFormat)
+        + " | SENT TWITTER DM TO " + user
+        + ": " + response.text
+      ));
+      if (callback !== undefined) { callback(null, message); }
+    }
+
+  });
 }
 
 process.on( "SIGINT", function() {
@@ -1197,10 +1276,6 @@ function updateClassifiedUsers(cnf, callback){
             function userStatusText(cb) {
 
               if ((user.status !== undefined) && user.status) {
-
-                // if (user.status.truncated) {
-                //   console.log(chalkAlert("TRUNCATED\n" + jsonPrint(user.status)));
-                // }
                 cb(null, user.status.text);
               }
               else {
@@ -1211,8 +1286,6 @@ function updateClassifiedUsers(cnf, callback){
               if ((user.retweeted_status !== undefined) && user.retweeted_status) {
 
                 console.log(chalkAlert("RT\n" + jsonPrint(user.retweeted_status.text)));
-
-                quit();
 
                 if (text) {
                   cb(null, text + " " + user.retweeted_status.text);
@@ -1497,10 +1570,7 @@ function initTimeout(){
 
     if (err && (err.status !== 404)) {
       console.error(chalkError("***** INIT ERROR *****\n" + jsonPrint(err)));
-      // if (err.status !== 404){
-      //   console.log("err.status: " + err.status);
-        quit();
-      // }
+      quit();
     }
 
     evolveNeuralNetwork = cp.fork(`evolveNeuralNetworkChild.js`);
@@ -1621,6 +1691,7 @@ function initTimeout(){
                 }
 
                 statsObj.tests[testObj.testRunId].results = results;
+
                 console.log(chalkAlert("\nNETWORK TEST COMPLETE\n==================="
                   + "\n  TESTS:   " + results.numTests
                   + "\n  PASSED:  " + results.numPassed
@@ -1698,6 +1769,7 @@ function initTimeout(){
     }
 
     console.log(chalkError(cnf.processName + " STARTED " + getTimeStamp() + "\n"));
+    slackPostMessage("#word", statsObj.testRunId + "\nSTARTED " + getTimeStamp(), function(err, results){});
 
     initTwitterUsers(cnf, function(err){
       if (err){
