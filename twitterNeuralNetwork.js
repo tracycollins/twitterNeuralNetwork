@@ -368,7 +368,7 @@ function quit(){
 
   if (statsObj.tests[testObj.testRunId].results) {
     console.log("RESULTS\n" + jsonPrint(statsObj.tests[testObj.testRunId].results));
-    slackText = "\nTEST RUN ID: " + statsObj.testRunId;
+    slackText = "\nTEST RUN ID: " + testObj.testRunId;
     slackText = slackText + "\n" + statsObj.tests[testObj.testRunId].results.numTests + " TESTS";
     slackText = slackText + "\n" + statsObj.tests[testObj.testRunId].results.numPassed + " PASSED";
     slackText = slackText + "\n" + statsObj.tests[testObj.testRunId].results.numSkipped + " SKIPPED";
@@ -1769,7 +1769,7 @@ function initTimeout(){
     }
 
     console.log(chalkError(cnf.processName + " STARTED " + getTimeStamp() + "\n"));
-    slackPostMessage("#word", statsObj.testRunId + "\nSTARTED " + getTimeStamp(), function(err, results){});
+    slackPostMessage("#word", testObj.testRunId + "\nSTARTED " + getTimeStamp(), function(err, results){});
 
     initTwitterUsers(cnf, function(err){
       if (err){
