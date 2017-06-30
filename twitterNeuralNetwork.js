@@ -1333,72 +1333,119 @@ function updateClassifiedUsers(cnf, callback){
           || (user.retweeted_status !== undefined) 
           || (user.description !== undefined)){
 
-          let text = "";
+          async.waterfall([
+            function userStatusText(cb) {
 
-          if ((user.status !== undefined) && user.status) {
-            text = user.status.text;
-          }
-          
-          if ((user.retweeted_status !== undefined) && user.retweeted_status) {
-            text = text + " " + user.retweeted_status.text;
-          }
+              if ((user.status !== undefined) && user.status) {
 
-          if ((user.description !== undefined) && user.description) {
-            text = text + " " + user.description;
-          }
+                // if (user.status.truncated) {
+                //   console.log(chalkAlert("TRUNCATED\n" + jsonPrint(user.status)));
+                // }
+                cb(null, user.status.text);
+              }
+              else {
+                cb(null, null);
+              }
+            },
+            function userRetweetText(text, cb) {
+              if ((user.retweeted_status !== undefined) && user.retweeted_status) {
 
-          parseText(text, {updateGlobalHistograms: false}, function(err, histogram){
+                console.log(chalkAlert("RT\n" + jsonPrint(user.retweeted_status.text)));
 
-            if (err) {
-              console.error("*** PARSE TEXT ERROR\n" + err);
-            }
+                quit();
 
-            console.log(chalkLog("user.description + status histogram\n" + jsonPrint(histogram)));
-            debug("user.description + status\n" + jsonPrint(text));
-
-            async.eachSeries(inputArrays, function(inputArray, cb1){
-
-              const type = Object.keys(inputArray)[0];
-
-              let inputHitsSum = 0;
-
-              debug(chalkAlert("START ARRAY: " + type + " | " + inputArray[type].length));
-
-              async.eachSeries(inputArray[type], function(element, cb2){
-                if (histogram[type][element]) {
-                  trainingSetDatum.inputHits += 1;
-                  console.log(chalkTwitter("+++ DATUM BIT: " + type
-                    + " | INPUT HITS: " + trainingSetDatum.inputHits 
-                    + " | " + element 
-                    + " | " + histogram[type][element]
-                  ));
-                  trainingSetDatum.input.push(1);
-                  cb2();
+                if (text) {
+                  cb(null, text + " " + user.retweeted_status.text);
                 }
                 else {
-                  debug(chalkInfo("--- DATUM BIT: " + type
-                    + " | " + element 
-                    + " | " + histogram[type][element]
-                  ));
-                  trainingSetDatum.input.push(0);
-                  cb2();
+                  cb(null, user.retweeted_status.text);
                 }
+              }
+              else {
+                if (text) {
+                  cb(null, text);
+                }
+                else {
+                  cb(null, null);
+                }
+              }
+            },
+            function userDescriptionText(text, cb) {
+              if ((user.description !== undefined) && user.description) {
+                if (text) {
+                  cb(null, text + " " + user.description);
+                }
+                else {
+                  cb(null, user.description);
+                }
+              }
+              else {
+                if (text) {
+                  cb(null, text);
+                }
+                else {
+                  cb(null, null);
+                }
+              }
+            }
+          ], function (error, text) {
+
+            if (!text) { text = " "; }
+
+            parseText(text, {updateGlobalHistograms: false}, function(err, histogram){
+
+              if (err) {
+                console.error("*** PARSE TEXT ERROR\n" + err);
+              }
+
+              console.log(chalkLog("user.description + status histogram\n" + jsonPrint(histogram)));
+              debug("user.description + status\n" + jsonPrint(text));
+
+              async.eachSeries(inputArrays, function(inputArray, cb1){
+
+                const type = Object.keys(inputArray)[0];
+
+                let inputHitsSum = 0;
+
+                debug(chalkAlert("START ARRAY: " + type + " | " + inputArray[type].length));
+
+                async.eachSeries(inputArray[type], function(element, cb2){
+                  if (histogram[type][element]) {
+                    trainingSetDatum.inputHits += 1;
+                    console.log(chalkTwitter("+++ DATUM BIT: " + type
+                      + " | INPUT HITS: " + trainingSetDatum.inputHits 
+                      + " | " + element 
+                      + " | " + histogram[type][element]
+                    ));
+                    trainingSetDatum.input.push(1);
+                    cb2();
+                  }
+                  else {
+                    debug(chalkInfo("--- DATUM BIT: " + type
+                      + " | " + element 
+                      + " | " + histogram[type][element]
+                    ));
+                    trainingSetDatum.input.push(0);
+                    cb2();
+                  }
+                }, function(err){
+                 if (err) {
+                    console.error("*** PARSE TEXT ERROR\n" + err);
+                  }
+                  debug(chalkAlert("DONE ARRAY: " + type));
+                  cb1();
+                });
+
               }, function(err){
                if (err) {
                   console.error("*** PARSE TEXT ERROR\n" + err);
                 }
-                debug(chalkAlert("DONE ARRAY: " + type));
-                cb1();
+                debug(chalkAlert("PARSE DESC COMPLETE"));
               });
-
-            }, function(err){
-             if (err) {
-                console.error("*** PARSE TEXT ERROR\n" + err);
-              }
-              debug(chalkAlert("PARSE DESC COMPLETE"));
             });
 
-          });
+          });     
+               
 
         }
         else {
