@@ -1112,6 +1112,7 @@ function parseText(text, options, callback){
           wordArray.forEach(function(w){
             let word = w.toLowerCase();
             word = word.replace(/'s/gi, "");
+            word = word.replace(/’s/gi, "");
             const m = mentionsRegex().exec(word);
             const h = hashtagRegex().exec(word);
             const rgx = ignoreWordRegex.test(word);
