@@ -1335,15 +1335,15 @@ function updateClassifiedUsers(cnf, callback){
 
           let text = "";
 
-          if (user.status !== undefined) {
+          if ((user.status !== undefined) && user.status) {
             text = user.status.text;
           }
           
-          if (user.retweeted_status !== undefined) {
+          if ((user.retweeted_status !== undefined) && user.retweeted_status) {
             text = text + " " + user.retweeted_status.text;
           }
 
-          if (user.description !== undefined) {
+          if ((user.description !== undefined) && user.description) {
             text = text + " " + user.description;
           }
 
