@@ -1115,9 +1115,9 @@ function parseText(text, options, callback){
             word = word.replace(/’s/gi, "");
             const m = mentionsRegex().exec(word);
             const h = hashtagRegex().exec(word);
-            const rgx = ignoreWordRegex.test(word);
+            // const rgx = ignoreWordRegex.test(word);
             const u = (Array.from(getUrls(text)).length > 0) ? Array.from(getUrls(text)) : null;
-            if (m || h || u || rgx 
+            if (m || h || u 
               || (word === "/") 
               || word.includes("--") 
               || word.includes("|") 
