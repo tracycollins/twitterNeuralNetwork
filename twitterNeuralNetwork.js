@@ -330,7 +330,9 @@ function showStats(options){
 
 function quit(){
 
-  console.log( "\n... QUITTING ..." );
+  console.log(chalkAlert( "\n\n... QUITTING ...\n\n" ));
+
+  statsObj.elapsed = msToTime(moment().valueOf() - statsObj.startTime);
 
   let slackText = "";
 
@@ -341,7 +343,7 @@ function quit(){
     slackText = slackText + "\nTESTS: " + statsObj.tests[testObj.testRunId].results.numTests;
     slackText = slackText + " | PASS: " + statsObj.tests[testObj.testRunId].results.numPassed;
     slackText = slackText + " | SKIP: " + statsObj.tests[testObj.testRunId].results.numSkipped;
-    slackText = slackText + "\nRUN TIME: " + statsObj.tests[testObj.testRunId].results.elapsed;
+    slackText = slackText + "\nRUN TIME: " + statsObj.elapsed;
   }
   else {
     slackText = "QUIT | " + getTimeStamp() + " | " + statsObj.runId;
