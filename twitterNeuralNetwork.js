@@ -1,6 +1,8 @@
 /*jslint node: true */
 "use strict";
+
 const DEFAULT_EVOLVE_ITERATIONS = 100;
+const slackOAuthAccessToken = "xoxp-3708084981-3708084993-206468961315-ec62db5792cd55071a51c544acf0da55";
 
 const os = require("os");
 const util = require("util");
@@ -9,7 +11,20 @@ const Dropbox = require("dropbox");
 const pick = require("object.pick");
 const arrayUnique = require("array-unique");
 const Autolinker = require( "autolinker" );
-var Slack = require("slack-node");
+const Slack = require("slack-node");
+const neataptic = require("neataptic");
+const cp = require("child_process");
+const keywordExtractor = require("keyword-extractor");
+const mentionsRegex = require("mentions-regex");
+const hashtagRegex = require("hashtag-regex");
+const getUrls = require("get-urls");
+const EventEmitter2 = require("eventemitter2").EventEmitter2;
+const async = require("async");
+const chalk = require("chalk");
+const debug = require("debug")("twm");
+const debugCache = require("debug")("cache");
+const debugQ = require("debug")("queue");
+const commandLineArgs = require("command-line-args");
 
 let hostname = os.hostname();
 hostname = hostname.replace(/.local/g, "");
@@ -19,17 +34,10 @@ hostname = hostname.replace(/.fios-router/g, "");
 hostname = hostname.replace(/.fios-router.home/g, "");
 hostname = hostname.replace(/word0-instance-1/g, "google");
 
-const neataptic = require("neataptic");
 let neuralNetworkChild;
+let network;
 
-const cp = require("child_process");
-const keywordExtractor = require("keyword-extractor");
-
-const mentionsRegex = require("mentions-regex");
-const hashtagRegex = require("hashtag-regex");
-const getUrls = require("get-urls");
-const Regex = require("regex");
-const ignoreWordRegex = new Regex(/(#|=|&amp|http)/igm);
+// const ignoreWordRegex = new Regex(/(#|=|&amp|http)/igm);
 
 const defaultDateTimeFormat = "YYYY-MM-DD HH:mm:ss ZZ";
 const compactDateTimeFormat = "YYYYMMDD_HHmmss";
@@ -54,7 +62,6 @@ const jsUcfirst = function(string) {
 const inputTypes = ["hashtags", "mentions", "urls", "words"];
 
 
-const EventEmitter2 = require("eventemitter2").EventEmitter2;
 const configEvents = new EventEmitter2({
   wildcard: true,
   newListener: true,
@@ -71,9 +78,6 @@ configuration.verbose = false;
 configuration.testMode = false; // per tweet test mode
 configuration.testSetRatio = 0.02;
 
-const async = require("async");
-
-const chalk = require("chalk");
 const chalkAlert = chalk.red;
 const chalkBlue = chalk.blue;
 const chalkRedBold = chalk.bold.red;
@@ -82,9 +86,6 @@ const chalkWarn = chalk.red;
 const chalkLog = chalk.gray;
 const chalkInfo = chalk.black;
 
-const debug = require("debug")("twm");
-const debugCache = require("debug")("cache");
-const debugQ = require("debug")("queue");
 
 let mongoose;
 let db;
@@ -99,16 +100,13 @@ const jsonPrint = function (obj){
   }
 };
 
-const slackClientId = "3708084981.206468503075";
-const slackClientSecret = "6d37b4140cda113786da8e3b9c4c25ef";
-const slackVerificationToken = "lIPm555BSbBHufS6xLbQ4twj";
-const slackOAuthAccessToken = "xoxp-3708084981-3708084993-206468961315-ec62db5792cd55071a51c544acf0da55";
 const slackChannel = "#word";
 
-var slack = new Slack(slackOAuthAccessToken);
+let slack = new Slack(slackOAuthAccessToken);
 
 function slackPostMessage(channel, text, callback){
-  slack.api('chat.postMessage', {
+
+  slack.api("chat.postMessage", {
     text: text,
     channel: channel
   }, function(err, response){
@@ -118,11 +116,10 @@ function slackPostMessage(channel, text, callback){
     else {
       debug(response);
     }
-    callback(err, response);
+    if (callback !== undefined) { callback(err, response); }
   });
 }
 
-const commandLineArgs = require("command-line-args");
 
 const enableStdin = { name: "enableStdin", alias: "i", type: Boolean, defaultValue: true };
 const quitOnError = { name: "quitOnError", alias: "q", type: Boolean, defaultValue: true };
@@ -350,8 +347,7 @@ function quit(){
     slackText = "QUIT | " + getTimeStamp() + " | " + statsObj.runId;
   }
 
-  slackPostMessage("#word", slackText, function(err, results){
-  });
+  slackPostMessage(slackChannel, slackText);
 
   showStats();
 
@@ -777,14 +773,6 @@ console.log(chalkInfo(getTimeStamp()
   + " | WAIT 5 SEC FOR MONGO BEFORE INITIALIZE CONFIGURATION"
 ));
 
-// configEvents.on("newListener", function(data){
-//   console.log(chalkInfo("*** NEW CONFIG EVENT LISTENER: " + data));
-// });
-
-// configEvents.on("removeListener", function(data){
-//   console.log(chalkInfo("*** REMOVED CONFIG EVENT LISTENER: " + data));
-// });
-
 configEvents.once("INIT_MONGODB", function(){
   mongoose = require("./config/mongoose");
 
@@ -812,7 +800,7 @@ let wordExtractionOptions = {
   remove_duplicates: true
 };
 
-var parser = new Autolinker( {
+let parser = new Autolinker( {
   email: false,
   urls: true,
   hashtag: "twitter",
@@ -881,8 +869,8 @@ function parseText(text, options, callback){
               ));
               cb2();
             }
-          }, function(err){
-            cb(null, userHistograms.mentions);
+          }, function(err2){
+            cb(err2, userHistograms.mentions);
           });
         }
         else {
@@ -912,7 +900,7 @@ function parseText(text, options, callback){
         if (wordArray) {
           wordArray.forEach(function(w){
             let word = w.toLowerCase();
-            word = word.replace(/'s/gi, "");
+            word = word.replace(/"s/gi, "");
             word = word.replace(/’s/gi, "");
             const m = mentionsRegex().exec(word);
             const h = hashtagRegex().exec(word);
@@ -979,16 +967,17 @@ function parseText(text, options, callback){
           cb(null, userHistograms.urls);
         }
       }
-    }, function(err, results){
-      let text = "HISTOGRAMS";
-      // console.log("PARSE TEXT RESULTS");
+    }, function(err2, results){
+
+      let t = "HISTOGRAMS";
+
       Object.keys(results).forEach(function(key){
         if (results[key]) {
-          text = text + " | " + key.toUpperCase() + ": " + Object.keys(results[key]).length;
+          t = t + " | " + key.toUpperCase() + ": " + Object.keys(results[key]).length;
         }
       });
-      console.log(chalkLog(text));
-      callback(err, results);
+      console.log(chalkLog(t));
+      callback((err || err2), results);
     });
 
   });
@@ -1186,6 +1175,10 @@ function updateClassifiedUsers(cnf, callback){
             }
           ], function (error, text) {
 
+            if (error) {
+              console.error(chalkError("*** ERROR " + error));
+            }
+
             if (!text || (text === undefined)) { text = " "; }
 
             parseText(text, {updateGlobalHistograms: false}, function(err, histogram){
@@ -1200,8 +1193,6 @@ function updateClassifiedUsers(cnf, callback){
               async.eachSeries(inputArrays, function(inputArray, cb1){
 
                 const type = Object.keys(inputArray)[0];
-
-                let inputHitsSum = 0;
 
                 debug(chalkAlert("START ARRAY: " + type + " | " + inputArray[type].length));
 
@@ -1342,11 +1333,14 @@ function updateClassifiedUsers(cnf, callback){
   });
 }
 
+let activateInterval;
+
 function activateNetwork(n, input, callback){
 
   let output;
 
-  const activateInterval = setInterval(function(){
+  activateInterval = setInterval(function(){
+
     if (output) {
       clearInterval(activateInterval);
       callback(output);
@@ -1418,7 +1412,14 @@ function testNetwork(nw, testObj, callback){
       cb();
     });
   }, function(err){
-    callback(null, { testRunId: testObj.testRunId, numTests: testObj.testSet.length, numSkipped: numSkipped, numPassed: numPassed, successRate: successRate});
+    callback(err, 
+      { testRunId: testObj.testRunId, 
+        numTests: testObj.testSet.length, 
+        numSkipped: numSkipped, 
+        numPassed: numPassed, 
+        successRate: successRate
+      }
+    );
   });
 
 }
@@ -1428,6 +1429,7 @@ function initNeuralNetworkChild(callback){
   neuralNetworkChild = cp.fork(`neuralNetworkChild.js`);
 
   neuralNetworkChild.on("message", function(m){
+
     console.log(chalkLog("neuralNetworkChild RX"
       + " | " + m.op
       // + " | " + m.obj.userId
@@ -1456,7 +1458,7 @@ function initNeuralNetworkChild(callback){
           // + "\nNETWORK\n" + jsonPrint(m.network)
         ));
 
-        let network = neataptic.Network.fromJSON(m.networkObj.network);
+        network = neataptic.Network.fromJSON(m.networkObj.network);
 
         testNetwork(network, testObj, function(err, results){
 
@@ -1669,7 +1671,7 @@ function initTimeout(){
 
     console.log(chalkBlue(cnf.processName + " STARTED " + getTimeStamp() + "\n"));
 
-    slackPostMessage("#word", testObj.testRunId + "\nSTARTED " + getTimeStamp(), function(err, results){});
+    slackPostMessage(slackChannel, testObj.testRunId + "\nSTARTED " + getTimeStamp());
 
     initNeuralNetworkChild();
 
