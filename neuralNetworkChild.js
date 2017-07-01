@@ -98,7 +98,7 @@ process.on("message", function(msg) {
   if (msg === "shutdown") {
     console.log("\n\n!!!!! RECEIVED PM2 SHUTDOWN !!!!!\n\n***** Closing all connections *****\n\n");
     setTimeout(function() {
-      console.log("**** Finished closing connections ****\n\n ***** RELOADING evolveNeuralNetwork.js NOW *****\n\n");
+      console.log("**** Finished closing connections ****\n\n ***** RELOADING neuralNetwork.js NOW *****\n\n");
       process.exit(0);
     }, 1500);
   }
@@ -138,8 +138,8 @@ statsObj.training.endTime = 0;
 const DROPBOX_WORD_ASSO_ACCESS_TOKEN = process.env.DROPBOX_WORD_ASSO_ACCESS_TOKEN ;
 const DROPBOX_WORD_ASSO_APP_KEY = process.env.DROPBOX_WORD_ASSO_APP_KEY ;
 const DROPBOX_WORD_ASSO_APP_SECRET = process.env.DROPBOX_WORD_ASSO_APP_SECRET;
-const DROPBOX_NN_CONFIG_FILE = process.env.DROPBOX_NN_CONFIG_FILE || "evolveNeuralNetworkConfig.json";
-const DROPBOX_NN_STATS_FILE = process.env.DROPBOX_NN_STATS_FILE || "evolveNeuralNetworkStats.json";
+const DROPBOX_NN_CONFIG_FILE = process.env.DROPBOX_NN_CONFIG_FILE || "neuralNetworkConfig.json";
+const DROPBOX_NN_STATS_FILE = process.env.DROPBOX_NN_STATS_FILE || "neuralNetworkStats.json";
 
 let dropboxConfigFolder = "/config/utility/" + hostname;
 let dropboxConfigFile = hostname + "_" + DROPBOX_NN_CONFIG_FILE;
@@ -404,7 +404,6 @@ process.on("message", function(m) {
 
         showStats();
       });
-
     break;
 
     case "EVOLVE":
@@ -439,7 +438,7 @@ process.on("message", function(m) {
         // }
 
         statsObj.training.endTime = moment().valueOf();
-        statsObj.training.elapsed = moment().valueOf() - statsObj.training.startTime;
+        statsObj.training.elapsed = results.time;
 
         let exportedNetwork = network.toJSON();
 
@@ -448,6 +447,7 @@ process.on("message", function(m) {
         networkObj.evolveParams = evolveParams;
         networkObj.networkId = statsObj.testRunId;
         networkObj.testRunId = statsObj.testRunId;
+        networkObj.elapsed = statsObj.training.elapsed;
         networkObj.neuralNetworkFile = statsObj.neuralNetworkFile;
         networkObj.inputArraysFile = statsObj.inputArraysFile;
         networkObj.normalization = {};
@@ -460,31 +460,9 @@ process.on("message", function(m) {
         console.log(chalkAlert("TRAINING COMPLETE"));
         console.log(chalkAlert("NORMALIZATION\n" + jsonPrint(networkObj.normalization)));
 
-        saveFile(neuralNetworkFolder, statsObj.defaultNeuralNetworkFile, networkObj, function(err){
-          if (err){
-            console.error(chalkError("*** SAVE DEFAULT NEURAL NETWORK FILE ERROR | " + defaultNeuralNetworkFile + " | " + err));
-          }
-          else {
-            console.log(chalkLog("SAVED DEFAULT NEURAL NETWORK FILE"
-              + " | " + neuralNetworkFolder + "/" + statsObj.defaultNeuralNetworkFile
-            ));
-          }
-
-          saveFile(neuralNetworkFolder, statsObj.neuralNetworkFile, networkObj, function(err){
-            if (err){
-              console.error(chalkError("*** SAVE NEURAL NETWORK FILE ERROR | " + neuralNetworkFile + " | " + err));
-            }
-            else {
-              console.log(chalkLog("SAVED NEURAL NETWORK FILE"
-                + " | " + neuralNetworkFolder + "/" + statsObj.neuralNetworkFile
-              ));
-            }
-            process.send({op:"EVOLVE_COMPLETE", networkObj: networkObj, statsObj: statsObj});
-          });
-
-        });
-
+        process.send({op:"EVOLVE_COMPLETE", networkObj: networkObj, statsObj: statsObj});
         showStats();
+
       });
     break;
     default:
@@ -494,84 +472,6 @@ process.on("message", function(m) {
       ));
   }
 });
-
-
-// function loadFile(path, file, callback) {
-
-//   debug(chalkInfo("LOAD FOLDER " + path));
-//   debug(chalkInfo("LOAD FILE " + file));
-//   debug(chalkInfo("FULL PATH " + path + "/" + file));
-
-//   let fileExists = false;
-
-//   dropboxClient.filesListFolder({path: path})
-//     .then(function(response) {
-
-//         async.each(response.entries, function(folderFile, cb) {
-
-//           debug("FOUND FILE " + folderFile.name);
-
-//           if (folderFile.name === file) {
-//             debug(chalkRedBold("SOURCE FILE EXISTS: " + path + "/" + file));
-//             fileExists = true;
-//           }
-
-//           cb();
-
-//         }, function(err) {
-
-//           if (err) {
-//             console.log(chalkError("ERR\n" + jsonPrint(err)));
-//             return(callback(err, null));
-//           }
-
-//           if (fileExists) {
-
-//             dropboxClient.filesDownload({path: path + "/" + file})
-//               .then(function(data) {
-//                 console.log(chalkLog(getTimeStamp()
-//                   + " | LOADING FILE FROM DROPBOX FILE: " + path + "/" + file
-//                 ));
-
-//                 let payload = data.fileBinary;
-//                 debug(payload);
-
-//                 if (file.match(/\.json$/gi)) {
-//                   let fileObj = JSON.parse(payload);
-//                   return(callback(null, fileObj));
-//                 }
-//                 else {
-//                   return(callback(null, payload));
-//                 }
-
-//               })
-//               .catch(function(error) {
-//                 console.log(chalkAlert("DROPBOX loadFile ERROR: " + file + "\n" + error));
-//                 console.log(chalkError("!!! DROPBOX READ " + file + " ERROR"));
-//                 console.log(chalkError(jsonPrint(error)));
-
-//                 if (error.status === 404) {
-//                   console.error(chalkError("!!! DROPBOX READ FILE " + file + " NOT FOUND ... SKIPPING ..."));
-//                   return(callback(null, null));
-//                 }
-//                 if (error.status === 0) {
-//                   console.error(chalkError("!!! DROPBOX NO RESPONSE ... NO INTERNET CONNECTION? ... SKIPPING ..."));
-//                   return(callback(null, null));
-//                 }
-//                 return(callback(error, null));
-//               });
-//           }
-//           else {
-//             console.log(chalkError("*** FILE DOES NOT EXIST: " + path + "/" + file));
-//             return(callback({status: 404}, null));
-//           }
-//         });
-//     })
-//     .catch(function(err) {
-//       console.log(chalkError("*** ERROR DROPBOX LOAD FILE\n" + err));
-//       callback(err, null);
-//     });
-// }
 
 function initStatsUpdate(cnf, callback){
 
@@ -583,7 +483,7 @@ function initStatsUpdate(cnf, callback){
     statsObj.timeStamp = moment().format(defaultDateTimeFormat);
 
     saveFile(statsFolder, statsFile, statsObj, function(){
-      showStats();
+      process.send({op:"STATS", statsObj: statsObj});
     });
 
   }, cnf.statsUpdateIntervalTime);
@@ -593,7 +493,7 @@ function initStatsUpdate(cnf, callback){
 
 function initialize(cnf, callback){
 
-  cnf.processName = process.env.NN_PROCESS_NAME || "evolveNeuralNetworkChild";
+  cnf.processName = process.env.NN_PROCESS_NAME || "neuralNetworkChild";
 
   cnf.verbose = process.env.NN_VERBOSE_MODE || false ;
   cnf.globalTestMode = process.env.NN_GLOBAL_TEST_MODE || false ;
