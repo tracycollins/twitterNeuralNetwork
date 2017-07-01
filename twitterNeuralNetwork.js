@@ -296,6 +296,7 @@ function indexOfMax(arr) {
 }
 
 function showStats(options){
+
   if (neuralNetworkChild !== undefined) {
     neuralNetworkChild.send({op: "STATS", options: options});
   }
@@ -313,11 +314,11 @@ function showStats(options){
       + " | NOW " + moment().format(compactDateTimeFormat)
       + " | STRT " + moment(parseInt(statsObj.startTime)).format(compactDateTimeFormat)
       + " | ITERATIONS " + configuration.evolveIterations
-      + " | HEAP " + statsObj.heap.toFixed(0) + "MB"
+      + " | HEAP " + statsObj.heap.toFixed(0) + " MB"
       + " MAX " + statsObj.maxHeap.toFixed(0)
     ));
 
-    if (statsObj.tests[testObj.testRunId].results) {
+    if (statsObj.tests[testObj.testRunId].results !== undefined) {
       console.log(chalkLog("RESULTS: " + statsObj.tests[testObj.testRunId].results.successRate.toFixed(1) + " %"
          + " | TESTS: " + statsObj.tests[testObj.testRunId].results.numTests
          + " | PASS: " + statsObj.tests[testObj.testRunId].results.numPassed
