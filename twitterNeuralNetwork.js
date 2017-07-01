@@ -318,7 +318,7 @@ function showStats(options){
       + " MAX " + statsObj.maxHeap.toFixed(0)
     ));
 
-    if (statsObj.tests[testObj.testRunId].results !== undefined) {
+    if (statsObj.tests[testObj.testRunId].results.successRate !== undefined) {
       console.log(chalkLog("RESULTS: " + statsObj.tests[testObj.testRunId].results.successRate.toFixed(1) + " %"
          + " | TESTS: " + statsObj.tests[testObj.testRunId].results.numTests
          + " | PASS: " + statsObj.tests[testObj.testRunId].results.numPassed
@@ -337,7 +337,7 @@ function quit(){
 
   let slackText = "";
 
-  if (statsObj.tests[testObj.testRunId].results) {
+  if (statsObj.tests[testObj.testRunId].results.successRate !== undefined) {
     // console.log("\n=====================\nRESULTS\n" + jsonPrint(statsObj.tests[testObj.testRunId].results));
     slackText = "\n" + testObj.testRunId;
     slackText = slackText + "\nRESULTS: " + statsObj.tests[testObj.testRunId].results.successRate.toFixed(1) + " %";
@@ -357,7 +357,7 @@ function quit(){
   setTimeout(function(){
     if (neuralNetworkChild !== undefined) { neuralNetworkChild.kill("SIGINT"); }
     process.exit();
-  }, 3000);
+  }, 100);
 }
 
 process.on( "SIGINT", function() {
