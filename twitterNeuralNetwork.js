@@ -341,6 +341,7 @@ function quit(){
     // console.log("\n=====================\nRESULTS\n" + jsonPrint(statsObj.tests[testObj.testRunId].results));
     slackText = "\n" + testObj.testRunId;
     slackText = slackText + "\nRESULTS: " + statsObj.tests[testObj.testRunId].results.successRate.toFixed(1) + " %";
+    slackText = slackText + "\nITERATIONS: " + statsObj.tests[testObj.testRunId].training.evolve.options.iterations;
     slackText = slackText + "\nTESTS: " + statsObj.tests[testObj.testRunId].results.numTests;
     slackText = slackText + " | PASS: " + statsObj.tests[testObj.testRunId].results.numPassed;
     slackText = slackText + " | SKIP: " + statsObj.tests[testObj.testRunId].results.numSkipped;
@@ -357,7 +358,7 @@ function quit(){
   setTimeout(function(){
     if (neuralNetworkChild !== undefined) { neuralNetworkChild.kill("SIGINT"); }
     process.exit();
-  }, 100);
+  }, 1000);
 }
 
 process.on( "SIGINT", function() {
@@ -1444,8 +1445,10 @@ function initNeuralNetworkChild(callback){
     switch(m.op) {
       case "TRAIN_COMPLETE":
       case "EVOLVE_COMPLETE":
+
         console.log(chalkBlue("NETWORK EVOLVE/TRAIN COMPLETE"
           + "\nELAPSED: " + getTimeStamp(m.networkObj.elapsed)
+          + "\nITERTNS: " + m.statsObj.training.evolve.options.iterations
           + "\nNN:      " + m.networkObj.neuralNetworkFile
           + "\nINPUTS:  " + m.networkObj.network.input
           + "\nOUTPUTS: " + m.networkObj.network.output
@@ -1474,6 +1477,10 @@ function initNeuralNetworkChild(callback){
 
           statsObj.tests[testObj.testRunId] = {};
           statsObj.tests[testObj.testRunId] = pick(testObj, ["numInputs", "numOutputs", "results", "inputArraysFile", "inputHits", "inputHitAverage"]);
+          statsObj.tests[testObj.testRunId].training = {};
+          statsObj.tests[testObj.testRunId].training.evolve = {};
+          statsObj.tests[testObj.testRunId].training.evolve.options = {};
+          statsObj.tests[testObj.testRunId].training.evolve.options = m.statsObj.training.evolve.options;
           statsObj.tests[testObj.testRunId].neuralNetworkFile = m.networkObj.neuralNetworkFile;
           statsObj.tests[testObj.testRunId].elapsed = m.networkObj.elapsed;
 
