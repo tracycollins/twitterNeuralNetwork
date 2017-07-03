@@ -3,7 +3,7 @@
 
 let configuration = {
   maxInstances: 3,
-  evolveIterations: 1
+  evolveIterations: 100
 };
 
 const slackOAuthAccessToken = "xoxp-3708084981-3708084993-206468961315-ec62db5792cd55071a51c544acf0da55";
