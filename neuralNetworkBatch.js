@@ -390,7 +390,12 @@ function initBatch(callback){
 
     let options = {};
     options.script = "twitterNeuralNetwork.js";
-    options.cwd = "/Volumes/RAID1/projects/twitterNeuralNetwork";
+    if (hostname.includes("google")) {
+      options.cwd = "/home/tc/twitterNeuralNetwork";
+    }
+    else {
+      options.cwd = "/Volumes/RAID1/projects/twitterNeuralNetwork";
+    }
     options.autorestart = false;
     options.env = {};
     options.env.NODE_ENV = "production";
