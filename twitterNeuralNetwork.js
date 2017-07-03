@@ -1,6 +1,8 @@
 /*jslint node: true */
 "use strict";
 
+let slackChannel = "#word";
+
 const DEFAULT_EVOLVE_ITERATIONS = 1;
 const DEFAULT_NEURAL_NETWORK_FILE = "neuralNetwork.json";
 const slackOAuthAccessToken = "xoxp-3708084981-3708084993-206468961315-ec62db5792cd55071a51c544acf0da55";
@@ -120,7 +122,6 @@ const jsonPrint = function (obj){
   }
 };
 
-const slackChannel = "#word";
 
 let slack = new Slack(slackOAuthAccessToken);
 
@@ -343,9 +344,9 @@ function quit(){
   statsObj.elapsed = msToTime(moment().valueOf() - statsObj.startTime);
 
   if (process.env.BATCH_MODE){
-
+    slackChannel = "#nn_batch";
   }
-  else {
+  // else {
     let slackText = "";
 
     if (statsObj.tests[testObj.testRunId].results.successRate !== undefined) {
@@ -363,7 +364,7 @@ function quit(){
     }
 
     slackPostMessage(slackChannel, slackText);
-  }
+  // }
 
   showStats();
   setTimeout(function(){
@@ -1714,11 +1715,11 @@ function initTimeout(){
     console.log(chalkBlue(cnf.processName + " STARTED " + getTimeStamp() + "\n"));
 
     if (process.env.BATCH_MODE){
-
+      slackChannel = "#nn_batch";
     }
-    else {
-      slackPostMessage(slackChannel, testObj.testRunId + "\nSTARTED " + getTimeStamp());
-    }
+    // else {
+    slackPostMessage(slackChannel, testObj.testRunId + "\nSTARTED " + getTimeStamp());
+    // }
 
     initNeuralNetworkChild();
 
