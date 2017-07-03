@@ -684,6 +684,10 @@ function initialize(cnf, callback){
   });
 }
 
+process.on( "SIGINT", function() {
+  quit("SIGINT");
+});
+
 initialize(configuration, function(err, cnf){
   if (err) { throw err; }
   configuration = cnf;
