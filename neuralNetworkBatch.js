@@ -176,28 +176,36 @@ function slackPostMessage(channel, text, callback){
   });
 }
 
+let appHashMap = {};
+
 function quit(){
 
   console.log(chalkAlert( "\n\n... QUITTING ...\n\n" ));
-
-  showStats(true);
 
   clearInterval(processPollInterval);
   clearInterval(statsUpdateInterval);
 
   statsObj.elapsed = msToTime(moment().valueOf() - statsObj.startTime);
 
+  Object.keys(appHashMap).forEach(function(instanceName){
+    pm2.delete(instanceName, function(err, results){
+      console.log(chalkAlert("PM2 DELETE APP: " + instanceName));
+      slackPostMessage(slackChannel, "\nNNB INSTANCE STOPPED\n" + instanceName + "\n" + getTimeStamp());
+    });
+  });
+
   const slackText = "QUIT BATCH\n" + getTimeStamp() + "\n" + statsObj.runId;
+
+  showStats(true);
 
   slackPostMessage(slackChannel, slackText, function(){
     setTimeout(function(){
       pm2.disconnect();   // Disconnects from PM2
       process.exit();
-    }, 1500);
+    }, 3000);
   });
 }
 
-let appHashMap = {};
 
 function saveFile (path, file, jsonObj, callback){
 
@@ -438,6 +446,7 @@ function initBatch(callback){
       currentOptions.env.TNN_NEURAL_NETWORK_FILE = neuralNetworkFile;
 
       debug("CURRENT OPTIONS\n" + jsonPrint(currentOptions));
+
       console.log("OPTIONS"
         + " | " + currentOptions.name
         + " | TNN_RUN_ID: " + currentOptions.env.TNN_RUN_ID
@@ -451,22 +460,22 @@ function initBatch(callback){
 
     async.each(instanceConfigArray, function(instanceConfig, cb){
 
-      console.log("START\n" + jsonPrint(instanceConfig));
+      debug("START\n" + jsonPrint(instanceConfig));
 
       pm2.start(instanceConfig, function(err, apps) {
 
         if (err) { throw err; }
 
         // console.log("PM2 LAUNCHED | " + instanceConfig.name);
-        console.log("APP\n" + jsonPrint(apps));
+        debug("APP\n" + jsonPrint(apps));
 
-        // console.log("START"
-        //   + " | " + apps[0].pm2_env.name
-        //   + " | PM2 ID: " + apps[0].pm2_env.pm_id
-        //   + " | PID: " + apps[0].process.pid
-        //   + " | TNN_RUN_ID: " + apps[0].pm2_env.TNN_RUN_ID
-        //   + " | STATUS: " + apps[0].pm2_env.status
-        // );
+        console.log("START"
+          + " | " + apps[0].pm2_env.name
+          + " | PM2 ID: " + apps[0].pm2_env.pm_id
+          + " | PID: " + apps[0].process.pid
+          + " | TNN_RUN_ID: " + apps[0].pm2_env.TNN_RUN_ID
+          + " | STATUS: " + apps[0].pm2_env.status
+        );
 
         appHashMap[apps[0].pm2_env.name] = apps[0];
 
