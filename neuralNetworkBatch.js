@@ -453,8 +453,8 @@ function initBatch(callback){
         if (err) { throw err; }
 
         // console.log("PM2 LAUNCHED | " + instanceConfig.name);
-        console.log("APP\n" + jsonPrint(apps[0]));
-        
+        console.log("APP\n" + jsonPrint(apps));
+
         // console.log("START"
         //   + " | " + apps[0].pm2_env.name
         //   + " | PM2 ID: " + apps[0].pm2_env.pm_id
