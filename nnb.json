@@ -3,7 +3,7 @@
   {
     "name": "nnb",
     "script": "neuralNetworkBatch.js",
-    "cwd": "/home/tc/twitterNeuralNetwork",
+    "cwd": "/Volumes/RAID1/projects/twitterNeuralNetwork",
     "autorestart": true,
     "env": {
       "NODE_ENV": "production",
