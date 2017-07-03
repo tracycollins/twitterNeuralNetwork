@@ -145,10 +145,10 @@ pm2.connect(function(err) {
 
     const instanceName = "tnn_" + hostname + "_" + process.pid + "_" + instanceIndex;
 
-    let logfile = "/Users/tc/logs/batch/tnn/" + process.pid + "/" + instanceName + ".log";
+    let logfile = "/Users/tc/logs/batch/tnn/" + instanceName + ".log";
 
     if (hostname.includes("google")){
-      logfile = "/home/tc/logs/batch/tnn/" + process.pid + "/" + instanceName + ".log";
+      logfile = "/home/tc/logs/batch/tnn/" + instanceName + ".log";
     }
     
     let currentOptions = defaults(options, {
