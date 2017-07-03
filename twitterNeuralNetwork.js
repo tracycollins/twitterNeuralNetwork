@@ -360,7 +360,7 @@ function quit(){
       slackText = slackText + "\nRUN TIME: " + statsObj.elapsed;
     }
     else {
-      slackText = "QUIT | " + getTimeStamp() + " | " + statsObj.runId;
+      slackText = "QUIT | " + getTimeStamp() + " | " + configuration.processName;
     }
 
     slackPostMessage(slackChannel, slackText);
@@ -1718,7 +1718,7 @@ function initTimeout(){
       slackChannel = "#nn_batch";
     }
     // else {
-    slackPostMessage(slackChannel, testObj.testRunId + "\nSTARTED " + getTimeStamp());
+    slackPostMessage(slackChannel, configuration.processName + "\nSTARTED " + getTimeStamp());
     // }
 
     initNeuralNetworkChild();
