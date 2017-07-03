@@ -453,14 +453,15 @@ function initBatch(callback){
         if (err) { throw err; }
 
         // console.log("PM2 LAUNCHED | " + instanceConfig.name);
-        // console.log("APP\n" + jsonPrint(apps[0]));
-        console.log("START"
-          + " | " + apps[0].pm2_env.name
-          + " | PM2 ID: " + apps[0].pm2_env.pm_id
-          + " | PID: " + apps[0].process.pid
-          + " | TNN_RUN_ID: " + apps[0].pm2_env.TNN_RUN_ID
-          + " | STATUS: " + apps[0].pm2_env.status
-        );
+        console.log("APP\n" + jsonPrint(apps[0]));
+        
+        // console.log("START"
+        //   + " | " + apps[0].pm2_env.name
+        //   + " | PM2 ID: " + apps[0].pm2_env.pm_id
+        //   + " | PID: " + apps[0].process.pid
+        //   + " | TNN_RUN_ID: " + apps[0].pm2_env.TNN_RUN_ID
+        //   + " | STATUS: " + apps[0].pm2_env.status
+        // );
 
         appHashMap[apps[0].pm2_env.name] = apps[0];
 
