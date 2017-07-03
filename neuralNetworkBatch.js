@@ -436,6 +436,7 @@ function initBatch(callback){
       console.log("OPTIONS"
         + " | " + currentOptions.name
         + " | TNN_RUN_ID: " + currentOptions.env.TNN_RUN_ID
+        + " | " + currentOptions.out_file
       );
 
       const opt = deepcopy(currentOptions);
@@ -448,6 +449,8 @@ function initBatch(callback){
       debug("START\n" + jsonPrint(instanceConfig));
 
       pm2.start(instanceConfig, function(err, apps) {
+
+        if (err) { throw err; }
 
         // console.log("PM2 LAUNCHED | " + instanceConfig.name);
         // console.log("APP\n" + jsonPrint(apps[0]));
