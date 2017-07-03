@@ -446,7 +446,7 @@ function initBatch(callback){
 
     async.each(instanceConfigArray, function(instanceConfig, cb){
 
-      debug("START\n" + jsonPrint(instanceConfig));
+      console.log("START\n" + jsonPrint(instanceConfig));
 
       pm2.start(instanceConfig, function(err, apps) {
 
