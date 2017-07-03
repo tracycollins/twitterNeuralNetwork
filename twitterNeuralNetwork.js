@@ -1394,7 +1394,7 @@ function testNetwork(nw, testObj, callback){
 
       numPassed = passed ? numPassed+1 : numPassed;
 
-      successRate = 100 * numPassed/numTested;
+      successRate = 100 * numPassed/(numTested + numSkipped);
 
       let currentChalk = passed ? chalkLog : chalkAlert;
 
