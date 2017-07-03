@@ -1,8 +1,12 @@
 /*jslint node: true */
 "use strict";
 
-const DEFAULT_EVOLVE_ITERATIONS = 100;
+const DEFAULT_EVOLVE_ITERATIONS = 1;
+const DEFAULT_NEURAL_NETWORK_FILE = "neuralNetwork.json";
 const slackOAuthAccessToken = "xoxp-3708084981-3708084993-206468961315-ec62db5792cd55071a51c544acf0da55";
+
+const defaultDateTimeFormat = "YYYY-MM-DD HH:mm:ss ZZ";
+const compactDateTimeFormat = "YYYYMMDD_HHmmss";
 
 const os = require("os");
 const util = require("util");
@@ -34,13 +38,38 @@ hostname = hostname.replace(/.fios-router/g, "");
 hostname = hostname.replace(/.fios-router.home/g, "");
 hostname = hostname.replace(/word0-instance-1/g, "google");
 
+const chalkAlert = chalk.red;
+const chalkBlue = chalk.blue;
+const chalkRedBold = chalk.bold.red;
+const chalkError = chalk.bold.red;
+const chalkWarn = chalk.red;
+const chalkLog = chalk.gray;
+const chalkInfo = chalk.black;
+
+
+let statsObj = {};
+statsObj.hostname = hostname;
+statsObj.pid = process.pid;
+statsObj.heap = process.memoryUsage().heapUsed/(1024*1024);
+statsObj.maxHeap = process.memoryUsage().heapUsed/(1024*1024);
+
+statsObj.startTimeMoment = moment();
+statsObj.startTime = moment().valueOf();
+statsObj.elapsed = msToTime(moment().valueOf() - statsObj.startTime);
+
+const DEFAULT_RUN_ID = hostname + "_" + process.pid + "_" + statsObj.startTimeMoment.format(compactDateTimeFormat);
+
+if (process.env.TNN_RUN_ID !== undefined) {
+  statsObj.runId = process.env.TNN_RUN_ID;
+  console.log(chalkAlert("ENV RUN ID: " + statsObj.runId));
+}
+else {
+  statsObj.runId = DEFAULT_RUN_ID;
+  console.log(chalkAlert("DEFAULT RUN ID: " + statsObj.runId));
+}
+
 let neuralNetworkChild;
 let network;
-
-// const ignoreWordRegex = new Regex(/(#|=|&amp|http)/igm);
-
-const defaultDateTimeFormat = "YYYY-MM-DD HH:mm:ss ZZ";
-const compactDateTimeFormat = "YYYYMMDD_HHmmss";
 
 let histograms = {};
 histograms.words = {};
@@ -77,15 +106,6 @@ configuration.normalization = null;
 configuration.verbose = false;
 configuration.testMode = false; // per tweet test mode
 configuration.testSetRatio = 0.02;
-
-const chalkAlert = chalk.red;
-const chalkBlue = chalk.blue;
-const chalkRedBold = chalk.bold.red;
-const chalkError = chalk.bold.red;
-const chalkWarn = chalk.red;
-const chalkLog = chalk.gray;
-const chalkInfo = chalk.black;
-
 
 let mongoose;
 let db;
@@ -161,18 +181,8 @@ function msToTime(duration) {
   return days + ":" + hours + ":" + minutes + ":" + seconds;
 }
 
-let statsObj = {};
 
 statsObj.commandLineConfig = commandLineConfig;
-
-statsObj.hostname = hostname;
-statsObj.pid = process.pid;
-statsObj.heap = process.memoryUsage().heapUsed/(1024*1024);
-statsObj.maxHeap = process.memoryUsage().heapUsed/(1024*1024);
-
-statsObj.startTimeMoment = moment();
-statsObj.startTime = moment().valueOf();
-statsObj.elapsed = msToTime(moment().valueOf() - statsObj.startTime);
 
 statsObj.normalization = {};
 statsObj.normalization.score = {};
@@ -183,9 +193,6 @@ statsObj.normalization.score.max = 1.0;
 statsObj.normalization.magnitude.min = 0;
 statsObj.normalization.magnitude.max = -Infinity;
 
-const TNN_RUN_ID = hostname + "_" + process.pid + "_" + statsObj.startTimeMoment.format(compactDateTimeFormat);
-statsObj.runId = TNN_RUN_ID;
-console.log(chalkAlert("RUN ID: " + statsObj.runId));
 
 let testObj = {};
 testObj.testRunId = statsObj.runId;
@@ -219,7 +226,7 @@ const dropboxConfigDefaultFolder = "/config/utility/default";
 const dropboxConfigHostFolder = "/config/utility/" + hostname;
 
 const dropboxConfigFile = hostname + "_" + DROPBOX_TNN_CONFIG_FILE;
-const statsFolder = "/stats/" + hostname;
+const statsFolder = "/stats/" + hostname + "/neuralNetwork";
 const statsFile = "twitterNeuralNetworkStats_" + statsObj.runId + ".json";
 debug("statsFolder : " + statsFolder);
 debug("statsFile : " + statsFile);
@@ -562,11 +569,13 @@ function initialize(cnf, callback){
   }
 
   cnf.processName = process.env.TNN_PROCESS_NAME || "twitterNeuralNetwork";
+  cnf.runId = process.env.TNN_RUN_ID || statsObj.runId;
 
   cnf.verbose = process.env.TNN_VERBOSE_MODE || false ;
   cnf.quitOnError = process.env.TNN_QUIT_ON_ERROR || false ;
   cnf.enableStdin = process.env.TNN_ENABLE_STDIN || true ;
   cnf.evolveIterations = process.env.TNN_EVOLVE_ITERATIONS || DEFAULT_EVOLVE_ITERATIONS ;
+  cnf.neuralNetworkFile = process.env.TNN_NEURAL_NETWORK_FILE || DEFAULT_NEURAL_NETWORK_FILE ;
 
   cnf.classifiedUsersFile = process.env.TNN_CLASSIFIED_USERS_FILE || "classifiedUsers.json";
   cnf.classifiedUsersFolder = dropboxConfigHostFolder + "/classifiedUsers";
@@ -1497,7 +1506,9 @@ function initNeuralNetworkChild(callback){
           testObj.results = results;
 
           statsObj.tests[testObj.testRunId] = {};
-          statsObj.tests[testObj.testRunId] = pick(testObj, ["numInputs", "numOutputs", "results", "inputArraysFile", "inputHits", "inputHitAverage"]);
+          statsObj.tests[testObj.testRunId] = pick(testObj, ["numInputs", "numOutputs", "inputArraysFile", "inputHits", "inputHitAverage"]);
+          statsObj.tests[testObj.testRunId].results = {};
+          statsObj.tests[testObj.testRunId].results = testObj.results;
           statsObj.tests[testObj.testRunId].training = {};
           statsObj.tests[testObj.testRunId].training.evolve = {};
           statsObj.tests[testObj.testRunId].training.evolve.options = {};

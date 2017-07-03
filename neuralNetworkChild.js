@@ -143,7 +143,7 @@ const DROPBOX_NN_STATS_FILE = process.env.DROPBOX_NN_STATS_FILE || "neuralNetwor
 
 let dropboxConfigFolder = "/config/utility/" + hostname;
 let dropboxConfigFile = hostname + "_" + DROPBOX_NN_CONFIG_FILE;
-let statsFolder = "/stats/" + hostname;
+let statsFolder = "/stats/" + hostname + "/neuralNetwork";
 let statsFile = DROPBOX_NN_STATS_FILE;
 
 console.log("DROPBOX_NN_CONFIG_FILE: " + DROPBOX_NN_CONFIG_FILE);
