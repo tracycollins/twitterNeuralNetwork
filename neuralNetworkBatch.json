@@ -1,6 +1,7 @@
 {
   "apps": [
   {
+    "name": "nnb",
     "script": "neuralNetworkBatch.js",
     "cwd": "/home/tc/twitterNeuralNetwork",
     "autorestart": false,
