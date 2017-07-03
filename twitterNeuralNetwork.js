@@ -21,7 +21,7 @@ const getUrls = require("get-urls");
 const EventEmitter2 = require("eventemitter2").EventEmitter2;
 const async = require("async");
 const chalk = require("chalk");
-const debug = require("debug")("twm");
+const debug = require("debug")("tnn");
 const debugCache = require("debug")("cache");
 const debugQ = require("debug")("queue");
 const commandLineArgs = require("command-line-args");
@@ -335,26 +335,30 @@ function quit(){
 
   statsObj.elapsed = msToTime(moment().valueOf() - statsObj.startTime);
 
-  let slackText = "";
+  if (process.env.BATCH_MODE){
 
-  if (statsObj.tests[testObj.testRunId].results.successRate !== undefined) {
-    // console.log("\n=====================\nRESULTS\n" + jsonPrint(statsObj.tests[testObj.testRunId].results));
-    slackText = "\n" + testObj.testRunId;
-    slackText = slackText + "\nRESULTS: " + statsObj.tests[testObj.testRunId].results.successRate.toFixed(1) + " %";
-    slackText = slackText + "\nITERATIONS: " + statsObj.tests[testObj.testRunId].training.evolve.options.iterations;
-    slackText = slackText + "\nTESTS: " + statsObj.tests[testObj.testRunId].results.numTests;
-    slackText = slackText + " | PASS: " + statsObj.tests[testObj.testRunId].results.numPassed;
-    slackText = slackText + " | SKIP: " + statsObj.tests[testObj.testRunId].results.numSkipped;
-    slackText = slackText + "\nRUN TIME: " + statsObj.elapsed;
   }
   else {
-    slackText = "QUIT | " + getTimeStamp() + " | " + statsObj.runId;
+    let slackText = "";
+
+    if (statsObj.tests[testObj.testRunId].results.successRate !== undefined) {
+      // console.log("\n=====================\nRESULTS\n" + jsonPrint(statsObj.tests[testObj.testRunId].results));
+      slackText = "\n" + testObj.testRunId;
+      slackText = slackText + "\nRESULTS: " + statsObj.tests[testObj.testRunId].results.successRate.toFixed(1) + " %";
+      slackText = slackText + "\nITERATIONS: " + statsObj.tests[testObj.testRunId].training.evolve.options.iterations;
+      slackText = slackText + "\nTESTS: " + statsObj.tests[testObj.testRunId].results.numTests;
+      slackText = slackText + " | PASS: " + statsObj.tests[testObj.testRunId].results.numPassed;
+      slackText = slackText + " | SKIP: " + statsObj.tests[testObj.testRunId].results.numSkipped;
+      slackText = slackText + "\nRUN TIME: " + statsObj.elapsed;
+    }
+    else {
+      slackText = "QUIT | " + getTimeStamp() + " | " + statsObj.runId;
+    }
+
+    slackPostMessage(slackChannel, slackText);
   }
 
-  slackPostMessage(slackChannel, slackText);
-
   showStats();
-
   setTimeout(function(){
     if (neuralNetworkChild !== undefined) { neuralNetworkChild.kill("SIGINT"); }
     process.exit();
@@ -571,145 +575,77 @@ function initialize(cnf, callback){
   debug(chalkWarn("dropboxConfigFolder: " + dropboxConfigFolder));
   debug(chalkWarn("dropboxConfigFile  : " + dropboxConfigFile));
 
-  loadFile(dropboxConfigHostFolder, dropboxConfigFile, function(err, loadedConfigObj){
+  if (process.env.BATCH_MODE) {
 
-    let commandLineConfigKeys;
-    let configArgs;
+    console.log(chalkAlert("\n\nBATCH MODE\n\n"));
 
-    if (!err) {
-      console.log(dropboxConfigFile + "\n" + jsonPrint(loadedConfigObj));
-
-      if (loadedConfigObj.TNN_EVOLVE_ITERATIONS  !== undefined){
-        console.log("LOADED TNN_EVOLVE_ITERATIONS: " + loadedConfigObj.TNN_EVOLVE_ITERATIONS);
-        cnf.evolveIterations = loadedConfigObj.TNN_EVOLVE_ITERATIONS;
+    initStatsUpdate(cnf, function(err, cnf2){
+      if (err) {
+        console.log(chalkError("ERROR initStatsUpdate\n" + jsonPrint(err)));
       }
+      debug("initStatsUpdate cnf2\n" + jsonPrint(cnf2));
+    });
+    initInputArrays(function(err){
+      return(callback(err, cnf));
+    });
+  }
+  else{
+    loadFile(dropboxConfigHostFolder, dropboxConfigFile, function(err, loadedConfigObj){
 
-      if (loadedConfigObj.TNN_VERBOSE_MODE  !== undefined){
-        console.log("LOADED TNN_VERBOSE_MODE: " + loadedConfigObj.TNN_VERBOSE_MODE);
-        cnf.verbose = loadedConfigObj.TNN_VERBOSE_MODE;
-      }
+      let commandLineConfigKeys;
+      let configArgs;
 
-      if (loadedConfigObj.TNN_TEST_MODE  !== undefined){
-        console.log("LOADED TNN_TEST_MODE: " + loadedConfigObj.TNN_TEST_MODE);
-        cnf.testMode = loadedConfigObj.TNN_TEST_MODE;
-      }
+      if (!err) {
+        console.log(dropboxConfigFile + "\n" + jsonPrint(loadedConfigObj));
 
-      if (loadedConfigObj.TNN_NEURAL_NETWORK_FILE_RUNID  !== undefined){
-        console.log("LOADED TNN_NEURAL_NETWORK_FILE_RUNID: " + loadedConfigObj.TNN_NEURAL_NETWORK_FILE_RUNID);
-        cnf.loadNeuralNetworkFileRunID = loadedConfigObj.TNN_NEURAL_NETWORK_FILE_RUNID;
-      }
-
-      if (loadedConfigObj.TNN_ENABLE_STDIN  !== undefined){
-        console.log("LOADED TNN_ENABLE_STDIN: " + loadedConfigObj.TNN_ENABLE_STDIN);
-        cnf.enableStdin = loadedConfigObj.TNN_ENABLE_STDIN;
-      }
-
-      if (loadedConfigObj.TNN_STATS_UPDATE_INTERVAL  !== undefined) {
-        console.log("LOADED TNN_STATS_UPDATE_INTERVAL: " + loadedConfigObj.TNN_STATS_UPDATE_INTERVAL);
-        cnf.statsUpdateIntervalTime = loadedConfigObj.TNN_STATS_UPDATE_INTERVAL;
-      }
-
-      if (loadedConfigObj.TNN_KEEPALIVE_INTERVAL  !== undefined) {
-        console.log("LOADED TNN_KEEPALIVE_INTERVAL: " + loadedConfigObj.TNN_KEEPALIVE_INTERVAL);
-        cnf.keepaliveInterval = loadedConfigObj.TNN_KEEPALIVE_INTERVAL;
-      }
-
-      // OVERIDE CONFIG WITH COMMAND LINE ARGS
-
-      commandLineConfigKeys = Object.keys(commandLineConfig);
-
-      commandLineConfigKeys.forEach(function(arg){
-        cnf[arg] = commandLineConfig[arg];
-        console.log("--> COMMAND LINE CONFIG | " + arg + ": " + cnf[arg]);
-      });
-
-      configArgs = Object.keys(cnf);
-
-      configArgs.forEach(function(arg){
-        console.log("FINAL CONFIG | " + arg + ": " + cnf[arg]);
-      });
-
-      if (cnf.enableStdin){
-
-        console.log("STDIN ENABLED");
-
-        stdin = process.stdin;
-        if(stdin.setRawMode  !== undefined) {
-          stdin.setRawMode( true );
-        }
-        stdin.resume();
-        stdin.setEncoding( "utf8" );
-        stdin.on( "data", function( key ){
-
-          switch (key) {
-            case "\u0003":
-              process.exit();
-            break;
-
-            // case "d":
-            //   configuration.enableHeapDump = !configuration.enableHeapDump;
-            //   console.log(chalkRedBold("HEAP DUMP: " + configuration.enableHeapDump));
-            // break;
-            case "v":
-              configuration.verbose = !configuration.verbose;
-              console.log(chalkRedBold("VERBOSE: " + configuration.verbose));
-            break;
-            case "q":
-              quit();
-            break;
-            case "Q":
-              quit();
-            break;
-            case "s":
-              showStats();
-            break;
-            case "S":
-              showStats(true);
-            break;
-            default:
-              console.log(
-                "\n" + "q/Q: quit"
-                + "\n" + "s: showStats"
-                + "\n" + "S: showStats verbose"
-              );
-          }
-
-        });
-      }
-
-      initStatsUpdate(cnf, function(err, cnf2){
-
-        if (err) {
-          console.log(chalkError("ERROR initStatsUpdate\n" + err));
+        if (loadedConfigObj.TNN_EVOLVE_ITERATIONS  !== undefined){
+          console.log("LOADED TNN_EVOLVE_ITERATIONS: " + loadedConfigObj.TNN_EVOLVE_ITERATIONS);
+          cnf.evolveIterations = loadedConfigObj.TNN_EVOLVE_ITERATIONS;
         }
 
-        debug("initStatsUpdate cnf2\n" + jsonPrint(cnf2));
+        if (loadedConfigObj.TNN_VERBOSE_MODE  !== undefined){
+          console.log("LOADED TNN_VERBOSE_MODE: " + loadedConfigObj.TNN_VERBOSE_MODE);
+          cnf.verbose = loadedConfigObj.TNN_VERBOSE_MODE;
+        }
 
-        initInputArrays(function(err){
-          return(callback(err, cnf2));
-        });
+        if (loadedConfigObj.TNN_TEST_MODE  !== undefined){
+          console.log("LOADED TNN_TEST_MODE: " + loadedConfigObj.TNN_TEST_MODE);
+          cnf.testMode = loadedConfigObj.TNN_TEST_MODE;
+        }
 
-      });
-    }
-    else {
-      console.error(chalkError("ERROR LOAD DROPBOX CONFIG: " + dropboxConfigFile
-        + "\n" + jsonPrint(err)
-      ));
+        if (loadedConfigObj.TNN_NEURAL_NETWORK_FILE_RUNID  !== undefined){
+          console.log("LOADED TNN_NEURAL_NETWORK_FILE_RUNID: " + loadedConfigObj.TNN_NEURAL_NETWORK_FILE_RUNID);
+          cnf.loadNeuralNetworkFileRunID = loadedConfigObj.TNN_NEURAL_NETWORK_FILE_RUNID;
+        }
 
-      if (err.status === 404){
+        if (loadedConfigObj.TNN_ENABLE_STDIN  !== undefined){
+          console.log("LOADED TNN_ENABLE_STDIN: " + loadedConfigObj.TNN_ENABLE_STDIN);
+          cnf.enableStdin = loadedConfigObj.TNN_ENABLE_STDIN;
+        }
+
+        if (loadedConfigObj.TNN_STATS_UPDATE_INTERVAL  !== undefined) {
+          console.log("LOADED TNN_STATS_UPDATE_INTERVAL: " + loadedConfigObj.TNN_STATS_UPDATE_INTERVAL);
+          cnf.statsUpdateIntervalTime = loadedConfigObj.TNN_STATS_UPDATE_INTERVAL;
+        }
+
+        if (loadedConfigObj.TNN_KEEPALIVE_INTERVAL  !== undefined) {
+          console.log("LOADED TNN_KEEPALIVE_INTERVAL: " + loadedConfigObj.TNN_KEEPALIVE_INTERVAL);
+          cnf.keepaliveInterval = loadedConfigObj.TNN_KEEPALIVE_INTERVAL;
+        }
+
         // OVERIDE CONFIG WITH COMMAND LINE ARGS
 
         commandLineConfigKeys = Object.keys(commandLineConfig);
 
         commandLineConfigKeys.forEach(function(arg){
           cnf[arg] = commandLineConfig[arg];
-          debug("--> COMMAND LINE CONFIG | " + arg + ": " + cnf[arg]);
+          console.log("--> COMMAND LINE CONFIG | " + arg + ": " + cnf[arg]);
         });
 
         configArgs = Object.keys(cnf);
 
         configArgs.forEach(function(arg){
-          console.log("_FINAL CONFIG | " + arg + ": " + cnf[arg]);
+          console.log("FINAL CONFIG | " + arg + ": " + cnf[arg]);
         });
 
         if (cnf.enableStdin){
@@ -756,21 +692,106 @@ function initialize(cnf, callback){
                   + "\n" + "S: showStats verbose"
                 );
             }
+
           });
         }
 
         initStatsUpdate(cnf, function(err, cnf2){
+
           if (err) {
-            console.log(chalkError("ERROR initStatsUpdate\n" + jsonPrint(err)));
+            console.log(chalkError("ERROR initStatsUpdate\n" + err));
           }
+
           debug("initStatsUpdate cnf2\n" + jsonPrint(cnf2));
+
+          initInputArrays(function(err){
+            return(callback(err, cnf2));
+          });
+
         });
       }
-      initInputArrays(function(err){
-        return(callback(err, cnf));
-      });
-     }
-  });
+      else {
+        console.error(chalkError("ERROR LOAD DROPBOX CONFIG: " + dropboxConfigFile
+          + "\n" + jsonPrint(err)
+        ));
+
+        if (err.status === 404){
+          // OVERIDE CONFIG WITH COMMAND LINE ARGS
+
+          commandLineConfigKeys = Object.keys(commandLineConfig);
+
+          commandLineConfigKeys.forEach(function(arg){
+            cnf[arg] = commandLineConfig[arg];
+            debug("--> COMMAND LINE CONFIG | " + arg + ": " + cnf[arg]);
+          });
+
+          configArgs = Object.keys(cnf);
+
+          configArgs.forEach(function(arg){
+            console.log("_FINAL CONFIG | " + arg + ": " + cnf[arg]);
+          });
+
+          if (cnf.enableStdin){
+
+            console.log("STDIN ENABLED");
+
+            stdin = process.stdin;
+            if(stdin.setRawMode  !== undefined) {
+              stdin.setRawMode( true );
+            }
+            stdin.resume();
+            stdin.setEncoding( "utf8" );
+            stdin.on( "data", function( key ){
+
+              switch (key) {
+                case "\u0003":
+                  process.exit();
+                break;
+
+                // case "d":
+                //   configuration.enableHeapDump = !configuration.enableHeapDump;
+                //   console.log(chalkRedBold("HEAP DUMP: " + configuration.enableHeapDump));
+                // break;
+                case "v":
+                  configuration.verbose = !configuration.verbose;
+                  console.log(chalkRedBold("VERBOSE: " + configuration.verbose));
+                break;
+                case "q":
+                  quit();
+                break;
+                case "Q":
+                  quit();
+                break;
+                case "s":
+                  showStats();
+                break;
+                case "S":
+                  showStats(true);
+                break;
+                default:
+                  console.log(
+                    "\n" + "q/Q: quit"
+                    + "\n" + "s: showStats"
+                    + "\n" + "S: showStats verbose"
+                  );
+              }
+            });
+          }
+
+          initStatsUpdate(cnf, function(err, cnf2){
+            if (err) {
+              console.log(chalkError("ERROR initStatsUpdate\n" + jsonPrint(err)));
+            }
+            debug("initStatsUpdate cnf2\n" + jsonPrint(cnf2));
+          });
+        }
+        initInputArrays(function(err){
+          return(callback(err, cnf));
+        });
+       }
+    });
+  }
+
 }
 
 console.log(chalkInfo(getTimeStamp() 
@@ -1681,7 +1702,12 @@ function initTimeout(){
 
     console.log(chalkBlue(cnf.processName + " STARTED " + getTimeStamp() + "\n"));
 
-    slackPostMessage(slackChannel, testObj.testRunId + "\nSTARTED " + getTimeStamp());
+    if (process.env.BATCH_MODE){
+
+    }
+    else {
+      slackPostMessage(slackChannel, testObj.testRunId + "\nSTARTED " + getTimeStamp());
+    }
 
     initNeuralNetworkChild();
 
