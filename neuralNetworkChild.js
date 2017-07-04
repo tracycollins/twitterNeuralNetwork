@@ -379,28 +379,30 @@ process.on("message", function(m) {
         console.log(chalkAlert("TRAINING COMPLETE"));
         console.log(chalkAlert("NORMALIZATION\n" + jsonPrint(networkObj.normalization)));
 
-        saveFile(neuralNetworkFolder, statsObj.defaultNeuralNetworkFile, networkObj, function(err){
-          if (err){
-            console.error(chalkError("*** SAVE DEFAULT NEURAL NETWORK FILE ERROR | " + defaultNeuralNetworkFile + " | " + err));
-          }
-          else {
-            console.log(chalkLog("SAVED DEFAULT NEURAL NETWORK FILE"
-              + " | " + neuralNetworkFolder + "/" + statsObj.defaultNeuralNetworkFile
-            ));
-          }
+        process.send({op:"TRAIN_COMPLETE", networkObj: networkObj, statsObj: statsObj});
 
-          saveFile(neuralNetworkFolder, statsObj.neuralNetworkFile, networkObj, function(err){
-            if (err){
-              console.error(chalkError("*** SAVE NEURAL NETWORK FILE ERROR | " + neuralNetworkFile + " | " + err));
-            }
-            else {
-              console.log(chalkLog("SAVED NEURAL NETWORK FILE"
-                + " | " + neuralNetworkFolder + "/" + statsObj.neuralNetworkFile
-              ));
-            }
-            process.send({op:"TRAIN_COMPLETE", networkObj: networkObj, statsObj: statsObj});
-          });
-        });
+        // saveFile(neuralNetworkFolder, statsObj.defaultNeuralNetworkFile, networkObj, function(err){
+        //   if (err){
+        //     console.error(chalkError("*** SAVE DEFAULT NEURAL NETWORK FILE ERROR | " + defaultNeuralNetworkFile + " | " + err));
+        //   }
+        //   else {
+        //     console.log(chalkLog("SAVED DEFAULT NEURAL NETWORK FILE"
+        //       + " | " + neuralNetworkFolder + "/" + statsObj.defaultNeuralNetworkFile
+        //     ));
+        //   }
+
+        //   saveFile(neuralNetworkFolder, statsObj.neuralNetworkFile, networkObj, function(err){
+        //     if (err){
+        //       console.error(chalkError("*** SAVE NEURAL NETWORK FILE ERROR | " + neuralNetworkFile + " | " + err));
+        //     }
+        //     else {
+        //       console.log(chalkLog("SAVED NEURAL NETWORK FILE"
+        //         + " | " + neuralNetworkFolder + "/" + statsObj.neuralNetworkFile
+        //       ));
+        //     }
+        //     process.send({op:"TRAIN_COMPLETE", networkObj: networkObj, statsObj: statsObj});
+        //   });
+        // });
 
         showStats();
       });

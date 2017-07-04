@@ -857,8 +857,14 @@ function parseText(text, options, callback){
   let hashtagArray = [];
 
   async.each(parseResults, function(matchObj, cb){
+
     const type = matchObj.getType();
-    debug("type: " + type);
+
+    debug(chalkAlert("PARSE TEXT"
+      + " | " + matchObj.getMatchedText().toLowerCase()
+      + " | TYPE: " + type
+    ));
+
     switch (type) {
       case "url":
         console.log(chalkInfo("URL: " + matchObj.getMatchedText().toLowerCase()));
@@ -879,7 +885,9 @@ function parseText(text, options, callback){
         console.error(chalkError("UNKNOWN PARSE TYPE: " + type));
         cb();
     }
+
    }, function(err){
+
     const wordArray = keywordExtractor.extract(text, wordExtractionOptions);
 
     const userHistograms = {};
@@ -895,9 +903,11 @@ function parseText(text, options, callback){
             if (!userId.match("@")) {
               userId = "@" + userId.toLowerCase();
               if (options.updateGlobalHistograms) {
-                histograms.mentions[userId] = (histograms.mentions[userId] === undefined) ? 1 : histograms.mentions[userId]+1;
+                histograms.mentions[userId] = (histograms.mentions[userId] === undefined) ? 1 
+                  : histograms.mentions[userId]+1;
               }
-              userHistograms.mentions[userId] = (userHistograms.mentions[userId] === undefined) ? 1 : userHistograms.mentions[userId]+1;
+              userHistograms.mentions[userId] = (userHistograms.mentions[userId] === undefined) ? 1 
+                : userHistograms.mentions[userId]+1;
               debug(chalkAlert("->- DESC Ms"
                 + " | " + userHistograms.mentions[userId]
                 + " | " + userId
@@ -917,9 +927,11 @@ function parseText(text, options, callback){
           hashtagArray.forEach(function(hashtag){
             hashtag = hashtag.toLowerCase();
             if (options.updateGlobalHistograms) {
-              histograms.hashtags[hashtag] = (histograms.hashtags[hashtag] === undefined) ? 1 : histograms.hashtags[hashtag]+1;
+              histograms.hashtags[hashtag] = (histograms.hashtags[hashtag] === undefined) ? 1 
+              : histograms.hashtags[hashtag]+1;
             }
-            userHistograms.hashtags[hashtag] = (userHistograms.hashtags[hashtag] === undefined) ? 1 : userHistograms.hashtags[hashtag]+1;
+            userHistograms.hashtags[hashtag] = (userHistograms.hashtags[hashtag] === undefined) ? 1 
+              : userHistograms.hashtags[hashtag]+1;
             debug(chalkAlert("->- DESC Hs"
               + " | " + userHistograms.hashtags[hashtag]
               + " | " + hashtag
@@ -933,14 +945,23 @@ function parseText(text, options, callback){
       },
       words: function(cb){
         if (wordArray) {
-          wordArray.forEach(function(w){
+
+          // wordArray.forEach(function(w){
+          async.each(wordArray, function(w, cb1){
+
+              debug(chalkAlert("w"
+                + " | " + w
+              ));
+
             let word = w.toLowerCase();
+
             word = word.replace(/"s/gi, "");
             word = word.replace(/’s/gi, "");
+
             const m = mentionsRegex().exec(word);
             const h = hashtagRegex().exec(word);
-            // const rgx = ignoreWordRegex.test(word);
-            const u = (Array.from(getUrls(text)).length > 0) ? Array.from(getUrls(text)) : null;
+            const u = (Array.from(getUrls(word)).length > 0) ? Array.from(getUrls(word)) : null;
+
             if (m || h || u 
               || (word === "/") 
               || word.includes("--") 
@@ -950,34 +971,35 @@ function parseText(text, options, callback){
               || word.includes("≠") 
               || word.includes("http") 
               || word.includes("+")) {
-              // if (rgx) { console.log(chalkAlert("-- REGEX SKIP WORD"
-              //   + " | M: " + m
-              //   + " | H: " + h
-              //   + " | U: " + u
-              //   + " | RGX: " + rgx
-              //   + " | " + word
-              // )) };
               debug(chalkAlert("-- SKIP WORD"
                 + " | M: " + m
                 + " | H: " + h
                 + " | U: " + u
-                // + " | RGX: " + rgx
                 + " | " + word
               ));
+              cb1();
             }
             else {
               if (options.updateGlobalHistograms) {
-                histograms.words[word] = (histograms.words[word] === undefined) ? 1 : histograms.words[word]+1;
+                histograms.words[word] = (histograms.words[word] === undefined) ? 1 
+                  : histograms.words[word]+1;
               }
-              userHistograms.words[word] = (userHistograms.words[word] === undefined) ? 1 : userHistograms.words[word]+1;
+              userHistograms.words[word] = (userHistograms.words[word] === undefined) ? 1 
+                : userHistograms.words[word]+1;
+
               debug(chalkAlert("->- DESC Ws"
-                + " | " + userHistograms.words[word]
+                + " | HIST: " + histograms.words[word]
+                + " | USER HIST: " + userHistograms.words[word]
                 + " | " + word
               ));
+
+              cb1();
             }
+
+          }, function(err){
+            cb(null, userHistograms.words);
           });
 
-          cb(null, userHistograms.words);
         }
         else {
           cb(null, userHistograms.words);
@@ -1018,12 +1040,19 @@ function parseText(text, options, callback){
   });
 }
 
-function printDatum(datum){
+function printDatum(title, datum){
 
   let row = "";
   let col = 0;
   let rowNum = 0;
   const COLS = 50;
+
+  if (title) {
+    console.log("\n-------- " + title + " --------");
+  }
+  else {
+    console.log("\n--------------------");
+  }
 
   datum.input.forEach(function(bit, i){
     if (i === 0) {
@@ -1175,7 +1204,7 @@ function updateClassifiedUsers(cnf, callback){
                 console.log(chalkBlue("RT\n" + jsonPrint(user.retweeted_status.text)));
 
                 if (text) {
-                  cb(null, text + " " + user.retweeted_status.text);
+                  cb(null, text + " | " + user.retweeted_status.text);
                 }
                 else {
                   cb(null, user.retweeted_status.text);
@@ -1193,7 +1222,7 @@ function updateClassifiedUsers(cnf, callback){
             function userDescriptionText(text, cb) {
               if ((user.description !== undefined) && user.description) {
                 if (text) {
-                  cb(null, text + " " + user.description);
+                  cb(null, text + " | " + user.description);
                 }
                 else {
                   cb(null, user.description);
@@ -1216,7 +1245,7 @@ function updateClassifiedUsers(cnf, callback){
 
             if (!text || (text === undefined)) { text = " "; }
 
-            parseText(text, {updateGlobalHistograms: false}, function(err, histogram){
+            parseText(text, {updateGlobalHistograms: true}, function(err, histogram){
 
               if (err) {
                 console.error("*** PARSE TEXT ERROR\n" + err);
@@ -1257,18 +1286,16 @@ function updateClassifiedUsers(cnf, callback){
                   debug(chalkAlert("DONE ARRAY: " + type));
                   cb1();
                 });
-
               }, function(err){
                if (err) {
                   console.error("*** PARSE TEXT ERROR\n" + err);
                 }
                 debug(chalkAlert("PARSE DESC COMPLETE"));
               });
+
             });
 
           });     
-               
-
         }
         else {
           async.eachSeries(inputArrays, function(inputArray, cb3){
@@ -1318,7 +1345,7 @@ function updateClassifiedUsers(cnf, callback){
         debug("trainingSetDatum INPUT:  " + trainingSetDatum.input);
         debug("trainingSetDatum OUTPUT: " + trainingSetDatum.output);
 
-        printDatum(trainingSetDatum);
+        printDatum(user.screenName, trainingSetDatum);
 
         cb0();
       }
@@ -1337,6 +1364,7 @@ function updateClassifiedUsers(cnf, callback){
         ));
         cb0();
       }
+
     });
   }, function(err){
 
@@ -1442,7 +1470,7 @@ function testNetwork(nw, testObj, callback){
         + " " + testDatum.output[2].toFixed(10) 
         + " | EMOI: " + expectedMaxOutputIndex
       ));
-      printDatum(testDatum);
+      printDatum(null, testDatum);
 
       cb();
     });
@@ -1507,7 +1535,10 @@ function initNeuralNetworkChild(callback){
           testObj.results = results;
 
           statsObj.tests[testObj.testRunId] = {};
-          statsObj.tests[testObj.testRunId] = pick(testObj, ["numInputs", "numOutputs", "inputArraysFile", "inputHits", "inputHitAverage"]);
+          statsObj.tests[testObj.testRunId] = pick(
+            testObj, 
+            ["numInputs", "numOutputs", "inputArraysFile", "inputHits", "inputHitAverage"]
+          );
           statsObj.tests[testObj.testRunId].results = {};
           statsObj.tests[testObj.testRunId].results = testObj.results;
           statsObj.tests[testObj.testRunId].training = {};
@@ -1527,7 +1558,9 @@ function initNeuralNetworkChild(callback){
 
           saveFile(neuralNetworkFolder, m.networkObj.neuralNetworkFile, m.networkObj.network, function(err){
             if (err){
-              console.error(chalkError("*** SAVE NEURAL NETWORK FILE ERROR | " + m.networkObj.neuralNetworkFile + " | " + err));
+              console.error(chalkError("*** SAVE NEURAL NETWORK FILE ERROR"
+                + " | " + m.networkObj.neuralNetworkFile + " | " + err
+              ));
             }
             else {
               console.log(chalkLog("SAVED NEURAL NETWORK FILE"
