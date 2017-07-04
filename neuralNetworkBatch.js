@@ -190,7 +190,7 @@ function quit(){
   Object.keys(appHashMap).forEach(function(instanceName){
     pm2.delete(instanceName, function(err, results){
       console.log(chalkAlert("PM2 DELETE APP: " + instanceName));
-      slackPostMessage(slackChannel, "\nNNB INSTANCE STOPPED\n" + instanceName + "\n" + getTimeStamp());
+      slackPostMessage(slackChannel, "\nNNB INSTANCE STOP\n" + instanceName + "\n");
     });
   });
 
@@ -479,7 +479,7 @@ function initBatch(callback){
 
         appHashMap[apps[0].pm2_env.name] = apps[0];
 
-        slackPostMessage(slackChannel, "\nNNB INSTANCE STARTED\n" + instanceConfig.name + "\n" + getTimeStamp(), function(){
+        slackPostMessage(slackChannel, "\nNNB INSTANCE START\n" + instanceConfig.name + "\n", function(){
           cb(err);
         });
 
@@ -523,7 +523,7 @@ function initBatch(callback){
 
                 pm2.delete(app.pm2_env.pm_id, function(err, results){
 
-                  slackPostMessage(slackChannel, "\nNNB INSTANCE STOPPED\n" + app.name + "\n" + getTimeStamp());
+                  slackPostMessage(slackChannel, "\nNNB INSTANCE STOPPED\n" + app.name + "\n");
 
                   delete appHashMap[app.name];
 
@@ -694,7 +694,7 @@ initialize(configuration, function(err, cnf){
   statsObj.configuration = {};
   statsObj.configuration = configuration;
 
-  slackPostMessage(slackChannel, statsObj.runId + "\nSTARTED\n" + getTimeStamp());
+  slackPostMessage(slackChannel, "\n*NN BATCH START*\n*" + statsObj.runId + "*\n");
 
   initBatch(function(){
     console.log(chalkAlert("INITIALIZED"));
