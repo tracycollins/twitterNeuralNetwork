@@ -4,6 +4,7 @@
 let ONE_SECOND = 1000 ;
 // let ONE_MINUTE = ONE_SECOND*60 ;
 
+const async = require("async");
 const os = require("os");
 let hostname = os.hostname();
 hostname = hostname.replace(/\.home/g, "");
@@ -34,19 +35,15 @@ let trainingSet = [];
 let configuration = {};
 configuration.verbose = false;
 configuration.globalTestMode = false;
+configuration.defaultPopulationSize = 100;
 configuration.testMode = false; // 
 configuration.keepaliveInterval = 30*ONE_SECOND;
 configuration.rxQueueInterval = 1*ONE_SECOND;
 
-// let S = require("string");
 const util = require("util");
 const moment = require("moment");
 const Dropbox = require("dropbox");
-// const HashMap = require("hashmap").HashMap;
-// const async = require("async");
 const debug = require("debug")("la");
-// const debugLang = require("debug")("lang");
-// const debugQ = require("debug")("queue");
 
 const chalk = require("chalk");
 const chalkAlert = chalk.red;
@@ -56,30 +53,9 @@ const chalkError = chalk.bold.red;
 const chalkWarn = chalk.red;
 const chalkLog = chalk.gray;
 const chalkInfo = chalk.black;
-// const chalkInfoBold = chalk.bold.black;
-// const chalkConnect = chalk.blue;
-// const chalkDisconnect = chalk.yellow;
 
 
-// let resetInProgressFlag = false;
-
-// function reset(cause, callback){
-
-//   if (!resetInProgressFlag) {
-
-//     let c = cause;
-//     resetInProgressFlag = true;
-
-//     setTimeout(function(){
-//       resetInProgressFlag = false;
-//       console.log(chalkError(moment().format(compactDateTimeFormat) + " | RESET: " + c));
-//       if (callback) { callback(); }
-//     }, 1*ONE_SECOND);
-
-//   }
-// }
-
-const jsonPrint = function (obj){
+function jsonPrint (obj){
   if (obj) {
     return JSON.stringify(obj, null, 2);
   }
@@ -274,15 +250,16 @@ function train (params, callback){
 
 function evolve (params, callback){
 
+  // neataptic.Methods.Mutation.FFW
   let options = {
-    mutation: neataptic.Methods.Mutation.FFW,
-    equal: true,
-    popsize: 100,
-    elitism: 10,
-    log: 1,
-    error: 0.03,
+    mutation: params.mutation,
+    equal: params.equal,
+    popsize: params.popsize,
+    elitism: params.elitism,
+    log: params.log,
+    error: params.error,
     iterations: params.iterations,
-    mutationRate: 0.5
+    mutationRate: params.mutationRate
   };
 
   console.log("EVOLVE"
@@ -290,7 +267,7 @@ function evolve (params, callback){
     + " | OUTPUTS: " + statsObj.training.trainingSet.numOutputs
     + " | SET: " + params.trainingSet.length + " DATA POINTS"
     + " | ITERATIONS: " + options.iterations
-    // + "\nOPTIONS\n" + jsonPrint(options)
+    + "\nOPTIONS\n" + jsonPrint(options)
   );
 
   statsObj.training.evolve = {};
@@ -299,9 +276,17 @@ function evolve (params, callback){
 
   network = new neataptic.Network(statsObj.training.trainingSet.numInputs, statsObj.training.trainingSet.numOutputs);
 
-  let results = network.evolve(params.trainingSet, options);
-  
-  if (callback !== undefined) { callback(results); }
+  let trainingSet = [];
+
+  async.each(params.trainingSet, function(datumObj, cb){
+    debug("DATUM | " + datumObj.name);
+    trainingSet.push(datumObj.datum);
+    cb();
+  }, function(err){
+    const results = network.evolve(trainingSet, options);
+    if (callback !== undefined) { callback(results); }
+  });
+
 }
 
 process.on("message", function(m) {
@@ -339,8 +324,8 @@ process.on("message", function(m) {
       statsObj.training.iterations = m.iterations;
       statsObj.training.trainingSet = {};
       statsObj.training.trainingSet.length = trainingSet.length;
-      statsObj.training.trainingSet.numInputs = trainingSet[0]["input"].length;
-      statsObj.training.trainingSet.numOutputs = trainingSet[0]["output"].length;
+      statsObj.training.trainingSet.numInputs = trainingSet[0].datum["input"].length;
+      statsObj.training.trainingSet.numOutputs = trainingSet[0].datum["output"].length;
 
       statsObj.inputArraysFile = m.inputArraysFile;
 
@@ -417,8 +402,8 @@ process.on("message", function(m) {
       statsObj.training.iterations = m.iterations;
       statsObj.training.trainingSet = {};
       statsObj.training.trainingSet.length = trainingSet.length;
-      statsObj.training.trainingSet.numInputs = trainingSet[0]["input"].length;
-      statsObj.training.trainingSet.numOutputs = trainingSet[0]["output"].length;
+      statsObj.training.trainingSet.numInputs = trainingSet[0].datum["input"].length;
+      statsObj.training.trainingSet.numOutputs = trainingSet[0].datum["output"].length;
 
       statsObj.inputArraysFile = m.inputArraysFile;
 
@@ -428,16 +413,20 @@ process.on("message", function(m) {
 
       evolveParams = {
         trainingSet: trainingSet,
-        iterations: m.iterations
+        iterations: m.iterations,
+        mutation: m.mutation,
+        equal: m.equal,
+        popsize: m.popsize,
+        elitism: m.elitism,
+        log: m.log,
+        error: m.error,
+        iterations: m.iterations,
+        mutationRate: m.mutationRate
       };
 
       evolve(evolveParams, function(results){
 
         console.log(chalkAlert("EVOLVE RESULTS\n" + jsonPrint(results)));
-
-        // if (err){
-        //   console.error(chalkError("*** EVOLVE ERROR\n" + err));
-        // }
 
         statsObj.training.endTime = moment().valueOf();
         statsObj.training.elapsed = results.time;

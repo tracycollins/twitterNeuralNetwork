@@ -3,7 +3,86 @@
 
 let slackChannel = "#word";
 
+const neataptic = require("neataptic");
+
+const DEFAULT_EVOLVE_MUTATION = [
+  {
+    "name": "ADD_NODE"
+  },
+  {
+    "name": "SUB_NODE",
+    "keep_gates": true
+  },
+  {
+    "name": "ADD_CONN"
+  },
+  {
+    "name": "REMOVE_CONN"
+  },
+  {
+    "name": "MOD_WEIGHT",
+    "min": -1,
+    "max": 1
+  },
+  {
+    "name": "MOD_BIAS",
+    "min": -1,
+    "max": 1
+  },
+  {
+    "name": "MOD_ACTIVATION",
+    "mutateOutput": true,
+    "allowed": [
+      "LOGISTIC",
+      "TANH",
+      "RELU",
+      "IDENTITY",
+      "STEP",
+      "SOFTSIGN",
+      "SINUSOID",
+      "GAUSSIAN",
+      "BENT_IDENTITY",
+      "BIPOLAR",
+      "BIPOLAR_SIGMOID",
+      "HARD_TANH",
+      "ABSOLUTE"
+    ]
+  },
+  {
+    "name": "SWAP_NODES",
+    "mutateOutput": true
+  }
+];
+
+
+const DEFAULT_EVOLVE_ELITISM = 10;
+const DEFAULT_EVOLVE_EQUAL = true;
+const DEFAULT_EVOLVE_ERROR = 0.03;
 const DEFAULT_EVOLVE_ITERATIONS = 1;
+const DEFAULT_EVOLVE_LOG = 1;
+// const DEFAULT_EVOLVE_MUTATION = neataptic.Methods.Mutation.FFW;
+const DEFAULT_EVOLVE_MUTATION_RATE = 0.5;
+const DEFAULT_EVOLVE_POPSIZE = 100;
+
+let configuration = {};
+configuration.evolveNetwork = true;
+configuration.normalization = null;
+configuration.verbose = false;
+configuration.testMode = false; // per tweet test mode
+configuration.testSetRatio = 0.02;
+
+configuration.evolve = {};
+
+configuration.evolve.elitism = DEFAULT_EVOLVE_ELITISM;
+configuration.evolve.equal = DEFAULT_EVOLVE_EQUAL;
+configuration.evolve.error = DEFAULT_EVOLVE_ERROR;
+configuration.evolve.iterations = DEFAULT_EVOLVE_ITERATIONS;
+configuration.evolve.log = DEFAULT_EVOLVE_LOG;
+configuration.evolve.mutation = DEFAULT_EVOLVE_MUTATION;
+configuration.evolve.mutationRate = DEFAULT_EVOLVE_MUTATION_RATE;
+configuration.evolve.popsize = DEFAULT_EVOLVE_POPSIZE;
+
+
 const DEFAULT_NEURAL_NETWORK_FILE = "neuralNetwork.json";
 const slackOAuthAccessToken = "xoxp-3708084981-3708084993-206468961315-ec62db5792cd55071a51c544acf0da55";
 
@@ -18,7 +97,6 @@ const pick = require("object.pick");
 const arrayUnique = require("array-unique");
 const Autolinker = require( "autolinker" );
 const Slack = require("slack-node");
-const neataptic = require("neataptic");
 const cp = require("child_process");
 const keywordExtractor = require("keyword-extractor");
 const mentionsRegex = require("mentions-regex");
@@ -102,12 +180,6 @@ const configEvents = new EventEmitter2({
 
 let stdin;
 
-let configuration = {};
-configuration.evolveNetwork = true;
-configuration.normalization = null;
-configuration.verbose = false;
-configuration.testMode = false; // per tweet test mode
-configuration.testSetRatio = 0.02;
 
 let mongoose;
 let db;
@@ -325,7 +397,7 @@ function showStats(options){
       + " | RUN " + statsObj.elapsed
       + " | NOW " + moment().format(compactDateTimeFormat)
       + " | STRT " + moment(parseInt(statsObj.startTime)).format(compactDateTimeFormat)
-      + " | ITERATIONS " + configuration.evolveIterations
+      + " | ITERATIONS " + configuration.evolve.iterations
       + " | HEAP " + statsObj.heap.toFixed(0) + " MB"
       + " MAX " + statsObj.maxHeap.toFixed(0)
     ));
@@ -548,7 +620,7 @@ function initialize(cnf, callback){
   cnf.verbose = process.env.TNN_VERBOSE_MODE || false ;
   cnf.quitOnError = process.env.TNN_QUIT_ON_ERROR || false ;
   cnf.enableStdin = process.env.TNN_ENABLE_STDIN || true ;
-  cnf.evolveIterations = process.env.TNN_EVOLVE_ITERATIONS || DEFAULT_EVOLVE_ITERATIONS ;
+  cnf.evolve.iterations = process.env.TNN_EVOLVE_ITERATIONS || DEFAULT_EVOLVE_ITERATIONS ;
   cnf.neuralNetworkFile = process.env.TNN_NEURAL_NETWORK_FILE || DEFAULT_NEURAL_NETWORK_FILE ;
 
   cnf.classifiedUsersFile = process.env.TNN_CLASSIFIED_USERS_FILE || "classifiedUsers.json";
@@ -583,7 +655,7 @@ function initialize(cnf, callback){
 
         if (loadedConfigObj.TNN_EVOLVE_ITERATIONS  !== undefined){
           console.log("LOADED TNN_EVOLVE_ITERATIONS: " + loadedConfigObj.TNN_EVOLVE_ITERATIONS);
-          cnf.evolveIterations = loadedConfigObj.TNN_EVOLVE_ITERATIONS;
+          cnf.evolve.iterations = loadedConfigObj.TNN_EVOLVE_ITERATIONS;
         }
 
         if (loadedConfigObj.TNN_VERBOSE_MODE  !== undefined){
@@ -621,8 +693,14 @@ function initialize(cnf, callback){
         commandLineConfigKeys = Object.keys(commandLineConfig);
 
         commandLineConfigKeys.forEach(function(arg){
-          cnf[arg] = commandLineConfig[arg];
-          console.log("--> COMMAND LINE CONFIG | " + arg + ": " + cnf[arg]);
+          if (arg === "evolveIterations") {
+            cnf.evolve.iterations = commandLineConfig[arg];
+            console.log("--> COMMAND LINE CONFIG | evolve.iterations: " + cnf.evolve.iterations);
+          }
+          else {
+            cnf[arg] = commandLineConfig[arg];
+            console.log("--> COMMAND LINE CONFIG | " + arg + ": " + cnf[arg]);
+          }
         });
 
         configArgs = Object.keys(cnf);
@@ -1013,21 +1091,32 @@ function parseText(text, options, callback){
   });
 }
 
-function printDatum(title, datum){
+function printDatum(title, datum, callback){
+
+  if (datum.input.length === 0) {
+    console.error(chalkError("*** EMPTY DATUM INPUT ***\n" + jsonPrint(datum)));
+  }
 
   let row = "";
   let col = 0;
   let rowNum = 0;
   const COLS = 50;
+  let text = "";
 
   if (title) {
-    console.log("\n-------- " + title + " --------");
+    // console.log("\n-------- " + title + " --------");
+    text = "\n-------- " + title + " --------\n";
   }
   else {
-    console.log("\n--------------------");
+    // console.log("\n--------------------");
+    text = "\n--------------------\n";
   }
 
-  datum.input.forEach(function(bit, i){
+  // datum.input.forEach(function(bit, i){
+
+  let i=0;
+  async.eachSeries(datum.input, function(bit, cb){
+
     if (i === 0) {
       row = row + bit.toFixed(10) + " | " ;
     }
@@ -1035,7 +1124,8 @@ function printDatum(title, datum){
       row = row + bit.toFixed(10);
     }
     else if (i === 2) {
-      console.log("ROW " + rowNum + " | " + row);
+      // console.log("ROW " + rowNum + " | " + row);
+      text = text + "ROW " + rowNum + " | " + row + "\n";
       row = bit ? "X" : ".";
       col = 1;
       rowNum += 1;
@@ -1045,11 +1135,20 @@ function printDatum(title, datum){
       col += 1;
     }
     else {
-      console.log("ROW " + rowNum + " | " + row);
+      // console.log("ROW " + rowNum + " | " + row);
+      text = text + "ROW " + rowNum + " | " + row + "\n";
       row = bit ? "X" : ".";
       col = 1;
       rowNum += 1;
     }
+
+    i += 1;
+
+    cb();
+
+  }, function(){
+    console.log(text);
+    callback();
   });
 }
 
@@ -1313,14 +1412,15 @@ function updateClassifiedUsers(cnf, callback){
         totalInputHits += trainingSetDatum.inputHits;
         testObj.numOutputs = trainingSetDatum.output.length;
 
-        trainingSet.push(trainingSetDatum);
 
         debug("trainingSetDatum INPUT:  " + trainingSetDatum.input);
         debug("trainingSetDatum OUTPUT: " + trainingSetDatum.output);
 
-        printDatum(user.screenName, trainingSetDatum);
+        printDatum(user.screenName, trainingSetDatum, function(){
+          trainingSet.push({name: user.screenName, datum:trainingSetDatum});
+          cb0();
+        });
 
-        cb0();
       }
       else {
         console.log(chalkBlue("SKIP | U"
@@ -1351,18 +1451,22 @@ function updateClassifiedUsers(cnf, callback){
       testObj.inputHits = totalInputHits;
       testObj.inputHitAverage = inputHitAverage;
 
-      trainingSet.forEach(function(datum){
-        let normMagnitude = datum.input[0]/maxMagnitude;
-        datum.input[0] = normMagnitude;
+      trainingSet.forEach(function(dataObj){
+
+        let normMagnitude = dataObj.datum.input[0]/maxMagnitude;
+
+        dataObj.datum.input[0] = normMagnitude;
+
         if (configuration.testMode) {
-          testObj.testSet.push(datum);
+          testObj.testSet.push(dataObj);
         }
         else if (Math.random() < cnf.testSetRatio) {
-          testObj.testSet.push(datum);
+          testObj.testSet.push(dataObj);
         }
         else {
-          trainingSetNormalized.push(datum);
+          trainingSetNormalized.push(dataObj);
         }
+
       });
 
       callback(err);
@@ -1399,53 +1503,58 @@ function testNetwork(nw, testObj, callback){
   let numPassed = 0;
   let successRate = 0;
 
-  async.eachSeries(testObj.testSet, function(testDatum, cb){
+  async.eachSeries(testObj.testSet, function(testDatumObj, cb){
 
-    activateNetwork(nw, testDatum.input, function(testOutput){
+    activateNetwork(nw, testDatumObj.datum.input, function(testOutput){
 
-      if (allZeros(testOutput)) {
-        console.log(chalkError("\n??? NO TEST OUTPUT ... SKIPPING | " + testOutput));
-        numSkipped += 1;
+      printDatum(testDatumObj.name, testDatumObj.datum, function(){
+
+        if (allZeros(testOutput)) {
+          console.log(chalkError("\n??? NO TEST OUTPUT ... SKIPPING | " + testOutput));
+          numSkipped += 1;
+          cb();
+          return;
+        }
+
+        if (allOnes(testOutput)) {
+          console.log(chalkError("\n??? ALL ONES TEST OUTPUT ... SKIPPING | " + testOutput));
+          numSkipped += 1;
+          cb();
+          return;
+        }
+
+        numTested += 1;
+
+        let testMaxOutputIndex = indexOfMax(testOutput);
+        let expectedMaxOutputIndex = indexOfMax(testDatumObj.datum.output);
+
+        let passed = (testMaxOutputIndex === expectedMaxOutputIndex);
+
+        numPassed = passed ? numPassed+1 : numPassed;
+
+        successRate = 100 * numPassed/(numTested + numSkipped);
+
+        let currentChalk = passed ? chalkLog : chalkAlert;
+
+        console.log(currentChalk("\n-----\nTEST RESULT: " + passed 
+          + " | " + successRate.toFixed(2) + "%"
+          // + "\n" + "TO: " + testOutput 
+          + "\n" + testOutput[0].toFixed(10)
+          + " " + testOutput[1].toFixed(10) 
+          + " " + testOutput[2].toFixed(10) 
+          + " | TMOI: " + testMaxOutputIndex
+          // + "\n" + "EO: " + testDatum.output 
+          + "\n" + testDatumObj.datum.output[0].toFixed(10) 
+          + " " + testDatumObj.datum.output[1].toFixed(10) 
+          + " " + testDatumObj.datum.output[2].toFixed(10) 
+          + " | EMOI: " + expectedMaxOutputIndex
+        ));
+
         cb();
-        return;
-      }
 
-      if (allOnes(testOutput)) {
-        console.log(chalkError("\n??? ALL ONES TEST OUTPUT ... SKIPPING | " + testOutput));
-        numSkipped += 1;
-        cb();
-        return;
-      }
+      });
 
-      numTested += 1;
 
-      let testMaxOutputIndex = indexOfMax(testOutput);
-      let expectedMaxOutputIndex = indexOfMax(testDatum.output);
-
-      let passed = (testMaxOutputIndex === expectedMaxOutputIndex);
-
-      numPassed = passed ? numPassed+1 : numPassed;
-
-      successRate = 100 * numPassed/(numTested + numSkipped);
-
-      let currentChalk = passed ? chalkLog : chalkAlert;
-
-      console.log(currentChalk("\n-----\nTEST RESULT: " + passed 
-        + " | " + successRate.toFixed(2) + "%"
-        // + "\n" + "TO: " + testOutput 
-        + "\n" + testOutput[0].toFixed(10)
-        + " " + testOutput[1].toFixed(10) 
-        + " " + testOutput[2].toFixed(10) 
-        + " | TMOI: " + testMaxOutputIndex
-        // + "\n" + "EO: " + testDatum.output 
-        + "\n" + testDatum.output[0].toFixed(10) 
-        + " " + testDatum.output[1].toFixed(10) 
-        + " " + testDatum.output[2].toFixed(10) 
-        + " | EMOI: " + expectedMaxOutputIndex
-      ));
-      printDatum(null, testDatum);
-
-      cb();
     });
   }, function(err){
     callback(err, 
@@ -1572,6 +1681,8 @@ function initTimeout(){
       quit();
     }
 
+    configuration = cnf;
+
     if (cnf.testMode) {
 
       let nnFile;
@@ -1678,7 +1789,14 @@ function initTimeout(){
                 inputArraysFile: testObj.inputArraysFile,
                 trainingSet: trainingSetNormalized,
                 normalization: statsObj.normalization,
-                iterations: cnf.evolveIterations
+                iterations: cnf.evolve.iterations,
+                mutation: cnf.evolve.mutation,
+                equal: cnf.evolve.equal,
+                popsize: cnf.evolve.popsize,
+                elitism: cnf.evolve.elitism,
+                log: cnf.evolve.log,
+                error: cnf.evolve.error,
+                mutationRate: cnf.evolve.mutationRate
               };
 
               console.log(chalkBlue("\nSTART NETWORK EVOLVE"));
@@ -1691,7 +1809,7 @@ function initTimeout(){
                 inputArraysFile: testObj.inputArraysFile,
                 trainingSet: trainingSetNormalized,
                 normalization: statsObj.normalization,
-                iterations: cnf.evolveIterations
+                iterations: cnf.evolve.iterations
               };
 
               console.log(chalkBlue("\nSTART NETWORK TRAIN"));
