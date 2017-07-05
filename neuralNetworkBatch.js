@@ -206,7 +206,6 @@ function quit(){
   });
 }
 
-
 function saveFile (path, file, jsonObj, callback){
 
   const fullPath = path + "/" + file;
@@ -230,10 +229,16 @@ function saveFile (path, file, jsonObj, callback){
     .catch(function(error){
       console.error(chalkError(moment().format(defaultDateTimeFormat) 
         + " | !!! ERROR DROBOX JSON WRITE | FILE: " + fullPath 
-        + "\nERROR: " + error
-        + "\nERROR: " + jsonPrint(error)
+        // + "\nERROR: " + error
+        // + "\nERROR: " + jsonPrint(error)
         // + "\nERROR\n" + jsonPrint(error)
       ));
+      if (error.status === 429) {
+        console.error("TOO MANY DROPBOX WRITES");
+      }
+      else {
+        console.error(jsonPrint(error.error));
+      }
       callback(error, null);
     });
 }
