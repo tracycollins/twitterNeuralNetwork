@@ -253,6 +253,7 @@ function evolve (params, callback){
   // neataptic.Methods.Mutation.FFW
   let options = {
     mutation: params.mutation,
+    cost: params.cost,
     equal: params.equal,
     popsize: params.popsize,
     elitism: params.elitism,
@@ -415,6 +416,7 @@ process.on("message", function(m) {
         trainingSet: trainingSet,
         iterations: m.iterations,
         mutation: m.mutation,
+        cost: m.cost,
         equal: m.equal,
         popsize: m.popsize,
         elitism: m.elitism,

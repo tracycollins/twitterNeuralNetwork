@@ -36,6 +36,7 @@ const DEFAULT_EVOLVE_MUTATION = [
       "LOGISTIC",
       "TANH",
       "RELU",
+      "INVERSE",
       "IDENTITY",
       "STEP",
       "SOFTSIGN",
@@ -54,6 +55,7 @@ const DEFAULT_EVOLVE_MUTATION = [
   }
 ];
 
+// const DEFAULT_EVOLVE_MUTATION = neataptic.Methods.Mutation.FFW;
 
 const DEFAULT_EVOLVE_ELITISM = 10;
 const DEFAULT_EVOLVE_EQUAL = true;
@@ -61,8 +63,13 @@ const DEFAULT_EVOLVE_ERROR = 0.03;
 const DEFAULT_EVOLVE_ITERATIONS = 1;
 const DEFAULT_EVOLVE_LOG = 1;
 // const DEFAULT_EVOLVE_MUTATION = neataptic.Methods.Mutation.FFW;
-const DEFAULT_EVOLVE_MUTATION_RATE = 0.5;
+const DEFAULT_EVOLVE_MUTATION_RATE = 0.7;
+// const DEFAULT_EVOLVE_COST = neataptic.Methods.Cost.CROSS_ENTROPY;
+// const DEFAULT_EVOLVE_COST = neataptic.Methods.Cost.MSE;
+const DEFAULT_EVOLVE_COST = neataptic.Methods.Cost.BINARY;
 const DEFAULT_EVOLVE_POPSIZE = 100;
+
+console.log("DEFAULT_EVOLVE_COST: " + DEFAULT_EVOLVE_COST);
 
 let configuration = {};
 configuration.evolveNetwork = true;
@@ -80,6 +87,7 @@ configuration.evolve.iterations = DEFAULT_EVOLVE_ITERATIONS;
 configuration.evolve.log = DEFAULT_EVOLVE_LOG;
 configuration.evolve.mutation = DEFAULT_EVOLVE_MUTATION;
 configuration.evolve.mutationRate = DEFAULT_EVOLVE_MUTATION_RATE;
+configuration.evolve.cost = DEFAULT_EVOLVE_COST;
 configuration.evolve.popsize = DEFAULT_EVOLVE_POPSIZE;
 
 
@@ -706,7 +714,12 @@ function initialize(cnf, callback){
         configArgs = Object.keys(cnf);
 
         configArgs.forEach(function(arg){
-          console.log("FINAL CONFIG | " + arg + ": " + cnf[arg]);
+          if (arg === "evolve") {
+            console.log("FINAL CONFIG | " + arg + ": " + jsonPrint(cnf[arg]));
+          }
+          else {
+            console.log("FINAL CONFIG | " + arg + ": " + cnf[arg]);
+          }
         });
 
         if (cnf.enableStdin){
@@ -1793,6 +1806,7 @@ function initTimeout(){
                 mutation: cnf.evolve.mutation,
                 equal: cnf.evolve.equal,
                 popsize: cnf.evolve.popsize,
+                cost: cnf.evolve.cost,
                 elitism: cnf.evolve.elitism,
                 log: cnf.evolve.log,
                 error: cnf.evolve.error,
