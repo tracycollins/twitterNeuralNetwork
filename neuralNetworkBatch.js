@@ -1,7 +1,7 @@
 /*jslint node: true */
 "use strict";
 
-const DEFAULT_EVOLVE_ITERATIONS = 50;
+const DEFAULT_EVOLVE_ITERATIONS = 1;
 const DEFAULT_MAX_INSTANCES = 5;
 const DEFAULT_STATS_INTERVAL = 60000;
 
@@ -388,6 +388,71 @@ function initStdIn(){
   });
 }
 
+function initInstance(instanceIndex, options, callback){
+
+  console.log(chalkInfo("INIT INSTANCE " + instanceIndex));
+
+  const runId = hostname + "_" + process.pid + "_" + instanceIndex;
+  const instanceName = "nnb_" + runId;
+  const neuralNetworkFile = "neuralNetwork_" + instanceName + ".json";
+
+  let logfile = "/Users/tc/logs/batch/neuralNetwork/" + instanceName + ".log";
+
+  if (hostname.includes("google")){
+    logfile = "/home/tc/logs/batch/neuralNetwork/" + instanceName + ".log";
+  }
+  
+  let currentOptions = defaults(options, {
+    name: instanceName,
+    out_file: logfile,
+    error_file: logfile
+  });
+
+  currentOptions.env.TNN_PROCESS_NAME = instanceName;
+  currentOptions.env.TNN_RUN_ID = runId;
+  currentOptions.env.TNN_NEURAL_NETWORK_FILE = neuralNetworkFile;
+
+  debug("CURRENT OPTIONS\n" + jsonPrint(currentOptions));
+
+  console.log("OPTIONS"
+    + " | " + currentOptions.name
+    + " | TNN_RUN_ID: " + currentOptions.env.TNN_RUN_ID
+    + " | " + currentOptions.out_file
+  );
+
+  const opt = deepcopy(currentOptions);
+
+  callback(opt);
+}
+
+function startInstance(instanceConfig, callback){
+
+  pm2.start(instanceConfig, function(err, apps) {
+
+    console.log(chalkInfo("START INSTANCE\n" + jsonPrint(instanceConfig)));
+
+    if (err) { throw err; }
+
+    // console.log("PM2 LAUNCHED | " + instanceConfig.name);
+    debug("APP\n" + jsonPrint(apps));
+
+    console.log("START"
+      + " | " + apps[0].pm2_env.name
+      + " | PM2 ID: " + apps[0].pm2_env.pm_id
+      + " | PID: " + apps[0].process.pid
+      + " | TNN_RUN_ID: " + apps[0].pm2_env.TNN_RUN_ID
+      + " | STATUS: " + apps[0].pm2_env.status
+    );
+
+    appHashMap[apps[0].pm2_env.name] = apps[0];
+
+    slackPostMessage(slackChannel, "\nNNB INSTANCE START\n" + instanceConfig.name + "\n", function(){
+      if (callback !== undefined) { callback(err); }
+    });
+
+  });
+}
+
 function initBatch(callback){
 
   console.log(chalkAlert("INIT BATCH"
@@ -429,66 +494,19 @@ function initBatch(callback){
     let instanceIndex = 0;
 
     for (instanceIndex=0; instanceIndex < configuration.maxInstances; instanceIndex +=1){
-
-      const runId = hostname + "_" + process.pid + "_" + instanceIndex;
-      const instanceName = "nnb_" + runId;
-      const neuralNetworkFile = "neuralNetwork_" + instanceName + ".json";
-
-      let logfile = "/Users/tc/logs/batch/neuralNetwork/" + instanceName + ".log";
-
-      if (hostname.includes("google")){
-        logfile = "/home/tc/logs/batch/neuralNetwork/" + instanceName + ".log";
-      }
-      
-      let currentOptions = defaults(options, {
-        name: instanceName,
-        out_file: logfile,
-        error_file: logfile
+      initInstance(instanceIndex, options, function(opt){
+        instanceConfigArray.push(opt);
       });
-
-      currentOptions.env.TNN_PROCESS_NAME = instanceName;
-      currentOptions.env.TNN_RUN_ID = runId;
-      currentOptions.env.TNN_NEURAL_NETWORK_FILE = neuralNetworkFile;
-
-      debug("CURRENT OPTIONS\n" + jsonPrint(currentOptions));
-
-      console.log("OPTIONS"
-        + " | " + currentOptions.name
-        + " | TNN_RUN_ID: " + currentOptions.env.TNN_RUN_ID
-        + " | " + currentOptions.out_file
-      );
-
-      const opt = deepcopy(currentOptions);
-
-      instanceConfigArray.push(opt);
     }
 
     async.each(instanceConfigArray, function(instanceConfig, cb){
 
       debug("START\n" + jsonPrint(instanceConfig));
 
-      pm2.start(instanceConfig, function(err, apps) {
-
-        if (err) { throw err; }
-
-        // console.log("PM2 LAUNCHED | " + instanceConfig.name);
-        debug("APP\n" + jsonPrint(apps));
-
-        console.log("START"
-          + " | " + apps[0].pm2_env.name
-          + " | PM2 ID: " + apps[0].pm2_env.pm_id
-          + " | PID: " + apps[0].process.pid
-          + " | TNN_RUN_ID: " + apps[0].pm2_env.TNN_RUN_ID
-          + " | STATUS: " + apps[0].pm2_env.status
-        );
-
-        appHashMap[apps[0].pm2_env.name] = apps[0];
-
-        slackPostMessage(slackChannel, "\nNNB INSTANCE START\n" + instanceConfig.name + "\n", function(){
-          cb(err);
-        });
-
+      startInstance(instanceConfig, function(){
+        cb();
       });
+
     }, function(err){
 
       if (err) { throw err; }
@@ -536,9 +554,16 @@ function initBatch(callback){
 
                   debug("PM2 DELETE RESULTS\n" + results);
 
-                  if ((Object.keys(appHashMap).length === 0) || (apps.length === 0 )) { 
-                    quit(); 
+                  if (Object.keys(appHashMap).length < configuration.maxInstances) {
+                    initInstance(instanceIndex, options, function(opt){
+                      startInstance(opt);
+                      instanceIndex += 1;
+                    });
                   }
+
+                  // if ((Object.keys(appHashMap).length === 0) || (apps.length === 0 )) { 
+                  //   quit(); 
+                  // }
                 });
               }
             });
@@ -548,6 +573,8 @@ function initBatch(callback){
 
       callback();
     });
+
+
   });
 }
 
