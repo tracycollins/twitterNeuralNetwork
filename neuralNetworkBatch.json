@@ -13,7 +13,7 @@
       "DROPBOX_WORD_ASSO_APP_KEY": "qlb9k4dp01t9iqk",
       "DROPBOX_WORD_ASSO_APP_SECRET": "wqslhe2t95zfn19",
       "NNB_EVOLVE_ITERATIONS": 500,
-      "NNB_MAX_INSTANCES": 3
+      "NNB_MAX_INSTANCES": 5
     }
   }]
 }

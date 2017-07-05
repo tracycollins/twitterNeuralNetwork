@@ -2,7 +2,7 @@
 "use strict";
 
 const DEFAULT_EVOLVE_ITERATIONS = 50;
-const DEFAULT_MAX_INSTANCES = 3;
+const DEFAULT_MAX_INSTANCES = 5;
 const DEFAULT_STATS_INTERVAL = 60000;
 
 let configuration = {};
