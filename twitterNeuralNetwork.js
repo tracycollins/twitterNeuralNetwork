@@ -5,78 +5,29 @@ let slackChannel = "#word";
 
 const neataptic = require("neataptic");
 
-const DEFAULT_EVOLVE_MUTATION = [
-  {
-    "name": "ADD_NODE"
-  },
-  {
-    "name": "SUB_NODE",
-    "keep_gates": true
-  },
-  {
-    "name": "ADD_CONN"
-  },
-  {
-    "name": "REMOVE_CONN"
-  },
-  {
-    "name": "MOD_WEIGHT",
-    "min": -1,
-    "max": 1
-  },
-  {
-    "name": "MOD_BIAS",
-    "min": -1,
-    "max": 1
-  },
-  {
-    "name": "MOD_ACTIVATION",
-    "mutateOutput": true,
-    "allowed": [
-      "LOGISTIC",
-      "TANH",
-      "RELU",
-      "INVERSE",
-      "IDENTITY",
-      "STEP",
-      "SOFTSIGN",
-      "SINUSOID",
-      "GAUSSIAN",
-      "BENT_IDENTITY",
-      "BIPOLAR",
-      "BIPOLAR_SIGMOID",
-      "HARD_TANH",
-      "ABSOLUTE"
-    ]
-  },
-  {
-    "name": "SWAP_NODES",
-    "mutateOutput": true
-  }
-];
+const DEFAULT_TEST_RATIO = 0.05;
 
 // const DEFAULT_EVOLVE_MUTATION = neataptic.Methods.Mutation.FFW;
-
-const DEFAULT_EVOLVE_ELITISM = 10;
+const DEFAULT_EVOLVE_MUTATION = "FFW";
+const DEFAULT_EVOLVE_MUTATION_RATE = 0.7;
+// const DEFAULT_EVOLVE_ACTIVATION = neataptic.Methods.Activation.STEP;
+const DEFAULT_EVOLVE_ACTIVATION = "STEP";
+const DEFAULT_EVOLVE_ITERATIONS = 500;
+const DEFAULT_EVOLVE_ELITISM = 20;
 const DEFAULT_EVOLVE_EQUAL = true;
 const DEFAULT_EVOLVE_ERROR = 0.03;
-const DEFAULT_EVOLVE_ITERATIONS = 1;
 const DEFAULT_EVOLVE_LOG = 1;
-// const DEFAULT_EVOLVE_MUTATION = neataptic.Methods.Mutation.FFW;
-const DEFAULT_EVOLVE_MUTATION_RATE = 0.7;
-// const DEFAULT_EVOLVE_COST = neataptic.Methods.Cost.CROSS_ENTROPY;
-// const DEFAULT_EVOLVE_COST = neataptic.Methods.Cost.MSE;
-const DEFAULT_EVOLVE_COST = neataptic.Methods.Cost.BINARY;
+// const DEFAULT_EVOLVE_COST = neataptic.Methods.Cost.BINARY;
+const DEFAULT_EVOLVE_COST = "BINARY";
 const DEFAULT_EVOLVE_POPSIZE = 100;
-
-console.log("DEFAULT_EVOLVE_COST: " + DEFAULT_EVOLVE_COST);
+const DEFAULT_EVOLVE_CLEAR = false;
 
 let configuration = {};
 configuration.evolveNetwork = true;
 configuration.normalization = null;
 configuration.verbose = false;
 configuration.testMode = false; // per tweet test mode
-configuration.testSetRatio = 0.02;
+configuration.testSetRatio = DEFAULT_TEST_RATIO;
 
 configuration.evolve = {};
 
@@ -85,11 +36,12 @@ configuration.evolve.equal = DEFAULT_EVOLVE_EQUAL;
 configuration.evolve.error = DEFAULT_EVOLVE_ERROR;
 configuration.evolve.iterations = DEFAULT_EVOLVE_ITERATIONS;
 configuration.evolve.log = DEFAULT_EVOLVE_LOG;
+configuration.evolve.activation = DEFAULT_EVOLVE_ACTIVATION;
 configuration.evolve.mutation = DEFAULT_EVOLVE_MUTATION;
 configuration.evolve.mutationRate = DEFAULT_EVOLVE_MUTATION_RATE;
 configuration.evolve.cost = DEFAULT_EVOLVE_COST;
 configuration.evolve.popsize = DEFAULT_EVOLVE_POPSIZE;
-
+configuration.evolve.clear = DEFAULT_EVOLVE_CLEAR;
 
 const DEFAULT_NEURAL_NETWORK_FILE = "neuralNetwork.json";
 const slackOAuthAccessToken = "xoxp-3708084981-3708084993-206468961315-ec62db5792cd55071a51c544acf0da55";
@@ -435,7 +387,7 @@ function quit(){
 
     if (statsObj.tests[testObj.testRunId].results.successRate !== undefined) {
       // console.log("\n=====================\nRESULTS\n" + jsonPrint(statsObj.tests[testObj.testRunId].results));
-      slackText = "\n*" + configuration.processName + "*";
+      slackText = "\n*" + statsObj.runId + "*";
       slackText = slackText + "\n*RESULTS: " + statsObj.tests[testObj.testRunId].results.successRate.toFixed(1) + " %*";
       slackText = slackText + "\nITERATIONS: " + statsObj.tests[testObj.testRunId].training.evolve.options.iterations;
       slackText = slackText + "\nTESTS: " + statsObj.tests[testObj.testRunId].results.numTests;
@@ -444,7 +396,7 @@ function quit(){
       slackText = slackText + "\nRUN TIME: " + statsObj.elapsed;
     }
     else {
-      slackText = "\n*QUIT*\n" + configuration.processName;
+      slackText = "\n*QUIT*\n" + statsObj.runId;
     }
 
     slackPostMessage(slackChannel, slackText);
@@ -616,7 +568,7 @@ function initInputArrays(callback){
 
 function initialize(cnf, callback){
 
-  console.log(chalkBlue("INITIALIZE cnf\n" + jsonPrint(cnf)));
+  debug(chalkBlue("INITIALIZE cnf\n" + jsonPrint(cnf)));
 
   if (debug.enabled || debugCache.enabled || debugQ.enabled){
     console.log("\n%%%%%%%%%%%%%%\n DEBUG ENABLED \n%%%%%%%%%%%%%%\n");
@@ -1160,7 +1112,7 @@ function printDatum(title, datum, callback){
     cb();
 
   }, function(){
-    console.log(text);
+    console.warn(text);
     callback();
   });
 }
@@ -1579,7 +1531,6 @@ function testNetwork(nw, testObj, callback){
       }
     );
   });
-
 }
 
 function initNeuralNetworkChild(callback){
@@ -1804,13 +1755,15 @@ function initTimeout(){
                 normalization: statsObj.normalization,
                 iterations: cnf.evolve.iterations,
                 mutation: cnf.evolve.mutation,
+                activation: cnf.evolve.activation,
                 equal: cnf.evolve.equal,
                 popsize: cnf.evolve.popsize,
                 cost: cnf.evolve.cost,
                 elitism: cnf.evolve.elitism,
                 log: cnf.evolve.log,
                 error: cnf.evolve.error,
-                mutationRate: cnf.evolve.mutationRate
+                mutationRate: cnf.evolve.mutationRate,
+                clear: cnf.evolve.clear
               };
 
               console.log(chalkBlue("\nSTART NETWORK EVOLVE"));
@@ -1856,13 +1809,46 @@ function initTimeout(){
       slackChannel = "#nn_batch";
     }
     // else {
-    slackPostMessage(slackChannel, "\nSTART\n" + cnf.processName);
+    slackPostMessage(slackChannel, "\nSTART\n" + statsObj.runId);
     // }
 
     initNeuralNetworkChild();
 
   });
 }
+
+var myTrainingSet = [
+  { input: [0,0], output: [0] },
+  { input: [0,1], output: [1] },
+  { input: [1,0], output: [1] },
+  { input: [1,1], output: [0] }
+];
+
+var myNetwork = new neataptic.Network(2, 1); // 2 inputs, 1 output
+
+var results = myNetwork.evolve(myTrainingSet, {
+  mutation: neataptic.Methods.Mutation.FFW,
+  activation: neataptic.Methods.Activation.STEP,
+  equal: true,
+  popsize: 100,
+  elitism: 10,
+  log: 10,
+  error: 0.01,
+  iterations: 1000,
+  mutationRate: 0.1,
+  clear: false
+});
+
+// console.log("Activation\n" + neataptic.Methods.Activation.STEP);
+
+console.log("TEST RESULTS\n" + jsonPrint(results));
+
+console.log("TEST RESULTS 0,0: " + myNetwork.activate([0,0])); // [0]
+console.log("TEST RESULTS 0,1: " + myNetwork.activate([0,1])); // [1]
+console.log("TEST RESULTS 1,0: " + myNetwork.activate([1,0])); // [1]
+console.log("TEST RESULTS 1,1: " + myNetwork.activate([1,1])); // [0]
+
+// quit();
 
 initTimeout();
 

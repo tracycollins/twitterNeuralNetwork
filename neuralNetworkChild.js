@@ -230,7 +230,8 @@ process.on("SIGINT", function() {
 
 function train (params, callback){
 
-  network = new neataptic.Architect.Perceptron(
+  // network = new neataptic.Architect.Perceptron(
+  network = new neataptic.Network(
     statsObj.training.trainingSet.numInputs, 
     statsObj.training.trainingSet.numInputs+statsObj.training.trainingSet.numOutputs, 
     statsObj.training.trainingSet.numOutputs
@@ -260,16 +261,28 @@ function evolve (params, callback){
     log: params.log,
     error: params.error,
     iterations: params.iterations,
-    mutationRate: params.mutationRate
+    mutationRate: params.mutationRate,
+    activation: params.activation,
+    clear: params.clear
   };
 
-  console.log("EVOLVE"
-    + " | INPUTS: " + statsObj.training.trainingSet.numInputs
-    + " | OUTPUTS: " + statsObj.training.trainingSet.numOutputs
-    + " | SET: " + params.trainingSet.length + " DATA POINTS"
-    + " | ITERATIONS: " + options.iterations
-    + "\nOPTIONS\n" + jsonPrint(options)
-  );
+  Object.keys(options).forEach(function(key){
+    if (key === "mutation") {
+      console.log("EVOLVE OPTION | " + key + ": " + options[key]);
+      options.mutation = neataptic.Methods.Mutation[key];
+    }
+    else if (key === "activation") {
+      console.log("EVOLVE OPTION | " + key + ": " + options[key]);
+      options.activation = neataptic.Methods.Activation[key];
+    }
+    else if (key === "cost") {
+      console.log("EVOLVE OPTION | " + key + ": " + options[key]);
+      options.cost = neataptic.Methods.Cost[key];
+    }
+    else {
+      console.log("EVOLVE OPTION | " + key + ": " + options[key]);
+    }
+  });
 
   statsObj.training.evolve = {};
   statsObj.training.evolve.options = {};
@@ -310,6 +323,7 @@ process.on("message", function(m) {
         + " | NEURAL NETWORK FILE: " + statsObj.neuralNetworkFile
         + " | DEFAULT NEURAL NETWORK FILE: " + statsObj.defaultNeuralNetworkFile
       ));
+
     break;
 
     case "STATS":
@@ -416,6 +430,7 @@ process.on("message", function(m) {
         trainingSet: trainingSet,
         iterations: m.iterations,
         mutation: m.mutation,
+        activation: m.activation,
         cost: m.cost,
         equal: m.equal,
         popsize: m.popsize,
@@ -423,7 +438,8 @@ process.on("message", function(m) {
         log: m.log,
         error: m.error,
         iterations: m.iterations,
-        mutationRate: m.mutationRate
+        mutationRate: m.mutationRate,
+        clear: m.clear,
       };
 
       evolve(evolveParams, function(results){
