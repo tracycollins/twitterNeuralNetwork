@@ -2,10 +2,13 @@
 "use strict";
 
 const DEFAULT_EVOLVE_ITERATIONS = 1;
+const DEFAULT_PROCESS_POLL_INTERVAL = 10000;
 const DEFAULT_MAX_INSTANCES = 5;
 const DEFAULT_STATS_INTERVAL = 60000;
 
 let configuration = {};
+configuration.autoStartInstance = true;
+configuration.processPollInterval = DEFAULT_PROCESS_POLL_INTERVAL;
 
 const slackOAuthAccessToken = "xoxp-3708084981-3708084993-206468961315-ec62db5792cd55071a51c544acf0da55";
 const slackChannel = "#nn_batch";
@@ -40,6 +43,31 @@ hostname = hostname.replace(/.at.net/g, "");
 hostname = hostname.replace(/.fios-router/g, "");
 hostname = hostname.replace(/.fios-router.home/g, "");
 hostname = hostname.replace(/word0-instance-1/g, "google");
+
+configuration.instanceOptions = {};
+
+configuration.instanceOptions.script = "twitterNeuralNetwork.js";
+if (hostname.includes("google")) {
+  configuration.instanceOptions.cwd = "/home/tc/twitterNeuralNetwork";
+}
+else {
+  configuration.instanceOptions.cwd = "/Volumes/RAID1/projects/twitterNeuralNetwork";
+}
+configuration.instanceOptions.autorestart = false;
+configuration.instanceOptions.env = {};
+configuration.instanceOptions.env.NODE_ENV = "production";
+configuration.instanceOptions.env.BATCH_MODE = true;
+configuration.instanceOptions.env.GCLOUD_PROJECT = "graphic-tangent-627";
+configuration.instanceOptions.env.GOOGLE_PROJECT = "graphic-tangent-627";
+configuration.instanceOptions.env.DROPBOX_WORD_ASSO_ACCESS_TOKEN = "nknEWsIkD5UAAAAAAAQouTDFRBKfwsFzuS8PPi2Q_JVYnpotNuaHiddNtmG4mUTi";
+// configuration.instanceOptions.env.DROPBOX_WORD_ASSO_APP_KEY = "qlb9k4dp01t9iqk";
+// configuration.instanceOptions.env.DROPBOX_WORD_ASSO_APP_SECRET = "wqslhe2t95zfn19";
+configuration.instanceOptions.env.DROPBOX_WORD_ASSO_DEFAULT_TWITTER_CONFIG_FOLDER = "/config/twitter";
+configuration.instanceOptions.env.DROPBOX_WORD_ASSO_DEFAULT_TWITTER_CONFIG_FILE = "altthreecee00.json";
+configuration.instanceOptions.env.TNN_PROCESS_NAME = "nnb";
+configuration.instanceOptions.env.TNN_EVOLVE_ITERATIONS = DEFAULT_EVOLVE_ITERATIONS;
+configuration.instanceOptions.env.TNN_TWITTER_DEFAULT_USER = "altthreecee00";
+configuration.instanceOptions.env.TNN_TWITTER_USERS = {"altthreecee00": "altthreecee00", "ninjathreecee": "ninjathreecee"};
 
 function jsonPrint(obj) {
   if (obj) {
@@ -127,6 +155,11 @@ statsObj.startTimeMoment = moment();
 statsObj.startTime = moment().valueOf();
 statsObj.elapsed = msToTime(moment().valueOf() - statsObj.startTime);
 
+statsObj.instances = {};
+statsObj.instances.started = 0;
+statsObj.instances.completed = 0;
+statsObj.instances.errors = 0;
+statsObj.instances.instanceIndex = 0;
 
 const NNB_RUN_ID = hostname + "_" + process.pid + "_" + statsObj.startTimeMoment.format(compactDateTimeFormat);
 statsObj.runId = NNB_RUN_ID;
@@ -429,7 +462,9 @@ function startInstance(instanceConfig, callback){
 
   pm2.start(instanceConfig, function(err, apps) {
 
-    console.log(chalkInfo("START INSTANCE\n" + jsonPrint(instanceConfig)));
+    statsObj.instances.started += 1;
+
+    debug(chalkInfo("START INSTANCE\n" + jsonPrint(instanceConfig)));
 
     if (err) { throw err; }
 
@@ -441,6 +476,7 @@ function startInstance(instanceConfig, callback){
       + " | PM2 ID: " + apps[0].pm2_env.pm_id
       + " | PID: " + apps[0].process.pid
       + " | TNN_RUN_ID: " + apps[0].pm2_env.TNN_RUN_ID
+      + " | ITERATIONS: " + apps[0].pm2_env.TNN_EVOLVE_ITERATIONS
       + " | STATUS: " + apps[0].pm2_env.status
     );
 
@@ -451,6 +487,72 @@ function startInstance(instanceConfig, callback){
     });
 
   });
+}
+
+let noInstancesRunning = function(){
+  return (Object.keys(appHashMap).length === 0);
+}
+
+function initProcessPollInterval(interval){
+
+  console.log(chalkInfo("INIT PROCESS POLL INTERVAL | " + interval));
+
+  processPollInterval = setInterval(function(){
+
+    if (Object.keys(appHashMap).length < configuration.maxInstances) {
+      initInstance(statsObj.instances.instanceIndex, configuration.instanceOptions, function(opt){
+        startInstance(opt);
+        statsObj.instances.instanceIndex += 1;
+      });
+    }
+
+    pm2.list(function(err, apps){
+      if (err) { throw err; }
+      if (!configuration.autoStartInstance && noInstancesRunning()) { 
+        quit(); 
+      }
+      else  {
+        showStats();
+        console.log("\nAPPS__________________________________________");
+        apps.forEach(function(app){
+          console.log(app.name
+            + " | PM2 ID: " + app.pm2_env.pm_id
+            + " | PID: " + app.pid
+            + " | STATUS: " + app.pm2_env.status
+            + " | ITERATIONS: " + app.pm2_env.TNN_EVOLVE_ITERATIONS
+            + " | START: " + moment(parseInt(app.pm2_env.created_at)).format(compactDateTimeFormat)
+            // + " | UPTIME: " + app.pm2_env.pm_uptime
+            + " | RUN: " + msToTime(moment().valueOf()-parseInt(app.pm2_env.created_at))
+          );
+          if (appHashMap[app.name] && app.pm2_env.status === "stopped"){
+
+            // console.log(chalkAlert("XXX STOPPED | " + app.name));
+            console.log(chalkAlert(app.name
+              + " | PM2 ID: " + app.pm2_env.pm_id
+              + " | PID: " + app.pid
+              + " | STATUS: " + app.pm2_env.status
+              + " | START: " + moment(parseInt(app.pm2_env.created_at)).format(compactDateTimeFormat)
+              // + " | UPTIME: " + app.pm2_env.pm_uptime
+              + " | RUN: " + msToTime(moment().valueOf()-parseInt(app.pm2_env.created_at))
+            ));
+
+            pm2.delete(app.pm2_env.pm_id, function(err, results){
+
+              slackPostMessage(slackChannel, "\nNNB INSTANCE STOPPED\n" + app.name + "\n");
+
+              delete appHashMap[app.name];
+
+              if (err) { throw err; }
+
+              debug("PM2 DELETE RESULTS\n" + results);
+            });
+
+          }
+        });
+      }
+    });
+
+  }, interval);
 }
 
 function initBatch(callback){
@@ -466,36 +568,13 @@ function initBatch(callback){
       process.exit(2);
     }
 
-    let options = {};
-    options.script = "twitterNeuralNetwork.js";
-    if (hostname.includes("google")) {
-      options.cwd = "/home/tc/twitterNeuralNetwork";
-    }
-    else {
-      options.cwd = "/Volumes/RAID1/projects/twitterNeuralNetwork";
-    }
-    options.autorestart = false;
-    options.env = {};
-    options.env.NODE_ENV = "production";
-    options.env.BATCH_MODE = true;
-    options.env.GCLOUD_PROJECT = "graphic-tangent-627";
-    options.env.GOOGLE_PROJECT = "graphic-tangent-627";
-    options.env.DROPBOX_WORD_ASSO_ACCESS_TOKEN = "nknEWsIkD5UAAAAAAAQouTDFRBKfwsFzuS8PPi2Q_JVYnpotNuaHiddNtmG4mUTi";
-    // options.env.DROPBOX_WORD_ASSO_APP_KEY = "qlb9k4dp01t9iqk";
-    // options.env.DROPBOX_WORD_ASSO_APP_SECRET = "wqslhe2t95zfn19";
-    options.env.DROPBOX_WORD_ASSO_DEFAULT_TWITTER_CONFIG_FOLDER = "/config/twitter";
-    options.env.DROPBOX_WORD_ASSO_DEFAULT_TWITTER_CONFIG_FILE = "altthreecee00.json";
-    options.env.TNN_PROCESS_NAME = "nnb";
-    options.env.TNN_EVOLVE_ITERATIONS = configuration.evolveIterations;
-    options.env.TNN_TWITTER_DEFAULT_USER = "altthreecee00";
-    options.env.TNN_TWITTER_USERS = {"altthreecee00": "altthreecee00", "ninjathreecee": "ninjathreecee"};
-
     let instanceConfigArray = [];
     let instanceIndex = 0;
 
     for (instanceIndex=0; instanceIndex < configuration.maxInstances; instanceIndex +=1){
-      initInstance(instanceIndex, options, function(opt){
+      initInstance(instanceIndex, configuration.instanceOptions, function(opt){
         instanceConfigArray.push(opt);
+        statsObj.instances.instanceIndex += 1;
       });
     }
 
@@ -522,56 +601,8 @@ function initBatch(callback){
         );
       });
 
-      processPollInterval = setInterval(function(){
+      initProcessPollInterval(configuration.processPollInterval);
 
-        pm2.list(function(err, apps){
-          if (err) { throw err; }
-          if ((Object.keys(appHashMap).length === 0) || (apps.length === 0 )) { 
-            quit(); 
-          }
-          else  {
-            showStats();
-            console.log("\nAPPS______________________");
-            apps.forEach(function(app){
-              console.log(app.name
-                + " | PM2 ID: " + app.pm2_env.pm_id
-                + " | PID: " + app.pid
-                + " | STATUS: " + app.pm2_env.status
-                + " | START: " + moment(parseInt(app.pm2_env.created_at)).format(compactDateTimeFormat)
-                + " | UPTIME: " + app.pm2_env.pm_uptime
-              );
-              if (appHashMap[app.name] && app.pm2_env.status === "stopped"){
-
-                console.log(chalkAlert("XXX STOPPED | " + app.name));
-
-                pm2.delete(app.pm2_env.pm_id, function(err, results){
-
-                  slackPostMessage(slackChannel, "\nNNB INSTANCE STOPPED\n" + app.name + "\n");
-
-                  delete appHashMap[app.name];
-
-                  if (err) { throw err; }
-
-                  debug("PM2 DELETE RESULTS\n" + results);
-
-                  if (Object.keys(appHashMap).length < configuration.maxInstances) {
-                    initInstance(instanceIndex, options, function(opt){
-                      startInstance(opt);
-                      instanceIndex += 1;
-                    });
-                  }
-
-                  // if ((Object.keys(appHashMap).length === 0) || (apps.length === 0 )) { 
-                  //   quit(); 
-                  // }
-                });
-              }
-            });
-          }
-        });
-      }, 10000);
-
-      callback();
     });
 
 
@@ -723,6 +754,7 @@ process.on( "SIGINT", function() {
 initialize(configuration, function(err, cnf){
   if (err) { throw err; }
   configuration = cnf;
+  configuration.instanceOptions.env.TNN_EVOLVE_ITERATIONS = configuration.evolveIterations;
   statsObj.configuration = {};
   statsObj.configuration = configuration;
 
