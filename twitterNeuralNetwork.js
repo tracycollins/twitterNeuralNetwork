@@ -1608,7 +1608,7 @@ function initNeuralNetworkChild(callback){
             // + " | " + jsonPrint(results)
           ));
 
-          saveFile(neuralNetworkFolder, m.networkObj.neuralNetworkFile, m.networkObj.network, function(err){
+          saveFile(neuralNetworkFolder, m.networkObj.neuralNetworkFile, m.networkObj, function(err){
             if (err){
               console.error(chalkError("*** SAVE NEURAL NETWORK FILE ERROR"
                 + " | " + m.networkObj.neuralNetworkFile + " | " + err
@@ -1823,36 +1823,36 @@ function initTimeout(){
   });
 }
 
-var myTrainingSet = [
-  { input: [0,0], output: [0] },
-  { input: [0,1], output: [1] },
-  { input: [1,0], output: [1] },
-  { input: [1,1], output: [0] }
-];
+// var myTrainingSet = [
+//   { input: [0,0], output: [0] },
+//   { input: [0,1], output: [1] },
+//   { input: [1,0], output: [1] },
+//   { input: [1,1], output: [0] }
+// ];
 
-var myNetwork = new neataptic.Network(2, 1); // 2 inputs, 1 output
+// var myNetwork = new neataptic.Network(2, 1); // 2 inputs, 1 output
 
-var results = myNetwork.evolve(myTrainingSet, {
-  mutation: neataptic.Methods.Mutation.FFW,
-  activation: neataptic.Methods.Activation.STEP,
-  equal: true,
-  popsize: 100,
-  elitism: 10,
-  log: 10,
-  error: 0.01,
-  iterations: 1000,
-  mutationRate: 0.1,
-  clear: false
-});
+// var results = myNetwork.evolve(myTrainingSet, {
+//   mutation: neataptic.Methods.Mutation.FFW,
+//   activation: neataptic.Methods.Activation.STEP,
+//   equal: true,
+//   popsize: 100,
+//   elitism: 10,
+//   log: 10,
+//   error: 0.01,
+//   iterations: 1000,
+//   mutationRate: 0.1,
+//   clear: false
+// });
 
-// console.log("Activation\n" + neataptic.Methods.Activation.STEP);
+// // console.log("Activation\n" + neataptic.Methods.Activation.STEP);
 
-console.log("TEST RESULTS\n" + jsonPrint(results));
+// console.log("TEST RESULTS\n" + jsonPrint(results));
 
-console.log("TEST RESULTS 0,0: " + myNetwork.activate([0,0])); // [0]
-console.log("TEST RESULTS 0,1: " + myNetwork.activate([0,1])); // [1]
-console.log("TEST RESULTS 1,0: " + myNetwork.activate([1,0])); // [1]
-console.log("TEST RESULTS 1,1: " + myNetwork.activate([1,1])); // [0]
+// console.log("TEST RESULTS 0,0: " + myNetwork.activate([0,0])); // [0]
+// console.log("TEST RESULTS 0,1: " + myNetwork.activate([0,1])); // [1]
+// console.log("TEST RESULTS 1,0: " + myNetwork.activate([1,0])); // [1]
+// console.log("TEST RESULTS 1,1: " + myNetwork.activate([1,1])); // [0]
 
 // quit();
 
