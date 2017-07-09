@@ -326,11 +326,11 @@ function allOnes(array){
 function indexOfMax (arr, callback) {
   if (arr.length === 0) {
     console.log(chalkAlert("indexOfMax: 0 LENG ARRAY: -1"));
-    return -1;
+    return(callback(-1)) ; 
   }
   if ((arr[0] === arr[1]) && (arr[1] === arr[2])){
     console.log(chalkAlert("indexOfMax: ALL EQUAL: " + arr[0]));
-    return -1;
+    return(callback(-1)) ; 
   }
 
   console.log("B4 ARR: " + arr[0].toFixed(2) + " - " + arr[1].toFixed(2) + " - " + arr[2].toFixed(2));
@@ -1514,37 +1514,36 @@ function testNetwork(nw, testObj, callback){
         numTested += 1;
 
         indexOfMax(testOutput, function(testMaxOutputIndex){
-          
-          let expectedMaxOutputIndex = indexOfMax(testDatumObj.datum.output);
 
-          let passed = (testMaxOutputIndex === expectedMaxOutputIndex);
+          indexOfMax(testDatumObj.datum.output, function(expectedMaxOutputIndex){
 
-          numPassed = passed ? numPassed+1 : numPassed;
+            let passed = (testMaxOutputIndex === expectedMaxOutputIndex);
 
-          successRate = 100 * numPassed/(numTested + numSkipped);
+            numPassed = passed ? numPassed+1 : numPassed;
 
-          let currentChalk = passed ? chalkLog : chalkAlert;
+            successRate = 100 * numPassed/(numTested + numSkipped);
 
-          console.log(currentChalk("\n-----\nTEST RESULT: " + passed 
-            + " | " + successRate.toFixed(2) + "%"
-            // + "\n" + "TO: " + testOutput 
-            + "\n" + testOutput[0].toFixed(10)
-            + " " + testOutput[1].toFixed(10) 
-            + " " + testOutput[2].toFixed(10) 
-            + " | TMOI: " + testMaxOutputIndex
-            // + "\n" + "EO: " + testDatum.output 
-            + "\n" + testDatumObj.datum.output[0].toFixed(10) 
-            + " " + testDatumObj.datum.output[1].toFixed(10) 
-            + " " + testDatumObj.datum.output[2].toFixed(10) 
-            + " | EMOI: " + expectedMaxOutputIndex
-          ));
+            let currentChalk = passed ? chalkLog : chalkAlert;
 
-          cb();
+            console.log(currentChalk("\n-----\nTEST RESULT: " + passed 
+              + " | " + successRate.toFixed(2) + "%"
+              // + "\n" + "TO: " + testOutput 
+              + "\n" + testOutput[0].toFixed(10)
+              + " " + testOutput[1].toFixed(10) 
+              + " " + testOutput[2].toFixed(10) 
+              + " | TMOI: " + testMaxOutputIndex
+              // + "\n" + "EO: " + testDatum.output 
+              + "\n" + testDatumObj.datum.output[0].toFixed(10) 
+              + " " + testDatumObj.datum.output[1].toFixed(10) 
+              + " " + testDatumObj.datum.output[2].toFixed(10) 
+              + " | EMOI: " + expectedMaxOutputIndex
+            ));
+
+            cb();
+          });
+
         });
-
       });
-
-
     });
   }, function(err){
     callback(err, 
