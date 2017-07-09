@@ -4,6 +4,7 @@
   "description": "",
   "main": "twitterNeuralNetwork.js",
   "dependencies": {
+    "array-normalize": "^1.1.2",
     "array-unique": "^0.3.2",
     "async": "^2.5.0",
     "autolinker": "^1.4.3",

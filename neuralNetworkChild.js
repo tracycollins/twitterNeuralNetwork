@@ -19,8 +19,8 @@ const compactDateTimeFormat = "YYYYMMDD HHmmss";
 // let evolveRunning = false;
 // let evolveReady = true;
 
-// const neataptic = require("neataptic");
-const neataptic = require("./js/neataptic/dist/neataptic.js");
+const neataptic = require("neataptic");
+// const neataptic = require("./js/neataptic/dist/neataptic.js");
 let network;
 
 const EventEmitter2 = require("eventemitter2").EventEmitter2;
