@@ -6,6 +6,7 @@ let ONE_SECOND = 1000 ;
 
 const async = require("async");
 const os = require("os");
+
 let hostname = os.hostname();
 hostname = hostname.replace(/\.home/g, "");
 hostname = hostname.replace(/\.local/g, "");
@@ -18,8 +19,8 @@ const compactDateTimeFormat = "YYYYMMDD HHmmss";
 // let evolveRunning = false;
 // let evolveReady = true;
 
-const neataptic = require("neataptic");
-// const neataptic = require("./js/neataptic/neataptic.js");
+// const neataptic = require("neataptic");
+const neataptic = require("./js/neataptic/dist/neataptic.js");
 let network;
 
 const EventEmitter2 = require("eventemitter2").EventEmitter2;
@@ -254,16 +255,16 @@ function evolve (params, callback){
   // neataptic.Methods.Mutation.FFW
   let options = {
     mutation: params.mutation,
-    cost: params.cost,
+    // cost: params.cost,
     equal: params.equal,
     popsize: params.popsize,
     elitism: params.elitism,
     log: params.log,
-    error: params.error,
+    // error: params.error,
     iterations: params.iterations,
     mutationRate: params.mutationRate,
-    activation: params.activation,
-    clear: params.clear
+    // activation: params.activation,
+    // clear: params.clear
   };
 
   Object.keys(options).forEach(function(key){

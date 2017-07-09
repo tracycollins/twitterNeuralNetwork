@@ -4,6 +4,7 @@
 let slackChannel = "#word";
 
 const neataptic = require("neataptic");
+// const neataptic = require("./js/neataptic/dist/neataptic.js");
 
 const DEFAULT_TEST_RATIO = 0.05;
 
@@ -13,7 +14,7 @@ const DEFAULT_EVOLVE_MUTATION_RATE = 0.7;
 // const DEFAULT_EVOLVE_ACTIVATION = neataptic.Methods.Activation.STEP;
 const DEFAULT_EVOLVE_ACTIVATION = "STEP";
 const DEFAULT_EVOLVE_ITERATIONS = 500;
-const DEFAULT_EVOLVE_ELITISM = 20;
+const DEFAULT_EVOLVE_ELITISM = 10;
 const DEFAULT_EVOLVE_EQUAL = true;
 const DEFAULT_EVOLVE_ERROR = 0.03;
 const DEFAULT_EVOLVE_LOG = 1;
@@ -36,12 +37,12 @@ configuration.evolve.equal = DEFAULT_EVOLVE_EQUAL;
 configuration.evolve.error = DEFAULT_EVOLVE_ERROR;
 configuration.evolve.iterations = DEFAULT_EVOLVE_ITERATIONS;
 configuration.evolve.log = DEFAULT_EVOLVE_LOG;
-configuration.evolve.activation = DEFAULT_EVOLVE_ACTIVATION;
+// configuration.evolve.activation = DEFAULT_EVOLVE_ACTIVATION;
 configuration.evolve.mutation = DEFAULT_EVOLVE_MUTATION;
 configuration.evolve.mutationRate = DEFAULT_EVOLVE_MUTATION_RATE;
-configuration.evolve.cost = DEFAULT_EVOLVE_COST;
+// configuration.evolve.cost = DEFAULT_EVOLVE_COST;
 configuration.evolve.popsize = DEFAULT_EVOLVE_POPSIZE;
-configuration.evolve.clear = DEFAULT_EVOLVE_CLEAR;
+// configuration.evolve.clear = DEFAULT_EVOLVE_CLEAR;
 
 const DEFAULT_NEURAL_NETWORK_FILE = "neuralNetwork.json";
 const slackOAuthAccessToken = "xoxp-3708084981-3708084993-206468961315-ec62db5792cd55071a51c544acf0da55";
@@ -317,26 +318,38 @@ function allOnes(array){
   if (i === array.length) { return true; }
 }
 
-function indexOfMax(arr) {
-  if (allZeros(arr) || (arr.length === 0)) {
+
+function indexOfMax (arr, callback) {
+  if (arr.length === 0) {
+    console.log(chalkAlert("indexOfMax: 0 LENG ARRAY: -1"));
+    return -1;
+  }
+  if ((arr[0] === arr[1]) && (arr[1] === arr[2])){
+    console.log(chalkAlert("indexOfMax: ALL EQUAL: " + arr[0]));
     return -1;
   }
 
-  let max = arr[0]; 
+  console.log("B4 ARR: " + arr[0].toFixed(2) + " - " + arr[1].toFixed(2) + " - " + arr[2].toFixed(2));
+  arrayNormalize(arr);
+  console.log("AF ARR: " + arr[0].toFixed(2) + " - " + arr[1].toFixed(2) + " - " + arr[2].toFixed(2));
+
+  let max = arr[0];
   let maxIndex = 0;
   let i=1;
 
-  for (i = 1; i < arr.length; i+=1) {
-    if (arr[i] > max) {
-      maxIndex = i;
-      max = arr[i];
+  async.eachOfSeries(arr, function(val, index, cb){
+    if (arr[index] > max) {
+      maxIndex = index;
+      max = arr[index];
     }
-    else if ((arr[i] === max) && (arr[i] > 0)) {
-      maxIndex = -1;
-      return maxIndex;
-    }
-  }
-  if (i === arr.length) { return maxIndex; }
+    cb();
+  }, function(){
+    console.log(chalk.blue("indexOfMax: " + maxIndex 
+      + " | " + arr[maxIndex].toFixed(2)
+      + " | " + arr[0].toFixed(2) + " - " + arr[1].toFixed(2) + " - " + arr[2].toFixed(2)
+    ));
+    callback(maxIndex) ; 
+  });
 }
 
 function showStats(options){
