@@ -881,6 +881,204 @@ let parser = new Autolinker( {
   mention: "twitter"
 } );
 
+// function parseText(text, options, callback){
+
+//   console.log(chalk.blue("\ntext\n" + text));
+
+//   if (text === "undefined") {
+//     console.error(chalkError("*** PARSER TEXT UNDEFINED"));
+//   }
+
+//   const parseResults = parser.parse(text);
+
+//   let urlArray = [];
+//   let mentionArray = [];
+//   let hashtagArray = [];
+
+//   async.each(parseResults, function(matchObj, cb){
+
+//     const type = matchObj.getType();
+
+//     debug(chalkAlert("PARSE TEXT"
+//       + " | " + matchObj.getMatchedText().toLowerCase()
+//       + " | TYPE: " + type
+//     ));
+
+//     switch (type) {
+//       case "url":
+//         console.log(chalkInfo("URL: " + matchObj.getMatchedText().toLowerCase()));
+//         urlArray.push(matchObj.getMatchedText().toLowerCase());
+//         cb();
+//       break;
+//       case "mention":
+//         mentionArray.push(matchObj.getMatchedText().toLowerCase());
+//         console.log(chalkInfo(mentionArray.length + " | MEN: " + matchObj.getMatchedText().toLowerCase()));
+//         cb();
+//       break;
+//       case "hashtag":
+//         hashtagArray.push(matchObj.getMatchedText().toLowerCase());
+//         console.log(chalkInfo(hashtagArray.length + " | HTG: " + matchObj.getMatchedText().toLowerCase()));
+//         cb();
+//       break;
+//       default:
+//         console.error(chalkError("UNKNOWN PARSE TYPE: " + type));
+//         cb();
+//     }
+
+//    }, function(err){
+
+//     const wordArray = keywordExtractor.extract(text, wordExtractionOptions);
+
+//     const userHistograms = {};
+//     userHistograms.words = {};
+//     userHistograms.urls = {};
+//     userHistograms.hashtags = {};
+//     userHistograms.mentions = {};
+
+//     async.parallel({
+//       mentions: function(cb){
+//         if (mentionArray) {
+//           async.each(mentionArray, function(userId, cb2){
+//             if (!userId.match("@")) {
+//               userId = "@" + userId.toLowerCase();
+//               if (options.updateGlobalHistograms) {
+//                 histograms.mentions[userId] = (histograms.mentions[userId] === undefined) ? 1 
+//                   : histograms.mentions[userId]+1;
+//               }
+//               userHistograms.mentions[userId] = (userHistograms.mentions[userId] === undefined) ? 1 
+//                 : userHistograms.mentions[userId]+1;
+//               debug(chalkAlert("->- DESC Ms"
+//                 + " | " + userHistograms.mentions[userId]
+//                 + " | " + userId
+//               ));
+//               cb2();
+//             }
+//           }, function(err2){
+//             cb(err2, userHistograms.mentions);
+//           });
+//         }
+//         else {
+//           cb(null, userHistograms.mentions);
+//         }
+//       },
+//       hashtags: function(cb){
+//         if (hashtagArray) {
+//           hashtagArray.forEach(function(hashtag){
+//             hashtag = hashtag.toLowerCase();
+//             if (options.updateGlobalHistograms) {
+//               histograms.hashtags[hashtag] = (histograms.hashtags[hashtag] === undefined) ? 1 
+//               : histograms.hashtags[hashtag]+1;
+//             }
+//             userHistograms.hashtags[hashtag] = (userHistograms.hashtags[hashtag] === undefined) ? 1 
+//               : userHistograms.hashtags[hashtag]+1;
+//             debug(chalkAlert("->- DESC Hs"
+//               + " | " + userHistograms.hashtags[hashtag]
+//               + " | " + hashtag
+//             ));
+//           });
+//           cb(null, userHistograms.hashtags);
+//         }
+//         else {
+//           cb(null, userHistograms.hashtags);
+//         }
+//       },
+//       words: function(cb){
+//         if (wordArray) {
+
+//           // wordArray.forEach(function(w){
+//           async.each(wordArray, function(w, cb1){
+
+//               debug(chalkAlert("w"
+//                 + " | " + w
+//               ));
+
+//             let word = w.toLowerCase();
+
+//             word = word.replace(/"s/gi, "");
+//             word = word.replace(/’s/gi, "");
+
+//             const m = mentionsRegex().exec(word);
+//             const h = hashtagRegex().exec(word);
+//             const u = (Array.from(getUrls(word)).length > 0) ? Array.from(getUrls(word)) : null;
+
+//             if (m || h || u 
+//               || (word === "/") 
+//               || word.includes("--") 
+//               || word.includes("|") 
+//               || word.includes("#") 
+//               || word.includes("w/") 
+//               || word.includes("≠") 
+//               || word.includes("http") 
+//               || word.includes("+")) {
+//               debug(chalkAlert("-- SKIP WORD"
+//                 + " | M: " + m
+//                 + " | H: " + h
+//                 + " | U: " + u
+//                 + " | " + word
+//               ));
+//               cb1();
+//             }
+//             else {
+//               if (options.updateGlobalHistograms) {
+//                 histograms.words[word] = (histograms.words[word] === undefined) ? 1 
+//                   : histograms.words[word]+1;
+//               }
+//               userHistograms.words[word] = (userHistograms.words[word] === undefined) ? 1 
+//                 : userHistograms.words[word]+1;
+
+//               debug(chalkAlert("->- DESC Ws"
+//                 + " | HIST: " + histograms.words[word]
+//                 + " | USER HIST: " + userHistograms.words[word]
+//                 + " | " + word
+//               ));
+
+//               cb1();
+//             }
+
+//           }, function(err){
+//             cb(null, userHistograms.words);
+//           });
+
+//         }
+//         else {
+//           cb(null, userHistograms.words);
+//         }
+//       },
+//       urls: function(cb){
+//         if (urlArray) {
+//           urlArray.forEach(function(url){
+//             url = url.toLowerCase();
+//             if (options.updateGlobalHistograms) {
+//               histograms.urls[url] = (histograms.urls[url] === undefined) ? 1 : histograms.urls[url]+1;
+//             }
+//             userHistograms.urls[url] = (userHistograms.urls[url] === undefined) ? 1 : userHistograms.urls[url]+1;
+//             debug(chalkAlert("->- DESC Us"
+//               + " | " + userHistograms.urls[url]
+//               + " | " + url
+//             ));
+//           });
+//           cb(null, userHistograms.urls);
+//         }
+//         else {
+//           cb(null, userHistograms.urls);
+//         }
+//       }
+//     }, function(err2, results){
+
+//       let t = "HISTOGRAMS";
+
+//       Object.keys(results).forEach(function(key){
+//         if (results[key]) {
+//           t = t + " | " + key.toUpperCase() + ": " + Object.keys(results[key]).length;
+//         }
+//       });
+//       console.log(chalkLog(t));
+//       callback((err || err2), results);
+//     });
+
+//   });
+// }
+
 function parseText(text, options, callback){
 
   console.log(chalk.blue("\ntext\n" + text));
@@ -888,6 +1086,8 @@ function parseText(text, options, callback){
   if (text === "undefined") {
     console.error(chalkError("*** PARSER TEXT UNDEFINED"));
   }
+
+  text = text.replace(/,/gi, " ");
 
   const parseResults = parser.parse(text);
 
@@ -899,15 +1099,15 @@ function parseText(text, options, callback){
 
     const type = matchObj.getType();
 
-    debug(chalkAlert("PARSE TEXT"
+    console.log(chalkAlert("PARSE TEXT"
       + " | " + matchObj.getMatchedText().toLowerCase()
       + " | TYPE: " + type
     ));
 
     switch (type) {
       case "url":
-        console.log(chalkInfo("URL: " + matchObj.getMatchedText().toLowerCase()));
         urlArray.push(matchObj.getMatchedText().toLowerCase());
+        console.log(chalkInfo(urlArray.length + " | URL: " + matchObj.getMatchedText().toLowerCase()));
         cb();
       break;
       case "mention":
@@ -936,23 +1136,23 @@ function parseText(text, options, callback){
     userHistograms.mentions = {};
 
     async.parallel({
+
       mentions: function(cb){
         if (mentionArray) {
+
           async.each(mentionArray, function(userId, cb2){
-            if (!userId.match("@")) {
-              userId = "@" + userId.toLowerCase();
-              if (options.updateGlobalHistograms) {
-                histograms.mentions[userId] = (histograms.mentions[userId] === undefined) ? 1 
-                  : histograms.mentions[userId]+1;
-              }
-              userHistograms.mentions[userId] = (userHistograms.mentions[userId] === undefined) ? 1 
-                : userHistograms.mentions[userId]+1;
-              debug(chalkAlert("->- DESC Ms"
-                + " | " + userHistograms.mentions[userId]
-                + " | " + userId
-              ));
-              cb2();
+            userId = userId.toLowerCase();
+            if (options.updateGlobalHistograms) {
+              histograms.mentions[userId] = (histograms.mentions[userId] === undefined) ? 1 
+                : histograms.mentions[userId]+1;
             }
+            userHistograms.mentions[userId] = (userHistograms.mentions[userId] === undefined) ? 1 
+              : userHistograms.mentions[userId]+1;
+            console.log(chalkAlert("->- DESC Ms"
+              + " | " + userHistograms.mentions[userId]
+              + " | " + userId
+            ));
+            cb2();
           }, function(err2){
             cb(err2, userHistograms.mentions);
           });
@@ -961,9 +1161,10 @@ function parseText(text, options, callback){
           cb(null, userHistograms.mentions);
         }
       },
+
       hashtags: function(cb){
         if (hashtagArray) {
-          hashtagArray.forEach(function(hashtag){
+          async.each(hashtagArray, function(hashtag, cb2){
             hashtag = hashtag.toLowerCase();
             if (options.updateGlobalHistograms) {
               histograms.hashtags[hashtag] = (histograms.hashtags[hashtag] === undefined) ? 1 
@@ -971,31 +1172,36 @@ function parseText(text, options, callback){
             }
             userHistograms.hashtags[hashtag] = (userHistograms.hashtags[hashtag] === undefined) ? 1 
               : userHistograms.hashtags[hashtag]+1;
-            debug(chalkAlert("->- DESC Hs"
+            console.log(chalkAlert("->- DESC Hs"
               + " | " + userHistograms.hashtags[hashtag]
               + " | " + hashtag
             ));
+            cb2();
+          }, function(err2){
+            cb(err2, userHistograms.hashtags);
           });
-          cb(null, userHistograms.hashtags);
         }
         else {
           cb(null, userHistograms.hashtags);
         }
       },
+
       words: function(cb){
         if (wordArray) {
-
-          // wordArray.forEach(function(w){
           async.each(wordArray, function(w, cb1){
 
-              debug(chalkAlert("w"
-                + " | " + w
-              ));
+            debug(chalkAlert("w"
+              + " | " + w
+            ));
 
             let word = w.toLowerCase();
 
-            word = word.replace(/"s/gi, "");
+            word = word.replace(/'s/gi, "");
             word = word.replace(/’s/gi, "");
+            word = word.replace(/'ve/gi, "");
+            word = word.replace(/’ve/gi, "");
+            word = word.replace(/'re/gi, "");
+            word = word.replace(/’re/gi, "");
 
             const m = mentionsRegex().exec(word);
             const h = hashtagRegex().exec(word);
@@ -1026,43 +1232,45 @@ function parseText(text, options, callback){
               userHistograms.words[word] = (userHistograms.words[word] === undefined) ? 1 
                 : userHistograms.words[word]+1;
 
-              debug(chalkAlert("->- DESC Ws"
-                + " | HIST: " + histograms.words[word]
-                + " | USER HIST: " + userHistograms.words[word]
+              console.log(chalkAlert("->- DESC Ws"
+                // + " | HIST: " + histograms.words[word]
+                + " | " + userHistograms.words[word]
                 + " | " + word
               ));
 
               cb1();
             }
-
           }, function(err){
             cb(null, userHistograms.words);
           });
-
         }
         else {
           cb(null, userHistograms.words);
         }
       },
+
       urls: function(cb){
         if (urlArray) {
-          urlArray.forEach(function(url){
+          async.each(urlArray, function(url, cb2){
             url = url.toLowerCase();
             if (options.updateGlobalHistograms) {
               histograms.urls[url] = (histograms.urls[url] === undefined) ? 1 : histograms.urls[url]+1;
             }
             userHistograms.urls[url] = (userHistograms.urls[url] === undefined) ? 1 : userHistograms.urls[url]+1;
-            debug(chalkAlert("->- DESC Us"
+            console.log(chalkAlert("->- DESC Us"
               + " | " + userHistograms.urls[url]
               + " | " + url
             ));
+            cb2();
+          }, function(err2){
+            cb(err2, userHistograms.urls);
           });
-          cb(null, userHistograms.urls);
         }
         else {
           cb(null, userHistograms.urls);
         }
       }
+
     }, function(err2, results){
 
       let t = "HISTOGRAMS";
@@ -1623,7 +1831,11 @@ function initNeuralNetworkChild(callback){
             + "\n  PASSED:  " + results.numPassed
             + "\n  SKIPPED: " + results.numSkipped
             + "\n  SUCCESS: " + results.successRate.toFixed(1) + "%"
-            // + " | " + jsonPrint(results)
+            + "\n"
+          ));
+
+          console.log(chalkLog("... SAVING NEURAL NETWORK FILE"
+            + " | " + neuralNetworkFolder + "/" + m.networkObj.neuralNetworkFile
           ));
 
           saveFile(neuralNetworkFolder, m.networkObj.neuralNetworkFile, m.networkObj, function(err){
@@ -1840,39 +2052,6 @@ function initTimeout(){
 
   });
 }
-
-// var myTrainingSet = [
-//   { input: [0,0], output: [0] },
-//   { input: [0,1], output: [1] },
-//   { input: [1,0], output: [1] },
-//   { input: [1,1], output: [0] }
-// ];
-
-// var myNetwork = new neataptic.Network(2, 1); // 2 inputs, 1 output
-
-// var results = myNetwork.evolve(myTrainingSet, {
-//   mutation: neataptic.Methods.Mutation.FFW,
-//   activation: neataptic.Methods.Activation.STEP,
-//   equal: true,
-//   popsize: 100,
-//   elitism: 10,
-//   log: 10,
-//   error: 0.01,
-//   iterations: 1000,
-//   mutationRate: 0.1,
-//   clear: false
-// });
-
-// // console.log("Activation\n" + neataptic.Methods.Activation.STEP);
-
-// console.log("TEST RESULTS\n" + jsonPrint(results));
-
-// console.log("TEST RESULTS 0,0: " + myNetwork.activate([0,0])); // [0]
-// console.log("TEST RESULTS 0,1: " + myNetwork.activate([0,1])); // [1]
-// console.log("TEST RESULTS 1,0: " + myNetwork.activate([1,0])); // [1]
-// console.log("TEST RESULTS 1,1: " + myNetwork.activate([1,1])); // [0]
-
-// quit();
 
 initTimeout();
 
