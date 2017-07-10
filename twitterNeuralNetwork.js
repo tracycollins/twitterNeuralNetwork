@@ -4,23 +4,21 @@
 let slackChannel = "#word";
 
 const neataptic = require("neataptic");
-// const neataptic = require("./js/neataptic/dist/neataptic.js");
-
+const DEFAULT_NETWORK_CREATE_MODE = "evolve";
 const DEFAULT_TEST_RATIO = 0.05;
 
-// const DEFAULT_EVOLVE_MUTATION = neataptic.Methods.Mutation.FFW;
 const DEFAULT_EVOLVE_MUTATION = "FFW";
 const DEFAULT_EVOLVE_MUTATION_RATE = 0.7;
-// const DEFAULT_EVOLVE_ACTIVATION = neataptic.Methods.Activation.STEP;
-const DEFAULT_EVOLVE_ACTIVATION = "STEP";
+// const DEFAULT_EVOLVE_ACTIVATION = "STEP";
+const DEFAULT_EVOLVE_ACTIVATION = "LOGISTIC";
+const DEFAULT_EVOLVE_POPSIZE = 100;
+const DEFAULT_EVOLVE_ELITISM = 5;
 const DEFAULT_EVOLVE_ITERATIONS = 100;
-const DEFAULT_EVOLVE_ELITISM = 10;
-const DEFAULT_EVOLVE_EQUAL = true;
+const DEFAULT_EVOLVE_EQUAL = false;
 const DEFAULT_EVOLVE_ERROR = 0.03;
 const DEFAULT_EVOLVE_LOG = 1;
-// const DEFAULT_EVOLVE_COST = neataptic.Methods.Cost.BINARY;
 const DEFAULT_EVOLVE_COST = "BINARY";
-const DEFAULT_EVOLVE_POPSIZE = 100;
+// const DEFAULT_EVOLVE_COST = "CROSS_ENTROPY";
 const DEFAULT_EVOLVE_CLEAR = false;
 
 let configuration = {};
@@ -37,12 +35,11 @@ configuration.evolve.equal = DEFAULT_EVOLVE_EQUAL;
 configuration.evolve.error = DEFAULT_EVOLVE_ERROR;
 configuration.evolve.iterations = DEFAULT_EVOLVE_ITERATIONS;
 configuration.evolve.log = DEFAULT_EVOLVE_LOG;
-// configuration.evolve.activation = DEFAULT_EVOLVE_ACTIVATION;
 configuration.evolve.mutation = DEFAULT_EVOLVE_MUTATION;
 configuration.evolve.mutationRate = DEFAULT_EVOLVE_MUTATION_RATE;
-// configuration.evolve.cost = DEFAULT_EVOLVE_COST;
 configuration.evolve.popsize = DEFAULT_EVOLVE_POPSIZE;
-// configuration.evolve.clear = DEFAULT_EVOLVE_CLEAR;
+configuration.evolve.cost = DEFAULT_EVOLVE_COST;
+configuration.evolve.activation = DEFAULT_EVOLVE_ACTIVATION;
 
 const DEFAULT_NEURAL_NETWORK_FILE = "neuralNetwork.json";
 const slackOAuthAccessToken = "xoxp-3708084981-3708084993-206468961315-ec62db5792cd55071a51c544acf0da55";
@@ -322,7 +319,6 @@ function allOnes(array){
   if (i === array.length) { return true; }
 }
 
-
 function indexOfMax (arr, callback) {
   if (arr.length === 0) {
     console.log(chalkAlert("indexOfMax: 0 LENG ARRAY: -1"));
@@ -380,7 +376,7 @@ function showStats(options){
     ));
 
     if (statsObj.tests[testObj.testRunId].results.successRate !== undefined) {
-      console.log(chalkLog("RESULTS: " + statsObj.tests[testObj.testRunId].results.successRate.toFixed(1) + " %"
+      console.log(chalkAlert("\nRESULTS: " + statsObj.tests[testObj.testRunId].results.successRate.toFixed(1) + " %"
          + " | TESTS: " + statsObj.tests[testObj.testRunId].results.numTests
          + " | PASS: " + statsObj.tests[testObj.testRunId].results.numPassed
          + " | SKIP: " + statsObj.tests[testObj.testRunId].results.numSkipped
@@ -603,6 +599,7 @@ function initialize(cnf, callback){
   cnf.verbose = process.env.TNN_VERBOSE_MODE || false ;
   cnf.quitOnError = process.env.TNN_QUIT_ON_ERROR || false ;
   cnf.enableStdin = process.env.TNN_ENABLE_STDIN || true ;
+  cnf.networkCreateMode = process.env.TNN_NETWORK_CREATE_MODE || DEFAULT_NETWORK_CREATE_MODE ;
   cnf.evolve.iterations = process.env.TNN_EVOLVE_ITERATIONS || DEFAULT_EVOLVE_ITERATIONS ;
   cnf.neuralNetworkFile = process.env.TNN_NEURAL_NETWORK_FILE || DEFAULT_NEURAL_NETWORK_FILE ;
 
@@ -1254,18 +1251,52 @@ function updateClassifiedUsers(cnf, callback){
           sentimentObj.score
         ];
 
-        if ((user.status !== undefined) 
-          || (user.retweeted_status !== undefined) 
-          || (user.description !== undefined)){
+        if (user.screenName !== undefined) {
 
           async.waterfall([
-            function userStatusText(cb) {
-
-              if ((user.status !== undefined) && user.status) {
-                cb(null, user.status.text);
+            function userScreenName(cb) {
+              if (user.screenName !== undefined) {
+                cb(null, "@" + user.screenName);
               }
               else {
                 cb(null, null);
+              }
+            },
+            function userName(text, cb) {
+              if (user.name !== undefined) {
+                if (text) {
+                  cb(null, text + " | " + user.name);
+                }
+                else {
+                  cb(null, user.name);
+                }
+              }
+              else {
+                if (text) {
+                  cb(null, text);
+                }
+                else {
+                  cb(null, null);
+                }
+              }
+            },
+            function userStatusText(text, cb) {
+              // console.log("user.status\n" + jsonPrint(user.status));
+              if ((user.status !== undefined) && user.status) {
+                if (text) {
+                  cb(null, text + "\n" + user.status.text);
+                }
+                else {
+                  cb(null, user.status.text);
+                }
+              }
+              else {
+                if (text) {
+                  cb(null, text);
+                }
+                else {
+                  cb(null, null);
+                }
               }
             },
             function userRetweetText(text, cb) {
@@ -1274,7 +1305,7 @@ function updateClassifiedUsers(cnf, callback){
                 console.log(chalkBlue("RT\n" + jsonPrint(user.retweeted_status.text)));
 
                 if (text) {
-                  cb(null, text + " | " + user.retweeted_status.text);
+                  cb(null, text + "\n" + user.retweeted_status.text);
                 }
                 else {
                   cb(null, user.retweeted_status.text);
@@ -1292,7 +1323,7 @@ function updateClassifiedUsers(cnf, callback){
             function userDescriptionText(text, cb) {
               if ((user.description !== undefined) && user.description) {
                 if (text) {
-                  cb(null, text + " | " + user.description);
+                  cb(null, text + "\n" + user.description);
                 }
                 else {
                   cb(null, user.description);
@@ -1321,7 +1352,7 @@ function updateClassifiedUsers(cnf, callback){
                 console.error("*** PARSE TEXT ERROR\n" + err);
               }
 
-              console.log(chalkLog("user.description + status histogram\n" + jsonPrint(histogram)));
+              debug(chalkLog("user.description + status histogram\n" + jsonPrint(histogram)));
               debug("user.description + status\n" + jsonPrint(text));
 
               async.eachSeries(inputArrays, function(inputArray, cb1){
@@ -1507,19 +1538,19 @@ function testNetwork(nw, testObj, callback){
 
       printDatum(testDatumObj.name, testDatumObj.datum, function(){
 
-        if (allZeros(testOutput)) {
-          console.log(chalkError("\n??? NO TEST OUTPUT ... SKIPPING | " + testOutput));
-          numSkipped += 1;
-          cb();
-          return;
-        }
+        // if (allZeros(testOutput)) {
+        //   console.log(chalkError("\n??? NO TEST OUTPUT ... SKIPPING | " + testOutput));
+        //   numSkipped += 1;
+        //   cb();
+        //   return;
+        // }
 
-        if (allOnes(testOutput)) {
-          console.log(chalkError("\n??? ALL ONES TEST OUTPUT ... SKIPPING | " + testOutput));
-          numSkipped += 1;
-          cb();
-          return;
-        }
+        // if (allOnes(testOutput)) {
+        //   console.log(chalkError("\n??? ALL ONES TEST OUTPUT ... SKIPPING | " + testOutput));
+        //   numSkipped += 1;
+        //   cb();
+        //   return;
+        // }
 
         numTested += 1;
 
@@ -1633,7 +1664,8 @@ function initNeuralNetworkChild(callback){
             + "\n  PASSED:  " + results.numPassed
             + "\n  SKIPPED: " + results.numSkipped
             + "\n  SUCCESS: " + results.successRate.toFixed(1) + "%"
-            + "\n"
+            // + "\nTRAINING OPTIONS"
+            // + "\n" + jsonPrint(statsObj.tests[testObj.testRunId].training.evolve.options)
           ));
 
           console.log(chalkLog("... SAVING NEURAL NETWORK FILE"
@@ -1784,41 +1816,44 @@ function initTimeout(){
 
             testObj.inputArraysFile = inputArraysFolder + "/" + inputArraysFile;
 
-            if (cnf.evolveNetwork) {
-              messageObj = {
-                op: "EVOLVE",
-                testRunId: testObj.testRunId,
-                inputArraysFile: testObj.inputArraysFile,
-                trainingSet: trainingSetNormalized,
-                normalization: statsObj.normalization,
-                iterations: cnf.evolve.iterations,
-                mutation: cnf.evolve.mutation,
-                activation: cnf.evolve.activation,
-                equal: cnf.evolve.equal,
-                popsize: cnf.evolve.popsize,
-                cost: cnf.evolve.cost,
-                elitism: cnf.evolve.elitism,
-                log: cnf.evolve.log,
-                error: cnf.evolve.error,
-                mutationRate: cnf.evolve.mutationRate,
-                clear: cnf.evolve.clear
-              };
 
-              console.log(chalkBlue("\nSTART NETWORK EVOLVE"));
+            switch (cnf.networkCreateMode) {
 
-            }
-            else {
-              messageObj = {
-                op: "TRAIN",
-                testRunId: testObj.testRunId,
-                inputArraysFile: testObj.inputArraysFile,
-                trainingSet: trainingSetNormalized,
-                normalization: statsObj.normalization,
-                iterations: cnf.evolve.iterations
-              };
+              case "evolve":
+                messageObj = {
+                  op: "EVOLVE",
+                  testRunId: testObj.testRunId,
+                  inputArraysFile: testObj.inputArraysFile,
+                  trainingSet: trainingSetNormalized,
+                  normalization: statsObj.normalization,
+                  iterations: cnf.evolve.iterations,
+                  mutation: cnf.evolve.mutation,
+                  activation: cnf.evolve.activation,
+                  equal: cnf.evolve.equal,
+                  popsize: cnf.evolve.popsize,
+                  cost: cnf.evolve.cost,
+                  elitism: cnf.evolve.elitism,
+                  log: cnf.evolve.log,
+                  error: cnf.evolve.error,
+                  mutationRate: cnf.evolve.mutationRate,
+                  clear: cnf.evolve.clear
+                };
+                console.log(chalkBlue("\nSTART NETWORK EVOLVE"));
+              break;
 
-              console.log(chalkBlue("\nSTART NETWORK TRAIN"));
+              case "train":
+                messageObj = {
+                  op: "TRAIN",
+                  testRunId: testObj.testRunId,
+                  inputArraysFile: testObj.inputArraysFile,
+                  trainingSet: trainingSetNormalized,
+                  normalization: statsObj.normalization,
+                  iterations: cnf.evolve.iterations
+                };
+                console.log(chalkBlue("\nSTART NETWORK TRAIN"));
+              break;
 
+              default:
             }
 
             console.log(chalkBlue("TEST RUN ID: " + messageObj.testRunId
@@ -1847,7 +1882,7 @@ function initTimeout(){
       slackChannel = "#nn_batch";
     }
     // else {
-    slackPostMessage(slackChannel, "\nSTART\n" + statsObj.runId);
+    // slackPostMessage(slackChannel, "\nSTART\n" + statsObj.runId);
     // }
 
     initNeuralNetworkChild();

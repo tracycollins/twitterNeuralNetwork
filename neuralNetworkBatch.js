@@ -482,9 +482,9 @@ function startInstance(instanceConfig, callback){
 
     appHashMap[apps[0].pm2_env.name] = apps[0];
 
-    slackPostMessage(slackChannel, "\nNNB INSTANCE START\n" + instanceConfig.name + "\n", function(){
+    // slackPostMessage(slackChannel, "\nNNB INSTANCE START\n" + instanceConfig.name + "\n", function(){
       if (callback !== undefined) { callback(err); }
-    });
+    // });
 
   });
 }
@@ -538,7 +538,7 @@ function initProcessPollInterval(interval){
 
             pm2.delete(app.pm2_env.pm_id, function(err, results){
 
-              slackPostMessage(slackChannel, "\nNNB INSTANCE STOPPED\n" + app.name + "\n");
+              // slackPostMessage(slackChannel, "\nNNB INSTANCE STOPPED\n" + app.name + "\n");
 
               delete appHashMap[app.name];
 

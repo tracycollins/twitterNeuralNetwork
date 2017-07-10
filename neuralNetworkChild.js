@@ -31,7 +31,7 @@ let configEvents = new EventEmitter2({
   verboseMemoryLeak: true
 });
 
-let trainingSet = [];
+// let trainingSet = [];
 
 let configuration = {};
 configuration.verbose = false;
@@ -63,7 +63,7 @@ function jsonPrint (obj){
   else {
     return "UNDEFINED";
   }
-};
+}
 
 console.log("\n\n=================================");
 console.log("HOST:          " + hostname);
@@ -138,7 +138,7 @@ console.log("DROPBOX_WORD_ASSO_APP_SECRET :" + DROPBOX_WORD_ASSO_APP_SECRET);
 
 const dropboxClient = new Dropbox({ accessToken: DROPBOX_WORD_ASSO_ACCESS_TOKEN });
 
-const neuralNetworkFolder = dropboxConfigFolder + "/neuralNetworks";
+// const neuralNetworkFolder = dropboxConfigFolder + "/neuralNetworks";
 
 function getTimeStamp(inputTime) {
   let currentTimeStamp ;
@@ -231,31 +231,45 @@ process.on("SIGINT", function() {
 
 function train (params, callback){
 
-  // network = new neataptic.Architect.Perceptron(
-  network = new neataptic.Network(
-    statsObj.training.trainingSet.numInputs, 
-    statsObj.training.trainingSet.numInputs+statsObj.training.trainingSet.numOutputs, 
-    statsObj.training.trainingSet.numOutputs
-  );
+  let trainingSet = [];
 
-  let options = {
-    log: 1,
-    error: 0.03,
-    iterations: params.iterations,
-    rate: 0.3
-  };
+  async.each(params.trainingSet, function(item, cb){
+    trainingSet.push(item.datum);
+    cb();
+  }, function(){
 
-  let results = network.train(params.trainingSet, options);
+    console.log(chalkAlert("START TRAIN"
+      + " | " + statsObj.training.trainingSet.numInputs + " INPUTS"
+      + " | " + statsObj.training.trainingSet.numOutputs + " OUTPUTS"
+    ));
 
-  if (callback !== undefined) { callback(results); }
+    network = new neataptic.Architect.Perceptron(
+    // network = new neataptic.Network(
+      statsObj.training.trainingSet.numInputs, 
+      statsObj.training.trainingSet.numInputs+statsObj.training.trainingSet.numOutputs, 
+      statsObj.training.trainingSet.numOutputs
+    );
+
+    let options = {
+      log: 1,
+      error: 0.03,
+      iterations: params.iterations,
+      rate: 0.3
+    };
+
+    let results = network.train(trainingSet, options);
+
+    if (callback !== undefined) { callback(results); }
+  });
+
 }
 
-function evolve (params, callback){
+function evolve(params, callback){
 
   // neataptic.Methods.Mutation.FFW
   let options = {
     mutation: params.mutation,
-    // cost: params.cost,
+    cost: params.cost,
     equal: params.equal,
     popsize: params.popsize,
     elitism: params.elitism,
@@ -263,9 +277,13 @@ function evolve (params, callback){
     // error: params.error,
     iterations: params.iterations,
     mutationRate: params.mutationRate,
-    // activation: params.activation,
+    activation: params.activation
     // clear: params.clear
   };
+
+  statsObj.training.evolve = {};
+  statsObj.training.evolve.options = {};
+  statsObj.training.evolve.options = options;
 
   Object.keys(options).forEach(function(key){
     if (key === "mutation") {
@@ -285,9 +303,6 @@ function evolve (params, callback){
     }
   });
 
-  statsObj.training.evolve = {};
-  statsObj.training.evolve.options = {};
-  statsObj.training.evolve.options = options;
 
   network = new neataptic.Network(statsObj.training.trainingSet.numInputs, statsObj.training.trainingSet.numOutputs);
 
@@ -297,7 +312,7 @@ function evolve (params, callback){
     debug("DATUM | " + datumObj.name);
     trainingSet.push(datumObj.datum);
     cb();
-  }, function(err){
+  }, function(){
     const results = network.evolve(trainingSet, options);
     if (callback !== undefined) { callback(results); }
   });
@@ -333,28 +348,23 @@ process.on("message", function(m) {
 
     case "TRAIN":
 
-      trainingSet = m.trainingSet;
-
       statsObj.training.startTime = moment().valueOf();
       statsObj.training.testRunId = m.testRunId;
       statsObj.training.iterations = m.iterations;
       statsObj.training.trainingSet = {};
-      statsObj.training.trainingSet.length = trainingSet.length;
-      statsObj.training.trainingSet.numInputs = trainingSet[0].datum["input"].length;
-      statsObj.training.trainingSet.numOutputs = trainingSet[0].datum["output"].length;
+      statsObj.training.trainingSet.length = m.trainingSet.length;
+      statsObj.training.trainingSet.numInputs = m.trainingSet[0].datum.input.length;
+      statsObj.training.trainingSet.numOutputs = m.trainingSet[0].datum.output.length;
 
       statsObj.inputArraysFile = m.inputArraysFile;
 
       console.log(chalkAlert("NN CHILD: NEURAL NET TRAIN"
-        + " | " + trainingSet.length + " TRAINING DATA POINTS"
+        + " | " + m.trainingSet.length + " TRAINING DATA POINTS"
       ));
 
-      let trainParams = {
-        trainingSet: trainingSet,
-        iterations: m.iterations
-      };
+      // let trainParams = { trainingSet: m.trainingSet, iterations: m.iterations };
 
-      train(trainParams, function(results){
+      train({trainingSet: m.trainingSet, iterations: m.iterations}, function(results){
 
         console.log(chalkAlert("TRAIN RESULTS\n" + jsonPrint(results)));
 
@@ -365,7 +375,8 @@ process.on("message", function(m) {
 
         let networkObj = {};
         networkObj.trainParams = {};
-        networkObj.trainParams = trainParams;
+        networkObj.trainParams.trainingSet = m.trainingSet;
+        networkObj.trainParams.iterations = m.iterations;
         networkObj.networkId = statsObj.testRunId;
         networkObj.testRunId = statsObj.testRunId;
         networkObj.neuralNetworkFile = statsObj.neuralNetworkFile;
@@ -382,53 +393,32 @@ process.on("message", function(m) {
 
         process.send({op:"TRAIN_COMPLETE", networkObj: networkObj, statsObj: statsObj});
 
-        // saveFile(neuralNetworkFolder, statsObj.defaultNeuralNetworkFile, networkObj, function(err){
-        //   if (err){
-        //     console.error(chalkError("*** SAVE DEFAULT NEURAL NETWORK FILE ERROR | " + defaultNeuralNetworkFile + " | " + err));
-        //   }
-        //   else {
-        //     console.log(chalkLog("SAVED DEFAULT NEURAL NETWORK FILE"
-        //       + " | " + neuralNetworkFolder + "/" + statsObj.defaultNeuralNetworkFile
-        //     ));
-        //   }
-
-        //   saveFile(neuralNetworkFolder, statsObj.neuralNetworkFile, networkObj, function(err){
-        //     if (err){
-        //       console.error(chalkError("*** SAVE NEURAL NETWORK FILE ERROR | " + neuralNetworkFile + " | " + err));
-        //     }
-        //     else {
-        //       console.log(chalkLog("SAVED NEURAL NETWORK FILE"
-        //         + " | " + neuralNetworkFolder + "/" + statsObj.neuralNetworkFile
-        //       ));
-        //     }
-        //     process.send({op:"TRAIN_COMPLETE", networkObj: networkObj, statsObj: statsObj});
-        //   });
-        // });
-
         showStats();
       });
     break;
 
     case "EVOLVE":
 
-      trainingSet = m.trainingSet;
-
       statsObj.training.startTime = moment().valueOf();
       statsObj.training.testRunId = m.testRunId;
       statsObj.training.iterations = m.iterations;
       statsObj.training.trainingSet = {};
-      statsObj.training.trainingSet.length = trainingSet.length;
-      statsObj.training.trainingSet.numInputs = trainingSet[0].datum["input"].length;
-      statsObj.training.trainingSet.numOutputs = trainingSet[0].datum["output"].length;
+      statsObj.training.trainingSet.length = m.trainingSet.length;
+      statsObj.training.trainingSet.numInputs = m.trainingSet[0].datum.input.length;
+      statsObj.training.trainingSet.numOutputs = m.trainingSet[0].datum.output.length;
 
       statsObj.inputArraysFile = m.inputArraysFile;
 
-      console.log(chalkAlert("NN CHILD: NEURAL NET EVOLVE"
-        + " | " + trainingSet.length + " TRAINING DATA POINTS"
+      console.log(chalkAlert("\n\nNN CHILD: NEURAL NET EVOLVE"
+        + "\nINPUTS:     " + statsObj.training.trainingSet.numInputs
+        + "\nOUTPUTS:    " + statsObj.training.trainingSet.numOutputs
+        + "\nDATA PTS:   " + m.trainingSet.length
+        + "\nITERATIONS: " + statsObj.training.iterations
+        + "\n"
       ));
 
       evolveParams = {
-        trainingSet: trainingSet,
+        trainingSet: m.trainingSet,
         iterations: m.iterations,
         mutation: m.mutation,
         activation: m.activation,
@@ -438,14 +428,13 @@ process.on("message", function(m) {
         elitism: m.elitism,
         log: m.log,
         error: m.error,
-        iterations: m.iterations,
         mutationRate: m.mutationRate,
-        clear: m.clear,
+        clear: m.clear
       };
 
       evolve(evolveParams, function(results){
 
-        console.log(chalkAlert("EVOLVE RESULTS\n" + jsonPrint(results)));
+        debug(chalkAlert("EVOLVE RESULTS\n" + jsonPrint(results)));
 
         statsObj.training.endTime = moment().valueOf();
         statsObj.training.elapsed = results.time;
