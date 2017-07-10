@@ -274,18 +274,18 @@ function evolve(params, callback){
     popsize: params.popsize,
     elitism: params.elitism,
     log: params.log,
-    // error: params.error,
     iterations: params.iterations,
     mutationRate: params.mutationRate,
     activation: params.activation
-    // clear: params.clear
   };
 
   statsObj.training.evolve = {};
   statsObj.training.evolve.options = {};
   statsObj.training.evolve.options = options;
 
-  Object.keys(options).forEach(function(key){
+  // Object.keys(options).forEach(function(key){
+  async.each(Object.keys(options), function(key, cb){
+    
     if (key === "mutation") {
       console.log("EVOLVE OPTION | " + key + ": " + options[key]);
       options.mutation = neataptic.Methods.Mutation[key];
@@ -301,21 +301,28 @@ function evolve(params, callback){
     else {
       console.log("EVOLVE OPTION | " + key + ": " + options[key]);
     }
-  });
-
-
-  network = new neataptic.Network(statsObj.training.trainingSet.numInputs, statsObj.training.trainingSet.numOutputs);
-
-  let trainingSet = [];
-
-  async.each(params.trainingSet, function(datumObj, cb){
-    debug("DATUM | " + datumObj.name);
-    trainingSet.push(datumObj.datum);
     cb();
+
   }, function(){
-    const results = network.evolve(trainingSet, options);
-    if (callback !== undefined) { callback(results); }
+
+    network = new neataptic.Network(
+      statsObj.training.trainingSet.numInputs, 
+      statsObj.training.trainingSet.numOutputs
+    );
+
+    let trainingSet = [];
+
+    async.each(params.trainingSet, function(datumObj, cb){
+      debug("DATUM | " + datumObj.name);
+      trainingSet.push(datumObj.datum);
+      cb();
+    }, function(){
+      const results = network.evolve(trainingSet, options);
+      if (callback !== undefined) { callback(results); }
+    });
+
   });
+
 
 }
 

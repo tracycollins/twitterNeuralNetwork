@@ -1,6 +1,9 @@
 /*jslint node: true */
 "use strict";
 
+const inputTypes = ["hashtags", "mentions", "urls", "words"];
+
+
 let slackChannel = "#word";
 
 const neataptic = require("neataptic");
@@ -17,8 +20,9 @@ const DEFAULT_EVOLVE_ITERATIONS = 100;
 const DEFAULT_EVOLVE_EQUAL = false;
 const DEFAULT_EVOLVE_ERROR = 0.03;
 const DEFAULT_EVOLVE_LOG = 1;
-const DEFAULT_EVOLVE_COST = "BINARY";
+// const DEFAULT_EVOLVE_COST = "BINARY";
 // const DEFAULT_EVOLVE_COST = "CROSS_ENTROPY";
+const DEFAULT_EVOLVE_COST = "MSE";
 const DEFAULT_EVOLVE_CLEAR = false;
 
 let configuration = {};
@@ -129,9 +133,6 @@ let inputArrays = [];
 const jsUcfirst = function(string) {
   return string.charAt(0).toUpperCase() + string.slice(1);
 };
-
-const inputTypes = ["hashtags", "mentions", "urls", "words"];
-
 
 const configEvents = new EventEmitter2({
   wildcard: true,
@@ -320,18 +321,37 @@ function allOnes(array){
 }
 
 function indexOfMax (arr, callback) {
+
   if (arr.length === 0) {
     console.log(chalkAlert("indexOfMax: 0 LENG ARRAY: -1"));
     return(callback(-1)) ; 
   }
+
   if ((arr[0] === arr[1]) && (arr[1] === arr[2])){
-    console.log(chalkAlert("indexOfMax: ALL EQUAL: " + arr[0]));
+    console.log(chalkAlert("indexOfMax: ALL EQUAL"));
+    console.log(chalkAlert("ARR" 
+      + " | " + arr[0].toFixed(2) 
+      + " - " + arr[1].toFixed(2) 
+      + " - " + arr[2].toFixed(2)
+    ));
     return(callback(-1)) ; 
   }
 
   console.log("B4 ARR: " + arr[0].toFixed(2) + " - " + arr[1].toFixed(2) + " - " + arr[2].toFixed(2));
   arrayNormalize(arr);
   console.log("AF ARR: " + arr[0].toFixed(2) + " - " + arr[1].toFixed(2) + " - " + arr[2].toFixed(2));
+
+  if (((arr[0] === 1) && (arr[1] === 1)) 
+    || ((arr[0] === 1) && (arr[2] === 1))
+    || ((arr[1] === 1) && (arr[2] === 1))){
+    console.log(chalkAlert("indexOfMax: MULTIPLE SET"));
+    console.log(chalkAlert("ARR" 
+      + " | " + arr[0].toFixed(2) 
+      + " - " + arr[1].toFixed(2) 
+      + " - " + arr[2].toFixed(2)
+    ));
+    return(callback(-1)) ; 
+  }
 
   let max = arr[0];
   let maxIndex = 0;
@@ -542,7 +562,7 @@ function initInputArrays(callback){
 
   console.log(chalkBlue("INIT INPUT ARRAYS"));
 
-  async.each(inputTypes, function(inputType, cb){
+  async.eachSeries(inputTypes, function(inputType, cb){
 
     const inputFile = "defaultInput" + jsUcfirst(inputType) + ".json";
 
@@ -1536,21 +1556,9 @@ function testNetwork(nw, testObj, callback){
 
     activateNetwork(nw, testDatumObj.datum.input, function(testOutput){
 
+      console.log(chalkLog("\n========================================\n"));
+
       printDatum(testDatumObj.name, testDatumObj.datum, function(){
-
-        // if (allZeros(testOutput)) {
-        //   console.log(chalkError("\n??? NO TEST OUTPUT ... SKIPPING | " + testOutput));
-        //   numSkipped += 1;
-        //   cb();
-        //   return;
-        // }
-
-        // if (allOnes(testOutput)) {
-        //   console.log(chalkError("\n??? ALL ONES TEST OUTPUT ... SKIPPING | " + testOutput));
-        //   numSkipped += 1;
-        //   cb();
-        //   return;
-        // }
 
         numTested += 1;
 
