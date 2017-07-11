@@ -53,6 +53,7 @@ module.exports = function() {
 	  console.log('MONGOOSE default connection disconnected');
 	});
 
+	require('../app/models/neuralNetwork.server.model');  
 
 	// require('../app/models/admin.server.model');  
 	require('../app/models/client.server.model');  

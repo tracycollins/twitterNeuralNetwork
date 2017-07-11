@@ -100,8 +100,11 @@ let statsObj = {};
 
 statsObj.hostname = hostname;
 statsObj.pid = process.pid;
-statsObj.heap = process.memoryUsage().heapUsed/(1024*1024);
-statsObj.maxHeap = process.memoryUsage().heapUsed/(1024*1024);
+
+statsObj.memory = {};
+statsObj.memory.rss = process.memoryUsage().rss/(1024*1024);
+statsObj.memory.maxRss = process.memoryUsage().rss/(1024*1024);
+statsObj.memory.maxRssTime = moment().valueOf();
 
 statsObj.startTime = moment().valueOf();
 statsObj.elapsed = msToTime(moment().valueOf() - statsObj.startTime);
@@ -196,9 +199,14 @@ function showStats(options){
   else if (statsObj.training.startTime > 0){
     statsObj.training.elapsed = msToTime(moment().valueOf() - statsObj.training.startTime);
   }
+
   statsObj.elapsed = msToTime(moment().valueOf() - statsObj.startTime);
-  statsObj.heap = process.memoryUsage().heapUsed/(1024*1024);
-  statsObj.maxHeap = Math.max(statsObj.maxHeap, statsObj.heap);
+  statsObj.memory.rss = process.memoryUsage().rss/(1024*1024);
+
+  if (statsObj.memory.rss > statsObj.memory.maxRss) {
+    statsObj.memory.maxRss = statsObj.memory.rss;
+    statsObj.memory.maxRssTime = moment().valueOf();
+  }
 
   if (options) {
     console.log("NN STATS\n" + jsonPrint(statsObj));
@@ -247,10 +255,10 @@ function train (params, callback){
       + " | " + statsObj.training.trainingSet.numOutputs + " OUTPUTS"
     ));
 
-    network = new neataptic.Architect.Perceptron(
-    // network = new neataptic.Network(
+    // network = new neataptic.Architect.Perceptron(
+    network = new neataptic.Network(
       statsObj.training.trainingSet.numInputs, 
-      statsObj.training.trainingSet.numInputs+statsObj.training.trainingSet.numOutputs, 
+      // statsObj.training.trainingSet.numInputs+statsObj.training.trainingSet.numOutputs, 
       statsObj.training.trainingSet.numOutputs
     );
 
@@ -270,26 +278,25 @@ function train (params, callback){
 
 function evolve(params, callback){
 
-  let options = {
-    mutation: params.mutation,
-    cost: params.cost,
-    equal: params.equal,
-    popsize: params.popsize,
-    elitism: params.elitism,
-    log: params.log,
-    iterations: params.iterations,
-    mutationRate: params.mutationRate,
-    activation: params.activation
-  };
+  let options = {};
 
+  options.mutation = neataptic.Methods.Mutation.FFW;
+  options.equal = params.equal;
+  options.popsize = params.popsize;
+  options.elitism = params.elitism;
+  options.log = params.log;
+  options.error = params.error;
+  options.iterations = params.iterations;
+  options.mutationRate = params.mutationRate;
 
   async.each(Object.keys(options), function(key, cb){
 
     if (key === "mutation") {
-      console.log("EVOLVE OPTION | " + key + ": " + options[key]);
-      options.mutation = neataptic.Methods.Mutation[key];
+      // console.log("EVOLVE OPTION | " + key + ": " + options[key]);
+      // options.mutation = neataptic.Methods.Mutation[key];
+      // options.mutation = neataptic.Methods.Mutation.FFW;
     }
-    else if (key === "activation") {
+    else if ((key === "activation") && (options[key] !== undefined)) {
       console.log("EVOLVE OPTION | " + key + ": " + options[key]);
       options.activation = neataptic.Methods.Activation[key];
     }
@@ -297,26 +304,45 @@ function evolve(params, callback){
       console.log("EVOLVE OPTION | " + key + ": " + options[key]);
       options.cost = neataptic.Methods.Cost[key];
     }
-    else {
+    else if (key !== "activation") {
       console.log("EVOLVE OPTION | " + key + ": " + options[key]);
     }
     cb();
 
   }, function(){
 
-    network = new neataptic.Network(
+    // network = new neataptic.Network(
+
+    const hiddenLayerSize = statsObj.training.trainingSet.numInputs + statsObj.training.trainingSet.numOutputs;
+
+    network = new neataptic.Architect.Perceptron(
       statsObj.training.trainingSet.numInputs, 
+      hiddenLayerSize,
       statsObj.training.trainingSet.numOutputs
     );
 
     let trainingSet = [];
 
     async.each(params.trainingSet, function(datumObj, cb){
+
       debug("DATUM | " + datumObj.name);
-      trainingSet.push(datumObj.datum);
+
+      trainingSet.push({ input: datumObj.datum.input, output: datumObj.datum.output});
+
       cb();
+
     }, function(){
+
+      console.log(chalkAlert("START EVOLVE"
+        + "\nIN:            " + statsObj.training.trainingSet.numInputs
+        + "\nOUT:           " + statsObj.training.trainingSet.numOutputs
+        + "\nTRAINING DATA: " + trainingSet.length
+        // + "\nMUTATION\n" + options.mutation.toString()
+        + "\nOPTIONS\n" + jsonPrint(options)
+      ));
+
       const results = network.evolve(trainingSet, options);
+
       if (callback !== undefined) { callback(results); }
     });
 
@@ -425,16 +451,16 @@ process.on("message", function(m) {
 
       evolveParams = {
         trainingSet: m.trainingSet,
-        iterations: m.iterations,
         mutation: m.mutation,
-        // activation: m.activation,
-        cost: m.cost,
         equal: m.equal,
         popsize: m.popsize,
         elitism: m.elitism,
-        mutationRate: m.mutationRate,
+        log: m.log,
         error: m.error,
-        log: m.log
+        iterations: m.iterations,
+        mutationRate: m.mutationRate
+        // activation: m.activation,
+        // cost: m.cost,
         // clear: m.clear
       };
 
