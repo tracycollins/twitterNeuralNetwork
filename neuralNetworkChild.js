@@ -6,6 +6,7 @@ let ONE_SECOND = 1000 ;
 
 const async = require("async");
 const os = require("os");
+const pick = require("object.pick");
 
 let hostname = os.hostname();
 hostname = hostname.replace(/\.home/g, "");
@@ -104,6 +105,9 @@ statsObj.maxHeap = process.memoryUsage().heapUsed/(1024*1024);
 
 statsObj.startTime = moment().valueOf();
 statsObj.elapsed = msToTime(moment().valueOf() - statsObj.startTime);
+
+statsObj.evolve = {};
+statsObj.evolve.evolveParams = {};
 
 statsObj.training = {};
 statsObj.training.startTime = 0;
@@ -266,7 +270,6 @@ function train (params, callback){
 
 function evolve(params, callback){
 
-  // neataptic.Methods.Mutation.FFW
   let options = {
     mutation: params.mutation,
     cost: params.cost,
@@ -279,13 +282,9 @@ function evolve(params, callback){
     activation: params.activation
   };
 
-  statsObj.training.evolve = {};
-  statsObj.training.evolve.options = {};
-  statsObj.training.evolve.options = options;
 
-  // Object.keys(options).forEach(function(key){
   async.each(Object.keys(options), function(key, cb){
-    
+
     if (key === "mutation") {
       console.log("EVOLVE OPTION | " + key + ": " + options[key]);
       options.mutation = neataptic.Methods.Mutation[key];
@@ -428,16 +427,22 @@ process.on("message", function(m) {
         trainingSet: m.trainingSet,
         iterations: m.iterations,
         mutation: m.mutation,
-        activation: m.activation,
+        // activation: m.activation,
         cost: m.cost,
         equal: m.equal,
         popsize: m.popsize,
         elitism: m.elitism,
-        log: m.log,
-        error: m.error,
         mutationRate: m.mutationRate,
-        clear: m.clear
+        error: m.error,
+        log: m.log
+        // clear: m.clear
       };
+
+      statsObj.evolve.options = {};
+      statsObj.evolve.options = pick(
+        evolveParams, 
+        ["iterations", "mutation", "cost", "equal", "popsize", "elitism", "mutationRate", "error"]
+      );
 
       evolve(evolveParams, function(results){
 

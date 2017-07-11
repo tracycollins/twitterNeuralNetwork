@@ -1,28 +1,27 @@
 /*jslint node: true */
 "use strict";
 
-const inputTypes = ["hashtags", "mentions", "urls", "words"];
-
+const inputTypes = ["hashtags", "mentions", "urls", "words", "emoji"];
 
 let slackChannel = "#word";
 
 const neataptic = require("neataptic");
 const DEFAULT_NETWORK_CREATE_MODE = "evolve";
-const DEFAULT_TEST_RATIO = 0.05;
+const DEFAULT_TEST_RATIO = 0.1;
 
 const DEFAULT_EVOLVE_MUTATION = "FFW";
-const DEFAULT_EVOLVE_MUTATION_RATE = 0.7;
+const DEFAULT_EVOLVE_MUTATION_RATE = 0.3;
 // const DEFAULT_EVOLVE_ACTIVATION = "STEP";
 const DEFAULT_EVOLVE_ACTIVATION = "LOGISTIC";
 const DEFAULT_EVOLVE_POPSIZE = 100;
-const DEFAULT_EVOLVE_ELITISM = 5;
+const DEFAULT_EVOLVE_ELITISM = 50;
 const DEFAULT_EVOLVE_ITERATIONS = 100;
-const DEFAULT_EVOLVE_EQUAL = false;
+const DEFAULT_EVOLVE_EQUAL = true;
 const DEFAULT_EVOLVE_ERROR = 0.03;
 const DEFAULT_EVOLVE_LOG = 1;
 // const DEFAULT_EVOLVE_COST = "BINARY";
-// const DEFAULT_EVOLVE_COST = "CROSS_ENTROPY";
-const DEFAULT_EVOLVE_COST = "MSE";
+const DEFAULT_EVOLVE_COST = "CROSS_ENTROPY";
+// const DEFAULT_EVOLVE_COST = "MSE";
 const DEFAULT_EVOLVE_CLEAR = false;
 
 let configuration = {};
@@ -61,6 +60,8 @@ const Autolinker = require( "autolinker" );
 const Slack = require("slack-node");
 const cp = require("child_process");
 const arrayNormalize = require("array-normalize");
+const emojiRegex = require("emoji-regex");
+const eRegex = emojiRegex();
 
 // const keywordExtractor = require("keyword-extractor");
 const keywordExtractor = require("./js/keyword-extractor");
@@ -122,6 +123,7 @@ histograms.words = {};
 histograms.urls = {};
 histograms.hashtags = {};
 histograms.mentions = {};
+histograms.emoji = {};
 
 let classifiedUserHashmap = {};
 
@@ -328,8 +330,8 @@ function indexOfMax (arr, callback) {
   }
 
   if ((arr[0] === arr[1]) && (arr[1] === arr[2])){
-    console.log(chalkAlert("indexOfMax: ALL EQUAL"));
-    console.log(chalkAlert("ARR" 
+    debug(chalkAlert("indexOfMax: ALL EQUAL"));
+    debug(chalkAlert("ARR" 
       + " | " + arr[0].toFixed(2) 
       + " - " + arr[1].toFixed(2) 
       + " - " + arr[2].toFixed(2)
@@ -337,15 +339,15 @@ function indexOfMax (arr, callback) {
     return(callback(-1)) ; 
   }
 
-  console.log("B4 ARR: " + arr[0].toFixed(2) + " - " + arr[1].toFixed(2) + " - " + arr[2].toFixed(2));
+  debug("B4 ARR: " + arr[0].toFixed(2) + " - " + arr[1].toFixed(2) + " - " + arr[2].toFixed(2));
   arrayNormalize(arr);
-  console.log("AF ARR: " + arr[0].toFixed(2) + " - " + arr[1].toFixed(2) + " - " + arr[2].toFixed(2));
+  debug("AF ARR: " + arr[0].toFixed(2) + " - " + arr[1].toFixed(2) + " - " + arr[2].toFixed(2));
 
   if (((arr[0] === 1) && (arr[1] === 1)) 
     || ((arr[0] === 1) && (arr[2] === 1))
     || ((arr[1] === 1) && (arr[2] === 1))){
-    console.log(chalkAlert("indexOfMax: MULTIPLE SET"));
-    console.log(chalkAlert("ARR" 
+    debug(chalkAlert("indexOfMax: MULTIPLE SET"));
+    debug(chalkAlert("ARR" 
       + " | " + arr[0].toFixed(2) 
       + " - " + arr[1].toFixed(2) 
       + " - " + arr[2].toFixed(2)
@@ -364,7 +366,7 @@ function indexOfMax (arr, callback) {
     }
     cb();
   }, function(){
-    console.log(chalk.blue("indexOfMax: " + maxIndex 
+    debug(chalk.blue("indexOfMax: " + maxIndex 
       + " | " + arr[maxIndex].toFixed(2)
       + " | " + arr[0].toFixed(2) + " - " + arr[1].toFixed(2) + " - " + arr[2].toFixed(2)
     ));
@@ -422,7 +424,7 @@ function quit(){
       // console.log("\n=====================\nRESULTS\n" + jsonPrint(statsObj.tests[testObj.testRunId].results));
       slackText = "\n*" + statsObj.runId + "*";
       slackText = slackText + "\n*RESULTS: " + statsObj.tests[testObj.testRunId].results.successRate.toFixed(1) + " %*";
-      slackText = slackText + "\nITERATIONS: " + statsObj.tests[testObj.testRunId].training.evolve.options.iterations;
+      slackText = slackText + "\nITERATIONS: " + statsObj.tests[testObj.testRunId].evolve.options.iterations;
       slackText = slackText + "\nTESTS: " + statsObj.tests[testObj.testRunId].results.numTests;
       slackText = slackText + " | PASS: " + statsObj.tests[testObj.testRunId].results.numPassed;
       slackText = slackText + " | SKIP: " + statsObj.tests[testObj.testRunId].results.numSkipped;
@@ -886,7 +888,7 @@ configEvents.once("INIT_MONGODB", function(){
 
 let wordExtractionOptions = {
   language:"english",
-  remove_digits: true,
+  remove_digits: false,
   return_changed_case: true,
   remove_duplicates: true
 };
@@ -900,11 +902,18 @@ let parser = new Autolinker( {
 
 function parseText(text, options, callback){
 
-  console.log(chalk.blue("\ntext\n" + text));
+  console.log(chalk.blue("\nPARSE TEST\n" + text + "\n"));
 
   if (text === "undefined") {
     console.error(chalkError("*** PARSER TEXT UNDEFINED"));
   }
+
+  const userHistograms = {};
+  userHistograms.words = {};
+  userHistograms.urls = {};
+  userHistograms.hashtags = {};
+  userHistograms.mentions = {};
+  userHistograms.emoji = {};
 
   text = text.replace(/,/gi, " ");
 
@@ -913,6 +922,8 @@ function parseText(text, options, callback){
   let urlArray = [];
   let mentionArray = [];
   let hashtagArray = [];
+  let emojiArray = [];
+
 
   async.each(parseResults, function(matchObj, cb){
 
@@ -946,13 +957,17 @@ function parseText(text, options, callback){
 
    }, function(err){
 
+    let matchEmoji;
+    while (matchEmoji = eRegex.exec(text)) {
+      const emj = matchEmoji[0];
+      emojiArray.push(emj);
+      text = text.replace(emj, " ");
+      console.log(chalkInfo(emojiArray.length + " | EMJ: " + emj));
+      debug(chalk.bold.black("\nTEXT LESS EMOJI: " + text + "\n\n"));
+    }
+ 
+    let textWordBreaks = text.replace(/\//gim, " ");
     const wordArray = keywordExtractor.extract(text, wordExtractionOptions);
-
-    const userHistograms = {};
-    userHistograms.words = {};
-    userHistograms.urls = {};
-    userHistograms.hashtags = {};
-    userHistograms.mentions = {};
 
     async.parallel({
 
@@ -1088,25 +1103,46 @@ function parseText(text, options, callback){
         else {
           cb(null, userHistograms.urls);
         }
+      },
+
+      emoji: function(cb){
+        if (emojiArray) {
+          async.each(emojiArray, function(emoji, cb2){
+            if (options.updateGlobalHistograms) {
+              histograms.emoji[emoji] = (histograms.emoji[emoji] === undefined) ? 1 : histograms.emoji[emoji]+1;
+            }
+            userHistograms.emoji[emoji] = (userHistograms.emoji[emoji] === undefined) ? 1 : userHistograms.emoji[emoji]+1;
+            console.log(chalkAlert("->- DESC Es"
+              + " | " + userHistograms.emoji[emoji]
+              + " | " + emoji
+            ));
+            cb2();
+          }, function(err2){
+            cb(err2, userHistograms.emoji);
+          });
+        }
+        else {
+          cb(null, userHistograms.emoji);
+        }
       }
 
     }, function(err2, results){
 
-      let t = "HISTOGRAMS";
+      let t = "\nHISTOGRAMS";
 
       Object.keys(results).forEach(function(key){
         if (results[key]) {
           t = t + " | " + key.toUpperCase() + ": " + Object.keys(results[key]).length;
         }
       });
-      console.log(chalkLog(t));
+      console.log(chalkInfo(t + "\n"));
       callback((err || err2), results);
     });
 
   });
 }
 
-function printDatum(title, datum, callback){
+function printDatum(title, datum, label, callback){
 
   if (datum.input.length === 0) {
     console.error(chalkError("*** EMPTY DATUM INPUT ***\n" + jsonPrint(datum)));
@@ -1119,23 +1155,27 @@ function printDatum(title, datum, callback){
   let text = "";
 
   if (title) {
-    // console.log("\n-------- " + title + " --------");
+    console.log(title + " --------");
     text = "\n-------- " + title + " --------\n";
   }
   else {
-    // console.log("\n--------------------");
+    console.log("\n--------------------");
     text = "\n--------------------\n";
   }
 
-  // datum.input.forEach(function(bit, i){
 
-  let i=0;
-  async.eachSeries(datum.input, function(bit, cb){
+  async.eachOfSeries(datum.input, function(bit, i, cb){
+
+    if (bit && (i >= 2)) {
+      console.log("IN | " + label.input[i]);
+    }
 
     if (i === 0) {
+      console.log("IN | " + label.input[i] + ": " + bit.toFixed(10));
       row = row + bit.toFixed(10) + " | " ;
     }
     else if (i === 1) {
+      console.log("IN | " + label.input[i] + ": " + bit.toFixed(10));
       row = row + bit.toFixed(10);
     }
     else if (i === 2) {
@@ -1162,8 +1202,8 @@ function printDatum(title, datum, callback){
     cb();
 
   }, function(){
-    console.warn(text);
-    callback();
+    // console.warn(text);
+    callback(text);
   });
 }
 
@@ -1249,9 +1289,8 @@ function updateClassifiedUsers(cnf, callback){
             currentChalk = chalk.bold.gray;
         }
 
+        console.log(chalkInfo("\n==============================\n"));
         console.log(currentChalk("ADD  | U"
-          // + " | " + keywordArray
-          // + " | " + classification
           + " | SEN: " + sentimentText
           + " | " + classText
           + " | " + user.screenName
@@ -1264,12 +1303,17 @@ function updateClassifiedUsers(cnf, callback){
         ));
 
         let trainingSetDatum = {};
+        let trainingSetLabels = {};
+
         trainingSetDatum.inputHits = 0;
 
-        trainingSetDatum.input = [
-          sentimentObj.magnitude, 
-          sentimentObj.score
-        ];
+        trainingSetDatum.input = [];
+        trainingSetDatum.input.push(sentimentObj.magnitude);
+        trainingSetDatum.input.push(sentimentObj.score);
+
+        trainingSetLabels.input = [];
+        trainingSetLabels.input.push("magnitude");
+        trainingSetLabels.input.push("score");
 
         if (user.screenName !== undefined) {
 
@@ -1382,9 +1426,12 @@ function updateClassifiedUsers(cnf, callback){
                 debug(chalkAlert("START ARRAY: " + type + " | " + inputArray[type].length));
 
                 async.eachSeries(inputArray[type], function(element, cb2){
+
+                  trainingSetLabels.input.push(element);
+
                   if (histogram[type][element]) {
                     trainingSetDatum.inputHits += 1;
-                    console.log(chalkBlue("+++ DATUM BIT: " + type
+                    debug(chalkBlue("+ DATUM BIT: " + type
                       + " | INPUT HITS: " + trainingSetDatum.inputHits 
                       + " | " + element 
                       + " | " + histogram[type][element]
@@ -1393,7 +1440,7 @@ function updateClassifiedUsers(cnf, callback){
                     cb2();
                   }
                   else {
-                    debug(chalkInfo("--- DATUM BIT: " + type
+                    debug(chalkInfo("- DATUM BIT: " + type
                       + " | " + element 
                       + " | " + histogram[type][element]
                     ));
@@ -1401,14 +1448,14 @@ function updateClassifiedUsers(cnf, callback){
                     cb2();
                   }
                 }, function(err){
-                 if (err) {
+                  if (err) {
                     console.error("*** PARSE TEXT ERROR\n" + err);
                   }
                   debug(chalkAlert("DONE ARRAY: " + type));
                   cb1();
                 });
               }, function(err){
-               if (err) {
+                if (err) {
                   console.error("*** PARSE TEXT ERROR\n" + err);
                 }
                 debug(chalkAlert("PARSE DESC COMPLETE"));
@@ -1443,6 +1490,8 @@ function updateClassifiedUsers(cnf, callback){
         }
 
         trainingSetDatum.output = [];
+        trainingSetLabels.output = [];
+        trainingSetLabels.output = ["LEFT", "NEUTRAL", "RIGHT"];
 
         switch (keywordArray[0]){
           case "left":
@@ -1465,8 +1514,9 @@ function updateClassifiedUsers(cnf, callback){
         debug("trainingSetDatum INPUT:  " + trainingSetDatum.input);
         debug("trainingSetDatum OUTPUT: " + trainingSetDatum.output);
 
-        printDatum(user.screenName, trainingSetDatum, function(){
-          trainingSet.push({name: user.screenName, datum:trainingSetDatum});
+        printDatum(user.screenName, trainingSetDatum, trainingSetLabels, function(text){
+          debug(chalkInfo(text));
+          trainingSet.push({name: user.screenName, datum: trainingSetDatum, labels: trainingSetLabels});
           cb0();
         });
 
@@ -1527,6 +1577,7 @@ let activateInterval;
 function activateNetwork(n, input, callback){
 
   let output;
+  output = n.activate(input);
 
   activateInterval = setInterval(function(){
 
@@ -1536,7 +1587,6 @@ function activateNetwork(n, input, callback){
     }
   }, 200);
 
-  output = n.activate(input);
 }
 
 function testNetwork(nw, testObj, callback){
@@ -1558,7 +1608,9 @@ function testNetwork(nw, testObj, callback){
 
       console.log(chalkLog("\n========================================\n"));
 
-      printDatum(testDatumObj.name, testDatumObj.datum, function(){
+      printDatum(testDatumObj.name, testDatumObj.datum, testDatumObj.labels, function(text){
+
+        debug(chalkInfo(text));
 
         numTested += 1;
 
@@ -1574,7 +1626,7 @@ function testNetwork(nw, testObj, callback){
 
             let currentChalk = passed ? chalkLog : chalkAlert;
 
-            console.log(currentChalk("\n-----\nTEST RESULT: " + passed 
+            console.log(currentChalk("\nTEST RESULT: " + passed 
               + " | " + successRate.toFixed(2) + "%"
               // + "\n" + "TO: " + testOutput 
               + "\n" + testOutput[0].toFixed(10)
@@ -1586,6 +1638,7 @@ function testNetwork(nw, testObj, callback){
               + " " + testDatumObj.datum.output[1].toFixed(10) 
               + " " + testDatumObj.datum.output[2].toFixed(10) 
               + " | EMOI: " + expectedMaxOutputIndex
+              // + "\n==================================="
             ));
 
             cb();
@@ -1626,7 +1679,7 @@ function initNeuralNetworkChild(callback){
 
         console.log(chalkBlue("NETWORK EVOLVE/TRAIN COMPLETE"
           + "\nELAPSED: " + getTimeStamp(m.networkObj.elapsed)
-          + "\nITERTNS: " + m.statsObj.training.evolve.options.iterations
+          + "\nITERTNS: " + m.statsObj.evolve.options.iterations
           + "\nNN:      " + m.networkObj.neuralNetworkFile
           + "\nINPUTS:  " + m.networkObj.network.input
           + "\nOUTPUTS: " + m.networkObj.network.output
@@ -1661,9 +1714,9 @@ function initNeuralNetworkChild(callback){
           statsObj.tests[testObj.testRunId].results = {};
           statsObj.tests[testObj.testRunId].results = testObj.results;
           statsObj.tests[testObj.testRunId].training = {};
-          statsObj.tests[testObj.testRunId].training.evolve = {};
-          statsObj.tests[testObj.testRunId].training.evolve.options = {};
-          statsObj.tests[testObj.testRunId].training.evolve.options = m.statsObj.training.evolve.options;
+          statsObj.tests[testObj.testRunId].evolve = {};
+          statsObj.tests[testObj.testRunId].evolve.options = {};
+          statsObj.tests[testObj.testRunId].evolve.options = m.statsObj.evolve.options;
           statsObj.tests[testObj.testRunId].neuralNetworkFile = m.networkObj.neuralNetworkFile;
           statsObj.tests[testObj.testRunId].elapsed = m.networkObj.elapsed;
 
@@ -1672,9 +1725,16 @@ function initNeuralNetworkChild(callback){
             + "\n  PASSED:  " + results.numPassed
             + "\n  SKIPPED: " + results.numSkipped
             + "\n  SUCCESS: " + results.successRate.toFixed(1) + "%"
-            // + "\nTRAINING OPTIONS"
-            // + "\n" + jsonPrint(statsObj.tests[testObj.testRunId].training.evolve.options)
+            // + "\n  EVOLVE OPTIONS"
+            // + "\n  " + jsonPrint(statsObj.tests[testObj.testRunId].evolve.options)
           ));
+
+          const options = statsObj.tests[testObj.testRunId].evolve.options;
+
+          console.log("\nEVOLVE OPTIONS\n===================");
+          Object.keys(options).forEach(function(key){
+            console.log("  " + key + ": " + options[key]);
+          });
 
           console.log(chalkLog("... SAVING NEURAL NETWORK FILE"
             + " | " + neuralNetworkFolder + "/" + m.networkObj.neuralNetworkFile
@@ -1766,6 +1826,7 @@ function initTimeout(){
             console.log(chalkBlue("INITIALIZED CLASSIFIED USERS"
               + " | " + Object.keys(classifiedUserHashmap).length
             ));
+
             updateClassifiedUsers(cnf, function(err){
 
               if (err) {
