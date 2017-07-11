@@ -311,14 +311,14 @@ function evolve(params, callback){
 
   }, function(){
 
-    // network = new neataptic.Network(
 
-    const hiddenLayerSize = statsObj.training.trainingSet.numInputs + statsObj.training.trainingSet.numOutputs;
+    const hiddenLayerSize = params.trainingSet[0].datum.input.length + params.trainingSet[0].datum.output.length;
 
-    network = new neataptic.Architect.Perceptron(
-      statsObj.training.trainingSet.numInputs, 
-      hiddenLayerSize,
-      statsObj.training.trainingSet.numOutputs
+    // network = new neataptic.Architect.Perceptron(
+    network = new neataptic.Network(
+      params.trainingSet[0].datum.input.length, 
+      // hiddenLayerSize,
+      params.trainingSet[0].datum.output.length
     );
 
     let trainingSet = [];
@@ -327,15 +327,18 @@ function evolve(params, callback){
 
       debug("DATUM | " + datumObj.name);
 
-      trainingSet.push({ input: datumObj.datum.input, output: datumObj.datum.output});
+      trainingSet.push({ 
+        input: datumObj.datum.input, 
+        output: datumObj.datum.output
+      });
 
       cb();
 
     }, function(){
 
       console.log(chalkAlert("START EVOLVE"
-        + "\nIN:            " + statsObj.training.trainingSet.numInputs
-        + "\nOUT:           " + statsObj.training.trainingSet.numOutputs
+        + "\nIN:            " + params.trainingSet[0].datum.input.length
+        + "\nOUT:           " + params.trainingSet[0].datum.output.length
         + "\nTRAINING DATA: " + trainingSet.length
         // + "\nMUTATION\n" + options.mutation.toString()
         + "\nOPTIONS\n" + jsonPrint(options)

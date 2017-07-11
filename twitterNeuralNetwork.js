@@ -1795,13 +1795,14 @@ function initNeuralNetworkChild(callback){
             }
 
             console.log("> NETWORK UPDATED"
-              + " | " + updateNetworkObj.networkId 
-              + "\nTYPE: " + updateNetworkObj.networkType
-              + "\nIN: " + updateNetworkObj.inputs.length
-              + "\nOUT: " + updateNetworkObj.outputs.length
-              + "\nEVOLVE: " + jsonPrint(updateNetworkObj.evolve) 
-              + "\nTRAIN: " + jsonPrint(updateNetworkObj.train)
-              + "\nTEST: " + jsonPrint(updateNetworkObj.test)
+              + "\nNET ID:  " + updateNetworkObj.networkId 
+              // + "\nTYPE:    " + updateNetworkObj.networkType
+              + "\nSUCCESS: " + updateNetworkObj.successRate.toFixed(1) + "%"
+              + "\nIN:      " + updateNetworkObj.inputs.length
+              + "\nOUT:     " + updateNetworkObj.outputs.length
+              + "\nEVOLVE:  " + jsonPrint(updateNetworkObj.evolve) 
+              + "\nTRAIN:   " + jsonPrint(updateNetworkObj.train)
+              + "\nTEST:    " + jsonPrint(updateNetworkObj.test)
               + "\nCREATED: " + moment(new Date(updateNetworkObj.createdAt)).format(compactDateTimeFormat) 
             );
 

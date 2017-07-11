@@ -31,7 +31,7 @@ exports.findOneNetwork = function (network, params, callback) {
 
 	console.log("> NW UPDATE"
 		+ " | " + network.networkId 
-		+ "\nSUCCESS: " + network.success
+		+ "\nSUCCESS: " + network.successRate
 		+ "\nTYPE: " + network.networkType
 		+ "\nIN: " + network.inputs.length
 		+ "\nOUT: " + network.outputs.length
@@ -51,7 +51,7 @@ exports.findOneNetwork = function (network, params, callback) {
 			evolve: network.evolve,
 			train: network.train,
 			test: network.test,
-			success: network.success
+			successRate: network.successRate
 		}
 	};
 
@@ -83,7 +83,7 @@ exports.findOneNetwork = function (network, params, callback) {
 			else {
 				console.log("> NW UPDATED"
 					+ " | " + nw.networkId 
-					+ "\nSUCCESS: " + nw.success
+					+ "\nSUCCESS: " + nw.successRate
 					+ "\nTYPE: " + nw.networkType
 					+ "\nIN: " + nw.inputs.length
 					+ "\nOUT: " + nw.outputs.length
