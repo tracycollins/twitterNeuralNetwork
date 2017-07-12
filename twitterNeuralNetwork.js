@@ -297,7 +297,7 @@ const inputArraysFile = "inputArrays_" + statsObj.runId + ".json";
 let neuralNetworkFolder = dropboxConfigHostFolder + "/neuralNetworks";
 let neuralNetworkFile = "neuralNetwork.json";
 
-let classifiedUsersFolder = dropboxConfigHostFolder + "/classifiedUsers";
+let classifiedUsersFolder = dropboxConfigDefaultFolder + "/classifiedUsers";
 let classifiedUsersFile = "classifiedUsers.json";
 
 function getTimeStamp(inputTime) {
@@ -2013,7 +2013,7 @@ function initTimeout(){
           });
         }
         else {
-          console.log(chalkError("ERROR: loadFile: " + cnf.classifiedUsersFolder + cnf.classifiedUsersFile));
+          console.log(chalkError("ERROR: loadFile: " + cnf.classifiedUsersFolder + "/" + cnf.classifiedUsersFile));
         }
       });
     }
