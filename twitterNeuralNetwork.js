@@ -1260,7 +1260,7 @@ function updateClassifiedUsers(cnf, callback){
 
   async.each(classifiedUserIds, function(userId, cb0){
 
-    debug("updateClassifiedUsers: userId: " + userId);
+    console.log(chalkInfo("updateClassifiedUsers: userId: " + userId));
 
     User.findOne({userId: userId.toString()}, function(err, user){
 
