@@ -13,8 +13,8 @@ const DEFAULT_TEST_RATIO = 0.1;
 
 const DEFAULT_EVOLVE_MUTATION = "FFW";
 const DEFAULT_EVOLVE_EQUAL = true;
-const DEFAULT_EVOLVE_POPSIZE = 50;
-const DEFAULT_EVOLVE_ELITISM = 5;
+const DEFAULT_EVOLVE_POPSIZE = 100;
+const DEFAULT_EVOLVE_ELITISM = 10;
 const DEFAULT_EVOLVE_LOG = 1;
 const DEFAULT_EVOLVE_ERROR = 0.03;
 const DEFAULT_EVOLVE_ITERATIONS = 100;
@@ -439,12 +439,12 @@ function quit(){
   if (statsObj.tests[testObj.testRunId].results.successRate !== undefined) {
     // console.log("\n=====================\nRESULTS\n" + jsonPrint(statsObj.tests[testObj.testRunId].results));
     slackText = "\n*" + statsObj.runId + "*";
-    slackText = slackText + "\n*RESULTS: " + statsObj.tests[testObj.testRunId].results.successRate.toFixed(1) + " %*";
-    slackText = slackText + "\nITERATIONS: " + statsObj.tests[testObj.testRunId].evolve.options.iterations;
+    slackText = slackText + "\n*RES: " + statsObj.tests[testObj.testRunId].results.successRate.toFixed(1) + " %*";
+    slackText = slackText + "\nGENS: " + statsObj.tests[testObj.testRunId].evolve.options.iterations;
+    slackText = slackText + " | RUN " + statsObj.elapsed;
     slackText = slackText + "\nTESTS: " + statsObj.tests[testObj.testRunId].results.numTests;
     slackText = slackText + " | PASS: " + statsObj.tests[testObj.testRunId].results.numPassed;
     slackText = slackText + " | SKIP: " + statsObj.tests[testObj.testRunId].results.numSkipped;
-    slackText = slackText + "\nRUN TIME: " + statsObj.elapsed;
   }
   else {
     slackText = "\n*QUIT*\n" + statsObj.runId;
@@ -1595,11 +1595,14 @@ function updateClassifiedUsers(cnf, callback){
         if (configuration.testMode) {
           testObj.testSet.push(dataObj);
         }
-        else if (Math.random() < cnf.testSetRatio) {
-          testObj.testSet.push(dataObj);
-        }
+        // else if (Math.random() < cnf.testSetRatio) {
+        //   testObj.testSet.push(dataObj);
+        // }
         else {
           trainingSetNormalized.push(dataObj);
+          if (Math.random() < cnf.testSetRatio) {
+            testObj.testSet.push(dataObj);
+          }
           // console.log("dataObj\n" + jsonPrint(dataObj));
           // quit();
         }

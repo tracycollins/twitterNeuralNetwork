@@ -278,9 +278,11 @@ function train (params, callback){
 
 function evolve(params, callback){
 
+  if (params.architecture === undefined) { params.architecture = "random"; }
+
   let options = {};
 
-  options.mutation = neataptic.Methods.Mutation.FFW;
+  options.mutation = params.mutation;
   options.equal = params.equal;
   options.popsize = params.popsize;
   options.elitism = params.elitism;
@@ -292,9 +294,9 @@ function evolve(params, callback){
   async.each(Object.keys(options), function(key, cb){
 
     if (key === "mutation") {
-      // console.log("EVOLVE OPTION | " + key + ": " + options[key]);
-      // options.mutation = neataptic.Methods.Mutation[key];
-      // options.mutation = neataptic.Methods.Mutation.FFW;
+      console.log("EVOLVE OPTION | " + key + ": " + options[key]);
+      options.mutation = neataptic.Methods.Mutation[key];
+      options.mutation = neataptic.Methods.Mutation.FFW;
     }
     else if ((key === "activation") && (options[key] !== undefined)) {
       console.log("EVOLVE OPTION | " + key + ": " + options[key]);
@@ -314,12 +316,24 @@ function evolve(params, callback){
 
     const hiddenLayerSize = params.trainingSet[0].datum.input.length + params.trainingSet[0].datum.output.length;
 
-    // network = new neataptic.Architect.Perceptron(
-    network = new neataptic.Network(
-      params.trainingSet[0].datum.input.length, 
-      // hiddenLayerSize,
-      params.trainingSet[0].datum.output.length
-    );
+    switch (params.architecture) {
+
+      case "perceptron":
+        console.log("EVOLVE ARCH | " + params.architecture);
+        network = new neataptic.Architect.Perceptron(
+          params.trainingSet[0].datum.input.length, 
+          hiddenLayerSize,
+          params.trainingSet[0].datum.output.length
+        );
+      break;
+
+      default:
+        console.log("EVOLVE ARCH | " + params.architecture);
+        network = new neataptic.Network(
+          params.trainingSet[0].datum.input.length, 
+          params.trainingSet[0].datum.output.length
+        );
+    }
 
     let trainingSet = [];
 
