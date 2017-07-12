@@ -904,17 +904,17 @@ configEvents.once("INIT_MONGODB", function(){
 
   db = mongoose();
 
-  db.connection.on("error", function(err){
-    console.log(chalkError("*** DB ERROR\n" + err));
-  });
+  // db.connection.on("error", function(err){
+  //   console.log(chalkError("*** DB ERROR\n" + err));
+  // });
 
-  db.connection.on("connected", function(){
-    console.log(chalkInfo("DB CONNECT"));
-  });
+  // db.connection.on("connected", function(){
+  //   console.log(chalkInfo("DB CONNECT"));
+  // });
 
-  db.connection.on("disconnected", function(){
-    console.log(chalkError("*** DB DISCONNECT"));
-  });
+  // db.connection.on("disconnected", function(){
+  //   console.log(chalkError("*** DB DISCONNECT"));
+  // });
 
   NeuralNetwork = require("mongoose").model("NeuralNetwork");
   User = require("mongoose").model("User");
