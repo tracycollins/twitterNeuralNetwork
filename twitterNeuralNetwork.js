@@ -1946,6 +1946,13 @@ function initTimeout(){
 
             if (err) {
               console.error("*** UPDATE CLASSIFIED USER ERROR ***\n" + jsonPrint(err));
+              quit("UPDATE CLASSIFIED USER ERROR");
+            }
+
+            if (trainingSetNormalized.length === 0) {
+              console.error("*** NO TRAINING SET DATA POINTS ??? ***\n" + jsonPrint(err));
+              quit("NO TRAINING SET DATA POINTS");
+              return;
             }
 
             let messageObj = {};
