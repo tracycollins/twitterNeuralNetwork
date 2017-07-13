@@ -8,6 +8,10 @@ var NeuralNetworkSchema = new Schema({
 		type: String,
 		unique: true
 	},
+	network: { 
+		type: Object,
+		default: {}
+	},
 	successRate: { 
 		type: Number,
 		default: 0

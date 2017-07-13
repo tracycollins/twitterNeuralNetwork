@@ -45,6 +45,7 @@ exports.findOneNetwork = function (network, params, callback) {
 	var update = { 
 		"$set": { 
 			networkType: network.networkType,
+			network: network.network,
 			createdAt: network.createdAt,
 			inputs: network.inputs,
 			outputs: network.outputs,

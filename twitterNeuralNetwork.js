@@ -1507,12 +1507,17 @@ function updateClassifiedUsers(cnf, callback){
 
             const type = Object.keys(inputArray)[0];
 
-            inputArray[type].forEach(function(){
-              debug("ARRAY: " + type + " | 0");
+            async.each(inputArray, function(val, cb4){
               trainingSetDatum.input.push(0);
+              cb4();
+            }, function(){
+              cb3();
             });
+            // inputArray[type].forEach(function(){
+            //   debug("ARRAY: " + type + " | 0");
+            //   trainingSetDatum.input.push(0);
+            // });
 
-            cb3();
 
           }, function(err){
             if (err) {
@@ -1586,7 +1591,8 @@ function updateClassifiedUsers(cnf, callback){
       testObj.inputHits = totalInputHits;
       testObj.inputHitAverage = inputHitAverage;
 
-      trainingSet.forEach(function(dataObj){
+      // trainingSet.forEach(function(dataObj){
+      async.each(trainingSet, function(dataObj, cb){
 
         let normMagnitude = dataObj.datum.input[0]/maxMagnitude;
 
@@ -1594,22 +1600,21 @@ function updateClassifiedUsers(cnf, callback){
 
         if (configuration.testMode) {
           testObj.testSet.push(dataObj);
+          cb();
         }
-        // else if (Math.random() < cnf.testSetRatio) {
-        //   testObj.testSet.push(dataObj);
-        // }
+        else if (Math.random() < cnf.testSetRatio) {
+          testObj.testSet.push(dataObj);
+          cb();
+        }
         else {
           trainingSetNormalized.push(dataObj);
-          if (Math.random() < cnf.testSetRatio) {
-            testObj.testSet.push(dataObj);
-          }
-          // console.log("dataObj\n" + jsonPrint(dataObj));
-          // quit();
+          cb();
         }
 
+      }, function(){
+        callback();
       });
 
-      callback(err);
   });
 }
 
@@ -1644,6 +1649,14 @@ function testNetwork(nw, testObj, callback){
   let successRate = 0;
 
   async.eachSeries(testObj.testSet, function(testDatumObj, cb){
+
+    if (testDatumObj.datum.input.length !== testObj.numInputs) {
+      console.error(chalkError("MISMATCH INPUT"
+        + " | TEST INPUTS: " + testDatumObj.datum.input.length 
+        + " | NETW INPUTS: " + testObj.numInputs 
+      ));
+      quit();
+    }
 
     activateNetwork(nw, testDatumObj.datum.input, function(testOutput){
 
@@ -1736,6 +1749,8 @@ function initNeuralNetworkChild(callback){
           // + "\nNETWORK\n" + jsonPrint(m.network)
         ));
 
+        testObj.numInputs = m.networkObj.network.input;
+
         network = neataptic.Network.fromJSON(m.networkObj.network);
 
         testNetwork(network, testObj, function(err, results){
@@ -1810,20 +1825,6 @@ function initNeuralNetworkChild(callback){
             );
 
             quit();
-            // saveFile(neuralNetworkFolder, m.networkObj.neuralNetworkFile, m.networkObj, function(err){
-            //   if (err){
-            //     console.error(chalkError("*** SAVE NEURAL NETWORK FILE ERROR"
-            //       + " | " + m.networkObj.neuralNetworkFile + " | " + err
-            //     ));
-            //   }
-            //   else {
-            //     console.log(chalkLog("SAVED NEURAL NETWORK FILE"
-            //       + " | " + neuralNetworkFolder + "/" + m.networkObj.neuralNetworkFile
-            //     ));
-            //   }
-
-            //   quit();
-            // });
           });
 
         });
