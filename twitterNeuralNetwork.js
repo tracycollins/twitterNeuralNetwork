@@ -962,7 +962,7 @@ function parseText(text, options, callback){
   let emojiArray = [];
 
 
-  async.each(parseResults, function(matchObj, cb){
+  async.each(parseResults, function(matchObj, cb0){
 
     const type = matchObj.getType();
 
@@ -975,26 +975,27 @@ function parseText(text, options, callback){
       case "url":
         urlArray.push(matchObj.getMatchedText().toLowerCase());
         console.log(chalkInfo(urlArray.length + " | URL: " + matchObj.getMatchedText().toLowerCase()));
-        cb();
+        cb0();
       break;
       case "mention":
         mentionArray.push(matchObj.getMatchedText().toLowerCase());
         console.log(chalkInfo(mentionArray.length + " | MEN: " + matchObj.getMatchedText().toLowerCase()));
-        cb();
+        cb0();
       break;
       case "hashtag":
         hashtagArray.push(matchObj.getMatchedText().toLowerCase());
         console.log(chalkInfo(hashtagArray.length + " | HTG: " + matchObj.getMatchedText().toLowerCase()));
-        cb();
+        cb0();
       break;
       default:
         console.error(chalkError("UNKNOWN PARSE TYPE: " + type));
-        cb();
+        cb0();
     }
 
    }, function(err){
 
     let matchEmoji;
+
     while (matchEmoji = eRegex.exec(text)) {
       const emj = matchEmoji[0];
       emojiArray.push(emj);
@@ -1008,7 +1009,7 @@ function parseText(text, options, callback){
 
     async.parallel({
 
-      mentions: function(cb){
+      mentions: function(cb1){
         if (mentionArray) {
 
           async.each(mentionArray, function(userId, cb2){
@@ -1025,16 +1026,18 @@ function parseText(text, options, callback){
             ));
             cb2();
           }, function(err2){
-            cb(err2, userHistograms.mentions);
+            cb1(err2, userHistograms.mentions);
           });
         }
         else {
-          cb(null, userHistograms.mentions);
+          cb1(null, userHistograms.mentions);
         }
       },
 
-      hashtags: function(cb){
+      hashtags: function(cb1){
+
         if (hashtagArray) {
+
           async.each(hashtagArray, function(hashtag, cb2){
             hashtag = hashtag.toLowerCase();
             if (options.updateGlobalHistograms) {
@@ -1049,17 +1052,19 @@ function parseText(text, options, callback){
             ));
             cb2();
           }, function(err2){
-            cb(err2, userHistograms.hashtags);
+            cb1(err2, userHistograms.hashtags);
           });
         }
         else {
-          cb(null, userHistograms.hashtags);
+          cb1(null, userHistograms.hashtags);
         }
       },
 
-      words: function(cb){
+      words: function(cb1){
+
         if (wordArray) {
-          async.each(wordArray, function(w, cb1){
+
+          async.each(wordArray, function(w, cb2){
 
             debug(chalkAlert("w"
               + " | " + w
@@ -1093,7 +1098,7 @@ function parseText(text, options, callback){
                 + " | U: " + u
                 + " | " + word
               ));
-              cb1();
+              cb2();
             }
             else {
               if (options.updateGlobalHistograms) {
@@ -1109,20 +1114,23 @@ function parseText(text, options, callback){
                 + " | " + word
               ));
 
-              cb1();
+              cb2();
             }
           }, function(err){
-            cb(null, userHistograms.words);
+            cb1(null, userHistograms.words);
           });
         }
         else {
-          cb(null, userHistograms.words);
+          cb1(null, userHistograms.words);
         }
       },
 
-      urls: function(cb){
+      urls: function(cb1){
+
         if (urlArray) {
+
           async.each(urlArray, function(url, cb2){
+
             url = url.toLowerCase();
             if (options.updateGlobalHistograms) {
               histograms.urls[url] = (histograms.urls[url] === undefined) ? 1 : histograms.urls[url]+1;
@@ -1134,17 +1142,20 @@ function parseText(text, options, callback){
             ));
             cb2();
           }, function(err2){
-            cb(err2, userHistograms.urls);
+            cb1(err2, userHistograms.urls);
           });
         }
         else {
-          cb(null, userHistograms.urls);
+          cb1(null, userHistograms.urls);
         }
       },
 
-      emoji: function(cb){
+      emoji: function(cb1){
+
         if (emojiArray) {
+
           async.each(emojiArray, function(emoji, cb2){
+
             if (options.updateGlobalHistograms) {
               histograms.emoji[emoji] = (histograms.emoji[emoji] === undefined) ? 1 : histograms.emoji[emoji]+1;
             }
@@ -1155,11 +1166,11 @@ function parseText(text, options, callback){
             ));
             cb2();
           }, function(err2){
-            cb(err2, userHistograms.emoji);
+            cb1(err2, userHistograms.emoji);
           });
         }
         else {
-          cb(null, userHistograms.emoji);
+          cb1(null, userHistograms.emoji);
         }
       }
 
@@ -1527,7 +1538,7 @@ function updateClassifiedUsers(cnf, callback){
               + " | " + trainingSetDatum.input.length + " INPUTS"
               + " | " + trainingSetDatum.inputHits + " INPUT HITS"
             ));
-            testObj.numInputs = trainingSetDatum.input.length;
+            // testObj.numInputs = trainingSetDatum.input.length;
           });
         }
 
@@ -1550,6 +1561,8 @@ function updateClassifiedUsers(cnf, callback){
         }
 
         totalInputHits += trainingSetDatum.inputHits;
+
+        testObj.numInputs = trainingSetDatum.input.length;
         testObj.numOutputs = trainingSetDatum.output.length;
 
         debug("trainingSetDatum INPUT:  " + trainingSetDatum.input);
@@ -1573,7 +1586,7 @@ function updateClassifiedUsers(cnf, callback){
           + " | FLLWs: " + user.followersCount
           + " | FRNDs: " + user.friendsCount
           + " | SEN: " + sentimentText
-          // + " | " + jsonPrint(user.keywords)
+          + " | KW: " + keywordArray
         ));
         cb0();
       }
@@ -1749,7 +1762,7 @@ function initNeuralNetworkChild(callback){
           // + "\nNETWORK\n" + jsonPrint(m.network)
         ));
 
-        testObj.numInputs = m.networkObj.network.input;
+        // testObj.numInputs = m.networkObj.network.input;
 
         network = neataptic.Network.fromJSON(m.networkObj.network);
 
