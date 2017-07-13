@@ -1586,7 +1586,8 @@ function updateClassifiedUsers(cnf, callback){
       testObj.inputHits = totalInputHits;
       testObj.inputHitAverage = inputHitAverage;
 
-      trainingSet.forEach(function(dataObj){
+      // trainingSet.forEach(function(dataObj){
+      async.each(trainingSet, function(dataObj, cb){
 
         let normMagnitude = dataObj.datum.input[0]/maxMagnitude;
 
@@ -1594,22 +1595,21 @@ function updateClassifiedUsers(cnf, callback){
 
         if (configuration.testMode) {
           testObj.testSet.push(dataObj);
+          cb();
         }
-        // else if (Math.random() < cnf.testSetRatio) {
-        //   testObj.testSet.push(dataObj);
-        // }
+        else if (Math.random() < cnf.testSetRatio) {
+          testObj.testSet.push(dataObj);
+          cb();
+        }
         else {
           trainingSetNormalized.push(dataObj);
-          if (Math.random() < cnf.testSetRatio) {
-            testObj.testSet.push(dataObj);
-          }
-          // console.log("dataObj\n" + jsonPrint(dataObj));
-          // quit();
+          cb();
         }
 
+      }, function(err){
+        callback(err);
       });
 
-      callback(err);
   });
 }
 
