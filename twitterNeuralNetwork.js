@@ -297,7 +297,7 @@ const inputArraysFile = "inputArrays_" + statsObj.runId + ".json";
 let neuralNetworkFolder = dropboxConfigHostFolder + "/neuralNetworks";
 let neuralNetworkFile = "neuralNetwork.json";
 
-let classifiedUsersFolder = dropboxConfigHostFolder + "/classifiedUsers";
+let classifiedUsersFolder = dropboxConfigDefaultFolder + "/classifiedUsers";
 let classifiedUsersFile = "classifiedUsers.json";
 
 function getTimeStamp(inputTime) {
@@ -904,17 +904,17 @@ configEvents.once("INIT_MONGODB", function(){
 
   db = mongoose();
 
-  db.connection.on("error", function(err){
-    console.log(chalkError("*** DB ERROR\n" + err));
-  });
+  // db.connection.on("error", function(err){
+  //   console.log(chalkError("*** DB ERROR\n" + err));
+  // });
 
-  db.connection.on("connected", function(){
-    console.log(chalkInfo("DB CONNECT"));
-  });
+  // db.connection.on("connected", function(){
+  //   console.log(chalkInfo("DB CONNECT"));
+  // });
 
-  db.connection.on("disconnected", function(){
-    console.log(chalkError("*** DB DISCONNECT"));
-  });
+  // db.connection.on("disconnected", function(){
+  //   console.log(chalkError("*** DB DISCONNECT"));
+  // });
 
   NeuralNetwork = require("mongoose").model("NeuralNetwork");
   User = require("mongoose").model("User");
@@ -962,7 +962,7 @@ function parseText(text, options, callback){
   let emojiArray = [];
 
 
-  async.each(parseResults, function(matchObj, cb){
+  async.each(parseResults, function(matchObj, cb0){
 
     const type = matchObj.getType();
 
@@ -975,26 +975,27 @@ function parseText(text, options, callback){
       case "url":
         urlArray.push(matchObj.getMatchedText().toLowerCase());
         console.log(chalkInfo(urlArray.length + " | URL: " + matchObj.getMatchedText().toLowerCase()));
-        cb();
+        cb0();
       break;
       case "mention":
         mentionArray.push(matchObj.getMatchedText().toLowerCase());
         console.log(chalkInfo(mentionArray.length + " | MEN: " + matchObj.getMatchedText().toLowerCase()));
-        cb();
+        cb0();
       break;
       case "hashtag":
         hashtagArray.push(matchObj.getMatchedText().toLowerCase());
         console.log(chalkInfo(hashtagArray.length + " | HTG: " + matchObj.getMatchedText().toLowerCase()));
-        cb();
+        cb0();
       break;
       default:
         console.error(chalkError("UNKNOWN PARSE TYPE: " + type));
-        cb();
+        cb0();
     }
 
    }, function(err){
 
     let matchEmoji;
+
     while (matchEmoji = eRegex.exec(text)) {
       const emj = matchEmoji[0];
       emojiArray.push(emj);
@@ -1008,7 +1009,7 @@ function parseText(text, options, callback){
 
     async.parallel({
 
-      mentions: function(cb){
+      mentions: function(cb1){
         if (mentionArray) {
 
           async.each(mentionArray, function(userId, cb2){
@@ -1025,16 +1026,18 @@ function parseText(text, options, callback){
             ));
             cb2();
           }, function(err2){
-            cb(err2, userHistograms.mentions);
+            cb1(err2, userHistograms.mentions);
           });
         }
         else {
-          cb(null, userHistograms.mentions);
+          cb1(null, userHistograms.mentions);
         }
       },
 
-      hashtags: function(cb){
+      hashtags: function(cb1){
+
         if (hashtagArray) {
+
           async.each(hashtagArray, function(hashtag, cb2){
             hashtag = hashtag.toLowerCase();
             if (options.updateGlobalHistograms) {
@@ -1049,17 +1052,19 @@ function parseText(text, options, callback){
             ));
             cb2();
           }, function(err2){
-            cb(err2, userHistograms.hashtags);
+            cb1(err2, userHistograms.hashtags);
           });
         }
         else {
-          cb(null, userHistograms.hashtags);
+          cb1(null, userHistograms.hashtags);
         }
       },
 
-      words: function(cb){
+      words: function(cb1){
+
         if (wordArray) {
-          async.each(wordArray, function(w, cb1){
+
+          async.each(wordArray, function(w, cb2){
 
             debug(chalkAlert("w"
               + " | " + w
@@ -1093,7 +1098,7 @@ function parseText(text, options, callback){
                 + " | U: " + u
                 + " | " + word
               ));
-              cb1();
+              cb2();
             }
             else {
               if (options.updateGlobalHistograms) {
@@ -1109,20 +1114,23 @@ function parseText(text, options, callback){
                 + " | " + word
               ));
 
-              cb1();
+              cb2();
             }
           }, function(err){
-            cb(null, userHistograms.words);
+            cb1(null, userHistograms.words);
           });
         }
         else {
-          cb(null, userHistograms.words);
+          cb1(null, userHistograms.words);
         }
       },
 
-      urls: function(cb){
+      urls: function(cb1){
+
         if (urlArray) {
+
           async.each(urlArray, function(url, cb2){
+
             url = url.toLowerCase();
             if (options.updateGlobalHistograms) {
               histograms.urls[url] = (histograms.urls[url] === undefined) ? 1 : histograms.urls[url]+1;
@@ -1134,17 +1142,20 @@ function parseText(text, options, callback){
             ));
             cb2();
           }, function(err2){
-            cb(err2, userHistograms.urls);
+            cb1(err2, userHistograms.urls);
           });
         }
         else {
-          cb(null, userHistograms.urls);
+          cb1(null, userHistograms.urls);
         }
       },
 
-      emoji: function(cb){
+      emoji: function(cb1){
+
         if (emojiArray) {
+
           async.each(emojiArray, function(emoji, cb2){
+
             if (options.updateGlobalHistograms) {
               histograms.emoji[emoji] = (histograms.emoji[emoji] === undefined) ? 1 : histograms.emoji[emoji]+1;
             }
@@ -1155,11 +1166,11 @@ function parseText(text, options, callback){
             ));
             cb2();
           }, function(err2){
-            cb(err2, userHistograms.emoji);
+            cb1(err2, userHistograms.emoji);
           });
         }
         else {
-          cb(null, userHistograms.emoji);
+          cb1(null, userHistograms.emoji);
         }
       }
 
@@ -1260,7 +1271,7 @@ function updateClassifiedUsers(cnf, callback){
 
   async.each(classifiedUserIds, function(userId, cb0){
 
-    debug("updateClassifiedUsers: userId: " + userId);
+    debug(chalkInfo("updateClassifiedUsers: userId: " + userId));
 
     User.findOne({userId: userId.toString()}, function(err, user){
 
@@ -1507,12 +1518,17 @@ function updateClassifiedUsers(cnf, callback){
 
             const type = Object.keys(inputArray)[0];
 
-            inputArray[type].forEach(function(){
-              debug("ARRAY: " + type + " | 0");
+            async.each(inputArray, function(val, cb4){
               trainingSetDatum.input.push(0);
+              cb4();
+            }, function(){
+              cb3();
             });
+            // inputArray[type].forEach(function(){
+            //   debug("ARRAY: " + type + " | 0");
+            //   trainingSetDatum.input.push(0);
+            // });
 
-            cb3();
 
           }, function(err){
             if (err) {
@@ -1522,7 +1538,7 @@ function updateClassifiedUsers(cnf, callback){
               + " | " + trainingSetDatum.input.length + " INPUTS"
               + " | " + trainingSetDatum.inputHits + " INPUT HITS"
             ));
-            testObj.numInputs = trainingSetDatum.input.length;
+            // testObj.numInputs = trainingSetDatum.input.length;
           });
         }
 
@@ -1545,6 +1561,8 @@ function updateClassifiedUsers(cnf, callback){
         }
 
         totalInputHits += trainingSetDatum.inputHits;
+
+        testObj.numInputs = trainingSetDatum.input.length;
         testObj.numOutputs = trainingSetDatum.output.length;
 
         debug("trainingSetDatum INPUT:  " + trainingSetDatum.input);
@@ -1568,7 +1586,7 @@ function updateClassifiedUsers(cnf, callback){
           + " | FLLWs: " + user.followersCount
           + " | FRNDs: " + user.friendsCount
           + " | SEN: " + sentimentText
-          // + " | " + jsonPrint(user.keywords)
+          + " | KW: " + keywordArray
         ));
         cb0();
       }
@@ -1606,8 +1624,8 @@ function updateClassifiedUsers(cnf, callback){
           cb();
         }
 
-      }, function(err){
-        callback(err);
+      }, function(){
+        callback();
       });
 
   });
@@ -1644,6 +1662,14 @@ function testNetwork(nw, testObj, callback){
   let successRate = 0;
 
   async.eachSeries(testObj.testSet, function(testDatumObj, cb){
+
+    if (testDatumObj.datum.input.length !== testObj.numInputs) {
+      console.error(chalkError("MISMATCH INPUT"
+        + " | TEST INPUTS: " + testDatumObj.datum.input.length 
+        + " | NETW INPUTS: " + testObj.numInputs 
+      ));
+      quit();
+    }
 
     activateNetwork(nw, testDatumObj.datum.input, function(testOutput){
 
@@ -1736,6 +1762,8 @@ function initNeuralNetworkChild(callback){
           // + "\nNETWORK\n" + jsonPrint(m.network)
         ));
 
+        // testObj.numInputs = m.networkObj.network.input;
+
         network = neataptic.Network.fromJSON(m.networkObj.network);
 
         testNetwork(network, testObj, function(err, results){
@@ -1810,20 +1838,6 @@ function initNeuralNetworkChild(callback){
             );
 
             quit();
-            // saveFile(neuralNetworkFolder, m.networkObj.neuralNetworkFile, m.networkObj, function(err){
-            //   if (err){
-            //     console.error(chalkError("*** SAVE NEURAL NETWORK FILE ERROR"
-            //       + " | " + m.networkObj.neuralNetworkFile + " | " + err
-            //     ));
-            //   }
-            //   else {
-            //     console.log(chalkLog("SAVED NEURAL NETWORK FILE"
-            //       + " | " + neuralNetworkFolder + "/" + m.networkObj.neuralNetworkFile
-            //     ));
-            //   }
-
-            //   quit();
-            // });
           });
 
         });
@@ -1946,6 +1960,13 @@ function initTimeout(){
 
             if (err) {
               console.error("*** UPDATE CLASSIFIED USER ERROR ***\n" + jsonPrint(err));
+              quit("UPDATE CLASSIFIED USER ERROR");
+            }
+
+            if (trainingSetNormalized.length === 0) {
+              console.error("*** NO TRAINING SET DATA POINTS ??? ***\n" + jsonPrint(err));
+              quit("NO TRAINING SET DATA POINTS");
+              return;
             }
 
             let messageObj = {};
@@ -2013,7 +2034,7 @@ function initTimeout(){
           });
         }
         else {
-          console.log(chalkError("ERROR: loadFile: " + cnf.classifiedUsersFolder + cnf.classifiedUsersFile));
+          console.log(chalkError("ERROR: loadFile: " + cnf.classifiedUsersFolder + "/" + cnf.classifiedUsersFile));
         }
       });
     }
