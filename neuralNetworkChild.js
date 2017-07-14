@@ -24,6 +24,7 @@ const neataptic = require("neataptic");
 // const neataptic = require("./js/neataptic/dist/neataptic.js");
 let network;
 
+
 const EventEmitter2 = require("eventemitter2").EventEmitter2;
 let configEvents = new EventEmitter2({
   wildcard: true,
@@ -65,6 +66,8 @@ function jsonPrint (obj){
     return "UNDEFINED";
   }
 }
+
+console.log("neataptic\n" + jsonPrint(neataptic));
 
 console.log("\n\n=================================");
 console.log("HOST:          " + hostname);
@@ -276,6 +279,46 @@ function train (params, callback){
 
 }
 
+function testEvolve(callback){
+  var myNetwork = new neataptic.Network(2, 1);
+
+  var myTrainingSet = [
+    { input: [0,0], output: [0] },
+    { input: [0,1], output: [1] },
+    { input: [1,0], output: [1] },
+    { input: [1,1], output: [0] }
+  ];
+
+  myNetwork.evolve(myTrainingSet, {
+    mutation: neataptic.methods.mutation.FFW,
+    // equal: true,
+    popsize: 100,
+    elitism: 10,
+    log: 10,
+    error: 0.02,
+    iterations: 1000,
+    mutationRate: 0.5
+  })
+  .then(function(results){
+
+    console.log(chalkAlert("TEST EVOLVE RESULTS\n" + jsonPrint(results)));
+
+    var pass = (myNetwork.activate([0,0]) === 0) 
+      && (myNetwork.activate([0,1]) === 1)
+      && (myNetwork.activate([1,0]) === 1)
+      && (myNetwork.activate([1,1]) === 0);
+
+    console.log("TEST 0 0 | " + myNetwork.activate([0,0])); // [0]
+    console.log("TEST 0 1 | " + myNetwork.activate([0,1])); // [0]
+    console.log("TEST 1 0 | " + myNetwork.activate([1,0])); // [0]
+    console.log("TEST 1 1 | " + myNetwork.activate([1,1])); // [0]
+
+    callback(pass);
+
+  });
+
+}
+
 function evolve(params, callback){
 
   if (params.architecture === undefined) { params.architecture = "random"; }
@@ -295,8 +338,8 @@ function evolve(params, callback){
 
     if (key === "mutation") {
       console.log("EVOLVE OPTION | " + key + ": " + options[key]);
-      options.mutation = neataptic.Methods.Mutation[key];
-      options.mutation = neataptic.Methods.Mutation.FFW;
+      // options.mutation = neataptic.methods.mutation[key];
+      options.mutation = neataptic.methods.mutation.ALL;
     }
     else if ((key === "activation") && (options[key] !== undefined)) {
       console.log("EVOLVE OPTION | " + key + ": " + options[key]);
@@ -355,12 +398,15 @@ function evolve(params, callback){
         + "\nOUT:           " + params.trainingSet[0].datum.output.length
         + "\nTRAINING DATA: " + trainingSet.length
         // + "\nMUTATION\n" + options.mutation.toString()
-        + "\nOPTIONS\n" + jsonPrint(options)
+        // + "\nOPTIONS\n" + jsonPrint(options)
       ));
 
-      const results = network.evolve(trainingSet, options);
+      // const results = network.evolve(trainingSet, options);
+      network.evolve(trainingSet, options)
+      .then(function(results){
+        if (callback !== undefined) { callback(results); }
+      });
 
-      if (callback !== undefined) { callback(results); }
     });
 
   });
@@ -388,6 +434,10 @@ process.on("message", function(m) {
         + " | NEURAL NETWORK FILE: " + statsObj.neuralNetworkFile
         + " | DEFAULT NEURAL NETWORK FILE: " + statsObj.defaultNeuralNetworkFile
       ));
+
+    testEvolve(function(pass){
+      process.send({op:"TEST_EVOLVE_COMPLETE", results: pass});
+    });
 
     break;
 
@@ -489,7 +539,7 @@ process.on("message", function(m) {
 
       evolve(evolveParams, function(results){
 
-        debug(chalkAlert("EVOLVE RESULTS\n" + jsonPrint(results)));
+        console.log(chalkAlert("EVOLVE RESULTS\n" + jsonPrint(results)));
 
         statsObj.training.endTime = moment().valueOf();
         statsObj.training.elapsed = results.time;
@@ -511,7 +561,7 @@ process.on("message", function(m) {
         networkObj.training = {};
         networkObj.training = statsObj.training;
 
-        console.log(chalkAlert("TRAINING COMPLETE"));
+        console.log(chalkAlert("EVOLVE COMPLETE"));
         console.log(chalkAlert("NORMALIZATION\n" + jsonPrint(networkObj.normalization)));
 
         process.send({op:"EVOLVE_COMPLETE", networkObj: networkObj, statsObj: statsObj});
