@@ -1827,7 +1827,7 @@ function initNeuralNetworkChild(callback){
           });
 
           console.log(chalkLog("SAVING NEURAL NETWORK FILE TO DB"
-            + " | ID: " + networkObj.networkId
+            + " | ID: " + testObj.testRunId
           ));
 
           let networkObj = new NeuralNetwork();
