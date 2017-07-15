@@ -1615,9 +1615,14 @@ function updateClassifiedUsers(cnf, callback){
       // trainingSet.forEach(function(dataObj){
       async.each(trainingSet, function(dataObj, cb){
 
-        let normMagnitude = dataObj.datum.input[0]/maxMagnitude;
+        if (maxMagnitude > 0) {
+          let normMagnitude = dataObj.datum.input[0]/maxMagnitude;
+          dataObj.datum.input[0] = normMagnitude;
+        }
+        else {
+          dataObj.datum.input[0] = 0;
+        }
 
-        dataObj.datum.input[0] = normMagnitude;
 
         if (configuration.testMode) {
           testObj.testSet.push(dataObj);
