@@ -1650,6 +1650,7 @@ function activateNetwork(n, input, callback){
 
     if (output) {
       clearInterval(activateInterval);
+      console.log(chalkAlert("NET OUTPUT\n" + jsonPrint(output)));
       callback(output);
     }
   }, 200);
