@@ -157,6 +157,7 @@ let User;
 let NeuralNetwork; // DB
 
 let neuralNetworkServer;
+let userServer;
 
 const jsonPrint = function (obj){
   if (obj) {
