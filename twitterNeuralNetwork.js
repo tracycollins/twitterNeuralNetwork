@@ -1397,7 +1397,7 @@ function updateClassifiedUsers(cnf, callback){
             },
             function userStatusText(text, cb) {
               // console.log("user.status\n" + jsonPrint(user.status));
-              if ((user.status !== undefined) && user.status) {
+              if ((user.status !== undefined) && user.status && user.status.text) {
                 if (text) {
                   cb(null, text + "\n" + user.status.text);
                 }
