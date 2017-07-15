@@ -920,6 +920,7 @@ configEvents.once("INIT_MONGODB", function(){
   User = require("mongoose").model("User");
 
   neuralNetworkServer = require("./app/controllers/neuralNetwork.server.controller");
+  userServer = require("./app/controllers/user.server.controller");
 
 });
 
@@ -1573,10 +1574,9 @@ function updateClassifiedUsers(cnf, callback){
           trainingSet.push({name: user.screenName, datum: trainingSetDatum, labels: trainingSetLabels});
           cb0();
         });
-
       }
       else {
-        console.log(chalkBlue("SKIP | U"
+        console.log(chalkBlue("UPDATING DB USER KEYWORDS"
           + " | " + keywordArray
           + " | " + classification
           + " | " + user.userId
@@ -1588,7 +1588,14 @@ function updateClassifiedUsers(cnf, callback){
           + " | SEN: " + sentimentText
           + " | KW: " + keywordArray
         ));
-        cb0();
+
+        console.log(chalkBlue("KEYWORDS: " + Object.keys(classifiedUserHashmap[userId])));
+
+        user.keywords = classifiedUserHashmap[userId];
+
+        userServer.findOneUser(user, {noInc: true}, function(err, updatedUser){
+          cb0();
+        });
       }
 
     });
