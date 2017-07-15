@@ -1826,8 +1826,8 @@ function initNeuralNetworkChild(callback){
             console.log("  " + key + ": " + options[key]);
           });
 
-          console.log(chalkLog("... SAVING NEURAL NETWORK FILE"
-            + " | " + neuralNetworkFolder + "/" + m.networkObj.neuralNetworkFile
+          console.log(chalkLog("SAVING NEURAL NETWORK FILE TO DB"
+            + " | ID: " + networkObj.networkId
           ));
 
           let networkObj = new NeuralNetwork();
@@ -1899,9 +1899,11 @@ function initTimeout(){
     configuration = cnf;
 
     initNeuralNetworkChild(function(){
+
       if (cnf.testMode) {
 
         let nnFile;
+        
         if (cnf.loadNeuralNetworkFileRunID) {
           // folder = neuralNetworkFolder;
           nnFile = neuralNetworkFile.replace(".json", "_" + cnf.loadNeuralNetworkFileRunID + ".json");
