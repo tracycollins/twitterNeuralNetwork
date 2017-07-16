@@ -67,19 +67,19 @@ function jsonPrint (obj){
   }
 }
 
-console.log("neataptic\n" + jsonPrint(neataptic));
+debug("neataptic\n" + jsonPrint(neataptic));
 
-console.log("\n\n=================================");
-console.log("HOST:          " + hostname);
-console.log("PROCESS ID:    " + process.pid);
-console.log("PROCESS ARGS:  " + util.inspect(process.argv, {showHidden: false, depth: 1}));
-console.log("=================================");
+console.log("\n\nNNC | =================================");
+console.log("NNC | HOST:          " + hostname);
+console.log("NNC | PROCESS ID:    " + process.pid);
+console.log("NNC | PROCESS ARGS:  " + util.inspect(process.argv, {showHidden: false, depth: 1}));
+console.log("NNC | =================================");
 
 process.on("message", function(msg) {
   if (msg === "shutdown") {
-    console.log("\n\n!!!!! RECEIVED PM2 SHUTDOWN !!!!!\n\n***** Closing all connections *****\n\n");
+    console.log("\n\nNNC | !!!!! RECEIVED PM2 SHUTDOWN !!!!!\n\n***** Closing all connections *****\n\n");
     setTimeout(function() {
-      console.log("**** Finished closing connections ****\n\n ***** RELOADING neuralNetwork.js NOW *****\n\n");
+      console.log("NNC | **** Finished closing connections ****\n\n ***** RELOADING neuralNetwork.js NOW *****\n\n");
       process.exit(0);
     }, 1500);
   }
@@ -133,8 +133,8 @@ let dropboxConfigFile = hostname + "_" + DROPBOX_NN_CONFIG_FILE;
 let statsFolder = "/stats/" + hostname + "/neuralNetwork";
 let statsFile = DROPBOX_NN_STATS_FILE;
 
-console.log("DROPBOX_NN_CONFIG_FILE: " + DROPBOX_NN_CONFIG_FILE);
-console.log("DROPBOX_NN_STATS_FILE : " + DROPBOX_NN_STATS_FILE);
+console.log("NNC | DROPBOX_NN_CONFIG_FILE: " + DROPBOX_NN_CONFIG_FILE);
+console.log("NNC | DROPBOX_NN_STATS_FILE : " + DROPBOX_NN_STATS_FILE);
 
 debug("dropboxConfigFolder : " + dropboxConfigFolder);
 debug("dropboxConfigFile : " + dropboxConfigFile);
@@ -142,9 +142,9 @@ debug("dropboxConfigFile : " + dropboxConfigFile);
 debug("statsFolder : " + statsFolder);
 debug("statsFile : " + statsFile);
 
-console.log("DROPBOX_WORD_ASSO_ACCESS_TOKEN :" + DROPBOX_WORD_ASSO_ACCESS_TOKEN);
-console.log("DROPBOX_WORD_ASSO_APP_KEY :" + DROPBOX_WORD_ASSO_APP_KEY);
-console.log("DROPBOX_WORD_ASSO_APP_SECRET :" + DROPBOX_WORD_ASSO_APP_SECRET);
+console.log("NNC | DROPBOX_WORD_ASSO_ACCESS_TOKEN :" + DROPBOX_WORD_ASSO_ACCESS_TOKEN);
+console.log("NNC | DROPBOX_WORD_ASSO_APP_KEY :" + DROPBOX_WORD_ASSO_APP_KEY);
+console.log("NNC | DROPBOX_WORD_ASSO_APP_SECRET :" + DROPBOX_WORD_ASSO_APP_SECRET);
 
 const dropboxClient = new Dropbox({ accessToken: DROPBOX_WORD_ASSO_ACCESS_TOKEN });
 
@@ -188,7 +188,7 @@ function saveFile (path, file, jsonObj, callback){
       callback(null, response);
     })
     .catch(function(error){
-      console.error(chalkError(moment().format(defaultDateTimeFormat) 
+      console.error(chalkError("NNC | " + moment().format(defaultDateTimeFormat) 
         + " | !!! ERROR DROBOX JSON WRITE | FILE: " + fullPath 
         + "\nERROR: " + error.error));
       callback(error.error, null);
@@ -212,10 +212,10 @@ function showStats(options){
   }
 
   if (options) {
-    console.log("NN STATS\n" + jsonPrint(statsObj));
+    console.log("NNC | STATS\n" + jsonPrint(statsObj));
   }
   else {
-    console.log(chalk.green("S - NN"
+    console.log(chalk.green("NNC | S"
       + " | START: " + moment(parseInt(statsObj.startTime)).format(compactDateTimeFormat)
       + " | ELAPSED: " + statsObj.elapsed
       + " | TRAINING START: " + moment(parseInt(statsObj.training.startTime)).format(compactDateTimeFormat)
@@ -227,7 +227,7 @@ function showStats(options){
 function quit(message) {
   let msg = "";
   if (message) { msg = message; }
-  console.log(process.argv[1]
+  console.log("NNC | " + process.argv[1]
     + " | NEURAL NET **** QUITTING"
     + " | CAUSE: " + msg
     + " | PID: " + process.pid
@@ -253,7 +253,7 @@ function train (params, callback){
     cb();
   }, function(){
 
-    console.log(chalkAlert("START TRAIN"
+    console.log(chalkAlert("NNC | START TRAIN"
       + " | " + statsObj.training.trainingSet.numInputs + " INPUTS"
       + " | " + statsObj.training.trainingSet.numOutputs + " OUTPUTS"
     ));
@@ -279,6 +279,23 @@ function train (params, callback){
 
 }
 
+function activateNetwork(n, input, callback){
+
+  let output;
+  output = n.activate(input);
+
+  const activateInterval = setInterval(function(){
+
+    if (output) {
+      clearInterval(activateInterval);
+      debug(chalkAlert("NNC | NET OUTPUT\n" + jsonPrint(output)));
+      callback(output);
+    }
+
+  }, 50);
+
+}
+
 function testEvolve(callback){
   var myNetwork = new neataptic.Network(2, 1);
 
@@ -294,26 +311,49 @@ function testEvolve(callback){
     // equal: true,
     popsize: 100,
     elitism: 10,
-    log: 10,
-    error: 0.02,
-    iterations: 1000,
-    mutationRate: 0.5
+    log: 100,
+    error: 0.03,
+    iterations: 10000,
+    mutationRate: 0.7
   })
   .then(function(results){
 
-    console.log(chalkAlert("TEST EVOLVE RESULTS\n" + jsonPrint(results)));
+    console.log(chalkAlert("NNC | TEST EVOLVE RESULTS\n" + jsonPrint(results)));
 
-    var pass = (myNetwork.activate([0,0]) === 0) 
-      && (myNetwork.activate([0,1]) === 1)
-      && (myNetwork.activate([1,0]) === 1)
-      && (myNetwork.activate([1,1]) === 0);
+    let testPass = true;
 
-    console.log("TEST 0 0 | " + myNetwork.activate([0,0])); // [0]
-    console.log("TEST 0 1 | " + myNetwork.activate([0,1])); // [0]
-    console.log("TEST 1 0 | " + myNetwork.activate([1,0])); // [0]
-    console.log("TEST 1 1 | " + myNetwork.activate([1,1])); // [0]
+    async.each(myTrainingSet, function(datum, cb){
 
-    callback(pass);
+      activateNetwork(myNetwork, datum.input, function(out){
+
+        let dataOut = (out[0] >= 0.5) ? 1 : 0 ;
+
+        const datumPass = (datum.output[0] === dataOut) ? true : false ;
+
+        if (!datumPass) { testPass = false; }
+
+        console.log("NNC | TEST"
+          + " | IN: " + datum.input
+          + " | EO: " + datum.output[0]
+          + " | TO: " + dataOut
+          + " | PASS: " + datumPass
+        );
+
+        cb();
+
+      });
+
+    }, function(err){
+      console.log(chalkAlert("TEST RESULT: PASS: " + testPass));
+      callback(testPass);
+    });
+
+    // console.log("TEST 0 0 | " + myNetwork.activate([0,0])); // [0]
+    // console.log("TEST 0 1 | " + myNetwork.activate([0,1])); // [0]
+    // console.log("TEST 1 0 | " + myNetwork.activate([1,0])); // [0]
+    // console.log("TEST 1 1 | " + myNetwork.activate([1,1])); // [0]
+
+    // callback(pass);
 
   });
 
@@ -337,20 +377,20 @@ function evolve(params, callback){
   async.each(Object.keys(options), function(key, cb){
 
     if (key === "mutation") {
-      console.log("EVOLVE OPTION | " + key + ": " + options[key]);
+      console.log("NNC | EVOLVE OPTION | " + key + ": " + options[key]);
       // options.mutation = neataptic.methods.mutation[key];
       options.mutation = neataptic.methods.mutation.ALL;
     }
     else if ((key === "activation") && (options[key] !== undefined)) {
-      console.log("EVOLVE OPTION | " + key + ": " + options[key]);
+      console.log("NNC | EVOLVE OPTION | " + key + ": " + options[key]);
       options.activation = neataptic.Methods.Activation[key];
     }
     else if (key === "cost") {
-      console.log("EVOLVE OPTION | " + key + ": " + options[key]);
+      console.log("NNC | EVOLVE OPTION | " + key + ": " + options[key]);
       options.cost = neataptic.Methods.Cost[key];
     }
     else if (key !== "activation") {
-      console.log("EVOLVE OPTION | " + key + ": " + options[key]);
+      console.log("NNC | EVOLVE OPTION | " + key + ": " + options[key]);
     }
     cb();
 
@@ -362,7 +402,7 @@ function evolve(params, callback){
     switch (params.architecture) {
 
       case "perceptron":
-        console.log("EVOLVE ARCH | " + params.architecture);
+        console.log("NNC | EVOLVE ARCH | " + params.architecture);
         network = new neataptic.Architect.Perceptron(
           params.trainingSet[0].datum.input.length, 
           hiddenLayerSize,
@@ -371,7 +411,7 @@ function evolve(params, callback){
       break;
 
       default:
-        console.log("EVOLVE ARCH | " + params.architecture);
+        console.log("NNC | EVOLVE ARCH | " + params.architecture);
         network = new neataptic.Network(
           params.trainingSet[0].datum.input.length, 
           params.trainingSet[0].datum.output.length
@@ -393,7 +433,7 @@ function evolve(params, callback){
 
     }, function(){
 
-      console.log(chalkAlert("START EVOLVE"
+      console.log(chalkAlert("NNC | START EVOLVE"
         + "\nIN:            " + params.trainingSet[0].datum.input.length
         + "\nOUT:           " + params.trainingSet[0].datum.output.length
         + "\nTRAINING DATA: " + trainingSet.length
@@ -429,16 +469,18 @@ process.on("message", function(m) {
       statsObj.testRunId = m.testRunId;
       statsObj.neuralNetworkFile = "neuralNetwork_" + m.testRunId + ".json";
       statsObj.defaultNeuralNetworkFile = "neuralNetwork.json";
-      console.log(chalkInfo("NEURAL NET INIT"
+      console.log(chalkInfo("NNC | NEURAL NET INIT"
         + " | TEST RUN ID: " + statsObj.testRunId
         + " | NEURAL NETWORK FILE: " + statsObj.neuralNetworkFile
         + " | DEFAULT NEURAL NETWORK FILE: " + statsObj.defaultNeuralNetworkFile
       ));
 
-    testEvolve(function(pass){
-      process.send({op:"TEST_EVOLVE_COMPLETE", results: pass});
-    });
+    break;
 
+    case "TEST_EVOLVE":
+      testEvolve(function(pass){
+        process.send({op:"TEST_EVOLVE_COMPLETE", results: pass});
+      });
     break;
 
     case "STATS":
@@ -457,7 +499,7 @@ process.on("message", function(m) {
 
       statsObj.inputArraysFile = m.inputArraysFile;
 
-      console.log(chalkAlert("NN CHILD: NEURAL NET TRAIN"
+      console.log(chalkAlert("NNC | NEURAL NET TRAIN"
         + " | " + m.trainingSet.length + " TRAINING DATA POINTS"
       ));
 
@@ -465,7 +507,7 @@ process.on("message", function(m) {
 
       train({trainingSet: m.trainingSet, iterations: m.iterations}, function(results){
 
-        console.log(chalkAlert("TRAIN RESULTS\n" + jsonPrint(results)));
+        console.log(chalkAlert("NNC | TRAIN RESULTS\n" + jsonPrint(results)));
 
         statsObj.training.endTime = moment().valueOf();
         statsObj.training.elapsed = moment().valueOf() - statsObj.training.startTime;
@@ -487,8 +529,8 @@ process.on("message", function(m) {
         networkObj.training = {};
         networkObj.training = statsObj.training;
 
-        console.log(chalkAlert("TRAINING COMPLETE"));
-        console.log(chalkAlert("NORMALIZATION\n" + jsonPrint(networkObj.normalization)));
+        console.log(chalkAlert("NNC | TRAINING COMPLETE"));
+        console.log(chalkAlert("NNC | NORMALIZATION\n" + jsonPrint(networkObj.normalization)));
 
         process.send({op:"TRAIN_COMPLETE", networkObj: networkObj, statsObj: statsObj});
 
@@ -508,7 +550,7 @@ process.on("message", function(m) {
 
       statsObj.inputArraysFile = m.inputArraysFile;
 
-      console.log(chalkAlert("\n\nNN CHILD: NEURAL NET EVOLVE"
+      console.log(chalkAlert("\n\nNNC | NEURAL NET EVOLVE"
         + "\nINPUTS:     " + statsObj.training.trainingSet.numInputs
         + "\nOUTPUTS:    " + statsObj.training.trainingSet.numOutputs
         + "\nDATA PTS:   " + m.trainingSet.length
@@ -539,7 +581,7 @@ process.on("message", function(m) {
 
       evolve(evolveParams, function(results){
 
-        console.log(chalkAlert("EVOLVE RESULTS\n" + jsonPrint(results)));
+        console.log(chalkAlert("NNC | EVOLVE RESULTS\n" + jsonPrint(results)));
 
         statsObj.training.endTime = moment().valueOf();
         statsObj.training.elapsed = results.time;
@@ -561,8 +603,8 @@ process.on("message", function(m) {
         networkObj.training = {};
         networkObj.training = statsObj.training;
 
-        console.log(chalkAlert("EVOLVE COMPLETE"));
-        console.log(chalkAlert("NORMALIZATION\n" + jsonPrint(networkObj.normalization)));
+        console.log(chalkAlert("NNC | EVOLVE COMPLETE"));
+        console.log(chalkAlert("NNC | NORMALIZATION\n" + jsonPrint(networkObj.normalization)));
 
         process.send({op:"EVOLVE_COMPLETE", networkObj: networkObj, statsObj: statsObj});
         showStats();
@@ -570,7 +612,7 @@ process.on("message", function(m) {
       });
     break;
     default:
-      console.log(chalkError("NEURAL NETIZE UNKNOWN OP ERROR"
+      console.log(chalkError("NNC | NEURAL NETIZE UNKNOWN OP ERROR"
         + " | " + m.op
         // + "\n" + jsonPrint(m)
       ));
@@ -579,7 +621,7 @@ process.on("message", function(m) {
 
 function initStatsUpdate(cnf, callback){
 
-  console.log(chalkInfo("initStatsUpdate | INTERVAL: " + cnf.statsUpdateIntervalTime));
+  console.log(chalkInfo("NNC | initStatsUpdate | INTERVAL: " + cnf.statsUpdateIntervalTime));
 
   setInterval(function () {
 
@@ -606,7 +648,7 @@ function initialize(cnf, callback){
 
   cnf.statsUpdateIntervalTime = process.env.NN_STATS_UPDATE_INTERVAL || 60000;
 
-  console.log("CONFIG\n" + jsonPrint(cnf));
+  console.log("NNC | CONFIG\n" + jsonPrint(cnf));
 
   debug(chalkWarn("dropboxConfigFolder: " + dropboxConfigFolder));
   debug(chalkWarn("dropboxConfigFile  : " + dropboxConfigFile));
@@ -615,11 +657,11 @@ function initialize(cnf, callback){
 }
 
 configEvents.on("newListener", function(data){
-  console.log(chalkInfo("*** NEW CONFIG EVENT LISTENER: " + data));
+  console.log(chalkInfo("NNC | *** NEW CONFIG EVENT LISTENER: " + data));
 });
 
 configEvents.on("removeListener", function(data){
-  console.log(chalkInfo("*** REMOVED CONFIG EVENT LISTENER: " + data));
+  console.log(chalkInfo("NNC | *** REMOVED CONFIG EVENT LISTENER: " + data));
 });
 
 setTimeout(function(){
@@ -627,7 +669,7 @@ setTimeout(function(){
   initialize(configuration, function(err, cnf){
 
     if (err && (err.status !== 404)) {
-      console.error(chalkError("***** INIT ERROR *****\n" + jsonPrint(err)));
+      console.error(chalkError("NNC | ***** INIT ERROR *****\n" + jsonPrint(err)));
       // if (err.status !== 404){
       //   console.log("err.status: " + err.status);
         quit();
@@ -636,7 +678,8 @@ setTimeout(function(){
 
 
     initStatsUpdate(cnf, function(){
-      console.log(cnf.processName + " STARTED " + getTimeStamp() + "\n");
+      console.log("NNC | " + cnf.processName + " STARTED " + getTimeStamp() + "\n");
+      process.send({op: "READY"});
     });
   });
 }, 1 * ONE_SECOND);
