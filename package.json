@@ -8,6 +8,8 @@
     "array-unique": "^0.3.2",
     "async": "^2.5.0",
     "autolinker": "^1.4.3",
+    "columnify": "^1.5.4",
+    "console.table": "^0.8.0",
     "deep-copy": "^1.2.0",
     "emoji-regex": "^6.4.3",
     "get-urls": "^7.0.0",

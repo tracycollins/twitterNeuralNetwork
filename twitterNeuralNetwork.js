@@ -64,6 +64,8 @@ const cp = require("child_process");
 const arrayNormalize = require("array-normalize");
 const emojiRegex = require("emoji-regex");
 const eRegex = emojiRegex();
+const consoleTable = require("console.table");
+const columnify = require("columnify");
 
 // const keywordExtractor = require("keyword-extractor");
 const keywordExtractor = require("./js/keyword-extractor");
@@ -338,7 +340,7 @@ function indexOfMax (arr, callback) {
 
   if (arr.length === 0) {
     console.log(chalkAlert("indexOfMax: 0 LENG ARRAY: -1"));
-    return(callback(-1)) ; 
+    return(callback(-2, arr)) ; 
   }
 
   if ((arr[0] === arr[1]) && (arr[1] === arr[2])){
@@ -348,7 +350,8 @@ function indexOfMax (arr, callback) {
       + " - " + arr[1].toFixed(2) 
       + " - " + arr[2].toFixed(2)
     ));
-    return(callback(-1)) ; 
+    if (arr[0] === 0) { return(callback(-4, arr)) }; 
+    return(callback(4, [1,1,1])) ; 
   }
 
   debug("B4 ARR: " + arr[0].toFixed(2) + " - " + arr[1].toFixed(2) + " - " + arr[2].toFixed(2));
@@ -358,32 +361,51 @@ function indexOfMax (arr, callback) {
   if (((arr[0] === 1) && (arr[1] === 1)) 
     || ((arr[0] === 1) && (arr[2] === 1))
     || ((arr[1] === 1) && (arr[2] === 1))){
+
     debug(chalkAlert("indexOfMax: MULTIPLE SET"));
+
     debug(chalkAlert("ARR" 
       + " | " + arr[0].toFixed(2) 
       + " - " + arr[1].toFixed(2) 
       + " - " + arr[2].toFixed(2)
     ));
-    return(callback(-1)) ; 
+
+    async.eachOf(arr, function(val, index, cb){
+      if (val < 1) {
+        arr[index] = 0;
+      }
+      cb();
+    }, function(){
+      return(callback(3), arr) ; 
+    });
+
   }
+  else {
 
-  let max = arr[0];
-  let maxIndex = 0;
-  let i=1;
+    // let max = arr[0];
+    let max = 0;
+    let maxIndex = -1;
 
-  async.eachOfSeries(arr, function(val, index, cb){
-    if (arr[index] > max) {
-      maxIndex = index;
-      max = arr[index];
-    }
-    cb();
-  }, function(){
-    debug(chalk.blue("indexOfMax: " + maxIndex 
-      + " | " + arr[maxIndex].toFixed(2)
-      + " | " + arr[0].toFixed(2) + " - " + arr[1].toFixed(2) + " - " + arr[2].toFixed(2)
-    ));
-    callback(maxIndex) ; 
-  });
+    async.eachOfSeries(arr, function(val, index, cb1){
+      if (arr[index] > max) {
+        maxIndex = index;
+        max = arr[index];
+      }
+      cb1();
+    }, function(){
+
+      async.eachOf(arr, function(val, index, cb){
+        if (val < 1) {
+          arr[index] = 0;
+        }
+        cb();
+      }, function(){
+        return(callback(maxIndex), arr) ; 
+      });
+
+    });
+
+  }
 }
 
 function showStats(options){
@@ -1674,6 +1696,7 @@ function testNetwork(nw, testObj, callback){
   let numSkipped = 0;
   let numPassed = 0;
   let successRate = 0;
+  let testResultArray = [];
 
   async.eachSeries(testObj.testSet, function(testDatumObj, cb){
 
@@ -1685,7 +1708,9 @@ function testNetwork(nw, testObj, callback){
       quit();
     }
 
-    activateNetwork(nw, testDatumObj.datum.input, function(testOutput){
+    activateNetwork(nw, testDatumObj.datum.input, function(to){
+
+      let testOutput = to;
 
       console.log(chalkLog("\n========================================\n"));
 
@@ -1695,9 +1720,9 @@ function testNetwork(nw, testObj, callback){
 
         numTested += 1;
 
-        indexOfMax(testOutput, function(testMaxOutputIndex){
+        indexOfMax(testOutput, function(testMaxOutputIndex, to){
 
-          indexOfMax(testDatumObj.datum.output, function(expectedMaxOutputIndex){
+          indexOfMax(testDatumObj.datum.output, function(expectedMaxOutputIndex, eo){
 
             let passed = (testMaxOutputIndex === expectedMaxOutputIndex);
 
@@ -1706,6 +1731,17 @@ function testNetwork(nw, testObj, callback){
             successRate = 100 * numPassed/(numTested + numSkipped);
 
             let currentChalk = passed ? chalkLog : chalkAlert;
+
+            testResultArray.push(
+              {
+                // testIn: testDatumObj.datum.input,
+                P: passed,
+                EO: testDatumObj.datum.output,
+                EOI: expectedMaxOutputIndex,
+                TO: testOutput, 
+                TOI: testMaxOutputIndex
+              }
+            );
 
             console.log(currentChalk("\nTEST RESULT: " + passed 
               + " | " + successRate.toFixed(2) + "%"
@@ -1734,7 +1770,8 @@ function testNetwork(nw, testObj, callback){
         numTests: testObj.testSet.length, 
         numSkipped: numSkipped, 
         numPassed: numPassed, 
-        successRate: successRate
+        successRate: successRate,
+        testResultArray: testResultArray
       }
     );
   });
@@ -1802,13 +1839,22 @@ function initNeuralNetworkChild(callback){
             ["numInputs", "numOutputs", "inputArraysFile", "inputHits", "inputHitAverage"]
           );
           statsObj.tests[testObj.testRunId].results = {};
-          statsObj.tests[testObj.testRunId].results = testObj.results;
+          statsObj.tests[testObj.testRunId].results = pick(
+            testObj.results, 
+            ["successRate", "numPassed", "numSkipped", "numTests", "testRunId"]
+          );
           statsObj.tests[testObj.testRunId].training = {};
           statsObj.tests[testObj.testRunId].evolve = {};
           statsObj.tests[testObj.testRunId].evolve.options = {};
           statsObj.tests[testObj.testRunId].evolve.options = m.statsObj.evolve.options;
           statsObj.tests[testObj.testRunId].neuralNetworkFile = m.networkObj.neuralNetworkFile;
           statsObj.tests[testObj.testRunId].elapsed = m.networkObj.elapsed;
+
+          // console.table(results.testResultArray);
+          console.log(chalkBlue("\nNETWORK TEST COMPLETE\n==================="));
+
+          let columns = columnify(results.testResultArray, {  minWidth: 5, maxWidth: 10});
+          console.log(chalkAlert(columns));
 
           console.log(chalkBlue("\nNETWORK TEST COMPLETE\n==================="
             + "\n  TESTS:   " + results.numTests
