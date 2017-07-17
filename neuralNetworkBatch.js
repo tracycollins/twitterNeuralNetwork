@@ -60,8 +60,6 @@ configuration.instanceOptions.env.BATCH_MODE = true;
 configuration.instanceOptions.env.GCLOUD_PROJECT = "graphic-tangent-627";
 configuration.instanceOptions.env.GOOGLE_PROJECT = "graphic-tangent-627";
 configuration.instanceOptions.env.DROPBOX_WORD_ASSO_ACCESS_TOKEN = "nknEWsIkD5UAAAAAAAQouTDFRBKfwsFzuS8PPi2Q_JVYnpotNuaHiddNtmG4mUTi";
-// configuration.instanceOptions.env.DROPBOX_WORD_ASSO_APP_KEY = "qlb9k4dp01t9iqk";
-// configuration.instanceOptions.env.DROPBOX_WORD_ASSO_APP_SECRET = "wqslhe2t95zfn19";
 configuration.instanceOptions.env.DROPBOX_WORD_ASSO_DEFAULT_TWITTER_CONFIG_FOLDER = "/config/twitter";
 configuration.instanceOptions.env.DROPBOX_WORD_ASSO_DEFAULT_TWITTER_CONFIG_FILE = "altthreecee00.json";
 configuration.instanceOptions.env.TNN_PROCESS_NAME = "nnb";
@@ -128,16 +126,12 @@ console.log("COMMAND LINE OPTIONS\n" + jsonPrint(commandLineConfig));
 // ==================================================================
 
 const DROPBOX_WORD_ASSO_ACCESS_TOKEN = process.env.DROPBOX_WORD_ASSO_ACCESS_TOKEN || "nknEWsIkD5UAAAAAAAQouTDFRBKfwsFzuS8PPi2Q_JVYnpotNuaHiddNtmG4mUTi";
-// const DROPBOX_WORD_ASSO_APP_KEY = process.env.DROPBOX_WORD_ASSO_APP_KEY ;
-// const DROPBOX_WORD_ASSO_APP_SECRET = process.env.DROPBOX_WORD_ASSO_APP_SECRET;
 
 let dropboxClient = new Dropbox({ accessToken: DROPBOX_WORD_ASSO_ACCESS_TOKEN });
 
 const DROPBOX_NNB_CONFIG_FILE = process.env.DROPBOX_NNB_CONFIG_FILE || "neuralNetworkBatchConfig.json";
-// const DROPBOX_NNB_STATS_FILE = process.env.DROPBOX_NNB_STATS_FILE || "neuralNetworkBatchStats.json";
 
 const dropboxConfigFolder = "/config/utility";
-// const dropboxConfigDefaultFolder = "/config/utility/default";
 const dropboxConfigHostFolder = "/config/utility/" + hostname;
 const dropboxConfigFile = hostname + "_" + DROPBOX_NNB_CONFIG_FILE;
 
