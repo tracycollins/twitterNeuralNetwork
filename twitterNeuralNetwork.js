@@ -683,7 +683,7 @@ function initialize(cnf, callback){
   cnf.classifiedUsersFile = process.env.TNN_CLASSIFIED_USERS_FILE || classifiedUsersFile;
   // cnf.classifiedUsersFolder = dropboxConfigHostFolder + "/classifiedUsers";
   cnf.classifiedUsersFolder = classifiedUsersFolder;
-  cnf.statsUpdateIntervalTime = process.env.TNN_STATS_UPDATE_INTERVAL || 10000;
+  cnf.statsUpdateIntervalTime = process.env.TNN_STATS_UPDATE_INTERVAL || 60000;
 
   debug(chalkWarn("dropboxConfigFolder: " + dropboxConfigFolder));
   debug(chalkWarn("dropboxConfigFile  : " + dropboxConfigFile));

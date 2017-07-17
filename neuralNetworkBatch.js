@@ -418,8 +418,6 @@ function initStdIn(){
 
 function initInstance(instanceIndex, options, callback){
 
-  console.log(chalkInfo("INIT INSTANCE " + instanceIndex));
-
   const runId = hostname + "_" + process.pid + "_" + instanceIndex;
   const instanceName = "nnb_" + runId;
   const neuralNetworkFile = "neuralNetwork_" + instanceName + ".json";
@@ -441,10 +439,10 @@ function initInstance(instanceIndex, options, callback){
 
   debug("CURRENT OPTIONS\n" + jsonPrint(currentOptions));
 
-  console.log("OPTIONS"
+  console.log("INIT INSTANCE " + instanceIndex
     + " | " + currentOptions.name
-    + " | TNN_RUN_ID: " + currentOptions.env.TNN_RUN_ID
-    + " | TNN_EVOLVE_ITERATIONS: " + currentOptions.env.TNN_EVOLVE_ITERATIONS
+    + " | ID: " + currentOptions.env.TNN_RUN_ID
+    + " | ITERATIONS: " + currentOptions.env.TNN_EVOLVE_ITERATIONS
     + " | " + currentOptions.out_file
   );
 
@@ -485,9 +483,7 @@ function startInstance(instanceConfig, callback){
 
     }
 
-    // slackPostMessage(slackChannel, "\nNNB INSTANCE START\n" + instanceConfig.name + "\n", function(){
-      if (callback !== undefined) { callback(err); }
-    // });
+    if (callback !== undefined) { callback(err); }
 
   });
 }
@@ -503,9 +499,13 @@ function initProcessPollInterval(interval){
   processPollInterval = setInterval(function(){
 
     if (Object.keys(appHashMap).length < configuration.maxInstances) {
+
       initInstance(statsObj.instances.instanceIndex, configuration.instanceOptions, function(opt){
+
         startInstance(opt);
+
         statsObj.instances.instanceIndex += 1;
+
       });
     }
 
@@ -561,6 +561,31 @@ function initProcessPollInterval(interval){
   }, interval);
 }
 
+function initAllInstances(maxInstances, callback) {
+
+  let instanceConfigArray = [];
+  let instanceIndex = 0;
+
+  async.times(maxInstances, function(n, next){
+
+    initInstance(instanceIndex, configuration.instanceOptions, function(opt){
+
+      instanceConfigArray.push(opt);
+      statsObj.instances.instanceIndex += 1;
+      instanceIndex += 1;
+
+      // console.log("instanceConfigArray | " + instanceConfigArray.length);
+      next(null, instanceConfigArray);
+      
+    });
+
+  }, function(err, instances){
+    // console.log("DONE instanceConfigArray | " + instanceConfigArray.length);
+    callback(instanceConfigArray);
+  });
+
+}
+
 function initBatch(callback){
 
   console.log(chalkAlert("INIT BATCH"
@@ -574,40 +599,36 @@ function initBatch(callback){
       process.exit(2);
     }
 
-    let instanceConfigArray = [];
-    let instanceIndex = 0;
+    initAllInstances(configuration.maxInstances, function(instanceConfigArray){
 
-    for (instanceIndex=0; instanceIndex < configuration.maxInstances; instanceIndex +=1){
-      initInstance(instanceIndex, configuration.instanceOptions, function(opt){
-        instanceConfigArray.push(opt);
-        statsObj.instances.instanceIndex += 1;
+      debug("instanceConfigArray\n" + jsonPrint(instanceConfigArray));
+
+      async.each(instanceConfigArray, function(instanceConfig, cb){
+
+        debug("START\n" + jsonPrint(instanceConfig));
+
+        startInstance(instanceConfig, function(){
+          cb();
+        });
+
+      }, function(err){
+
+        if (err) { throw err; }
+
+        console.log(chalkAlert("\nALL LAUNCHED | " + configuration.maxInstances + " MAX INSTANCES\n"));
+
+        Object.keys(appHashMap).forEach(function(appName){
+          console.log("LAUNCHED"
+            + " | " + appName
+            + " | PM2 ID: " + appHashMap[appName].pm2_env.pm_id
+            + " | PID: " + appHashMap[appName].process.pid
+            + " | STATUS: " + appHashMap[appName].pm2_env.status
+          );
+        });
+
+        initProcessPollInterval(configuration.processPollInterval);
+
       });
-    }
-
-    async.each(instanceConfigArray, function(instanceConfig, cb){
-
-      debug("START\n" + jsonPrint(instanceConfig));
-
-      startInstance(instanceConfig, function(){
-        cb();
-      });
-
-    }, function(err){
-
-      if (err) { throw err; }
-
-      console.log(chalkAlert("\nALL LAUNCHED | " + configuration.maxInstances + " MAX INSTANCES\n"));
-
-      Object.keys(appHashMap).forEach(function(appName){
-        console.log("LAUNCHED"
-          + " | " + appName
-          + " | PM2 ID: " + appHashMap[appName].pm2_env.pm_id
-          + " | PID: " + appHashMap[appName].process.pid
-          + " | STATUS: " + appHashMap[appName].pm2_env.status
-        );
-      });
-
-      initProcessPollInterval(configuration.processPollInterval);
 
     });
 
