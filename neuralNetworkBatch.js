@@ -62,10 +62,11 @@ configuration.instanceOptions.env.GOOGLE_PROJECT = "graphic-tangent-627";
 configuration.instanceOptions.env.DROPBOX_WORD_ASSO_ACCESS_TOKEN = "nknEWsIkD5UAAAAAAAQouTDFRBKfwsFzuS8PPi2Q_JVYnpotNuaHiddNtmG4mUTi";
 configuration.instanceOptions.env.DROPBOX_WORD_ASSO_DEFAULT_TWITTER_CONFIG_FOLDER = "/config/twitter";
 configuration.instanceOptions.env.DROPBOX_WORD_ASSO_DEFAULT_TWITTER_CONFIG_FILE = "altthreecee00.json";
-configuration.instanceOptions.env.TNN_PROCESS_NAME = "nnb";
+configuration.instanceOptions.env.TNN_PROCESS_NAME = "tnn";
 configuration.instanceOptions.env.TNN_EVOLVE_ITERATIONS = DEFAULT_EVOLVE_ITERATIONS;
 configuration.instanceOptions.env.TNN_TWITTER_DEFAULT_USER = "altthreecee00";
 configuration.instanceOptions.env.TNN_TWITTER_USERS = {"altthreecee00": "altthreecee00", "ninjathreecee": "ninjathreecee"};
+configuration.instanceOptions.env.TNN_STATS_UPDATE_INTERVAL = 60000;
 
 function jsonPrint(obj) {
   if (obj) {
@@ -155,7 +156,7 @@ statsObj.instances.completed = 0;
 statsObj.instances.errors = 0;
 statsObj.instances.instanceIndex = 0;
 
-const NNB_RUN_ID = hostname + "_" + process.pid + "_" + statsObj.startTimeMoment.format(compactDateTimeFormat);
+const NNB_RUN_ID = "nnb_" + hostname + "_" + process.pid + "_" + statsObj.startTimeMoment.format(compactDateTimeFormat);
 statsObj.runId = NNB_RUN_ID;
 console.log(chalkAlert("RUN ID: " + statsObj.runId));
 
@@ -423,10 +424,10 @@ function initInstance(instanceIndex, options, callback){
   const instanceName = "nnb_" + runId;
   const neuralNetworkFile = "neuralNetwork_" + instanceName + ".json";
 
-  let logfile = "/Users/tc/logs/batch/neuralNetwork/" + instanceName + ".log";
+  let logfile = "/Users/tc/logs/batch/neuralNetwork/" + hostname + "/" + instanceName + ".log";
 
   if (hostname.includes("google")){
-    logfile = "/home/tc/logs/batch/neuralNetwork/" + instanceName + ".log";
+    logfile = "/home/tc/logs/batch/neuralNetwork/" + hostname + "/" + instanceName + ".log";
   }
   
   let currentOptions = defaults(options, {
@@ -437,13 +438,13 @@ function initInstance(instanceIndex, options, callback){
 
   currentOptions.env.TNN_PROCESS_NAME = instanceName;
   currentOptions.env.TNN_RUN_ID = runId;
-  currentOptions.env.TNN_NEURAL_NETWORK_FILE = neuralNetworkFile;
 
   debug("CURRENT OPTIONS\n" + jsonPrint(currentOptions));
 
   console.log("OPTIONS"
     + " | " + currentOptions.name
     + " | TNN_RUN_ID: " + currentOptions.env.TNN_RUN_ID
+    + " | TNN_EVOLVE_ITERATIONS: " + currentOptions.env.TNN_EVOLVE_ITERATIONS
     + " | " + currentOptions.out_file
   );
 
@@ -501,6 +502,7 @@ function initProcessPollInterval(interval){
     }
 
     pm2.list(function(err, apps){
+
       if (err) { throw err; }
       if (!configuration.autoStartInstance && noInstancesRunning()) { 
         quit(); 
@@ -508,7 +510,9 @@ function initProcessPollInterval(interval){
       else  {
         showStats();
         console.log("\nAPPS__________________________________________");
+
         apps.forEach(function(app){
+
           console.log(app.name
             + " | PM2 ID: " + app.pm2_env.pm_id
             + " | PID: " + app.pid
@@ -518,9 +522,9 @@ function initProcessPollInterval(interval){
             // + " | UPTIME: " + app.pm2_env.pm_uptime
             + " | RUN: " + msToTime(moment().valueOf()-parseInt(app.pm2_env.created_at))
           );
+
           if (appHashMap[app.name] && app.pm2_env.status === "stopped"){
 
-            // console.log(chalkAlert("XXX STOPPED | " + app.name));
             console.log(chalkAlert(app.name
               + " | PM2 ID: " + app.pm2_env.pm_id
               + " | PID: " + app.pid
@@ -530,9 +534,9 @@ function initProcessPollInterval(interval){
               + " | RUN: " + msToTime(moment().valueOf()-parseInt(app.pm2_env.created_at))
             ));
 
-            pm2.delete(app.pm2_env.pm_id, function(err, results){
+            statsObj.instances.completed += 1;
 
-              // slackPostMessage(slackChannel, "\nNNB INSTANCE STOPPED\n" + app.name + "\n");
+            pm2.delete(app.pm2_env.pm_id, function(err, results){
 
               delete appHashMap[app.name];
 
@@ -584,7 +588,7 @@ function initBatch(callback){
 
       if (err) { throw err; }
 
-      console.log("\nALL LAUNCHED\n");
+      console.log(chalkAlert("\nALL LAUNCHED | " + configuration.maxInstances + " MAX INSTANCES\n"));
 
       Object.keys(appHashMap).forEach(function(appName){
         console.log("LAUNCHED"

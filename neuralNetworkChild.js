@@ -125,16 +125,16 @@ statsObj.training.endTime = 0;
 const DROPBOX_WORD_ASSO_ACCESS_TOKEN = process.env.DROPBOX_WORD_ASSO_ACCESS_TOKEN ;
 const DROPBOX_WORD_ASSO_APP_KEY = process.env.DROPBOX_WORD_ASSO_APP_KEY ;
 const DROPBOX_WORD_ASSO_APP_SECRET = process.env.DROPBOX_WORD_ASSO_APP_SECRET;
-const DROPBOX_NN_CONFIG_FILE = process.env.DROPBOX_NN_CONFIG_FILE || "neuralNetworkConfig.json";
-const DROPBOX_NN_STATS_FILE = process.env.DROPBOX_NN_STATS_FILE || "neuralNetworkStats.json";
+const DROPBOX_TNN_CONFIG_FILE = process.env.DROPBOX_TNN_CONFIG_FILE || "neuralNetworkConfig.json";
+const DROPBOX_TNN_STATS_FILE = process.env.DROPBOX_TNN_STATS_FILE || "neuralNetworkStats.json";
 
 let dropboxConfigFolder = "/config/utility/" + hostname;
-let dropboxConfigFile = hostname + "_" + DROPBOX_NN_CONFIG_FILE;
+let dropboxConfigFile = hostname + "_" + DROPBOX_TNN_CONFIG_FILE;
 let statsFolder = "/stats/" + hostname + "/neuralNetwork";
-let statsFile = DROPBOX_NN_STATS_FILE;
+let statsFile = DROPBOX_TNN_STATS_FILE;
 
-console.log("NNC | DROPBOX_NN_CONFIG_FILE: " + DROPBOX_NN_CONFIG_FILE);
-console.log("NNC | DROPBOX_NN_STATS_FILE : " + DROPBOX_NN_STATS_FILE);
+console.log("NNC | DROPBOX_TNN_CONFIG_FILE: " + DROPBOX_TNN_CONFIG_FILE);
+console.log("NNC | DROPBOX_TNN_STATS_FILE : " + DROPBOX_TNN_STATS_FILE);
 
 debug("dropboxConfigFolder : " + dropboxConfigFolder);
 debug("dropboxConfigFile : " + dropboxConfigFile);
@@ -639,14 +639,14 @@ function initStatsUpdate(cnf, callback){
 
 function initialize(cnf, callback){
 
-  cnf.processName = process.env.NN_PROCESS_NAME || "neuralNetworkChild";
+  cnf.processName = process.env.TNN_PROCESS_NAME || "neuralNetworkChild";
 
-  cnf.verbose = process.env.NN_VERBOSE_MODE || false ;
-  cnf.globalTestMode = process.env.NN_GLOBAL_TEST_MODE || false ;
-  cnf.testMode = process.env.NN_TEST_MODE || false ;
-  cnf.quitOnError = process.env.NN_QUIT_ON_ERROR || false ;
+  cnf.verbose = process.env.TNN_VERBOSE_MODE || false ;
+  cnf.globalTestMode = process.env.TNN_GLOBAL_TEST_MODE || false ;
+  cnf.testMode = process.env.TNN_TEST_MODE || false ;
+  cnf.quitOnError = process.env.TNN_QUIT_ON_ERROR || false ;
 
-  cnf.statsUpdateIntervalTime = process.env.NN_STATS_UPDATE_INTERVAL || 60000;
+  cnf.statsUpdateIntervalTime = process.env.TNN_STATS_UPDATE_INTERVAL || 60000;
 
   console.log("NNC | CONFIG\n" + jsonPrint(cnf));
 
