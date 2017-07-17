@@ -457,11 +457,15 @@ function startInstance(instanceConfig, callback){
 
   pm2.start(instanceConfig, function(err, apps) {
 
+    if (err) {
+      console.error(chalkError("PM2 START ERROR\n" + err));
+      return(callback(err));
+    }
+
     statsObj.instances.started += 1;
 
     debug(chalkInfo("START INSTANCE\n" + jsonPrint(instanceConfig)));
 
-    if (err) { throw err; }
 
     // console.log("PM2 LAUNCHED | " + instanceConfig.name);
     debug("APP\n" + jsonPrint(apps));
