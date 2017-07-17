@@ -1,0 +1,1 @@
+db.getCollection('neuralnetworks').find({}).sort({'successRate':-1})

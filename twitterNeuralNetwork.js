@@ -925,18 +925,6 @@ configEvents.once("INIT_MONGODB", function(){
 
   db = mongoose();
 
-  // db.connection.on("error", function(err){
-  //   console.log(chalkError("*** DB ERROR\n" + err));
-  // });
-
-  // db.connection.on("connected", function(){
-  //   console.log(chalkInfo("DB CONNECT"));
-  // });
-
-  // db.connection.on("disconnected", function(){
-  //   console.log(chalkError("*** DB DISCONNECT"));
-  // });
-
   NeuralNetwork = require("mongoose").model("NeuralNetwork");
   User = require("mongoose").model("User");
 
@@ -1237,15 +1225,15 @@ function printDatum(title, datum, label, callback){
   async.eachOfSeries(datum.input, function(bit, i, cb){
 
     if (bit && (i >= 2)) {
-      console.log("IN | " + label.input[i]);
+      console.log("IN | " + label.inputRaw[i]);
     }
 
     if (i === 0) {
-      console.log("IN | " + label.input[i] + ": " + bit.toFixed(10));
+      console.log("IN | " + label.inputRaw[i] + ": " + bit.toFixed(10));
       row = row + bit.toFixed(10) + " | " ;
     }
     else if (i === 1) {
-      console.log("IN | " + label.input[i] + ": " + bit.toFixed(10));
+      console.log("IN | " + label.inputRaw[i] + ": " + bit.toFixed(10));
       row = row + bit.toFixed(10);
     }
     else if (i === 2) {
@@ -1382,9 +1370,21 @@ function updateClassifiedUsers(cnf, callback){
 
         // KLUDGE!!!! should only need to create trainingSetLabels once per network creation
 
-        trainingSetLabels.input = [];
-        trainingSetLabels.input.push("magnitude");
-        trainingSetLabels.input.push("score");
+        trainingSetLabels.inputRaw = [];
+        trainingSetLabels.input = {};
+
+        trainingSetLabels.input.sentiment = [];
+
+        trainingSetLabels.input.sentiment.push("magnitude");
+        trainingSetLabels.input.sentiment.push("score");
+
+        trainingSetLabels.inputRaw.push("magnitude");
+        trainingSetLabels.inputRaw.push("score");
+
+        inputTypes.forEach(function(type){
+          trainingSetLabels.input[type] = [];
+        });
+
 
         if (user.screenName !== undefined) {
 
@@ -1498,7 +1498,8 @@ function updateClassifiedUsers(cnf, callback){
 
                 async.eachSeries(inputArray[type], function(element, cb2){
 
-                  trainingSetLabels.input.push(element);
+                  trainingSetLabels.input[type].push(element);
+                  trainingSetLabels.inputRaw.push(element);
 
                   if (histogram[type][element]) {
                     trainingSetDatum.inputHits += 1;
