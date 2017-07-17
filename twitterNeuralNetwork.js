@@ -1,7 +1,7 @@
 /*jslint node: true */
 "use strict";
 
-const inputTypes = ["hashtags", "mentions", "urls", "words", "emoji"];
+const inputTypes = ["hashtags", "mentions", "urls", "words", "emoji"].sort();
 
 let neuralNetworkReady = false;
 let trainingSetLabels = {};
@@ -135,7 +135,7 @@ let classifiedUserHashmap = {};
 let trainingSet = [];
 let trainingSetNormalized = [];
 
-let inputArrays = [];
+let inputArrays = {};
 
 const jsUcfirst = function(string) {
   return string.charAt(0).toUpperCase() + string.slice(1);
@@ -631,7 +631,8 @@ function initInputArrays(callback){
 
         inputArrayObj[inputType].sort();
 
-        inputArrays.push(inputArrayObj);
+        inputArrays[inputType] = {};
+        inputArrays[inputType] = inputArrayObj[inputType];
 
         console.log(chalkBlue("LOADED " + inputType.toUpperCase() + " ARRAY"
           + " | " + inputArrayObj[inputType].length + " " + inputType.toUpperCase()
@@ -1314,7 +1315,6 @@ function updateClassifiedUsers(cnf, callback){
       let classification = (keywordArray[0] !== undefined) ? keywordArray[0] : false;
       let threeceeFollowing = (user.threeceeFollowing) ? user.threeceeFollowing.screenName : "-";
 
-      // if (classification && (!cnf.zeroSentiment && (sentiment !== undefined))) {
       if (classification) {
 
         let classText = "";
@@ -1490,13 +1490,11 @@ function updateClassifiedUsers(cnf, callback){
               debug(chalkLog("user.description + status histogram\n" + jsonPrint(histogram)));
               debug("user.description + status\n" + jsonPrint(text));
 
-              async.eachSeries(inputArrays, function(inputArray, cb1){
+              async.eachSeries(inputTypes, function(type, cb1){
 
-                const type = Object.keys(inputArray)[0];
+                debug(chalkAlert("START ARRAY: " + type + " | " + inputArrays[type].length));
 
-                debug(chalkAlert("START ARRAY: " + type + " | " + inputArray[type].length));
-
-                async.eachSeries(inputArray[type], function(element, cb2){
+                async.eachSeries(inputArrays[type], function(element, cb2){
 
                   trainingSetLabels.input[type].push(element);
                   trainingSetLabels.inputRaw.push(element);
@@ -1537,21 +1535,14 @@ function updateClassifiedUsers(cnf, callback){
           });     
         }
         else {
-          async.eachSeries(inputArrays, function(inputArray, cb3){
+          async.eachSeries(inputTypes, function(type, cb3){
 
-            const type = Object.keys(inputArray)[0];
-
-            async.each(inputArray, function(val, cb4){
+            async.each(inputArrays[type], function(val, cb4){
               trainingSetDatum.input.push(0);
               cb4();
             }, function(){
               cb3();
             });
-            // inputArray[type].forEach(function(){
-            //   debug("ARRAY: " + type + " | 0");
-            //   trainingSetDatum.input.push(0);
-            // });
-
 
           }, function(err){
             if (err) {
@@ -1561,7 +1552,6 @@ function updateClassifiedUsers(cnf, callback){
               + " | " + trainingSetDatum.input.length + " INPUTS"
               + " | " + trainingSetDatum.inputHits + " INPUT HITS"
             ));
-            // testObj.numInputs = trainingSetDatum.input.length;
           });
         }
 
