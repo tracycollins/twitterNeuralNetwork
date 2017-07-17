@@ -4,8 +4,6 @@
     "name": "tnn",
     "script": "twitterNeuralNetwork.js",
     "cwd": "/Volumes/RAID1/projects/twitterNeuralNetwork",
-    "out_file"    : "/Volumes/RAID1/projects/twitterNeuralNetwork/logs/tnn.log",
-    "error_file"  : "/Volumes/RAID1/projects/twitterNeuralNetwork/logs/tnn.log",
     "autorestart": false,
     "env": {
       "NODE_ENV": "production",
