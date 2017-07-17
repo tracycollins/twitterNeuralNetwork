@@ -6,7 +6,7 @@
     "cwd": "/home/tc/twitterNeuralNetwork",
     "out_file"    : "/home/tc/logs/tnn.log",
     "error_file"  : "/home/tc/logs/tnn.log",
-    "autorestart": true,
+    "autorestart": false,
     "env": {
       "NODE_ENV": "production",
       "GCLOUD_PROJECT": "graphic-tangent-627",

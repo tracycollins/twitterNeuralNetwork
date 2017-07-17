@@ -4,7 +4,7 @@
     "name": "nnb",
     "script": "neuralNetworkBatch.js",
     "cwd": "/home/tc/twitterNeuralNetwork",
-    "autorestart": true,
+    "autorestart": false,
     "env": {
       "NODE_ENV": "production",
       "GCLOUD_PROJECT": "graphic-tangent-627",
