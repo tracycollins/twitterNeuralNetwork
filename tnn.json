@@ -6,7 +6,7 @@
     "cwd": "/Volumes/RAID1/projects/twitterNeuralNetwork",
     "autorestart": false,
     "env": {
-      "NODE_ENV": "production",
+      "NODE_ENV": "development",
       "GCLOUD_PROJECT": "graphic-tangent-627",
       "GOOGLE_PROJECT": "graphic-tangent-627",
       "DROPBOX_WORD_ASSO_ACCESS_TOKEN": "nknEWsIkD5UAAAAAAAQouTDFRBKfwsFzuS8PPi2Q_JVYnpotNuaHiddNtmG4mUTi",
