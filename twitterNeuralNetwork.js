@@ -2071,12 +2071,14 @@ function initNeuralNetworkChild(callback){
               throw err;
             }
 
+            const numInputs = 
+
             console.log("> NETWORK UPDATED"
               + "\nNET ID:  " + updateNetworkObj.networkId 
               // + "\nTYPE:    " + updateNetworkObj.networkType
               + "\nSUCCESS: " + updateNetworkObj.successRate.toFixed(1) + "%"
-              + "\nIN:      " + updateNetworkObj.inputs.length
-              + "\nOUT:     " + updateNetworkObj.outputs.length
+              + "\nIN:      " + updateNetworkObj.network.input
+              + "\nOUT:     " + updateNetworkObj.network.output
               + "\nEVOLVE:  " + jsonPrint(updateNetworkObj.evolve) 
               + "\nTRAIN:   " + jsonPrint(updateNetworkObj.train)
               + "\nTEST:    " + jsonPrint(updateNetworkObj.test)
