@@ -466,16 +466,20 @@ function startInstance(instanceConfig, callback){
     // console.log("PM2 LAUNCHED | " + instanceConfig.name);
     debug("APP\n" + jsonPrint(apps));
 
-    console.log("START"
-      + " | " + apps[0].pm2_env.name
-      + " | PM2 ID: " + apps[0].pm2_env.pm_id
-      + " | PID: " + apps[0].process.pid
-      + " | TNN_RUN_ID: " + apps[0].pm2_env.TNN_RUN_ID
-      + " | ITERATIONS: " + apps[0].pm2_env.TNN_EVOLVE_ITERATIONS
-      + " | STATUS: " + apps[0].pm2_env.status
-    );
+    if (apps.length > 0) {
 
-    appHashMap[apps[0].pm2_env.name] = apps[0];
+      console.log("START"
+        + " | " + apps[0].pm2_env.name
+        + " | PM2 ID: " + apps[0].pm2_env.pm_id
+        + " | PID: " + apps[0].process.pid
+        + " | TNN_RUN_ID: " + apps[0].pm2_env.TNN_RUN_ID
+        + " | ITERATIONS: " + apps[0].pm2_env.TNN_EVOLVE_ITERATIONS
+        + " | STATUS: " + apps[0].pm2_env.status
+      );
+
+      appHashMap[apps[0].pm2_env.name] = apps[0];
+
+    }
 
     // slackPostMessage(slackChannel, "\nNNB INSTANCE START\n" + instanceConfig.name + "\n", function(){
       if (callback !== undefined) { callback(err); }
