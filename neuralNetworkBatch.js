@@ -1071,7 +1071,7 @@ function initialize(cnf, callback){
       commandLineConfigKeys = Object.keys(commandLineConfig);
 
       commandLineConfigKeys.forEach(function(arg){
-        if (arg === evolveEnableRandom) {
+        if (arg === "evolveEnableRandom") {
           cnf[arg] = commandLineConfig[arg] || cnf[arg];
         }
         else {
