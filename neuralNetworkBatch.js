@@ -2,7 +2,7 @@
 "use strict";
 
 const OFFLINE_MODE = true;
-const DEFAULT_BATCH_MAX_INSTANCES = 5;
+const DEFAULT_BATCH_MAX_INSTANCES = 3;
 
 const EVOLVE_COST_ARRAY = [
   "CROSS_ENTROPY",
