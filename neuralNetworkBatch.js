@@ -2,6 +2,7 @@
 "use strict";
 
 const OFFLINE_MODE = true;
+const DEFAULT_EVOLVE_ENABLE_RANDOM = true;
 const DEFAULT_BATCH_MAX_INSTANCES = 3;
 
 const EVOLVE_COST_ARRAY = [
@@ -53,6 +54,7 @@ const DEFAULT_PROCESS_POLL_INTERVAL = 10000;
 const DEFAULT_STATS_INTERVAL = 60000;
 
 let configuration = {};
+configuration.evolveEnableRandom = DEFAULT_EVOLVE_ENABLE_RANDOM;
 configuration.autoStartInstance = true;
 configuration.processPollInterval = DEFAULT_PROCESS_POLL_INTERVAL;
 configuration.keepaliveInterval = 3000;
@@ -1002,7 +1004,7 @@ function initialize(cnf, callback){
   cnf.enableStdin = process.env.NNB_ENABLE_STDIN || true ;
   cnf.evolveIterations = process.env.NNB_EVOLVE_ITERATIONS || DEFAULT_EVOLVE_ITERATIONS ;
   cnf.maxInstances = process.env.NNB_MAX_INSTANCES || DEFAULT_BATCH_MAX_INSTANCES ;
-  cnf.evolveEnableRandom = process.env.NNB_EVOLVE_ENABLE_RANDOM || true ;
+  cnf.evolveEnableRandom = process.env.NNB_EVOLVE_ENABLE_RANDOM || DEFAULT_EVOLVE_ENABLE_RANDOM ;
 
   cnf.classifiedUsersFile = process.env.NNB_CLASSIFIED_USERS_FILE || "classifiedUsers.json";
   cnf.classifiedUsersFolder = dropboxConfigHostFolder + "/classifiedUsers";
