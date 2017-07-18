@@ -1071,7 +1071,12 @@ function initialize(cnf, callback){
       commandLineConfigKeys = Object.keys(commandLineConfig);
 
       commandLineConfigKeys.forEach(function(arg){
-        cnf[arg] = commandLineConfig[arg];
+        if (arg === evolveEnableRandom) {
+          cnf[arg] = commandLineConfig[arg] || cnf[arg];
+        }
+        else {
+          cnf[arg] = commandLineConfig[arg];
+        }
         console.log("--> COMMAND LINE CONFIG | " + arg + ": " + cnf[arg]);
       });
 
