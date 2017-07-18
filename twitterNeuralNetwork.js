@@ -461,11 +461,11 @@ function quit(){
     // console.log("\n=====================\nRESULTS\n" + jsonPrint(statsObj.tests[testObj.testRunId].results));
     slackText = "\n*" + statsObj.runId + "*";
     slackText = slackText + "\n*RES: " + statsObj.tests[testObj.testRunId].results.successRate.toFixed(1) + " %*";
-    slackText = slackText + "\nGENS: " + statsObj.tests[testObj.testRunId].evolve.options.iterations;
     slackText = slackText + " | RUN " + statsObj.elapsed;
     slackText = slackText + "\nTESTS: " + statsObj.tests[testObj.testRunId].results.numTests;
     slackText = slackText + " | PASS: " + statsObj.tests[testObj.testRunId].results.numPassed;
     slackText = slackText + " | SKIP: " + statsObj.tests[testObj.testRunId].results.numSkipped;
+    slackText = slackText + "\nOPTIONS\n" + jsonPrint(statsObj.tests[testObj.testRunId].evolve.options);
   }
   else {
     slackText = "\n*QUIT*\n" + statsObj.runId;
