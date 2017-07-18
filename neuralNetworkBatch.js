@@ -1,14 +1,60 @@
 /*jslint node: true */
 "use strict";
 
+const DEFAULT_BATCH_MAX_INSTANCES = 5;
+
+const EVOLVE_COST_ARRAY = [
+  "CROSS_ENTROPY",
+  "MSE",
+  "BINARY",
+  "MAE",
+  "MAPE",
+  "MSLE",
+  "HINGE"
+];
+
+const EVOLVE_ACTIVATION_ARRAY = [ 
+  "LOGISTIC", 
+  "TAHN", 
+  "RELU", 
+  "IDENTITY", 
+  "STEP", 
+  "SOFTSIGN", 
+  "SINUSOID", 
+  "GAUSSIAN", 
+  "BENT_IDENTITY",
+  "BIPOLAR",
+  "BIPOLAR_SIGMOID",
+  "HARD_TANH",
+  "ABSOLUTE",
+  "SELU",
+  "INVERSE"
+  ];
+
+const EVOLVE_MUTATION_RATE_RANGE = {min: 0.3, max: 0.9} ;
+const EVOLVE_POP_SIZE_RANGE = { min: 10, max: 100 } ;
+const EVOLVE_ELITISM_RANGE = { min: 0, max: 50 } ;
+
+const DEFAULT_EVOLVE_ACTIVATION = "LOGISTIC"; // TAHN | RELU | IDENTITY | STEP
+const DEFAULT_EVOLVE_CLEAR = false; // binary
+const DEFAULT_EVOLVE_COST = "CROSS_ENTROPY"; // CROSS_ENTROPY | MSE | BINARY
+const DEFAULT_EVOLVE_EQUAL = true;
+const DEFAULT_EVOLVE_ERROR = 0.03;
 const DEFAULT_EVOLVE_ITERATIONS = 1;
+
+const DEFAULT_EVOLVE_MUTATION = "FFW";
+const DEFAULT_EVOLVE_MUTATION_RATE = 0.5;
+
+const DEFAULT_EVOLVE_POP_SIZE = 50;
+const DEFAULT_EVOLVE_ELITISM = 10; // %
+
 const DEFAULT_PROCESS_POLL_INTERVAL = 10000;
-const DEFAULT_MAX_INSTANCES = 5;
 const DEFAULT_STATS_INTERVAL = 60000;
 
 let configuration = {};
 configuration.autoStartInstance = true;
 configuration.processPollInterval = DEFAULT_PROCESS_POLL_INTERVAL;
+configuration.keepaliveInterval = 3000;
 
 const slackOAuthAccessToken = "xoxp-3708084981-3708084993-206468961315-ec62db5792cd55071a51c544acf0da55";
 const slackChannel = "#nn_batch";
@@ -27,10 +73,12 @@ const debug = require("debug")("nnb");
 const commandLineArgs = require("command-line-args");
 const Dropbox = require("dropbox");
 const deepcopy = require("deep-copy");
+const randomItem = require('random-item');
+const randomFloat = require('random-float');
+const randomInt = require('random-int');
 
 const chalkAlert = chalk.red;
 const chalkBlue = chalk.blue;
-const chalkRedBold = chalk.bold.red;
 const chalkError = chalk.bold.red;
 const chalkWarn = chalk.red;
 const chalkLog = chalk.gray;
@@ -44,9 +92,15 @@ hostname = hostname.replace(/.fios-router/g, "");
 hostname = hostname.replace(/.fios-router.home/g, "");
 hostname = hostname.replace(/word0-instance-1/g, "google");
 
+let socket;
+let userReadyTransmitted = false;
+let userReadyAck = false;
+let serverConnected = false;
+
 configuration.instanceOptions = {};
 
 configuration.instanceOptions.script = "twitterNeuralNetwork.js";
+
 if (hostname.includes("google")) {
   configuration.instanceOptions.cwd = "/home/tc/twitterNeuralNetwork";
 }
@@ -63,10 +117,23 @@ configuration.instanceOptions.env.DROPBOX_WORD_ASSO_ACCESS_TOKEN = "nknEWsIkD5UA
 configuration.instanceOptions.env.DROPBOX_WORD_ASSO_DEFAULT_TWITTER_CONFIG_FOLDER = "/config/twitter";
 configuration.instanceOptions.env.DROPBOX_WORD_ASSO_DEFAULT_TWITTER_CONFIG_FILE = "altthreecee00.json";
 configuration.instanceOptions.env.TNN_PROCESS_NAME = "tnn";
-configuration.instanceOptions.env.TNN_EVOLVE_ITERATIONS = DEFAULT_EVOLVE_ITERATIONS;
+
 configuration.instanceOptions.env.TNN_TWITTER_DEFAULT_USER = "altthreecee00";
 configuration.instanceOptions.env.TNN_TWITTER_USERS = {"altthreecee00": "altthreecee00", "ninjathreecee": "ninjathreecee"};
 configuration.instanceOptions.env.TNN_STATS_UPDATE_INTERVAL = 60000;
+
+// configuration.instanceOptions.env.TNN_EVOLVE_ = DEFAULT_EVOLVE_;
+configuration.instanceOptions.env.TNN_EVOLVE_ELITISM = DEFAULT_EVOLVE_ELITISM;
+configuration.instanceOptions.env.TNN_EVOLVE_EQUAL = DEFAULT_EVOLVE_EQUAL;
+configuration.instanceOptions.env.TNN_EVOLVE_ERROR = DEFAULT_EVOLVE_ERROR;
+configuration.instanceOptions.env.TNN_EVOLVE_ITERATIONS = DEFAULT_EVOLVE_ITERATIONS;
+configuration.instanceOptions.env.TNN_EVOLVE_MUTATION = DEFAULT_EVOLVE_MUTATION;
+configuration.instanceOptions.env.TNN_EVOLVE_MUTATION_RATE = DEFAULT_EVOLVE_MUTATION_RATE;
+configuration.instanceOptions.env.TNN_EVOLVE_POP_SIZE = DEFAULT_EVOLVE_POP_SIZE;
+configuration.instanceOptions.env.TNN_EVOLVE_ACTIVATION = DEFAULT_EVOLVE_ACTIVATION;
+configuration.instanceOptions.env.TNN_EVOLVE_COST = DEFAULT_EVOLVE_COST;
+configuration.instanceOptions.env.TNN_EVOLVE_CLEAR = DEFAULT_EVOLVE_CLEAR;
+
 
 function jsonPrint(obj) {
   if (obj) {
@@ -106,7 +173,8 @@ function msToTime(duration) {
   return days + ":" + hours + ":" + minutes + ":" + seconds;
 }
 
-
+const evolveEnableRandom = { name: "evolveEnableRandom", alias: "r", type: Boolean, defaultValue: false };
+const targetServer = { name: "targetServer", alias: "s", type: String };
 const enableStdin = { name: "enableStdin", alias: "i", type: Boolean, defaultValue: true };
 const quitOnError = { name: "quitOnError", alias: "q", type: Boolean, defaultValue: true };
 const verbose = { name: "verbose", alias: "v", type: Boolean };
@@ -115,12 +183,18 @@ const testMode = { name: "testMode", alias: "T", type: Boolean, defaultValue: fa
 const loadNeuralNetworkFileRunID = { name: "loadNeuralNetworkFileRunID", alias: "N", type: String };
 const evolveIterations = { name: "evolveIterations", alias: "I", type: Number};
 
-const optionDefinitions = [enableStdin, quitOnError, verbose, evolveIterations, testMode, loadNeuralNetworkFileRunID];
+const optionDefinitions = [ evolveEnableRandom, targetServer, enableStdin, quitOnError, verbose, evolveIterations, testMode, loadNeuralNetworkFileRunID];
 
 const commandLineConfig = commandLineArgs(optionDefinitions);
 console.log(chalkInfo("COMMAND LINE CONFIG\n" + jsonPrint(commandLineConfig)));
 console.log("COMMAND LINE OPTIONS\n" + jsonPrint(commandLineConfig));
 
+if (commandLineConfig.targetServer === "LOCAL"){
+  commandLineConfig.targetServer = "http://localhost:9997/util";
+}
+if (commandLineConfig.targetServer === "REMOTE"){
+  commandLineConfig.targetServer = "http://word.threeceelabs.com:9997/util";
+}
 
 // ==================================================================
 // DROPBOX
@@ -156,13 +230,38 @@ statsObj.instances.completed = 0;
 statsObj.instances.errors = 0;
 statsObj.instances.instanceIndex = 0;
 
-const NNB_RUN_ID = "nnb_" + hostname + "_" + process.pid + "_" + statsObj.startTimeMoment.format(compactDateTimeFormat);
+const NNB_RUN_ID = "NNB_" + hostname + "_" + process.pid + "_" + statsObj.startTimeMoment.format(compactDateTimeFormat);
 statsObj.runId = NNB_RUN_ID;
 console.log(chalkAlert("RUN ID: " + statsObj.runId));
 
 const statsFolder = "/stats/" + hostname + "/neuralNetworkBatch";
 const statsFile = "neuralNetworkBatch_" + statsObj.runId + ".json";
 console.log(chalkInfo("STATS FILE : " + statsFolder + "/" + statsFile));
+
+
+var USER_ID = NNB_RUN_ID;
+var SCREEN_NAME = NNB_RUN_ID;
+
+var userObj = { 
+  name: USER_ID, 
+  nodeId: USER_ID, 
+  userId: USER_ID, 
+  utilId: USER_ID, 
+  url: "https://word.threeceelabs.com", 
+  screenName: SCREEN_NAME, 
+  namespace: "util", 
+  type: "util", 
+  mode: "batch",
+  tags: {},
+  stats: {}
+} ;
+
+userObj.tags.entity = USER_ID;
+userObj.tags.mode = "util";
+userObj.tags.channel = "neural_network";
+userObj.tags.url = "https://word.threeceelabs.com";
+
+
 
 let processPollInterval;
 let statsUpdateInterval;
@@ -287,7 +386,7 @@ function loadFile(path, file, callback) {
           debug("FOUND FILE " + folderFile.name);
 
           if (folderFile.name === file) {
-            debug(chalkRedBold("SOURCE FILE EXISTS: " + path + "/" + file));
+            debug(chalkAlert("SOURCE FILE EXISTS: " + path + "/" + file));
             fileExists = true;
           }
 
@@ -388,11 +487,11 @@ function initStdIn(){
 
       // case "d":
       //   configuration.enableHeapDump = !configuration.enableHeapDump;
-      //   console.log(chalkRedBold("HEAP DUMP: " + configuration.enableHeapDump));
+      //   console.log(chalkAlert("HEAP DUMP: " + configuration.enableHeapDump));
       // break;
       case "v":
         configuration.verbose = !configuration.verbose;
-        console.log(chalkRedBold("VERBOSE: " + configuration.verbose));
+        console.log(chalkAlert("VERBOSE: " + configuration.verbose));
       break;
       case "q":
         quit();
@@ -416,10 +515,217 @@ function initStdIn(){
   });
 }
 
+function initSocket(cnf, callback){
+
+  console.log(chalkLog("INIT SOCKET"
+    + " | " + cnf.targetServer
+    + " | " + jsonPrint(userObj)
+  ));
+
+  socket = require("socket.io-client")(cnf.targetServer);
+
+  socket.on("connect", function(){
+
+    serverConnected = true ;
+    userReadyTransmitted = false;
+    userReadyAck = false ;
+
+    statsObj.socketId = socket.id;
+
+    console.log(chalkAlert( "CONNECTED TO HOST" 
+      + " | SERVER: " + cnf.targetServer 
+      + " | ID: " + socket.id 
+    ));
+
+    initUserReadyInterval(5000);
+  });
+
+  socket.on("reconnect", function(){
+    serverConnected = true ;
+    userReadyAck = false ;
+    console.log(chalkAlert(moment().format(defaultDateTimeFormat) 
+      + " | SOCKET RECONNECT: " + socket.id));
+  });
+
+  socket.on("USER_READY_ACK", function(ackObj) {
+
+    clearInterval(userReadyInterval);
+
+    serverConnected = true ;
+    userReadyAck = true ;
+
+    console.log(chalkAlert("RX USER_READY_ACK"
+      + " | " + moment().format(defaultDateTimeFormat)
+      + " | " + socket.id
+      + " | USER ID: " + ackObj.userId
+      + " | ACK TIMESTAMP: " + moment(parseInt(ackObj.timeStamp)).format(compactDateTimeFormat)
+    ));
+
+    initKeepalive(userObj, cnf.keepaliveInterval);
+  });
+
+  socket.on("error", function(err){
+    userReadyTransmitted = false;
+    userReadyAck = false ;
+    serverConnected = false ;
+    console.log(chalkAlert(moment().format(compactDateTimeFormat)
+      + " | ***** SOCKET ERROR"
+      + " | " + err.type
+      + " | " + err.description
+    ));
+  });
+
+  socket.on("connect_error", function(err){
+    userReadyTransmitted = false;
+    userReadyAck = false ;
+    serverConnected = false ;
+    console.log(chalkAlert(moment().format(compactDateTimeFormat)
+      + " | ***** SOCKET CONNECT ERROR"
+      + " | " + err.type
+      + " | " + err.description
+    ));
+
+    slackPostMessage(slackChannel, "\n*SOCKET CONN ERROR*"
+      + "\n*" + userObj.userId + "*\n"
+      + "\n*TYPE: " + err.type + "*\n"
+      + "\n" + err.description + "\n"
+    );
+  });
+
+  socket.on("reconnect_error", function(){
+    userReadyTransmitted = false;
+    userReadyAck = false ;
+    serverConnected = false ;
+    console.log(chalkAlert(moment().format(compactDateTimeFormat)
+      + " | ***** SOCKET RECONNECT ERROR"
+    ));
+  });
+
+  socket.on("disconnect", function(){
+    userReadyTransmitted = false;
+    userReadyAck = false ;
+    serverConnected = false;
+    console.log(chalkAlert(moment().format(compactDateTimeFormat)
+      + " | ***** SOCKET DISCONNECT"
+    ));
+ 
+    slackPostMessage(slackChannel, "\n*SOCKET DISCONN*"
+      + "\n*" + userObj.userId + "*\n"
+    );
+  });
+
+  socket.on("SET_ITERATIONS", function(value){
+    console.log(chalkAlert("RX SET_ITERATIONS | " + value));
+  });
+
+  socket.on("KEEPALIVE_ACK", function(userId) {
+    debug(chalkLog("RX KEEPALIVE_ACK | " + userId));
+  });
+
+  callback(null, null);
+}
+
+function sendKeepAlive(userObj, callback){
+  if (userReadyAck && serverConnected){
+    debug(chalkInfo("TX KEEPALIVE"
+      + " | " + userObj.userId
+      + " | " + moment().format(defaultDateTimeFormat)
+    ));
+    socket.emit("SESSION_KEEPALIVE", userObj);
+    callback(null);
+  }
+  else {
+    console.log(chalkError("!!!! CANNOT TX KEEPALIVE"
+      + " | " + userObj.userId
+      + " | CONNECTED: " + serverConnected
+      + " | READY ACK: " + userReadyAck
+      + " | " + moment().format(defaultDateTimeFormat)
+    ));
+    callback("ERROR");
+  }
+}
+
+let socketKeepaliveInterval;
+function initKeepalive(userObj, interval){
+
+  let zeroTweetsPerMinute = false;
+  let keepaliveIndex = 0;
+  let slackMessageTwitterFeedDownSent = false;
+  let slackMessageTwitterFeedUpSent = false;
+
+  clearInterval(socketKeepaliveInterval);
+  zeroTweetsPerMinute = false;
+
+  console.log(chalkAlert("START PRIMARY KEEPALIVE"
+    // + " | USER ID: " + userId
+    + " | READY ACK: " + userReadyAck
+    + " | SERVER CONNECTED: " + serverConnected
+    + " | INTERVAL: " + interval + " ms"
+  ));
+
+  sendKeepAlive(userObj, function(err){
+    if (err) {
+      console.log(chalkError("KEEPALIVE ERROR: " + err));
+    }
+    debug(chalkAlert("KEEPALIVE"
+      + " | " + moment().format(defaultDateTimeFormat)
+    ));
+  });
+
+  socketKeepaliveInterval = setInterval(function(){ // TX KEEPALIVE
+
+    userObj.stats = statsObj;
+
+    sendKeepAlive(userObj, function(err){
+      if (err) {
+        console.log(chalkError("KEEPALIVE ERROR: " + err));
+      }
+      debug(chalkAlert("KEEPALIVE"
+        + " | " + moment().format(defaultDateTimeFormat)
+      ));
+    });
+
+    keepaliveIndex += 1;
+
+  }, interval);
+}
+
+let userReadyInterval;
+function initUserReadyInterval(interval){
+
+  console.log(chalkInfo("INIT USER READY INTERVAL"));
+
+  clearInterval(userReadyInterval);
+
+  userReadyInterval = setInterval(function(){
+
+    if (serverConnected && !userReadyTransmitted && !userReadyAck){
+
+      userReadyTransmitted = true; 
+      userObj.timeStamp = moment().valueOf();
+      socket.emit("USER_READY", {userId: userObj.userId, timeStamp: moment().valueOf()}); 
+
+    }
+    // else if (userReadyAck && !twitterSearchInit) {
+
+    //   twitterSearchInit = true;
+    //   console.log(chalkTwitter("INIT TWITTER SEARCH"));
+    //   initTwitterSearch(cnf);
+
+    // }
+    else if (userReadyTransmitted && !userReadyAck) {
+
+      statsObj.userReadyAckWait += 1;
+      console.log(chalkDisconnect("... WAITING FOR USER_READY_ACK ..."));
+
+    }
+  }, interval);
+}
+
 function initInstance(instanceIndex, options, callback){
 
   const runId = hostname + "_" + process.pid + "_" + instanceIndex;
-  const instanceName = "nnb_" + runId;
+  const instanceName = "NNB_" + runId;
   const neuralNetworkFile = "neuralNetwork_" + instanceName + ".json";
 
   let logfile = "/Users/tc/logs/batch/neuralNetwork/" + hostname + "/" + instanceName + ".log";
@@ -427,8 +733,9 @@ function initInstance(instanceIndex, options, callback){
   if (hostname.includes("google")){
     logfile = "/home/tc/logs/batch/neuralNetwork/" + hostname + "/" + instanceName + ".log";
   }
-  
-  let currentOptions = defaults(options, {
+
+  let currentOptions = {};
+   currentOptions = defaults(options, {
     name: instanceName,
     out_file: logfile,
     error_file: logfile
@@ -437,7 +744,6 @@ function initInstance(instanceIndex, options, callback){
   currentOptions.env.TNN_PROCESS_NAME = instanceName;
   currentOptions.env.TNN_RUN_ID = runId;
 
-  debug("CURRENT OPTIONS\n" + jsonPrint(currentOptions));
 
   console.log("INIT INSTANCE " + instanceIndex
     + " | " + currentOptions.name
@@ -445,6 +751,7 @@ function initInstance(instanceIndex, options, callback){
     + " | ITERATIONS: " + currentOptions.env.TNN_EVOLVE_ITERATIONS
     + " | " + currentOptions.out_file
   );
+  console.log("CURRENT OPTIONS\n" + jsonPrint(currentOptions));
 
   const opt = deepcopy(currentOptions);
 
@@ -462,7 +769,7 @@ function startInstance(instanceConfig, callback){
 
     statsObj.instances.started += 1;
 
-    debug(chalkInfo("START INSTANCE\n" + jsonPrint(instanceConfig)));
+    console.log(chalkInfo("START INSTANCE\n" + jsonPrint(instanceConfig)));
 
 
     // console.log("PM2 LAUNCHED | " + instanceConfig.name);
@@ -500,9 +807,30 @@ function initProcessPollInterval(interval){
 
     if (Object.keys(appHashMap).length < configuration.maxInstances) {
 
-      initInstance(statsObj.instances.instanceIndex, configuration.instanceOptions, function(opt){
+      let options = {};
+      options = deepcopy(configuration.instanceOptions);
 
-        startInstance(opt);
+      if (configuration.evolveEnableRandom){
+        options.env.TNN_EVOLVE_ACTIVATION = randomItem(EVOLVE_ACTIVATION_ARRAY);
+        options.env.TNN_EVOLVE_COST = randomItem(EVOLVE_COST_ARRAY);
+        options.env.TNN_EVOLVE_CLEAR = randomItem([true, false]);
+        options.env.TNN_EVOLVE_EQUAL = randomItem([true, false]);
+
+        options.env.TNN_EVOLVE_MUTATION_RATE = randomFloat(EVOLVE_MUTATION_RATE_RANGE.min, EVOLVE_MUTATION_RATE_RANGE.max);
+        options.env.TNN_EVOLVE_POP_SIZE = randomInt(EVOLVE_POP_SIZE_RANGE.min, EVOLVE_POP_SIZE_RANGE.max);
+        options.env.TNN_EVOLVE_ELITISM = randomInt(EVOLVE_ELITISM_RANGE.min, EVOLVE_ELITISM_RANGE.max);
+
+        console.log(chalkAlert("RANDOM OPTIONS\n" + jsonPrint(options)));
+      }
+      else {
+      }
+
+
+      initInstance(statsObj.instances.instanceIndex, options, function(opt){
+
+        const options = deepcopy(opt);
+
+        startInstance(options);
 
         statsObj.instances.instanceIndex += 1;
 
@@ -568,7 +896,21 @@ function initAllInstances(maxInstances, callback) {
 
   async.times(maxInstances, function(n, next){
 
-    initInstance(instanceIndex, configuration.instanceOptions, function(opt){
+    let options = {};
+    options = deepcopy(configuration.instanceOptions);
+
+    if (configuration.evolveEnableRandom){
+      options.env.TNN_EVOLVE_ACTIVATION = randomItem(EVOLVE_ACTIVATION_ARRAY);
+      options.env.TNN_EVOLVE_COST = randomItem(EVOLVE_COST_ARRAY);
+      options.env.TNN_EVOLVE_CLEAR = randomItem([true, false]);
+      options.env.TNN_EVOLVE_EQUAL = randomItem([true, false]);
+
+      options.env.TNN_EVOLVE_MUTATION_RATE = randomFloat(EVOLVE_MUTATION_RATE_RANGE.min, EVOLVE_MUTATION_RATE_RANGE.max);
+      options.env.TNN_EVOLVE_POP_SIZE = randomInt(EVOLVE_POP_SIZE_RANGE.min, EVOLVE_POP_SIZE_RANGE.max);
+      options.env.TNN_EVOLVE_ELITISM = randomInt(EVOLVE_ELITISM_RANGE.min, EVOLVE_ELITISM_RANGE.max);
+    }
+
+    initInstance(instanceIndex, options, function(opt){
 
       instanceConfigArray.push(opt);
       statsObj.instances.instanceIndex += 1;
@@ -607,7 +949,9 @@ function initBatch(callback){
 
         debug("START\n" + jsonPrint(instanceConfig));
 
-        startInstance(instanceConfig, function(){
+        const options = deepcopy(instanceConfig);
+
+        startInstance(options, function(){
           cb();
         });
 
@@ -646,11 +990,14 @@ function initialize(cnf, callback){
 
   cnf.processName = process.env.NNB_PROCESS_NAME || "neuralNetworkBatch";
 
+  cnf.targetServer = process.env.TNNB_UTIL_TARGET_SERVER || "http://localhost:9997/util" ;
+
   cnf.verbose = process.env.NNB_VERBOSE_MODE || false ;
   cnf.quitOnError = process.env.NNB_QUIT_ON_ERROR || false ;
   cnf.enableStdin = process.env.NNB_ENABLE_STDIN || true ;
   cnf.evolveIterations = process.env.NNB_EVOLVE_ITERATIONS || DEFAULT_EVOLVE_ITERATIONS ;
-  cnf.maxInstances = process.env.NNB_MAX_INSTANCES || DEFAULT_MAX_INSTANCES ;
+  cnf.maxInstances = process.env.NNB_MAX_INSTANCES || DEFAULT_BATCH_MAX_INSTANCES ;
+  cnf.evolveEnableRandom = process.env.NNB_EVOLVE_ENABLE_RANDOM || true ;
 
   cnf.classifiedUsersFile = process.env.NNB_CLASSIFIED_USERS_FILE || "classifiedUsers.json";
   cnf.classifiedUsersFolder = dropboxConfigHostFolder + "/classifiedUsers";
@@ -666,6 +1013,11 @@ function initialize(cnf, callback){
 
     if (!err) {
       console.log(dropboxConfigFile + "\n" + jsonPrint(loadedConfigObj));
+
+      if (loadedConfigObj.NNB_EVOLVE_ENABLE_RANDOM  !== undefined){
+        console.log("LOADED NNB_EVOLVE_ENABLE_RANDOM: " + loadedConfigObj.NNB_EVOLVE_ENABLE_RANDOM);
+        cnf.evolveEnableRandom = loadedConfigObj.NNB_EVOLVE_ENABLE_RANDOM;
+      }
 
       if (loadedConfigObj.NNB_EVOLVE_ITERATIONS  !== undefined){
         console.log("LOADED NNB_EVOLVE_ITERATIONS: " + loadedConfigObj.NNB_EVOLVE_ITERATIONS);
@@ -726,11 +1078,13 @@ function initialize(cnf, callback){
         initStdIn();
       }
 
-      initStatsUpdate(cnf, function(err, cnf2){
-        if (err) {
-          console.log(chalkError("ERROR initStatsUpdate\n" + err));
-        }
-        return(callback(err, cnf2));
+      initSocket(cnf, function(){
+        initStatsUpdate(cnf, function(err, cnf2){
+          if (err) {
+            console.log(chalkError("ERROR initStatsUpdate\n" + err));
+          }
+          return(callback(err, cnf2));
+        });
       });
     }
     else {
@@ -755,11 +1109,13 @@ function initialize(cnf, callback){
           initStdIn();
         }
 
-        initStatsUpdate(cnf, function(err, cnf2){
-          if (err) {
-            console.log(chalkError("ERROR initStatsUpdate\n" + jsonPrint(err)));
-          }
-          debug("initStatsUpdate cnf2\n" + jsonPrint(cnf2));
+        initSocket(cnf, function(){
+          initStatsUpdate(cnf, function(err, cnf2){
+            if (err) {
+              console.log(chalkError("ERROR initStatsUpdate\n" + jsonPrint(err)));
+            }
+            debug("initStatsUpdate cnf2\n" + jsonPrint(cnf2));
+          });
         });
 
         callback(null, cnf);

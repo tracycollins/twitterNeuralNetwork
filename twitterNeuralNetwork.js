@@ -12,17 +12,17 @@ const neataptic = require("neataptic");
 const DEFAULT_NETWORK_CREATE_MODE = "evolve";
 const DEFAULT_TEST_RATIO = 0.1;
 
-const DEFAULT_EVOLVE_MUTATION = "FFW";
-const DEFAULT_EVOLVE_EQUAL = false;
-const DEFAULT_EVOLVE_POPSIZE = 100;
+const DEFAULT_EVOLVE_ACTIVATION = "LOGISTIC";
+const DEFAULT_EVOLVE_CLEAR = false;
+const DEFAULT_EVOLVE_COST = "CROSS_ENTROPY";
 const DEFAULT_EVOLVE_ELITISM = 10;
-const DEFAULT_EVOLVE_LOG = 1;
+const DEFAULT_EVOLVE_EQUAL = false;
 const DEFAULT_EVOLVE_ERROR = 0.03;
 const DEFAULT_EVOLVE_ITERATIONS = 100;
+const DEFAULT_EVOLVE_LOG = 1;
+const DEFAULT_EVOLVE_MUTATION = "FFW";
 const DEFAULT_EVOLVE_MUTATION_RATE = 0.75;
-const DEFAULT_EVOLVE_ACTIVATION = "LOGISTIC";
-const DEFAULT_EVOLVE_COST = "CROSS_ENTROPY";
-const DEFAULT_EVOLVE_CLEAR = false;
+const DEFAULT_EVOLVE_POPSIZE = 100;
 
 let configuration = {};
 configuration.evolveNetwork = true;
@@ -676,12 +676,21 @@ function initialize(cnf, callback){
   cnf.quitOnError = process.env.TNN_QUIT_ON_ERROR || false ;
   cnf.enableStdin = process.env.TNN_ENABLE_STDIN || true ;
   cnf.networkCreateMode = process.env.TNN_NETWORK_CREATE_MODE || DEFAULT_NETWORK_CREATE_MODE ;
+
+  cnf.evolve.activation = process.env.TNN_EVOLVE_ACTIVATION || DEFAULT_EVOLVE_ACTIVATION ;
+  cnf.evolve.clear = process.env.TNN_EVOLVE_CLEAR || DEFAULT_EVOLVE_CLEAR ;
+  cnf.evolve.cost = process.env.TNN_EVOLVE_COST || DEFAULT_EVOLVE_COST ;
+  cnf.evolve.elitism = process.env.TNN_EVOLVE_ELITISM || DEFAULT_EVOLVE_ELITISM ;
+  cnf.evolve.equal = process.env.TNN_EVOLVE_EQUAL || DEFAULT_EVOLVE_EQUAL ;
+  cnf.evolve.error = process.env.TNN_EVOLVE_ERROR || DEFAULT_EVOLVE_ERROR ;
   cnf.evolve.iterations = process.env.TNN_EVOLVE_ITERATIONS || DEFAULT_EVOLVE_ITERATIONS ;
+  cnf.evolve.mutation = process.env.TNN_EVOLVE_MUTATION || DEFAULT_EVOLVE_MUTATION ;
+  cnf.evolve.mutationRate = process.env.TNN_EVOLVE_MUTATION_RATE || DEFAULT_EVOLVE_MUTATION_RATE ;
+  cnf.evolve.popsize = process.env.TNN_EVOLVE_POP_SIZE || DEFAULT_EVOLVE_POPSIZE ;
+
   cnf.neuralNetworkFile = process.env.TNN_NEURAL_NETWORK_FILE || DEFAULT_NEURAL_NETWORK_FILE ;
 
-  // cnf.classifiedUsersFile = process.env.TNN_CLASSIFIED_USERS_FILE || "classifiedUsers.json";
   cnf.classifiedUsersFile = process.env.TNN_CLASSIFIED_USERS_FILE || classifiedUsersFile;
-  // cnf.classifiedUsersFolder = dropboxConfigHostFolder + "/classifiedUsers";
   cnf.classifiedUsersFolder = classifiedUsersFolder;
   cnf.statsUpdateIntervalTime = process.env.TNN_STATS_UPDATE_INTERVAL || 60000;
 
@@ -1670,7 +1679,6 @@ function activateNetwork(n, input, callback){
       callback(output);
     }
   }, 200);
-
 }
 
 function initMain(cnf){
@@ -1844,7 +1852,6 @@ function initMain(cnf){
     });
   }
 }
-
 
 function testNetwork(nw, testObj, callback){
 
@@ -2130,9 +2137,10 @@ function initTimeout(){
 
     configuration = cnf;
 
+    console.log(chalkBlue(cnf.processName + " STARTED " + getTimeStamp() + "\n" + jsonPrint(configuration)));
+
     initNeuralNetworkChild(function(){
 
-      console.log(chalkBlue(cnf.processName + " STARTED " + getTimeStamp() + "\n"));
 
       if (process.env.BATCH_MODE){
         slackChannel = "#nn_batch";

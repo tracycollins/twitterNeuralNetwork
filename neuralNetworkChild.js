@@ -17,11 +17,7 @@ hostname = hostname.replace(/word0-instance-1/g, "google");
 const defaultDateTimeFormat = "YYYY-MM-DD HH:mm:ss ZZ";
 const compactDateTimeFormat = "YYYYMMDD HHmmss";
 
-// let evolveRunning = false;
-// let evolveReady = true;
-
 const neataptic = require("neataptic");
-// const neataptic = require("./js/neataptic/dist/neataptic.js");
 let network;
 
 
@@ -32,8 +28,6 @@ let configEvents = new EventEmitter2({
   maxListeners: 20,
   verboseMemoryLeak: true
 });
-
-// let trainingSet = [];
 
 let configuration = {};
 configuration.verbose = false;
@@ -50,8 +44,6 @@ const debug = require("debug")("la");
 
 const chalk = require("chalk");
 const chalkAlert = chalk.red;
-// const chalkRed = chalk.red;
-// const chalkRedBold = chalk.bold.red;
 const chalkError = chalk.bold.red;
 const chalkWarn = chalk.red;
 const chalkLog = chalk.gray;
@@ -147,8 +139,6 @@ console.log("NNC | DROPBOX_WORD_ASSO_APP_KEY :" + DROPBOX_WORD_ASSO_APP_KEY);
 console.log("NNC | DROPBOX_WORD_ASSO_APP_SECRET :" + DROPBOX_WORD_ASSO_APP_SECRET);
 
 const dropboxClient = new Dropbox({ accessToken: DROPBOX_WORD_ASSO_ACCESS_TOKEN });
-
-// const neuralNetworkFolder = dropboxConfigFolder + "/neuralNetworks";
 
 function getTimeStamp(inputTime) {
   let currentTimeStamp ;
@@ -258,10 +248,8 @@ function train (params, callback){
       + " | " + statsObj.training.trainingSet.numOutputs + " OUTPUTS"
     ));
 
-    // network = new neataptic.Architect.Perceptron(
     network = new neataptic.Network(
       statsObj.training.trainingSet.numInputs, 
-      // statsObj.training.trainingSet.numInputs+statsObj.training.trainingSet.numOutputs, 
       statsObj.training.trainingSet.numOutputs
     );
 
@@ -365,21 +353,21 @@ function evolve(params, callback){
 
   let options = {};
 
-  options.mutation = params.mutation;
-  options.equal = params.equal;
-  options.popsize = params.popsize;
   options.elitism = params.elitism;
-  options.log = params.log;
+  options.equal = params.equal;
   options.error = params.error;
   options.iterations = params.iterations;
+  options.log = params.log;
+  options.mutation = params.mutation;
   options.mutationRate = params.mutationRate;
+  options.popsize = params.popsize;
 
   async.each(Object.keys(options), function(key, cb){
 
     if (key === "mutation") {
       console.log("NNC | EVOLVE OPTION | " + key + ": " + options[key]);
       // options.mutation = neataptic.methods.mutation[key];
-      options.mutation = neataptic.methods.mutation.ALL;
+      options.mutation = neataptic.methods.mutation.FFW;
     }
     else if ((key === "activation") && (options[key] !== undefined)) {
       console.log("NNC | EVOLVE OPTION | " + key + ": " + options[key]);
@@ -567,17 +555,25 @@ process.on("message", function(m) {
         log: m.log,
         error: m.error,
         iterations: m.iterations,
-        mutationRate: m.mutationRate
-        // activation: m.activation,
-        // cost: m.cost,
-        // clear: m.clear
+        mutationRate: m.mutationRate,
+        activation: m.activation,
+        cost: m.cost,
+        clear: m.clear
       };
 
-      statsObj.evolve.options = {};
-      statsObj.evolve.options = pick(
-        evolveParams, 
-        ["iterations", "mutation", "cost", "equal", "popsize", "elitism", "mutationRate", "error"]
-      );
+      statsObj.evolve.options = {        
+        mutation: m.mutation,
+        mutationRate: m.mutationRate,
+        activation: m.activation,
+        equal: m.equal,
+        cost: m.cost,
+        clear: m.clear,
+        error: m.error,
+        popsize: m.popsize,
+        elitism: m.elitism,
+        iterations: m.iterations,
+        log: m.log
+      };
 
       evolve(evolveParams, function(results){
 
