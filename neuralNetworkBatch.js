@@ -50,7 +50,7 @@ const DEFAULT_EVOLVE_MUTATION_RATE = 0.5;
 const DEFAULT_EVOLVE_POP_SIZE = 50;
 const DEFAULT_EVOLVE_ELITISM = 10; // %
 
-const DEFAULT_PROCESS_POLL_INTERVAL = 10000;
+const DEFAULT_PROCESS_POLL_INTERVAL = 15000;
 const DEFAULT_STATS_INTERVAL = 60000;
 
 let configuration = {};
@@ -79,7 +79,10 @@ const deepcopy = require("deep-copy");
 const randomItem = require('random-item');
 const randomFloat = require('random-float');
 const randomInt = require('random-int');
+const mongoose = require("./config/mongoose");
+const db = mongoose();
 
+const chalkNetwork = chalk.blue;
 const chalkAlert = chalk.red;
 const chalkBlue = chalk.blue;
 const chalkError = chalk.bold.red;
@@ -137,6 +140,14 @@ configuration.instanceOptions.env.TNN_EVOLVE_ACTIVATION = DEFAULT_EVOLVE_ACTIVAT
 configuration.instanceOptions.env.TNN_EVOLVE_COST = DEFAULT_EVOLVE_COST;
 configuration.instanceOptions.env.TNN_EVOLVE_CLEAR = DEFAULT_EVOLVE_CLEAR;
 
+const User = require("mongoose").model("User");
+const Word = require("mongoose").model("Word");
+const NeuralNetwork = require("mongoose").model("NeuralNetwork");
+
+const userServer = require("./app/controllers/user.server.controller");
+const neuralNetworkServer = require("./app/controllers/neuralNetwork.server.controller");
+
+let currentBestNetwork;
 
 function jsonPrint(obj) {
   if (obj) {
@@ -716,7 +727,7 @@ function initUserReadyInterval(interval){
     // else if (userReadyAck && !twitterSearchInit) {
 
     //   twitterSearchInit = true;
-    //   console.log(chalkTwitter("INIT TWITTER SEARCH"));
+    //   console.log(chalkNetwork("INIT TWITTER SEARCH"));
     //   initTwitterSearch(cnf);
 
     // }
@@ -727,6 +738,90 @@ function initUserReadyInterval(interval){
 
     }
   }, interval);
+}
+
+function loadBestNeuralNetworkFile(callback){
+
+  console.log(chalkNetwork("LOADING NEURAL NETWORK FROM DB"));
+
+  let maxSuccessRate = 0;
+  let nnCurrent = {};
+
+  NeuralNetwork.find({}, function(err, nnArray){
+    if (err) {
+      console.log(chalkError("NEUAL NETWORK FIND ERR\n" + err));
+      callback(err);
+    }
+    else if (nnArray.length === 0){
+      console.log("NO NETWORKS FOUND");
+      callback(err);
+    }
+    else{
+      console.log(nnArray.length + " NETWORKS FOUND");
+
+      async.eachSeries(nnArray, function(nn, cb){
+
+        console.log(chalkInfo("NN"
+          + " | ID: " + nn.networkId
+          + " | SUCCESS: " + nn.successRate.toFixed(2) + "%"
+        ));
+
+        if (nn.successRate > maxSuccessRate) {
+
+           console.log(chalkNetwork("NEW MAX NN"
+            + " | ID: " + nn.networkId
+            + " | SUCCESS: " + nn.successRate.toFixed(2) + "%"
+          ));
+
+          maxSuccessRate = nn.successRate;
+          nnCurrent = nn;
+          nnCurrent.inputs = nn.inputs;
+
+        }
+
+        cb();
+
+      }, function(err){
+
+        if (err) {
+          console.log(chalkError("*** loadBestNeuralNetworkFile ERROR\n" + err));
+          return(callback(err, null));
+        }
+
+        printNetworkObj("LOADING NEURAL NETWORK", nnCurrent);
+
+        if (currentBestNetwork) {
+
+          if (currentBestNetwork.networkId !== nnCurrent.networkId) {
+
+            printNetworkObj("NEW BEST NETWORK", nnCurrent);
+
+            const messageText = "\n*NN NEW BEST*\n*" 
+              + nnCurrent.networkId + "*\n"
+              + nnCurrent.successRate.toFixed(2) + "%*\n";
+
+            slackPostMessage(slackChannel, messageText);
+
+          }
+          else {
+            console.log("--- " + nnCurrent.networkId + " | " + nnCurrent.successRate.toFixed(2));
+          }
+        }
+        else {
+          const messageText = "\n*NN BEST*\n*" 
+            + nnCurrent.networkId + "*\n"
+            + nnCurrent.successRate.toFixed(2) + "%\n"
+            + jsonPrint(nnCurrent.evolve) + "\n";
+
+          slackPostMessage(slackChannel, messageText);
+        }
+        currentBestNetwork = nnCurrent;
+        statsObj.currentBestNetworkId = nnCurrent.networkId;
+
+        callback(null, nnCurrent);
+      });
+    }
+  });
 }
 
 function initInstance(instanceIndex, options, callback){
@@ -806,9 +901,24 @@ let noInstancesRunning = function(){
   return (Object.keys(appHashMap).length === 0);
 }
 
+function printNetworkObj(title, nnObj){
+  console.log(chalkNetwork("\n==================="
+    + "\n" + title
+    + "\nID:      " + nnObj.networkId
+    + "\nCREATED: " + getTimeStamp(nnObj.createdAt)
+    + "\nSUCCESS: " + nnObj.successRate.toFixed(2) + "%"
+    + "\nINPUTS:  " + Object.keys(nnObj.inputs)
+    + "\nEVOLVE\n" + jsonPrint(nnObj.evolve)
+    + "\n===================\n"
+  ));
+}
+
 function initProcessPollInterval(interval){
 
   console.log(chalkInfo("INIT PROCESS POLL INTERVAL | " + interval));
+
+  loadBestNeuralNetworkFile(function(err, nnObj){
+  });
 
   processPollInterval = setInterval(function(){
 
@@ -867,6 +977,9 @@ function initProcessPollInterval(interval){
           );
 
           if (appHashMap[app.name] && app.pm2_env.status === "stopped"){
+
+            loadBestNeuralNetworkFile(function(err, nnObj){
+            });
 
             console.log(chalkAlert(app.name
               + " | PM2 ID: " + app.pm2_env.pm_id
