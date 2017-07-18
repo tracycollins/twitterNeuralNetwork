@@ -1,6 +1,7 @@
 /*jslint node: true */
 "use strict";
 
+const OFFLINE_MODE = true;
 const DEFAULT_BATCH_MAX_INSTANCES = 5;
 
 const EVOLVE_COST_ARRAY = [
@@ -516,6 +517,10 @@ function initStdIn(){
 }
 
 function initSocket(cnf, callback){
+
+  if (OFFLINE_MODE){
+    return(callback(null, null));
+  }
 
   console.log(chalkLog("INIT SOCKET"
     + " | " + cnf.targetServer
