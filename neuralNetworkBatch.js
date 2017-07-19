@@ -76,9 +76,9 @@ const debug = require("debug")("nnb");
 const commandLineArgs = require("command-line-args");
 const Dropbox = require("dropbox");
 const deepcopy = require("deep-copy");
-const randomItem = require('random-item');
-const randomFloat = require('random-float');
-const randomInt = require('random-int');
+const randomItem = require("random-item");
+const randomFloat = require("random-float");
+const randomInt = require("random-int");
 const mongoose = require("./config/mongoose");
 const db = mongoose();
 
@@ -187,7 +187,7 @@ function msToTime(duration) {
   return days + ":" + hours + ":" + minutes + ":" + seconds;
 }
 
-const evolveEnableRandom = { name: "evolveEnableRandom", alias: "r", type: Boolean, defaultValue: false };
+const evolveEnableRandom = { name: "evolveEnableRandom", alias: "r", type: Boolean};
 const targetServer = { name: "targetServer", alias: "s", type: String };
 const enableStdin = { name: "enableStdin", alias: "i", type: Boolean, defaultValue: true };
 const quitOnError = { name: "quitOnError", alias: "q", type: Boolean, defaultValue: true };
@@ -253,10 +253,10 @@ const statsFile = "neuralNetworkBatch_" + statsObj.runId + ".json";
 console.log(chalkInfo("STATS FILE : " + statsFolder + "/" + statsFile));
 
 
-var USER_ID = NNB_RUN_ID;
-var SCREEN_NAME = NNB_RUN_ID;
+const USER_ID = NNB_RUN_ID;
+const SCREEN_NAME = NNB_RUN_ID;
 
-var userObj = { 
+let userObj = { 
   name: USER_ID, 
   nodeId: USER_ID, 
   userId: USER_ID, 
@@ -268,13 +268,12 @@ var userObj = {
   mode: "batch",
   tags: {},
   stats: {}
-} ;
+};
 
 userObj.tags.entity = USER_ID;
 userObj.tags.mode = "util";
 userObj.tags.channel = "neural_network";
 userObj.tags.url = "https://word.threeceelabs.com";
-
 
 
 let processPollInterval;
@@ -358,6 +357,7 @@ function saveFile (path, file, jsonObj, callback){
   let options = {};
 
   options.contents = JSON.stringify(jsonObj, null, 2);
+  // options.contents = jsonObj;
   options.path = fullPath;
   options.mode = "overwrite";
   options.autorename = false;
@@ -370,10 +370,11 @@ function saveFile (path, file, jsonObj, callback){
     .catch(function(error){
       console.error(chalkError(moment().format(defaultDateTimeFormat) 
         + " | !!! ERROR DROBOX JSON WRITE | FILE: " + fullPath 
-        // + "\nERROR: " + error
-        // + "\nERROR: " + jsonPrint(error)
+        + "\nERROR: " + error
+        + "\nERROR: " + jsonPrint(error)
         // + "\nERROR\n" + jsonPrint(error)
       ));
+      console.log(error);
       if (error.status === 429) {
         console.error("TOO MANY DROPBOX WRITES");
       }
@@ -527,6 +528,38 @@ function initStdIn(){
         );
     }
   });
+}
+
+let userReadyInterval;
+function initUserReadyInterval(interval){
+
+  console.log(chalkInfo("INIT USER READY INTERVAL"));
+
+  clearInterval(userReadyInterval);
+
+  userReadyInterval = setInterval(function(){
+
+    if (serverConnected && !userReadyTransmitted && !userReadyAck){
+
+      userReadyTransmitted = true; 
+      userObj.timeStamp = moment().valueOf();
+      socket.emit("USER_READY", {userId: userObj.userId, timeStamp: moment().valueOf()}); 
+
+    }
+    // else if (userReadyAck && !twitterSearchInit) {
+
+    //   twitterSearchInit = true;
+    //   console.log(chalkNetwork("INIT TWITTER SEARCH"));
+    //   initTwitterSearch(cnf);
+
+    // }
+    else if (userReadyTransmitted && !userReadyAck) {
+
+      statsObj.userReadyAckWait += 1;
+      console.log(chalkAlert("... WAITING FOR USER_READY_ACK ..."));
+
+    }
+  }, interval);
 }
 
 function initSocket(cnf, callback){
@@ -708,37 +741,6 @@ function initKeepalive(userObj, interval){
   }, interval);
 }
 
-let userReadyInterval;
-function initUserReadyInterval(interval){
-
-  console.log(chalkInfo("INIT USER READY INTERVAL"));
-
-  clearInterval(userReadyInterval);
-
-  userReadyInterval = setInterval(function(){
-
-    if (serverConnected && !userReadyTransmitted && !userReadyAck){
-
-      userReadyTransmitted = true; 
-      userObj.timeStamp = moment().valueOf();
-      socket.emit("USER_READY", {userId: userObj.userId, timeStamp: moment().valueOf()}); 
-
-    }
-    // else if (userReadyAck && !twitterSearchInit) {
-
-    //   twitterSearchInit = true;
-    //   console.log(chalkNetwork("INIT TWITTER SEARCH"));
-    //   initTwitterSearch(cnf);
-
-    // }
-    else if (userReadyTransmitted && !userReadyAck) {
-
-      statsObj.userReadyAckWait += 1;
-      console.log(chalkDisconnect("... WAITING FOR USER_READY_ACK ..."));
-
-    }
-  }, interval);
-}
 
 function loadBestNeuralNetworkFile(callback){
 
@@ -790,15 +792,18 @@ function loadBestNeuralNetworkFile(callback){
 
         printNetworkObj("LOADING NEURAL NETWORK", nnCurrent);
 
+        let messageText;
+
         if (currentBestNetwork) {
 
           if (currentBestNetwork.networkId !== nnCurrent.networkId) {
 
             printNetworkObj("NEW BEST NETWORK", nnCurrent);
 
-            const messageText = "\n*NN NEW BEST*\n*" 
+            messageText = "\n*NN NEW BEST*\n*" 
               + nnCurrent.networkId + "*\n"
-              + nnCurrent.successRate.toFixed(2) + "%*\n";
+              + nnCurrent.successRate.toFixed(2) + "%*\n"
+              + jsonPrint(nnCurrent.evolve) + "\n";
 
             slackPostMessage(slackChannel, messageText);
 
@@ -808,7 +813,8 @@ function loadBestNeuralNetworkFile(callback){
           }
         }
         else {
-          const messageText = "\n*NN BEST*\n*" 
+          
+          messageText = "\n*NN BEST*\n*" 
             + nnCurrent.networkId + "*\n"
             + nnCurrent.successRate.toFixed(2) + "%\n"
             + jsonPrint(nnCurrent.evolve) + "\n";
@@ -899,7 +905,7 @@ function startInstance(instanceConfig, callback){
 
 let noInstancesRunning = function(){
   return (Object.keys(appHashMap).length === 0);
-}
+};
 
 function printNetworkObj(title, nnObj){
   console.log(chalkNetwork("\n==================="
@@ -913,6 +919,25 @@ function printNetworkObj(title, nnObj){
   ));
 }
 
+const generateRandomEvolveOptions = function (optionsIn){
+  let options = {};
+  options.TNN_EVOLVE_BEST_NETWORK = randomItem([true, false]);
+  options.TNN_EVOLVE_ACTIVATION = randomItem(EVOLVE_ACTIVATION_ARRAY);
+  options.TNN_EVOLVE_COST = randomItem(EVOLVE_COST_ARRAY);
+  options.TNN_EVOLVE_CLEAR = randomItem([true, false]);
+  options.TNN_EVOLVE_EQUAL = randomItem([true, false]);
+
+  options.TNN_EVOLVE_MUTATION_RATE = randomFloat(EVOLVE_MUTATION_RATE_RANGE.min, EVOLVE_MUTATION_RATE_RANGE.max);
+  options.TNN_EVOLVE_POP_SIZE = randomInt(EVOLVE_POP_SIZE_RANGE.min, EVOLVE_POP_SIZE_RANGE.max);
+  options.TNN_EVOLVE_ELITISM = randomInt(EVOLVE_ELITISM_RANGE.min, EVOLVE_ELITISM_RANGE.max);
+
+  let optionsOut = defaults(optionsIn, options);
+
+  console.log(chalkAlert("RANDOM OPTIONS\n" + jsonPrint(options)));
+
+  return(optionsOut);
+};
+
 function initProcessPollInterval(interval){
 
   console.log(chalkInfo("INIT PROCESS POLL INTERVAL | " + interval));
@@ -925,29 +950,19 @@ function initProcessPollInterval(interval){
     if (Object.keys(appHashMap).length < configuration.maxInstances) {
 
       let options = {};
-      options = deepcopy(configuration.instanceOptions);
 
       if (configuration.evolveEnableRandom){
-        options.env.TNN_EVOLVE_ACTIVATION = randomItem(EVOLVE_ACTIVATION_ARRAY);
-        options.env.TNN_EVOLVE_COST = randomItem(EVOLVE_COST_ARRAY);
-        options.env.TNN_EVOLVE_CLEAR = randomItem([true, false]);
-        options.env.TNN_EVOLVE_EQUAL = randomItem([true, false]);
-
-        options.env.TNN_EVOLVE_MUTATION_RATE = randomFloat(EVOLVE_MUTATION_RATE_RANGE.min, EVOLVE_MUTATION_RATE_RANGE.max);
-        options.env.TNN_EVOLVE_POP_SIZE = randomInt(EVOLVE_POP_SIZE_RANGE.min, EVOLVE_POP_SIZE_RANGE.max);
-        options.env.TNN_EVOLVE_ELITISM = randomInt(EVOLVE_ELITISM_RANGE.min, EVOLVE_ELITISM_RANGE.max);
-
-        console.log(chalkAlert("RANDOM OPTIONS\n" + jsonPrint(options)));
+        options = generateRandomEvolveOptions(configuration.instanceOptions);
       }
       else {
+        options = deepcopy(configuration.instanceOptions);
       }
-
 
       initInstance(statsObj.instances.instanceIndex, options, function(opt){
 
-        const options = deepcopy(opt);
+        const instanceOptions = deepcopy(opt);
 
-        startInstance(options);
+        startInstance(instanceOptions);
 
         statsObj.instances.instanceIndex += 1;
 
@@ -1017,35 +1032,36 @@ function initAllInstances(maxInstances, callback) {
   async.times(maxInstances, function(n, next){
 
     let options = {};
-    options = deepcopy(configuration.instanceOptions);
+
+    // if (configuration.evolveEnableRandom){
+    //   options.env.TNN_EVOLVE_BEST_NETWORK = randomItem([true, false]);
+    //   options.env.TNN_EVOLVE_ACTIVATION = randomItem(EVOLVE_ACTIVATION_ARRAY);
+    //   options.env.TNN_EVOLVE_COST = randomItem(EVOLVE_COST_ARRAY);
+    //   options.env.TNN_EVOLVE_CLEAR = randomItem([true, false]);
+    //   options.env.TNN_EVOLVE_EQUAL = randomItem([true, false]);
+
+    //   options.env.TNN_EVOLVE_MUTATION_RATE = randomFloat(EVOLVE_MUTATION_RATE_RANGE.min, EVOLVE_MUTATION_RATE_RANGE.max);
+    //   options.env.TNN_EVOLVE_POP_SIZE = randomInt(EVOLVE_POP_SIZE_RANGE.min, EVOLVE_POP_SIZE_RANGE.max);
+    //   options.env.TNN_EVOLVE_ELITISM = randomInt(EVOLVE_ELITISM_RANGE.min, EVOLVE_ELITISM_RANGE.max);
+    // }
 
     if (configuration.evolveEnableRandom){
-      options.env.TNN_EVOLVE_ACTIVATION = randomItem(EVOLVE_ACTIVATION_ARRAY);
-      options.env.TNN_EVOLVE_COST = randomItem(EVOLVE_COST_ARRAY);
-      options.env.TNN_EVOLVE_CLEAR = randomItem([true, false]);
-      options.env.TNN_EVOLVE_EQUAL = randomItem([true, false]);
-
-      options.env.TNN_EVOLVE_MUTATION_RATE = randomFloat(EVOLVE_MUTATION_RATE_RANGE.min, EVOLVE_MUTATION_RATE_RANGE.max);
-      options.env.TNN_EVOLVE_POP_SIZE = randomInt(EVOLVE_POP_SIZE_RANGE.min, EVOLVE_POP_SIZE_RANGE.max);
-      options.env.TNN_EVOLVE_ELITISM = randomInt(EVOLVE_ELITISM_RANGE.min, EVOLVE_ELITISM_RANGE.max);
+      options = generateRandomEvolveOptions(configuration.instanceOptions);
+    }
+    else{
+      options = deepcopy(configuration.instanceOptions);
     }
 
     initInstance(instanceIndex, options, function(opt){
-
       instanceConfigArray.push(opt);
       statsObj.instances.instanceIndex += 1;
       instanceIndex += 1;
-
-      // console.log("instanceConfigArray | " + instanceConfigArray.length);
       next(null, instanceConfigArray);
-      
     });
 
   }, function(err, instances){
-    // console.log("DONE instanceConfigArray | " + instanceConfigArray.length);
     callback(instanceConfigArray);
   });
-
 }
 
 function initBatch(callback){
@@ -1058,6 +1074,7 @@ function initBatch(callback){
 
     if (err) {
       console.error(err);
+      callback(err);
       process.exit(2);
     }
 
@@ -1077,7 +1094,10 @@ function initBatch(callback){
 
       }, function(err){
 
-        if (err) { throw err; }
+        if (err) { 
+          throw err;
+          return (callback(err));
+        }
 
         console.log(chalkAlert("\nALL LAUNCHED | " + configuration.maxInstances + " MAX INSTANCES\n"));
 
@@ -1091,6 +1111,7 @@ function initBatch(callback){
         });
 
         initProcessPollInterval(configuration.processPollInterval);
+        callback(null);
 
       });
 

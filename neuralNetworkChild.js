@@ -353,6 +353,12 @@ function evolve(params, callback){
 
   let options = {};
 
+  if (params.network !== undefined) {
+    options.network = params.network;
+    params.architecture = "loadedNetwork";
+    console.log(chalkAlert("START NETWORK DEFINED: " + options.network.networkId));
+  }
+
   options.elitism = params.elitism;
   options.equal = params.equal;
   options.error = params.error;
@@ -364,7 +370,12 @@ function evolve(params, callback){
 
   async.each(Object.keys(options), function(key, cb){
 
-    if (key === "mutation") {
+    if (key === "network") {
+      console.log("NNC | EVOLVE OPTION | " + key + ": " + options[key].networkId + " | " + options[key].successRate.toFixed(2) + "%");
+      // options.mutation = neataptic.methods.mutation[key];
+      // options.mutation = neataptic.methods.mutation.FFW;
+    }
+    else if (key === "mutation") {
       console.log("NNC | EVOLVE OPTION | " + key + ": " + options[key]);
       // options.mutation = neataptic.methods.mutation[key];
       options.mutation = neataptic.methods.mutation.FFW;
@@ -388,6 +399,12 @@ function evolve(params, callback){
     const hiddenLayerSize = params.trainingSet[0].datum.input.length + params.trainingSet[0].datum.output.length;
 
     switch (params.architecture) {
+
+      case "loadedNetwork":
+        console.log("NNC | EVOLVE ARCH | LOADED: " + options.network.networkId);
+        network = neataptic.Network.fromJSON(options.network.network);
+
+      break;
 
       case "perceptron":
         console.log("NNC | EVOLVE ARCH | " + params.architecture);
@@ -429,11 +446,20 @@ function evolve(params, callback){
         // + "\nOPTIONS\n" + jsonPrint(options)
       ));
 
-      // const results = network.evolve(trainingSet, options);
       network.evolve(trainingSet, options)
       .then(function(results){
         if (callback !== undefined) { callback(results); }
       });
+
+      // const doEvolve = async () => {
+      //   const results = await network.evolve(trainingSet, options);
+      //   return (callback(results));
+      //   // .then(function(results){
+      //     // if (callback !== undefined) { callback(results); }
+      //   // });
+      // }
+
+      // doEvolve();
 
     });
 
@@ -538,15 +564,29 @@ process.on("message", function(m) {
 
       statsObj.inputArraysFile = m.inputArraysFile;
 
-      console.log(chalkAlert("\n\nNNC | NEURAL NET EVOLVE"
-        + "\nINPUTS:     " + statsObj.training.trainingSet.numInputs
-        + "\nOUTPUTS:    " + statsObj.training.trainingSet.numOutputs
-        + "\nDATA PTS:   " + m.trainingSet.length
-        + "\nITERATIONS: " + statsObj.training.iterations
-        + "\n"
-      ));
+      if (m.network) {
+        console.log(chalkAlert("\n\nNNC | NEURAL NET EVOLVE"
+          + "\nNETWORK:    " + m.network.networkId + " | " + m.network.successRate.toFixed(2) + "%"
+          + "\nINPUTS:     " + statsObj.training.trainingSet.numInputs
+          + "\nOUTPUTS:    " + statsObj.training.trainingSet.numOutputs
+          + "\nDATA PTS:   " + m.trainingSet.length
+          + "\nITERATIONS: " + statsObj.training.iterations
+          + "\n"
+        ));
+      }
+      else {
+        console.log(chalkAlert("\n\nNNC | NEURAL NET EVOLVE"
+          + "\nINPUTS:     " + statsObj.training.trainingSet.numInputs
+          + "\nOUTPUTS:    " + statsObj.training.trainingSet.numOutputs
+          + "\nDATA PTS:   " + m.trainingSet.length
+          + "\nITERATIONS: " + statsObj.training.iterations
+          + "\n"
+        ));
+      }
+
 
       evolveParams = {
+        network: m.network,
         trainingSet: m.trainingSet,
         mutation: m.mutation,
         equal: m.equal,
@@ -562,6 +602,7 @@ process.on("message", function(m) {
       };
 
       statsObj.evolve.options = {        
+        network: m.network,
         mutation: m.mutation,
         mutationRate: m.mutationRate,
         activation: m.activation,
