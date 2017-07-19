@@ -801,8 +801,9 @@ function loadBestNeuralNetworkFile(callback){
             printNetworkObj("NEW BEST NETWORK", nnCurrent);
 
             messageText = "\n*NN NEW BEST*\n*" 
-              + nnCurrent.networkId + "*\n"
+              + nnCurrent.networkId + "*\n*"
               + nnCurrent.successRate.toFixed(2) + "%*\n"
+              + getTimeStamp(nnCurrent.createdAt) + "\n"
               + jsonPrint(nnCurrent.evolve) + "\n";
 
             slackPostMessage(slackChannel, messageText);
@@ -815,8 +816,9 @@ function loadBestNeuralNetworkFile(callback){
         else {
           
           messageText = "\n*NN BEST*\n*" 
-            + nnCurrent.networkId + "*\n"
-            + nnCurrent.successRate.toFixed(2) + "%\n"
+            + nnCurrent.networkId + "*\n*"
+            + nnCurrent.successRate.toFixed(2) + "%*\n"
+            + getTimeStamp(nnCurrent.createdAt) + "\n"
             + jsonPrint(nnCurrent.evolve) + "\n";
 
           slackPostMessage(slackChannel, messageText);
