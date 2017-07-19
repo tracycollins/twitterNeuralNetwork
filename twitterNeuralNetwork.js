@@ -12,7 +12,7 @@ let slackChannel = "#word";
 
 const neataptic = require("neataptic");
 const DEFAULT_NETWORK_CREATE_MODE = "evolve";
-const DEFAULT_EVOLVE_BEST_NETWORK = true;
+const DEFAULT_EVOLVE_BEST_NETWORK = false;
 const DEFAULT_TEST_RATIO = 0.1;
 
 const DEFAULT_EVOLVE_ACTIVATION = "LOGISTIC";
@@ -2038,7 +2038,6 @@ function initNeuralNetworkChild(callback){
           // + "\nNETWORK\n" + jsonPrint(m.network)
         ));
 
-        // testObj.numInputs = m.networkObj.network.input;
 
         network = neataptic.Network.fromJSON(m.networkObj.network);
 
