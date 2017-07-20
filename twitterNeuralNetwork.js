@@ -100,6 +100,17 @@ const chalkLog = chalk.gray;
 const chalkInfo = chalk.black;
 const chalkNetwork = chalk.blue;
 
+function msToTime(duration) {
+  let seconds = parseInt((duration / 1000) % 60);
+  let minutes = parseInt((duration / (1000 * 60)) % 60);
+  let hours = parseInt((duration / (1000 * 60 * 60)) % 24);
+  let days = parseInt(duration / (1000 * 60 * 60 * 24));
+  days = (days < 10) ? "0" + days : days;
+  hours = (hours < 10) ? "0" + hours : hours;
+  minutes = (minutes < 10) ? "0" + minutes : minutes;
+  seconds = (seconds < 10) ? "0" + seconds : seconds;
+  return days + ":" + hours + ":" + minutes + ":" + seconds;
+}
 
 let statsObj = {};
 statsObj.hostname = hostname;
@@ -109,6 +120,10 @@ statsObj.memory = {};
 statsObj.memory.rss = process.memoryUsage().rss/(1024*1024);
 statsObj.memory.maxRss = process.memoryUsage().rss/(1024*1024);
 statsObj.memory.maxRssTime = moment().valueOf();
+
+statsObj.startTimeMoment = moment();
+statsObj.startTime = moment().valueOf();
+statsObj.elapsed = msToTime(moment().valueOf() - statsObj.startTime);
 
 
 const DEFAULT_RUN_ID = hostname + "_" + process.pid + "_" + statsObj.startTimeMoment.format(compactDateTimeFormat);
@@ -226,22 +241,6 @@ process.on("message", function(msg) {
     console.log("R<\n" + jsonPrint(msg));
   }
 });
-
-function msToTime(duration) {
-  let seconds = parseInt((duration / 1000) % 60);
-  let minutes = parseInt((duration / (1000 * 60)) % 60);
-  let hours = parseInt((duration / (1000 * 60 * 60)) % 24);
-  let days = parseInt(duration / (1000 * 60 * 60 * 24));
-  days = (days < 10) ? "0" + days : days;
-  hours = (hours < 10) ? "0" + hours : hours;
-  minutes = (minutes < 10) ? "0" + minutes : minutes;
-  seconds = (seconds < 10) ? "0" + seconds : seconds;
-  return days + ":" + hours + ":" + minutes + ":" + seconds;
-}
-
-statsObj.startTimeMoment = moment();
-statsObj.startTime = moment().valueOf();
-statsObj.elapsed = msToTime(moment().valueOf() - statsObj.startTime);
 
 statsObj.commandLineConfig = commandLineConfig;
 
@@ -527,14 +526,11 @@ function saveFile (path, file, jsonObj, callback){
   dropboxClient.filesUpload(options)
     .then(function(response){
       debug(chalkLog("SAVED DROPBOX JSON | " + options.path));
-      if (callback !== undefined) { callback(error, null); }
+      if (callback !== undefined) { callback(null, response); }
     })
     .catch(function(error){
       console.error(chalkError(moment().format(defaultDateTimeFormat) 
         + " | !!! ERROR DROBOX JSON WRITE | FILE: " + fullPath 
-        // + "\nERROR: " + error
-        // + "\nERROR: " + jsonPrint(error)
-        // + "\nERROR\n" + jsonPrint(error)
       ));
       if (error.status === 429) {
         console.error("TOO MANY DROPBOX WRITES");
@@ -552,8 +548,6 @@ function loadFile(path, file, callback) {
   console.log(chalkInfo("LOAD FOLDER " + path));
   console.log(chalkInfo("LOAD FILE " + file));
   console.log(chalkInfo("FULL PATH " + path + "/" + file));
-
-  // let fileExists = false;
 
   dropboxClient.filesDownload({path: path + "/" + file})
     .then(function(data) {
@@ -1050,9 +1044,9 @@ function parseText(text, options, callback){
 
    }, function(err){
 
-    let mEmoji = eRegex.exec(text);
+    let mEmoji;
 
-    while (mEmoji) {
+    while (mEmoji = eRegex.exec(text)) {
       const emj = mEmoji[0];
       emojiArray.push(emj);
       text = text.replace(emj, " ");

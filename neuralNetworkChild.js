@@ -271,16 +271,7 @@ function activateNetwork(n, input, callback){
 
   let output;
   output = n.activate(input);
-
-  activateInterval = setInterval(function(){
-
-    if (output) {
-      clearInterval(activateInterval);
-      debug(chalkAlert("NNC | NET OUTPUT\n" + jsonPrint(output)));
-      callback(output);
-    }
-
-  }, 50);
+  callback(output);
 
 }
 
@@ -446,16 +437,6 @@ function evolve(params, callback){
         if (callback !== undefined) { callback(results); }
       });
 
-      // const doEvolve = async () => {
-      //   const results = await network.evolve(trainingSet, options);
-      //   return (callback(results));
-      //   // .then(function(results){
-      //     // if (callback !== undefined) { callback(results); }
-      //   // });
-      // }
-
-      // doEvolve();
-
     });
 
   });
@@ -493,7 +474,8 @@ process.on("message", function(m) {
     break;
 
     case "STATS":
-      showStats(m.options);
+      // showStats(m.options);
+      showStats();
     break;
 
     case "TRAIN":
