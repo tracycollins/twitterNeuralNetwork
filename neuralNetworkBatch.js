@@ -37,7 +37,7 @@ const EVOLVE_MUTATION_RATE_RANGE = { min: 0.3, max: 0.9 } ;
 const EVOLVE_POP_SIZE_RANGE = { min: 10, max: 100 } ;
 const EVOLVE_ELITISM_RANGE = { min: 0, max: 20 } ;
 
-const DEFAULT_EVOLVE_SEED_NETWORK_ID = "BEST"; 
+const DEFAULT_EVOLVE_SEED_NETWORK_ID = null; 
 const DEFAULT_EVOLVE_ACTIVATION = "LOGISTIC"; // TAHN | RELU | IDENTITY | STEP
 const DEFAULT_EVOLVE_CLEAR = false; // binary
 const DEFAULT_EVOLVE_COST = "CROSS_ENTROPY"; // CROSS_ENTROPY | MSE | BINARY
@@ -989,13 +989,18 @@ function initProcessPollInterval(interval){
   }
 
   loadSeedNeuralNetwork(seedOpt, function(err, results){
-    console.log(chalkAlert("LOAD SEED"
-      + " | BEST: " + results.best.networkId
-      + " " + results.best.successRate.toFixed(2) + "%"
-      + " | SEED: " + results.seed.networkId
-      + " " + results.seed.successRate.toFixed(2) + "%"
-      // + "\n" + jsonPrint(results)
-    ));
+    if (results.best) {
+      console.log(chalkAlert("LOAD NN"
+        + " | BEST: " + results.best.networkId
+        + " " + results.best.successRate.toFixed(2) + "%"
+      ));
+    }
+    if (results.seed) {
+      console.log(chalkAlert("LOAD NN"
+        + " | SEED: " + results.seed.networkId
+        + " " + results.seed.successRate.toFixed(2) + "%"
+      ));
+    }
   });
 
   processPollInterval = setInterval(function(){
@@ -1044,13 +1049,18 @@ function initProcessPollInterval(interval){
           if (appHashMap[app.name] && app.pm2_env.status === "stopped"){
 
             loadSeedNeuralNetwork(seedOpt, function(err, results){
-              console.log(chalkAlert("LOAD SEED"
-                + " | BEST: " + results.best.networkId
-                + " " + results.best.successRate.toFixed(2) + "%"
-                + " | SEED: " + results.seed.networkId
-                + " " + results.seed.successRate.toFixed(2) + "%"
-                // + "\n" + jsonPrint(results)
-              ));
+              if (results.best) {
+                console.log(chalkAlert("LOAD NN"
+                  + " | BEST: " + results.best.networkId
+                  + " " + results.best.successRate.toFixed(2) + "%"
+                ));
+              }
+              if (results.seed) {
+                console.log(chalkAlert("LOAD NN"
+                  + " | SEED: " + results.seed.networkId
+                  + " " + results.seed.successRate.toFixed(2) + "%"
+                ));
+              }
             });
 
             console.log(chalkAlert(app.name
@@ -1119,13 +1129,18 @@ function initBatch(callback){
 
   loadSeedNeuralNetwork(seedOpt, function(err, results){
 
-    console.log(chalkAlert("LOAD SEED"
-      + " | BEST: " + results.best.networkId
-      + " " + results.best.successRate.toFixed(2) + "%"
-      + " | SEED: " + results.seed.networkId
-      + " " + results.seed.successRate.toFixed(2) + "%"
-      // + "\n" + jsonPrint(results)
-    ));
+    if (results.best) {
+      console.log(chalkAlert("LOAD NN"
+        + " | BEST: " + results.best.networkId
+        + " " + results.best.successRate.toFixed(2) + "%"
+      ));
+    }
+    if (results.seed) {
+      console.log(chalkAlert("LOAD NN"
+        + " | SEED: " + results.seed.networkId
+        + " " + results.seed.successRate.toFixed(2) + "%"
+      ));
+    }
 
     console.log(chalkAlert("INIT BATCH"
       + " | " + getTimeStamp()

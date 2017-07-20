@@ -33,7 +33,7 @@ const DEFAULT_EVOLVE_POPSIZE = 100;
 
 let configuration = {};
 configuration.evolveNetwork = true;
-configuration.seedNetwork = null;
+configuration.seedNetworkId = null;
 configuration.normalization = null;
 configuration.verbose = false;
 configuration.testMode = false; // per tweet test mode
@@ -216,13 +216,13 @@ const enableStdin = { name: "enableStdin", alias: "i", type: Boolean, defaultVal
 const quitOnError = { name: "quitOnError", alias: "q", type: Boolean, defaultValue: true };
 const verbose = { name: "verbose", alias: "v", type: Boolean };
 
-const seedNetwork = { name: "seedNetwork", alias: "s", type: String };
+const seedNetworkId = { name: "seedNetworkId", alias: "s", type: String };
 const useBestNetwork = { name: "useBestNetwork", alias: "b", type: Boolean };
 const testMode = { name: "testMode", alias: "T", type: Boolean, defaultValue: false };
 const evolveIterations = { name: "evolveIterations", alias: "I", type: Number};
 
 const optionDefinitions = [
-  seedNetwork,
+  seedNetworkId,
   useBestNetwork, 
   enableStdin, 
   quitOnError, 
@@ -479,7 +479,7 @@ function quit(){
 
   if (statsObj.tests[testObj.testRunId].results.successRate !== undefined) {
 
-    const seedNetwork = (statsObj.tests[testObj.testRunId].evolve.network !== undefined) 
+    const snid = (statsObj.tests[testObj.testRunId].evolve.network !== undefined) 
       ? statsObj.tests[testObj.testRunId].evolve.network.networkId 
       + " | " + statsObj.tests[testObj.testRunId].evolve.network.successRate.toFixed(2) + "%"
       : "-" ;
@@ -490,7 +490,7 @@ function quit(){
     slackText = slackText + "\nTESTS: " + statsObj.tests[testObj.testRunId].results.numTests;
     slackText = slackText + " | PASS: " + statsObj.tests[testObj.testRunId].results.numPassed;
     slackText = slackText + " | SKIP: " + statsObj.tests[testObj.testRunId].results.numSkipped;
-    slackText = slackText + " | SEED NET: " + seedNetwork;
+    slackText = slackText + " | SEED NET: " + snid;
     slackText = slackText + "\nOPTIONS\n" + jsonPrint(statsObj.tests[testObj.testRunId].evolve.options);
 
     slackPostMessage(slackChannel, slackText);
@@ -802,7 +802,7 @@ function initialize(cnf, callback){
         commandLineConfigKeys = Object.keys(commandLineConfig);
 
         commandLineConfigKeys.forEach(function(arg){
-          if (arg === "seedNetwork") {
+          if (arg === "seedNetworkId") {
             cnf.evolve.networkId = commandLineConfig[arg];
             console.log("--> COMMAND LINE CONFIG | evolve.network.networkId: " + cnf.evolve.networkId);
           }
@@ -900,7 +900,7 @@ function initialize(cnf, callback){
           commandLineConfigKeys = Object.keys(commandLineConfig);
 
           commandLineConfigKeys.forEach(function(arg){
-            if (arg === "seedNetwork") {
+            if (arg === "seedNetworkId") {
               cnf.evolve.networkId = commandLineConfig[arg];
               console.log("--> COMMAND LINE CONFIG | evolve.network.networkId: " + cnf.evolve.networkId);
             }
