@@ -937,6 +937,7 @@ const noInstancesRunning = function(){
 const generateRandomEvolveEnv = function (){
   let env = {};
   env.TNN_BATCH_MODE = true;
+  env.TNN_STATS_UPDATE_INTERVAL = 120000;
   env.TNN_EVOLVE_ITERATIONS = configuration.evolveIterations;
   env.TNN_EVOLVE_SEED_NETWORK = randomItem([true, false]);
   env.TNN_EVOLVE_ACTIVATION = randomItem(EVOLVE_ACTIVATION_ARRAY);

@@ -591,7 +591,7 @@ function loadFile(path, file, callback) {
 }
 
 let statsUpdateInterval;
-let statsIndex = 0;
+// let statsIndex = 0;
 
 function initStatsUpdate(cnf, callback){
 
@@ -614,17 +614,17 @@ function initStatsUpdate(cnf, callback){
       ));
     }
 
-    if (statsIndex % 6 === 0){
+    // if (statsIndex % 6 === 0){
       saveFile(statsFolder, statsFile, statsObj, function(){
         debug("END SAVE FILE");
       });
-    }
+    // }
  
     showStats();
 
-    statsIndex += 1;
+    // statsIndex += 1;
 
-  }, parseInt(cnf.statsUpdateIntervalTime/6));
+  }, cnf.statsUpdateIntervalTime));
 
   callback(null, cnf);
 }
