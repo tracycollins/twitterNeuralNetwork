@@ -773,11 +773,11 @@ function loadSeedNeuralNetworkFile(options, callback){
         + "\n" + jsonPrint(findQuery)
         + "\n" + err
       ));
-      callback(err, null);
+      if (callback !== undefined) { callback(err, null); }
     }
     else if (nnArray.length === 0){
       console.log("NO NETWORKS FOUND");
-      callback(err, null);
+      if (callback !== undefined) { callback(err, null); }
     }
     else{
       console.log(nnArray.length + " NETWORKS FOUND");
@@ -810,7 +810,7 @@ function loadSeedNeuralNetworkFile(options, callback){
 
         if (err) {
           console.log(chalkError("*** loadSeedNeuralNetworkFile ERROR\n" + err));
-          return(callback(err, null));
+          if (callback !== undefined) { return(callback(err, null)); }
         }
 
         if (findOneNetwork && currentSeedNetwork){
@@ -849,7 +849,9 @@ function loadSeedNeuralNetworkFile(options, callback){
         }
 
 
-        callback(null, {best: currentBestNetwork, seed: currentSeedNetwork});
+        if (callback !== undefined) { 
+          callback(null, {best: currentBestNetwork, seed: currentSeedNetwork});
+        }
       });
     }
   });
@@ -928,47 +930,44 @@ function startInstance(instanceConfig, callback){
   });
 }
 
-let noInstancesRunning = function(){
+const noInstancesRunning = function(){
   return (Object.keys(appHashMap).length === 0);
 };
 
-const generateRandomEvolveOptions = function (optionsIn){
-  let options = {};
-  options.TNN_EVOLVE_SEED_NETWORK = randomItem([true, false]);
-  options.TNN_EVOLVE_ACTIVATION = randomItem(EVOLVE_ACTIVATION_ARRAY);
-  options.TNN_EVOLVE_COST = randomItem(EVOLVE_COST_ARRAY);
-  options.TNN_EVOLVE_CLEAR = randomItem([true, false]);
-  options.TNN_EVOLVE_EQUAL = randomItem([true, false]);
+const generateRandomEvolveEnv = function (){
+  let env = {};
+  env.TNN_BATCH_MODE = true;
+  env.TNN_EVOLVE_ITERATIONS = configuration.evolveIterations;
+  env.TNN_EVOLVE_SEED_NETWORK = randomItem([true, false]);
+  env.TNN_EVOLVE_ACTIVATION = randomItem(EVOLVE_ACTIVATION_ARRAY);
+  env.TNN_EVOLVE_COST = randomItem(EVOLVE_COST_ARRAY);
+  env.TNN_EVOLVE_CLEAR = randomItem([true, false]);
+  env.TNN_EVOLVE_EQUAL = randomItem([true, false]);
 
-  options.TNN_EVOLVE_MUTATION_RATE = randomFloat(EVOLVE_MUTATION_RATE_RANGE.min, EVOLVE_MUTATION_RATE_RANGE.max);
-  options.TNN_EVOLVE_POP_SIZE = randomInt(EVOLVE_POP_SIZE_RANGE.min, EVOLVE_POP_SIZE_RANGE.max);
-  options.TNN_EVOLVE_ELITISM = randomInt(EVOLVE_ELITISM_RANGE.min, EVOLVE_ELITISM_RANGE.max);
+  env.TNN_EVOLVE_MUTATION_RATE = randomFloat(EVOLVE_MUTATION_RATE_RANGE.min, EVOLVE_MUTATION_RATE_RANGE.max);
+  env.TNN_EVOLVE_POP_SIZE = randomInt(EVOLVE_POP_SIZE_RANGE.min, EVOLVE_POP_SIZE_RANGE.max);
+  env.TNN_EVOLVE_ELITISM = randomInt(EVOLVE_ELITISM_RANGE.min, EVOLVE_ELITISM_RANGE.max);
+  env.randomEvolveOptions = true;
 
-  let optionsOut = defaults(optionsIn, options);
+  console.log(chalkAlert("NNB RANDOM ENV\n" + jsonPrint(env)));
 
-  console.log(chalkAlert("RANDOM OPTIONS\n" + jsonPrint(options)));
-
-  return(optionsOut);
+  return(env);
 };
 
 function initProcessPollInterval(interval){
 
   console.log(chalkInfo("INIT PROCESS POLL INTERVAL | " + interval));
 
-  loadSeedNeuralNetworkFile({}, function(err, nnObj){
-  });
+  loadSeedNeuralNetworkFile({});
 
   processPollInterval = setInterval(function(){
 
     if (Object.keys(appHashMap).length < configuration.maxInstances) {
 
-      let options = {};
+      let options = deepcopy(configuration.instanceOptions);
 
       if (configuration.evolveEnableRandom){
-        options = generateRandomEvolveOptions(configuration.instanceOptions);
-      }
-      else {
-        options = deepcopy(configuration.instanceOptions);
+        options.env = generateRandomEvolveEnv();
       }
 
       initInstance(statsObj.instances.instanceIndex, options, function(opt){
@@ -1006,8 +1005,7 @@ function initProcessPollInterval(interval){
 
           if (appHashMap[app.name] && app.pm2_env.status === "stopped"){
 
-            loadSeedNeuralNetworkFile({}, function(err, nnObj){
-            });
+            loadSeedNeuralNetworkFile({});
 
             console.log(chalkAlert(app.name
               + " | PM2 ID: " + app.pm2_env.pm_id
@@ -1048,25 +1046,10 @@ function initAllInstances(maxInstances, callback) {
 
   async.times(maxInstances, function(n, next){
 
-    let options = {};
-
-    // if (configuration.evolveEnableRandom){
-    //   options.env.TNN_EVOLVE_SEED_NETWORK = randomItem([true, false]);
-    //   options.env.TNN_EVOLVE_ACTIVATION = randomItem(EVOLVE_ACTIVATION_ARRAY);
-    //   options.env.TNN_EVOLVE_COST = randomItem(EVOLVE_COST_ARRAY);
-    //   options.env.TNN_EVOLVE_CLEAR = randomItem([true, false]);
-    //   options.env.TNN_EVOLVE_EQUAL = randomItem([true, false]);
-
-    //   options.env.TNN_EVOLVE_MUTATION_RATE = randomFloat(EVOLVE_MUTATION_RATE_RANGE.min, EVOLVE_MUTATION_RATE_RANGE.max);
-    //   options.env.TNN_EVOLVE_POP_SIZE = randomInt(EVOLVE_POP_SIZE_RANGE.min, EVOLVE_POP_SIZE_RANGE.max);
-    //   options.env.TNN_EVOLVE_ELITISM = randomInt(EVOLVE_ELITISM_RANGE.min, EVOLVE_ELITISM_RANGE.max);
-    // }
+    let options = deepcopy(configuration.instanceOptions);
 
     if (configuration.evolveEnableRandom){
-      options = generateRandomEvolveOptions(configuration.instanceOptions);
-    }
-    else{
-      options = deepcopy(configuration.instanceOptions);
+      options.env = generateRandomEvolveEnv();
     }
 
     initInstance(instanceIndex, options, function(opt){

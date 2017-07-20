@@ -464,7 +464,7 @@ function quit(){
 
   statsObj.elapsed = msToTime(moment().valueOf() - statsObj.startTime);
 
-  if (process.env.BATCH_MODE){
+  if (process.env.TNN_BATCH_MODE){
     slackChannel = "#nn_batch";
   }
 
@@ -722,7 +722,7 @@ function initialize(cnf, callback){
   debug(chalkWarn("dropboxConfigFolder: " + dropboxConfigFolder));
   debug(chalkWarn("dropboxConfigFile  : " + dropboxConfigFile));
 
-  if (process.env.BATCH_MODE) {
+  if (process.env.TNN_BATCH_MODE) {
 
     console.log(chalkAlert("\n\nBATCH MODE\n\n"));
 
@@ -2348,7 +2348,7 @@ function initTimeout(){
         console.log(chalkAlert("NN: " + nnObj.networkId));
 
         initNeuralNetworkChild(function(){
-          if (process.env.BATCH_MODE){
+          if (process.env.TNN_BATCH_MODE){
             slackChannel = "#nn_batch";
           }
         });
@@ -2357,7 +2357,7 @@ function initTimeout(){
     }
     else{
       initNeuralNetworkChild(function(){
-        if (process.env.BATCH_MODE){
+        if (process.env.TNN_BATCH_MODE){
           slackChannel = "#nn_batch";
         }
       });
