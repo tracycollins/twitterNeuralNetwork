@@ -37,6 +37,7 @@ const EVOLVE_MUTATION_RATE_RANGE = { min: 0.3, max: 0.9 } ;
 const EVOLVE_POP_SIZE_RANGE = { min: 10, max: 100 } ;
 const EVOLVE_ELITISM_RANGE = { min: 0, max: 20 } ;
 
+const DEFAULT_EVOLVE_SEED_NETWORK_ID = "BEST"; 
 const DEFAULT_EVOLVE_ACTIVATION = "LOGISTIC"; // TAHN | RELU | IDENTITY | STEP
 const DEFAULT_EVOLVE_CLEAR = false; // binary
 const DEFAULT_EVOLVE_COST = "CROSS_ENTROPY"; // CROSS_ENTROPY | MSE | BINARY
@@ -54,6 +55,7 @@ const DEFAULT_PROCESS_POLL_INTERVAL = 15000;
 const DEFAULT_STATS_INTERVAL = 60000;
 
 let configuration = {};
+configuration.seedNetworkId = DEFAULT_EVOLVE_SEED_NETWORK_ID;
 configuration.evolveEnableRandom = DEFAULT_EVOLVE_ENABLE_RANDOM;
 configuration.autoStartInstance = true;
 configuration.processPollInterval = DEFAULT_PROCESS_POLL_INTERVAL;
@@ -129,6 +131,8 @@ configuration.instanceOptions.env.TNN_TWITTER_USERS = {"altthreecee00": "altthre
 configuration.instanceOptions.env.TNN_STATS_UPDATE_INTERVAL = 60000;
 
 // configuration.instanceOptions.env.TNN_EVOLVE_ = DEFAULT_EVOLVE_;
+
+configuration.instanceOptions.env.EVOLVE_SEED_NETWORK_ID = null;
 configuration.instanceOptions.env.TNN_EVOLVE_ELITISM = DEFAULT_EVOLVE_ELITISM;
 configuration.instanceOptions.env.TNN_EVOLVE_EQUAL = DEFAULT_EVOLVE_EQUAL;
 configuration.instanceOptions.env.TNN_EVOLVE_ERROR = DEFAULT_EVOLVE_ERROR;
@@ -188,17 +192,18 @@ function msToTime(duration) {
   return days + ":" + hours + ":" + minutes + ":" + seconds;
 }
 
+const seedNetworkId = { name: "seedNetworkId", alias: "s", type: String};
 const evolveEnableRandom = { name: "evolveEnableRandom", alias: "r", type: Boolean};
-const targetServer = { name: "targetServer", alias: "s", type: String };
+const targetServer = { name: "targetServer", alias: "S", type: String };
 const enableStdin = { name: "enableStdin", alias: "i", type: Boolean, defaultValue: true };
 const quitOnError = { name: "quitOnError", alias: "q", type: Boolean, defaultValue: true };
 const verbose = { name: "verbose", alias: "v", type: Boolean };
 
 const testMode = { name: "testMode", alias: "T", type: Boolean, defaultValue: false };
-const loadNeuralNetworkFileRunID = { name: "loadNeuralNetworkFileRunID", alias: "N", type: String };
+// const loadNeuralNetworkFileRunID = { name: "loadNeuralNetworkFileRunID", alias: "N", type: String };
 const evolveIterations = { name: "evolveIterations", alias: "I", type: Number};
 
-const optionDefinitions = [ evolveEnableRandom, targetServer, enableStdin, quitOnError, verbose, evolveIterations, testMode, loadNeuralNetworkFileRunID];
+const optionDefinitions = [ seedNetworkId, evolveEnableRandom, targetServer, enableStdin, quitOnError, verbose, evolveIterations, testMode];
 
 const commandLineConfig = commandLineArgs(optionDefinitions);
 console.log(chalkInfo("COMMAND LINE CONFIG\n" + jsonPrint(commandLineConfig)));
@@ -331,7 +336,7 @@ function quit(){
   Object.keys(appHashMap).forEach(function(instanceName){
     pm2.delete(instanceName, function(err, results){
       console.log(chalkAlert("PM2 DELETE APP: " + instanceName));
-      slackPostMessage(slackChannel, "\nNNB INSTANCE STOP\n" + instanceName + "\n");
+      // slackPostMessage(slackChannel, "\nNNB INSTANCE STOP\n" + instanceName + "\n");
     });
   });
 
@@ -752,9 +757,9 @@ function printNetworkObj(title, nnObj){
   ));
 }
 
-function loadSeedNeuralNetworkFile(options, callback){
+function loadSeedNeuralNetwork(options, callback){
 
-  console.log(chalkNetwork("LOADING NEURAL NETWORK FROM DB"));
+  console.log(chalkNetwork("LOADING NEURAL NETWORK FROM DB\nOPTIONS: " + jsonPrint(options)));
 
   let findQuery = {};
   let findOneNetwork = false;
@@ -762,9 +767,14 @@ function loadSeedNeuralNetworkFile(options, callback){
 
   if (options.networkId !== undefined) {
     findOneNetwork = true;
-    findQuery.networkId = options.networkId;
-    currentSeedNetwork = null;
-    console.log(chalkAlert("LOADING SEED NETWORK " + findQuery.networkId));
+    if (options.networkId === "BEST") {
+      // findQuery.networkId = options.networkId;
+    }
+    else {
+      findQuery.networkId = options.networkId;
+    }
+    // currentSeedNetwork = null;
+    console.log(chalkAlert("LOADING SEED NETWORK " + options.networkId));
   }
 
   NeuralNetwork.find(findQuery, function(err, nnArray){
@@ -798,6 +808,11 @@ function loadSeedNeuralNetworkFile(options, callback){
 
           newBestNetwork = true;
           currentBestNetwork = nn;
+
+          if (options.networkId === "BEST") {
+            currentSeedNetwork = nn;
+          }
+
         }
 
         if (options.networkId === nn.networkId){
@@ -809,7 +824,7 @@ function loadSeedNeuralNetworkFile(options, callback){
       }, function(err){
 
         if (err) {
-          console.log(chalkError("*** loadSeedNeuralNetworkFile ERROR\n" + err));
+          console.log(chalkError("*** loadSeedNeuralNetwork ERROR\n" + err));
           if (callback !== undefined) { return(callback(err, null)); }
         }
 
@@ -861,7 +876,6 @@ function initInstance(instanceIndex, options, callback){
 
   const runId = hostname + "_" + process.pid + "_" + instanceIndex;
   const instanceName = "NNB_" + runId;
-  // const neuralNetworkFile = "neuralNetwork_" + instanceName + ".json";
 
   let logfile = "/Users/tc/logs/batch/neuralNetwork/" + hostname + "/" + instanceName + ".log";
 
@@ -935,11 +949,22 @@ const noInstancesRunning = function(){
 };
 
 const generateRandomEvolveEnv = function (){
+
   let env = {};
+
+  env.randomEvolveOptions = true;
+
   env.TNN_BATCH_MODE = true;
   env.TNN_STATS_UPDATE_INTERVAL = 120000;
   env.TNN_EVOLVE_ITERATIONS = configuration.evolveIterations;
-  env.TNN_EVOLVE_SEED_NETWORK = randomItem([true, false]);
+
+  if (currentSeedNetwork) {
+    env.TNN_EVOLVE_SEED_NETWORK_ID = randomItem([null, currentSeedNetwork.networkId]);
+  }
+  else {
+    env.TNN_EVOLVE_SEED_NETWORK_ID = randomItem([null, "BEST"]);
+  }
+
   env.TNN_EVOLVE_ACTIVATION = randomItem(EVOLVE_ACTIVATION_ARRAY);
   env.TNN_EVOLVE_COST = randomItem(EVOLVE_COST_ARRAY);
   env.TNN_EVOLVE_CLEAR = randomItem([true, false]);
@@ -948,7 +973,6 @@ const generateRandomEvolveEnv = function (){
   env.TNN_EVOLVE_MUTATION_RATE = randomFloat(EVOLVE_MUTATION_RATE_RANGE.min, EVOLVE_MUTATION_RATE_RANGE.max);
   env.TNN_EVOLVE_POP_SIZE = randomInt(EVOLVE_POP_SIZE_RANGE.min, EVOLVE_POP_SIZE_RANGE.max);
   env.TNN_EVOLVE_ELITISM = randomInt(EVOLVE_ELITISM_RANGE.min, EVOLVE_ELITISM_RANGE.max);
-  env.randomEvolveOptions = true;
 
   console.log(chalkAlert("NNB RANDOM ENV\n" + jsonPrint(env)));
 
@@ -959,7 +983,20 @@ function initProcessPollInterval(interval){
 
   console.log(chalkInfo("INIT PROCESS POLL INTERVAL | " + interval));
 
-  loadSeedNeuralNetworkFile({});
+  const seedOpt = {};
+  if (configuration.seedNetworkId) {
+    seedOpt.networkId = configuration.seedNetworkId;
+  }
+
+  loadSeedNeuralNetwork(seedOpt, function(err, results){
+    console.log(chalkAlert("LOAD SEED"
+      + " | BEST: " + results.best.networkId
+      + " " + results.best.successRate.toFixed(2) + "%"
+      + " | SEED: " + results.seed.networkId
+      + " " + results.seed.successRate.toFixed(2) + "%"
+      // + "\n" + jsonPrint(results)
+    ));
+  });
 
   processPollInterval = setInterval(function(){
 
@@ -1006,7 +1043,15 @@ function initProcessPollInterval(interval){
 
           if (appHashMap[app.name] && app.pm2_env.status === "stopped"){
 
-            loadSeedNeuralNetworkFile({});
+            loadSeedNeuralNetwork(seedOpt, function(err, results){
+              console.log(chalkAlert("LOAD SEED"
+                + " | BEST: " + results.best.networkId
+                + " " + results.best.successRate.toFixed(2) + "%"
+                + " | SEED: " + results.seed.networkId
+                + " " + results.seed.successRate.toFixed(2) + "%"
+                // + "\n" + jsonPrint(results)
+              ));
+            });
 
             console.log(chalkAlert(app.name
               + " | PM2 ID: " + app.pm2_env.pm_id
@@ -1067,58 +1112,74 @@ function initAllInstances(maxInstances, callback) {
 
 function initBatch(callback){
 
-  console.log(chalkAlert("INIT BATCH"
-    + " | " + getTimeStamp()
-  ));
+  const seedOpt = {};
+  if (configuration.seedNetworkId) {
+    seedOpt.networkId = configuration.seedNetworkId;
+  }
 
-  pm2.connect(function(err) {
+  loadSeedNeuralNetwork(seedOpt, function(err, results){
 
-    if (err) {
-      console.error(err);
-      callback(err);
-      process.exit(2);
-    }
+    console.log(chalkAlert("LOAD SEED"
+      + " | BEST: " + results.best.networkId
+      + " " + results.best.successRate.toFixed(2) + "%"
+      + " | SEED: " + results.seed.networkId
+      + " " + results.seed.successRate.toFixed(2) + "%"
+      // + "\n" + jsonPrint(results)
+    ));
 
-    initAllInstances(configuration.maxInstances, function(instanceConfigArray){
+    console.log(chalkAlert("INIT BATCH"
+      + " | " + getTimeStamp()
+    ));
 
-      debug("instanceConfigArray\n" + jsonPrint(instanceConfigArray));
+    pm2.connect(function(err) {
 
-      async.each(instanceConfigArray, function(instanceConfig, cb){
+      if (err) {
+        console.error(err);
+        callback(err);
+        process.exit(2);
+      }
 
-        debug("START\n" + jsonPrint(instanceConfig));
+      initAllInstances(configuration.maxInstances, function(instanceConfigArray){
 
-        const options = deepcopy(instanceConfig);
+        debug("instanceConfigArray\n" + jsonPrint(instanceConfigArray));
 
-        startInstance(options, function(){
-          cb();
+        async.each(instanceConfigArray, function(instanceConfig, cb){
+
+          debug("START\n" + jsonPrint(instanceConfig));
+
+          const options = deepcopy(instanceConfig);
+
+          startInstance(options, function(){
+            cb();
+          });
+
+        }, function(err){
+
+          if (err) { 
+            return (callback(err));
+          }
+
+          console.log(chalkAlert("\nALL LAUNCHED | " + configuration.maxInstances + " MAX INSTANCES\n"));
+
+          Object.keys(appHashMap).forEach(function(appName){
+            console.log("LAUNCHED"
+              + " | " + appName
+              + " | PM2 ID: " + appHashMap[appName].pm2_env.pm_id
+              + " | PID: " + appHashMap[appName].process.pid
+              + " | STATUS: " + appHashMap[appName].pm2_env.status
+            );
+          });
+
+          initProcessPollInterval(configuration.processPollInterval);
+          callback(null);
+
         });
-
-      }, function(err){
-
-        if (err) { 
-          return (callback(err));
-        }
-
-        console.log(chalkAlert("\nALL LAUNCHED | " + configuration.maxInstances + " MAX INSTANCES\n"));
-
-        Object.keys(appHashMap).forEach(function(appName){
-          console.log("LAUNCHED"
-            + " | " + appName
-            + " | PM2 ID: " + appHashMap[appName].pm2_env.pm_id
-            + " | PID: " + appHashMap[appName].process.pid
-            + " | STATUS: " + appHashMap[appName].pm2_env.status
-          );
-        });
-
-        initProcessPollInterval(configuration.processPollInterval);
-        callback(null);
 
       });
-
     });
 
-
   });
+
 }
 
 function initialize(cnf, callback){
@@ -1138,7 +1199,9 @@ function initialize(cnf, callback){
   cnf.enableStdin = process.env.NNB_ENABLE_STDIN || true ;
   cnf.evolveIterations = process.env.NNB_EVOLVE_ITERATIONS || DEFAULT_EVOLVE_ITERATIONS ;
   cnf.maxInstances = process.env.NNB_MAX_INSTANCES || DEFAULT_BATCH_MAX_INSTANCES ;
+
   cnf.evolveEnableRandom = process.env.NNB_EVOLVE_ENABLE_RANDOM || DEFAULT_EVOLVE_ENABLE_RANDOM ;
+  cnf.seedNetworkId = process.env.NNB_EVOLVE_SEED_NETWORK_ID || DEFAULT_EVOLVE_SEED_NETWORK_ID ;
 
   cnf.classifiedUsersFile = process.env.NNB_CLASSIFIED_USERS_FILE || "classifiedUsers.json";
   cnf.classifiedUsersFolder = dropboxConfigHostFolder + "/classifiedUsers";
@@ -1180,10 +1243,10 @@ function initialize(cnf, callback){
         cnf.testMode = loadedConfigObj.NNB_TEST_MODE;
       }
 
-      if (loadedConfigObj.NNB_NEURAL_NETWORK_FILE_RUNID  !== undefined){
-        console.log("LOADED NNB_NEURAL_NETWORK_FILE_RUNID: " + loadedConfigObj.NNB_NEURAL_NETWORK_FILE_RUNID);
-        cnf.loadNeuralNetworkFileRunID = loadedConfigObj.NNB_NEURAL_NETWORK_FILE_RUNID;
-      }
+      // if (loadedConfigObj.NNB_NEURAL_NETWORK_FILE_RUNID  !== undefined){
+      //   console.log("LOADED NNB_NEURAL_NETWORK_FILE_RUNID: " + loadedConfigObj.NNB_NEURAL_NETWORK_FILE_RUNID);
+      //   cnf.loadNeuralNetworkFileRunID = loadedConfigObj.NNB_NEURAL_NETWORK_FILE_RUNID;
+      // }
 
       if (loadedConfigObj.NNB_ENABLE_STDIN  !== undefined){
         console.log("LOADED NNB_ENABLE_STDIN: " + loadedConfigObj.NNB_ENABLE_STDIN);
@@ -1284,6 +1347,7 @@ initialize(configuration, function(err, cnf){
   if (err) { throw err; }
   configuration = cnf;
   configuration.instanceOptions.env.TNN_EVOLVE_ITERATIONS = configuration.evolveIterations;
+  configuration.instanceOptions.env.TNN_EVOLVE_SEED_NETWORK_ID = configuration.seedNetworkId;
   statsObj.configuration = {};
   statsObj.configuration = configuration;
 
