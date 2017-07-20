@@ -624,7 +624,7 @@ function initStatsUpdate(cnf, callback){
 
     // statsIndex += 1;
 
-  }, cnf.statsUpdateIntervalTime));
+  }, cnf.statsUpdateIntervalTime);
 
   callback(null, cnf);
 }
