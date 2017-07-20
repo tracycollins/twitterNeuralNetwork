@@ -6,7 +6,6 @@ let ONE_SECOND = 1000 ;
 
 const async = require("async");
 const os = require("os");
-const pick = require("object.pick");
 
 let hostname = os.hostname();
 hostname = hostname.replace(/\.home/g, "");
@@ -180,7 +179,7 @@ function saveFile (path, file, jsonObj, callback){
     .catch(function(error){
       console.error(chalkError("NNC | " + moment().format(defaultDateTimeFormat) 
         + " | !!! ERROR DROBOX JSON WRITE | FILE: " + fullPath 
-        + "\nERROR: " + error.error));
+        + "\nERROR: " + jsonPrint(error)));
       callback(error.error, null);
     });
 }
@@ -267,12 +266,13 @@ function train (params, callback){
 
 }
 
+let activateInterval;
 function activateNetwork(n, input, callback){
 
   let output;
   output = n.activate(input);
 
-  const activateInterval = setInterval(function(){
+  activateInterval = setInterval(function(){
 
     if (output) {
       clearInterval(activateInterval);
@@ -285,9 +285,9 @@ function activateNetwork(n, input, callback){
 }
 
 function testEvolve(callback){
-  var myNetwork = new neataptic.Network(2, 1);
+  let myNetwork = new neataptic.Network(2, 1);
 
-  var myTrainingSet = [
+  let myTrainingSet = [
     { input: [0,0], output: [0] },
     { input: [0,1], output: [1] },
     { input: [1,0], output: [1] },
@@ -316,7 +316,10 @@ function testEvolve(callback){
 
         let dataOut = (out[0] >= 0.5) ? 1 : 0 ;
 
-        const datumPass = (datum.output[0] === dataOut) ? true : false ;
+        let datumPass = false;
+        if (datum.output[0] === dataOut){
+          datumPass = true;
+        }
 
         if (!datumPass) { testPass = false; }
 
@@ -331,18 +334,10 @@ function testEvolve(callback){
 
       });
 
-    }, function(err){
+    }, function(){
       console.log(chalkAlert("TEST RESULT: PASS: " + testPass));
       callback(testPass);
     });
-
-    // console.log("TEST 0 0 | " + myNetwork.activate([0,0])); // [0]
-    // console.log("TEST 0 1 | " + myNetwork.activate([0,1])); // [0]
-    // console.log("TEST 1 0 | " + myNetwork.activate([1,0])); // [0]
-    // console.log("TEST 1 1 | " + myNetwork.activate([1,1])); // [0]
-
-    // callback(pass);
-
   });
 
 }
