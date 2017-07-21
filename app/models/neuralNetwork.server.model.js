@@ -30,6 +30,10 @@ var NeuralNetworkSchema = new Schema({
 		type: Array,
 		default: []
 	},
+	elapsed: { 
+		type: Number,
+		default: 0
+	},
 	createdAt: { 
 		type: Number,
 		default: moment().valueOf()
