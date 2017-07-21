@@ -483,7 +483,7 @@ function quit(){
       ? statsObj.tests[testObj.testRunId].evolve.networkId 
       + " | " + statsObj.tests[testObj.testRunId].evolve.network.successRate.toFixed(2) + "%"
       : "-" ;
-    // console.log("\n=====================\nRESULTS\n" + jsonPrint(statsObj.tests[testObj.testRunId].results));
+
     slackText = "\n*" + statsObj.runId + "*";
     slackText = slackText + "\n*RES: " + statsObj.tests[testObj.testRunId].results.successRate.toFixed(1) + " %*";
     slackText = slackText + " | RUN " + statsObj.elapsed;
@@ -1729,19 +1729,10 @@ function updateClassifiedUsers(cnf, callback){
 
 let activateInterval;
 
-function activateNetwork(n, input, callback){
+function activateNetwork(n, input){
 
-  let output;
-  output = n.activate(input);
-
-  activateInterval = setInterval(function(){
-
-    if (output) {
-      clearInterval(activateInterval);
-      debug(chalkAlert("NET OUTPUT\n" + jsonPrint(output)));
-      callback(output);
-    }
-  }, 200);
+  const output = n.activate(input);
+  return output;
 }
 
 function testNetwork(nw, testObj, callback){
@@ -1768,67 +1759,62 @@ function testNetwork(nw, testObj, callback){
       quit();
     }
 
-    activateNetwork(nw, testDatumObj.datum.input, function(to){
 
-      let testOutput = to;
+    const testOutput = activateNetwork(nw, testDatumObj.datum.input);
 
-      debug(chalkLog("========================================"));
+    debug(chalkLog("========================================"));
 
-      // printDatum(testDatumObj.name, testDatumObj.datum, testDatumObj.labels, function(text){
+    numTested += 1;
 
-        // debug(chalkInfo(text));
+    indexOfMax(testOutput, function(testMaxOutputIndex, to){
 
-        numTested += 1;
+      debug("INDEX OF MAX TEST OUTPUT: " + to);
 
-        indexOfMax(testOutput, function(testMaxOutputIndex, to){
+      indexOfMax(testDatumObj.datum.output, function(expectedMaxOutputIndex, eo){
 
-          debug("INDEX OF MAX TEST OUTPUT: " + to);
+        debug("INDEX OF MAX TEST OUTPUT: " + eo);
 
-          indexOfMax(testDatumObj.datum.output, function(expectedMaxOutputIndex, eo){
+        let passed = (testMaxOutputIndex === expectedMaxOutputIndex);
 
-            debug("INDEX OF MAX TEST OUTPUT: " + eo);
+        numPassed = passed ? numPassed+1 : numPassed;
 
-            let passed = (testMaxOutputIndex === expectedMaxOutputIndex);
+        successRate = 100 * numPassed/(numTested + numSkipped);
 
-            numPassed = passed ? numPassed+1 : numPassed;
+        let currentChalk = passed ? chalkLog : chalkAlert;
 
-            successRate = 100 * numPassed/(numTested + numSkipped);
+        testResultArray.push(
+          {
+            // testIn: testDatumObj.datum.input,
+            P: passed,
+            EO: testDatumObj.datum.output,
+            EOI: expectedMaxOutputIndex,
+            TO: testOutput, 
+            TOI: testMaxOutputIndex
+          }
+        );
 
-            let currentChalk = passed ? chalkLog : chalkAlert;
+        debug(currentChalk("TEST RESULT: " + passed 
+          + " | " + successRate.toFixed(2) + "%"
+          // + "\n" + "TO: " + testOutput 
+          + "\n" + testOutput[0]
+          + " " + testOutput[1]
+          + " " + testOutput[2]
+          + " | TMOI: " + testMaxOutputIndex
+          // + "\n" + "EO: " + testDatum.output 
+          + "\n" + testDatumObj.datum.output[0]
+          + " " + testDatumObj.datum.output[1]
+          + " " + testDatumObj.datum.output[2]
+          + " | EMOI: " + expectedMaxOutputIndex
+          // + "\n==================================="
+        ));
 
-            testResultArray.push(
-              {
-                // testIn: testDatumObj.datum.input,
-                P: passed,
-                EO: testDatumObj.datum.output,
-                EOI: expectedMaxOutputIndex,
-                TO: testOutput, 
-                TOI: testMaxOutputIndex
-              }
-            );
+        cb();
+      });
 
-            debug(currentChalk("TEST RESULT: " + passed 
-              + " | " + successRate.toFixed(2) + "%"
-              // + "\n" + "TO: " + testOutput 
-              + "\n" + testOutput[0]
-              + " " + testOutput[1]
-              + " " + testOutput[2]
-              + " | TMOI: " + testMaxOutputIndex
-              // + "\n" + "EO: " + testDatum.output 
-              + "\n" + testDatumObj.datum.output[0]
-              + " " + testDatumObj.datum.output[1]
-              + " " + testDatumObj.datum.output[2]
-              + " | EMOI: " + expectedMaxOutputIndex
-              // + "\n==================================="
-            ));
-
-            cb();
-          });
-
-        });
-      // });
     });
+
   }, function(err){
+
     callback(err, 
       { testRunId: testObj.testRunId, 
         numTests: testObj.testSet.length, 
@@ -1838,6 +1824,7 @@ function testNetwork(nw, testObj, callback){
         testResultArray: testResultArray
       }
     );
+
   });
 }
 
@@ -1950,7 +1937,7 @@ function initNeuralNetworkChild(callback){
 
   neuralNetworkChild.on("message", function(m){
 
-    console.log(chalkAlert("neuralNetworkChild RX"
+    debug(chalkAlert("neuralNetworkChild RX"
       + " | " + m.op
       // + " | " + m.obj.userId
       // + " | " + m.obj.screenName
@@ -1995,7 +1982,7 @@ function initNeuralNetworkChild(callback){
         console.log(chalkBlue("NETWORK EVOLVE/TRAIN COMPLETE"
           + "\nELAPSED: " + msToTime(m.networkObj.elapsed)
           + "\nITERTNS: " + m.statsObj.evolve.options.iterations
-          + "\nSEED NN: " + m.networkObj.evolve.options.network.networkId
+          // + "\nSEED NN: " + m.networkObj.evolve.options.network.networkId
           + "\nINPUTS:  " + m.networkObj.network.input
           + "\nOUTPUTS: " + m.networkObj.network.output
           + "\nDROPOUT: " + m.networkObj.network.dropout
@@ -2009,6 +1996,10 @@ function initNeuralNetworkChild(callback){
           // + "/" + m.networkObj.normalization.score.max.toFixed(3)
           // + "\nNETWORK\n" + jsonPrint(m.network)
         ));
+
+        if (m.networkObj.evolve.options.network) {
+          console.log(chalkBlue("\nSEED NN: " + m.networkObj.evolve.options.network.networkId));
+        }
 
 
         network = neataptic.Network.fromJSON(m.networkObj.network);

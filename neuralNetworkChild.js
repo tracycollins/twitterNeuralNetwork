@@ -170,7 +170,7 @@ function saveFile (path, file, jsonObj, callback){
 
   debug(chalkInfo("LOAD FOLDER " + path));
   debug(chalkInfo("LOAD FILE " + file));
-  debug(chalkInfo("FULL PATH " + fullPath));
+  console.log(chalkInfo("SAVE FILE FULL PATH " + fullPath));
 
   let options = {};
 
@@ -181,14 +181,22 @@ function saveFile (path, file, jsonObj, callback){
 
   dropboxClient.filesUpload(options)
     .then(function(response){
-      debug(chalkLog("... SAVED DROPBOX JSON | " + options.path));
-      callback(null, response);
+      debug(chalkLog("SAVED DROPBOX JSON | " + options.path));
+      if (callback !== undefined) { callback(null, response); }
     })
-    .catch(function(error){
-      console.error(chalkError("NNC | " + moment().format(defaultDateTimeFormat) 
+    .catch(function(err){
+      console.error(chalkError(moment().format(defaultDateTimeFormat) 
         + " | !!! ERROR DROBOX JSON WRITE | FILE: " + fullPath 
-        + "\nERROR: " + jsonPrint(error)));
-      callback(error.error, null);
+      ));
+      if (err.status === 429) {
+        console.error("TOO MANY DROPBOX WRITES");
+        if (callback !== undefined) { callback(null, null); }
+      }
+      else {
+        console.error("ERROR\n" + jsonPrint(err));
+        console.error("ERROR.ERROR\n" + jsonPrint(err.error));
+        if (callback !== undefined) { callback(err, null); }
+      }
     });
 }
 
@@ -406,7 +414,7 @@ function evolve(params, callback){
       break;
 
       case "perceptron":
-        console.log("NNC | EVOLVE ARCH | " + params.architecture);
+        console.log("NNC | EVOLVE ARCH   | " + params.architecture + "\n");
         network = new neataptic.Architect.Perceptron(
           params.trainingSet[0].datum.input.length, 
           hiddenLayerSize,
@@ -415,7 +423,7 @@ function evolve(params, callback){
       break;
 
       default:
-        console.log("NNC | EVOLVE ARCH | " + params.architecture);
+        console.log("NNC | EVOLVE ARCH   | " + params.architecture + "\n");
         network = new neataptic.Network(
           params.trainingSet[0].datum.input.length, 
           params.trainingSet[0].datum.output.length
@@ -437,7 +445,7 @@ function evolve(params, callback){
 
     }, function(){
 
-      console.log(chalkAlert("NNC | START EVOLVE"
+      console.log(chalkAlert("\n========================\nNNC | START EVOLVE"
         + "\nIN:            " + params.trainingSet[0].datum.input.length
         + "\nOUT:           " + params.trainingSet[0].datum.output.length
         + "\nTRAINING DATA: " + trainingSet.length
@@ -447,20 +455,24 @@ function evolve(params, callback){
 
       async function networkEvolve() {
 
-        console.log("networkEvolve options\n" + Object.keys(options) + "\nnetwork: " + Object.keys(options.network));
+        // console.log("networkEvolve options\n" + Object.keys(options) + "\nnetwork: " + Object.keys(options.network));
+        // console.log("networkEvolve options\n" + Object.keys(options));
 
-        try {
+        // try {
           const results = await network.evolve(trainingSet, options);
           if (callback !== undefined) { callback(null, results); }
-       }
-        catch (error) {
-          console.error(chalkError("EVOLVE ERROR\n" + error));
-          if (callback !== undefined) { callback(error, null); }
-        }
+        // }
+        // catch (error) {
+        //   console.error(chalkError("EVOLVE ERROR\n" + error));
+        //   if (callback !== undefined) { callback(error, null); }
+        // }
 
       }
 
-      networkEvolve();
+      networkEvolve().catch(function(err){
+        console.error(chalkError("NNC NETWORK EVOLVE ERROR: " + err));
+      });
+
     });
 
   });
@@ -475,7 +487,7 @@ process.on("message", function(m) {
     + "\n" + jsonPrint(m)
   ));
 
-  let evolveParams;
+  let evolveParams = {};
 
   switch (m.op) {
 
@@ -568,7 +580,44 @@ process.on("message", function(m) {
       statsObj.outputs = {};
       statsObj.outputs = m.outputs;
 
+      evolveParams = {
+        // network: m.network,
+        inputs: m.inputs,
+        outputs: m.outputs,
+        trainingSet: m.trainingSet,
+        mutation: m.mutation,
+        equal: m.equal,
+        popsize: m.popsize,
+        elitism: m.elitism,
+        log: m.log,
+        error: m.error,
+        iterations: m.iterations,
+        mutationRate: m.mutationRate,
+        activation: m.activation,
+        cost: m.cost,
+        clear: m.clear
+      };
+
+      statsObj.evolve.options = {        
+        // network: m.network,
+        mutation: m.mutation,
+        mutationRate: m.mutationRate,
+        activation: m.activation,
+        equal: m.equal,
+        cost: m.cost,
+        clear: m.clear,
+        error: m.error,
+        popsize: m.popsize,
+        elitism: m.elitism,
+        iterations: m.iterations,
+        log: m.log
+      };
+
       if (m.network && (m.network !== undefined)) {
+
+        evolveParams.network = m.network;
+        statsObj.evolve.options = m.network;
+
         console.log(chalkAlert("\n\nNNC | NEURAL NET EVOLVE"
           + "\nNETWORK:    " + m.network.networkId + " | " + m.network.successRate.toFixed(2) + "%"
           // + "\nNETWORK:    " + jsonPrint(m.network)
@@ -589,43 +638,12 @@ process.on("message", function(m) {
         ));
       }
 
-      evolveParams = {
-        network: m.network,
-        inputs: m.inputs,
-        outputs: m.outputs,
-        trainingSet: m.trainingSet,
-        mutation: m.mutation,
-        equal: m.equal,
-        popsize: m.popsize,
-        elitism: m.elitism,
-        log: m.log,
-        error: m.error,
-        iterations: m.iterations,
-        mutationRate: m.mutationRate,
-        activation: m.activation,
-        cost: m.cost,
-        clear: m.clear
-      };
-
-      statsObj.evolve.options = {        
-        network: m.network,
-        mutation: m.mutation,
-        mutationRate: m.mutationRate,
-        activation: m.activation,
-        equal: m.equal,
-        cost: m.cost,
-        clear: m.clear,
-        error: m.error,
-        popsize: m.popsize,
-        elitism: m.elitism,
-        iterations: m.iterations,
-        log: m.log
-      };
 
       evolve(evolveParams, function(err, results){
 
         if (err) {
           console.error(chalkError("NNC EVOLVE ERROR: " + err));
+          console.trace("NNC EVOLVE ERROR");
           process.send({op:"EVOLVE_COMPLETE", error: err, statsObj: statsObj});
         }
         else {
@@ -651,8 +669,10 @@ process.on("message", function(m) {
           networkObj.evolve = {};
           networkObj.evolve.options = {};
           networkObj.evolve.options = omit(evolveParams, "network");
-          networkObj.evolve.options.network = {};
-          networkObj.evolve.options.network.networkId = evolveParams.network.networkId;
+          if (evolveParams.network){
+            networkObj.evolve.options.network = {};
+            networkObj.evolve.options.network.networkId = evolveParams.network.networkId;
+          }
           networkObj.elapsed = statsObj.training.elapsed;
 
           console.log(chalkAlert("NNC | EVOLVE COMPLETE"));
