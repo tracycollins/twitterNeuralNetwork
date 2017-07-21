@@ -885,7 +885,7 @@ function initInstance(instanceIndex, options, callback){
     + " | " + currentOptions.name
     + " | ID: " + currentOptions.env.TNN_RUN_ID
     + " | ITERATIONS: " + currentOptions.env.TNN_EVOLVE_ITERATIONS
-    + " | " + currentOptions.out_file
+    // + " | " + currentOptions.out_file
   );
   console.log("CURRENT OPTIONS\n" + jsonPrint(currentOptions));
 
