@@ -1442,7 +1442,12 @@ function updateClassifiedUsers(cnf, callback){
 
     User.findOne({userId: userId.toString()}, function(err, user){
 
-      if (err || !user){
+      if (err){
+        console.error(chalkError("USER FINDE ONE ERROR: " + err));
+        return(cb0(err));
+      }
+
+      if (!user){
         return(cb0());
       }
 
@@ -2298,7 +2303,7 @@ function initNeuralNetworkChild(callback){
           );
           statsObj.tests[testObj.testRunId].training = {};
           statsObj.tests[testObj.testRunId].evolve = {};
-          statsObj.tests[testObj.testRunId].evolve.options = omit(m.statsObj.evolve.options, "network");
+          statsObj.tests[testObj.testRunId].evolve.options = omit(m.statsObj.evolve.options, ["network", "inputs", "outputs"]);
 
           if (m.statsObj.evolve.options.network && (m.statsObj.evolve.options.network !== undefined)){
             statsObj.tests[testObj.testRunId].evolve.network = {};
@@ -2345,9 +2350,10 @@ function initNeuralNetworkChild(callback){
           networkObj.outputs = trainingSetLabels.outputs;
           networkObj.evolve = {};
           networkObj.evolve.options = {};
-          networkObj.evolve.options = omit(m.statsObj.evolve.options, "network");
+          networkObj.evolve.options = omit(m.statsObj.evolve.options, ["network", "inputs", "outputs"]);
 
           networkObj.test = statsObj.tests[testObj.testRunId];
+          networkObj.test.evolve.options = omit(statsObj.tests[testObj.testRunId].evolve.options, ["inputs", "output"]);
 
           if (m.statsObj.evolve.options.network && (m.statsObj.evolve.options.network !== undefined)){
             networkObj.evolve.options.network = {};
