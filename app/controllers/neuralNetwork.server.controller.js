@@ -39,6 +39,7 @@ exports.findOneNetwork = function (network, params, callback) {
 		+ "\nTRAIN: " + jsonPrint(network.train)
 		+ "\nTEST: " + jsonPrint(network.test)
 		+ "\nCREATED: " + moment(new Date(network.createdAt)).format(compactDateTimeFormat) 
+		// + "\nNETWORK: " + jsonPrint(network.network) 
 	);
 
 	var query = { networkId: network.networkId  };

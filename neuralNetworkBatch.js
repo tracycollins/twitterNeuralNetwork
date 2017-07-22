@@ -950,13 +950,17 @@ const generateRandomEvolveEnv = function (){
   }
   else {
     env.TNN_EVOLVE_SEED_NETWORK_ID = randomItem([null, "BEST"]);
+    if (!env.TNN_EVOLVE_SEED_NETWORK_ID) {
+      env.TNN_EVOLVE_ARCHITECTURE = "perceptron";
+    }
   }
+
 
   // env.TNN_EVOLVE_SEED_NETWORK_ID = "BEST";
 
   env.TNN_EVOLVE_ACTIVATION = randomItem(EVOLVE_ACTIVATION_ARRAY);
   env.TNN_EVOLVE_COST = randomItem(EVOLVE_COST_ARRAY);
-  env.TNN_EVOLVE_CLEAR = randomItem([true, false]);
+  // env.TNN_EVOLVE_CLEAR = randomItem([true, false]);
   env.TNN_EVOLVE_EQUAL = randomItem([true, false]);
 
   env.TNN_EVOLVE_MUTATION_RATE = randomFloat(EVOLVE_MUTATION_RATE_RANGE.min, EVOLVE_MUTATION_RATE_RANGE.max);
@@ -1220,8 +1224,8 @@ function initialize(cnf, callback){
   cnf.evolveEnableRandom = process.env.NNB_EVOLVE_ENABLE_RANDOM || DEFAULT_EVOLVE_ENABLE_RANDOM ;
   cnf.seedNetworkId = process.env.NNB_EVOLVE_SEED_NETWORK_ID || DEFAULT_EVOLVE_SEED_NETWORK_ID ;
 
-  cnf.classifiedUsersFile = process.env.NNB_CLASSIFIED_USERS_FILE || "classifiedUsers.json";
-  cnf.classifiedUsersFolder = dropboxConfigHostFolder + "/classifiedUsers";
+  // cnf.classifiedUsersFile = process.env.NNB_CLASSIFIED_USERS_FILE || "classifiedUsers.json";
+  // cnf.classifiedUsersFolder = dropboxConfigHostFolder + "/classifiedUsers";
   cnf.statsUpdateIntervalTime = process.env.NNB_STATS_UPDATE_INTERVAL || DEFAULT_STATS_INTERVAL;
 
   debug(chalkWarn("dropboxConfigFolder: " + dropboxConfigFolder));
