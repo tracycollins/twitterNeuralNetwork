@@ -424,19 +424,18 @@ function indexOfMax (arr, callback) {
       + " - " + arr[2].toFixed(2)
     ));
 
-    async.eachOf(arr, function(val, index, cb){
+    async.eachOf(arr, function(val, index, cb0){
       if (val < 1) {
         arr[index] = 0;
       }
-      cb();
+      cb0();
     }, function(){
-      return( callback(3, arr) ); 
+      callback(3, arr); 
     });
 
   }
   else {
 
-    // let max = arr[0];
     let max = 0;
     let maxIndex = -1;
 
@@ -448,13 +447,13 @@ function indexOfMax (arr, callback) {
       cb1();
     }, function(){
 
-      async.eachOf(arr, function(val, index, cb){
+      async.eachOf(arr, function(val, index, cb2){
         if (val < 1) {
           arr[index] = 0;
         }
-        cb();
+        cb2();
       }, function(){
-        return(callback(maxIndex, arr)); 
+        callback(maxIndex, arr); 
       });
 
     });
