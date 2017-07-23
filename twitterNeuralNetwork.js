@@ -1861,7 +1861,7 @@ function testNetwork(nw, testObj, callback){
   let successRate = 0;
   let testResultArray = [];
 
-  async.eachSeries(testObj.testSet, function(testDatumObj, cb){
+  async.each(testObj.testSet, function(testDatumObj, cb){
 
     if (testDatumObj.datum.input.length !== testObj.numInputs) {
       console.error(chalkError("MISMATCH INPUT"
