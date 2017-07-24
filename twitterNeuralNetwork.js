@@ -509,7 +509,7 @@ function showStats(options){
   }
 }
 
-function quit(){
+function quit(network){
 
   console.log(chalkAlert( "\n\n... QUITTING ...\n\n" ));
 
@@ -521,11 +521,11 @@ function quit(){
 
   let slackText = "";
 
-  if (statsObj.tests[testObj.testRunId].results.successRate !== undefined) {
+  if (network) {
 
-    const snid = (statsObj.tests[testObj.testRunId][configuration.networkCreateMode].networkId !== undefined) 
-      ? statsObj.tests[testObj.testRunId][configuration.networkCreateMode].networkId 
-      + " | " + statsObj.tests[testObj.testRunId][configuration.networkCreateMode].network.successRate.toFixed(2) + "%"
+    const snid = (network.evolve.options.network !== undefined) 
+      ? network.evolve.options.network.networkId 
+      + " | " + network.evolve.options.network.successRate.toFixed(2) + "%"
       : "-" ;
 
     slackText = "\n*" + statsObj.runId + "*";
@@ -2264,7 +2264,7 @@ function initNeuralNetworkChild(callback){
 
       case "EVOLVE_COMPLETE":
 
-        console.log(chalkBlue("NETWORK EVOLVE/TRAIN COMPLETE"
+        console.log(chalkBlue("NETWORK EVOLVE COMPLETE"
           + "\nELAPSED: " + msToTime(m.networkObj.elapsed)
           + "\nITERTNS: " + m.statsObj.evolve.options.iterations
           + "\nINPUTS:  " + m.networkObj.network.input
@@ -2275,7 +2275,9 @@ function initNeuralNetworkChild(callback){
         ));
 
         if (m.networkObj.evolve.options.network) {
-          console.log(chalkBlue("\nSEED NN: " + m.networkObj.evolve.options.network.networkId));
+          console.log(chalkBlue("\nSEED NN"
+            + " | " + m.networkObj.evolve.options.network.networkId
+          ));
         }
 
 
@@ -2385,7 +2387,7 @@ function initNeuralNetworkChild(callback){
               + "\nCREATED: " + moment(new Date(updateNetworkObj.createdAt)).format(compactDateTimeFormat) 
             );
 
-            quit();
+            quit(updateNetworkObj);
           });
 
         });

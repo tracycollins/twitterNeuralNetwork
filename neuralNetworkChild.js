@@ -822,7 +822,8 @@ process.on("message", function(m) {
         clear: m.clear
       };
 
-      statsObj.evolve.options = {        
+      statsObj.evolve.options = {
+        network: m.network,
         architecture: m.architecture,
         mutation: m.mutation,
         mutationRate: m.mutationRate,
@@ -840,7 +841,6 @@ process.on("message", function(m) {
       if (m.network && (m.network !== undefined)) {
 
         evolveParams.network = m.network;
-        statsObj.evolve.options = m.network;
 
         console.log(chalkAlert("\n\nNNC | NEURAL NET EVOLVE"
           + "\nNETWORK:    " + m.network.networkId + " | " + m.network.successRate.toFixed(2) + "%"
@@ -914,7 +914,6 @@ process.on("message", function(m) {
     default:
       console.log(chalkError("NNC | NEURAL NETIZE UNKNOWN OP ERROR"
         + " | " + m.op
-        // + "\n" + jsonPrint(m)
       ));
   }
 });
