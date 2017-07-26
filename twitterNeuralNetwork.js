@@ -2511,7 +2511,7 @@ function loadBestNeuralNetwork(callback){
                 + " | INPUTS: " + nnCurrent.inputs[type].length
               ));
               inputArrays[type] = nnCurrent.inputs[type];
-              trainingSetLabels.input[type] = nnCurrent.inputs[type];
+              trainingSetLabels.inputs[type] = nnCurrent.inputs[type];
             });
 
             network = neataptic.Network.fromJSON(nnCurrent.network);
