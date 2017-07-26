@@ -85,7 +85,7 @@ exports.findOneUser = function (user, params, callback) {
 		options,
 		function(err, us) {
 			if (err) {
-				console.log(moment().format(compactDateTimeFormat) + "\n\n***** USER FINDONE ERROR: USER ID: " + user.userId + "\n" + err);
+				console.log(moment().format(compactDateTimeFormat) + "\n\n***** USER FIND ONE ERROR: USER ID: " + user.userId + "\n" + err);
 				if (err.code === 11000) {
 					User.remove({userId: user.userId}, function(err){
 						if (err) {

@@ -5,6 +5,13 @@ const inputTypes = ["hashtags", "mentions", "urls", "words", "emoji"];
 inputTypes.sort();
 
 let trainingSetLabels = {};
+trainingSetLabels.inputRaw = [];
+trainingSetLabels.inputs = {};
+trainingSetLabels.outputs = ["left", "neutral", "right"];
+
+inputTypes.forEach(function(type){
+  trainingSetLabels.inputs[type] = [];
+})
 
 let currentBestNetwork;
 // let currentSeedNetwork;
@@ -524,7 +531,7 @@ function quit(network){
 
   if (network) {
 
-    const snid = (network.evolve.options.network !== undefined) 
+    const snid = (network.evolve && (network.evolve.options.network !== undefined)) 
       ? network.evolve.options.network.networkId 
       + " | " + network.evolve.options.network.successRate.toFixed(2) + "%"
       : "-" ;
@@ -1443,11 +1450,12 @@ function updateClassifiedUsers(cnf, callback){
     User.findOne({userId: userId.toString()}, function(err, user){
 
       if (err){
-        console.error(chalkError("USER FINDE ONE ERROR: " + err));
+        console.error(chalkError("USER FIND ONE ERROR: " + err));
         return(cb0(err));
       }
 
       if (!user){
+        debug(chalkError("USER NOT FOUND: " + userId));
         return(cb0());
       }
 
@@ -1550,21 +1558,15 @@ function updateClassifiedUsers(cnf, callback){
 
         // KLUDGE!!!! should only need to create trainingSetLabels once per network creation
 
-        trainingSetLabels.inputRaw = [];
-        trainingSetLabels.inputs = {};
+        if (trainingSetLabels.inputs.length === 0){
+          trainingSetLabels.inputs.sentiment = [];
 
-        trainingSetLabels.inputs.sentiment = [];
+          trainingSetLabels.inputs.sentiment.push("magnitude");
+          trainingSetLabels.inputs.sentiment.push("score");
 
-        trainingSetLabels.inputs.sentiment.push("magnitude");
-        trainingSetLabels.inputs.sentiment.push("score");
-
-        trainingSetLabels.inputRaw.push("magnitude");
-        trainingSetLabels.inputRaw.push("score");
-
-        inputTypes.forEach(function(type){
-          trainingSetLabels.inputs[type] = [];
-        });
-
+          trainingSetLabels.inputRaw.push("magnitude");
+          trainingSetLabels.inputRaw.push("score");
+        }
 
         async.waterfall([
           function userScreenName(cb) {
@@ -1686,8 +1688,8 @@ function updateClassifiedUsers(cnf, callback){
 
                 async.eachSeries(inputArrays[type], function(element, cb2){
 
-                  trainingSetLabels.inputs[type].push(element);
-                  trainingSetLabels.inputRaw.push(element);
+                  // trainingSetLabels.inputs[type].push(element);
+                  // trainingSetLabels.inputRaw.push(element);
 
                   if ((userHistograms[type] !== undefined) && userHistograms[type][element]) {
 
@@ -1731,8 +1733,8 @@ function updateClassifiedUsers(cnf, callback){
 
 
                 trainingSetDatum.output = [];
-                trainingSetLabels.outputs = [];
-                trainingSetLabels.outputs = ["LEFT", "NEUTRAL", "RIGHT"];
+                // trainingSetLabels.outputs = [];
+                // trainingSetLabels.outputs = ["LEFT", "NEUTRAL", "RIGHT"];
 
                 switch (keywordArray[0]){
                   case "left":
@@ -1753,12 +1755,13 @@ function updateClassifiedUsers(cnf, callback){
                 testObj.numInputs = trainingSetDatum.input.length;
                 testObj.numOutputs = trainingSetDatum.output.length;
 
-                debug("trainingSetDatum INPUT:  " + trainingSetDatum.input);
+                debug("trainingSet " + trainingSet.length + " | INPUT:  " + trainingSetDatum.input.length);
                 debug("trainingSetDatum OUTPUT: " + trainingSetDatum.output);
 
                 // printDatum(user.screenName, trainingSetDatum, trainingSetLabels, function(text){
                 //   debug(chalkInfo(text));
-                  trainingSet.push({name: user.screenName, datum: trainingSetDatum, labels: trainingSetLabels});
+                  // trainingSet.push({name: user.screenName, datum: trainingSetDatum, labels: trainingSetLabels});
+                  trainingSet.push({name: user.screenName, datum: trainingSetDatum});
                   cb0();
                 // });
               });
@@ -1798,52 +1801,56 @@ function updateClassifiedUsers(cnf, callback){
     });
   }, function(err){
 
-      console.log(chalkAlert("CL U HIST"
-        + " | L: " + classifiedUserHistogram.left
-        + " | R: " + classifiedUserHistogram.right
-        + " | N: " + classifiedUserHistogram.neutral
-        + " | +: " + classifiedUserHistogram.positive
-        + " | -: " + classifiedUserHistogram.negative
-        + " | 0: " + classifiedUserHistogram.none
-      ));
+    if (err) {
+      console.log(chalkError("UPDATE CLASSIFIED USERS ERROR: " + err));
+    }
 
-      let inputHitAverage = totalInputHits/trainingSet.length;
+    console.log(chalkAlert("CL U HIST"
+      + " | L: " + classifiedUserHistogram.left
+      + " | R: " + classifiedUserHistogram.right
+      + " | N: " + classifiedUserHistogram.neutral
+      + " | +: " + classifiedUserHistogram.positive
+      + " | -: " + classifiedUserHistogram.negative
+      + " | 0: " + classifiedUserHistogram.none
+    ));
 
-      console.log(chalkBlue("\nMAX MAGNITUDE:        " + maxMagnitude));
-      console.log(chalkBlue("TOTAL INPUT HITS:     " + totalInputHits));
-      console.log(chalkBlue("AVE INPUT HITS/DATUM: " + inputHitAverage.toFixed(3)));
-      statsObj.normalization.magnitude.max = maxMagnitude;
+    let inputHitAverage = totalInputHits/trainingSet.length;
 
-      testObj.inputHits = totalInputHits;
-      testObj.inputHitAverage = inputHitAverage;
+    console.log(chalkBlue("\nMAX MAGNITUDE:        " + maxMagnitude));
+    console.log(chalkBlue("TOTAL INPUT HITS:     " + totalInputHits));
+    console.log(chalkBlue("AVE INPUT HITS/DATUM: " + inputHitAverage.toFixed(3)));
+    statsObj.normalization.magnitude.max = maxMagnitude;
 
-      async.each(trainingSet, function(dataObj, cb3){
+    testObj.inputHits = totalInputHits;
+    testObj.inputHitAverage = inputHitAverage;
 
-        if (maxMagnitude > 0) {
-          let normMagnitude = dataObj.datum.input[0]/maxMagnitude;
-          dataObj.datum.input[0] = normMagnitude;
-        }
-        else {
-          dataObj.datum.input[0] = 0;
-        }
+    async.each(trainingSet, function(dataObj, cb3){
+
+      if (maxMagnitude > 0) {
+        let normMagnitude = dataObj.datum.input[0]/maxMagnitude;
+        dataObj.datum.input[0] = normMagnitude;
+      }
+      else {
+        dataObj.datum.input[0] = 0;
+      }
 
 
-        if (configuration.testMode) {
-          testObj.testSet.push(dataObj);
-          cb3();
-        }
-        else if (Math.random() < cnf.testSetRatio) {
-          testObj.testSet.push(dataObj);
-          cb3();
-        }
-        else {
-          trainingSetNormalized.push(dataObj);
-          cb3();
-        }
+      if (configuration.testMode) {
+        testObj.testSet.push(dataObj);
+        cb3();
+      }
+      else if (Math.random() < cnf.testSetRatio) {
+        testObj.testSet.push(dataObj);
+        cb3();
+      }
+      else {
+        trainingSetNormalized.push(dataObj);
+        cb3();
+      }
 
-      }, function(){
-        callback(err, null);
-      });
+    }, function(){
+      callback(err, null);
+    });
 
   });
 }
@@ -1984,7 +1991,7 @@ function initMain(cnf){
           // + " | " + jsonPrint(trainingSetNormalized[0])
         ));
 
-        debug(chalkBlue("\nTRAINING SET NORMALIZED\n" + jsonPrint(trainingSetNormalized)));
+        debug(chalkBlue("\nTRAINING SET NORMALIZED\n" + jsonPrint(trainingSetNormalized[0])));
 
         testObj.inputArraysFile = inputArraysFolder + "/" + inputArraysFile;
 
@@ -2018,6 +2025,7 @@ function initMain(cnf){
             console.log(chalkBlue("TEST RUN ID: " + messageObj.testRunId
               + "\nINPUT ARRAYS FILE:   " + messageObj.inputArraysFile
               + "\nTRAINING SET LENGTH: " + messageObj.trainingSet.length
+              + "\nTEST SET LENGTH:     " + testObj.testSet.length
               + "\nITERATIONS:          " + messageObj.iterations
             ));
 
@@ -2503,6 +2511,7 @@ function loadBestNeuralNetwork(callback){
                 + " | INPUTS: " + nnCurrent.inputs[type].length
               ));
               inputArrays[type] = nnCurrent.inputs[type];
+              trainingSetLabels.input[type] = nnCurrent.inputs[type];
             });
 
             network = neataptic.Network.fromJSON(nnCurrent.network);
@@ -2537,6 +2546,7 @@ function loadBestNeuralNetwork(callback){
               + " | INPUTS: " + nnCurrent.inputs[type].length
             ));
             inputArrays[type] = nnCurrent.inputs[type];
+            trainingSetLabels.input[type] = nnCurrent.inputs[type];
           });
 
           network = neataptic.Network.fromJSON(nnCurrent.network);
@@ -2590,6 +2600,7 @@ function loadNeuralNetwork(options, callback){
           ));
 
           inputArrays[type] = nn.inputs[type];
+          trainingSetLabels.input[type] = nn.inputs[type];
           cb();
 
         }, function(){

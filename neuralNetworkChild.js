@@ -576,9 +576,9 @@ function train(params, callback){
 
 process.on("message", function(m) {
 
-  debug(chalkAlert("NEURAL NET RX MESSAGE"
+  console.log(chalkAlert("NEURAL NET RX MESSAGE"
     + " | OP: " + m.op
-    + "\n" + jsonPrint(m)
+    // + "\n" + jsonPrint(m)
   ));
 
   let evolveParams = {};
