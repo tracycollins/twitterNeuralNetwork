@@ -543,7 +543,7 @@ function quit(network){
     slackText = slackText + " | PASS: " + statsObj.tests[testObj.testRunId].results.numPassed;
     slackText = slackText + " | SKIP: " + statsObj.tests[testObj.testRunId].results.numSkipped;
     slackText = slackText + " | SEED NET: " + snid;
-    slackText = slackText + "\nOPTIONS\n" + jsonPrint(statsObj.tests[testObj.testRunId][configuration.networkCreateMode].options);
+    slackText = slackText + "\nOPTIONS\n" + jsonPrint(statsObj.evolve.options);
 
     console.log("SLACK TEXT: " + slackText);
 
@@ -1762,6 +1762,15 @@ function initMain(cnf){
               mutationRate: cnf.evolve.mutationRate,
               clear: cnf.evolve.clear
             };
+
+            statsObj.evolve = {};
+            statsObj.evolve.options = {};
+            statsObj.evolve.options = omit(messageObj, ["network", "trainingSet", "inputs", "outputs", "inputArraysFile"]);
+            if (messageObj.network !== undefined) {
+              statsObj.evolve.options.network = {};
+              statsObj.evolve.options.network = pick(messageObj, ["networkId", "successRate"]);
+            }
+
             console.log(chalkBlue("\nSTART NETWORK EVOLVE"));
 
             console.log(chalkBlue("TEST RUN ID: " + messageObj.testRunId
@@ -1941,7 +1950,7 @@ function initNeuralNetworkChild(callback){
 
           console.log(chalkBlue("\nNETWORK TEST COMPLETE\n==================="));
 
-          let columns = columnify(results.testResultArray, {  minWidth: 8, maxWidth: 16});
+          let columns = columnify(results.testResultArray, {  minWidth: 8});
           console.log(chalkAlert(columns));
 
           console.log(chalkBlue("\nNETWORK TEST COMPLETE\n==================="
@@ -2042,7 +2051,8 @@ function initNeuralNetworkChild(callback){
 
         console.log(chalkBlue("NETWORK EVOLVE COMPLETE"
           + "\nELAPSED: " + msToTime(m.networkObj.elapsed)
-          + "\nITERTNS: " + m.statsObj.evolve.options.iterations
+          + "\nITERTNS: " + m.statsObj.evolve.results.iterations
+          + "\nERROR:   " + m.statsObj.evolve.results.error
           + "\nINPUTS:  " + m.networkObj.network.input
           + "\nOUTPUTS: " + m.networkObj.network.output
           + "\nDROPOUT: " + m.networkObj.network.dropout
@@ -2078,15 +2088,6 @@ function initNeuralNetworkChild(callback){
             testObj.results, 
             ["successRate", "numPassed", "numSkipped", "numTests", "testRunId"]
           );
-          statsObj.tests[testObj.testRunId].training = {};
-          statsObj.tests[testObj.testRunId].evolve = {};
-          statsObj.tests[testObj.testRunId].evolve.options = omit(m.statsObj.evolve.options, ["network", "inputs", "outputs"]);
-
-          if (m.statsObj.evolve.options.network && (m.statsObj.evolve.options.network !== undefined)){
-            statsObj.tests[testObj.testRunId].evolve.network = {};
-            statsObj.tests[testObj.testRunId].evolve.network.networkId = m.statsObj.evolve.options.network.networkId;
-            statsObj.tests[testObj.testRunId].evolve.network.successRate = m.statsObj.evolve.options.network.successRate;
-          }
 
           statsObj.tests[testObj.testRunId].elapsed = m.networkObj.elapsed;
 
@@ -2102,7 +2103,8 @@ function initNeuralNetworkChild(callback){
             + "\n  SUCCESS: " + results.successRate.toFixed(1) + "%"
           ));
 
-          const options = statsObj.tests[testObj.testRunId].evolve.options;
+          // const options = statsObj.tests[testObj.testRunId].evolve.options;
+          const options = m.statsObj.evolve.options;
 
           console.log("\nEVOLVE OPTIONS\n===================");
           Object.keys(options).forEach(function(key){
@@ -2130,16 +2132,16 @@ function initNeuralNetworkChild(callback){
           networkObj.evolve.options = omit(m.statsObj.evolve.options, ["network", "inputs", "outputs"]);
 
           networkObj.test = statsObj.tests[testObj.testRunId];
-          networkObj.test.evolve.options = omit(statsObj.tests[testObj.testRunId].evolve.options, ["inputs", "output"]);
+          // networkObj.test.evolve.options = omit(statsObj.tests[testObj.testRunId].evolve.options, ["inputs", "output"]);
 
           if (m.statsObj.evolve.options.network && (m.statsObj.evolve.options.network !== undefined)){
             networkObj.evolve.options.network = {};
             networkObj.evolve.options.network.networkId = m.statsObj.evolve.options.network.networkId;
             networkObj.evolve.options.network.successRate = m.statsObj.evolve.options.network.successRate;
 
-            networkObj.test.evolve.network = {};
-            networkObj.test.evolve.network.networkId = m.statsObj.evolve.options.network.networkId;
-            networkObj.test.evolve.network.successRate = m.statsObj.evolve.options.network.successRate;
+            // networkObj.test.evolve.network = {};
+            // networkObj.test.evolve.network.networkId = m.statsObj.evolve.options.network.networkId;
+            // networkObj.test.evolve.network.successRate = m.statsObj.evolve.options.network.successRate;
           }
 
           // console.log("networkObj.network\n" + jsonPrint(Object.keys(networkObj.network)));

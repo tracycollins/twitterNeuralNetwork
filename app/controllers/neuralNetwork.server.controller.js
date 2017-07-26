@@ -1,21 +1,22 @@
-var S = require("string");
-var chalk = require("chalk");
-var util = require("util");
+/*jslint node: true */
+"use strict";
 
-var chalkAlert = chalk.red;
-var chalkInfo = chalk.yellow;
-var chalkTest = chalk.bold.yellow;
-var chalkError = chalk.bold.red;
-var chalkWarn = chalk.bold.yellow;
-var chalkLog = chalk.gray;
-var chalkDb = chalk.gray;
+const chalk = require("chalk");
 
-var moment = require("moment");
-var NeuralNetwork = require("mongoose").model("NeuralNetwork");
-var debug = require("debug")("nn");
+const chalkAlert = chalk.red;
+const chalkInfo = chalk.yellow;
+const chalkTest = chalk.bold.yellow;
+const chalkError = chalk.bold.red;
+const chalkWarn = chalk.bold.yellow;
+const chalkLog = chalk.gray;
+const chalkDb = chalk.gray;
 
-var defaultDateTimeFormat = "YYYY-MM-DD HH:mm:ss ZZ";
-var compactDateTimeFormat = "YYYYMMDD_HHmmss";
+const moment = require("moment");
+const NeuralNetwork = require("mongoose").model("NeuralNetwork");
+const debug = require("debug")("nn");
+const columnify = require("columnify");
+
+const compactDateTimeFormat = "YYYYMMDD_HHmmss";
 
 const jsonPrint = function (obj){
   if (obj) {
@@ -29,21 +30,25 @@ const jsonPrint = function (obj){
 
 exports.findOneNetwork = function (network, params, callback) {
 
+  const evolveCols = columnify(network.evolve, {  showHeaders: false, minWidth: 8, maxWidth: 16});
+  const trainCols = columnify(network.train, {  showHeaders: false, minWidth: 8, maxWidth: 16});
+  const testCols = columnify(network.test, {  showHeaders: false, minWidth: 8, maxWidth: 16});
+
 	console.log("> NW UPDATE"
 		+ " | " + network.networkId 
 		+ "\nSUCCESS: " + network.successRate
+		+ "\nCREATED: " + moment(new Date(network.createdAt)).format(compactDateTimeFormat) 
 		+ "\nTYPE: " + network.networkType
 		+ "\nIN: " + network.inputs.length
 		+ "\nOUT: " + network.outputs.length
-		+ "\nEVOLVE: " + jsonPrint(network.evolve) 
-		+ "\nTRAIN: " + jsonPrint(network.train)
-		+ "\nTEST: " + jsonPrint(network.test)
-		+ "\nCREATED: " + moment(new Date(network.createdAt)).format(compactDateTimeFormat) 
+		+ "\nEVOLVE\n" + evolveCols
+		+ "\nTRAIN\n" + trainCols
+		+ "\nTEST\n" + testCols
 		// + "\nNETWORK: " + jsonPrint(network.network) 
 	);
 
-	var query = { networkId: network.networkId  };
-	var update = { 
+	const query = { networkId: network.networkId  };
+	const update = { 
 		"$set": { 
 			networkType: network.networkType,
 			network: network.network,
@@ -57,7 +62,7 @@ exports.findOneNetwork = function (network, params, callback) {
 		}
 	};
 
-	var options = { 
+	const options = { 
 		upsert: true, 
 		setDefaultsOnInsert: true,
 		new: true
@@ -98,4 +103,4 @@ exports.findOneNetwork = function (network, params, callback) {
 			}
 		}
 	);
-}
+};
