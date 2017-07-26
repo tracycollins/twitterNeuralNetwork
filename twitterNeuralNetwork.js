@@ -2600,7 +2600,7 @@ function loadNeuralNetwork(options, callback){
           ));
 
           inputArrays[type] = nn.inputs[type];
-          trainingSetLabels.input[type] = nn.inputs[type];
+          trainingSetLabels.inputs[type] = nn.inputs[type];
           cb();
 
         }, function(){
