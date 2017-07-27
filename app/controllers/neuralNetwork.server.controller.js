@@ -39,8 +39,8 @@ exports.findOneNetwork = function (network, params, callback) {
 		+ "\nSUCCESS: " + network.successRate
 		+ "\nCREATED: " + moment(new Date(network.createdAt)).format(compactDateTimeFormat) 
 		+ "\nTYPE: " + network.networkType
-		+ "\nIN: " + network.inputs.length
-		+ "\nOUT: " + network.outputs.length
+		+ "\nIN: " + network.network.input
+		+ "\nOUT: " + network.network.output
 		+ "\nEVOLVE\n" + evolveCols
 		+ "\nTRAIN\n" + trainCols
 		+ "\nTEST\n" + testCols
@@ -53,6 +53,8 @@ exports.findOneNetwork = function (network, params, callback) {
 			networkType: network.networkType,
 			network: network.network,
 			createdAt: network.createdAt,
+			numInputs: network.network.input,
+			numOutputs: network.network.output,
 			inputs: network.inputs,
 			outputs: network.outputs,
 			evolve: network.evolve,
@@ -92,8 +94,8 @@ exports.findOneNetwork = function (network, params, callback) {
 					+ " | " + nw.networkId 
 					+ "\nSUCCESS: " + nw.successRate
 					+ "\nTYPE: " + nw.networkType
-					+ "\nIN: " + nw.inputs.length
-					+ "\nOUT: " + nw.outputs.length
+					+ "\nIN: " + nw.numInputs
+					+ "\nOUT: " + nw.numOutputs
 					+ "\nEVOLVE: " + jsonPrint(nw.evolve) 
 					+ "\nTRAIN: " + jsonPrint(nw.train)
 					+ "\nTEST: " + jsonPrint(nw.test)

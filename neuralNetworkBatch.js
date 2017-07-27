@@ -39,7 +39,7 @@ const EVOLVE_MUTATION_RATE_RANGE = { min: 0.3, max: 0.9 } ;
 const EVOLVE_POP_SIZE_RANGE = { min: 10, max: 100 } ;
 const EVOLVE_ELITISM_RANGE = { min: 0, max: 20 } ;
 
-const DEFAULT_EVOLVE_SEED_NETWORK_ID = "BEST"; 
+const DEFAULT_EVOLVE_SEED_NETWORK_ID = false; 
 const DEFAULT_EVOLVE_ACTIVATION = "LOGISTIC"; // TAHN | RELU | IDENTITY | STEP
 const DEFAULT_EVOLVE_CLEAR = false; // binary
 const DEFAULT_EVOLVE_COST = "CROSS_ENTROPY"; // CROSS_ENTROPY | MSE | BINARY
@@ -118,6 +118,7 @@ if (hostname.includes("google")) {
 else {
   configuration.instanceOptions.cwd = "/Volumes/RAID1/projects/twitterNeuralNetwork";
 }
+
 configuration.instanceOptions.autorestart = false;
 configuration.instanceOptions.node_args = "--max-old-space-size=4096";
 
@@ -137,7 +138,7 @@ configuration.instanceOptions.env.TNN_STATS_UPDATE_INTERVAL = 60000;
 
 // configuration.instanceOptions.env.TNN_EVOLVE_ = DEFAULT_EVOLVE_;
 
-configuration.instanceOptions.env.EVOLVE_SEED_NETWORK_ID = null;
+configuration.instanceOptions.env.EVOLVE_SEED_NETWORK_ID = false;
 configuration.instanceOptions.env.TNN_EVOLVE_ELITISM = DEFAULT_EVOLVE_ELITISM;
 configuration.instanceOptions.env.TNN_EVOLVE_EQUAL = DEFAULT_EVOLVE_EQUAL;
 configuration.instanceOptions.env.TNN_EVOLVE_ERROR = DEFAULT_EVOLVE_ERROR;
@@ -760,8 +761,7 @@ function loadSeedNeuralNetwork(options, callback){
   let findOneNetwork = false;
   let newBestNetwork = false;
 
-  if (options.networkId !== undefined) {
-
+  if ((options.networkId !== undefined) && (options.networkId !== "false")) {
 
     if (options.networkId === "BEST") {
       findBestNetworks = true;
@@ -790,12 +790,17 @@ function loadSeedNeuralNetwork(options, callback){
     else{
       console.log(nnArray.length + " NETWORKS FOUND");
 
-      if (findBestNetworks) {
+      if (findOneNetwork) {
+        currentSeedNetwork = nnArray[0];
+      }
+      else {
 
         if (!currentBestNetwork || (nnArray[0].successRate > currentBestNetwork.successRate)) {
 
-           console.log(chalkNetwork("NEW MAX NN"
+          console.log(chalkNetwork("NEW MAX NN"
             + " | ID: " + nnArray[0].networkId
+            + " | IN: " + nnArray[0].network.input
+            + " | OUT: " + nnArray[0].network.output
             + " | SUCCESS: " + nnArray[0].successRate.toFixed(2) + "%"
           ));
 
@@ -808,42 +813,7 @@ function loadSeedNeuralNetwork(options, callback){
         nnArray.forEach(function(nn){
           bestNetworksHashMap.set(nn.networkId, nn);
         });
-
       }
-      else if (findOneNetwork) {
-        currentSeedNetwork = nnArray[0];
-      }
-
-      // async.eachSeries(nnArray, function(nn, cb){
-
-      //   console.log(chalkInfo("NN"
-      //     + " | ID: " + nn.networkId
-      //     + " | SUCCESS: " + nn.successRate.toFixed(2) + "%"
-      //   ));
-
-      //   if (!currentBestNetwork || (nn.successRate > currentBestNetwork.successRate)) {
-
-      //      console.log(chalkNetwork("NEW MAX NN"
-      //       + " | ID: " + nn.networkId
-      //       + " | SUCCESS: " + nn.successRate.toFixed(2) + "%"
-      //     ));
-
-      //     newBestNetwork = true;
-      //     currentBestNetwork = nn;
-
-      //     if (options.networkId === "BEST") {
-      //       currentSeedNetwork = nn;
-      //     }
-
-      //   }
-
-      //   if (options.networkId === nn.networkId){
-      //     currentSeedNetwork = nn;
-      //   }
-
-      //   cb();
-
-      // }, function(err){
 
       if (findOneNetwork && currentSeedNetwork){
         printNetworkObj("LOADING NEURAL NETWORK", currentSeedNetwork);
@@ -909,16 +879,16 @@ function initInstance(instanceIndex, options, callback){
   currentOptions.env.TNN_PROCESS_NAME = instanceName;
   currentOptions.env.TNN_RUN_ID = runId;
 
-
   console.log("INIT INSTANCE " + instanceIndex
     + " | " + currentOptions.name
     + " | ID: " + currentOptions.env.TNN_RUN_ID
     + " | ITERATIONS: " + currentOptions.env.TNN_EVOLVE_ITERATIONS
     // + " | " + currentOptions.out_file
   );
-  debug("CURRENT OPTIONS\n" + jsonPrint(currentOptions));
 
   const opt = deepcopy(currentOptions);
+
+  console.log("\n***** CURRENT INSTANCE OPTIONS *****\n" + jsonPrint(opt));
 
   callback(opt);
 }
@@ -982,6 +952,10 @@ const generateRandomEvolveEnv = function (){
   if (currentSeedNetwork) {
     // env.TNN_EVOLVE_SEED_NETWORK_ID = randomItem([null, currentSeedNetwork.networkId]);
     env.TNN_EVOLVE_SEED_NETWORK_ID = currentSeedNetwork.networkId;
+
+    console.log(chalkAlert("\nSEED NETWORK\n----------------------------------"));
+    console.log(chalkAlert(currentSeedNetwork.successRate.toFixed(2) + " | " + currentSeedNetwork.networkId));
+    console.log(chalkAlert("----------------------------------"));
   }
   else {
 
@@ -996,7 +970,7 @@ const generateRandomEvolveEnv = function (){
     console.log(chalkAlert("----------------------------------"));
 
     // env.TNN_EVOLVE_SEED_NETWORK_ID = randomItem(randomNetworkArray);
-    env.TNN_EVOLVE_SEED_NETWORK_ID = (Math.random() > SEED_NETWORK_PROBABILITY) ? randomItem(bestNetworksHashMap.keys()) : null;
+    env.TNN_EVOLVE_SEED_NETWORK_ID = (Math.random() > SEED_NETWORK_PROBABILITY) ? randomItem(bestNetworksHashMap.keys()) : false;
 
     if (!env.TNN_EVOLVE_SEED_NETWORK_ID) {
       env.TNN_EVOLVE_ARCHITECTURE = "perceptron";

@@ -380,8 +380,12 @@ function evolve(params, callback){
     switch (params.architecture) {
 
       case "loadedNetwork":
-        console.log("NNC | EVOLVE ARCH | LOADED: " + options.network.networkId);
         network = neataptic.Network.fromJSON(options.network.network);
+        console.log("NNC"
+          + " | EVOLVE ARCH | LOADED: " + options.network.networkId
+          + " | IN: " + options.network.network.input
+          + " | OUT: " + options.network.network.output
+        );
 
       break;
 
@@ -423,10 +427,11 @@ function evolve(params, callback){
 
     }, function(){
 
-      console.log(chalkAlert("\n========================\nNNC | START EVOLVE"
+      console.log(chalkAlert("\n========================\nNNC | START EVOLVE\n========================"
         + "\nIN:            " + params.trainingSet[0].datum.input.length
         + "\nOUT:           " + params.trainingSet[0].datum.output.length
         + "\nTRAINING DATA: " + trainingSet.length
+        + "\n========================\n"
      ));
 
       async function networkEvolve() {
@@ -469,7 +474,12 @@ function train(params, callback){
   async.each(Object.keys(options), function(key, cb){
 
     if (key === "network") {
-      console.log("NNC | EVOLVE OPTION | " + key + ": " + options[key].networkId + " | " + options[key].successRate.toFixed(2) + "%");
+      console.log("NNC"
+        + " | EVOLVE OPTION | NETWORK: " + options[key].networkId 
+        + " | IN: " + options[key].input
+        + " | OUT: " + options[key].output
+        + " | " + options[key].successRate.toFixed(2) + "%"
+      );
     }
     else if (key === "cost") {
       console.log("NNC | EVOLVE OPTION | " + key + ": " + options[key]);
@@ -807,8 +817,8 @@ process.on("message", function(m) {
           networkObj.testRunId = statsObj.training.testRunId;
           networkObj.networkId = statsObj.training.testRunId;
           networkObj.network = exportedNetwork;
-          networkObj.inputs = statsObj.inputs;
-          networkObj.outputs = statsObj.outputs;
+          networkObj.numInputs = exportedNetwork.input;
+          networkObj.numOutputs = exportedNetwork.output;
           networkObj.evolve = {};
           networkObj.evolve.results = {};
           networkObj.evolve.results = results;

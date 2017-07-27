@@ -19,6 +19,14 @@ var NeuralNetworkSchema = new Schema({
 	networkType: { 
 		type: String
 	},
+	numInputs: { 
+		type: Number,
+		default: 0
+	},
+	numOutputs: { 
+		type: Number,
+		default: 0
+	},
 	network: { // JSON
 		type: Object
 	},
