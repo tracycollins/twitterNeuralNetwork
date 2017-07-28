@@ -991,6 +991,93 @@ const generateRandomEvolveEnv = function (){
   return(env);
 };
 
+function loadDropboxConfig(callback){
+
+  let cnf = deepcopy(configuration);
+
+  loadFile(dropboxConfigHostFolder, dropboxConfigFile, function(err, loadedConfigObj){
+
+    let commandLineConfigKeys;
+    let configArgs;
+
+    if (!err) {
+      console.log(dropboxConfigHostFolder + "/" + dropboxConfigFile + "\n" + jsonPrint(loadedConfigObj));
+
+      if (loadedConfigObj.NNB_EVOLVE_ENABLE_RANDOM  !== undefined){
+        console.log("LOADED NNB_EVOLVE_ENABLE_RANDOM: " + loadedConfigObj.NNB_EVOLVE_ENABLE_RANDOM);
+        cnf.evolveEnableRandom = loadedConfigObj.NNB_EVOLVE_ENABLE_RANDOM;
+      }
+
+      if (loadedConfigObj.NNB_EVOLVE_ITERATIONS  !== undefined){
+        console.log("LOADED NNB_EVOLVE_ITERATIONS: " + loadedConfigObj.NNB_EVOLVE_ITERATIONS);
+        cnf.evolveIterations = loadedConfigObj.NNB_EVOLVE_ITERATIONS;
+      }
+
+      if (loadedConfigObj.NNB_MAX_INSTANCES  !== undefined){
+        console.log("LOADED NNB_MAX_INSTANCES: " + loadedConfigObj.NNB_MAX_INSTANCES);
+        cnf.maxInstances = loadedConfigObj.NNB_MAX_INSTANCES;
+      }
+
+      if (loadedConfigObj.NNB_VERBOSE_MODE  !== undefined){
+        console.log("LOADED NNB_VERBOSE_MODE: " + loadedConfigObj.NNB_VERBOSE_MODE);
+        cnf.verbose = loadedConfigObj.NNB_VERBOSE_MODE;
+      }
+
+      if (loadedConfigObj.NNB_TEST_MODE  !== undefined){
+        console.log("LOADED NNB_TEST_MODE: " + loadedConfigObj.NNB_TEST_MODE);
+        cnf.testMode = loadedConfigObj.NNB_TEST_MODE;
+      }
+
+      if (loadedConfigObj.NNB_ENABLE_STDIN  !== undefined){
+        console.log("LOADED NNB_ENABLE_STDIN: " + loadedConfigObj.NNB_ENABLE_STDIN);
+        cnf.enableStdin = loadedConfigObj.NNB_ENABLE_STDIN;
+      }
+
+      if (loadedConfigObj.NNB_STATS_UPDATE_INTERVAL  !== undefined) {
+        console.log("LOADED NNB_STATS_UPDATE_INTERVAL: " + loadedConfigObj.NNB_STATS_UPDATE_INTERVAL);
+        cnf.statsUpdateIntervalTime = loadedConfigObj.NNB_STATS_UPDATE_INTERVAL;
+      }
+
+      if (loadedConfigObj.NNB_KEEPALIVE_INTERVAL  !== undefined) {
+        console.log("LOADED NNB_KEEPALIVE_INTERVAL: " + loadedConfigObj.NNB_KEEPALIVE_INTERVAL);
+        cnf.keepaliveInterval = loadedConfigObj.NNB_KEEPALIVE_INTERVAL;
+      }
+
+      // OVERIDE CONFIG WITH COMMAND LINE ARGS
+
+      commandLineConfigKeys = Object.keys(commandLineConfig);
+
+      async.each(commandLineConfigKeys, function(arg, cb){
+
+        if (arg === "evolveEnableRandom") {
+          cnf[arg] = commandLineConfig[arg] || cnf[arg];
+        }
+        else {
+          cnf[arg] = commandLineConfig[arg];
+        }
+        console.log("--> COMMAND LINE CONFIG | " + arg + ": " + cnf[arg]);
+
+        cb();
+
+      }, function(){
+
+        configArgs = Object.keys(cnf);
+
+        configArgs.forEach(function(arg){
+          console.log(chalkAlert(">>> FINAL CONFIG (FILE) | " + arg + ": " + cnf[arg]));
+        });
+
+        callback(null, cnf);
+
+      });
+    }
+    else {
+      console.log(chalkError("ERROR LOADING CONFIG: " + err));
+      callback(err, cnf);
+    }
+  });
+}
+
 function initProcessPollInterval(interval){
 
   console.log(chalkInfo("INIT PROCESS POLL INTERVAL | " + interval));
@@ -1020,125 +1107,101 @@ function initProcessPollInterval(interval){
 
   processPollInterval = setInterval(function(){
 
-    if (Object.keys(appHashMap).length < configuration.maxInstances) {
+    loadDropboxConfig(function(err, cnf){
 
-      let options = deepcopy(configuration.instanceOptions);
+      if (Object.keys(appHashMap).length < cnf.maxInstances) {
 
-      if (configuration.evolveEnableRandom){
-        options.env = generateRandomEvolveEnv();
+        let options = deepcopy(cnf.instanceOptions);
+
+        if (cnf.evolveEnableRandom){
+          options.env = generateRandomEvolveEnv();
+        }
+
+        initInstance(statsObj.instances.instanceIndex, options, function(opt){
+
+          const instanceOptions = deepcopy(opt);
+
+          startInstance(instanceOptions);
+
+          statsObj.instances.instanceIndex += 1;
+
+        });
       }
 
-      initInstance(statsObj.instances.instanceIndex, options, function(opt){
+      pm2.list(function(err, apps){
 
-        const instanceOptions = deepcopy(opt);
+        if (err) { throw err; }
+        if (!cnf.autoStartInstance && noInstancesRunning()) { 
+          quit(); 
+        }
+        else  {
+          showStats();
+          console.log("\nAPPS__________________________________________");
 
-        startInstance(instanceOptions);
+          apps.forEach(function(app){
 
-        statsObj.instances.instanceIndex += 1;
-
-      });
-    }
-
-    pm2.list(function(err, apps){
-
-      if (err) { throw err; }
-      if (!configuration.autoStartInstance && noInstancesRunning()) { 
-        quit(); 
-      }
-      else  {
-        showStats();
-        console.log("\nAPPS__________________________________________");
-
-        apps.forEach(function(app){
-
-          console.log(app.name
-            + " | PM2 ID: " + app.pm2_env.pm_id
-            + " | PID: " + app.pid
-            + " | STATUS: " + app.pm2_env.status
-            + " | ITERATIONS: " + app.pm2_env.TNN_EVOLVE_ITERATIONS
-            + " | START: " + moment(parseInt(app.pm2_env.created_at)).format(compactDateTimeFormat)
-            // + " | UPTIME: " + app.pm2_env.pm_uptime
-            + " | RUN: " + msToTime(moment().valueOf()-parseInt(app.pm2_env.created_at))
-          );
-
-          if (appHashMap[app.name] && app.pm2_env.status === "stopped"){
-
-            loadSeedNeuralNetwork(seedOpt, function(err, results){
-              if (err) {
-                console.error(chalkError("loadSeedNeuralNetwork ERROR: " + err));
-              }
-              if (results.best) {
-                console.log(chalkAlert("LOAD NN"
-                  + " | BEST: " + results.best.networkId
-                  + " " + results.best.successRate.toFixed(2) + "%"
-                ));
-              }
-              if (results.seed) {
-                console.log(chalkAlert("LOAD NN"
-                  + " | SEED: " + results.seed.networkId
-                  + " " + results.seed.successRate.toFixed(2) + "%"
-                ));
-              }
-            });
-
-            console.log(chalkAlert(app.name
+            console.log(app.name
               + " | PM2 ID: " + app.pm2_env.pm_id
               + " | PID: " + app.pid
               + " | STATUS: " + app.pm2_env.status
+              + " | ITERATIONS: " + app.pm2_env.TNN_EVOLVE_ITERATIONS
               + " | START: " + moment(parseInt(app.pm2_env.created_at)).format(compactDateTimeFormat)
               // + " | UPTIME: " + app.pm2_env.pm_uptime
               + " | RUN: " + msToTime(moment().valueOf()-parseInt(app.pm2_env.created_at))
-            ));
+            );
 
-            statsObj.instances.completed += 1;
+            if (appHashMap[app.name] && app.pm2_env.status === "stopped"){
 
-            pm2.delete(app.pm2_env.pm_id, function(err, results){
+              loadSeedNeuralNetwork(seedOpt, function(err, results){
+                if (err) {
+                  console.error(chalkError("loadSeedNeuralNetwork ERROR: " + err));
+                }
+                if (results.best) {
+                  console.log(chalkAlert("LOAD NN"
+                    + " | BEST: " + results.best.networkId
+                    + " " + results.best.successRate.toFixed(2) + "%"
+                  ));
+                }
+                if (results.seed) {
+                  console.log(chalkAlert("LOAD NN"
+                    + " | SEED: " + results.seed.networkId
+                    + " " + results.seed.successRate.toFixed(2) + "%"
+                  ));
+                }
+              });
 
-              delete appHashMap[app.name];
+              console.log(chalkAlert(app.name
+                + " | PM2 ID: " + app.pm2_env.pm_id
+                + " | PID: " + app.pid
+                + " | STATUS: " + app.pm2_env.status
+                + " | START: " + moment(parseInt(app.pm2_env.created_at)).format(compactDateTimeFormat)
+                // + " | UPTIME: " + app.pm2_env.pm_uptime
+                + " | RUN: " + msToTime(moment().valueOf()-parseInt(app.pm2_env.created_at))
+              ));
 
-              if (err) { 
-                console.log(chalkError("PM2 DELETE ERROR: " + err));
-              }
-              else {
-                debug("PM2 DELETE RESULTS\n" + results);
-              }
+              statsObj.instances.completed += 1;
 
-            });
+              pm2.delete(app.pm2_env.pm_id, function(err, results){
 
-          }
-        });
-      }
+                delete appHashMap[app.name];
+
+                if (err) { 
+                  console.log(chalkError("PM2 DELETE ERROR: " + err));
+                }
+                else {
+                  debug("PM2 DELETE RESULTS\n" + results);
+                }
+
+              });
+
+            }
+          });
+        }
+      });
+
     });
 
   }, interval);
-}
-
-function initAllInstances(maxInstances, callback) {
-
-  let instanceConfigArray = [];
-  let instanceIndex = 0;
-
-  async.times(maxInstances, function(n, next){
-
-    debug("initAllInstances n: " + n);
-
-    let options = deepcopy(configuration.instanceOptions);
-
-    if (configuration.evolveEnableRandom){
-      options.env = generateRandomEvolveEnv();
-    }
-
-    initInstance(instanceIndex, options, function(opt){
-      instanceConfigArray.push(opt);
-      statsObj.instances.instanceIndex += 1;
-      instanceIndex += 1;
-      next(null, instanceConfigArray);
-    });
-
-  }, function(err, instances){
-    debug("instances: " + jsonPrint(instances));
-    callback(err, instanceConfigArray);
-  });
 }
 
 function initBatch(callback){
@@ -1183,43 +1246,6 @@ function initBatch(callback){
       initProcessPollInterval(configuration.processPollInterval);
       callback(null);
 
-      // initAllInstances(configuration.maxInstances, function(instanceConfigArray){
-
-      //   debug("instanceConfigArray\n" + jsonPrint(instanceConfigArray));
-
-      //   async.each(instanceConfigArray, function(instanceConfig, cb){
-
-      //     debug("START\n" + jsonPrint(instanceConfig));
-
-      //     const options = deepcopy(instanceConfig);
-
-      //     startInstance(options, function(err){
-      //       cb(err);
-      //     });
-
-      //   }, function(err){
-
-      //     if (err) { 
-      //       return (callback(err));
-      //     }
-
-      //     console.log(chalkAlert("\nALL LAUNCHED | " + configuration.maxInstances + " MAX INSTANCES\n"));
-
-      //     Object.keys(appHashMap).forEach(function(appName){
-      //       console.log("LAUNCHED"
-      //         + " | " + appName
-      //         + " | PM2 ID: " + appHashMap[appName].pm2_env.pm_id
-      //         + " | PID: " + appHashMap[appName].process.pid
-      //         + " | STATUS: " + appHashMap[appName].pm2_env.status
-      //       );
-      //     });
-
-      //     initProcessPollInterval(configuration.processPollInterval);
-      //     callback(null);
-
-      //   });
-
-      // });
     });
 
   });

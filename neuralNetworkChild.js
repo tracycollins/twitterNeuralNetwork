@@ -275,10 +275,23 @@ function testEvolve(callback){
     // equal: true,
     popsize: 100,
     elitism: 10,
-    log: 100,
+    // log: 100,
     error: 0.03,
     iterations: 10000,
-    mutationRate: 0.7
+    mutationRate: 0.7,
+    schedule: {
+      function: function(params){ 
+        console.log("NNC SCHED"
+          + " | " + statsObj.testRunId
+          + " | " + moment().format(compactDateTimeFormat)
+          + " | I: " + params.iteration
+          + " | F: " + params.fitness.toFixed(5)
+          + " | E: " + params.error.toFixed(5)
+        );
+      },
+      iterations: 100
+    }
+
   })
   .then(function(results){
 
@@ -341,10 +354,47 @@ function evolve(params, callback){
   options.equal = params.equal;
   options.error = params.error;
   options.iterations = params.iterations;
-  options.log = params.log;
+  // options.log = params.log;
   options.mutation = params.mutation;
   options.mutationRate = params.mutationRate;
   options.popsize = params.popsize;
+
+  const startTime = moment().valueOf();
+
+  options.schedule = {
+
+    function: function(schedParams){
+
+      var elapsedInt = moment().valueOf() - startTime;
+
+      function schedMsToTime(duration) {
+        let seconds = parseInt((duration / 1000) % 60);
+        let minutes = parseInt((duration / (1000 * 60)) % 60);
+        let hours = parseInt((duration / (1000 * 60 * 60)) % 24);
+        let days = parseInt(duration / (1000 * 60 * 60 * 24));
+
+        days = (days < 10) ? "0" + days : days;
+        hours = (hours < 10) ? "0" + hours : hours;
+        minutes = (minutes < 10) ? "0" + minutes : minutes;
+        seconds = (seconds < 10) ? "0" + seconds : seconds;
+
+        return days + ":" + hours + ":" + minutes + ":" + seconds;
+      }
+
+      console.log("NNC"
+        + " | " + params.runId
+        + " | S: " + moment(startTime).format(compactDateTimeFormat)
+        + " | R: " + schedMsToTime(elapsedInt)
+        + " | I: " + schedParams.iteration + " / " + params.iterations
+        + " | F: " + schedParams.fitness.toFixed(5)
+        + " | E: " + schedParams.error.toFixed(5)
+      );
+
+    },
+    iterations: 1
+
+  };
+
 
   async.each(Object.keys(options), function(key, cb){
 
@@ -355,16 +405,16 @@ function evolve(params, callback){
     }
     else if (key === "mutation") {
       console.log("NNC | EVOLVE OPTION | " + key + ": " + options[key]);
-      // options.mutation = neataptic.methods.mutation[key];
-      options.mutation = neataptic.methods.mutation.FFW;
+      options.mutation = neataptic.methods.mutation[options[key]];
+      // options.mutation = neataptic.methods.mutation.FFW;
     }
     else if ((key === "activation") && (options[key] !== undefined)) {
       console.log("NNC | EVOLVE OPTION | " + key + ": " + options[key]);
-      options.activation = neataptic.Methods.Activation[key];
+      options.activation = neataptic.Methods.Activation[options[key]];
     }
     else if (key === "cost") {
       console.log("NNC | EVOLVE OPTION | " + key + ": " + options[key]);
-      options.cost = neataptic.Methods.Cost[key];
+      options.cost = neataptic.Methods.Cost[options[key]];
     }
     else if (key !== "activation") {
       console.log("NNC | EVOLVE OPTION | " + key + ": " + options[key]);
@@ -441,6 +491,7 @@ function evolve(params, callback){
 
       networkEvolve().catch(function(err){
         console.error(chalkError("NNC NETWORK EVOLVE ERROR: " + err));
+        quit("NNC NETWORK EVOLVE ERROR: " + err);
       });
 
     });
@@ -730,6 +781,7 @@ process.on("message", function(m) {
       statsObj.outputs = m.outputs;
 
       evolveOptions = {
+        runId: m.testRunId,
         architecture: m.architecture,
         inputs: m.inputs,
         outputs: m.outputs,

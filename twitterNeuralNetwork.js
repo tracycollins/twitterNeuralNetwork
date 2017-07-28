@@ -520,12 +520,12 @@ function showStats(options){
     ));
 
     if (statsObj.tests[testObj.testRunId].results.successRate !== undefined) {
-      console.log(chalkAlert("\nRESULTS: " + statsObj.tests[testObj.testRunId].results.successRate.toFixed(1) + " %"
+      console.log(chalkAlert("RESULTS: " + statsObj.tests[testObj.testRunId].results.successRate.toFixed(1) + " %"
          + " | TESTS: " + statsObj.tests[testObj.testRunId].results.numTests
          + " | PASS: " + statsObj.tests[testObj.testRunId].results.numPassed
          + " | SKIP: " + statsObj.tests[testObj.testRunId].results.numSkipped
-         + " | ITRTNS: " + configuration.evolve.iterations
-         + " | RUN TIME: " + statsObj.elapsed
+         + " | ITR: " + configuration.evolve.iterations
+         + " | RUN: " + statsObj.elapsed
       ));
     }
   }
@@ -567,7 +567,7 @@ function quit(options){
       slackPostMessage(slackChannel, slackText);
     }
     else {
-      
+
       slackText = "\n*" + statsObj.runId + "*";
       slackText = slackText + " | RUN " + statsObj.elapsed;
       slackText = slackText + " | QUIT CAUSE: " + options;
