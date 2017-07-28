@@ -260,7 +260,7 @@ function activateNetwork(n, input, callback){
   callback(output);
 }
 
-function testEvolve(callback){
+function testEvolve(params, callback){
   let myNetwork = new neataptic.Network(2, 1);
 
   let myTrainingSet = [
@@ -280,13 +280,13 @@ function testEvolve(callback){
     iterations: 10000,
     mutationRate: 0.7,
     schedule: {
-      function: function(params){ 
+      function: function(schedParams){ 
         console.log("NNC SCHED"
-          + " | " + statsObj.testRunId
+          + " | " + params.runId
           + " | " + moment().format(compactDateTimeFormat)
-          + " | I: " + params.iteration
-          + " | F: " + params.fitness.toFixed(5)
-          + " | E: " + params.error.toFixed(5)
+          + " | I: " + schedParams.iteration
+          + " | F: " + schedParams.fitness.toFixed(5)
+          + " | E: " + schedParams.error.toFixed(5)
         );
       },
       iterations: 100
@@ -629,7 +629,7 @@ process.on("message", function(m) {
     break;
 
     case "TEST_EVOLVE":
-      testEvolve(function(pass){
+      testEvolve({runId: statsObj.testRunId}, function(pass){
         process.send({op:"TEST_EVOLVE_COMPLETE", results: pass});
       });
     break;

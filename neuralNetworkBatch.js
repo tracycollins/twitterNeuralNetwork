@@ -939,7 +939,7 @@ const noInstancesRunning = function(){
   return (Object.keys(appHashMap).length === 0);
 };
 
-const generateRandomEvolveEnv = function (){
+const generateRandomEvolveEnv = function(cnf){
 
   let env = {};
 
@@ -947,7 +947,7 @@ const generateRandomEvolveEnv = function (){
 
   env.TNN_BATCH_MODE = true;
   env.TNN_STATS_UPDATE_INTERVAL = 120000;
-  env.TNN_EVOLVE_ITERATIONS = configuration.evolveIterations;
+  env.TNN_EVOLVE_ITERATIONS = cnf.evolveIterations;
 
   if (currentSeedNetwork) {
     // env.TNN_EVOLVE_SEED_NETWORK_ID = randomItem([null, currentSeedNetwork.networkId]);
@@ -1114,7 +1114,7 @@ function initProcessPollInterval(interval){
         let options = deepcopy(cnf.instanceOptions);
 
         if (cnf.evolveEnableRandom){
-          options.env = generateRandomEvolveEnv();
+          options.env = generateRandomEvolveEnv(cnf);
         }
 
         initInstance(statsObj.instances.instanceIndex, options, function(opt){
