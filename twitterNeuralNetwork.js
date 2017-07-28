@@ -546,9 +546,9 @@ function quit(options){
   if (options !== undefined) {
 
     if (options.network !== undefined) {
-      const snid = (network.evolve && (network.evolve.options.network !== undefined)) 
-        ? network.evolve.options.network.networkId 
-        + " | " + network.evolve.options.network.successRate.toFixed(2) + "%"
+      const snid = (options.network.evolve && (options.network.evolve.options.network !== undefined)) 
+        ? options.network.evolve.options.network.networkId 
+        + " | " + options.network.evolve.options.network.successRate.toFixed(2) + "%"
         : "-" ;
 
       slackText = "\n*" + statsObj.runId + "*";
