@@ -524,13 +524,14 @@ function showStats(options){
          + " | TESTS: " + statsObj.tests[testObj.testRunId].results.numTests
          + " | PASS: " + statsObj.tests[testObj.testRunId].results.numPassed
          + " | SKIP: " + statsObj.tests[testObj.testRunId].results.numSkipped
+         + " | ITRTNS: " + configuration.evolve.iterations
          + " | RUN TIME: " + statsObj.elapsed
       ));
     }
   }
 }
 
-function quit(network){
+function quit(options){
 
   console.log(chalkAlert( "\n\n... QUITTING ...\n\n" ));
 
@@ -542,27 +543,40 @@ function quit(network){
 
   let slackText = "";
 
-  if (network) {
+  if (options !== undefined) {
 
-    const snid = (network.evolve && (network.evolve.options.network !== undefined)) 
-      ? network.evolve.options.network.networkId 
-      + " | " + network.evolve.options.network.successRate.toFixed(2) + "%"
-      : "-" ;
+    if (options.network !== undefined) {
+      const snid = (network.evolve && (network.evolve.options.network !== undefined)) 
+        ? network.evolve.options.network.networkId 
+        + " | " + network.evolve.options.network.successRate.toFixed(2) + "%"
+        : "-" ;
 
-    slackText = "\n*" + statsObj.runId + "*";
-    if (statsObj.tests[testObj.testRunId].results) {
-      slackText = slackText + "\n*RES: " + statsObj.tests[testObj.testRunId].results.successRate.toFixed(1) + " %*";
+      slackText = "\n*" + statsObj.runId + "*";
+      if (statsObj.tests[testObj.testRunId].results) {
+        slackText = slackText + "\n*RES: " + statsObj.tests[testObj.testRunId].results.successRate.toFixed(1) + " %*";
+      }
+      slackText = slackText + " | RUN " + statsObj.elapsed;
+      slackText = slackText + "\nTESTS: " + statsObj.tests[testObj.testRunId].results.numTests;
+      slackText = slackText + " | PASS: " + statsObj.tests[testObj.testRunId].results.numPassed;
+      slackText = slackText + " | SKIP: " + statsObj.tests[testObj.testRunId].results.numSkipped;
+      slackText = slackText + " | SEED NET: " + snid;
+      slackText = slackText + "\nOPTIONS\n" + jsonPrint(statsObj.evolve.options);
+
+      console.log("SLACK TEXT: " + slackText);
+
+      slackPostMessage(slackChannel, slackText);
     }
-    slackText = slackText + " | RUN " + statsObj.elapsed;
-    slackText = slackText + "\nTESTS: " + statsObj.tests[testObj.testRunId].results.numTests;
-    slackText = slackText + " | PASS: " + statsObj.tests[testObj.testRunId].results.numPassed;
-    slackText = slackText + " | SKIP: " + statsObj.tests[testObj.testRunId].results.numSkipped;
-    slackText = slackText + " | SEED NET: " + snid;
-    slackText = slackText + "\nOPTIONS\n" + jsonPrint(statsObj.evolve.options);
+    else {
+      
+      slackText = "\n*" + statsObj.runId + "*";
+      slackText = slackText + " | RUN " + statsObj.elapsed;
+      slackText = slackText + " | QUIT CAUSE: " + options;
 
-    console.log("SLACK TEXT: " + slackText);
+      console.log("SLACK TEXT: " + slackText);
 
-    slackPostMessage(slackChannel, slackText);
+      slackPostMessage(slackChannel, slackText);
+    }
+
   }
 
   showStats();
@@ -2231,7 +2245,7 @@ function initNeuralNetworkChild(callback){
           networkObj.outputs = trainingSetLabels.outputs;
           networkObj.evolve = {};
           networkObj.evolve.options = {};
-          networkObj.evolve.options = omit(m.statsObj.evolve.options, ["network", "inputs", "outputs"]);
+          networkObj.evolve.options = omit(m.statsObj.evolve.options, ["network", "inputs", "outputs", "iterations"]);
 
           networkObj.test = statsObj.tests[testObj.testRunId];
           // networkObj.test.evolve.options = omit(statsObj.tests[testObj.testRunId].evolve.options, ["inputs", "output"]);
@@ -2270,7 +2284,7 @@ function initNeuralNetworkChild(callback){
               + "\nCREATED: " + moment(new Date(updateNetworkObj.createdAt)).format(compactDateTimeFormat) 
             );
 
-            quit(updateNetworkObj);
+            quit({network: updateNetworkObj});
           });
 
         });
