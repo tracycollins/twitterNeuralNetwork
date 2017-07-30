@@ -14,7 +14,6 @@ inputTypes.forEach(function(type){
 });
 
 let currentBestNetwork;
-// let currentSeedNetwork;
 
 let slackChannel = "#nn";
 
@@ -24,17 +23,17 @@ const twitterTextParser = require("@threeceelabs/twitter-text-parser");
 const DEFAULT_TEST_RATIO = 0.1;
 
 const DEFAULT_NETWORK_CREATE_MODE = "evolve";
+const DEFAULT_ITERATIONS = 1;
+const DEFAULT_SEED_NETWORK_ID = false;
 
 const DEFAULT_EVOLVE_ARCHITECTURE = "random";
 const DEFAULT_EVOLVE_BEST_NETWORK = false;
-const DEFAULT_EVOLVE_SEED_NETWORK_ID = false;
 const DEFAULT_EVOLVE_ACTIVATION = "LOGISTIC";
 const DEFAULT_EVOLVE_CLEAR = false;
 const DEFAULT_EVOLVE_COST = "MSE";
 const DEFAULT_EVOLVE_ELITISM = 10;
 const DEFAULT_EVOLVE_EQUAL = true;
 const DEFAULT_EVOLVE_ERROR = 0.03;
-const DEFAULT_EVOLVE_ITERATIONS = 1;
 const DEFAULT_EVOLVE_LOG = 1;
 const DEFAULT_EVOLVE_MUTATION = "FFW";
 const DEFAULT_EVOLVE_MUTATION_RATE = 0.75;
@@ -42,7 +41,6 @@ const DEFAULT_EVOLVE_POPSIZE = 100;
 
 const DEFAULT_TRAIN_ARCHITECTURE = "perceptron";
 const DEFAULT_TRAIN_BEST_NETWORK = false;
-const DEFAULT_TRAIN_SEED_NETWORK_ID = null;
 const DEFAULT_TRAIN_HIDDEN_LAYER_SIZE = 10;
 const DEFAULT_TRAIN_LOG = 1;
 const DEFAULT_TRAIN_ERROR = 0.01;
@@ -50,7 +48,6 @@ const DEFAULT_TRAIN_COST = "MSE";
 const DEFAULT_TRAIN_RATE = 0.3;
 const DEFAULT_TRAIN_DROPOUT = 0;
 const DEFAULT_TRAIN_SHUFFLE = false;
-const DEFAULT_TRAIN_ITERATIONS = 1;
 const DEFAULT_TRAIN_CLEAR = false;
 const DEFAULT_TRAIN_MOMENTUM = 0;
 const DEFAULT_TRAIN_RATE_POLICY = "FIXED";
@@ -64,13 +61,13 @@ configuration.testSetRatio = DEFAULT_TEST_RATIO;
 
 configuration.evolve = {};
 configuration.evolve.useBestNetwork = DEFAULT_EVOLVE_BEST_NETWORK;
-configuration.evolve.networkId = DEFAULT_EVOLVE_SEED_NETWORK_ID;
+configuration.evolve.networkId = DEFAULT_SEED_NETWORK_ID;
 configuration.evolve.architecture = DEFAULT_EVOLVE_ARCHITECTURE;
 configuration.evolve.network = null;
 configuration.evolve.elitism = DEFAULT_EVOLVE_ELITISM;
 configuration.evolve.equal = DEFAULT_EVOLVE_EQUAL;
 configuration.evolve.error = DEFAULT_EVOLVE_ERROR;
-configuration.evolve.iterations = DEFAULT_EVOLVE_ITERATIONS;
+configuration.evolve.iterations = DEFAULT_ITERATIONS;
 configuration.evolve.log = DEFAULT_EVOLVE_LOG;
 configuration.evolve.mutation = DEFAULT_EVOLVE_MUTATION;
 configuration.evolve.mutationRate = DEFAULT_EVOLVE_MUTATION_RATE;
@@ -83,20 +80,19 @@ configuration.train.architecture = DEFAULT_TRAIN_ARCHITECTURE;
 configuration.train.hiddenLayerSize = DEFAULT_TRAIN_HIDDEN_LAYER_SIZE;
 configuration.train.useBestNetwork = DEFAULT_TRAIN_BEST_NETWORK;
 configuration.train.network = null;
-configuration.train.networkId = DEFAULT_TRAIN_SEED_NETWORK_ID;
+configuration.train.networkId = DEFAULT_SEED_NETWORK_ID;
 configuration.train.log = DEFAULT_TRAIN_LOG;
 configuration.train.error = DEFAULT_TRAIN_ERROR;
 configuration.train.cost = DEFAULT_TRAIN_COST;
 configuration.train.rate = DEFAULT_TRAIN_RATE;
 configuration.train.dropout = DEFAULT_TRAIN_DROPOUT;
 configuration.train.shuffle = DEFAULT_TRAIN_SHUFFLE;
-configuration.train.iterations = DEFAULT_TRAIN_ITERATIONS;
+configuration.train.iterations = DEFAULT_ITERATIONS;
 configuration.train.clear = DEFAULT_TRAIN_CLEAR;
 configuration.train.momentum = DEFAULT_TRAIN_MOMENTUM;
 configuration.train.ratePolicy = DEFAULT_TRAIN_RATE_POLICY;
 configuration.train.batchSize = DEFAULT_TRAIN_BATCH_SIZE;
 
-// const DEFAULT_NEURAL_NETWORK_FILE = "neuralNetwork.json";
 const slackOAuthAccessToken = "xoxp-3708084981-3708084993-206468961315-ec62db5792cd55071a51c544acf0da55";
 
 const defaultDateTimeFormat = "YYYY-MM-DD HH:mm:ss ZZ";
@@ -109,21 +105,11 @@ const Dropbox = require("dropbox");
 const pick = require("object.pick");
 const omit = require("object.omit");
 const arrayUnique = require("array-unique");
-const Autolinker = require( "autolinker" );
 const Slack = require("slack-node");
 const cp = require("child_process");
 const arrayNormalize = require("array-normalize");
-const emojiRegex = require("emoji-regex");
-const eRegex = emojiRegex();
-// const consoleTable = require("console.table");
 const columnify = require("columnify");
 
-// const keywordExtractor = require("keyword-extractor");
-const keywordExtractor = require("./js/keyword-extractor");
-
-const mentionsRegex = require("mentions-regex");
-const hashtagRegex = require("hashtag-regex");
-const getUrls = require("get-urls");
 const EventEmitter2 = require("eventemitter2").EventEmitter2;
 const async = require("async");
 const chalk = require("chalk");
@@ -387,9 +373,6 @@ let dropboxClient = new Dropbox({ accessToken: DROPBOX_WORD_ASSO_ACCESS_TOKEN })
 
 const inputArraysFolder = dropboxConfigHostFolder + "/inputArrays";
 const inputArraysFile = "inputArrays_" + statsObj.runId + ".json";
-
-let neuralNetworkFolder = dropboxConfigHostFolder + "/neuralNetworks";
-let neuralNetworkFile = "neuralNetwork.json";
 
 let classifiedUsersFolder = dropboxConfigHostFolder + "/classifiedUsers";
 let classifiedUsersFile = "classifiedUsers.json";
@@ -859,7 +842,7 @@ function initialize(cnf, callback){
     }
   }
 
-  cnf.evolve.networkId = process.env.TNN_EVOLVE_SEED_NETWORK_ID || DEFAULT_EVOLVE_SEED_NETWORK_ID ;
+  cnf.evolve.networkId = process.env.TNN_SEED_NETWORK_ID || DEFAULT_SEED_NETWORK_ID ;
 
   if (cnf.evolve.networkId === "false") {
     cnf.evolve.networkId = false;
@@ -870,25 +853,26 @@ function initialize(cnf, callback){
   cnf.evolve.elitism = process.env.TNN_EVOLVE_ELITISM || DEFAULT_EVOLVE_ELITISM ;
   cnf.evolve.equal = process.env.TNN_EVOLVE_EQUAL || DEFAULT_EVOLVE_EQUAL ;
   cnf.evolve.error = process.env.TNN_EVOLVE_ERROR || DEFAULT_EVOLVE_ERROR ;
-  cnf.evolve.iterations = process.env.TNN_EVOLVE_ITERATIONS || DEFAULT_EVOLVE_ITERATIONS ;
+  cnf.evolve.iterations = process.env.TNN_ITERATIONS || DEFAULT_ITERATIONS ;
   cnf.evolve.mutation = process.env.TNN_EVOLVE_MUTATION || DEFAULT_EVOLVE_MUTATION ;
   cnf.evolve.mutationRate = process.env.TNN_EVOLVE_MUTATION_RATE || DEFAULT_EVOLVE_MUTATION_RATE ;
   cnf.evolve.popsize = process.env.TNN_EVOLVE_POP_SIZE || DEFAULT_EVOLVE_POPSIZE ;
 
-  cnf.train.networkId = process.env.TNN_TRAIN_SEED_NETWORK_ID || DEFAULT_TRAIN_SEED_NETWORK_ID ;
+  cnf.train.networkId = process.env.TNN_SEED_NETWORK_ID || DEFAULT_SEED_NETWORK_ID ;
+  if (cnf.train.networkId === "false") {
+    cnf.train.networkId = false;
+  }
   cnf.train.hiddenLayerSize = process.env.TNN_TRAIN_HIDDEN_LAYER_SIZE || DEFAULT_TRAIN_HIDDEN_LAYER_SIZE ;
   cnf.train.error = process.env.TNN_TRAIN_ERROR || DEFAULT_TRAIN_ERROR ;
   cnf.train.cost = process.env.TNN_TRAIN_COST || DEFAULT_TRAIN_COST ;
   cnf.train.rate = process.env.TNN_TRAIN_RATE || DEFAULT_TRAIN_RATE ;
   cnf.train.dropout = process.env.TNN_TRAIN_DROPOUT || DEFAULT_TRAIN_DROPOUT;
   cnf.train.shuffle = process.env.TNN_TRAIN_SHUFFLE || DEFAULT_TRAIN_SHUFFLE;
-  cnf.train.iterations = process.env.TNN_TRAIN_ITERATIONS || DEFAULT_TRAIN_ITERATIONS ;
+  cnf.train.iterations = process.env.TNN_ITERATIONS || DEFAULT_ITERATIONS ;
   cnf.train.clear = process.env.TNN_TRAIN_CLEAR || DEFAULT_TRAIN_CLEAR ;
   cnf.train.momentum = process.env.TNN_TRAIN_MOMENTUM || DEFAULT_TRAIN_MOMENTUM ;
   cnf.train.ratePolicy = process.env.TNN_TRAIN_RATE_POLICY || DEFAULT_TRAIN_RATE_POLICY ;
   cnf.train.batchSize = process.env.TNN_TRAIN_BATCH_SIZE || DEFAULT_TRAIN_BATCH_SIZE ;
-
-  // cnf.neuralNetworkFile = process.env.TNN_NEURAL_NETWORK_FILE || DEFAULT_NEURAL_NETWORK_FILE ;
 
   cnf.classifiedUsersFile = process.env.TNN_CLASSIFIED_USERS_FILE || classifiedUsersFile;
   cnf.classifiedUsersFolder = classifiedUsersFolder;
@@ -922,14 +906,10 @@ function initialize(cnf, callback){
       if (!err) {
         console.log(dropboxConfigFile + "\n" + jsonPrint(loadedConfigObj));
 
-        if (loadedConfigObj.TNN_TRAIN_SEED_NETWORK_ID  !== undefined){
-          console.log("LOADED TNN_TRAIN_SEED_NETWORK_ID: " + loadedConfigObj.TNN_TRAIN_SEED_NETWORK_ID);
-          cnf.train.networkId = loadedConfigObj.TNN_TRAIN_SEED_NETWORK_ID;
-        }
-
-        if (loadedConfigObj.TNN_EVOLVE_SEED_NETWORK_ID  !== undefined){
-          console.log("LOADED TNN_EVOLVE_SEED_NETWORK_ID: " + loadedConfigObj.TNN_EVOLVE_SEED_NETWORK_ID);
-          cnf.evolve.networkId = loadedConfigObj.TNN_EVOLVE_SEED_NETWORK_ID;
+        if (loadedConfigObj.TNN_SEED_NETWORK_ID  !== undefined){
+          console.log("LOADED TNN_SEED_NETWORK_ID: " + loadedConfigObj.TNN_SEED_NETWORK_ID);
+          cnf.evolve.networkId = loadedConfigObj.TNN_SEED_NETWORK_ID;
+          cnf.train.networkId = loadedConfigObj.TNN_SEED_NETWORK_ID;
         }
 
         if (loadedConfigObj.TNN_TRAIN_BEST_NETWORK  !== undefined){
@@ -942,14 +922,10 @@ function initialize(cnf, callback){
           cnf.evolve.useBestNetwork = loadedConfigObj.TNN_EVOLVE_BEST_NETWORK;
         }
 
-        if (loadedConfigObj.TNN_TRAIN_ITERATIONS  !== undefined){
-          console.log("LOADED TNN_TRAIN_ITERATIONS: " + loadedConfigObj.TNN_TRAIN_ITERATIONS);
-          cnf.train.iterations = loadedConfigObj.TNN_TRAIN_ITERATIONS;
-        }
-
-        if (loadedConfigObj.TNN_EVOLVE_ITERATIONS  !== undefined){
-          console.log("LOADED TNN_EVOLVE_ITERATIONS: " + loadedConfigObj.TNN_EVOLVE_ITERATIONS);
-          cnf.evolve.iterations = loadedConfigObj.TNN_EVOLVE_ITERATIONS;
+        if (loadedConfigObj.TNN_ITERATIONS  !== undefined){
+          console.log("LOADED TNN_ITERATIONS: " + loadedConfigObj.TNN_ITERATIONS);
+          cnf.evolve.iterations = loadedConfigObj.TNN_ITERATIONS;
+          cnf.train.iterations = loadedConfigObj.TNN_ITERATIONS;
         }
 
         if (loadedConfigObj.TNN_VERBOSE_MODE  !== undefined){
@@ -961,11 +937,6 @@ function initialize(cnf, callback){
           console.log("LOADED TNN_TEST_MODE: " + loadedConfigObj.TNN_TEST_MODE);
           cnf.testMode = loadedConfigObj.TNN_TEST_MODE;
         }
-
-        // if (loadedConfigObj.TNN_NEURAL_NETWORK_FILE_RUNID  !== undefined){
-        //   console.log("LOADED TNN_NEURAL_NETWORK_FILE_RUNID: " + loadedConfigObj.TNN_NEURAL_NETWORK_FILE_RUNID);
-        //   cnf.loadNeuralNetworkFileRunID = loadedConfigObj.TNN_NEURAL_NETWORK_FILE_RUNID;
-        // }
 
         if (loadedConfigObj.TNN_ENABLE_STDIN  !== undefined){
           console.log("LOADED TNN_ENABLE_STDIN: " + loadedConfigObj.TNN_ENABLE_STDIN);
@@ -1199,84 +1170,71 @@ configEvents.once("INIT_MONGODB", function(){
 
 });
 
-let wordExtractionOptions = {
-  language:"english",
-  remove_digits: false,
-  return_changed_case: true,
-  remove_duplicates: true
-};
 
-let parser = new Autolinker( {
-  email: false,
-  urls: true,
-  hashtag: "twitter",
-  mention: "twitter"
-} );
+// function printDatum(title, datum, label, callback){
 
-function printDatum(title, datum, label, callback){
+//   if (datum.input.length === 0) {
+//     console.error(chalkError("*** EMPTY DATUM INPUT ***\n" + jsonPrint(datum)));
+//   }
 
-  if (datum.input.length === 0) {
-    console.error(chalkError("*** EMPTY DATUM INPUT ***\n" + jsonPrint(datum)));
-  }
+//   let row = "";
+//   let col = 0;
+//   let rowNum = 0;
+//   const COLS = 50;
+//   let text = "";
 
-  let row = "";
-  let col = 0;
-  let rowNum = 0;
-  const COLS = 50;
-  let text = "";
-
-  if (title) {
-    debug(title + " --------");
-    text = "\n-------- " + title + " --------\n";
-  }
-  else {
-    debug("\n--------------------");
-    text = "\n--------------------\n";
-  }
+//   if (title) {
+//     debug(title + " --------");
+//     text = "\n-------- " + title + " --------\n";
+//   }
+//   else {
+//     debug("\n--------------------");
+//     text = "\n--------------------\n";
+//   }
 
 
-  async.eachOfSeries(datum.input, function(bit, i, cb){
+//   async.eachOfSeries(datum.input, function(bit, i, cb){
 
-    if (bit && (i >= 2)) {
-      debug("IN | " + label.inputRaw[i]);
-    }
+//     if (bit && (i >= 2)) {
+//       debug("IN | " + label.inputRaw[i]);
+//     }
 
-    if (i === 0) {
-      debug("IN | " + label.inputRaw[i] + ": " + bit.toFixed(10));
-      row = row + bit.toFixed(10) + " | " ;
-    }
-    else if (i === 1) {
-      debug("IN | " + label.inputRaw[i] + ": " + bit.toFixed(10));
-      row = row + bit.toFixed(10);
-    }
-    else if (i === 2) {
-      // console.log("ROW " + rowNum + " | " + row);
-      text = text + "ROW " + rowNum + " | " + row + "\n";
-      row = bit ? "X" : ".";
-      col = 1;
-      rowNum += 1;
-    }
-    else if (col < COLS){
-      row = row + (bit ? "X" : ".");
-      col += 1;
-    }
-    else {
-      // console.log("ROW " + rowNum + " | " + row);
-      text = text + "ROW " + rowNum + " | " + row + "\n";
-      row = bit ? "X" : ".";
-      col = 1;
-      rowNum += 1;
-    }
+//     if (i === 0) {
+//       debug("IN | " + label.inputRaw[i] + ": " + bit.toFixed(10));
+//       row = row + bit.toFixed(10) + " | " ;
+//     }
+//     else if (i === 1) {
+//       debug("IN | " + label.inputRaw[i] + ": " + bit.toFixed(10));
+//       row = row + bit.toFixed(10);
+//     }
+//     else if (i === 2) {
+//       // console.log("ROW " + rowNum + " | " + row);
+//       text = text + "ROW " + rowNum + " | " + row + "\n";
+//       row = bit ? "X" : ".";
+//       col = 1;
+//       rowNum += 1;
+//     }
+//     else if (col < COLS){
+//       row = row + (bit ? "X" : ".");
+//       col += 1;
+//     }
+//     else {
+//       // console.log("ROW " + rowNum + " | " + row);
+//       text = text + "ROW " + rowNum + " | " + row + "\n";
+//       row = bit ? "X" : ".";
+//       col = 1;
+//       rowNum += 1;
+//     }
 
-    i += 1;
+//     i += 1;
 
-    cb();
+//     cb();
 
-  }, function(){
-    // console.warn(text);
-    callback(text);
-  });
-}
+//   }, function(){
+//     // console.warn(text);
+//     callback(text);
+//   });
+// }
 
 // FUTURE: break up into updateClassifiedUsers and createTrainingSet
 function updateClassifiedUsers(cnf, callback){
@@ -1708,8 +1666,6 @@ function updateClassifiedUsers(cnf, callback){
   });
 }
 
-let activateInterval;
-
 function activateNetwork(n, input){
 
   const output = n.activate(input);
@@ -1824,6 +1780,8 @@ function initMain(cnf){
       ));
 
       updateClassifiedUsers(cnf, function(err, clUsHist){
+
+        debug("updateClassifiedUsers clUsHist\n" + jsonPrint(clUsHist));
 
         if (err) {
           console.error("*** UPDATE CLASSIFIED USER ERROR ***\n" + jsonPrint(err));
@@ -2136,29 +2094,6 @@ function initNeuralNetworkChild(callback){
 
             quit();
           });
-
-          // console.log("networkObj.network\n" + jsonPrint(Object.keys(networkObj.network)));
-
-          // neuralNetworkFile = "neuralNetwork_" + networkObj.networkId + ".json";
-
-          // saveFile(neuralNetworkFolder, neuralNetworkFile, networkObj, function(err, results){
-          //   if (err) {
-          //     throw err;
-          //   }
-
-          //   console.log("> NETWORK UPDATED"
-          //     + "\nNET ID:  " + networkObj.networkId 
-          //     + "\nSUCCESS: " + networkObj.successRate.toFixed(1) + "%"
-          //     + "\nIN:      " + networkObj.network.input
-          //     + "\nOUT:     " + networkObj.network.output
-          //     + "\nTRAIN:   " + jsonPrint(networkObj.train)
-          //     + "\nTEST:    " + jsonPrint(networkObj.test)
-          //     + "\nCREATED: " + moment(new Date(networkObj.createdAt)).format(compactDateTimeFormat) 
-          //   );
-
-          //   quit();
-          //   debug("END SAVE FILE");
-          // });
         });
       break;
 
@@ -2248,21 +2183,12 @@ function initNeuralNetworkChild(callback){
           networkObj.evolve.options = omit(m.statsObj.evolve.options, ["network", "inputs", "outputs", "iterations"]);
 
           networkObj.test = statsObj.tests[testObj.testRunId];
-          // networkObj.test.evolve.options = omit(statsObj.tests[testObj.testRunId].evolve.options, ["inputs", "output"]);
 
           if (m.statsObj.evolve.options.network && (m.statsObj.evolve.options.network !== undefined)){
             networkObj.evolve.options.network = {};
             networkObj.evolve.options.network.networkId = m.statsObj.evolve.options.network.networkId;
             networkObj.evolve.options.network.successRate = m.statsObj.evolve.options.network.successRate;
-
-            // networkObj.test.evolve.network = {};
-            // networkObj.test.evolve.network.networkId = m.statsObj.evolve.options.network.networkId;
-            // networkObj.test.evolve.network.successRate = m.statsObj.evolve.options.network.successRate;
           }
-
-          // console.log("networkObj.network\n" + jsonPrint(Object.keys(networkObj.network)));
-
-          // neuralNetworkFile = "neuralNetwork_" + networkObj.networkId + ".json";
 
           neuralNetworkServer.findOneNetwork(networkObj, {}, function(err, updateNetworkObj){
             if (err) {

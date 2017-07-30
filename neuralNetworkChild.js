@@ -392,7 +392,6 @@ function evolve(params, callback){
 
     },
     iterations: 1
-
   };
 
 
@@ -511,7 +510,7 @@ function train(params, callback){
     console.log(chalkAlert("START NETWORK DEFINED: " + options.network.networkId));
   }
 
-  options.log = params.log;
+  // options.log = params.log;
   options.error = params.error;
   options.rate = params.rate;
   options.dropout = params.dropout;
@@ -522,18 +521,54 @@ function train(params, callback){
   options.batchSize = params.batchSize;
   options.hiddenLayerSize = params.hiddenLayerSize;
 
+  const startTime = moment().valueOf();
+
+  options.schedule = {
+
+    function: function(schedParams){
+
+      var elapsedInt = moment().valueOf() - startTime;
+
+      function schedMsToTime(duration) {
+        let seconds = parseInt((duration / 1000) % 60);
+        let minutes = parseInt((duration / (1000 * 60)) % 60);
+        let hours = parseInt((duration / (1000 * 60 * 60)) % 24);
+        let days = parseInt(duration / (1000 * 60 * 60 * 24));
+
+        days = (days < 10) ? "0" + days : days;
+        hours = (hours < 10) ? "0" + hours : hours;
+        minutes = (minutes < 10) ? "0" + minutes : minutes;
+        seconds = (seconds < 10) ? "0" + seconds : seconds;
+
+        return days + ":" + hours + ":" + minutes + ":" + seconds;
+      }
+
+      console.log("NNC"
+        + " | " + params.runId
+        + " | S: " + moment(startTime).format(compactDateTimeFormat)
+        + " | R: " + schedMsToTime(elapsedInt)
+        + " | I: " + schedParams.iteration + " / " + params.iterations
+        // + " | F: " + schedParams.rate.toFixed(1)
+        + " | E: " + schedParams.error.toFixed(5)
+        // + " | schedParams\n" + jsonPrint(schedParams)
+      );
+
+    },
+    iterations: 1
+  };
+
   async.each(Object.keys(options), function(key, cb){
 
     if (key === "network") {
       console.log("NNC"
-        + " | EVOLVE OPTION | NETWORK: " + options[key].networkId 
+        + " | TRAIN OPTION | NETWORK: " + options[key].networkId 
         + " | IN: " + options[key].input
         + " | OUT: " + options[key].output
         + " | " + options[key].successRate.toFixed(2) + "%"
       );
     }
     else if (key === "cost") {
-      console.log("NNC | EVOLVE OPTION | " + key + ": " + options[key]);
+      console.log("NNC | TRAIN OPTION | " + key + ": " + options[key]);
       options.cost = neataptic.Methods.Cost[key];
     }
     cb();
@@ -545,13 +580,13 @@ function train(params, callback){
     switch (params.architecture) {
 
       case "loadedNetwork":
-        console.log("NNC | EVOLVE ARCH | LOADED: " + options.network.networkId);
+        console.log("NNC | TRAIN ARCH | LOADED: " + options.network.networkId);
         network = neataptic.Network.fromJSON(options.network.network);
 
       break;
 
       default:
-        console.log("NNC | EVOLVE ARCH"
+        console.log("NNC | TRAIN ARCH"
           + "   | " + params.architecture
           + " | HIDDEN LAYER NODES: " + options.hiddenLayerSize
           + "\n"
@@ -654,6 +689,7 @@ process.on("message", function(m) {
       statsObj.outputs = m.outputs;
 
       trainParams = {
+        runId: m.testRunId,
         architecture: m.architecture,
         inputs: m.inputs,
         hiddenLayerSize: m.hiddenLayerSize,
