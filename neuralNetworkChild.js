@@ -571,7 +571,13 @@ function train(params, callback){
       console.log("NNC | TRAIN OPTION | " + key + ": " + options[key]);
       options.cost = neataptic.Methods.Cost[key];
     }
+    else if (key === "ratePolicy") {
+      console.log("NNC | TRAIN OPTION | " + key + ": " + options[key]);
+      options.ratePolicy = neataptic.Methods.Rate[options[key]];
+      // options.mutation = neataptic.methods.mutation.FFW;
+    }
     cb();
+
 
   }, function(){
 

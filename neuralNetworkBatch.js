@@ -11,6 +11,7 @@ const DEFAULT_ITERATIONS = 1;
 const DEFAULT_SEED_NETWORK_ID = false; 
 
 // ================ TRAIN ================
+const DEFAULT_TRAIN_HIDDEN_LAYER_SIZE = 10;
 const DEFAULT_TRAIN_ERROR = 0.03;
 const DEFAULT_TRAIN_COST = "MSE";
 const DEFAULT_TRAIN_RATE = 0.3;
@@ -38,6 +39,7 @@ const TRAIN_RATE_POLICY_ARRAY = [
   "INV"
 ];
 
+const TRAIN_HIDDEN_LAYER_SIZE_RANGE = { min: 10, max: 50 } ;
 const TRAIN_RATE_RANGE = { min: 0.2, max: 0.4 } ;
 const TRAIN_DROPOUT_RANGE = { min: 0, max: 0.5 } ;
 const TRAIN_MOMENTUM_RANGE = { min: 0, max: 0.5 } ;
@@ -188,6 +190,7 @@ configuration.instanceOptions.env.TNN_EVOLVE_ACTIVATION = DEFAULT_EVOLVE_ACTIVAT
 configuration.instanceOptions.env.TNN_EVOLVE_COST = DEFAULT_EVOLVE_COST;
 configuration.instanceOptions.env.TNN_EVOLVE_CLEAR = DEFAULT_EVOLVE_CLEAR;
 
+configuration.instanceOptions.env.TNN_TRAIN_HIDDEN_LAYER_SIZE = DEFAULT_TRAIN_HIDDEN_LAYER_SIZE;
 configuration.instanceOptions.env.TNN_TRAIN_ERROR = DEFAULT_TRAIN_ERROR;
 configuration.instanceOptions.env.TNN_TRAIN_COST = DEFAULT_TRAIN_COST;
 configuration.instanceOptions.env.TNN_TRAIN_RATE = DEFAULT_TRAIN_RATE;
@@ -994,6 +997,11 @@ const generateRandomEvolveEnv = function(cnf){
 
   env.TNN_ITERATIONS = cnf.iterations;
 
+  env.TNN_NETWORK_CREATE_MODE = randomItem(["evolve", "train"]);
+  // env.TNN_NETWORK_CREATE_MODE = randomItem(["train"]);
+
+  console.log(chalkAlert("NETWORK CREATE MODE: " + env.TNN_NETWORK_CREATE_MODE));
+
   if (currentSeedNetwork) {
 
     env.TNN_SEED_NETWORK_ID = currentSeedNetwork.networkId;
@@ -1029,19 +1037,18 @@ const generateRandomEvolveEnv = function(cnf){
   env.TNN_EVOLVE_COST = randomItem(EVOLVE_COST_ARRAY);
   env.TNN_EVOLVE_CLEAR = randomItem([true, false]);
   env.TNN_EVOLVE_EQUAL = randomItem([true, false]);
-
   env.TNN_EVOLVE_MUTATION_RATE = randomFloat(EVOLVE_MUTATION_RATE_RANGE.min, EVOLVE_MUTATION_RATE_RANGE.max);
   env.TNN_EVOLVE_POP_SIZE = randomInt(EVOLVE_POP_SIZE_RANGE.min, EVOLVE_POP_SIZE_RANGE.max);
   env.TNN_EVOLVE_ELITISM = randomInt(EVOLVE_ELITISM_RANGE.min, EVOLVE_ELITISM_RANGE.max);
 
-
   env.TNN_TRAIN_ERROR = randomInt(TRAIN_ERROR_RANGE.min, TRAIN_ERROR_RANGE.max);
   env.TNN_TRAIN_COST = randomItem(TRAIN_COST_ARRAY);
+  env.TNN_TRAIN_HIDDEN_LAYER_SIZE = randomInt(TRAIN_HIDDEN_LAYER_SIZE_RANGE.min, TRAIN_HIDDEN_LAYER_SIZE_RANGE.max);
   env.TNN_TRAIN_RATE = randomFloat(TRAIN_RATE_RANGE.min, TRAIN_RATE_RANGE.max);
   env.TNN_TRAIN_DROPOUT = randomFloat(TRAIN_DROPOUT_RANGE.min, TRAIN_DROPOUT_RANGE.max);
   env.TNN_TRAIN_SHUFFLE = randomItem([true, false]);
   env.TNN_TRAIN_CLEAR = randomItem([true, false]);
-  env.TNN_TRAIN_MOMENTUM = randomInt(TRAIN_MOMENTUM_RANGE.min, TRAIN_MOMENTUM_RANGE.max);
+  env.TNN_TRAIN_MOMENTUM = randomFloat(TRAIN_MOMENTUM_RANGE.min, TRAIN_MOMENTUM_RANGE.max);
   env.TNN_TRAIN_RATE_POLICY = randomItem(TRAIN_RATE_POLICY_ARRAY);
   env.TNN_TRAIN_BATCH_SIZE = randomInt(TRAIN_BATCH_SIZE_RANGE.min, TRAIN_BATCH_SIZE_RANGE.max);
 
