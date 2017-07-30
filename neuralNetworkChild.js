@@ -381,7 +381,7 @@ function evolve(params, callback){
         return days + ":" + hours + ":" + minutes + ":" + seconds;
       }
 
-      console.log("NNC"
+      console.log("NNC | EVOLVE"
         + " | " + params.runId
         + " | S: " + moment(startTime).format(compactDateTimeFormat)
         + " | R: " + schedMsToTime(elapsedInt)
@@ -543,7 +543,7 @@ function train(params, callback){
         return days + ":" + hours + ":" + minutes + ":" + seconds;
       }
 
-      console.log("NNC"
+      console.log("NNC | TRAIN "
         + " | " + params.runId
         + " | S: " + moment(startTime).format(compactDateTimeFormat)
         + " | R: " + schedMsToTime(elapsedInt)
@@ -737,7 +737,8 @@ process.on("message", function(m) {
         trainParams.network = m.network;
         statsObj.train.options = m.network;
 
-        console.log(chalkAlert("\n\nNNC | NEURAL NET TRAIN"
+        console.log(chalkAlert("\n\nNNC | NEURAL NET TRAIN | " + getTimeStamp()
+          + "\nRUN ID:     " + m.testRunId
           + "\nNETWORK:    " + m.network.networkId + " | " + m.network.successRate.toFixed(2) + "%"
           // + "\nNETWORK:    " + jsonPrint(m.network)
           + "\nINPUTS:     " + statsObj.training.trainingSet.numInputs
@@ -748,7 +749,8 @@ process.on("message", function(m) {
         ));
       }
       else {
-        console.log(chalkAlert("\n\nNNC | NEURAL NET TRAIN"
+        console.log(chalkAlert("\n\nNNC | NEURAL NET TRAIN | " + getTimeStamp()
+          + "\nRUN ID:     " + m.testRunId
           + "\nINPUTS:     " + statsObj.training.trainingSet.numInputs
           + "\nOUTPUTS:    " + statsObj.training.trainingSet.numOutputs
           + "\nDATA PTS:   " + m.trainingSet.length
@@ -766,10 +768,11 @@ process.on("message", function(m) {
         }
         else {
 
-          console.log(chalkAlert("\nNNC | TRAIN RESULTS"
-            + " | " + "TIME: " + results.time
-            + " | " + "ITERATIONS: " + results.iterations
-            + " | " + "ERROR: " + results.error
+          console.log(chalkAlert("\nNNC | TRAIN COMPLETE | " + getTimeStamp()
+            + " | RUN ID: " + m.testRunId
+            + " | TIME: " + results.time
+            + " | ITERATIONS: " + results.iterations
+            + " | ERROR: " + results.error
             + "\n"
           ));
 
@@ -796,9 +799,6 @@ process.on("message", function(m) {
             networkObj.train.options.network.networkId = trainParams.network.networkId;
           }
           networkObj.elapsed = statsObj.training.elapsed;
-
-          console.log(chalkAlert("NNC | TRAIN COMPLETE"));
-          // console.log(chalkAlert("NNC | NORMALIZATION\n" + jsonPrint(networkObj.normalization)));
 
           process.send({op:"TRAIN_COMPLETE", networkObj: networkObj, statsObj: statsObj});
           showStats();
@@ -842,7 +842,6 @@ process.on("message", function(m) {
       };
 
       statsObj.evolve.options = {
-        // network: m.network,
         architecture: m.architecture,
         mutation: m.mutation,
         mutationRate: m.mutationRate,
@@ -862,9 +861,9 @@ process.on("message", function(m) {
         evolveOptions.network = m.network;
         statsObj.evolve.options.network = m.network;
 
-        console.log(chalkAlert("\n\nNNC | NEURAL NET EVOLVE"
+        console.log(chalkAlert("\n\nNNC | NEURAL NET EVOLVE | " + getTimeStamp()
+          + "\nRUN ID:     " + m.testRunId
           + "\nNETWORK:    " + m.network.networkId + " | " + m.network.successRate.toFixed(2) + "%"
-          // + "\nNETWORK:    " + jsonPrint(m.network)
           + "\nINPUTS:     " + statsObj.training.trainingSet.numInputs
           + "\nOUTPUTS:    " + statsObj.training.trainingSet.numOutputs
           + "\nDATA PTS:   " + m.trainingSet.length
@@ -873,7 +872,8 @@ process.on("message", function(m) {
         ));
       }
       else {
-        console.log(chalkAlert("\n\nNNC | NEURAL NET EVOLVE"
+        console.log(chalkAlert("\n\nNNC | NEURAL NET EVOLVE | " + getTimeStamp()
+          + "\nRUN ID:     " + m.testRunId
           + "\nINPUTS:     " + statsObj.training.trainingSet.numInputs
           + "\nOUTPUTS:    " + statsObj.training.trainingSet.numOutputs
           + "\nDATA PTS:   " + m.trainingSet.length
@@ -892,7 +892,8 @@ process.on("message", function(m) {
         }
         else {
 
-          console.log(chalkAlert("\nNNC | EVOLVE RESULTS"
+          console.log(chalkAlert("\nNNC | EVOLVE COMPLETE | " + getTimeStamp()
+            + " | RUN ID: " + m.testRunId
             + " | " + "TIME: " + results.time
             + " | " + "ITERATIONS: " + results.iterations
             + " | " + "ERROR: " + results.error
@@ -901,8 +902,6 @@ process.on("message", function(m) {
 
           statsObj.training.endTime = moment().valueOf();
           statsObj.training.elapsed = results.time;
-          // statsObj.evolve = {};
-          // statsObj.evolve.results = {};
           statsObj.evolve.results = results;
 
           let exportedNetwork = network.toJSON();
@@ -918,15 +917,7 @@ process.on("message", function(m) {
           networkObj.evolve.results = results;
           networkObj.evolve.options = {};
           networkObj.evolve.options = evolveOptions;
-          // networkObj.evolve.options.network = null;
-          // if (evolveOptions.network){
-          //   networkObj.evolve.options.network = {};
-          //   networkObj.evolve.options.network.networkId = evolveOptions.network.networkId;
-          // }
           networkObj.elapsed = statsObj.training.elapsed;
-
-          console.log(chalkAlert("NNC | EVOLVE COMPLETE"));
-          // console.log(chalkAlert("NNC | NORMALIZATION\n" + jsonPrint(networkObj.normalization)));
 
           process.send({op:"EVOLVE_COMPLETE", networkObj: networkObj, statsObj: statsObj});
           showStats();

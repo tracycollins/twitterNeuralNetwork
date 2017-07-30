@@ -484,13 +484,15 @@ function showStats(options){
   }
   else {
     console.log(chalkLog("S"
+      + " | " + testObj.testRunId
+      + " | " + configuration.networkCreateMode.toUpperCase()
       + " | RUN " + statsObj.elapsed
       + " | NOW " + moment().format(compactDateTimeFormat)
       + " | STRT " + moment(parseInt(statsObj.startTime)).format(compactDateTimeFormat)
-      + " | ITERATIONS " + configuration.evolve.iterations
-      + " | RSS " + statsObj.memory.rss.toFixed(1) + " MB"
-      + " / " + statsObj.memory.maxRss.toFixed(1) + " MAX"
-      + " @ " + getTimeStamp(statsObj.memory.maxRssTime)
+      + " | ITR " + configuration.evolve.iterations
+      // + " | RSS " + statsObj.memory.rss.toFixed(1) + " MB"
+      // + " / " + statsObj.memory.maxRss.toFixed(1) + " MAX"
+      // + " @ " + getTimeStamp(statsObj.memory.maxRssTime)
     ));
 
     console.log(chalkLog("CL U HIST"
@@ -503,12 +505,14 @@ function showStats(options){
     ));
 
     if (statsObj.tests[testObj.testRunId].results.successRate !== undefined) {
-      console.log(chalkAlert("RESULTS: " + statsObj.tests[testObj.testRunId].results.successRate.toFixed(1) + " %"
-         + " | TESTS: " + statsObj.tests[testObj.testRunId].results.numTests
-         + " | PASS: " + statsObj.tests[testObj.testRunId].results.numPassed
-         + " | SKIP: " + statsObj.tests[testObj.testRunId].results.numSkipped
-         + " | ITR: " + configuration.evolve.iterations
-         + " | RUN: " + statsObj.elapsed
+      console.log(chalkAlert(testObj.testRunId
+        + " | " + configuration.networkCreateMode.toUpperCase()
+        + " | RUN: " + statsObj.elapsed
+        + " | ITR: " + configuration.evolve.iterations
+        + " | TESTS: " + statsObj.tests[testObj.testRunId].results.numTests
+        + " | PASS: " + statsObj.tests[testObj.testRunId].results.numPassed
+        + " | SKIP: " + statsObj.tests[testObj.testRunId].results.numSkipped
+        + " | RES: " + statsObj.tests[testObj.testRunId].results.successRate.toFixed(1) + " %"
       ));
     }
   }
@@ -2052,6 +2056,7 @@ function initNeuralNetworkChild(callback){
           ));
 
           let networkObj = new NeuralNetwork();
+          networkObj.networkCreateMode = configuration.networkCreateMode;
           networkObj.createdAt = moment().valueOf();
           networkObj.networkId = testObj.testRunId;
           networkObj.network = m.networkObj.network;
@@ -2082,6 +2087,7 @@ function initNeuralNetworkChild(callback){
 
             console.log("> NETWORK UPDATED"
               + "\nNET ID:  " + updateNetworkObj.networkId 
+              + "\nCREATE:  " + updateNetworkObj.networkCreateMode 
               // + "\nTYPE:    " + updateNetworkObj.networkType
               + "\nSUCCESS: " + updateNetworkObj.successRate.toFixed(1) + "%"
               + "\nIN:      " + updateNetworkObj.network.input
@@ -2166,12 +2172,12 @@ function initNeuralNetworkChild(callback){
             }
           });
 
-          console.log(chalkLog("SAVING NEURAL NETWORK FILE TO DB"
+          console.log(chalkLog("SAVING NN FILE TO DB"
             + " | ID: " + testObj.testRunId
           ));
 
           let networkObj = new NeuralNetwork();
-
+          networkObj.networkCreateMode = configuration.networkCreateMode;
           networkObj.createdAt = moment().valueOf();
           networkObj.networkId = testObj.testRunId;
           networkObj.network = m.networkObj.network;
@@ -2180,7 +2186,7 @@ function initNeuralNetworkChild(callback){
           networkObj.outputs = trainingSetLabels.outputs;
           networkObj.evolve = {};
           networkObj.evolve.options = {};
-          networkObj.evolve.options = omit(m.statsObj.evolve.options, ["network", "inputs", "outputs", "iterations"]);
+          networkObj.evolve.options = omit(m.statsObj.evolve.options, ["network", "inputs", "outputs"]);
 
           networkObj.test = statsObj.tests[testObj.testRunId];
 
@@ -2198,16 +2204,17 @@ function initNeuralNetworkChild(callback){
             statsObj.evolve.options.numInputs = updateNetworkObj.network.input;
             statsObj.evolve.options.numOutputs = updateNetworkObj.network.output;
 
-            console.log("> NETWORK UPDATED"
-              + "\nNET ID:  " + updateNetworkObj.networkId 
+            console.log(">DB NNB UPDATED"
+              + "\nNNB NET ID:  " + updateNetworkObj.networkId 
+              + "\nNNB CREATE:  " + updateNetworkObj.networkCreateMode 
               // + "\nTYPE:    " + updateNetworkObj.networkType
-              + "\nSUCCESS: " + updateNetworkObj.successRate.toFixed(1) + "%"
-              + "\nIN:      " + updateNetworkObj.network.input
-              + "\nOUT:     " + updateNetworkObj.network.output
-              + "\nEVOLVE:  " + jsonPrint(updateNetworkObj.evolve) 
-              + "\nTRAIN:   " + jsonPrint(updateNetworkObj.train)
-              + "\nTEST:    " + jsonPrint(updateNetworkObj.test)
-              + "\nCREATED: " + moment(new Date(updateNetworkObj.createdAt)).format(compactDateTimeFormat) 
+              + "\nNNB SUCCESS: " + updateNetworkObj.successRate.toFixed(1) + "%"
+              + "\nNNB IN:      " + updateNetworkObj.network.input
+              + "\nNNB OUT:     " + updateNetworkObj.network.output
+              + "\nNNB EVOLVE:  " + jsonPrint(updateNetworkObj.evolve) 
+              + "\nNNB TRAIN:   " + jsonPrint(updateNetworkObj.train)
+              + "\nNNB TEST:    " + jsonPrint(updateNetworkObj.test)
+              + "\nNNB CREATED: " + moment(new Date(updateNetworkObj.createdAt)).format(compactDateTimeFormat) 
             );
 
             quit({network: updateNetworkObj});

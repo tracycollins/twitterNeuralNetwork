@@ -30,12 +30,16 @@ const jsonPrint = function (obj){
 
 exports.findOneNetwork = function (network, params, callback) {
 
-  const evolveCols = columnify(network.evolve, {  showHeaders: false, minWidth: 8, maxWidth: 16});
-  const trainCols = columnify(network.train, {  showHeaders: false, minWidth: 8, maxWidth: 16});
-  const testCols = columnify(network.test, {  showHeaders: false, minWidth: 8, maxWidth: 16});
+	if (network.networkCreateMode === undefined) {
+		network.networkCreateMode = "UNKNOWN";
+	}
+
+	const evolveCols = columnify(network.evolve, {  showHeaders: false, minWidth: 8, maxWidth: 16});
+	const trainCols = columnify(network.train, {  showHeaders: false, minWidth: 8, maxWidth: 16});
+	const testCols = columnify(network.test, {  showHeaders: false, minWidth: 8, maxWidth: 16});
 
 	console.log("> NW UPDATE"
-		+ " | " + network.networkId 
+		+ " | " + network.networkId + " | " + network.networkCreateMode.toUpperCase()
 		+ "\nSUCCESS: " + network.successRate
 		+ "\nCREATED: " + moment(new Date(network.createdAt)).format(compactDateTimeFormat) 
 		+ "\nTYPE: " + network.networkType
@@ -51,6 +55,7 @@ exports.findOneNetwork = function (network, params, callback) {
 	const update = { 
 		"$set": { 
 			networkType: network.networkType,
+			networkCreateMode: network.networkCreateMode,
 			network: network.network,
 			createdAt: network.createdAt,
 			numInputs: network.network.input,
@@ -92,13 +97,14 @@ exports.findOneNetwork = function (network, params, callback) {
 			else {
 				console.log("> NW UPDATED"
 					+ " | " + nw.networkId 
+					+ "\nCREATE:  " + nw.networkCreateMode.toUpperCase()
 					+ "\nSUCCESS: " + nw.successRate
-					+ "\nTYPE: " + nw.networkType
-					+ "\nIN: " + nw.numInputs
-					+ "\nOUT: " + nw.numOutputs
-					+ "\nEVOLVE: " + jsonPrint(nw.evolve) 
-					+ "\nTRAIN: " + jsonPrint(nw.train)
-					+ "\nTEST: " + jsonPrint(nw.test)
+					+ "\nTYPE:    " + nw.networkType
+					+ "\nIN:      " + nw.numInputs
+					+ "\nOUT:     " + nw.numOutputs
+					+ "\nEVOLVE:  " + jsonPrint(nw.evolve) 
+					+ "\nTRAIN:   " + jsonPrint(nw.train)
+					+ "\nTEST:    " + jsonPrint(nw.test)
 					+ "\nCREATED: " + moment(new Date(nw.createdAt)).format(compactDateTimeFormat) 
 				);
 				callback(err, nw);

@@ -12,6 +12,9 @@ var NeuralNetworkSchema = new Schema({
 		type: Object,
 		default: {}
 	},
+	networkCreateMode: { 
+		type: String
+	},
 	successRate: { 
 		type: Number,
 		default: 0
