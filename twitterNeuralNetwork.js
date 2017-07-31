@@ -600,7 +600,7 @@ function saveFile (path, file, jsonObj, callback){
 
   options.contents = JSON.stringify(jsonObj, null, 2);
   options.path = fullPath;
-  options.mode = "add";
+  options.mode = "overwrite";
   options.autorename = false;
 
   dropboxClient.filesUpload(options)
