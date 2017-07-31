@@ -352,8 +352,14 @@ const dropboxConfigDefaultFolder = "/config/utility/default";
 const dropboxConfigHostFolder = "/config/utility/" + hostname;
 
 const dropboxConfigFile = hostname + "_" + DROPBOX_TNN_CONFIG_FILE;
+
 const statsFolder = "/stats/" + hostname + "/neuralNetwork";
 const statsFile = "twitterNeuralNetworkStats_" + statsObj.runId + ".json";
+
+const bestNetworkFolder = "/config/utility/best/neuralNetworks";
+let bestNetworkFile;
+
+
 debug("statsFolder : " + statsFolder);
 debug("statsFile : " + statsFile);
 
@@ -588,13 +594,13 @@ function saveFile (path, file, jsonObj, callback){
 
   debug(chalkInfo("LOAD FOLDER " + path));
   debug(chalkInfo("LOAD FILE " + file));
-  console.log(chalkInfo("SAVE FILE FULL PATH " + fullPath));
+  console.log(chalkInfo("--> SAVE FILE FULL PATH " + fullPath));
 
   let options = {};
 
   options.contents = JSON.stringify(jsonObj, null, 2);
   options.path = fullPath;
-  options.mode = "overwrite";
+  options.mode = "add";
   options.autorename = false;
 
   dropboxClient.filesUpload(options)
@@ -817,7 +823,6 @@ function initInputArrays(cnf, callback){
     });
     
   }
-
 }
 
 function initialize(cnf, callback){
@@ -1171,74 +1176,8 @@ configEvents.once("INIT_MONGODB", function(){
 
   neuralNetworkServer = require("./app/controllers/neuralNetwork.server.controller");
   userServer = require("./app/controllers/user.server.controller");
-
 });
 
-
-// function printDatum(title, datum, label, callback){
-
-//   if (datum.input.length === 0) {
-//     console.error(chalkError("*** EMPTY DATUM INPUT ***\n" + jsonPrint(datum)));
-//   }
-
-//   let row = "";
-//   let col = 0;
-//   let rowNum = 0;
-//   const COLS = 50;
-//   let text = "";
-
-//   if (title) {
-//     debug(title + " --------");
-//     text = "\n-------- " + title + " --------\n";
-//   }
-//   else {
-//     debug("\n--------------------");
-//     text = "\n--------------------\n";
-//   }
-
-
-//   async.eachOfSeries(datum.input, function(bit, i, cb){
-
-//     if (bit && (i >= 2)) {
-//       debug("IN | " + label.inputRaw[i]);
-//     }
-
-//     if (i === 0) {
-//       debug("IN | " + label.inputRaw[i] + ": " + bit.toFixed(10));
-//       row = row + bit.toFixed(10) + " | " ;
-//     }
-//     else if (i === 1) {
-//       debug("IN | " + label.inputRaw[i] + ": " + bit.toFixed(10));
-//       row = row + bit.toFixed(10);
-//     }
-//     else if (i === 2) {
-//       // console.log("ROW " + rowNum + " | " + row);
-//       text = text + "ROW " + rowNum + " | " + row + "\n";
-//       row = bit ? "X" : ".";
-//       col = 1;
-//       rowNum += 1;
-//     }
-//     else if (col < COLS){
-//       row = row + (bit ? "X" : ".");
-//       col += 1;
-//     }
-//     else {
-//       // console.log("ROW " + rowNum + " | " + row);
-//       text = text + "ROW " + rowNum + " | " + row + "\n";
-//       row = bit ? "X" : ".";
-//       col = 1;
-//       rowNum += 1;
-//     }
-
-//     i += 1;
-
-//     cb();
-
-//   }, function(){
-//     // console.warn(text);
-//     callback(text);
-//   });
-// }
 
 // FUTURE: break up into updateClassifiedUsers and createTrainingSet
 function updateClassifiedUsers(cnf, callback){
@@ -1919,7 +1858,6 @@ function initMain(cnf){
   });
 }
 
-
 function initNeuralNetworkChild(callback){
 
   // neuralNetworkReady = false;
@@ -2250,7 +2188,8 @@ function loadBestNeuralNetwork(callback){
   let maxSuccessRate = 0;
   let nnCurrent = {};
 
-  NeuralNetwork.find({}, function(err, nnArray){
+  // NeuralNetwork.find({}, function(err, nnArray){
+  NeuralNetwork.find({}, null, {sort: {successRate: -1}, limit: 1}, function(err, nnArray){
     if (err) {
       console.log(chalkError("NEUAL NETWORK FIND ERR\n" + err));
       callback(err, null);
@@ -2300,8 +2239,10 @@ function loadBestNeuralNetwork(callback){
             printNetworkObj("NEW BEST NETWORK", nnCurrent);
 
             currentBestNetwork = nnCurrent;
+            bestNetworkFile = nnCurrent.networkId + ".json";
 
-            // Object.keys(nnCurrent.inputs).forEach(function(type){
+            saveFile(bestNetworkFolder, bestNetworkFile, nnCurrent, function(err, response){
+            });
 
             async.each(Object.keys(nnCurrent.inputs), function(type, cb){
 
@@ -2343,6 +2284,10 @@ function loadBestNeuralNetwork(callback){
 
           printNetworkObj("LOADED BEST NETWORK", nnCurrent);
 
+          bestNetworkFile = nnCurrent.networkId + ".json";
+          saveFile(bestNetworkFolder, bestNetworkFile, nnCurrent, function(err, response){
+          });
+
           async.each(Object.keys(nnCurrent.inputs), function(type, cb){
 
             console.log(chalkNetwork("NN INPUTS TYPE" 
@@ -2351,7 +2296,8 @@ function loadBestNeuralNetwork(callback){
             ));
 
             inputArrays[type] = nnCurrent.inputs[type];
-            trainingSetLabels.input[type] = nnCurrent.inputs[type];
+
+            trainingSetLabels.inputs[type] = nnCurrent.inputs[type];
             cb();
 
           }, function(){
