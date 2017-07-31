@@ -553,7 +553,8 @@ function quit(options){
       slackText = slackText + " | PASS: " + statsObj.tests[testObj.testRunId].results.numPassed;
       slackText = slackText + " | SKIP: " + statsObj.tests[testObj.testRunId].results.numSkipped;
       slackText = slackText + " | SEED NET: " + snid;
-      slackText = slackText + "\nOPTIONS\n" + jsonPrint(statsObj.evolve.options);
+      slackText = slackText + "\nEVOLVE OPTIONS\n" + jsonPrint(statsObj.evolve.options);
+      slackText = slackText + "\nTRAIN OPTIONS\n" + jsonPrint(statsObj.train.options);
 
       console.log("SLACK TEXT: " + slackText);
 
@@ -1806,12 +1807,9 @@ function initMain(cnf){
 
           case "train":
 
-            // cnf.train.hiddenLayerSize = parseInt(0.5*(trainingSetLabels.inputs.length));
-
             messageObj = {
               op: "TRAIN",
               testRunId: testObj.testRunId,
-              // inputArraysFile: testObj.inputArraysFile,
               trainingSet: trainingSetNormalized,
               architecture: cnf.train.architecture,
               inputs: trainingSetLabels.inputs,
@@ -1928,7 +1926,6 @@ function initNeuralNetworkChild(callback){
         if (m.networkObj.train.options.network) {
           console.log(chalkBlue("\nSEED NN: " + m.networkObj.train.options.network.networkId));
         }
-
 
         network = neataptic.Network.fromJSON(m.networkObj.network);
 

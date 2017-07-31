@@ -1014,7 +1014,6 @@ const generateRandomEvolveEnv = function(cnf){
   env.TNN_ITERATIONS = cnf.iterations;
 
   env.TNN_NETWORK_CREATE_MODE = randomItem(["evolve", "train"]);
-  // env.TNN_NETWORK_CREATE_MODE = randomItem(["train"]);
 
   console.log(chalkAlert("NETWORK CREATE MODE: " + env.TNN_NETWORK_CREATE_MODE));
 
@@ -1027,9 +1026,7 @@ const generateRandomEvolveEnv = function(cnf){
     console.log(chalkAlert("----------------------------------"));
   }
   else {
-
-    // const randomNetworkArray = bestNetworksHashMap.keys().concat([null]);
-
+    
     console.log(chalkAlert("\nBEST NETWORKS\n----------------------------------"));
 
     bestNetworksHashMap.forEach(function(nn, nnId){
