@@ -377,9 +377,6 @@ console.log("DROPBOX_WORD_ASSO_APP_SECRET :" + DROPBOX_WORD_ASSO_APP_SECRET);
 
 let dropboxClient = new Dropbox({ accessToken: DROPBOX_WORD_ASSO_ACCESS_TOKEN });
 
-const inputArraysFolder = dropboxConfigHostFolder + "/inputArrays";
-const inputArraysFile = "inputArrays_" + statsObj.runId + ".json";
-
 let classifiedUsersFolder = dropboxConfigHostFolder + "/classifiedUsers";
 let classifiedUsersFile = "classifiedUsers.json";
 
@@ -673,7 +670,6 @@ function loadFile(path, file, callback) {
 }
 
 let statsUpdateInterval;
-// let statsIndex = 0;
 
 function initStatsUpdate(cnf, callback){
 
@@ -696,15 +692,11 @@ function initStatsUpdate(cnf, callback){
       ));
     }
 
-    // if (statsIndex % 6 === 0){
-      saveFile(statsFolder, statsFile, statsObj, function(){
-        debug("END SAVE FILE");
-      });
-    // }
+    saveFile(statsFolder, statsFile, statsObj, function(){
+      debug("END SAVE FILE");
+    });
  
     showStats();
-
-    // statsIndex += 1;
 
   }, cnf.statsUpdateIntervalTime);
 
@@ -731,7 +723,6 @@ function initInputArrays(cnf, callback){
 
       console.log("FOUND SEED NETWORK"
         + "\nNET ID:  " + nnObj.networkId 
-        // + "\nTYPE:    " + updateNetworkObj.networkType
         + "\nSUCCESS: " + nnObj.successRate.toFixed(1) + "%"
         + "\nIN:      " + nnObj.network.input
         + "\nOUT:     " + nnObj.network.output
@@ -813,13 +804,7 @@ function initInputArrays(cnf, callback){
       }
       else {
         console.log(chalkBlue("LOADED INPUT ARRAY FILES"));
-
-        saveFile(inputArraysFolder, inputArraysFile, inputArrays, function(err, results){
-          statsObj.inputArraysFile = inputArraysFolder + "/" + inputArraysFile;
-          debug("results\n" + jsonPrint(results));
-          debug("descriptionArrays\n" + jsonPrint(inputArrays));
-          callback(err);
-        });
+        callback();
       }
     });
     
@@ -1443,9 +1428,6 @@ function updateClassifiedUsers(cnf, callback){
 
                 async.eachSeries(inputArrays[type], function(element, cb2){
 
-                  // trainingSetLabels.inputs[type].push(element);
-                  // trainingSetLabels.inputRaw.push(element);
-
                   if ((userHistograms[type] !== undefined) && userHistograms[type][element]) {
 
                     trainingSetDatum.input.push(1);
@@ -1748,8 +1730,6 @@ function initMain(cnf){
 
         debug(chalkBlue("\nTRAINING SET NORMALIZED\n" + jsonPrint(trainingSetNormalized[0])));
 
-        // testObj.inputArraysFile = inputArraysFolder + "/" + inputArraysFile;
-
         switch (cnf.networkCreateMode) {
 
           case "evolve":
@@ -1760,7 +1740,6 @@ function initMain(cnf){
               network: cnf.evolve.network,
               inputs: trainingSetLabels.inputs,
               outputs: trainingSetLabels.outputs,
-              // inputArraysFile: testObj.inputArraysFile,
               trainingSet: trainingSetNormalized,
               normalization: statsObj.normalization,
               iterations: cnf.evolve.iterations,
@@ -1791,7 +1770,6 @@ function initMain(cnf){
             console.log(chalkBlue("\nSTART NETWORK EVOLVE"));
 
             console.log(chalkBlue("TEST RUN ID: " + messageObj.testRunId
-              // + "\nINPUT ARRAYS FILE:   " + messageObj.inputArraysFile
               + "\nTRAINING SET LENGTH: " + messageObj.trainingSet.length
               + "\nTEST SET LENGTH:     " + testObj.testSet.length
               + "\nITERATIONS:          " + messageObj.iterations
@@ -1830,7 +1808,6 @@ function initMain(cnf){
             console.log(chalkBlue("\nSTART NETWORK TRAIN"));
 
             console.log(chalkBlue("TEST RUN ID: " + messageObj.testRunId
-              // + "\nINPUT ARRAYS FILE:   " + messageObj.inputArraysFile
               + "\nTRAINING SET LENGTH: " + messageObj.trainingSet.length
               + "\nITERATIONS:          " + messageObj.iterations
             ));
