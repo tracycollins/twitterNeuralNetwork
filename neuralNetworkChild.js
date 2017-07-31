@@ -354,7 +354,6 @@ function evolve(params, callback){
   options.equal = params.equal;
   options.error = params.error;
   options.iterations = params.iterations;
-  // options.log = params.log;
   options.mutation = params.mutation;
   options.mutationRate = params.mutationRate;
   options.popsize = params.popsize;
@@ -421,10 +420,6 @@ function evolve(params, callback){
     cb();
 
   }, function(){
-
-
-    // const hiddenLayerSize = params.trainingSet[0].datum.input.length + params.trainingSet[0].datum.output.length;
-    // const hiddenLayerSize = parseInt(0.5*(params.trainingSet[0].datum.input.length));
 
     switch (params.architecture) {
 

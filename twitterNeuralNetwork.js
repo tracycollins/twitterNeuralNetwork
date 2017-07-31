@@ -1914,13 +1914,6 @@ function initNeuralNetworkChild(callback){
           + "\nDROPOUT: " + m.networkObj.network.dropout
           + "\nNODES:   " + m.networkObj.network.nodes.length
           + "\nCONNS:   " + m.networkObj.network.connections.length
-          // + "\nNORM: M: "
-          // + m.networkObj.normalization.magnitude.min.toFixed(3) 
-          // + "/" + m.networkObj.normalization.magnitude.max.toFixed(3)
-          // + " | S: " 
-          // + m.networkObj.normalization.score.min.toFixed(3) 
-          // + "/" + m.networkObj.normalization.score.max.toFixed(3)
-          // + "\nNETWORK\n" + jsonPrint(m.network)
         ));
 
         if (m.networkObj.train.options.network) {
