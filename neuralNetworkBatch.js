@@ -4,7 +4,7 @@
 const OFFLINE_MODE = true;
 const DEFAULT_ENABLE_RANDOM = true;
 const DEFAULT_BATCH_MAX_INSTANCES = 3;
-const DEFAULT_BEST_NETWORK_NUMBER = 10;
+const DEFAULT_BEST_NETWORK_NUMBER = 5;
 const SEED_NETWORK_PROBABILITY = 0.5;
 
 const DEFAULT_ITERATIONS = 1;
@@ -826,7 +826,7 @@ function loadSeedNeuralNetwork(options, callback){
 
   }
 
-  NeuralNetwork.find(findQuery, null, {sort: {successRate: -1}, limit: DEFAULT_BEST_NETWORK_NUMBER}, function(err, nnArray){
+  NeuralNetwork.find(findQuery, null, {sort: {successRate: -1}, limit: 1}, function(err, nnArray){
     if (err) {
       console.log(chalkError("NEUAL NETWORK FIND ERR"
         + "\n" + jsonPrint(findQuery)
