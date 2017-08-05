@@ -54,9 +54,6 @@ exports.findOneUser = function (user, params, callback) {
 			verified: user.verified,
 			following: user.following,
 			status: user.status,
-			"$max": {statusesCount: user.statusesCount},
-			"$max": {followersCount: user.followersCount},
-			"$max": {friendsCount: user.friendsCount},
 			rate: user.rate,
 			isTopTerm: user.isTopTerm,
 			connectTime: user.connectTime,
@@ -67,6 +64,9 @@ exports.findOneUser = function (user, params, callback) {
 			lastSeen: moment().valueOf()
 		},
 		"$max": {
+			statusesCount: user.statusesCount,
+			followersCount: user.followersCount,
+			friendsCount: user.friendsCount,
 			keywords: user.keywords,
 			languageAnalyzed: user.languageAnalyzed,
 			languageAnalysis: user.languageAnalysis
