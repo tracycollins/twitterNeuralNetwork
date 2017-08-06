@@ -642,7 +642,7 @@ function train(params, callback){
 
 process.on("message", function(m) {
 
-  console.log(chalkAlert("NEURAL NET RX MESSAGE"
+  debug(chalkAlert("NEURAL NET RX MESSAGE"
     + " | OP: " + m.op
     // + "\n" + jsonPrint(m)
   ));
