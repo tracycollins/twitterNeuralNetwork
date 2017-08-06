@@ -42,6 +42,7 @@ exports.findOneUser = function (user, params, callback) {
 			threeceeFollowing: user.threeceeFollowing,
 			tags: user.tags,
 			entities: user.entities,
+			keywords: user.keywords,
 			keywordsAuto: user.keywordsAuto,
 			histograms: user.histograms,
 			isTwitterUser: user.isTwitterUser,
@@ -53,6 +54,9 @@ exports.findOneUser = function (user, params, callback) {
 			profileImageUrl: user.profileImageUrl,
 			verified: user.verified,
 			following: user.following,
+			statusesCount: user.statusesCount,
+			followersCount: user.followersCount,
+			friendsCount: user.friendsCount,
 			status: user.status,
 			rate: user.rate,
 			isTopTerm: user.isTopTerm,
@@ -64,10 +68,10 @@ exports.findOneUser = function (user, params, callback) {
 			lastSeen: moment().valueOf()
 		},
 		"$max": {
-			statusesCount: user.statusesCount,
-			followersCount: user.followersCount,
-			friendsCount: user.friendsCount,
-			keywords: user.keywords,
+			// statusesCount: user.statusesCount,
+			// followersCount: user.followersCount,
+			// friendsCount: user.friendsCount,
+			// keywords: user.keywords,
 			languageAnalyzed: user.languageAnalyzed,
 			languageAnalysis: user.languageAnalysis
 		}

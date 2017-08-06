@@ -76,6 +76,8 @@ exports.findOneUser = function (user, params, callback) {
 			isTwitterUser: user.isTwitterUser,
 			threeceeFollowing: user.threeceeFollowing,
 			nodeId: user.nodeId,
+			keywords: user.keywords,
+			keywordsAuto: user.keywordsAuto,
 			tags: user.tags,
 			screenName: user.screenName,
 			name: user.name,
