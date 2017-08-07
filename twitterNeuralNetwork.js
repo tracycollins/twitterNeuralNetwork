@@ -1823,7 +1823,7 @@ function updateClassifiedUsers(cnf, callback){
               return(cb0(err));
             }
 
-            userServer.updateHistograms({userId: user.userId, histograms: hist}, function(err, updateduser){
+            userServer.updateHistograms({user: user, histograms: hist}, function(err, updateduser){
 
               if (err) {
                 console.error("*** UPDATE USER HISTOGRAMS ERROR\n" + err);
