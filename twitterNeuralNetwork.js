@@ -1079,8 +1079,8 @@ function loadNeuralNetwork(options, callback){
     // NeuralNetwork.findOne({networkId: options.networkId}, function(err, nn){
       if (err) {
         console.log(chalkError("*** DROPBOX LOAD NEURAL NETWORK ERR"
-          " | " + bestNetworkFolder + "/" + file
-          "\n" + err
+          + " | " + bestNetworkFolder + "/" + file
+          + "\n" + err
         ));
         callback(err, null);
       }
