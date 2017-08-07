@@ -5,11 +5,7 @@ const chalk = require("chalk");
 const async = require("async");
 
 const chalkAlert = chalk.red;
-const chalkInfo = chalk.yellow;
-const chalkTest = chalk.bold.yellow;
 const chalkError = chalk.bold.red;
-const chalkWarn = chalk.bold.yellow;
-const chalkLog = chalk.gray;
 
 const moment = require("moment");
 const User = require("mongoose").model("User");
@@ -27,6 +23,109 @@ const jsonPrint = function (obj){
   }
 };
 
+exports.findOneUserPromise = function (params) {
+
+	return new Promise(function(resolve, reject) {
+
+		let user = params.user;
+		let inc = 1;
+		
+		if (params.noInc) { inc = 0; }
+
+		const query = { userId: user.userId  };
+
+		let update = { 
+			"$inc": { mentions: inc }, 
+			"$set": { 
+				nodeType: "user",
+				nodeId: user.nodeId,
+				threeceeFollowing: user.threeceeFollowing,
+				tags: user.tags,
+				entities: user.entities,
+				keywords: user.keywords,
+				keywordsAuto: user.keywordsAuto,
+				histograms: user.histograms,
+				isTwitterUser: user.isTwitterUser,
+				screenName: user.screenName,
+				name: user.name,
+				description: user.description,
+				url: user.url,
+				profileUrl: user.profileUrl,
+				profileImageUrl: user.profileImageUrl,
+				verified: user.verified,
+				following: user.following,
+				status: user.status,
+				rate: user.rate,
+				isTopTerm: user.isTopTerm,
+				connectTime: user.connectTime,
+				disconnectTime: user.disconnectTime,
+				sessionId: user.sessionId,
+				sessions: user.sessions,
+				lastSession: user.lastSession,
+				lastSeen: moment().valueOf()
+			},
+			"$max": {
+				languageAnalyzed: user.languageAnalyzed,
+				languageAnalysis: user.languageAnalysis
+			}
+		};
+
+		if (user.statusesCount !== undefined){
+			update["$set"].statusesCount = user.statusesCount;
+		}
+		if (user.followersCount !== undefined){
+			update["$set"].followersCount = user.followersCount;
+		}
+		if (user.friendsCount !== undefined){
+			update["$set"].friendsCount = user.friendsCount;
+		}
+
+		const options = { 
+			upsert: true, 
+			setDefaultsOnInsert: true,
+			new: true
+		};
+
+		User.findOneAndUpdate(
+			query,
+			update,
+			options,
+			function(err, us) {
+				if (err) {
+					console.log(moment().format(compactDateTimeFormat) + "\n\n***** USER FINDONE ERROR: USER ID: " + user.userId + "\n" + err);
+					if (err.code === 11000) {
+						User.remove({userId: user.userId}, function(err){
+							if (err) {
+								console.log("REMOVED DUPLICATE USER ERROR " + err + "\n" + user.userId);
+							}
+							else {
+								console.log("REMOVED DUPLICATE USER " + user.userId);
+							}
+						});
+					}
+					reject(err);
+				}
+				else {
+					debug("> US UPDATED"
+						+ " | " + us.userId 
+						+ " | @" + us.screenName
+						+ " | " + us.name
+						+ " | Vd: " + us.verified 
+						+ " | FLg: " + us.following 
+						+ " | Ts: " + us.statusesCount 
+						+ " | FLRs: " + us.followersCount 
+						+ " | Ms: " + us.mentions 
+						+ " | LAd: " + us.languageAnalyzed 
+						+ " | LS: " + moment(new Date(us.lastSeen)).format(compactDateTimeFormat) 
+					);
+					const mentionsString = us.mentions.toString() ;
+					us.mentions = mentionsString ;
+					resolve(us);
+				}
+			}
+		);
+	});
+};
 
 exports.findOneUser = function (user, params, callback) {
 
@@ -34,7 +133,8 @@ exports.findOneUser = function (user, params, callback) {
 	if (params.noInc) { inc = 0; }
 
 	const query = { userId: user.userId  };
-	const update = { 
+
+	let update = { 
 		"$inc": { mentions: inc }, 
 		"$set": { 
 			nodeType: "user",
@@ -54,9 +154,6 @@ exports.findOneUser = function (user, params, callback) {
 			profileImageUrl: user.profileImageUrl,
 			verified: user.verified,
 			following: user.following,
-			statusesCount: user.statusesCount,
-			followersCount: user.followersCount,
-			friendsCount: user.friendsCount,
 			status: user.status,
 			rate: user.rate,
 			isTopTerm: user.isTopTerm,
@@ -68,14 +165,20 @@ exports.findOneUser = function (user, params, callback) {
 			lastSeen: moment().valueOf()
 		},
 		"$max": {
-			// statusesCount: user.statusesCount,
-			// followersCount: user.followersCount,
-			// friendsCount: user.friendsCount,
-			// keywords: user.keywords,
 			languageAnalyzed: user.languageAnalyzed,
 			languageAnalysis: user.languageAnalysis
 		}
 	};
+
+	if (user.statusesCount !== undefined){
+		update["$set"].statusesCount = user.statusesCount;
+	}
+	if (user.followersCount !== undefined){
+		update["$set"].followersCount = user.followersCount;
+	}
+	if (user.friendsCount !== undefined){
+		update["$set"].friendsCount = user.friendsCount;
+	}
 
 	const options = { 
 		upsert: true, 
@@ -89,7 +192,7 @@ exports.findOneUser = function (user, params, callback) {
 		options,
 		function(err, us) {
 			if (err) {
-				console.log(moment().format(compactDateTimeFormat) + "\n\n***** USER FIND ONE ERROR: USER ID: " + user.userId + "\n" + err);
+				console.log(moment().format(compactDateTimeFormat) + "\n\n***** USER FINDONE ERROR: USER ID: " + user.userId + "\n" + err);
 				if (err.code === 11000) {
 					User.remove({userId: user.userId}, function(err){
 						if (err) {
@@ -103,16 +206,15 @@ exports.findOneUser = function (user, params, callback) {
 				callback(err, user);
 			}
 			else {
-				debug("> US UPDATED"
+				console.log("USR>DB"
 					+ " | " + us.userId 
 					+ " | @" + us.screenName
 					+ " | " + us.name
-					+ " | Vd: " + us.verified 
-					+ " | FLg: " + us.following 
 					+ " | Ts: " + us.statusesCount 
-					+ " | FLRs: " + us.followersCount 
+					+ " | FLs: " + us.followersCount 
+					+ " | FRs: " + us.friendsCount 
 					+ " | Ms: " + us.mentions 
-					+ " | LAd: " + us.languageAnalyzed 
+					+ " | LA: " + us.languageAnalyzed 
 					+ " | LS: " + moment(new Date(us.lastSeen)).format(compactDateTimeFormat) 
 				);
 				const mentionsString = us.mentions.toString() ;
@@ -127,7 +229,7 @@ exports.updateHistograms = function (params, callback) {
 
 	debug(chalkAlert("updateHistograms\n" + jsonPrint(params)));
 
-	const query = { userId: params.userId };
+	const query = { userId: params.user.userId };
 
 	User.findOne(query, function(err, user){
 
@@ -149,11 +251,14 @@ exports.updateHistograms = function (params, callback) {
 
       }, function(){
 
-      	user.histograms = comboHistogram;
+      	params.user.histograms = comboHistogram;
         
-      	exports.findOneUser(user, {noInc: true}, function(err, updatedUser){
+      	exports.findOneUser(params.user, {noInc: true}, function(err, updatedUser){
 
-					debug("updateHistograms | UPDATED USER: @" + user.screenName + " | HISTOGRAMS: " + jsonPrint(user.histograms));
+					debug("updateHistograms"
+						+ " | UPDATED USER: @" + updatedUser.screenName
+						+ " | HISTOGRAMS\n" + jsonPrint(updatedUser.histograms)
+					);
 
       		callback(err, updatedUser);
       	});
@@ -162,9 +267,19 @@ exports.updateHistograms = function (params, callback) {
       });
 		}
 		else {
-  		callback(null, null);
+
+      params.user.histograms = params.histograms;
+      
+    	exports.findOneUser(params.user, {noInc: true}, function(err, updatedUser){
+
+				debug("updateHistograms"
+					+ " | UPDATED USER: @" + updatedUser.screenName
+					+ " | HISTOGRAMS\n" + jsonPrint(updatedUser.histograms)
+				);
+
+    		callback(err, updatedUser);
+    	});
 		}
 
 	});
-
 };
