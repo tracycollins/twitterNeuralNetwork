@@ -1932,15 +1932,15 @@ function updateClassifiedUsers(cnf, callback){
         });   
       }
       else {
-        console.log(chalkBlue("UPDATING DB USER KEYWORDS"
+        console.log(chalkBlue("USER KW>DB"
           + " | " + keywordArray
           + " | " + classification
           + " | " + user.userId
           + " | " + user.screenName
           + " | " + user.name
-          + " | 3C FOLLOW: " + threeceeFollowing
-          + " | FLLWs: " + user.followersCount
-          + " | FRNDs: " + user.friendsCount
+          + " | 3CF: " + threeceeFollowing
+          + " | FLs: " + user.followersCount
+          + " | FRs: " + user.friendsCount
           + " | SEN: " + sentimentText
           + " | KW: " + keywordArray
         ));
