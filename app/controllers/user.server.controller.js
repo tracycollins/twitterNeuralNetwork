@@ -29,7 +29,7 @@ exports.findOneUserPromise = function (params) {
 
 		let user = params.user;
 		let inc = 1;
-		
+
 		if (params.noInc) { inc = 0; }
 
 		const query = { userId: user.userId  };
@@ -42,8 +42,8 @@ exports.findOneUserPromise = function (params) {
 				threeceeFollowing: user.threeceeFollowing,
 				tags: user.tags,
 				entities: user.entities,
-				keywords: user.keywords,
-				keywordsAuto: user.keywordsAuto,
+				// keywords: user.keywords,
+				// keywordsAuto: user.keywordsAuto,
 				histograms: user.histograms,
 				isTwitterUser: user.isTwitterUser,
 				screenName: user.screenName,
@@ -63,13 +63,25 @@ exports.findOneUserPromise = function (params) {
 				sessions: user.sessions,
 				lastSession: user.lastSession,
 				lastSeen: moment().valueOf()
-			},
-			"$max": {
-				languageAnalyzed: user.languageAnalyzed,
-				languageAnalysis: user.languageAnalysis
 			}
+			// "$max": {
+			// 	languageAnalyzed: user.languageAnalyzed,
+			// 	languageAnalysis: user.languageAnalysis
+			// }
 		};
 
+		if (user.languageAnalyzed !== undefined){
+			update["$set"].languageAnalyzed = user.languageAnalyzed;
+		}
+		if (user.languageAnalysis !== undefined){
+			update["$set"].languageAnalysis = user.languageAnalysis;
+		}
+		if (user.keywords !== undefined){
+			update["$set"].keywords = user.keywords;
+		}
+		if (user.keywordsAuto !== undefined){
+			update["$set"].keywordsAuto = user.keywordsAuto;
+		}
 		if (user.statusesCount !== undefined){
 			update["$set"].statusesCount = user.statusesCount;
 		}
@@ -142,8 +154,8 @@ exports.findOneUser = function (user, params, callback) {
 			threeceeFollowing: user.threeceeFollowing,
 			tags: user.tags,
 			entities: user.entities,
-			keywords: user.keywords,
-			keywordsAuto: user.keywordsAuto,
+			// keywords: user.keywords,
+			// keywordsAuto: user.keywordsAuto,
 			histograms: user.histograms,
 			isTwitterUser: user.isTwitterUser,
 			screenName: user.screenName,
@@ -163,13 +175,25 @@ exports.findOneUser = function (user, params, callback) {
 			sessions: user.sessions,
 			lastSession: user.lastSession,
 			lastSeen: moment().valueOf()
-		},
-		"$max": {
-			languageAnalyzed: user.languageAnalyzed,
-			languageAnalysis: user.languageAnalysis
 		}
+		// "$max": {
+		// 	languageAnalyzed: user.languageAnalyzed,
+		// 	languageAnalysis: user.languageAnalysis
+		// }
 	};
 
+	if (user.languageAnalyzed !== undefined){
+		update["$set"].languageAnalyzed = user.languageAnalyzed;
+	}
+	if (user.languageAnalysis !== undefined){
+		update["$set"].languageAnalysis = user.languageAnalysis;
+	}
+	if (user.keywords !== undefined){
+		update["$set"].keywords = user.keywords;
+	}
+	if (user.keywordsAuto !== undefined){
+		update["$set"].keywordsAuto = user.keywordsAuto;
+	}
 	if (user.statusesCount !== undefined){
 		update["$set"].statusesCount = user.statusesCount;
 	}
