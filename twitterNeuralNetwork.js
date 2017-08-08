@@ -109,6 +109,7 @@ const Slack = require("slack-node");
 const cp = require("child_process");
 const arrayNormalize = require("array-normalize");
 const columnify = require("columnify");
+const mongoose = require("mongoose");
 
 const EventEmitter2 = require("eventemitter2").EventEmitter2;
 const async = require("async");
@@ -213,13 +214,11 @@ const configEvents = new EventEmitter2({
 
 let stdin;
 
-
-let mongoose;
 let db;
+let wordAssoDb;
 let User;
 let NeuralNetwork; // DB
 
-// let neuralNetworkServer;
 let userServer;
 
 const jsonPrint = function (obj){
@@ -1576,15 +1575,14 @@ console.log(chalkInfo(getTimeStamp()
 ));
 
 configEvents.once("INIT_MONGODB", function(){
-  mongoose = require("./config/mongoose");
 
-  db = mongoose();
+  wordAssoDb = require("@threeceelabs/mongoose-twitter");
+  db = wordAssoDb();
 
   NeuralNetwork = require("mongoose").model("NeuralNetwork");
   User = require("mongoose").model("User");
 
-  // neuralNetworkServer = require("./app/controllers/neuralNetwork.server.controller");
-  userServer = require("./app/controllers/user.server.controller");
+  userServer = require("@threeceelabs/user-server-controller");
 });
 
 
@@ -1755,6 +1753,9 @@ function updateClassifiedUsers(cnf, callback){
           function userStatusText(text, cb) {
             // console.log("user.status\n" + jsonPrint(user.status));
             if ((user.status !== undefined) && user.status && user.status.text) {
+
+              console.log(chalkBlue("T | " + user.userId + "\n" + jsonPrint(user.status.text)));
+
               if (text) {
                 cb(null, text + "\n" + user.status.text);
               }
@@ -1772,15 +1773,25 @@ function updateClassifiedUsers(cnf, callback){
             }
           },
           function userRetweetText(text, cb) {
-            if ((user.retweeted_status !== undefined) && user.retweeted_status) {
+            if ((user.status !== undefined) && user.status) {
+              if ((user.status.retweeted_status !== undefined) && user.status.retweeted_status) {
 
-              debug(chalkBlue("RT\n" + jsonPrint(user.retweeted_status.text)));
+                console.log(chalkBlue("R | " + user.userId + "\n" + jsonPrint(user.status.retweeted_status.text)));
 
-              if (text) {
-                cb(null, text + "\n" + user.retweeted_status.text);
+                if (text) {
+                  cb(null, text + "\n" + user.status.retweeted_status.text);
+                }
+                else {
+                  cb(null, user.status.retweeted_status.text);
+                }
               }
               else {
-                cb(null, user.retweeted_status.text);
+                if (text) {
+                  cb(null, text);
+                }
+                else {
+                  cb(null, null);
+                }
               }
             }
             else {
