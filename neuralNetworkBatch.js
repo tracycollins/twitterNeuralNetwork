@@ -41,7 +41,7 @@ const TRAIN_RATE_POLICY_ARRAY = [
   "INV"
 ];
 
-const TRAIN_HIDDEN_LAYER_SIZE_RANGE = { min: 10, max: 50 } ;
+const TRAIN_HIDDEN_LAYER_SIZE_RANGE = { min: 5, max: 20 } ;
 const TRAIN_RATE_RANGE = { min: 0.2, max: 0.4 } ;
 const TRAIN_DROPOUT_RANGE = { min: 0, max: 0.5 } ;
 const TRAIN_MOMENTUM_RANGE = { min: 0, max: 0.5 } ;
@@ -1506,13 +1506,13 @@ function initBatch(callback){
       console.error(chalkError("loadSeedNeuralNetwork ERROR: " + err));
     }
 
-    if (results.best) {
+    if (results && results.best) {
       console.log(chalkAlert("LOAD NN"
         + " | BEST: " + results.best.networkId
         + " " + results.best.successRate.toFixed(1) + "%"
       ));
     }
-    if (results.seed) {
+    if (results && results.seed) {
       console.log(chalkAlert("LOAD NN"
         + " | SEED: " + results.seed.networkId
         + " " + results.seed.successRate.toFixed(1) + "%"
