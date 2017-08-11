@@ -2396,6 +2396,8 @@ function initNeuralNetworkChild(callback){
           networkObj.networkId = testObj.testRunId;
           networkObj.network = m.networkObj.network;
           networkObj.successRate = results.successRate;
+          networkObj.numInputs = m.networkObj.network.input
+          networkObj.numOutputs = m.networkObj.network.output
           networkObj.inputs = trainingSetLabels.inputs;
           networkObj.outputs = trainingSetLabels.outputs;
           networkObj.train = {};
@@ -2438,27 +2440,8 @@ function initNeuralNetworkChild(callback){
             quit();
           });
 
-        //   neuralNetworkServer.findOneNetwork(networkObj, {}, function(err, updateNetworkObj){
-        //     if (err) {
-        //       throw err;
-        //     }
-
-        //     console.log("> NETWORK UPDATED"
-        //       + "\nNET ID:  " + updateNetworkObj.networkId 
-        //       + "\nCREATE:  " + updateNetworkObj.networkCreateMode 
-        //       // + "\nTYPE:    " + updateNetworkObj.networkType
-        //       + "\nSUCCESS: " + updateNetworkObj.successRate.toFixed(1) + "%"
-        //       + "\nIN:      " + updateNetworkObj.network.input
-        //       + "\nOUT:     " + updateNetworkObj.network.output
-        //       + "\nEVOLVE:  " + jsonPrint(updateNetworkObj.evolve) 
-        //       + "\nTRAIN:   " + jsonPrint(updateNetworkObj.train)
-        //       + "\nTEST:    " + jsonPrint(updateNetworkObj.test)
-        //       + "\nCREATED: " + moment(new Date(updateNetworkObj.createdAt)).format(compactDateTimeFormat) 
-        //     );
-
-        //     quit();
-        //   });
         });
+
       break;
 
       case "EVOLVE_COMPLETE":
@@ -2536,6 +2519,8 @@ function initNeuralNetworkChild(callback){
           networkObj.networkId = testObj.testRunId;
           networkObj.network = m.networkObj.network;
           networkObj.successRate = results.successRate;
+          networkObj.numInputs = m.networkObj.network.input
+          networkObj.numOutputs = m.networkObj.network.output
           networkObj.inputs = trainingSetLabels.inputs;
           networkObj.outputs = trainingSetLabels.outputs;
           networkObj.evolve = {};
@@ -2549,30 +2534,6 @@ function initNeuralNetworkChild(callback){
             networkObj.evolve.options.network.networkId = m.statsObj.evolve.options.network.networkId;
             networkObj.evolve.options.network.successRate = m.statsObj.evolve.options.network.successRate;
           }
-
-          // neuralNetworkServer.findOneNetwork(networkObj, {}, function(err, updateNetworkObj){
-          //   if (err) {
-          //     throw err;
-          //   }
-
-          //   statsObj.evolve.options.numInputs = updateNetworkObj.network.input;
-          //   statsObj.evolve.options.numOutputs = updateNetworkObj.network.output;
-
-          //   console.log(">DB NNB UPDATED"
-          //     + "\nNNB NET ID:  " + updateNetworkObj.networkId 
-          //     + "\nNNB CREATE:  " + updateNetworkObj.networkCreateMode 
-          //     // + "\nTYPE:    " + updateNetworkObj.networkType
-          //     + "\nNNB SUCCESS: " + updateNetworkObj.successRate.toFixed(1) + "%"
-          //     + "\nNNB IN:      " + updateNetworkObj.network.input
-          //     + "\nNNB OUT:     " + updateNetworkObj.network.output
-          //     + "\nNNB EVOLVE:  " + jsonPrint(updateNetworkObj.evolve) 
-          //     + "\nNNB TRAIN:   " + jsonPrint(updateNetworkObj.train)
-          //     + "\nNNB TEST:    " + jsonPrint(updateNetworkObj.test)
-          //     + "\nNNB CREATED: " + moment(new Date(updateNetworkObj.createdAt)).format(compactDateTimeFormat) 
-          //   );
-
-          //   quit({network: updateNetworkObj});
-          // });
 
           bestNetworkFile = networkObj.networkId + ".json";
 
