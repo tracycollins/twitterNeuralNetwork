@@ -1331,6 +1331,7 @@ function initProcessPollInterval(interval){
   console.log(chalkInfo("INIT PROCESS POLL INTERVAL | " + interval));
 
   const seedOpt = {};
+
   if (configuration.seedNetworkId) {
     seedOpt.networkId = configuration.seedNetworkId;
   }
@@ -1417,57 +1418,58 @@ function initProcessPollInterval(interval){
                     + " " + results.seed.successRate.toFixed(2) + "%"
                   ));
                 }
+
+                const nnId = app.name.replace("NNB_", "");
+
+                // NeuralNetwork.find({networkId: nnId}, function(err, nnArray){
+
+                if (!bestNetworkHashMap.has(nnId)){
+                  console.log(chalkError("*** NN NOT FOUND IN HASH: " + nnId));
+                }
+                else {
+                  const nn = bestNetworkHashMap.get(nnId);
+
+                  debug("SEED NETWORK\n" + jsonPrint(nn));
+
+                  console.log("<DB NETWORK"
+                    + " | " + nn.networkId 
+                    + " | CREATE: " + nn.networkCreateMode.toUpperCase()
+                    + " | SUCCESS: " + nn.successRate.toFixed(1) + "%"
+                    + " | IN: " + nn.network.input
+                    + " | OUT: " + nn.network.output
+                    // + " | EVOLVE:  " + jsonPrint(nn.evolve) 
+                    // + " | TRAIN:   " + jsonPrint(nn.train)
+                    // + " | TEST:    " + jsonPrint(nn.test)
+                    + " | CREATED: " + moment(new Date(nn.createdAt)).format(compactDateTimeFormat) 
+                  );
+
+                  let instanceObj = instanceConfigHashMap.get(app.name);
+
+                  instanceObj.stats.elapsed = moment().valueOf() - instanceObj.stats.started;  
+                  instanceObj.stats.ended = moment().valueOf();
+                  instanceObj.results.successRate = nn.successRate;
+                  instanceConfigHashMap.set(instanceObj.id, instanceObj);
+
+                  printInstanceConfigHashMap();
+
+                  statsObj.instances.completed += 1;
+
+                  pm2.delete(app.pm2_env.pm_id, function(err, results){
+
+                    delete appHashMap[app.name];
+
+                    if (err) { 
+                      console.log(chalkError("PM2 DELETE ERROR: " + err));
+                    }
+                    else {
+                      debug("PM2 DELETE RESULTS\n" + results);
+                    }
+
+                  });
+                }
+
               });
 
-              const nnId = app.name.replace("NNB_", "");
-
-              // NeuralNetwork.find({networkId: nnId}, function(err, nnArray){
-
-              if (!bestNetworkHashMap.has(nnId)){
-                console.log(chalkError("*** NN NOT FOUND IN HASH: " + nnId));
-              }
-              else {
-
-                const nn = bestNetworkHashMap.get(nnId);
-
-                debug("SEED NETWORK\n" + jsonPrint(nn));
-
-                console.log("<DB NETWORK"
-                  + " | " + nn.networkId 
-                  + " | CREATE: " + nn.networkCreateMode.toUpperCase()
-                  + " | SUCCESS: " + nn.successRate.toFixed(1) + "%"
-                  + " | IN: " + nn.network.input
-                  + " | OUT: " + nn.network.output
-                  // + " | EVOLVE:  " + jsonPrint(nn.evolve) 
-                  // + " | TRAIN:   " + jsonPrint(nn.train)
-                  // + " | TEST:    " + jsonPrint(nn.test)
-                  + " | CREATED: " + moment(new Date(nn.createdAt)).format(compactDateTimeFormat) 
-                );
-
-                let instanceObj = instanceConfigHashMap.get(app.name);
-
-                instanceObj.stats.elapsed = moment().valueOf() - instanceObj.stats.started;  
-                instanceObj.stats.ended = moment().valueOf();
-                instanceObj.results.successRate = nn.successRate;
-                instanceConfigHashMap.set(instanceObj.id, instanceObj);
-
-                printInstanceConfigHashMap();
-
-                statsObj.instances.completed += 1;
-
-                pm2.delete(app.pm2_env.pm_id, function(err, results){
-
-                  delete appHashMap[app.name];
-
-                  if (err) { 
-                    console.log(chalkError("PM2 DELETE ERROR: " + err));
-                  }
-                  else {
-                    debug("PM2 DELETE RESULTS\n" + results);
-                  }
-
-                });
-              }
 
             }
           });
@@ -1482,6 +1484,7 @@ function initProcessPollInterval(interval){
 function initBatch(callback){
 
   const seedOpt = {};
+
   if (configuration.seedNetworkId) {
     seedOpt.networkId = configuration.seedNetworkId;
   }
