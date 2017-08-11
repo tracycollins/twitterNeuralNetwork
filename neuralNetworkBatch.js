@@ -489,7 +489,7 @@ function loadFile(path, file, callback) {
   dropboxClient.filesListFolder({path: path})
     .then(function(response) {
 
-        async.each(response.entries, function(folderFile, cb) {
+        async.eachSeries(response.entries, function(folderFile, cb) {
 
           debug("FOUND FILE " + folderFile.name);
 
@@ -852,7 +852,7 @@ function loadBestNetworkDropboxFolder(folder, callback){
 
     let nnArray = [];
 
-    async.each(response.entries, function(entry, cb){
+    async.eachSeries(response.entries, function(entry, cb){
 
       console.log(chalkInfo("DROPBOX BEST NETWORK FOUND"
         + " | " + getTimeStamp(new Date(entry.client_modified))
