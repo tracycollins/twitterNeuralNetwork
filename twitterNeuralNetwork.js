@@ -2391,7 +2391,7 @@ function initNeuralNetworkChild(callback){
           });
 
           let networkObj = new NeuralNetwork();
-          networkObj.networkCreateMode = configuration.networkCreateMode;
+          networkObj.networkCreateMode = "train";
           networkObj.createdAt = moment().valueOf();
           networkObj.networkId = testObj.testRunId;
           networkObj.network = m.networkObj.network;
@@ -2463,7 +2463,6 @@ function initNeuralNetworkChild(callback){
           ));
         }
 
-
         network = neataptic.Network.fromJSON(m.networkObj.network);
 
         testNetwork(network, testObj, function(err, results){
@@ -2514,7 +2513,7 @@ function initNeuralNetworkChild(callback){
           });
 
           let networkObj = new NeuralNetwork();
-          networkObj.networkCreateMode = configuration.networkCreateMode;
+          networkObj.networkCreateMode = "evolve";
           networkObj.createdAt = moment().valueOf();
           networkObj.networkId = testObj.testRunId;
           networkObj.network = m.networkObj.network;
@@ -2555,7 +2554,12 @@ function initNeuralNetworkChild(callback){
               + "\nCREATED: " + moment(new Date(networkObj.createdAt)).format(compactDateTimeFormat) 
             );
 
-            quit();
+            console.log(chalkInfo("WAIT FOR NETWORK FILE SAVE ..."));
+
+            setTimeout(function(){
+              quit();
+            }, 5000);
+
           });
 
         });
@@ -2588,29 +2592,10 @@ function initTimeout(){
 
     if (cnf.useBestNetwork) {
 
-      // loadBestNeuralNetworkFile(function(err, nnObj){
-
-      //   if (err) {
-      //     console.log(chalkError("LOAD NN ERROR\n" + err));
-      //   }
-
-      //   console.log(chalkAlert("NN: " + nnObj.networkId));
-
-      //   configuration.evolve.networkId = nnObj.networkId;
-      //   configuration.evolve.network = nnObj;
-
-      //   initNeuralNetworkChild(function(){
-      //     if (process.env.TNN_BATCH_MODE){
-      //       slackChannel = "#nn_batch";
-      //     }
-      //   });
-
-      // });
-
       loadBestNeuralNetworkFile()
       .then(function(nnObj){
 
-        console.log(chalkAlert("NN: " + nnObj.networkId));
+        console.log(chalkAlert("BEST NN: " + nnObj.networkId));
 
         configuration.evolve.networkId = nnObj.networkId;
         configuration.evolve.network = nnObj;

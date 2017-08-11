@@ -178,11 +178,18 @@ function saveFile (path, file, jsonObj, callback){
   console.log(chalkInfo("SAVE FILE FULL PATH " + fullPath));
 
   let options = {};
-
-  options.contents = JSON.stringify(jsonObj, null, 2);
   options.path = fullPath;
   options.mode = "overwrite";
   options.autorename = false;
+
+  try {
+    options.contents = JSON.stringify(jsonObj, null, 2);
+  }
+  catch (err){
+    console.error(chalkError("*** SAVE FILE JSON STRINGIFY ERROR: " + err));
+    if (callback !== undefined) { return (callback(err, null)); }
+  };
+
 
   dropboxClient.filesUpload(options)
     .then(function(response){
@@ -777,6 +784,7 @@ process.on("message", function(m) {
           let exportedNetwork = network.toJSON();
 
           let networkObj = new NeuralNetwork();
+          networkObj.networkCreateMode = "train";
           networkObj.testRunId = statsObj.training.testRunId;
           networkObj.networkId = statsObj.training.testRunId;
           networkObj.network = exportedNetwork;
@@ -902,6 +910,7 @@ process.on("message", function(m) {
           let exportedNetwork = network.toJSON();
 
           let networkObj = new NeuralNetwork();
+          networkObj.networkCreateMode = "evolve";
           networkObj.testRunId = statsObj.training.testRunId;
           networkObj.networkId = statsObj.training.testRunId;
           networkObj.network = exportedNetwork;

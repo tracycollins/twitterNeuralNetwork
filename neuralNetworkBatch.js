@@ -231,6 +231,10 @@ function getTimeStamp(inputTime) {
     currentTimeStamp = moment().format(compactDateTimeFormat);
     return currentTimeStamp;
   }
+  else if (moment.isDate(inputTime)) {
+    currentTimeStamp = moment(inputTime).format(compactDateTimeFormat);
+    return currentTimeStamp;
+  }
   else if (moment.isMoment(inputTime)) {
     currentTimeStamp = moment(inputTime).format(compactDateTimeFormat);
     return currentTimeStamp;
@@ -549,7 +553,12 @@ function loadFile(path, file, callback) {
         });
     })
     .catch(function(err) {
-      console.log(chalkError("*** ERROR DROPBOX LOAD FILE\n" + jsonPrint(err)));
+      if (err.status === 429){
+        console.log(chalkError("*** ERROR DROPBOX LOAD FILE TOO MANY REQUESTS"));
+      }
+      else {
+        console.log(chalkError("*** ERROR DROPBOX LOAD FILE\n" + jsonPrint(err)));
+      }
       callback(err, null);
     });
 }
@@ -820,7 +829,7 @@ function printNetworkObj(title, nnObj){
     + "\n" + title
     + "\nID:      " + nnObj.networkId
     + "\nCREATED: " + getTimeStamp(nnObj.createdAt)
-    + "\nSUCCESS: " + nnObj.successRate.toFixed(2) + "%"
+    + "\nSUCCESS: " + nnObj.successRate.toFixed(1) + "%"
     + "\nINPUTS:  " + Object.keys(nnObj.inputs)
     + "\nEVOLVE\n" + jsonPrint(nnObj.evolve)
     + "\nTRAIN\n" + jsonPrint(nnObj.train)
@@ -847,7 +856,6 @@ function loadBestNetworkDropboxFolder(folder, callback){
 
       console.log(chalkInfo("DROPBOX BEST NETWORK FOUND"
         + " | " + getTimeStamp(new Date(entry.client_modified))
-        + " | " + entry.client_modified
         + " | " + entry.name
         // + " | " + entry.content_hash
         // + "\n" + jsonPrint(entry)
@@ -860,7 +868,7 @@ function loadBestNetworkDropboxFolder(folder, callback){
         if (bestNetworkHashMap.get(nnId).entry.content_hash !== entry.content_hash) {
 
           console.log(chalkInfo("DROPBOX BEST NETWORK CONTENT CHANGE"
-            + " | " + getTimeStamp(entry.client_modified * 1000)
+            + " | " + getTimeStamp(new Date(entry.client_modified))
             + " | " + entry.name
             + "\nCUR HASH: " + entry.content_hash
             + "\nOLD HASH: " + bestNetworkHashMap.get(nnId).entry.content_hash
@@ -869,7 +877,12 @@ function loadBestNetworkDropboxFolder(folder, callback){
           loadFile(folder, entry.name, function(err, networkObj){
 
             if (err) {
-              console.log(chalkError("DROPBOX BEST NETWORK LOAD FILE ERROR: " + jsonPrint(err)));
+              if (err.status === 429) {
+                console.log(chalkError("DROPBOX BEST NETWORK LOAD FILE ERROR: TOO MANY REQUESTS"));
+              }
+              else {
+                console.log(chalkError("DROPBOX BEST NETWORK LOAD FILE ERROR: " + jsonPrint(err)));
+              }
               return(cb());
             }
 
@@ -899,7 +912,7 @@ function loadBestNetworkDropboxFolder(folder, callback){
             + " | " + entry.name
             // + " | CUR HASH: " + entry.content_hash
             // + " | OLD HASH: " + bestNetworkHashMap.get(entry.name).content_hash
-            + " | " + getTimeStamp(entry.client_modified * 1000)
+            + " | " + getTimeStamp(new Date(entry.client_modified))
           ));
 
           cb();
@@ -910,7 +923,12 @@ function loadBestNetworkDropboxFolder(folder, callback){
         loadFile(folder, entry.name, function(err, networkObj){
 
           if (err) {
-            console.log(chalkError("DROPBOX BEST NETWORK LOAD FILE ERROR: " + jsonPrint(err)));
+            if (err.status === 429) {
+              console.log(chalkError("DROPBOX BEST NETWORK LOAD FILE ERROR: TOO MANY REQUESTS"));
+            }
+            else {
+              console.log(chalkError("DROPBOX BEST NETWORK LOAD FILE ERROR: " + jsonPrint(err)));
+            }
             return(cb());
           }
 
@@ -923,8 +941,7 @@ function loadBestNetworkDropboxFolder(folder, callback){
             + " | OUT: " + networkObj.numOutputs
           ));
 
-          // bestNetworkHashMap.set(entry.name, { entry: entry, network: networkObj});
-          bestNetworkHashMap.set(networkObj.nodeId, { entry: entry, network: networkObj});
+          bestNetworkHashMap.set(networkObj.networkId, { entry: entry, network: networkObj});
 
           nnArray.push(networkObj);
 
@@ -949,7 +966,7 @@ function loadBestNetworkDropboxFolder(folder, callback){
 
         messageText = "\n*NN NEW SEED*\n*" 
           + currentBestNetwork.networkId + "*\n*"
-          + currentBestNetwork.successRate.toFixed(2) + "%*\n"
+          + currentBestNetwork.successRate.toFixed(1) + "%*\n"
           + currentBestNetwork.networkCreateMode + "*\n"
           + getTimeStamp(currentBestNetwork.createdAt) + "\n"
           + jsonPrint(currentBestNetwork.evolve) + "\n";
@@ -1004,7 +1021,8 @@ function loadSeedNeuralNetwork(options, callback){
     else {
       console.log("BEST NETWORK FOUND"
         + " | " + currentBestNetwork.networkId
-        + " | " + currentBestNetwork.successRate.toFixed(2) + "%"
+        // + " | " + currentBestNetwork.successRate.toFixed(2) + "%"
+        + " | " + currentBestNetwork.successRate.toFixed(1) + "%"
       );
 
       if (findOneNetwork) {
@@ -1028,7 +1046,8 @@ function loadSeedNeuralNetwork(options, callback){
 
         let messageText = "\n*NN SEED*\n*" 
           + currentSeedNetwork.networkId + "*\n*"
-          + currentSeedNetwork.successRate.toFixed(2) + "%*\n"
+          // + currentSeedNetwork.successRate.toFixed(2) + "%*\n"
+          + currentSeedNetwork.successRate.toFixed(1) + "%*\n"
           + currentBestNetwork.networkCreateMode + "*\n"
           + getTimeStamp(currentSeedNetwork.createdAt) + "\n"
           + jsonPrint(currentSeedNetwork.evolve) + "\n";
@@ -1109,7 +1128,7 @@ function startInstance(instanceConfig, callback){
     if (apps.length > 0) {
 
       console.log(chalkAlert("START"
-        + " | " + instanceConfig.env.TNN_NETWORK_CREATE_MODE.toUpperCase()
+        + " | " + instanceConfig.env.TNN_NETWORK_CREATE_MODE
         + " | " + apps[0].pm2_env.TNN_RUN_ID
         // + " | " + apps[0].pm2_env.name
         + " | PM2 ID: " + apps[0].pm2_env.pm_id
@@ -1154,7 +1173,7 @@ const generateRandomEvolveEnv = function(cnf){
     env.TNN_SEED_NETWORK_ID = currentSeedNetwork.networkId;
 
     console.log(chalkAlert("\nSEED NETWORK\n----------------------------------"));
-    console.log(chalkAlert(currentSeedNetwork.successRate.toFixed(2) + " | " + currentSeedNetwork.networkId));
+    console.log(chalkAlert(currentSeedNetwork.successRate.toFixed(1) + " | " + currentSeedNetwork.networkId));
     console.log(chalkAlert("----------------------------------"));
   }
   else {
@@ -1162,7 +1181,7 @@ const generateRandomEvolveEnv = function(cnf){
     console.log(chalkAlert("\nBEST NETWORKS\n----------------------------------"));
 
     bestNetworkHashMap.forEach(function(entry, nnId){
-      console.log(chalkAlert(entry.network.successRate.toFixed(2) + " | " + nnId));
+      console.log(chalkAlert(entry.network.successRate.toFixed(1) + " | " + nnId));
     });
 
     console.log(chalkAlert("----------------------------------"));
@@ -1307,13 +1326,15 @@ function initProcessPollInterval(interval){
     if (results.best) {
       console.log(chalkAlert("LOAD NN"
         + " | BEST: " + results.best.networkId
-        + " " + results.best.successRate.toFixed(2) + "%"
+        // + " " + results.best.successRate.toFixed(2) + "%"
+        + " " + results.best.successRate.toFixed(1) + "%"
       ));
     }
     if (results.seed) {
       console.log(chalkAlert("LOAD NN"
         + " | SEED: " + results.seed.networkId
-        + " " + results.seed.successRate.toFixed(2) + "%"
+        // + " " + results.seed.successRate.toFixed(2) + "%"
+        + " " + results.seed.successRate.toFixed(1) + "%"
       ));
     }
   });
@@ -1368,39 +1389,63 @@ function initProcessPollInterval(interval){
 
               console.log(chalkAlert("STOPPED: " + app.name));
 
-              loadSeedNeuralNetwork(seedOpt, function(err, results){
+              const nnId = app.name.replace("NNB_", "");
+
+              loadSeedNeuralNetwork({networkId: nnId}, function(err, results){
 
                 if (err) {
                   console.error(chalkError("loadSeedNeuralNetwork ERROR: " + err));
+
+                  let instanceObj = instanceConfigHashMap.get(app.name);
+
+                  instanceObj.stats.elapsed = moment().valueOf() - instanceObj.stats.started;  
+                  instanceObj.stats.ended = moment().valueOf();
+                  instanceObj.results.successRate = 0;
+                  instanceConfigHashMap.set(instanceObj.id, instanceObj);
+
+                  printInstanceConfigHashMap();
+
+                  statsObj.instances.completed += 1;
+                  statsObj.instances.errors += 1;
+
+                  pm2.delete(app.pm2_env.pm_id, function(err, results){
+
+                    delete appHashMap[app.name];
+
+                    if (err) { 
+                      console.log(chalkError("PM2 DELETE ERROR: " + err));
+                    }
+                    else {
+                      debug("PM2 DELETE RESULTS\n" + results);
+                    }
+
+                  });
+
                 }
                 if (results.best) {
                   console.log(chalkAlert("LOAD NN"
                     + " | BEST: " + results.best.networkId
-                    + " " + results.best.successRate.toFixed(2) + "%"
+                    + " " + results.best.successRate.toFixed(1) + "%"
                   ));
                 }
                 if (results.seed) {
                   console.log(chalkAlert("LOAD NN"
                     + " | SEED: " + results.seed.networkId
-                    + " " + results.seed.successRate.toFixed(2) + "%"
+                    + " " + results.seed.successRate.toFixed(1) + "%"
                   ));
                 }
-
-                const nnId = app.name.replace("NNB_", "");
-
-                // NeuralNetwork.find({networkId: nnId}, function(err, nnArray){
 
                 if (!bestNetworkHashMap.has(nnId)){
                   console.log(chalkError("*** NN NOT FOUND IN HASH: " + nnId));
                 }
                 else {
-                  const nn = bestNetworkHashMap.get(nnId);
+                  const nn = bestNetworkHashMap.get(nnId).network;
 
                   debug("SEED NETWORK\n" + jsonPrint(nn));
 
                   console.log("<DB NETWORK"
                     + " | " + nn.networkId 
-                    + " | CREATE: " + nn.networkCreateMode.toUpperCase()
+                    + " | CREATE: " + nn.networkCreateMode
                     + " | SUCCESS: " + nn.successRate.toFixed(1) + "%"
                     + " | IN: " + nn.network.input
                     + " | OUT: " + nn.network.output
@@ -1464,13 +1509,13 @@ function initBatch(callback){
     if (results.best) {
       console.log(chalkAlert("LOAD NN"
         + " | BEST: " + results.best.networkId
-        + " " + results.best.successRate.toFixed(2) + "%"
+        + " " + results.best.successRate.toFixed(1) + "%"
       ));
     }
     if (results.seed) {
       console.log(chalkAlert("LOAD NN"
         + " | SEED: " + results.seed.networkId
-        + " " + results.seed.successRate.toFixed(2) + "%"
+        + " " + results.seed.successRate.toFixed(1) + "%"
       ));
     }
 
