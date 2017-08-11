@@ -549,7 +549,7 @@ function loadFile(path, file, callback) {
         });
     })
     .catch(function(err) {
-      console.log(chalkError("*** ERROR DROPBOX LOAD FILE\n" + err));
+      console.log(chalkError("*** ERROR DROPBOX LOAD FILE\n" + jsonPrint(err)));
       callback(err, null);
     });
 }
@@ -866,7 +866,7 @@ function loadBestNetworkDropboxFolder(folder, callback){
           loadFile(folder, entry.name, function(err, networkObj){
 
             if (err) {
-              console.log(chalkError("DROPBOX BEST NETWORK LOAD FILE ERROR: " + err));
+              console.log(chalkError("DROPBOX BEST NETWORK LOAD FILE ERROR: " + jsonPrint(err)));
               return(cb());
             }
 
@@ -906,7 +906,7 @@ function loadBestNetworkDropboxFolder(folder, callback){
         loadFile(folder, entry.name, function(err, networkObj){
 
           if (err) {
-            console.log(chalkError("DROPBOX BEST NETWORK LOAD FILE ERROR: " + err));
+            console.log(chalkError("DROPBOX BEST NETWORK LOAD FILE ERROR: " + jsonPrint(err)));
             return(cb());
           }
 
