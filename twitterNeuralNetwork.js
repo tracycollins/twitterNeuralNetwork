@@ -2437,6 +2437,12 @@ function initNeuralNetworkChild(callback){
               + "\nCREATED: " + moment(new Date(networkObj.createdAt)).format(compactDateTimeFormat) 
             );
 
+            console.log(chalkInfo("WAIT FOR NETWORK FILE SAVE ..."));
+
+            setTimeout(function(){
+              quit();
+            }, 10000);
+
             quit();
           });
 
@@ -2558,7 +2564,7 @@ function initNeuralNetworkChild(callback){
 
             setTimeout(function(){
               quit();
-            }, 5000);
+            }, 10000);
 
           });
 
