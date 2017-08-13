@@ -2424,7 +2424,7 @@ function initNeuralNetworkChild(callback){
           ));
 
           saveFile({folder: bestNetworkFolder, file: bestNetworkFile, obj: networkObj}, function(err){
-            console.log("> NETWORK SAVED"
+            console.log("SAVED NETWORK TO DROPBOX"
               + "\nNET ID:  " + networkObj.networkId 
               + "\nCREATE:  " + networkObj.networkCreateMode 
               // + "\nTYPE:    " + updateNetworkObj.networkType
@@ -2443,7 +2443,6 @@ function initNeuralNetworkChild(callback){
               quit();
             }, 10000);
 
-            quit();
           });
 
         });
