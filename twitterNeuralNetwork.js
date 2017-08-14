@@ -1754,7 +1754,10 @@ function updateClassifiedUsers(cnf, callback){
             // console.log("user.status\n" + jsonPrint(user.status));
             if ((user.status !== undefined) && user.status && user.status.text) {
 
-              console.log(chalkBlue("T | " + user.userId + "\n" + jsonPrint(user.status.text)));
+              debug(chalkBlue("T"
+                + " | " + user.userId
+                + " | " + jsonPrint(user.status.text)
+              ));
 
               if (text) {
                 cb(null, text + "\n" + user.status.text);
@@ -1776,7 +1779,11 @@ function updateClassifiedUsers(cnf, callback){
             if ((user.status !== undefined) && user.status) {
               if ((user.status.retweeted_status !== undefined) && user.status.retweeted_status) {
 
-                console.log(chalkBlue("R | " + user.userId + "\n" + jsonPrint(user.status.retweeted_status.text)));
+                debug(chalkBlue("R"
+                  + " | " + user.userId
+                  + " | " + jsonPrint(user.status.retweeted_status.text)
+                ));
+
 
                 if (text) {
                   cb(null, text + "\n" + user.status.retweeted_status.text);
@@ -1873,7 +1880,9 @@ function updateClassifiedUsers(cnf, callback){
                       + " | " + userHistograms[type][element]
                     ));
 
-                    cb2();
+                    async.setImmediate(function() {
+                      cb2();
+                    });
 
                   }
                   else {
@@ -1882,7 +1891,10 @@ function updateClassifiedUsers(cnf, callback){
                     debug(chalkInfo("- DATUM BIT: " + type
                       + " | " + element 
                     ));
-                    cb2();
+
+                    async.setImmediate(function() {
+                      cb2();
+                    });
 
                   }
                 }, function(err){
