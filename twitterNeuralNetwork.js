@@ -734,7 +734,7 @@ function loadFile(path, file, callback) {
 
   dropboxClient.filesDownload({path: path + "/" + file})
     .then(function(data) {
-      console.log(chalkLog(getTimeStamp()
+      debug(chalkLog(getTimeStamp()
         + " | LOADING FILE FROM DROPBOX FILE: " + path + "/" + file
       ));
 
@@ -2320,7 +2320,8 @@ function initNeuralNetworkChild(callback){
       break;
 
       case "STATS":
-        console.log("NNC | STATS | " + Object.keys(statsObj));
+        console.log("NNC | STATS___________________________\n" + jsonPrint(statsObj));
+        console.log("NNC | STATS___________________________\n");
       break;
 
       case "TEST_EVOLVE_COMPLETE":

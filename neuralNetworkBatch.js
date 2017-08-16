@@ -511,7 +511,7 @@ function loadFile(path, file, callback) {
 
             dropboxClient.filesDownload({path: path + "/" + file})
               .then(function(data) {
-                console.log(chalkLog(getTimeStamp()
+                debug(chalkLog(getTimeStamp()
                   + " | LOADING FILE FROM DROPBOX FILE: " + path + "/" + file
                 ));
 
@@ -854,7 +854,7 @@ function loadBestNetworkDropboxFolder(folder, callback){
 
     async.eachSeries(response.entries, function(entry, cb){
 
-      console.log(chalkInfo("DROPBOX BEST NETWORK FOUND"
+      debug(chalkInfo("DROPBOX BEST NETWORK FOUND"
         + " | " + getTimeStamp(new Date(entry.client_modified))
         + " | " + entry.name
         // + " | " + entry.content_hash
@@ -1021,7 +1021,7 @@ function loadSeedNeuralNetwork(options, callback){
     else {
       console.log("BEST NETWORK FOUND"
         + " | " + currentBestNetwork.networkId
-        // + " | " + currentBestNetwork.successRate.toFixed(2) + "%"
+        + " | " + getTimeStamp(currentBestNetwork.createdAt)
         + " | " + currentBestNetwork.successRate.toFixed(1) + "%"
       );
 
