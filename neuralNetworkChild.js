@@ -228,7 +228,7 @@ function showStats(options){
     statsObj.memory.maxRssTime = moment().valueOf();
   }
 
-  if (options) {
+  if (options !== undefined) {
     console.log("NNC | STATS | " + Object.keys(statsObj));
   }
   else {
