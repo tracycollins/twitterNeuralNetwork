@@ -228,17 +228,12 @@ function showStats(options){
     statsObj.memory.maxRssTime = moment().valueOf();
   }
 
-  if (options !== undefined) {
-    console.log("NNC | STATS | " + Object.keys(statsObj));
-  }
-  else {
-    console.log(chalk.green("NNC | S"
-      + " | START: " + moment(parseInt(statsObj.startTime)).format(compactDateTimeFormat)
-      + " | ELAPSED: " + statsObj.elapsed
-      + " | TRAINING START: " + moment(parseInt(statsObj.training.startTime)).format(compactDateTimeFormat)
-      + " | TRAINING ELAPSED: " + statsObj.elapsed
-    ));
-  }
+  console.log(chalk.green("NNC | S"
+    + " | START: " + moment(parseInt(statsObj.startTime)).format(compactDateTimeFormat)
+    + " | ELAPSED: " + statsObj.elapsed
+    + " | TRAINING START: " + moment(parseInt(statsObj.training.startTime)).format(compactDateTimeFormat)
+    + " | TRAINING ELAPSED: " + statsObj.elapsed
+  ));
 }
 
 function quit(message) {

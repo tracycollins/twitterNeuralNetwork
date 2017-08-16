@@ -171,10 +171,10 @@ let statsObj = {};
 statsObj.hostname = hostname;
 statsObj.pid = process.pid;
 
-statsObj.memory = {};
-statsObj.memory.rss = process.memoryUsage().rss/(1024*1024);
-statsObj.memory.maxRss = process.memoryUsage().rss/(1024*1024);
-statsObj.memory.maxRssTime = moment().valueOf();
+// statsObj.memory = {};
+// statsObj.memory.rss = process.memoryUsage().rss/(1024*1024);
+// statsObj.memory.maxRss = process.memoryUsage().rss/(1024*1024);
+// statsObj.memory.maxRssTime = moment().valueOf();
 
 statsObj.startTimeMoment = moment();
 statsObj.startTime = moment().valueOf();
@@ -489,11 +489,11 @@ function showStats(options){
 
   statsObj.elapsed = msToTime(moment().valueOf() - statsObj.startTime);
 
-  statsObj.memory.rss = process.memoryUsage().rss/(1024*1024);
-  if (statsObj.memory.rss > statsObj.memory.maxRss) {
-    statsObj.memory.maxRss = statsObj.memory.rss;
-    statsObj.memory.maxRssTime = moment().valueOf();
-  }
+  // statsObj.memory.rss = process.memoryUsage().rss/(1024*1024);
+  // if (statsObj.memory.rss > statsObj.memory.maxRss) {
+  //   statsObj.memory.maxRss = statsObj.memory.rss;
+  //   statsObj.memory.maxRssTime = moment().valueOf();
+  // }
 
   if (options) {
     console.log("STATS\n" + jsonPrint(statsObj));
@@ -782,15 +782,15 @@ function initStatsUpdate(cnf, callback){
     statsObj.elapsed = msToTime(moment().valueOf() - statsObj.startTime);
     statsObj.timeStamp = moment().format(defaultDateTimeFormat);
 
-    statsObj.memory.rss = process.memoryUsage().rss/(1024*1024);
-    if (statsObj.memory.rss > statsObj.memory.maxRss) {
-      statsObj.memory.maxRss = statsObj.memory.rss;
-      statsObj.memory.maxRssTime = moment().valueOf();
-      console.log(chalkAlert("NEW MAX RSS"
-        + " | " + statsObj.memory.maxRss.toFixed(1)
-        + " | " + getTimeStamp(statsObj.memory.maxRssTime)
-      ));
-    }
+    // statsObj.memory.rss = process.memoryUsage().rss/(1024*1024);
+    // if (statsObj.memory.rss > statsObj.memory.maxRss) {
+    //   statsObj.memory.maxRss = statsObj.memory.rss;
+    //   statsObj.memory.maxRssTime = moment().valueOf();
+    //   console.log(chalkAlert("NEW MAX RSS"
+    //     + " | " + statsObj.memory.maxRss.toFixed(1)
+    //     + " | " + getTimeStamp(statsObj.memory.maxRssTime)
+    //   ));
+    // }
 
     saveFile({folder: statsFolder, file: statsFile, obj: statsObj});
 
@@ -1961,7 +1961,7 @@ function updateClassifiedUsers(cnf, callback){
       }
       else {
         console.log(chalkBlue("USER KW>DB"
-          + " | " + keywordArray
+          + " | KW: " + keywordArray
           + " | " + classification
           + " | " + user.userId
           + " | " + user.screenName
@@ -1970,7 +1970,6 @@ function updateClassifiedUsers(cnf, callback){
           + " | FLs: " + user.followersCount
           + " | FRs: " + user.friendsCount
           + " | SEN: " + sentimentText
-          + " | KW: " + keywordArray
         ));
 
         console.log(chalkBlue("KEYWORDS: " + Object.keys(classifiedUserHashmap[userId])));
