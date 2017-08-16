@@ -351,23 +351,31 @@ let processPollInterval;
 let statsUpdateInterval;
 
 function printInstanceConfigHashMap(){
-  console.log("\nNNB INSTANCE CONFIG HASH MAP_____________________________________");
+
+  console.log("\nNNB INSTANCE CONFIG HASH MAP"
+    + " | " + getTimeStamp()
+    + " | _____________________________________"
+  );
+
   instanceConfigHashMap.forEach(function(instanceObj, nnId){
 
+    let resultsText = instanceObj.results.successRate.toFixed(1) + "%";
+
     if (instanceObj.stats.ended === 0) {
+      resultsText = "---"
       instanceObj.stats.elapsed = moment().valueOf() - instanceObj.stats.started;
       instanceConfigHashMap.set(nnId, instanceObj);
     }
 
     console.log(nnId
-      // + "\n" + jsonPrint(instanceObj)
       + " | " + instanceObj.config.env.TNN_NETWORK_CREATE_MODE
-      + " | N: " + getTimeStamp()
       + " | S: " + getTimeStamp(instanceObj.stats.started)
       + " | RUN: " + msToTime(instanceObj.stats.elapsed)
-      + " | RESULTS: " + instanceObj.results.successRate.toFixed(1) + "%"
+      + " | RESULTS: " + resultsText
     );
+    
   });
+
   console.log("_____________________________________________________________\n");
 }
 
@@ -935,10 +943,10 @@ function loadBestNetworkDropboxFolder(folder, callback){
           console.log(chalkInfo("DROPBOX BEST NETWORK"
             + " | " + networkObj.successRate.toFixed(1) + "%"
             + " | " + getTimeStamp(networkObj.createdAt)
-            + " | " + networkObj.networkId
-            + " | " + networkObj.networkCreateMode
             + " | IN: " + networkObj.numInputs
             + " | OUT: " + networkObj.numOutputs
+            + " | " + networkObj.networkCreateMode
+            + " | " + networkObj.networkId
           ));
 
           bestNetworkHashMap.set(networkObj.networkId, { entry: entry, network: networkObj});
@@ -1119,7 +1127,9 @@ function startInstance(instanceConfig, callback){
     instanceObj.results.successRate = 0;
 
     console.log(chalkInfo("START INSTANCE\n" + jsonPrint(instanceConfig)));
+
     instanceConfigHashMap.set(instanceObj.id, instanceObj);
+
     printInstanceConfigHashMap();
 
     statsObj.instances.started += 1;
