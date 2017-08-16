@@ -1164,7 +1164,8 @@ const generateRandomEvolveEnv = function(cnf){
 
   env.TNN_ITERATIONS = cnf.iterations;
 
-  env.TNN_NETWORK_CREATE_MODE = randomItem(["evolve", "train"]);
+  // env.TNN_NETWORK_CREATE_MODE = randomItem(["evolve", "train"]);
+  env.TNN_NETWORK_CREATE_MODE = "evolve";
 
   console.log(chalkAlert("NETWORK CREATE MODE: " + env.TNN_NETWORK_CREATE_MODE));
 

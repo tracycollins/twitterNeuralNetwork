@@ -302,7 +302,6 @@ function testEvolve(params, callback){
   })
   .then(function(results){
 
-    // console.log(chalkAlert("NNC | TEST EVOLVE RESULTS\n" + jsonPrint(results)));
     console.log(chalkAlert("\nNNC | EVOLVE RESULTS"
       + " | " + "TIME: " + results.time
       + " | " + "ITERATIONS: " + results.iterations
@@ -988,10 +987,7 @@ setTimeout(function(){
 
     if (err && (err.status !== 404)) {
       console.error(chalkError("NNC | ***** INIT ERROR *****\n" + jsonPrint(err)));
-      // if (err.status !== 404){
-      //   console.log("err.status: " + err.status);
-        quit();
-      // }
+      quit();
     }
     initStatsUpdate(cnf, function(){
       console.log("NNC | " + cnf.processName + " STARTED " + getTimeStamp() + "\n");

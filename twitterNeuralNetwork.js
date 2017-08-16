@@ -4,6 +4,9 @@
 const inputTypes = ["hashtags", "mentions", "urls", "words", "emoji"];
 inputTypes.sort();
 
+let trainingSet = [];
+let trainingSetNormalized = [];
+
 let trainingSetLabels = {};
 trainingSetLabels.inputRaw = [];
 trainingSetLabels.inputs = {};
@@ -12,6 +15,22 @@ trainingSetLabels.outputs = ["left", "neutral", "right"];
 inputTypes.forEach(function(type){
   trainingSetLabels.inputs[type] = [];
 });
+
+let inputArrays = {};
+
+
+let requiredTrainingSet = new Set();
+requiredTrainingSet.add("realdonaldtrump");
+requiredTrainingSet.add("potus");
+requiredTrainingSet.add("gop");
+requiredTrainingSet.add("vp");
+requiredTrainingSet.add("foxnews");
+requiredTrainingSet.add("dnc");
+requiredTrainingSet.add("hillaryclinton");
+requiredTrainingSet.add("barackobama");
+requiredTrainingSet.add("sensanders");
+requiredTrainingSet.add("speakerryan");
+
 
 let currentBestNetwork;
 
@@ -193,10 +212,6 @@ classifiedUserHistogram.positive = 0;
 classifiedUserHistogram.negative = 0;
 classifiedUserHistogram.none = 0;
 
-let trainingSet = [];
-let trainingSetNormalized = [];
-
-let inputArrays = {};
 
 const HashMap = require("hashmap").HashMap;
 let bestNetworkHashMap = new HashMap();
@@ -312,10 +327,6 @@ testObj.testRunId = statsObj.runId;
 testObj.testSet = [];
 
 statsObj.tests = {};
-// statsObj.tests[statsObj.runId] = {};
-// statsObj.tests[statsObj.runId].results = {};
-// statsObj.tests[statsObj.runId].network = {};
-
 statsObj.tests[testObj.testRunId] = {};
 statsObj.tests[testObj.testRunId].numInputs = 0;
 statsObj.tests[testObj.testRunId].numOutputs = 0;
@@ -1907,6 +1918,7 @@ function updateClassifiedUsers(cnf, callback){
                 });
 
               }, function(err){
+
                 if (err) {
                   console.error("*** PARSE TEXT ERROR\n" + err);
                   return(cb0(err));
@@ -1914,10 +1926,7 @@ function updateClassifiedUsers(cnf, callback){
 
                 debug(chalkAlert("PARSE DESC COMPLETE"));
 
-
                 trainingSetDatum.output = [];
-                // trainingSetLabels.outputs = [];
-                // trainingSetLabels.outputs = ["LEFT", "NEUTRAL", "RIGHT"];
 
                 switch (keywordArray[0]){
                   case "left":
@@ -1941,12 +1950,8 @@ function updateClassifiedUsers(cnf, callback){
                 debug("trainingSet " + trainingSet.length + " | INPUT:  " + trainingSetDatum.input.length);
                 debug("trainingSetDatum OUTPUT: " + trainingSetDatum.output);
 
-                // printDatum(user.screenName, trainingSetDatum, trainingSetLabels, function(text){
-                //   debug(chalkInfo(text));
-                  // trainingSet.push({name: user.screenName, datum: trainingSetDatum, labels: trainingSetLabels});
-                  trainingSet.push({name: user.screenName, datum: trainingSetDatum});
-                  cb0();
-                // });
+                trainingSet.push({name: user.screenName.toLowerCase(), datum: trainingSetDatum});
+                cb0();
               });
             });
 
@@ -2017,17 +2022,22 @@ function updateClassifiedUsers(cnf, callback){
         dataObj.datum.input[0] = 0;
       }
 
-
       if (configuration.testMode) {
         testObj.testSet.push(dataObj);
         cb3();
       }
-      else if (Math.random() < cnf.testSetRatio) {
-        testObj.testSet.push(dataObj);
+      // trainingSet.push({name: user.screenName, datum: trainingSetDatum});
+      else if (requiredTrainingSet.has(dataObj.name.toLowerCase())) {
+        console.log(chalkAlert("+++ ADD REQ TRAINING SET | @" + dataObj.name));
+        trainingSetNormalized.push(dataObj);
+        cb3();
+      }
+      else if (Math.random() > cnf.testSetRatio) {
+        trainingSetNormalized.push(dataObj);
         cb3();
       }
       else {
-        trainingSetNormalized.push(dataObj);
+        testObj.testSet.push(dataObj);
         cb3();
       }
 
@@ -2607,6 +2617,10 @@ function initTimeout(){
 
     console.log(chalkBlue("\n\n" + cnf.processName + " STARTED " + getTimeStamp() + "\n" + jsonPrint(configuration)));
 
+    requiredTrainingSet.forEach(function(userId) {
+      console.log(chalkAlert("... REQ TRAINING SET | @" + userId));
+    });
+
     if (cnf.useBestNetwork) {
 
       loadBestNeuralNetworkFile()
@@ -2662,8 +2676,6 @@ function initTimeout(){
 
       });
     }
-
-  
 
   });
 }
