@@ -3,6 +3,7 @@
 
 const bestNetworkFolder = "/config/utility/best/neuralNetworks";
 
+const MIN_SUCCESS_RATE = 85%;
 const OFFLINE_MODE = true;
 const DEFAULT_ENABLE_RANDOM = true;
 const DEFAULT_BATCH_MAX_INSTANCES = 3;
@@ -945,11 +946,13 @@ function loadBestNetworkDropboxFolder(folder, callback){
             + " | " + networkObj.networkId
           ));
 
-          bestNetworkHashMap.set(networkObj.networkId, { entry: entry, network: networkObj});
+          if (networkObj.successRate > MIN_SUCCESS_RATE) {
+            bestNetworkHashMap.set(networkObj.networkId, { entry: entry, network: networkObj});
 
-          if (!currentBestNetwork || (networkObj.successRate > currentBestNetwork.successRate)) {
-            currentBestNetwork = networkObj;
-            newBestNetwork = true;
+            if (!currentBestNetwork || (networkObj.successRate > currentBestNetwork.successRate)) {
+              currentBestNetwork = networkObj;
+              newBestNetwork = true;
+            }
           }
 
           cb();
