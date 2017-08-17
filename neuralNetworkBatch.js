@@ -373,7 +373,7 @@ function printInstanceConfigHashMap(){
       + " | RUN: " + msToTime(instanceObj.stats.elapsed)
       + " | RESULTS: " + resultsText
     );
-    
+
   });
 
   console.log("______________________________________________________________________________________\n");
@@ -858,8 +858,6 @@ function loadBestNetworkDropboxFolder(folder, callback){
       + " | " + jsonPrint(response)
     ));
 
-    let nnArray = [];
-
     async.eachSeries(response.entries, function(entry, cb){
 
       debug(chalkInfo("DROPBOX BEST NETWORK FOUND"
@@ -905,8 +903,6 @@ function loadBestNetworkDropboxFolder(folder, callback){
 
             bestNetworkHashMap.set(networkObj.networkId, { entry: entry, network: networkObj});
 
-            nnArray.push(networkObj);
-
             if (!currentBestNetwork || (networkObj.successRate > currentBestNetwork.successRate)) {
               currentBestNetwork = networkObj;
               newBestNetwork = true;
@@ -950,8 +946,6 @@ function loadBestNetworkDropboxFolder(folder, callback){
           ));
 
           bestNetworkHashMap.set(networkObj.networkId, { entry: entry, network: networkObj});
-
-          nnArray.push(networkObj);
 
           if (!currentBestNetwork || (networkObj.successRate > currentBestNetwork.successRate)) {
             currentBestNetwork = networkObj;
@@ -1014,7 +1008,6 @@ function loadSeedNeuralNetwork(options, callback){
   }
 
   loadBestNetworkDropboxFolder(bestNetworkFolder, function(err, bestNetwork){
-  // NeuralNetwork.find(findQuery, null, {sort: {successRate: -1}, limit: 1}, function(err, nnArray){
     if (err) {
       console.log(chalkError("LOAD DROPBOX BEST NETWORK ERR"
         + " | FOLDER: " + bestNetworkFolder
@@ -1319,7 +1312,6 @@ function loadDropboxConfig(callback){
   });
 }
 
-
 function initProcessPollInterval(interval){
 
   console.log(chalkInfo("INIT PROCESS POLL INTERVAL | " + interval));
@@ -1549,7 +1541,6 @@ function initBatch(callback){
     });
 
   });
-
 }
 
 function initialize(cnf, callback){
