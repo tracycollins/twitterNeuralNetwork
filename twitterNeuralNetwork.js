@@ -26,6 +26,7 @@ requiredTrainingSet.add("mittromney");
 requiredTrainingSet.add("jaredkushner");
 requiredTrainingSet.add("gopchairwoman");
 requiredTrainingSet.add("breitbartnews");
+requiredTrainingSet.add("bfraser747");
 requiredTrainingSet.add("sherriffclarke");
 requiredTrainingSet.add("angela_rye");
 requiredTrainingSet.add("proudresister");
