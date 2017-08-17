@@ -204,13 +204,6 @@ configuration.instanceOptions.env.TNN_TRAIN_MOMENTUM = DEFAULT_TRAIN_MOMENTUM;
 configuration.instanceOptions.env.TNN_TRAIN_RATE_POLICY = DEFAULT_TRAIN_RATE_POLICY;
 configuration.instanceOptions.env.TNN_TRAIN_BATCH_SIZE = DEFAULT_TRAIN_BATCH_SIZE;
 
-// const User = require("mongoose").model("User");
-// const Word = require("mongoose").model("Word");
-// const NeuralNetwork = require("mongoose").model("NeuralNetwork");
-
-// const userServer = require("./app/controllers/user.server.controller");
-// const neuralNetworkServer = require("./app/controllers/neuralNetwork.server.controller");
-
 let currentSeedNetwork;
 let currentBestNetwork;
 const bestNetworkHashMap = new HashMap();
@@ -960,7 +953,7 @@ function loadBestNetworkDropboxFolder(folder, callback){
             if (!currentBestNetwork || (networkObj.successRate > currentBestNetwork.successRate)) {
               currentBestNetwork = networkObj;
               newBestNetwork = true;
-              console.log(chalkAlert("*** NEW BEST NN"
+              console.log(chalkAlert("* NEW BEST NN"
                 + " | " + bestNetworkHashMap.count() + " NNs IN HM"
                 + " | " + networkObj.successRate.toFixed(1) + "%"
                 + " | " + getTimeStamp(networkObj.createdAt)
@@ -970,6 +963,26 @@ function loadBestNetworkDropboxFolder(folder, callback){
                 + " | " + networkObj.networkId
               ));
             }
+          }
+          else {
+            dropboxClient.filesDelete({path: folder + "/" + entry.name})
+            .then(function(response){
+              console.log(chalkAlert("XXX NN"
+                + " | MIN SUCCESS RATE: " + MIN_SUCCESS_RATE
+                + " | " + networkObj.successRate.toFixed(1) + "%"
+                + " | " + getTimeStamp(networkObj.createdAt)
+                + " | IN: " + networkObj.numInputs
+                + " | OUT: " + networkObj.numOutputs
+                + " | " + networkObj.networkCreateMode
+                + " | " + networkObj.networkId
+              ));
+            })
+            .catch(function(err){
+              console.log(chalkError("*** ERROR: XXX NN"
+                + " | " + folder + "/" + entry.name
+                + " | " + jsonPrint(err)
+              ));
+            });
           }
 
           cb();
