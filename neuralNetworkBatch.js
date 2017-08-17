@@ -854,10 +854,7 @@ function loadBestNetworkDropboxFolder(folder, callback){
   dropboxClient.filesListFolder(options)
   .then(function(response){
 
-    debug(chalkLog("DROPBOX LIST FOLDER"
-      + " | " + options.path
-      + " | " + jsonPrint(response)
-    ));
+    console.log(chalkLog("FOUND " + response.entries.length + " FILES in DROPBOX FOLDER " + folder));
 
     async.eachSeries(response.entries, function(entry, cb){
 
@@ -937,21 +934,41 @@ function loadBestNetworkDropboxFolder(folder, callback){
             return(cb());
           }
 
-          console.log(chalkInfo("DROPBOX BEST NETWORK"
+          console.log(chalkInfo("... FOUND DROPBOX BEST NETWORK"
             + " | " + networkObj.successRate.toFixed(1) + "%"
             + " | " + getTimeStamp(networkObj.createdAt)
-            + " | IN: " + networkObj.numInputs
-            + " | OUT: " + networkObj.numOutputs
-            + " | " + networkObj.networkCreateMode
+            // + " | IN: " + networkObj.numInputs
+            // + " | OUT: " + networkObj.numOutputs
+            // + " | " + networkObj.networkCreateMode
             + " | " + networkObj.networkId
           ));
 
           if (networkObj.successRate > MIN_SUCCESS_RATE) {
+
             bestNetworkHashMap.set(networkObj.networkId, { entry: entry, network: networkObj});
+
+            console.log(chalkInfo("+ NN HASH MAP"
+              + " | " + bestNetworkHashMap.count() + " NNs IN HM"
+              + " | " + networkObj.successRate.toFixed(1) + "%"
+              + " | " + getTimeStamp(networkObj.createdAt)
+              + " | IN: " + networkObj.numInputs
+              + " | OUT: " + networkObj.numOutputs
+              + " | " + networkObj.networkCreateMode
+              + " | " + networkObj.networkId
+            ));
 
             if (!currentBestNetwork || (networkObj.successRate > currentBestNetwork.successRate)) {
               currentBestNetwork = networkObj;
               newBestNetwork = true;
+              console.log(chalkAlert("*** NEW BEST NN"
+                + " | " + bestNetworkHashMap.count() + " NNs IN HM"
+                + " | " + networkObj.successRate.toFixed(1) + "%"
+                + " | " + getTimeStamp(networkObj.createdAt)
+                + " | IN: " + networkObj.numInputs
+                + " | OUT: " + networkObj.numOutputs
+                + " | " + networkObj.networkCreateMode
+                + " | " + networkObj.networkId
+              ));
             }
           }
 
