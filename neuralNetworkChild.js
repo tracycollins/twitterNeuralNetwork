@@ -56,7 +56,6 @@ const chalkWarn = chalk.red;
 const chalkLog = chalk.gray;
 const chalkInfo = chalk.black;
 
-
 function jsonPrint (obj){
   if (obj) {
     return JSON.stringify(obj, null, 2);
@@ -655,13 +654,15 @@ process.on("message", function(m) {
 
     case "INIT":
       statsObj.testRunId = m.testRunId;
-      // statsObj.neuralNetworkFile = "neuralNetwork_" + m.testRunId + ".json";
-      // statsObj.defaultNeuralNetworkFile = "neuralNetwork.json";
+      statsFile = "neuralNetworkChildStats_" + statsObj.pid + "_" + statsObj.testRunId + ".json";
+      console.log(chalkInfo("NNC | STATS FILE: " + statsFolder + "/" + statsFile));
       console.log(chalkInfo("NNC | NEURAL NET INIT"
         + " | TEST RUN ID: " + statsObj.testRunId
-        // + " | NEURAL NETWORK FILE: " + statsObj.neuralNetworkFile
-        // + " | DEFAULT NEURAL NETWORK FILE: " + statsObj.defaultNeuralNetworkFile
       ));
+
+      initStatsUpdate(configuration, function(){
+        process.send({op: "INIT_COMPLETE"});
+      });
 
     break;
 
@@ -933,7 +934,7 @@ process.on("message", function(m) {
 
 function initStatsUpdate(cnf, callback){
 
-  console.log(chalkInfo("NNC | initStatsUpdate | INTERVAL: " + cnf.statsUpdateIntervalTime));
+  console.log(chalkAlert("NNC | initStatsUpdate | INTERVAL: " + cnf.statsUpdateIntervalTime));
 
   setInterval(function () {
 
@@ -984,10 +985,9 @@ setTimeout(function(){
       console.error(chalkError("NNC | ***** INIT ERROR *****\n" + jsonPrint(err)));
       quit();
     }
-    initStatsUpdate(cnf, function(){
-      console.log("NNC | " + cnf.processName + " STARTED " + getTimeStamp() + "\n");
-      process.send({op: "READY"});
-    });
+    console.log("NNC | " + cnf.processName + " STARTED " + getTimeStamp() + "\n");
+    process.send({op: "READY"});
+
   });
 }, 1 * ONE_SECOND);
 

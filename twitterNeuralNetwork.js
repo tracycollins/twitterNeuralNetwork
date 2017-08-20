@@ -205,7 +205,7 @@ statsObj.pid = process.pid;
 statsObj.startTimeMoment = moment();
 statsObj.startTime = moment().valueOf();
 statsObj.elapsed = msToTime(moment().valueOf() - statsObj.startTime);
-
+statsObj.neuralNetworkReady = false;
 
 const DEFAULT_RUN_ID = hostname + "_" + process.pid + "_" + statsObj.startTimeMoment.format(compactDateTimeFormat);
 
@@ -2316,7 +2316,7 @@ function initMain(cnf){
 
 function initNeuralNetworkChild(callback){
 
-  // neuralNetworkReady = false;
+  statsObj.neuralNetworkReady = false;
 
   neuralNetworkChild = cp.fork(`neuralNetworkChild.js`);
 
@@ -2340,9 +2340,16 @@ function initNeuralNetworkChild(callback){
 
     switch(m.op) {
 
-      case "READY":
+      case "INIT_COMPLETE":
+        statsObj.neuralNetworkReady = true;
         console.log(chalkInfo("TEST NEURAL NETWORK"));
         neuralNetworkChild.send({op: "TEST_EVOLVE"});
+      break;
+
+      case "READY":
+        statsObj.neuralNetworkReady = true;
+        console.log(chalkInfo("INIT NEURAL NETWORK"));
+        neuralNetworkChild.send({op: "INIT", testRunId: testObj.testRunId});
       break;
 
       case "STATS":
