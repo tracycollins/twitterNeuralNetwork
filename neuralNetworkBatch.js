@@ -387,7 +387,7 @@ function showStats(options){
       + " | STRT " + moment(parseInt(statsObj.startTime)).format(compactDateTimeFormat)
       + " | ITERATIONS " + configuration.iterations
     ));
-    printInstanceConfigHashMap();
+    // printInstanceConfigHashMap();
   }
 }
 
