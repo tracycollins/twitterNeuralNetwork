@@ -7,6 +7,7 @@
     "autorestart": false,
     "env": {
       "NODE_ENV": "production",
+      "NNB_MIN_SUCCESS_RATE" : 90,
       "GCLOUD_PROJECT": "graphic-tangent-627",
       "GOOGLE_PROJECT": "graphic-tangent-627",
       "DROPBOX_WORD_ASSO_ACCESS_TOKEN": "nknEWsIkD5UAAAAAAAQouTDFRBKfwsFzuS8PPi2Q_JVYnpotNuaHiddNtmG4mUTi",

@@ -3,7 +3,7 @@
 
 const bestNetworkFolder = "/config/utility/best/neuralNetworks";
 
-const MIN_SUCCESS_RATE = 85; // percent
+const DEFAULT_MIN_SUCCESS_RATE = 90; // percent
 const OFFLINE_MODE = true;
 const DEFAULT_ENABLE_RANDOM = true;
 const DEFAULT_BATCH_MAX_INSTANCES = 3;
@@ -1604,6 +1604,7 @@ function initialize(cnf, callback){
   cnf.enableStdin = process.env.NNB_ENABLE_STDIN || true ;
   cnf.iterations = process.env.NNB_ITERATIONS || DEFAULT_ITERATIONS ;
   cnf.maxInstances = process.env.NNB_MAX_INSTANCES || DEFAULT_BATCH_MAX_INSTANCES ;
+  cnf.minSuccessRate = process.env.NNB_MIN_SUCCESS_RATE || DEFAULT_MIN_SUCCESS_RATE ;
 
   cnf.enableRandom = process.env.NNB_ENABLE_RANDOM || DEFAULT_ENABLE_RANDOM ;
   cnf.seedNetworkId = process.env.NNB_SEED_NETWORK_ID || DEFAULT_SEED_NETWORK_ID ;
@@ -1629,6 +1630,11 @@ function initialize(cnf, callback){
       if (loadedConfigObj.NNB_ITERATIONS  !== undefined){
         console.log("LOADED NNB_ITERATIONS: " + loadedConfigObj.NNB_ITERATIONS);
         cnf.iterations = loadedConfigObj.NNB_ITERATIONS;
+      }
+
+      if (loadedConfigObj.NNB_MIN_SUCCESS_RATE  !== undefined){
+        console.log("LOADED NNB_MIN_SUCCESS_RATE: " + loadedConfigObj.NNB_MIN_SUCCESS_RATE);
+        cnf.minSuccessRate = loadedConfigObj.NNB_MIN_SUCCESS_RATE;
       }
 
       if (loadedConfigObj.NNB_MAX_INSTANCES  !== undefined){
