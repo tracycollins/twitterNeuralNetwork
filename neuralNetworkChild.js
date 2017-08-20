@@ -674,6 +674,7 @@ process.on("message", function(m) {
 
     case "STATS":
       showStats();
+      process.send({op:"STATS", statsObj: statsObj});
     break;
 
     case "TRAIN":

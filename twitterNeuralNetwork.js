@@ -262,8 +262,11 @@ let NeuralNetwork; // DB
 
 let userServer;
 
-const jsonPrint = function (obj){
+const jsonPrint = function (obj, prefix){
   if (obj) {
+    if (prefix) {
+      return JSON.stringify(obj, null, 2).replace(/^./gm, prefix);
+    }
     return JSON.stringify(obj, null, 2);
   }
   else {
@@ -661,7 +664,7 @@ function saveFile (params, callback){
         console.error(chalkError(moment().format(compactDateTimeFormat) 
           + " | !!! ERROR DROBOX JSON WRITE | FILE: " + fullPath 
           + " | ERROR: TOO MANY WRITES"
-          // + " ERROR\n" + jsonPrint(error.error)
+          // + " ERROR\n" + "jsonPrint"(error.error)
         ));
         if (callback !== undefined) { callback(error.error_summary); }
       }
@@ -2353,7 +2356,7 @@ function initNeuralNetworkChild(callback){
       break;
 
       case "STATS":
-        console.log("NNC | STATS___________________________\n" + jsonPrint(statsObj));
+        console.log("NNC | STATS___________________________\n" + jsonPrint(statsObj, "NNC | STATS "));
         console.log("NNC | STATS___________________________\n");
       break;
 
