@@ -941,7 +941,8 @@ function loadBestNetworkDropboxFolder(options, callback){
             + " | " + networkObj.networkId
           ));
 
-          if ((options.networkId !== undefined) || (networkObj.successRate > MIN_SUCCESS_RATE)) {
+          if ((options.networkId !== undefined) 
+            || (networkObj.successRate > configuration.minSuccessRate)) {
 
             bestNetworkHashMap.set(networkObj.networkId, { entry: entry, network: networkObj});
 
@@ -976,7 +977,7 @@ function loadBestNetworkDropboxFolder(options, callback){
             dropboxClient.filesDelete({path: options.folder + "/" + entry.name})
             .then(function(response){
               console.log(chalkAlert("XXX NN"
-                + " | MIN SUCCESS RATE: " + MIN_SUCCESS_RATE
+                + " | MIN SUCCESS RATE: " + configuration.minSuccessRate
                 + " | " + networkObj.successRate.toFixed(1) + "%"
                 + " | " + getTimeStamp(networkObj.createdAt)
                 + " | IN: " + networkObj.numInputs
