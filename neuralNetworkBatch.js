@@ -265,8 +265,8 @@ const iterations = { name: "iterations", alias: "I", type: Number};
 const optionDefinitions = [ seedNetworkId, enableRandom, targetServer, enableStdin, quitOnError, verbose, iterations, testMode];
 
 const commandLineConfig = commandLineArgs(optionDefinitions);
-console.log(chalkInfo("COMMAND LINE CONFIG\n" + jsonPrint(commandLineConfig)));
-console.log("COMMAND LINE OPTIONS\n" + jsonPrint(commandLineConfig));
+console.log(chalkInfo("NNB | COMMAND LINE CONFIG\n" + jsonPrint(commandLineConfig)));
+console.log("NNB | COMMAND LINE OPTIONS\n" + jsonPrint(commandLineConfig));
 
 if (commandLineConfig.targetServer === "LOCAL"){
   commandLineConfig.targetServer = "http://localhost:9997/util";
@@ -311,11 +311,11 @@ statsObj.instances.instanceIndex = 0;
 
 const NNB_RUN_ID = "NNB_" + hostname + "_" + process.pid + "_" + statsObj.startTimeMoment.format(compactDateTimeFormat);
 statsObj.runId = NNB_RUN_ID;
-console.log(chalkAlert("RUN ID: " + statsObj.runId));
+console.log(chalkAlert("NNB | RUN ID: " + statsObj.runId));
 
 const statsFolder = "/stats/" + hostname + "/neuralNetworkBatch";
 const statsFile = "neuralNetworkBatch_" + statsObj.runId + ".json";
-console.log(chalkInfo("STATS FILE : " + statsFolder + "/" + statsFile));
+console.log(chalkInfo("NNB | STATS FILE : " + statsFolder + "/" + statsFile));
 
 
 const USER_ID = NNB_RUN_ID;
@@ -346,7 +346,7 @@ let statsUpdateInterval;
 
 function printInstanceConfigHashMap(){
 
-  console.log("\nNNB INSTANCE CONFIG HASH MAP"
+  console.log("\nNNB | INSTANCE CONFIG HASH MAP"
     + " | " + getTimeStamp()
     + " | _____________________________________"
   );
@@ -356,12 +356,12 @@ function printInstanceConfigHashMap(){
     let resultsText = instanceObj.results.successRate.toFixed(1) + "%";
 
     if (instanceObj.stats.ended === 0) {
-      resultsText = "---"
+      resultsText = "---";
       instanceObj.stats.elapsed = moment().valueOf() - instanceObj.stats.started;
       instanceConfigHashMap.set(nnId, instanceObj);
     }
 
-    console.log(nnId
+    console.log("NNB | " + nnId
       + " | " + instanceObj.config.env.TNN_NETWORK_CREATE_MODE
       + " | S: " + getTimeStamp(instanceObj.stats.started)
       + " | RUN: " + msToTime(instanceObj.stats.elapsed)
@@ -370,7 +370,7 @@ function printInstanceConfigHashMap(){
 
   });
 
-  console.log("______________________________________________________________________________________\n");
+  console.log("NNB | ______________________________________________________________________________________\n");
 }
 
 function showStats(options){
@@ -378,10 +378,10 @@ function showStats(options){
   statsObj.elapsed = msToTime(moment().valueOf() - statsObj.startTime);
 
   if (options) {
-    console.log("\n\nSTATS\n" + jsonPrint(statsObj));
+    console.log("\n\nNNB | STATS\nNNB | " + jsonPrint(statsObj));
   }
   else {
-    console.log(chalkLog("\nS"
+    console.log(chalkLog("\nNNB | S"
       + " | RUN " + statsObj.elapsed
       + " | NOW " + moment().format(compactDateTimeFormat)
       + " | STRT " + moment(parseInt(statsObj.startTime)).format(compactDateTimeFormat)
@@ -414,7 +414,7 @@ let appHashMap = {};
 
 function quit(){
 
-  console.log(chalkAlert( "\n\n... QUITTING ...\n\n" ));
+  console.log(chalkAlert( "\n\nNNB | ... QUITTING ...\n\n" ));
 
   clearInterval(processPollInterval);
   clearInterval(statsUpdateInterval);
@@ -426,8 +426,8 @@ function quit(){
       if (err) {
         console.error(chalkError("pm2 DELETE ERROR\n" + err));
       }
-      console.log(chalkAlert("PM2 DELETE APP: " + instanceName));
-      debug(chalkAlert("PM2 DELETE RESULTS\n " + jsonPrint(results)));
+      console.log(chalkAlert("NNB | PM2 DELETE APP: " + instanceName));
+      debug(chalkAlert("NNB | PM2 DELETE RESULTS\n " + jsonPrint(results)));
     });
   });
 
@@ -466,10 +466,10 @@ function saveFile (path, file, jsonObj, callback){
     })
     .catch(function(error){
       if (error.status === 429) {
-        console.error(chalkAlert("TOO MANY DROPBOX WRITES"));
+        console.error(chalkAlert("NNB | TOO MANY DROPBOX WRITES"));
       }
       else {
-        console.error(chalkError(moment().format(defaultDateTimeFormat) 
+        console.error("NNB | " + chalkError(moment().format(defaultDateTimeFormat) 
           + " | !!! ERROR DROBOX JSON WRITE | FILE: " + fullPath 
           + "\nERROR: " + error
           + "\nERROR: " + jsonPrint(error)
@@ -505,7 +505,7 @@ function loadFile(path, file, callback) {
         }, function(err) {
 
           if (err) {
-            console.log(chalkError("ERR\n" + jsonPrint(err)));
+            console.log(chalkError("NNB | ERR\nNNB | " + jsonPrint(err)));
             return(callback(err, null));
           }
 
@@ -530,18 +530,18 @@ function loadFile(path, file, callback) {
 
               })
               .catch(function(error) {
-                console.log(chalkError("DROPBOX loadFile ERROR: " + file + "\n" + error));
-                console.log(chalkError("!!! DROPBOX READ " + file + " ERROR"));
-                console.log(chalkError(jsonPrint(error)));
+                console.log(chalkError("NNB | DROPBOX loadFile ERROR: " + file + "\n" + error));
+                console.log(chalkError("NNB | !!! DROPBOX READ " + file + " ERROR"));
+                console.log(chalkError("NNB | " + jsonPrint(error)));
 
                 if (error.status === 404) {
-                  console.error(chalkError("!!! DROPBOX READ FILE " + file + " NOT FOUND"
+                  console.error(chalkError("NNB | !!! DROPBOX READ FILE " + file + " NOT FOUND"
                     + " ... SKIPPING ...")
                   );
                   return(callback(null, null));
                 }
                 if (error.status === 0) {
-                  console.error(chalkError("!!! DROPBOX NO RESPONSE"
+                  console.error(chalkError("NNB | !!! DROPBOX NO RESPONSE"
                     + " ... NO INTERNET CONNECTION? ... SKIPPING ..."));
                   return(callback(null, null));
                 }
@@ -549,17 +549,17 @@ function loadFile(path, file, callback) {
               });
           }
           else {
-            console.log(chalkError("*** FILE DOES NOT EXIST: " + path + "/" + file));
+            console.log(chalkError("NNB | *** FILE DOES NOT EXIST: " + path + "/" + file));
             return(callback({status: 404}, null));
           }
         });
     })
     .catch(function(err) {
       if (err.status === 429){
-        console.log(chalkError("*** ERROR DROPBOX LOAD FILE TOO MANY REQUESTS"));
+        console.log(chalkError("NNB | *** ERROR DROPBOX LOAD FILE TOO MANY REQUESTS"));
       }
       else {
-        console.log(chalkError("*** ERROR DROPBOX LOAD FILE\n" + jsonPrint(err)));
+        console.log(chalkError("NNB | *** ERROR DROPBOX LOAD FILE\n" + jsonPrint(err)));
       }
       callback(err, null);
     });
@@ -567,7 +567,7 @@ function loadFile(path, file, callback) {
 
 function initStatsUpdate(cnf, callback){
 
-  console.log(chalkBlue("INIT STATS UPDATE INTERVAL | " + cnf.statsUpdateIntervalTime + " MS"));
+  console.log(chalkBlue("NNB | INIT STATS UPDATE INTERVAL | " + cnf.statsUpdateIntervalTime + " MS"));
 
   clearInterval(statsUpdateInterval);
 
@@ -586,7 +586,7 @@ function initStatsUpdate(cnf, callback){
 }
 
 function initStdIn(){
-  console.log("STDIN ENABLED");
+  console.log("NNB | STDIN ENABLED");
   stdin = process.stdin;
   if(stdin.setRawMode  !== undefined) {
     stdin.setRawMode( true );
@@ -628,7 +628,7 @@ function initStdIn(){
 let userReadyInterval;
 function initUserReadyInterval(interval){
 
-  console.log(chalkInfo("INIT USER READY INTERVAL"));
+  console.log(chalkInfo("NNB | INIT USER READY INTERVAL"));
 
   clearInterval(userReadyInterval);
 
@@ -644,7 +644,7 @@ function initUserReadyInterval(interval){
     else if (userReadyTransmitted && !userReadyAck) {
 
       statsObj.userReadyAckWait += 1;
-      console.log(chalkAlert("... WAITING FOR USER_READY_ACK ..."));
+      console.log(chalkAlert("NNB | ... WAITING FOR USER_READY_ACK ..."));
 
     }
   }, interval);
@@ -660,7 +660,7 @@ function sendKeepAlive(userObj, callback){
     callback(null);
   }
   else {
-    console.log(chalkError("!!!! CANNOT TX KEEPALIVE"
+    console.log(chalkError("NNB | !!!! CANNOT TX KEEPALIVE"
       + " | " + userObj.userId
       + " | CONNECTED: " + serverConnected
       + " | READY ACK: " + userReadyAck
@@ -678,7 +678,7 @@ function initKeepalive(userObj, interval){
 
   clearInterval(socketKeepaliveInterval);
 
-  console.log(chalkAlert("START PRIMARY KEEPALIVE"
+  console.log(chalkAlert("NNB | START PRIMARY KEEPALIVE"
     // + " | USER ID: " + userId
     + " | READY ACK: " + userReadyAck
     + " | SERVER CONNECTED: " + serverConnected
@@ -687,9 +687,9 @@ function initKeepalive(userObj, interval){
 
   sendKeepAlive(userObj, function(err){
     if (err) {
-      console.log(chalkError("KEEPALIVE ERROR: " + err));
+      console.log(chalkError("NNB | KEEPALIVE ERROR: " + err));
     }
-    debug(chalkAlert("KEEPALIVE"
+    debug(chalkAlert("NNB | KEEPALIVE"
       + " | " + moment().format(defaultDateTimeFormat)
     ));
   });
@@ -700,7 +700,7 @@ function initKeepalive(userObj, interval){
 
     sendKeepAlive(userObj, function(err){
       if (err) {
-        console.log(chalkError("KEEPALIVE ERROR: " + err));
+        console.log(chalkError("NNB | KEEPALIVE ERROR: " + err));
       }
       debug(chalkAlert("KEEPALIVE"
         + " | " + moment().format(defaultDateTimeFormat)
@@ -718,7 +718,7 @@ function initSocket(cnf, callback){
     return(callback(null, null));
   }
 
-  console.log(chalkLog("INIT SOCKET"
+  console.log(chalkLog("NNB | INIT SOCKET"
     + " | " + cnf.targetServer
     + " | " + jsonPrint(userObj)
   ));
@@ -733,7 +733,7 @@ function initSocket(cnf, callback){
 
     statsObj.socketId = socket.id;
 
-    console.log(chalkAlert( "CONNECTED TO HOST" 
+    console.log(chalkAlert("NNB | CONNECTED TO HOST" 
       + " | SERVER: " + cnf.targetServer 
       + " | ID: " + socket.id 
     ));
@@ -744,7 +744,7 @@ function initSocket(cnf, callback){
   socket.on("reconnect", function(){
     serverConnected = true ;
     userReadyAck = false ;
-    console.log(chalkAlert(moment().format(defaultDateTimeFormat) 
+    console.log("NNB | " + chalkAlert(moment().format(defaultDateTimeFormat) 
       + " | SOCKET RECONNECT: " + socket.id));
   });
 
@@ -755,7 +755,7 @@ function initSocket(cnf, callback){
     serverConnected = true ;
     userReadyAck = true ;
 
-    console.log(chalkAlert("RX USER_READY_ACK"
+    console.log(chalkAlert("NNB | RX USER_READY_ACK"
       + " | " + moment().format(defaultDateTimeFormat)
       + " | " + socket.id
       + " | USER ID: " + ackObj.userId
@@ -769,7 +769,7 @@ function initSocket(cnf, callback){
     userReadyTransmitted = false;
     userReadyAck = false ;
     serverConnected = false ;
-    console.log(chalkAlert(moment().format(compactDateTimeFormat)
+    console.log(chalkAlert("NNB | " + moment().format(compactDateTimeFormat)
       + " | ***** SOCKET ERROR"
       + " | " + err.type
       + " | " + err.description
@@ -780,7 +780,7 @@ function initSocket(cnf, callback){
     userReadyTransmitted = false;
     userReadyAck = false ;
     serverConnected = false ;
-    console.log(chalkAlert(moment().format(compactDateTimeFormat)
+    console.log(chalkAlert("NNB | " + moment().format(compactDateTimeFormat)
       + " | ***** SOCKET CONNECT ERROR"
       + " | " + err.type
       + " | " + err.description
@@ -797,7 +797,7 @@ function initSocket(cnf, callback){
     userReadyTransmitted = false;
     userReadyAck = false ;
     serverConnected = false ;
-    console.log(chalkAlert(moment().format(compactDateTimeFormat)
+    console.log(chalkAlert("NNB | " + moment().format(compactDateTimeFormat)
       + " | ***** SOCKET RECONNECT ERROR"
     ));
   });
@@ -806,7 +806,7 @@ function initSocket(cnf, callback){
     userReadyTransmitted = false;
     userReadyAck = false ;
     serverConnected = false;
-    console.log(chalkAlert(moment().format(compactDateTimeFormat)
+    console.log(chalkAlert("NNB | " + moment().format(compactDateTimeFormat)
       + " | ***** SOCKET DISCONNECT"
     ));
  
@@ -816,32 +816,32 @@ function initSocket(cnf, callback){
   });
 
   socket.on("SET_ITERATIONS", function(value){
-    console.log(chalkAlert("RX SET_ITERATIONS | " + value));
+    console.log(chalkAlert("NNB | RX SET_ITERATIONS | " + value));
   });
 
   socket.on("KEEPALIVE_ACK", function(userId) {
-    debug(chalkLog("RX KEEPALIVE_ACK | " + userId));
+    debug(chalkLog("NNB | RX KEEPALIVE_ACK | " + userId));
   });
 
   callback(null, null);
 }
 
 function printNetworkObj(title, nnObj){
-  console.log(chalkNetwork("\n==================="
+  console.log(chalkNetwork("\nNNB | ==================="
     + "\n" + title
-    + "\nID:      " + nnObj.networkId
-    + "\nCREATED: " + getTimeStamp(nnObj.createdAt)
-    + "\nSUCCESS: " + nnObj.successRate.toFixed(1) + "%"
-    + "\nINPUTS:  " + Object.keys(nnObj.inputs)
-    + "\nEVOLVE\n" + jsonPrint(nnObj.evolve)
-    + "\nTRAIN\n" + jsonPrint(nnObj.train)
+    + "\nNNB | ID:      " + nnObj.networkId
+    + "\nNNB | CREATED: " + getTimeStamp(nnObj.createdAt)
+    + "\nNNB | SUCCESS: " + nnObj.successRate.toFixed(1) + "%"
+    + "\nNNB | INPUTS:  " + Object.keys(nnObj.inputs)
+    + "\nNNB | EVOLVE\n" + jsonPrint(nnObj.evolve)
+    + "\nNNB | TRAIN\n" + jsonPrint(nnObj.train)
     + "\n===================\n"
   ));
 }
 
 function loadBestNetworkDropboxFolder(options, callback){
 
-  console.log(chalkInfo("loadBestNetworkDropboxFolder\n " + jsonPrint(options)));
+  console.log(chalkInfo("NNB | loadBestNetworkDropboxFolder\n " + jsonPrint(options)));
 
   let newBestNetwork = false;
 
@@ -852,11 +852,11 @@ function loadBestNetworkDropboxFolder(options, callback){
   dropboxClient.filesListFolder(dropboxOptions)
   .then(function(response){
 
-    console.log(chalkLog("FOUND " + response.entries.length + " FILES in DROPBOX FOLDER " + dropboxOptions.path));
+    console.log(chalkLog("NNB | FOUND " + response.entries.length + " FILES in DROPBOX FOLDER " + dropboxOptions.path));
 
     async.eachSeries(response.entries, function(entry, cb){
 
-      debug(chalkInfo("DROPBOX BEST NETWORK FOUND"
+      debug(chalkInfo("NNB | DROPBOX BEST NETWORK FOUND"
         + " | " + getTimeStamp(new Date(entry.client_modified))
         + " | " + entry.name
         // + " | " + entry.content_hash
@@ -869,26 +869,26 @@ function loadBestNetworkDropboxFolder(options, callback){
 
         if (bestNetworkHashMap.get(nnId).entry.content_hash !== entry.content_hash) {
 
-          console.log(chalkInfo("DROPBOX BEST NETWORK CONTENT CHANGE"
+          console.log(chalkInfo("NNB | DROPBOX BEST NETWORK CONTENT CHANGE"
             + " | " + getTimeStamp(new Date(entry.client_modified))
             + " | " + entry.name
-            + "\nCUR HASH: " + entry.content_hash
-            + "\nOLD HASH: " + bestNetworkHashMap.get(nnId).entry.content_hash
+            + "\nNNB | CUR HASH: " + entry.content_hash
+            + "\nNNB | OLD HASH: " + bestNetworkHashMap.get(nnId).entry.content_hash
           ));
 
           loadFile(options.folder, entry.name, function(err, networkObj){
 
             if (err) {
               if (err.status === 429) {
-                console.log(chalkError("DROPBOX BEST NETWORK LOAD FILE ERROR: TOO MANY REQUESTS"));
+                console.log(chalkError("NNB | DROPBOX BEST NETWORK LOAD FILE ERROR: TOO MANY REQUESTS"));
               }
               else {
-                console.log(chalkError("DROPBOX BEST NETWORK LOAD FILE ERROR: " + jsonPrint(err)));
+                console.log(chalkError("NNB | DROPBOX BEST NETWORK LOAD FILE ERROR: " + jsonPrint(err)));
               }
               return(cb());
             }
 
-            console.log(chalkInfo("DROPBOX LOAD NETWORK"
+            console.log(chalkInfo("NNB | DROPBOX LOAD NETWORK"
               + " | " + networkObj.successRate.toFixed(1) + "%"
               + " | " + getTimeStamp(networkObj.createdAt)
               + " | " + networkObj.networkId
@@ -908,7 +908,7 @@ function loadBestNetworkDropboxFolder(options, callback){
           });
         }
         else {
-          debug(chalkLog("DROPBOX BEST NETWORK CONTENT SAME  "
+          debug(chalkLog("NNB | DROPBOX BEST NETWORK CONTENT SAME  "
             + " | " + entry.name
             // + " | CUR HASH: " + entry.content_hash
             // + " | OLD HASH: " + bestNetworkHashMap.get(entry.name).content_hash
@@ -924,15 +924,15 @@ function loadBestNetworkDropboxFolder(options, callback){
 
           if (err) {
             if (err.status === 429) {
-              console.log(chalkError("DROPBOX BEST NETWORK LOAD FILE ERROR: TOO MANY REQUESTS"));
+              console.log(chalkError("NNB | DROPBOX BEST NETWORK LOAD FILE ERROR: TOO MANY REQUESTS"));
             }
             else {
-              console.log(chalkError("DROPBOX BEST NETWORK LOAD FILE ERROR: " + jsonPrint(err)));
+              console.log(chalkError("NNB | DROPBOX BEST NETWORK LOAD FILE ERROR: " + jsonPrint(err)));
             }
             return(cb());
           }
 
-          console.log(chalkInfo("... FOUND DROPBOX BEST NETWORK"
+          console.log(chalkInfo("NNB | ... FOUND DROPBOX BEST NETWORK"
             + " | " + networkObj.successRate.toFixed(1) + "%"
             + " | " + getTimeStamp(networkObj.createdAt)
             // + " | IN: " + networkObj.numInputs
@@ -946,7 +946,7 @@ function loadBestNetworkDropboxFolder(options, callback){
 
             bestNetworkHashMap.set(networkObj.networkId, { entry: entry, network: networkObj});
 
-            console.log(chalkInfo("+ NN HASH MAP"
+            console.log(chalkInfo("NNB | + NN HASH MAP"
               + " | " + bestNetworkHashMap.count() + " NNs IN HM"
               + " | " + networkObj.successRate.toFixed(1) + "%"
               + " | " + getTimeStamp(networkObj.createdAt)
@@ -959,7 +959,7 @@ function loadBestNetworkDropboxFolder(options, callback){
             if (!currentBestNetwork || (networkObj.successRate > currentBestNetwork.successRate)) {
               currentBestNetwork = networkObj;
               newBestNetwork = true;
-              console.log(chalkAlert("* NEW BEST NN"
+              console.log(chalkAlert("NNB | * NEW BEST NN"
                 + " | " + bestNetworkHashMap.count() + " NNs IN HM"
                 + " | " + networkObj.successRate.toFixed(1) + "%"
                 + " | " + getTimeStamp(networkObj.createdAt)
@@ -976,7 +976,7 @@ function loadBestNetworkDropboxFolder(options, callback){
 
             dropboxClient.filesDelete({path: options.folder + "/" + entry.name})
             .then(function(response){
-              console.log(chalkAlert("XXX NN"
+              console.log(chalkAlert("NNB | XXX NN"
                 + " | MIN SUCCESS RATE: " + configuration.minSuccessRate
                 + " | " + networkObj.successRate.toFixed(1) + "%"
                 + " | " + getTimeStamp(networkObj.createdAt)
@@ -987,7 +987,7 @@ function loadBestNetworkDropboxFolder(options, callback){
               ));
             })
             .catch(function(err){
-              console.log(chalkError("*** ERROR: XXX NN"
+              console.log(chalkError("NNB | *** ERROR: XXX NN"
                 + " | " + options.folder + "/" + entry.name
                 + " | " + jsonPrint(err)
               ));
@@ -1006,7 +1006,7 @@ function loadBestNetworkDropboxFolder(options, callback){
 
         statsObj.bestNetworkId = currentBestNetwork.networkId;
 
-        printNetworkObj("NEW SEED NETWORK", currentBestNetwork);
+        printNetworkObj("NNB | NEW SEED NETWORK", currentBestNetwork);
 
         messageText = "\n*NN NEW SEED*\n*" 
           + currentBestNetwork.networkId + "*\n*"
@@ -1024,14 +1024,14 @@ function loadBestNetworkDropboxFolder(options, callback){
 
   })
   .catch(function(err){
-    console.log(chalkError("*** DROPBOX FILES LIST FOLDER ERROR\n" + jsonPrint(err)));
+    console.log(chalkError("NNB | *** DROPBOX FILES LIST FOLDER ERROR\n" + jsonPrint(err)));
     if (callback !== undefined) { callback(err, null); }
   });
 }
 
 function loadSeedNeuralNetwork(options, callback){
 
-  console.log(chalkNetwork("LOADING SEED NETWORK FROM DB\nOPTIONS: " + jsonPrint(options)));
+  console.log(chalkNetwork("NNB | LOADING SEED NETWORK FROM DB\nOPTIONS: " + jsonPrint(options)));
 
   let findQuery = {};
   let findOneNetwork = false;
@@ -1039,12 +1039,12 @@ function loadSeedNeuralNetwork(options, callback){
   if ((options.networkId !== undefined) && (options.networkId !== "false")) {
 
     if (options.networkId === "BEST") {
-      console.log(chalkAlert("LOADING " + DEFAULT_BEST_NETWORK_NUMBER + " BEST NETWORKS"));
+      console.log(chalkAlert("NNB | LOADING " + DEFAULT_BEST_NETWORK_NUMBER + " BEST NETWORKS"));
     }
     else {
       findOneNetwork = true;
       findQuery.networkId = options.networkId;
-      console.log(chalkAlert("LOADING SEED NETWORK " + options.networkId));
+      console.log(chalkAlert("NNB | LOADING SEED NETWORK " + options.networkId));
     }
 
   }
@@ -1054,36 +1054,36 @@ function loadSeedNeuralNetwork(options, callback){
   // loadBestNetworkDropboxFolder(bestNetworkFolder, function(err, bestNetwork){
   loadBestNetworkDropboxFolder(options, function(err, bestNetwork){
     if (err) {
-      console.log(chalkError("LOAD DROPBOX BEST NETWORK ERR"
+      console.log(chalkError("NNB | LOAD DROPBOX BEST NETWORK ERR"
         + " | FOLDER: " + bestNetworkFolder
         + "\n" + err
       ));
       if (callback !== undefined) { callback(err, null); }
     }
     else if (!bestNetwork){
-      console.log(chalkError("*** NO BEST NETWORK FOUND"));
+      console.log(chalkError("NNB | *** NO BEST NETWORK FOUND"));
       if (callback !== undefined) { callback(err, null); }
     }
     else {
-      console.log("BEST NETWORK FOUND"
+      console.log(chalkAlert("NNB | BEST NETWORK FOUND"
         + " | " + currentBestNetwork.networkId
         + " | " + getTimeStamp(currentBestNetwork.createdAt)
         + " | " + currentBestNetwork.successRate.toFixed(1) + "%"
-      );
+      ));
 
       if (findOneNetwork) {
         if (bestNetworkHashMap.has(options.networkId)) {
-          console.log("FOUND NETWORK IN HASH MAP: " + options.networkId);
+          console.log("NNB | FOUND NETWORK IN HASH MAP: " + options.networkId);
           currentSeedNetwork = bestNetworkHashMap.get(options.networkId).network;
         }
         else {
-          console.error(chalkError("*** ERROR: NETWORK NOT FOUND: " + options.networkId));
+          console.error(chalkError("NNB | *** ERROR: NETWORK NOT FOUND: " + options.networkId));
           if (callback !== undefined) { callback("NETWORK NOT FOUND", null); }
         }
       }
 
       if (findOneNetwork && currentSeedNetwork){
-        printNetworkObj("LOADING NEURAL NETWORK", currentSeedNetwork);
+        printNetworkObj("NNB | LOADING NEURAL NETWORK", currentSeedNetwork);
       }
 
       if (currentSeedNetwork) {
@@ -1130,7 +1130,7 @@ function initInstance(instanceIndex, options, callback){
   currentOptions.env.TNN_PROCESS_NAME = instanceName;
   currentOptions.env.TNN_RUN_ID = runId;
 
-  console.log("INIT INSTANCE " + instanceIndex
+  console.log("NNB | INIT INSTANCE " + instanceIndex
     + " | " + currentOptions.name
     + " | ID: " + currentOptions.env.TNN_RUN_ID
     + " | ITERATIONS: " + currentOptions.env.TNN_ITERATIONS
@@ -1139,7 +1139,7 @@ function initInstance(instanceIndex, options, callback){
 
   const opt = deepcopy(currentOptions);
 
-  console.log("\n***** CURRENT INSTANCE OPTIONS *****\n" + jsonPrint(opt));
+  console.log("\nNNB | ***** CURRENT INSTANCE OPTIONS *****\nNNB | " + jsonPrint(opt));
 
   callback(opt);
 }
@@ -1149,7 +1149,7 @@ function startInstance(instanceConfig, callback){
   pm2.start(instanceConfig, function(err, apps) {
 
     if (err) {
-      console.error(chalkError("PM2 START ERROR\n" + err));
+      console.error(chalkError("NNB | PM2 START ERROR\n" + err));
       return(callback(err));
     }
 
@@ -1164,7 +1164,7 @@ function startInstance(instanceConfig, callback){
     instanceObj.results = {};
     instanceObj.results.successRate = 0;
 
-    console.log(chalkInfo("START INSTANCE\n" + jsonPrint(instanceConfig)));
+    console.log(chalkInfo("NNB | START INSTANCE\nNNB | " + jsonPrint(instanceConfig)));
 
     instanceConfigHashMap.set(instanceObj.id, instanceObj);
 
@@ -1175,7 +1175,7 @@ function startInstance(instanceConfig, callback){
 
     if (apps.length > 0) {
 
-      console.log(chalkAlert("START"
+      console.log(chalkAlert("NNB | START"
         + " | " + instanceConfig.env.TNN_NETWORK_CREATE_MODE
         + " | " + apps[0].pm2_env.TNN_RUN_ID
         // + " | " + apps[0].pm2_env.name
@@ -1215,25 +1215,25 @@ const generateRandomEvolveEnv = function(cnf){
   // env.TNN_NETWORK_CREATE_MODE = randomItem(["evolve", "train"]);
   env.TNN_NETWORK_CREATE_MODE = "evolve";
 
-  console.log(chalkAlert("NETWORK CREATE MODE: " + env.TNN_NETWORK_CREATE_MODE));
+  console.log(chalkAlert("NNB | NETWORK CREATE MODE: " + env.TNN_NETWORK_CREATE_MODE));
 
   if (currentSeedNetwork) {
 
     env.TNN_SEED_NETWORK_ID = currentSeedNetwork.networkId;
 
-    console.log(chalkAlert("\nSEED NETWORK\n----------------------------------"));
-    console.log(chalkAlert(currentSeedNetwork.successRate.toFixed(1) + " | " + currentSeedNetwork.networkId));
-    console.log(chalkAlert("----------------------------------"));
+    console.log(chalkAlert("\nNNB | SEED NETWORK\n----------------------------------"));
+    console.log(chalkAlert("NNB | " + currentSeedNetwork.successRate.toFixed(1) + " | " + currentSeedNetwork.networkId));
+    console.log(chalkAlert("NNB | ----------------------------------"));
   }
   else {
     
-    console.log(chalkAlert("\nBEST NETWORKS\n----------------------------------"));
+    console.log(chalkAlert("\nNNB | BEST NETWORKS\nNNB | ----------------------------------"));
 
     bestNetworkHashMap.forEach(function(entry, nnId){
-      console.log(chalkAlert(entry.network.successRate.toFixed(1) + " | " + nnId));
+      console.log(chalkAlert("NNB | " + entry.network.successRate.toFixed(1) + " | " + nnId));
     });
 
-    console.log(chalkAlert("----------------------------------"));
+    console.log(chalkAlert("NNB | ----------------------------------"));
 
     env.TNN_SEED_NETWORK_ID = (Math.random() > SEED_NETWORK_PROBABILITY) ? randomItem(bestNetworkHashMap.keys()) : false;
 
@@ -1280,45 +1280,45 @@ function loadDropboxConfig(callback){
     let configArgs;
 
     if (!err) {
-      console.log(dropboxConfigHostFolder + "/" + dropboxConfigFile + "\n" + jsonPrint(loadedConfigObj));
+      console.log("NNB | " + dropboxConfigHostFolder + "/" + dropboxConfigFile + "\nNNB | " + jsonPrint(loadedConfigObj));
 
       if (loadedConfigObj.NNB_ENABLE_RANDOM  !== undefined){
-        console.log("LOADED NNB_ENABLE_RANDOM: " + loadedConfigObj.NNB_ENABLE_RANDOM);
+        console.log("NNB | LOADED NNB_ENABLE_RANDOM: " + loadedConfigObj.NNB_ENABLE_RANDOM);
         cnf.enableRandom = loadedConfigObj.NNB_ENABLE_RANDOM;
       }
 
       if (loadedConfigObj.NNB_ITERATIONS  !== undefined){
-        console.log("LOADED NNB_ITERATIONS: " + loadedConfigObj.NNB_ITERATIONS);
+        console.log("NNB | LOADED NNB_ITERATIONS: " + loadedConfigObj.NNB_ITERATIONS);
         cnf.iterations = loadedConfigObj.NNB_ITERATIONS;
       }
 
       if (loadedConfigObj.NNB_MAX_INSTANCES  !== undefined){
-        console.log("LOADED NNB_MAX_INSTANCES: " + loadedConfigObj.NNB_MAX_INSTANCES);
+        console.log("NNB | LOADED NNB_MAX_INSTANCES: " + loadedConfigObj.NNB_MAX_INSTANCES);
         cnf.maxInstances = loadedConfigObj.NNB_MAX_INSTANCES;
       }
 
       if (loadedConfigObj.NNB_VERBOSE_MODE  !== undefined){
-        console.log("LOADED NNB_VERBOSE_MODE: " + loadedConfigObj.NNB_VERBOSE_MODE);
+        console.log("NNB | LOADED NNB_VERBOSE_MODE: " + loadedConfigObj.NNB_VERBOSE_MODE);
         cnf.verbose = loadedConfigObj.NNB_VERBOSE_MODE;
       }
 
       if (loadedConfigObj.NNB_TEST_MODE  !== undefined){
-        console.log("LOADED NNB_TEST_MODE: " + loadedConfigObj.NNB_TEST_MODE);
+        console.log("NNB | LOADED NNB_TEST_MODE: " + loadedConfigObj.NNB_TEST_MODE);
         cnf.testMode = loadedConfigObj.NNB_TEST_MODE;
       }
 
       if (loadedConfigObj.NNB_ENABLE_STDIN  !== undefined){
-        console.log("LOADED NNB_ENABLE_STDIN: " + loadedConfigObj.NNB_ENABLE_STDIN);
+        console.log("NNB | LOADED NNB_ENABLE_STDIN: " + loadedConfigObj.NNB_ENABLE_STDIN);
         cnf.enableStdin = loadedConfigObj.NNB_ENABLE_STDIN;
       }
 
       if (loadedConfigObj.NNB_STATS_UPDATE_INTERVAL  !== undefined) {
-        console.log("LOADED NNB_STATS_UPDATE_INTERVAL: " + loadedConfigObj.NNB_STATS_UPDATE_INTERVAL);
+        console.log("NNB | LOADED NNB_STATS_UPDATE_INTERVAL: " + loadedConfigObj.NNB_STATS_UPDATE_INTERVAL);
         cnf.statsUpdateIntervalTime = loadedConfigObj.NNB_STATS_UPDATE_INTERVAL;
       }
 
       if (loadedConfigObj.NNB_KEEPALIVE_INTERVAL  !== undefined) {
-        console.log("LOADED NNB_KEEPALIVE_INTERVAL: " + loadedConfigObj.NNB_KEEPALIVE_INTERVAL);
+        console.log("NNB | LOADED NNB_KEEPALIVE_INTERVAL: " + loadedConfigObj.NNB_KEEPALIVE_INTERVAL);
         cnf.keepaliveInterval = loadedConfigObj.NNB_KEEPALIVE_INTERVAL;
       }
 
@@ -1334,7 +1334,7 @@ function loadDropboxConfig(callback){
         else {
           cnf[arg] = commandLineConfig[arg];
         }
-        console.log("--> COMMAND LINE CONFIG | " + arg + ": " + cnf[arg]);
+        console.log("NNB | --> COMMAND LINE CONFIG | " + arg + ": " + cnf[arg]);
 
         cb();
 
@@ -1343,7 +1343,7 @@ function loadDropboxConfig(callback){
         configArgs = Object.keys(cnf);
 
         configArgs.forEach(function(arg){
-          console.log(chalkAlert(">>> FINAL CONFIG (FILE) | " + arg + ": " + cnf[arg]));
+          console.log(chalkAlert("NNB | >>> FINAL CONFIG (FILE) | " + arg + ": " + cnf[arg]));
         });
 
         callback(null, cnf);
@@ -1351,7 +1351,7 @@ function loadDropboxConfig(callback){
       });
     }
     else {
-      console.log(chalkError("ERROR LOADING CONFIG: " + err));
+      console.log(chalkError("NNB | ERROR LOADING CONFIG: " + err));
       callback(err, cnf);
     }
   });
@@ -1359,7 +1359,7 @@ function loadDropboxConfig(callback){
 
 function initProcessPollInterval(interval){
 
-  console.log(chalkInfo("INIT PROCESS POLL INTERVAL | " + interval));
+  console.log(chalkInfo("NNB | INIT PROCESS POLL INTERVAL | " + interval));
 
   const seedOpt = {};
 
@@ -1369,17 +1369,17 @@ function initProcessPollInterval(interval){
 
   loadSeedNeuralNetwork(seedOpt, function(err, results){
     if (err) {
-      console.error(chalkError("loadSeedNeuralNetwork ERROR: " + err));
+      console.error(chalkError("NNB | loadSeedNeuralNetwork ERROR: " + err));
     }
     if (results.best) {
-      console.log(chalkAlert("LOAD NN"
+      console.log(chalkAlert("NNB | LOAD NN"
         + " | BEST: " + results.best.networkId
         // + " " + results.best.successRate.toFixed(2) + "%"
         + " " + results.best.successRate.toFixed(1) + "%"
       ));
     }
     if (results.seed) {
-      console.log(chalkAlert("LOAD NN"
+      console.log(chalkAlert("NNB | LOAD NN"
         + " | SEED: " + results.seed.networkId
         // + " " + results.seed.successRate.toFixed(2) + "%"
         + " " + results.seed.successRate.toFixed(1) + "%"
@@ -1418,11 +1418,11 @@ function initProcessPollInterval(interval){
         }
         else  {
           showStats();
-          console.log("\nAPPS__________________________________________");
+          console.log("\nNNB | APPS__________________________________________");
 
           apps.forEach(function(app){
 
-            console.log(app.name
+            console.log("NNB | " + app.name
               + " | PM2 ID: " + app.pm2_env.pm_id
               + " | " + app.pm2_env.TNN_NETWORK_CREATE_MODE
               + " | PID: " + app.pid
@@ -1435,16 +1435,18 @@ function initProcessPollInterval(interval){
 
             if (appHashMap[app.name] && app.pm2_env.status === "stopped"){
 
-              console.log(chalkAlert("STOPPED: " + app.name));
+              console.log(chalkAlert("NNB | STOPPED: " + app.name));
 
               const nnId = app.name.replace("NNB_", "");
+
+              let instanceObj = {};
 
               loadSeedNeuralNetwork({networkId: nnId}, function(err, results){
 
                 if (err) {
-                  console.error(chalkError("loadSeedNeuralNetwork ERROR: " + err));
+                  console.error(chalkError("NNB | loadSeedNeuralNetwork ERROR: " + err));
 
-                  let instanceObj = instanceConfigHashMap.get(app.name);
+                  instanceObj = instanceConfigHashMap.get(app.name);
 
                   instanceObj.stats.elapsed = moment().valueOf() - instanceObj.stats.started;  
                   instanceObj.stats.ended = moment().valueOf();
@@ -1461,7 +1463,7 @@ function initProcessPollInterval(interval){
                     delete appHashMap[app.name];
 
                     if (err) { 
-                      console.log(chalkError("PM2 DELETE ERROR: " + err));
+                      console.log(chalkError("NNB | PM2 DELETE ERROR: " + err));
                     }
                     else {
                       debug("PM2 DELETE RESULTS\n" + results);
@@ -1471,27 +1473,27 @@ function initProcessPollInterval(interval){
 
                 }
                 if (results.best) {
-                  console.log(chalkAlert("LOAD NN"
+                  console.log(chalkAlert("NNB | LOAD NN"
                     + " | BEST: " + results.best.networkId
                     + " " + results.best.successRate.toFixed(1) + "%"
                   ));
                 }
                 if (results.seed) {
-                  console.log(chalkAlert("LOAD NN"
+                  console.log(chalkAlert("NNB | LOAD NN"
                     + " | SEED: " + results.seed.networkId
                     + " " + results.seed.successRate.toFixed(1) + "%"
                   ));
                 }
 
                 if (!bestNetworkHashMap.has(nnId)){
-                  console.log(chalkError("*** NN NOT FOUND IN HASH: " + nnId));
+                  console.log(chalkError("NNB | *** NN NOT FOUND IN HASH: " + nnId));
                 }
                 else {
                   const nn = bestNetworkHashMap.get(nnId).network;
 
                   debug("SEED NETWORK\n" + jsonPrint(nn));
 
-                  console.log("<DB NETWORK"
+                  console.log("NNB | <DB NETWORK"
                     + " | " + nn.networkId 
                     + " | CREATE: " + nn.networkCreateMode
                     + " | SUCCESS: " + nn.successRate.toFixed(1) + "%"
@@ -1503,7 +1505,7 @@ function initProcessPollInterval(interval){
                     + " | CREATED: " + moment(new Date(nn.createdAt)).format(compactDateTimeFormat) 
                   );
 
-                  let instanceObj = instanceConfigHashMap.get(app.name);
+                  instanceObj = instanceConfigHashMap.get(app.name);
 
                   instanceObj.stats.elapsed = moment().valueOf() - instanceObj.stats.started;  
                   instanceObj.stats.ended = moment().valueOf();
@@ -1519,7 +1521,7 @@ function initProcessPollInterval(interval){
                     delete appHashMap[app.name];
 
                     if (err) { 
-                      console.log(chalkError("PM2 DELETE ERROR: " + err));
+                      console.log(chalkError("NNB | PM2 DELETE ERROR: " + err));
                     }
                     else {
                       debug("PM2 DELETE RESULTS\n" + results);
@@ -1551,30 +1553,30 @@ function initBatch(callback){
   loadSeedNeuralNetwork(seedOpt, function(err, results){
 
     if (err) {
-      console.error(chalkError("loadSeedNeuralNetwork ERROR: " + err));
+      console.error(chalkError("lNNB | oadSeedNeuralNetwork ERROR: " + err));
     }
 
     if (results && results.best) {
-      console.log(chalkAlert("LOAD NN"
+      console.log(chalkAlert("NNB | LOAD NN"
         + " | BEST: " + results.best.networkId
         + " " + results.best.successRate.toFixed(1) + "%"
       ));
     }
     if (results && results.seed) {
-      console.log(chalkAlert("LOAD NN"
+      console.log(chalkAlert("NNB | LOAD NN"
         + " | SEED: " + results.seed.networkId
         + " " + results.seed.successRate.toFixed(1) + "%"
       ));
     }
 
-    console.log(chalkAlert("INIT BATCH"
+    console.log(chalkAlert("NNB | INIT BATCH"
       + " | " + getTimeStamp()
     ));
 
     pm2.connect(function(err) {
 
       if (err) {
-        console.error(err);
+        console.error("NNB | " + err);
         callback(err);
         process.exit(2);
       }
@@ -1590,7 +1592,7 @@ function initBatch(callback){
 
 function initialize(cnf, callback){
 
-  console.log(chalkBlue("INITIALIZE cnf\n" + jsonPrint(cnf)));
+  console.log(chalkBlue("NNB | INITIALIZE cnf\n" + jsonPrint(cnf)));
 
   if (debug.enabled){
     console.log("\n%%%%%%%%%%%%%%\n DEBUG ENABLED \n%%%%%%%%%%%%%%\n");
@@ -1695,7 +1697,7 @@ function initialize(cnf, callback){
       initSocket(cnf, function(){
         initStatsUpdate(cnf, function(err, cnf2){
           if (err) {
-            console.log(chalkError("ERROR initStatsUpdate\n" + err));
+            console.log(chalkError("NNB | ERROR initStatsUpdate\n" + err));
           }
           return(callback(err, cnf2));
         });
