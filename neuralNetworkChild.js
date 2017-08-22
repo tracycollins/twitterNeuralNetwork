@@ -186,8 +186,8 @@ function saveFile (path, file, jsonObj, callback){
   }
   catch (err){
     console.error(chalkError("*** SAVE FILE JSON STRINGIFY ERROR: " + err));
-    if (callback !== undefined) { return (callback(err, null)); }
-  };
+    if (callback !== undefined) { return callback(err, null); }
+  }
 
 
   dropboxClient.filesUpload(options)
@@ -350,6 +350,7 @@ function evolve(params, callback){
     console.log(chalkAlert("START NETWORK DEFINED: " + options.network.networkId));
   }
 
+  options.threads = params.threads;
   options.elitism = params.elitism;
   options.equal = params.equal;
   options.error = params.error;
@@ -364,7 +365,7 @@ function evolve(params, callback){
 
     function: function(schedParams){
 
-      var elapsedInt = moment().valueOf() - startTime;
+      let elapsedInt = moment().valueOf() - startTime;
 
       function schedMsToTime(duration) {
         let seconds = parseInt((duration / 1000) % 60);
@@ -479,7 +480,8 @@ function evolve(params, callback){
      ));
 
       async function networkEvolve() {
-        const results = await network.evolve(trainingSet, options);
+        let results = await network.evolve(trainingSet, options);
+        results.threads = options.threads;
         if (callback !== undefined) { callback(null, results); }
       }
 
@@ -823,6 +825,7 @@ process.on("message", function(m) {
 
       evolveOptions = {
         runId: m.testRunId,
+        threads: m.threads,
         architecture: m.architecture,
         inputs: m.inputs,
         outputs: m.outputs,
@@ -841,6 +844,7 @@ process.on("message", function(m) {
       };
 
       statsObj.evolve.options = {
+        threads: m.threads,
         architecture: m.architecture,
         mutation: m.mutation,
         mutationRate: m.mutationRate,
@@ -862,6 +866,7 @@ process.on("message", function(m) {
 
         console.log(chalkAlert("\n\nNNC | NEURAL NET EVOLVE | " + getTimeStamp()
           + "\nRUN ID:     " + m.testRunId
+          + "\nTHREADS:    " + m.threads
           + "\nNETWORK:    " + m.network.networkId + " | " + m.network.successRate.toFixed(2) + "%"
           + "\nINPUTS:     " + statsObj.training.trainingSet.numInputs
           + "\nOUTPUTS:    " + statsObj.training.trainingSet.numOutputs
@@ -873,6 +878,7 @@ process.on("message", function(m) {
       else {
         console.log(chalkAlert("\n\nNNC | NEURAL NET EVOLVE | " + getTimeStamp()
           + "\nRUN ID:     " + m.testRunId
+          + "\nTHREADS:    " + m.threads
           + "\nINPUTS:     " + statsObj.training.trainingSet.numInputs
           + "\nOUTPUTS:    " + statsObj.training.trainingSet.numOutputs
           + "\nDATA PTS:   " + m.trainingSet.length
@@ -894,6 +900,7 @@ process.on("message", function(m) {
           console.log(chalkAlert("\nNNC | EVOLVE COMPLETE | " + getTimeStamp()
             + " | RUN ID: " + m.testRunId
             + " | " + "TIME: " + results.time
+            + " | " + "THREADS: " + results.threads
             + " | " + "ITERATIONS: " + results.iterations
             + " | " + "ERROR: " + results.error
             + "\n"

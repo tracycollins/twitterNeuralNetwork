@@ -20,42 +20,43 @@ let inputArrays = {};
 
 
 let requiredTrainingSet = new Set();
-requiredTrainingSet.add("senategop");
-requiredTrainingSet.add("newtgingrich");
-requiredTrainingSet.add("tuckercarlson");
-requiredTrainingSet.add("danscavino");
-requiredTrainingSet.add("mittromney");
-requiredTrainingSet.add("jaredkushner");
-requiredTrainingSet.add("gopchairwoman");
-requiredTrainingSet.add("breitbartnews");
-requiredTrainingSet.add("bfraser747");
-requiredTrainingSet.add("sheriffclarke");
-requiredTrainingSet.add("realjameswoods");
-requiredTrainingSet.add("angela_rye");
-requiredTrainingSet.add("proudresister");
-requiredTrainingSet.add("kamalaharris");
-requiredTrainingSet.add("nancypelosi");
-requiredTrainingSet.add("usatoday");
-requiredTrainingSet.add("mmflint");
-requiredTrainingSet.add("maddow");
-requiredTrainingSet.add("msnbc");
-requiredTrainingSet.add("jaketapper");
+// requiredTrainingSet.add("angela_rye");
+// requiredTrainingSet.add("barackobama");
+// requiredTrainingSet.add("bfraser747");
+// requiredTrainingSet.add("breitbartnews");
+// requiredTrainingSet.add("danscavino");
+// requiredTrainingSet.add("dnc");
+// requiredTrainingSet.add("foxandfriends");
+// requiredTrainingSet.add("foxnews");
+// requiredTrainingSet.add("gop");
+// requiredTrainingSet.add("gopchairwoman");
+// requiredTrainingSet.add("hannity");
+// requiredTrainingSet.add("hillaryclinton");
+// requiredTrainingSet.add("jaketapper");
+// requiredTrainingSet.add("jaredkushner");
+// requiredTrainingSet.add("kamalaharris");
+// requiredTrainingSet.add("loudobbs");
+// requiredTrainingSet.add("maddow");
+// requiredTrainingSet.add("mikepence");
+// requiredTrainingSet.add("mikepencevp");
+// requiredTrainingSet.add("mittromney");
+// requiredTrainingSet.add("mmflint");
+// requiredTrainingSet.add("msnbc");
+// requiredTrainingSet.add("nancypelosi");
+// requiredTrainingSet.add("newtgingrich");
+// requiredTrainingSet.add("nytimes");
+// requiredTrainingSet.add("potus");
+// requiredTrainingSet.add("proudresister");
+// requiredTrainingSet.add("realalexjones");
 requiredTrainingSet.add("realdonaldtrump");
-requiredTrainingSet.add("realalexjones");
-requiredTrainingSet.add("mikepence");
-requiredTrainingSet.add("mikepencevp");
-requiredTrainingSet.add("foxandfriends");
-requiredTrainingSet.add("hannity");
-requiredTrainingSet.add("loudobbs");
-requiredTrainingSet.add("potus");
-requiredTrainingSet.add("gop");
-requiredTrainingSet.add("vp");
-requiredTrainingSet.add("foxnews");
-requiredTrainingSet.add("dnc");
-requiredTrainingSet.add("hillaryclinton");
-requiredTrainingSet.add("barackobama");
-requiredTrainingSet.add("sensanders");
-requiredTrainingSet.add("speakerryan");
+// requiredTrainingSet.add("realjameswoods");
+// requiredTrainingSet.add("senategop");
+// requiredTrainingSet.add("sensanders");
+// requiredTrainingSet.add("sheriffclarke");
+// requiredTrainingSet.add("speakerryan");
+// requiredTrainingSet.add("tuckercarlson");
+// requiredTrainingSet.add("usatoday");
+// requiredTrainingSet.add("vp");
 
 
 let currentBestNetwork;
@@ -71,6 +72,7 @@ const DEFAULT_NETWORK_CREATE_MODE = "evolve";
 const DEFAULT_ITERATIONS = 1;
 const DEFAULT_SEED_NETWORK_ID = false;
 
+const DEFAULT_EVOLVE_THREADS = 2;
 const DEFAULT_EVOLVE_ARCHITECTURE = "random";
 const DEFAULT_EVOLVE_BEST_NETWORK = false;
 const DEFAULT_EVOLVE_ACTIVATION = "LOGISTIC";
@@ -84,6 +86,7 @@ const DEFAULT_EVOLVE_MUTATION = "FFW";
 const DEFAULT_EVOLVE_MUTATION_RATE = 0.75;
 const DEFAULT_EVOLVE_POPSIZE = 100;
 
+const DEFAULT_TRAIN_THREADS = 2;
 const DEFAULT_TRAIN_ARCHITECTURE = "perceptron";
 const DEFAULT_TRAIN_BEST_NETWORK = false;
 const DEFAULT_TRAIN_HIDDEN_LAYER_SIZE = 10;
@@ -107,6 +110,7 @@ configuration.testSetRatio = DEFAULT_TEST_RATIO;
 configuration.evolve = {};
 configuration.evolve.useBestNetwork = DEFAULT_EVOLVE_BEST_NETWORK;
 configuration.evolve.networkId = DEFAULT_SEED_NETWORK_ID;
+configuration.evolve.threads = DEFAULT_EVOLVE_THREADS;
 configuration.evolve.architecture = DEFAULT_EVOLVE_ARCHITECTURE;
 configuration.evolve.network = null;
 configuration.evolve.elitism = DEFAULT_EVOLVE_ELITISM;
@@ -121,6 +125,7 @@ configuration.evolve.cost = DEFAULT_EVOLVE_COST;
 configuration.evolve.activation = DEFAULT_EVOLVE_ACTIVATION;
 
 configuration.train = {};
+configuration.train.threads = DEFAULT_TRAIN_THREADS;
 configuration.train.architecture = DEFAULT_TRAIN_ARCHITECTURE;
 configuration.train.hiddenLayerSize = DEFAULT_TRAIN_HIDDEN_LAYER_SIZE;
 configuration.train.useBestNetwork = DEFAULT_TRAIN_BEST_NETWORK;
@@ -196,6 +201,7 @@ function msToTime(duration) {
 let statsObj = {};
 statsObj.hostname = hostname;
 statsObj.pid = process.pid;
+statsObj.cpus = os.cpus().length;
 
 // statsObj.memory = {};
 // statsObj.memory.rss = process.memoryUsage().rss/(1024*1024);
@@ -529,6 +535,7 @@ function showStats(options){
   }
   else {
     console.log(chalkLog("S"
+      + " | CPUs: " + statsObj.cpus
       + " | " + testObj.testRunId
       + " | " + configuration.networkCreateMode.toUpperCase()
       + " | RUN " + statsObj.elapsed
@@ -2220,6 +2227,7 @@ function initMain(cnf){
             messageObj = {
               op: "EVOLVE",
               testRunId: testObj.testRunId,
+              threads: cnf.evolve.threads,
               architecture: cnf.evolve.architecture,
               network: cnf.evolve.network,
               inputs: trainingSetLabels.inputs,
@@ -2273,6 +2281,7 @@ function initMain(cnf){
               op: "TRAIN",
               testRunId: testObj.testRunId,
               trainingSet: trainingSetNormalized,
+              threads: cnf.train.threads,
               architecture: cnf.train.architecture,
               inputs: trainingSetLabels.inputs,
               outputs: trainingSetLabels.outputs,
