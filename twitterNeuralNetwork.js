@@ -1676,8 +1676,8 @@ function updateClassifiedUsers(cnf, callback){
       if ((user.languageAnalysis !== undefined)
         && (user.languageAnalysis.sentiment !== undefined)) {
 
-        sentimentObj.magnitude = user.languageAnalysis.sentiment.magnitude;
-        sentimentObj.score = user.languageAnalysis.sentiment.score;
+        sentimentObj.magnitude = user.languageAnalysis.sentiment.magnitude || 0;
+        sentimentObj.score = user.languageAnalysis.sentiment.score || 0;
 
         if (!cnf.normalization) {
           maxMagnitude = Math.max(maxMagnitude, sentimentObj.magnitude);

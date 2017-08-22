@@ -559,7 +559,10 @@ function loadFile(path, file, callback) {
         console.log(chalkError("NNB | *** ERROR DROPBOX LOAD FILE TOO MANY REQUESTS"));
       }
       else {
-        console.log(chalkError("NNB | *** ERROR DROPBOX LOAD FILE\n" + jsonPrint(err)));
+        console.log(chalkError("NNB | *** ERROR DROPBOX LOAD FILE"
+          + " | " + path + "/" + file
+          + "\n" + jsonPrint(err)
+        ));
       }
       callback(err, null);
     });
@@ -1351,7 +1354,7 @@ function loadDropboxConfig(callback){
       });
     }
     else {
-      console.log(chalkError("NNB | ERROR LOADING CONFIG: " + err));
+      console.log(chalkError("NNB | ERROR LOADING CONFIG\nNNB" + jsonPrint(err)));
       callback(err, cnf);
     }
   });
