@@ -662,8 +662,12 @@ function saveFile (params, callback){
   options.mode = params.mode || "overwrite";
   options.autorename = params.autorename || false;
 
+  // if (params.propertyGroups !== undefined) {
+  //   options.property_groups = params.propertyGroups;
+  // }
 
   const dbFileUpload = function () {
+
     dropboxClient.filesUpload(options)
     .then(function(){
       debug(chalkLog("SAVED DROPBOX JSON | " + options.path));
@@ -1701,8 +1705,8 @@ function updateClassifiedUsers(cnf, callback){
       if ((user.languageAnalysis !== undefined)
         && (user.languageAnalysis.sentiment !== undefined)) {
 
-        sentimentObj.magnitude = user.languageAnalysis.sentiment.magnitude;
-        sentimentObj.score = user.languageAnalysis.sentiment.score;
+        sentimentObj.magnitude = user.languageAnalysis.sentiment.magnitude || 0;
+        sentimentObj.score = user.languageAnalysis.sentiment.score || 0;
 
         if (!cnf.normalization) {
           maxMagnitude = Math.max(maxMagnitude, sentimentObj.magnitude);
@@ -2714,7 +2718,16 @@ function initNeuralNetworkChild(callback){
             + " | " + bestNetworkFolder + "/" + bestNetworkFile
           ));
 
-          saveFile({folder: bestNetworkFolder, file: bestNetworkFile, obj: networkObj}, function(err){
+          saveFile({
+            folder: bestNetworkFolder, 
+            file: bestNetworkFile, 
+            obj: networkObj, 
+            propertyGroups: {
+              template_id: "neutral_network", 
+              name: "successRate",
+              value: networkObj.successRate
+            }
+          }, function(err){
             console.log("NNT | SAVED NETWORK TO DROPBOX"
               + "\nNNT | NET ID:  " + networkObj.networkId 
               + "\nNNT | CREATE:  " + networkObj.networkCreateMode 
@@ -2836,7 +2849,16 @@ function initNeuralNetworkChild(callback){
             + " | " + bestNetworkFolder + "/" + bestNetworkFile
           ));
 
-          saveFile({folder: bestNetworkFolder, file: bestNetworkFile, obj: networkObj}, function(err){
+          saveFile({
+            folder: bestNetworkFolder, 
+            file: bestNetworkFile, 
+            obj: networkObj, 
+            propertyGroups: {
+              template_id: "neutral_network", 
+              name: "successRate",
+              value: networkObj.successRate
+            }
+          }, function(err){
             console.log("NNT | SAVED NETWORK TO DROPBOX"
               + "\nNNT | NET ID:  " + networkObj.networkId 
               + "\nNNT | CREATE:  " + networkObj.networkCreateMode 
@@ -2890,6 +2912,32 @@ function initTimeout(){
       console.log(chalkAlert("NNT | ... REQ TRAINING SET | @" + userId));
     });
 
+    // console.log(chalkAlert("SAVE TEST"));
+
+    // saveFile({ folder: "/config/utility", file: "testMetaProperty", obj: { key: "this!"} }, function(err){
+    //   console.log(chalkAlert("TEST SAVE DB FILE WITH CUSTOM PROP"));
+
+    //   dropboxClient.filesPropertiesTemplateList()
+    //   .then(function(response){
+    //     console.log("filesPropertiesTemplateList RESPONSE\n" + jsonPrint(response));
+    //   })
+    //   .catch(function(err){
+    //     console.log("filesPropertiesTemplateList ERROR\n" + jsonPrint(err));
+    //   });
+
+    //   dropboxClient.filesAlphaGetMetadata({path: dropboxConfigHostFolder + "/" +dropboxConfigFile})
+    //   .then(function(response){
+    //     console.log("filesAlphaGetMetadata RESPONSE\n" + jsonPrint(response));
+    //   })
+    //   .catch(function(err){
+    //     console.log("filesAlphaGetMetadata ERROR\n" + jsonPrint(err));
+    //   });
+
+
+    //   quit();
+    // });
+
+
     if (cnf.useBestNetwork) {
 
       loadBestNeuralNetworkFile()
@@ -2911,7 +2959,6 @@ function initTimeout(){
         console.log(chalkError("NNT | LOAD NN ERROR\nNNT | " + err));
         quit(err);
       });
-
     }
     else if (cnf.evolve.networkId){
 
@@ -2934,7 +2981,6 @@ function initTimeout(){
 
       });
     }
-
     else {
 
       initNeuralNetworkChild(function(){
