@@ -2912,9 +2912,17 @@ function initTimeout(){
       console.log(chalkAlert("NNT | ... REQ TRAINING SET | @" + userId));
     });
 
-    // console.log(chalkAlert("SAVE TEST"));
+    console.log(chalkAlert("SAVE TEST"));
+
 
     // saveFile({ folder: "/config/utility", file: "testMetaProperty", obj: { key: "this!"} }, function(err){
+    // saveFile({
+    //   folder: "/config/utility", 
+    //   file: "testMetaProperty", 
+    //   obj: { key: "this!"}, 
+    //   propertyGroups: [ { template_id: "ptid:47474747", fields: [ { name: "successRate", value: "47.4736474" } ] } ]
+    // }, function(err){
+
     //   console.log(chalkAlert("TEST SAVE DB FILE WITH CUSTOM PROP"));
 
     //   dropboxClient.filesPropertiesTemplateList()
