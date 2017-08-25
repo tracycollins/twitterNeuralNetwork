@@ -803,7 +803,7 @@ function loadFile(path, file, callback) {
     .catch(function(error) {
       console.log(chalkError("NNT | DROPBOX loadFile ERROR: " + file + "\n" + error));
       console.log(chalkError("NNT | !!! DROPBOX READ " + file + " ERROR"));
-      console.log(chalkError("NNT | " + jsonPrint(error)));
+      console.log(chalkError("NNT | " + jsonPrint(error.error)));
 
       if (error.status === 404) {
         console.error(chalkError("NNT | !!! DROPBOX READ FILE " + file + " NOT FOUND"
