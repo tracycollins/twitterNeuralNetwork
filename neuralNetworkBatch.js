@@ -350,7 +350,7 @@ function printInstanceConfigHashMap(){
 
   console.log("\nNNB | INSTANCE CONFIG HASH MAP"
     + " | " + getTimeStamp()
-    + " | _____________________________________"
+    + " | ========================================="
   );
 
   instanceConfigHashMap.forEach(function(instanceObj, nnId){
@@ -372,7 +372,7 @@ function printInstanceConfigHashMap(){
 
   });
 
-  console.log("NNB | ______________________________________________________________________________________\n");
+  console.log("NNB | ====================================================================================\n");
 }
 
 function showStats(options){
