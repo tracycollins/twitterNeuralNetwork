@@ -3,7 +3,7 @@
 
 const bestNetworkFolder = "/config/utility/best/neuralNetworks";
 
-const DEFAULT_MIN_SUCCESS_RATE = 90; // percent
+const DEFAULT_MIN_SUCCESS_RATE = 0; // percent
 const OFFLINE_MODE = true;
 const DEFAULT_ENABLE_RANDOM = true;
 const DEFAULT_BATCH_MAX_INSTANCES = 3;

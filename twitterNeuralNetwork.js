@@ -1190,7 +1190,7 @@ function loadNeuralNetwork(options, callback){
 function initInputArrays(cnf, callback){
 
   console.log(chalkBlue("NNT | INIT INPUT ARRAYS"));
-  console.log(chalkBlue("NNT | INIT INPUT ARRAYS cnf\nNNT | " + jsonPrint(cnf)));
+  debug(chalkBlue("NNT | INIT INPUT ARRAYS cnf\nNNT | " + jsonPrint(cnf)));
 
   let folder = dropboxConfigDefaultFolder;
   let inputFilePrefix = "defaultInput";
@@ -1247,8 +1247,6 @@ function initInputArrays(cnf, callback){
       });
 
     });
-
-
   }
   else {
 
