@@ -1497,7 +1497,7 @@ function initProcessPollInterval(interval){
 
                     if (err) { 
                       console.log(chalkError("NNB | PM2 DELETE ERROR: " + err));
-                      quit("PM2 DELETE ERROR");
+                      // quit("PM2 DELETE ERROR");
                     }
                     else {
                       debug("PM2 DELETE RESULTS\n" + results);
