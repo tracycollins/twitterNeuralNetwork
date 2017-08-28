@@ -348,10 +348,9 @@ let statsUpdateInterval;
 
 function printInstanceConfigHashMap(){
 
-  console.log("\nNNB | INSTANCE CONFIG HASH MAP"
-    + " | " + getTimeStamp()
-    + " | ========================================="
-  );
+  console.log("NNB | ====================================================================================");
+
+  console.log("NNB | ===== INSTANCE CONFIG HASH MAP | " + getTimeStamp() );
 
   instanceConfigHashMap.forEach(function(instanceObj, nnId){
 
@@ -372,7 +371,7 @@ function printInstanceConfigHashMap(){
 
   });
 
-  console.log("NNB | ====================================================================================\n");
+  console.log("NNB | ====================================================================================");
 }
 
 function showStats(options){
@@ -1451,20 +1450,23 @@ function initProcessPollInterval(interval){
         }
         else  {
           showStats();
-          console.log("\nNNB | APPS__________________________________________");
+          // console.log("NNB | ____________________________________________________________________________________");
+          // console.log("NNB | ===== APPS");
 
           apps.forEach(function(app){
 
-            console.log("NNB | " + app.name
-              + " | PM2 ID: " + app.pm2_env.pm_id
-              + " | " + app.pm2_env.TNN_NETWORK_CREATE_MODE
-              + " | PID: " + app.pid
-              + " | STATUS: " + app.pm2_env.status
-              + " | ITR: " + app.pm2_env.TNN_ITERATIONS
-              + " | START: " + moment(parseInt(app.pm2_env.created_at)).format(compactDateTimeFormat)
-              // + " | UPTIME: " + app.pm2_env.pm_uptime
-              + " | RUN: " + msToTime(moment().valueOf()-parseInt(app.pm2_env.created_at))
-            );
+            if (appHashMap[app.name]) {
+              console.log("NNB | RUNNING: " + app.name
+                + " | PM2 ID: " + app.pm2_env.pm_id
+                + " | " + app.pm2_env.TNN_NETWORK_CREATE_MODE
+                + " | PID: " + app.pid
+                + " | STATUS: " + app.pm2_env.status
+                + " | ITR: " + app.pm2_env.TNN_ITERATIONS
+                + " | START: " + moment(parseInt(app.pm2_env.created_at)).format(compactDateTimeFormat)
+                // + " | UPTIME: " + app.pm2_env.pm_uptime
+                + " | RUN: " + msToTime(moment().valueOf()-parseInt(app.pm2_env.created_at))
+              );
+            }
 
             let instanceObj = {};
 
@@ -1502,7 +1504,6 @@ function initProcessPollInterval(interval){
                     else {
                       debug("PM2 DELETE RESULTS\n" + results);
                     }
-
                   });
 
                 }
@@ -1561,12 +1562,12 @@ function initProcessPollInterval(interval){
                     else {
                       debug("PM2 DELETE RESULTS\n" + results);
                     }
-
                   });
                 }
 
               });
             }
+
 
           });
         }
