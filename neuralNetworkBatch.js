@@ -65,7 +65,7 @@ const DEFAULT_EVOLVE_POP_SIZE = 50;
 const DEFAULT_EVOLVE_ELITISM = 5; // %
 
 const EVOLVE_COST_ARRAY = [
-  "CROSS_ENTROPY",
+  // "CROSS_ENTROPY",
   "MSE",
   "BINARY"
   // "MAE",
