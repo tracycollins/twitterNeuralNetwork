@@ -3,7 +3,7 @@
 
 const bestNetworkFolder = "/config/utility/best/neuralNetworks";
 
-const DEFAULT_MIN_SUCCESS_RATE = 0; // percent
+const DEFAULT_MIN_SUCCESS_RATE = 52; // percent
 const OFFLINE_MODE = true;
 const DEFAULT_ENABLE_RANDOM = true;
 const DEFAULT_BATCH_MAX_INSTANCES = 3;
@@ -67,11 +67,11 @@ const DEFAULT_EVOLVE_ELITISM = 5; // %
 const EVOLVE_COST_ARRAY = [
   "CROSS_ENTROPY",
   "MSE",
-  "BINARY",
-  "MAE",
-  "MAPE",
-  "MSLE",
-  "HINGE"
+  "BINARY"
+  // "MAE",
+  // "MAPE",
+  // "MSLE",
+  // "HINGE"
 ];
 
 const EVOLVE_ACTIVATION_ARRAY = [ 
@@ -1557,7 +1557,7 @@ function initProcessPollInterval(interval){
 
                     if (err) { 
                       console.log(chalkError("NNB | PM2 DELETE ERROR: " + err));
-                      quit("PM2 DELETE ERROR");
+                      // quit("PM2 DELETE ERROR");
                     }
                     else {
                       debug("PM2 DELETE RESULTS\n" + results);
