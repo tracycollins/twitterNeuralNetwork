@@ -7,12 +7,13 @@
     "autorestart": false,
     "env": {
       "NODE_ENV": "development",
-      "NNB_MIN_SUCCESS_RATE" : 50,
+      "NNB_MIN_SUCCESS_RATE" : 54,
       "GCLOUD_PROJECT": "graphic-tangent-627",
       "GOOGLE_PROJECT": "graphic-tangent-627",
       "DROPBOX_WORD_ASSO_ACCESS_TOKEN": "nknEWsIkD5UAAAAAAAQouTDFRBKfwsFzuS8PPi2Q_JVYnpotNuaHiddNtmG4mUTi",
       "DROPBOX_WORD_ASSO_APP_KEY": "qlb9k4dp01t9iqk",
       "DROPBOX_WORD_ASSO_APP_SECRET": "wqslhe2t95zfn19",
+      "NNB_STATS_UPDATE_INTERVAL": 60000,
       "NNB_EVOLVE_ITERATIONS": 1000,
       "NNB_MAX_INSTANCES": 3
     }

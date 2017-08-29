@@ -3,12 +3,12 @@
 
 const bestNetworkFolder = "/config/utility/best/neuralNetworks";
 
-const DEFAULT_MIN_SUCCESS_RATE = 52; // percent
+const DEFAULT_MIN_SUCCESS_RATE = 54; // percent
 const OFFLINE_MODE = true;
 const DEFAULT_ENABLE_RANDOM = true;
 const DEFAULT_BATCH_MAX_INSTANCES = 3;
 const DEFAULT_BEST_NETWORK_NUMBER = 5;
-const SEED_NETWORK_PROBABILITY = 0.5;
+const SEED_NETWORK_PROBABILITY = 0.3;
 
 const DEFAULT_ITERATIONS = 1;
 const DEFAULT_SEED_NETWORK_ID = false; 
@@ -64,8 +64,12 @@ const DEFAULT_EVOLVE_MUTATION_RATE = 0.5;
 const DEFAULT_EVOLVE_POP_SIZE = 50;
 const DEFAULT_EVOLVE_ELITISM = 5; // %
 
+const EVOLVE_MUTATION_ARRAY = [
+  "FFW"
+];
+
 const EVOLVE_COST_ARRAY = [
-  // "CROSS_ENTROPY",
+  "CROSS_ENTROPY",
   "MSE",
   "BINARY"
   // "MAE",
@@ -76,25 +80,29 @@ const EVOLVE_COST_ARRAY = [
 
 const EVOLVE_ACTIVATION_ARRAY = [ 
   "LOGISTIC", 
-  "TAHN", 
-  "RELU", 
+  // "TAHN", 
+  // "RELU", 
   "IDENTITY", 
-  "STEP", 
-  "SOFTSIGN", 
-  "SINUSOID", 
-  "GAUSSIAN", 
-  "BENT_IDENTITY",
-  "BIPOLAR",
-  "BIPOLAR_SIGMOID",
-  "HARD_TANH",
-  "ABSOLUTE",
-  "SELU",
-  "INVERSE"
+  "STEP"
+  // "STEP", 
+  // "STEP", 
+  // "STEP", 
+  // "STEP", 
+  // "SOFTSIGN", 
+  // "SINUSOID", 
+  // "GAUSSIAN", 
+  // "BENT_IDENTITY",
+  // "BIPOLAR",
+  // "BIPOLAR_SIGMOID",
+  // "HARD_TANH",
+  // "ABSOLUTE",
+  // "SELU",
+  // "INVERSE"
 ];
 
-const EVOLVE_MUTATION_RATE_RANGE = { min: 0.3, max: 0.9 } ;
-const EVOLVE_POP_SIZE_RANGE = { min: 10, max: 100 } ;
-const EVOLVE_ELITISM_RANGE = { min: 0, max: 20 } ;
+const EVOLVE_MUTATION_RATE_RANGE = { min: 0.5, max: 0.9 } ;
+const EVOLVE_POP_SIZE_RANGE = { min: 80, max: 160 } ;
+const EVOLVE_ELITISM_RANGE = { min: 1, max: 20 } ;
 // ================ EVOLVE ================
 
 const DEFAULT_PROCESS_POLL_INTERVAL = 15000;
@@ -130,6 +138,7 @@ const randomInt = require("random-int");
 const mongoose = require("./config/mongoose");
 const db = mongoose();
 const HashMap = require("hashmap").HashMap;
+const table = require("text-table");
 
 const chalkNetwork = chalk.blue;
 const chalkAlert = chalk.red;
@@ -348,30 +357,66 @@ let statsUpdateInterval;
 
 function printInstanceConfigHashMap(){
 
-  console.log("NNB | ====================================================================================");
+  let tableArray = [];
 
-  console.log("NNB | ===== INSTANCE CONFIG HASH MAP | " + getTimeStamp() );
+  tableArray.push([
+    "NNB | NNID",
+    "SEED",
+    "MUT",
+    "ACTV",
+    "CLEAR",
+    "COST",
+    "EQUAL",
+    "M RATE",
+    "POP",
+    "ELITE",
+    "START",
+    "ELPSD",
+    "RES %"
+  ]);
 
-  instanceConfigHashMap.forEach(function(instanceObj, nnId){
+  // instanceConfigHashMap.forEach(function(instanceObj, nnId){
+  async.each(instanceConfigHashMap.keys(), function(nnId, cb){
 
-    let resultsText = instanceObj.results.successRate.toFixed(1) + "%";
+    let instanceObj = instanceConfigHashMap.get(nnId);
+
+    let results = instanceObj.results.successRate;
 
     if (instanceObj.stats.ended === 0) {
-      resultsText = "---";
+      results = 0.0;
       instanceObj.stats.elapsed = moment().valueOf() - instanceObj.stats.started;
       instanceConfigHashMap.set(nnId, instanceObj);
     }
 
-    console.log("NNB | " + nnId
-      + " | " + instanceObj.config.env.TNN_NETWORK_CREATE_MODE
-      + " | S: " + getTimeStamp(instanceObj.stats.started)
-      + " | RUN: " + msToTime(instanceObj.stats.elapsed)
-      + " | RESULTS: " + resultsText
-    );
+    tableArray.push([
+      "NNB | " + nnId,
+      instanceObj.config.env.TNN_SEED_NETWORK_ID,
+      instanceObj.config.env.TNN_EVOLVE_MUTATION,
+      instanceObj.config.env.TNN_EVOLVE_ACTIVATION,
+      instanceObj.config.env.TNN_EVOLVE_CLEAR,
+      instanceObj.config.env.TNN_EVOLVE_COST,
+      instanceObj.config.env.TNN_EVOLVE_EQUAL,
+      instanceObj.config.env.TNN_EVOLVE_MUTATION_RATE.toFixed(3),
+      instanceObj.config.env.TNN_EVOLVE_POP_SIZE,
+      instanceObj.config.env.TNN_EVOLVE_ELITISM,
+      getTimeStamp(instanceObj.stats.started),
+      msToTime(instanceObj.stats.elapsed),
+      results.toFixed(1)
+    ]);
+
+    cb();
+
+  }, function(){
+
+    const t = table(tableArray, { align: ["l", "l", "l", "l", "l", "l", "l", "r", "r", "r", "l", "l", "r"] });
+    // const t = table(tableArray);
+
+    console.log("NNB | ======================================================================================================================");
+    console.log(t);
+    console.log("NNB | ======================================================================================================================");
 
   });
 
-  console.log("NNB | ====================================================================================");
 }
 
 function showStats(options){
@@ -842,7 +887,7 @@ function printNetworkObj(title, nnObj){
 
 function loadBestNetworkDropboxFolder(options, callback){
 
-  console.log(chalkInfo("NNB | loadBestNetworkDropboxFolder\n " + jsonPrint(options)));
+  debug(chalkInfo("NNB | loadBestNetworkDropboxFolder\n " + jsonPrint(options)));
 
   let newBestNetwork = false;
 
@@ -882,6 +927,11 @@ function loadBestNetworkDropboxFolder(options, callback){
             if (err) {
               if (err.status === 429) {
                 console.log(chalkError("NNB | DROPBOX BEST NETWORK LOAD FILE ERROR: TOO MANY REQUESTS"));
+              }
+              else if (err.status === 409) {
+                console.log(chalkError("NNB | DROPBOX BEST NETWORK LOAD FILE ERROR: FILE NOT FOUND"
+                  + " | " + options.folder + "/" + entry.name
+                ));
               }
               else {
                 console.log(chalkError("NNB | DROPBOX BEST NETWORK LOAD FILE ERROR: " + jsonPrint(err)));
@@ -924,7 +974,12 @@ function loadBestNetworkDropboxFolder(options, callback){
         loadFile(options.folder, entry.name, function(err, networkObj){
 
           if (err) {
-            if (err.status === 429) {
+            if (err.status === 409) {
+              console.log(chalkError("NNB | DROPBOX BEST NETWORK LOAD FILE ERROR: FILE NOT FOUND"
+                + " | " + options.folder + "/" + entry.name
+              ));
+            }
+            else if (err.status === 429) {
               console.log(chalkError("NNB | DROPBOX BEST NETWORK LOAD FILE ERROR: TOO MANY REQUESTS"));
             }
             else {
@@ -970,6 +1025,9 @@ function loadBestNetworkDropboxFolder(options, callback){
                 + " | " + networkObj.networkId
               ));
             }
+
+            cb();
+
           }
           else {
 
@@ -986,16 +1044,16 @@ function loadBestNetworkDropboxFolder(options, callback){
                 + " | " + networkObj.networkCreateMode
                 + " | " + networkObj.networkId
               ));
+              cb();
             })
             .catch(function(err){
               console.log(chalkError("NNB | *** ERROR: XXX NN"
                 + " | " + options.folder + "/" + entry.name
                 + " | " + jsonPrint(err)
               ));
+              cb();
             });
           }
-
-          cb();
 
         });
       }
@@ -1220,15 +1278,15 @@ const generateRandomEvolveEnv = function(cnf){
 
   console.log(chalkAlert("NNB | NETWORK CREATE MODE: " + env.TNN_NETWORK_CREATE_MODE));
 
-  if (currentSeedNetwork) {
+  // if (currentSeedNetwork) {
 
-    env.TNN_SEED_NETWORK_ID = currentSeedNetwork.networkId;
+  //   env.TNN_SEED_NETWORK_ID = currentSeedNetwork.networkId;
 
-    console.log(chalkAlert("\nNNB | SEED NETWORK\nNNB | ----------------------------------"));
-    console.log(chalkAlert("NNB | " + currentSeedNetwork.successRate.toFixed(1) + " | " + currentSeedNetwork.networkId));
-    console.log(chalkAlert("NNB | ----------------------------------"));
-  }
-  else {
+  //   console.log(chalkAlert("\nNNB | SEED NETWORK\nNNB | ----------------------------------"));
+  //   console.log(chalkAlert("NNB | " + currentSeedNetwork.successRate.toFixed(1) + " | " + currentSeedNetwork.networkId));
+  //   console.log(chalkAlert("NNB | ----------------------------------"));
+  // }
+  // else {
     
     console.log(chalkAlert("\nNNB | BEST NETWORKS\nNNB | ----------------------------------"));
 
@@ -1238,7 +1296,7 @@ const generateRandomEvolveEnv = function(cnf){
 
     console.log(chalkAlert("NNB | ----------------------------------"));
 
-    env.TNN_SEED_NETWORK_ID = (Math.random() > SEED_NETWORK_PROBABILITY) ? randomItem(bestNetworkHashMap.keys()) : false;
+    env.TNN_SEED_NETWORK_ID = (Math.random() < SEED_NETWORK_PROBABILITY) ? randomItem(bestNetworkHashMap.keys()) : false;
 
     if (!env.TNN_SEED_NETWORK_ID) {
       env.TNN_EVOLVE_ARCHITECTURE = "perceptron";
@@ -1247,12 +1305,15 @@ const generateRandomEvolveEnv = function(cnf){
     if (!env.TNN_SEED_NETWORK_ID) {
       env.TNN_TRAIN_ARCHITECTURE = "perceptron";
     }
-  }
+  // }
 
+  env.TNN_EVOLVE_MUTATION = randomItem(EVOLVE_MUTATION_ARRAY);
   env.TNN_EVOLVE_ACTIVATION = randomItem(EVOLVE_ACTIVATION_ARRAY);
   env.TNN_EVOLVE_COST = randomItem(EVOLVE_COST_ARRAY);
   env.TNN_EVOLVE_CLEAR = randomItem([true, false]);
-  env.TNN_EVOLVE_EQUAL = randomItem([true, false]);
+  // env.TNN_EVOLVE_CLEAR = randomItem([false]);
+  // env.TNN_EVOLVE_EQUAL = randomItem([true, false]);
+  env.TNN_EVOLVE_EQUAL = randomItem([true]);
   env.TNN_EVOLVE_MUTATION_RATE = randomFloat(EVOLVE_MUTATION_RATE_RANGE.min, EVOLVE_MUTATION_RATE_RANGE.max);
   env.TNN_EVOLVE_POP_SIZE = randomInt(EVOLVE_POP_SIZE_RANGE.min, EVOLVE_POP_SIZE_RANGE.max);
   env.TNN_EVOLVE_ELITISM = randomInt(EVOLVE_ELITISM_RANGE.min, EVOLVE_ELITISM_RANGE.max);
@@ -1400,7 +1461,7 @@ function initProcessPollInterval(interval){
   loadSeedNeuralNetwork(seedOpt, function(err, results){
     if (err) {
       console.error(chalkError("NNB | loadSeedNeuralNetwork ERROR: " + err));
-      quit("loadSeedNeuralNetwork ERROR");
+      // quit("loadSeedNeuralNetwork ERROR");
       return;
     }
     if (results.best) {
@@ -1507,6 +1568,7 @@ function initProcessPollInterval(interval){
                   });
 
                 }
+
                 if (results.best) {
                   console.log(chalkAlert("NNB | LOAD NN"
                     + " | BEST: " + results.best.networkId
@@ -1591,7 +1653,7 @@ function initBatch(callback){
     if (err) {
 
       console.error(chalkError("NNB | loadSeedNeuralNetwork ERROR: " + err));
-      quit("loadSeedNeuralNetwork ERROR");
+      // quit("loadSeedNeuralNetwork ERROR");
     }
 
     if (results && results.best) {

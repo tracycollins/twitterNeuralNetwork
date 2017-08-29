@@ -35,7 +35,8 @@
     "regex": "^0.1.1",
     "slack": "^8.3.1",
     "slack-node": "^0.1.8",
-    "string": "^3.3.3"
+    "string": "^3.3.3",
+    "text-table": "^0.2.0"
   },
   "devDependencies": {},
   "scripts": {
