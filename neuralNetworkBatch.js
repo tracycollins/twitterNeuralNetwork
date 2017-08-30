@@ -70,6 +70,8 @@ const EVOLVE_MUTATION_ARRAY = [
 
 const EVOLVE_COST_ARRAY = [
   "CROSS_ENTROPY",
+  "CROSS_ENTROPY",
+  "MSE",
   "MSE",
   "BINARY"
   // "MAE",
