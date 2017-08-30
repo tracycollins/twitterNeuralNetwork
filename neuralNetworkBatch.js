@@ -79,10 +79,10 @@ const EVOLVE_COST_ARRAY = [
 ];
 
 const EVOLVE_ACTIVATION_ARRAY = [ 
-  "LOGISTIC", 
+  // "LOGISTIC", 
   // "TAHN", 
   // "RELU", 
-  "IDENTITY", 
+  // "IDENTITY", 
   "STEP"
   // "STEP", 
   // "STEP", 
@@ -100,7 +100,7 @@ const EVOLVE_ACTIVATION_ARRAY = [
   // "INVERSE"
 ];
 
-const EVOLVE_MUTATION_RATE_RANGE = { min: 0.5, max: 0.9 } ;
+const EVOLVE_MUTATION_RATE_RANGE = { min: 0.3, max: 0.8 } ;
 const EVOLVE_POP_SIZE_RANGE = { min: 80, max: 160 } ;
 const EVOLVE_ELITISM_RANGE = { min: 1, max: 20 } ;
 // ================ EVOLVE ================

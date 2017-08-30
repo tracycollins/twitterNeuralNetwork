@@ -60,7 +60,6 @@ requiredTrainingSet.add("tuckercarlson");
 requiredTrainingSet.add("usatoday");
 requiredTrainingSet.add("vp");
 
-
 let currentBestNetwork;
 
 let slackChannel = "#nn";
@@ -79,8 +78,8 @@ const DEFAULT_EVOLVE_THREADS = 2;
 const DEFAULT_EVOLVE_ARCHITECTURE = "random";
 const DEFAULT_EVOLVE_BEST_NETWORK = false;
 
-// const DEFAULT_EVOLVE_ACTIVATION = "LOGISTIC"; // TAHN | RELU | IDENTITY | STEP
-const DEFAULT_EVOLVE_ACTIVATION = "STEP"; // TAHN | RELU | IDENTITY | STEP
+const DEFAULT_EVOLVE_ACTIVATION = "LOGISTIC"; // TAHN | RELU | IDENTITY | STEP
+// const DEFAULT_EVOLVE_ACTIVATION = "STEP"; // TAHN | RELU | IDENTITY | STEP
 const DEFAULT_EVOLVE_CLEAR = false;
 
 // const EVOLVE_COST_ARRAY = [
@@ -96,12 +95,13 @@ const DEFAULT_EVOLVE_CLEAR = false;
 const DEFAULT_EVOLVE_COST = "MSE";
 // const DEFAULT_EVOLVE_COST = "CROSS_ENTROPY";
 // const DEFAULT_EVOLVE_COST = "BINARY";
+
 const DEFAULT_EVOLVE_ELITISM = 10;
 const DEFAULT_EVOLVE_EQUAL = true;
 const DEFAULT_EVOLVE_ERROR = 0.03;
 const DEFAULT_EVOLVE_LOG = 1;
 const DEFAULT_EVOLVE_MUTATION = "FFW";
-const DEFAULT_EVOLVE_MUTATION_RATE = 0.75;
+const DEFAULT_EVOLVE_MUTATION_RATE = 0.5;
 const DEFAULT_EVOLVE_POPSIZE = 100;
 
 const DEFAULT_TRAIN_THREADS = 1;
