@@ -1656,6 +1656,7 @@ function initBatch(callback){
 
       console.error(chalkError("NNB | loadSeedNeuralNetwork ERROR: " + err));
       // quit("loadSeedNeuralNetwork ERROR");
+      return(callback(null));
     }
 
     if (results && results.best) {
