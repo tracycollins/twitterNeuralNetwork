@@ -65,11 +65,16 @@ function jsonPrint (obj){
   }
 }
 
-debug("neataptic\n" + jsonPrint(neataptic));
+process.title = process.env.NNC_PROCESS_NAME;
+
+
+// debug("neataptic\n" + jsonPrint(neataptic));
+console.log("NNC | proces.env\n" + jsonPrint(process.env));
 
 console.log("\n\nNNC | =================================");
 console.log("NNC | HOST:          " + hostname);
 console.log("NNC | PROCESS ID:    " + process.pid);
+console.log("NNC | PROCESS NAME:  " + process.env.NNC_PROCESS_NAME);
 console.log("NNC | PROCESS ARGS:  " + util.inspect(process.argv, {showHidden: false, depth: 1}));
 console.log("NNC | =================================");
 
@@ -129,7 +134,7 @@ const DROPBOX_WORD_ASSO_ACCESS_TOKEN = process.env.DROPBOX_WORD_ASSO_ACCESS_TOKE
 const DROPBOX_WORD_ASSO_APP_KEY = process.env.DROPBOX_WORD_ASSO_APP_KEY ;
 const DROPBOX_WORD_ASSO_APP_SECRET = process.env.DROPBOX_WORD_ASSO_APP_SECRET;
 const DROPBOX_TNN_CONFIG_FILE = process.env.DROPBOX_TNN_CONFIG_FILE || "neuralNetworkConfig.json";
-const DROPBOX_TNN_STATS_FILE = process.env.DROPBOX_TNN_STATS_FILE || "neuralNetworkStats.json";
+const DROPBOX_TNN_STATS_FILE = process.env.DROPBOX_NNC_STATS_FILE;
 
 let dropboxConfigFolder = "/config/utility/" + hostname;
 let dropboxConfigFile = hostname + "_" + DROPBOX_TNN_CONFIG_FILE;
@@ -168,13 +173,26 @@ function getTimeStamp(inputTime) {
   }
 }
 
+function quit(message) {
+  let msg = "";
+  if (message) { msg = message; }
+  console.log("NNC | " + process.argv[1]
+    + " | NEURAL NET **** QUITTING"
+    + " | CAUSE: " + msg
+    + " | PID: " + process.pid
+    
+  );
+  process.exit();
+}
+
+
 function saveFile (path, file, jsonObj, callback){
 
   const fullPath = path + "/" + file;
 
   debug(chalkInfo("LOAD FOLDER " + path));
   debug(chalkInfo("LOAD FILE " + file));
-  console.log(chalkInfo("NNC | SAVE FILE FULL PATH " + fullPath));
+  debug(chalkInfo("NNC | SAVE FILE FULL PATH " + fullPath));
 
   let options = {};
   options.path = fullPath;
@@ -186,7 +204,7 @@ function saveFile (path, file, jsonObj, callback){
   }
   catch (err){
     console.error(chalkError("NNC | *** SAVE FILE JSON STRINGIFY ERROR: " + err));
-    process.send({op:"ERROR", error: err, statsObj: statsObj}, function(){
+    process.send({op:"ERROR", processName: configuration.processName, error: err, statsObj: statsObj}, function(){
       quit();
     });
     // if (callback !== undefined) { return callback(err, null); }
@@ -208,7 +226,7 @@ function saveFile (path, file, jsonObj, callback){
       else {
         console.error("NNC | ERROR\nNNC | " + jsonPrint(err));
         console.error("NNC | ERROR.ERRORNNC | \n" + jsonPrint(err.error));
-        process.send({op: "ERROR", error: err}, function(){
+        process.send({op: "ERROR", processName: configuration.processName, error: err}, function(){
           quit(jsonPrint(err));
         });
       }
@@ -237,18 +255,6 @@ function showStats(options){
     + " | TRAINING START: " + moment(parseInt(statsObj.training.startTime)).format(compactDateTimeFormat)
     + " | TRAINING ELAPSED: " + statsObj.elapsed
   ));
-}
-
-function quit(message) {
-  let msg = "";
-  if (message) { msg = message; }
-  console.log("NNC | " + process.argv[1]
-    + " | NEURAL NET **** QUITTING"
-    + " | CAUSE: " + msg
-    + " | PID: " + process.pid
-    
-  );
-  process.exit();
 }
 
 process.on("SIGHUP", function() {
@@ -334,7 +340,7 @@ function testEvolve(params, callback){
       });
 
     }, function(){
-      console.log(chalkAlert("NNC | TEST RESULT: PASS: " + testPass));
+      console.log(chalkLog("NNC | TEST RESULT: PASS: " + testPass));
       callback(testPass);
     });
   });
@@ -354,19 +360,18 @@ function evolve(params, callback){
     console.log(chalkAlert("NNC | START NETWORK DEFINED: " + options.network.networkId));
   }
 
-  // options.threads = params.threads;
-  // options.elitism = params.elitism;
-  // options.equal = params.equal;
-  // options.error = params.error;
-  // options.iterations = params.iterations;
-  // options.mutation = params.mutation;
-  // options.mutationRate = params.mutationRate;
-  // options.popsize = params.popsize;
+  options.threads = params.threads;
+  options.elitism = params.elitism;
+  options.equal = params.equal;
+  options.error = params.error;
+  options.iterations = params.iterations;
+  options.mutation = params.mutation;
+  options.mutationRate = params.mutationRate;
+  options.popsize = params.popsize;
 
   const startTime = moment().valueOf();
 
   options.schedule = {
-
     function: function(schedParams){
 
       let elapsedInt = moment().valueOf() - startTime;
@@ -389,7 +394,8 @@ function evolve(params, callback){
       }
 
       console.log("NNC | EVOLVE"
-        + " | " + params.runId
+        + " | " + configuration.processName
+        // + " | " + params.runId
         + " | S: " + moment(startTime).format(compactDateTimeFormat)
         + " | R: " + schedMsToTime(elapsedInt)
         + " | RATE: " + iterationRateSec.toFixed(1) + " s/I"
@@ -399,6 +405,8 @@ function evolve(params, callback){
         + " | F: " + schedParams.fitness.toFixed(5)
         + " | E: " + schedParams.error.toFixed(5)
       );
+
+      // process.send("EVOLVE_STATS", schedParams);
 
     },
     iterations: params.log
@@ -412,56 +420,36 @@ function evolve(params, callback){
     switch (key) {
 
       case "network":
-      console.log("NNC | EVOLVE OPTION"
+      console.log("NNC"
+        + " | " + configuration.processName
+        + " | EVOLVE OPTION"
         + " | " + key + ": " + params[key].networkId 
         + " | " + params[key].successRate.toFixed(2) + "%"
       );
       break;
 
       case "mutation":
-      console.log("NNC | EVOLVE OPTION | " + key + ": " + params[key]);
+      console.log("NNC" + " | " + configuration.processName + " | EVOLVE OPTION | " + key + ": " + params[key]);
       options.mutation = neataptic.methods.mutation[params[key]];
       break;
       
       case "activation":
-      console.log("NNC | EVOLVE OPTION | " + key + ": " + params[key]);
+      console.log("NNC" + " | " + configuration.processName + " | EVOLVE OPTION | " + key + ": " + params[key]);
       options.activation = neataptic.methods.activation[params[key]];
       break;
       
       case "cost":
-      console.log("NNC | EVOLVE OPTION | " + key + ": " + params[key]);
+      console.log("NNC" + " | " + configuration.processName + " | EVOLVE OPTION | " + key + ": " + params[key]);
       options.cost = neataptic.methods.cost[params[key]];
       break;
 
       default:
-      if ((key !== "log") && (key !== "trainingSet")){
-        console.log("NNC | EVOLVE OPTION | " + key + ": " + params[key]);
-        options[key] = params[key];
-      }
+        if ((key !== "log") && (key !== "trainingSet")){
+          console.log("NNC" + " | " + configuration.processName + " | EVOLVE OPTION | " + key + ": " + params[key]);
+          options[key] = params[key];
+        }
     }
 
-    // if (key === "network") {
-    //   console.log("NNC | EVOLVE OPTION | " + key + ": " + options[key].networkId + " | " + options[key].successRate.toFixed(2) + "%");
-    //   // options.mutation = neataptic.methods.mutation[key];
-    //   // options.mutation = neataptic.methods.mutation.FFW;
-    // }
-    // else if (key === "mutation") {
-    //   console.log("NNC | EVOLVE OPTION | " + key + ": " + options[key]);
-    //   options.mutation = neataptic.methods.mutation[options[key]];
-    //   // options.mutation = neataptic.methods.mutation.FFW;
-    // }
-    // // else if ((key === "activation") && (options[key] !== undefined)) {
-    // else if (key === "activation") {
-    //   console.log("NNC | EVOLVE OPTION | " + key + ": " + options[key]);
-    //   options.activation = neataptic.methods.activation[options[key]];
-    // }
-    // else if (key === "cost") {
-    //   console.log("NNC | EVOLVE OPTION | " + key + ": " + options[key]);
-    //   options.cost = neataptic.Methods.Cost[options[key]];
-    // }
-    // else if (key !== "activation") {
-    //   console.log("NNC | EVOLVE OPTION | " + key + ": " + options[key]);
-    // }
     cb();
 
   }, function(){
@@ -505,35 +493,48 @@ function evolve(params, callback){
 
     async.each(params.trainingSet, function(datumObj, cb){
 
-      debug("DATUM | " + datumObj.user.screenName);
+      debug("DATUM | " + datumObj.output + " | " + datumObj.user.screenName);
 
       trainingSet.push({ 
         input: datumObj.input, 
         output: datumObj.output
       });
 
-      cb();
+      async.setImmediate(function() {
+        cb();
+      });
 
     }, function(){
 
       console.log(chalkAlert("\nNNC | ========================\nNNC | START EVOLVE\nNNC | ========================"
+        + "\nNNC | PROCESS NAME:  " + configuration.processName
         + "\nNNC | IN:            " + params.trainingSet[0].input.length
         + "\nNNC | OUT:           " + params.trainingSet[0].output.length
+        + "\nNNC | ITERATIONS:    " + options.iterations
         + "\nNNC | TRAINING DATA: " + trainingSet.length
         + "\nNNC | ========================\n"
-     ));
+      ));
 
       async function networkEvolve() {
+
         let results = await network.evolve(trainingSet, options);
+
         results.threads = options.threads;
+
         if (callback !== undefined) { callback(null, results); }
+
       }
 
       networkEvolve().catch(function(err){
-        console.error(chalkError("NNC | NETWORK EVOLVE ERROR: " + err));
-        process.send({op: "ERROR", error: err}, function(){
+
+        console.error(chalkError("NNC | " + configuration.processName + " | NETWORK EVOLVE ERROR: " + err));
+
+        process.send({op: "ERROR", processName: configuration.processName, error: err}, function(){
+
           quit(jsonPrint(err));
+
         });
+
       });
 
     });
@@ -570,7 +571,7 @@ function train(params, callback){
 
     function: function(schedParams){
 
-      var elapsedInt = moment().valueOf() - startTime;
+      let elapsedInt = moment().valueOf() - startTime;
 
       function schedMsToTime(duration) {
         let seconds = parseInt((duration / 1000) % 60);
@@ -681,7 +682,7 @@ function train(params, callback){
 
       networkTrain().catch(function(err){
         console.error(chalkError("NNC | NETWORK TRAIN ERROR: " + err));
-        process.send({op: "ERROR", error: err}, function(){
+        process.send({op: "ERROR", processName: configuration.processName, error: err}, function(){
           quit(jsonPrint(err));
         });
       });
@@ -690,6 +691,26 @@ function train(params, callback){
 
   });
 }
+
+
+function initStatsUpdate(cnf, callback){
+
+  console.log(chalkInfo("NNC | initStatsUpdate | INTERVAL: " + cnf.statsUpdateIntervalTime));
+
+  setInterval(function () {
+
+    statsObj.elapsed = msToTime(moment().valueOf() - statsObj.startTime);
+    statsObj.timeStamp = moment().format(defaultDateTimeFormat);
+
+    // saveFile(statsFolder, statsFile, statsObj, function(){
+    //   // process.send({op:"STATS", statsObj: statsObj});
+    // });
+
+  }, cnf.statsUpdateIntervalTime);
+
+  callback(null, cnf);
+}
+
 
 process.on("message", function(m) {
 
@@ -705,27 +726,28 @@ process.on("message", function(m) {
 
     case "INIT":
       statsObj.testRunId = m.testRunId;
-      statsFile = "neuralNetworkChildStats_" + statsObj.pid + "_" + statsObj.testRunId + ".json";
+      // statsFile = "neuralNetworkChildStats_" + statsObj.pid + "_" + statsObj.testRunId + ".json";
       console.log(chalkInfo("NNC | STATS FILE: " + statsFolder + "/" + statsFile));
       console.log(chalkInfo("NNC | NEURAL NET INIT"
+        + " | PROCESS NAME: " + configuration.processName
         + " | TEST RUN ID: " + statsObj.testRunId
       ));
 
       initStatsUpdate(configuration, function(){
-        process.send({op: "INIT_COMPLETE"});
+        process.send({op: "INIT_COMPLETE", processName: configuration.processName, });
       });
 
     break;
 
     case "TEST_EVOLVE":
       testEvolve({runId: statsObj.testRunId}, function(pass){
-        process.send({op:"TEST_EVOLVE_COMPLETE", results: pass});
+        process.send({op:"TEST_EVOLVE_COMPLETE", processName: configuration.processName, results: pass});
       });
     break;
 
     case "STATS":
       showStats();
-      process.send({op:"STATS", statsObj: statsObj});
+      process.send({op:"STATS", processName: configuration.processName, statsObj: statsObj});
     break;
 
     case "TRAIN":
@@ -813,7 +835,7 @@ process.on("message", function(m) {
         if (err) {
           console.error(chalkError("NNC | TRAIN ERROR: " + err));
           console.trace("NNC | TRAIN ERROR");
-          process.send({op: "ERROR", error: err}, function(){
+          process.send({op: "ERROR", processName: configuration.processName, error: err}, function(){
             quit(jsonPrint(err));
           });
         }
@@ -835,7 +857,7 @@ process.on("message", function(m) {
           let networkObj = new NeuralNetwork();
           networkObj.networkCreateMode = "train";
           networkObj.testRunId = statsObj.training.testRunId;
-          networkObj.networkId = statsObj.training.testRunId;
+          networkObj.networkId = statsObj.training.testRunId + "_" + configuration.processName;
           networkObj.network = exportedNetwork;
           networkObj.inputs = statsObj.inputs;
           networkObj.outputs = statsObj.outputs;
@@ -852,7 +874,7 @@ process.on("message", function(m) {
           }
           networkObj.elapsed = statsObj.training.elapsed;
 
-          process.send({op:"TRAIN_COMPLETE", networkObj: networkObj, statsObj: statsObj});
+          process.send({op:"TRAIN_COMPLETE", processName: configuration.processName, networkObj: networkObj, statsObj: statsObj});
           showStats();
         }
       });
@@ -874,6 +896,7 @@ process.on("message", function(m) {
       statsObj.outputs = {};
       statsObj.outputs = m.outputs;
 
+      evolveOptions = {};
       evolveOptions = {
         runId: m.testRunId,
         threads: m.threads,
@@ -894,6 +917,7 @@ process.on("message", function(m) {
         clear: m.clear
       };
 
+      statsObj.evolve.options = {};
       statsObj.evolve.options = {
         threads: m.threads,
         architecture: m.architecture,
@@ -915,75 +939,80 @@ process.on("message", function(m) {
         evolveOptions.network = m.network;
         statsObj.evolve.options.network = m.network;
 
-        console.log(chalkAlert("\n\nNNC | NEURAL NET EVOLVE | " + getTimeStamp()
-          + "\nNNC | RUN ID:     " + m.testRunId
-          + "\nNNC | THREADS:    " + m.threads
-          + "\nNNC | NETWORK:    " + m.network.networkId + " | " + m.network.successRate.toFixed(2) + "%"
-          + "\nNNC | INPUTS:     " + statsObj.training.trainingSet.numInputs
-          + "\nNNC | OUTPUTS:    " + statsObj.training.trainingSet.numOutputs
-          + "\nNNC | DATA PTS:   " + m.trainingSet.length
-          + "\nNNC | ITERATIONS: " + statsObj.training.iterations
-          + "\n"
+        console.log(chalkAlert("NNC | EVOLVE | " + getTimeStamp()
+          + " | NAME:  " + configuration.processName
+          + " | RID:     " + m.testRunId
+          + " | THRD:    " + m.threads
+          + " | NN:    " + m.network.networkId + " | " + m.network.successRate.toFixed(2) + "%"
+          + " | IN:     " + statsObj.training.trainingSet.numInputs
+          + " | OUT:    " + statsObj.training.trainingSet.numOutputs
+          + " | TRSET:   " + m.trainingSet.length
+          + " | ITRS: " + statsObj.training.iterations
         ));
       }
       else {
-        console.log(chalkAlert("\n\nNNC | NEURAL NET EVOLVE | " + getTimeStamp()
-          + "\nNNC | RUN ID:     " + m.testRunId
-          + "\nNNC | THREADS:    " + m.threads
-          + "\nNNC | INPUTS:     " + statsObj.training.trainingSet.numInputs
-          + "\nNNC | OUTPUTS:    " + statsObj.training.trainingSet.numOutputs
-          + "\nNNC | DATA PTS:   " + m.trainingSet.length
-          + "\nNNC | ITERATIONS: " + statsObj.training.iterations
-          + "\n"
+        console.log(chalkAlert("NNC | NEURAL NET EVOLVE | " + getTimeStamp()
+          + " | NAME:  " + configuration.processName
+          + " | RID:     " + m.testRunId
+          + " | THRD:    " + m.threads
+          + " | IN:     " + statsObj.training.trainingSet.numInputs
+          + " | OUT:    " + statsObj.training.trainingSet.numOutputs
+          + " | TRSET:   " + m.trainingSet.length
+          + " | ITRS: " + statsObj.training.iterations
         ));
       }
 
+      setTimeout(function(){
 
-      evolve(evolveOptions, function(err, results){
+        evolve(evolveOptions, function(err, results){
 
-        if (err) {
-          console.error(chalkError("NNC | EVOLVE ERROR: " + err));
-          console.trace("NNC | EVOLVE ERROR");
-          process.send({op: "ERROR", error: err}, function(){
-            quit(jsonPrint(err));
-          });
-        }
-        else {
+          if (err) {
+            console.error(chalkError("NNC | EVOLVE ERROR: " + err));
+            console.trace("NNC | EVOLVE ERROR");
+            process.send({op: "ERROR", processName: configuration.processName, error: err}, function(){
+              quit(jsonPrint(err));
+            });
+          }
+          else {
 
-          console.log(chalkAlert("\nNNC | EVOLVE COMPLETE | " + getTimeStamp()
-            + " | RUN ID: " + m.testRunId
-            + " | " + "TIME: " + results.time
-            + " | " + "THREADS: " + results.threads
-            + " | " + "ITERATIONS: " + results.iterations
-            + " | " + "ERROR: " + results.error
-            + "\n"
-          ));
+            console.log(chalkAlert("NNC | EVOLVE COMPLETE"
+              + " | " + configuration.processName
+              + " | " + getTimeStamp()
+              + " | " + "TIME: " + results.time
+              + " | " + "THREADS: " + results.threads
+              + " | " + "ITERATIONS: " + results.iterations
+              + " | " + "ERROR: " + results.error
+            ));
 
-          statsObj.training.endTime = moment().valueOf();
-          statsObj.training.elapsed = results.time;
-          statsObj.evolve.results = results;
+            statsObj.training.endTime = moment().valueOf();
+            statsObj.training.elapsed = results.time;
+            statsObj.evolve.results = results;
 
-          let exportedNetwork = network.toJSON();
+            let exportedNetwork = network.toJSON();
 
-          let networkObj = new NeuralNetwork();
-          networkObj.networkCreateMode = "evolve";
-          networkObj.testRunId = statsObj.training.testRunId;
-          networkObj.networkId = statsObj.training.testRunId;
-          networkObj.network = exportedNetwork;
-          networkObj.numInputs = exportedNetwork.input;
-          networkObj.numOutputs = exportedNetwork.output;
-          networkObj.evolve = {};
-          networkObj.evolve.results = {};
-          networkObj.evolve.results = results;
-          networkObj.evolve.options = {};
-          networkObj.evolve.options = evolveOptions;
-          networkObj.elapsed = statsObj.training.elapsed;
+            let networkObj = {};
 
-          process.send({op:"EVOLVE_COMPLETE", networkObj: networkObj, statsObj: statsObj});
-          showStats();
-        }
+            networkObj.networkCreateMode = "evolve";
+            networkObj.testRunId = statsObj.training.testRunId;
+            networkObj.networkId = statsObj.training.testRunId;
+            networkObj.network = {};
+            networkObj.network = exportedNetwork;
+            networkObj.numInputs = exportedNetwork.input;
+            networkObj.numOutputs = exportedNetwork.output;
+            networkObj.evolve = {};
+            networkObj.evolve.results = {};
+            networkObj.evolve.results = results;
+            networkObj.evolve.options = {};
+            networkObj.evolve.options = evolveOptions;
+            networkObj.elapsed = statsObj.training.elapsed;
 
-      });
+            process.send({op:"EVOLVE_COMPLETE", processName: configuration.processName, networkObj: networkObj, statsObj: statsObj});
+            showStats();
+          }
+        });
+      }, 5000);
+
+
     break;
 
     default:
@@ -993,27 +1022,9 @@ process.on("message", function(m) {
   }
 });
 
-function initStatsUpdate(cnf, callback){
-
-  console.log(chalkAlert("NNC | initStatsUpdate | INTERVAL: " + cnf.statsUpdateIntervalTime));
-
-  setInterval(function () {
-
-    statsObj.elapsed = msToTime(moment().valueOf() - statsObj.startTime);
-    statsObj.timeStamp = moment().format(defaultDateTimeFormat);
-
-    saveFile(statsFolder, statsFile, statsObj, function(){
-      process.send({op:"STATS", statsObj: statsObj});
-    });
-
-  }, cnf.statsUpdateIntervalTime);
-
-  callback(null, cnf);
-}
-
 function initialize(cnf, callback){
 
-  cnf.processName = process.env.TNN_PROCESS_NAME || "neuralNetworkChild";
+  cnf.processName = process.env.NNC_PROCESS_NAME || "neuralNetworkChild";
 
   cnf.verbose = process.env.TNN_VERBOSE_MODE || false ;
   cnf.globalTestMode = process.env.TNN_GLOBAL_TEST_MODE || false ;
@@ -1022,7 +1033,7 @@ function initialize(cnf, callback){
 
   cnf.statsUpdateIntervalTime = process.env.TNN_STATS_UPDATE_INTERVAL || 60000;
 
-  console.log("NNC | CONFIG\n" + jsonPrint(cnf));
+  debug("NNC | CONFIG\n" + jsonPrint(cnf));
 
   debug(chalkWarn("dropboxConfigFolder: " + dropboxConfigFolder));
   debug(chalkWarn("dropboxConfigFile  : " + dropboxConfigFile));
@@ -1045,13 +1056,13 @@ setTimeout(function(){
     if (err && (err.status !== 404)) {
       console.error(chalkError("NNC | ***** INIT ERROR *****\n" + jsonPrint(err)));
       console.trace("NNC INIT ERROR");
-      process.send({op:"ERROR", error: err, statsObj: statsObj}, function(){
+      process.send({op:"ERROR", error: err, processName: configuration.processName, statsObj: statsObj}, function(){
         quit();
       });
     }
     else {
       console.log("NNC | " + cnf.processName + " STARTED " + getTimeStamp() + "\n");
-      process.send({op: "READY"});
+      process.send({op: "READY", processName: configuration.processName});
     }
 
   });

@@ -54,6 +54,7 @@ const TRAIN_ERROR_RANGE = { min: 0.02, max: 0.04 } ;
 
 
 // ================ EVOLVE ================
+const DEFAULT_EVOLVE_THREADS = 2;
 const DEFAULT_EVOLVE_ACTIVATION = "LOGISTIC"; // TAHN | RELU | IDENTITY | STEP
 const DEFAULT_EVOLVE_CLEAR = false; // binary
 const DEFAULT_EVOLVE_COST = "MSE"; // CROSS_ENTROPY | MSE | BINARY
@@ -196,6 +197,8 @@ configuration.instanceOptions.env.TNN_STATS_UPDATE_INTERVAL = 60000;
 configuration.instanceOptions.env.TNN_ITERATIONS = DEFAULT_ITERATIONS;
 configuration.instanceOptions.env.SEED_NETWORK_ID = false;
 
+
+configuration.instanceOptions.env.TNN_EVOLVE_THREADS = DEFAULT_EVOLVE_THREADS;
 configuration.instanceOptions.env.TNN_EVOLVE_ELITISM = DEFAULT_EVOLVE_ELITISM;
 configuration.instanceOptions.env.TNN_EVOLVE_EQUAL = DEFAULT_EVOLVE_EQUAL;
 configuration.instanceOptions.env.TNN_EVOLVE_ERROR = DEFAULT_EVOLVE_ERROR;
@@ -382,6 +385,8 @@ function printInstanceConfigHashMap(){
 
     let instanceObj = instanceConfigHashMap.get(nnId);
 
+    console.log(chalkAlert("instanceObj.config.env\n" + jsonPrint(instanceObj.config.env)));
+
     let results = instanceObj.results.successRate;
 
     if (instanceObj.stats.ended === 0) {
@@ -393,6 +398,7 @@ function printInstanceConfigHashMap(){
     tableArray.push([
       "NNB | " + nnId,
       instanceObj.config.env.TNN_SEED_NETWORK_ID,
+      instanceObj.config.env.TNN_EVOLVE_THREADS,
       instanceObj.config.env.TNN_EVOLVE_MUTATION,
       instanceObj.config.env.TNN_EVOLVE_ACTIVATION,
       instanceObj.config.env.TNN_EVOLVE_CLEAR,
@@ -1274,41 +1280,29 @@ const generateRandomEvolveEnv = function(cnf){
   env.TNN_STATS_UPDATE_INTERVAL = 120000;
 
   env.TNN_ITERATIONS = cnf.iterations;
-
-  // env.TNN_NETWORK_CREATE_MODE = randomItem(["evolve", "train"]);
   env.TNN_NETWORK_CREATE_MODE = "evolve";
 
   console.log(chalkAlert("NNB | NETWORK CREATE MODE: " + env.TNN_NETWORK_CREATE_MODE));
-
-  // if (currentSeedNetwork) {
-
-  //   env.TNN_SEED_NETWORK_ID = currentSeedNetwork.networkId;
-
-  //   console.log(chalkAlert("\nNNB | SEED NETWORK\nNNB | ----------------------------------"));
-  //   console.log(chalkAlert("NNB | " + currentSeedNetwork.successRate.toFixed(1) + " | " + currentSeedNetwork.networkId));
-  //   console.log(chalkAlert("NNB | ----------------------------------"));
-  // }
-  // else {
     
-    console.log(chalkAlert("\nNNB | BEST NETWORKS\nNNB | ----------------------------------"));
+  console.log(chalkAlert("\nNNB | BEST NETWORKS\nNNB | ----------------------------------"));
 
-    bestNetworkHashMap.forEach(function(entry, nnId){
-      console.log(chalkAlert("NNB | " + entry.network.successRate.toFixed(1) + " | " + nnId));
-    });
+  bestNetworkHashMap.forEach(function(entry, nnId){
+    console.log(chalkAlert("NNB | " + entry.network.successRate.toFixed(1) + " | " + nnId));
+  });
 
-    console.log(chalkAlert("NNB | ----------------------------------"));
+  console.log(chalkAlert("NNB | ----------------------------------"));
 
-    env.TNN_SEED_NETWORK_ID = (Math.random() < SEED_NETWORK_PROBABILITY) ? randomItem(bestNetworkHashMap.keys()) : false;
+  env.TNN_SEED_NETWORK_ID = (Math.random() < SEED_NETWORK_PROBABILITY) ? randomItem(bestNetworkHashMap.keys()) : false;
 
-    if (!env.TNN_SEED_NETWORK_ID) {
-      env.TNN_EVOLVE_ARCHITECTURE = "perceptron";
-    }
+  if (!env.TNN_SEED_NETWORK_ID) {
+    env.TNN_EVOLVE_ARCHITECTURE = "perceptron";
+  }
 
-    if (!env.TNN_SEED_NETWORK_ID) {
-      env.TNN_TRAIN_ARCHITECTURE = "perceptron";
-    }
-  // }
+  if (!env.TNN_SEED_NETWORK_ID) {
+    env.TNN_TRAIN_ARCHITECTURE = "perceptron";
+  }
 
+  env.TNN_EVOLVE_THREADS = cnf.instanceOptions.env.TNN_EVOLVE_THREADS;
   env.TNN_EVOLVE_MUTATION = randomItem(EVOLVE_MUTATION_ARRAY);
   env.TNN_EVOLVE_ACTIVATION = randomItem(EVOLVE_ACTIVATION_ARRAY);
   env.TNN_EVOLVE_COST = randomItem(EVOLVE_COST_ARRAY);
@@ -1374,6 +1368,11 @@ function loadDropboxConfig(callback){
             if (loadedConfigObj.NNB_ENABLE_RANDOM  !== undefined){
               console.log("NNB | LOADED NNB_ENABLE_RANDOM: " + loadedConfigObj.NNB_ENABLE_RANDOM);
               cnf.enableRandom = loadedConfigObj.NNB_ENABLE_RANDOM;
+            }
+
+            if (loadedConfigObj.NNB_EVOLVE_THREADS  !== undefined){
+              console.log("NNB | LOADED NNB_EVOLVE_THREADS: " + loadedConfigObj.NNB_EVOLVE_THREADS);
+              cnf.instanceOptions.env.TNN_EVOLVE_THREADS = loadedConfigObj.NNB_EVOLVE_THREADS;
             }
 
             if (loadedConfigObj.NNB_ITERATIONS  !== undefined){
