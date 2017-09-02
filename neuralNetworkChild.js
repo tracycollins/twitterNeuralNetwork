@@ -69,7 +69,7 @@ process.title = process.env.NNC_PROCESS_NAME;
 
 
 // debug("neataptic\n" + jsonPrint(neataptic));
-console.log("NNC | proces.env\n" + jsonPrint(process.env));
+debug("NNC | process.env\n" + jsonPrint(process.env));
 
 console.log("\n\nNNC | =================================");
 console.log("NNC | HOST:          " + hostname);
@@ -292,8 +292,8 @@ function testEvolve(params, callback){
     mutationRate: 0.7,
     schedule: {
       function: function(schedParams){ 
-        console.log("NNC SCHED"
-          + " | " + params.runId
+        debug("NNC SCHED"
+          + " | " + configuration.processName
           + " | " + moment().format(compactDateTimeFormat)
           + " | I: " + schedParams.iteration
           + " | F: " + schedParams.fitness.toFixed(5)
@@ -306,7 +306,9 @@ function testEvolve(params, callback){
   })
   .then(function(results){
 
-    console.log(chalkAlert("\nNNC | EVOLVE RESULTS"
+    debug(chalkAlert("NNC"
+      + " | " + configuration.processName
+      + " | EVOLVE RESULTS"
       + " | " + "TIME: " + results.time
       + " | " + "ITERATIONS: " + results.iterations
       + " | " + "ERROR: " + results.error
@@ -328,7 +330,8 @@ function testEvolve(params, callback){
 
         if (!datumPass) { testPass = false; }
 
-        console.log("NNC | TEST"
+        debug("NNC | TEST"
+          + " | " + configuration.processName
           + " | IN: " + datum.input
           + " | EO: " + datum.output[0]
           + " | TO: " + dataOut
@@ -340,7 +343,7 @@ function testEvolve(params, callback){
       });
 
     }, function(){
-      console.log(chalkLog("NNC | TEST RESULT: PASS: " + testPass));
+      console.log(chalkLog("NNC | " + configuration.processName + " | TEST RESULT: PASS: " + testPass));
       callback(testPass);
     });
   });
@@ -711,7 +714,7 @@ function train(params, callback){
 
 function initStatsUpdate(cnf, callback){
 
-  console.log(chalkInfo("NNC | initStatsUpdate | INTERVAL: " + cnf.statsUpdateIntervalTime));
+  debug(chalkInfo("NNC | initStatsUpdate | INTERVAL: " + cnf.statsUpdateIntervalTime));
 
   setInterval(function () {
 
@@ -1101,7 +1104,7 @@ setTimeout(function(){
       });
     }
     else {
-      console.log("NNC | " + cnf.processName + " STARTED " + getTimeStamp() + "\n");
+      console.log(chalkAlert("NNC | " + cnf.processName + " STARTED " + getTimeStamp()));
       process.send({op: "READY", processName: configuration.processName});
     }
 
