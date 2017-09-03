@@ -7,7 +7,7 @@ let ONE_SECOND = 1000 ;
 const async = require("async");
 const os = require("os");
 const omit = require("object.omit");
-// const deepcopy = require("deep-copy");
+const defaults = require("object.defaults/immutable");
 
 let hostname = os.hostname();
 hostname = hostname.replace(/\.home/g, "");
@@ -36,7 +36,10 @@ let configEvents = new EventEmitter2({
   verboseMemoryLeak: true
 });
 
+process.title = process.env.NNC_PROCESS_NAME;
+
 let configuration = {};
+configuration.processName = process.env.NNC_PROCESS_NAME;
 configuration.verbose = false;
 configuration.globalTestMode = false;
 configuration.defaultPopulationSize = 100;
@@ -65,7 +68,6 @@ function jsonPrint (obj){
   }
 }
 
-process.title = process.env.NNC_PROCESS_NAME;
 
 
 // debug("neataptic\n" + jsonPrint(neataptic));
@@ -116,6 +118,9 @@ statsObj.startTime = moment().valueOf();
 statsObj.elapsed = msToTime(moment().valueOf() - statsObj.startTime);
 
 statsObj.evolve = {};
+statsObj.evolve.startTime;
+statsObj.evolve.endTime;
+statsObj.evolve.elapsed;
 statsObj.evolve.options = {};
 statsObj.evolve.results = {};
 
@@ -160,15 +165,15 @@ function getTimeStamp(inputTime) {
   let currentTimeStamp ;
 
   if (inputTime  === undefined) {
-    currentTimeStamp = moment().format(defaultDateTimeFormat);
+    currentTimeStamp = moment().format(compactDateTimeFormat);
     return currentTimeStamp;
   }
   else if (moment.isMoment(inputTime)) {
-    currentTimeStamp = moment(inputTime).format(defaultDateTimeFormat);
+    currentTimeStamp = moment(inputTime).format(compactDateTimeFormat);
     return currentTimeStamp;
   }
   else {
-    currentTimeStamp = moment(parseInt(inputTime)).format(defaultDateTimeFormat);
+    currentTimeStamp = moment(parseInt(inputTime)).format(compactDateTimeFormat);
     return currentTimeStamp;
   }
 }
@@ -257,11 +262,18 @@ function showStats(options){
   ));
 }
 
+// process.on("SIGKILL", function() {
+//   console.log(chalkAlert("NNC | " + configuration.processName + " | *** SIGKILL ***"));
+//   quit("SIGKILL");
+// });
+
 process.on("SIGHUP", function() {
+  console.log(chalkAlert("NNC | " + configuration.processName + " | *** SIGHUP ***"));
   quit("SIGHUP");
 });
 
 process.on("SIGINT", function() {
+  console.log(chalkAlert("NNC | " + configuration.processName + " | *** SIGINT ***"));
   quit("SIGINT");
 });
 
@@ -283,7 +295,7 @@ function testEvolve(params, callback){
 
   myNetwork.evolve(myTrainingSet, {
     mutation: neataptic.methods.mutation.FFW,
-    // equal: true,
+    equal: true,
     popsize: 100,
     elitism: 10,
     // log: 100,
@@ -343,7 +355,7 @@ function testEvolve(params, callback){
       });
 
     }, function(){
-      console.log(chalkLog("NNC | " + configuration.processName + " | TEST RESULT: PASS: " + testPass));
+      debug(chalkLog("NNC | " + configuration.processName + " | TEST RESULT: PASS: " + testPass));
       callback(testPass);
     });
   });
@@ -360,7 +372,7 @@ function evolve(params, callback){
   if ((params.network !== undefined) && params.network) {
     options.network = params.network;
     params.architecture = "loadedNetwork";
-    console.log(chalkAlert("NNC | START NETWORK DEFINED: " + options.network.networkId));
+    debug(chalkAlert("NNC | START NETWORK DEFINED: " + options.network.networkId));
   }
 
   options.threads = params.threads;
@@ -368,11 +380,12 @@ function evolve(params, callback){
   options.equal = params.equal;
   options.error = params.error;
   options.iterations = params.iterations;
-  options.mutation = params.mutation;
+  options.mutation = neataptic.methods.mutation.FFW;
   options.mutationRate = params.mutationRate;
   options.popsize = params.popsize;
 
-  const startTime = moment().valueOf();
+  statsObj.evolve.startTime = moment().valueOf();
+  statsObj.evolve.elapsed = moment().valueOf() - statsObj.evolve.startTime;
 
   options.schedule = {
     function: function(schedParams){
@@ -432,15 +445,10 @@ function evolve(params, callback){
       break;
 
       case "mutation":
-      console.log("NNC" + " | " + configuration.processName + " | EVOLVE OPTION | " + key + ": " + params[key]);
-      options.mutation = neataptic.methods.mutation[params[key]];
+      console.log("NNC" + " | " + configuration.processName + " | EVOLVE OPTION | " + key + ": " + "FFW");
+      // options.mutation = neataptic.methods.mutation[params[key]];
       break;
-      
-      case "activation":
-      console.log("NNC" + " | " + configuration.processName + " | EVOLVE OPTION | " + key + ": " + params[key]);
-      // options.activation = neataptic.methods.activation[params[key]];
-      break;
-      
+            
       case "cost":
       console.log("NNC" + " | " + configuration.processName + " | EVOLVE OPTION | " + key + ": " + params[key]);
       options.cost = neataptic.methods.cost[params[key]];
@@ -462,6 +470,7 @@ function evolve(params, callback){
       case "loadedNetwork":
         network = neataptic.Network.fromJSON(options.network.network);
         console.log("NNC"
+          + " | " + configuration.processName
           + " | EVOLVE ARCH | LOADED: " + options.network.networkId
           + " | IN: " + options.network.network.input
           + " | OUT: " + options.network.network.output
@@ -471,9 +480,9 @@ function evolve(params, callback){
 
       case "perceptron":
         console.log("NNC | EVOLVE ARCH"
-          + "   | " + params.architecture
+          + " | " + configuration.processName
+          + " | " + params.architecture
           + " | HIDDEN LAYER NODES: " + params.hiddenLayerSize
-          + "\n"
         );
 
         network = new neataptic.architect.Perceptron(
@@ -485,7 +494,10 @@ function evolve(params, callback){
       break;
 
       default:
-        console.log("NNC | EVOLVE ARCH   | " + params.architecture + "\n");
+        console.log("NNC | EVOLVE ARCH"
+          + " | " + configuration.processName
+          + " | " + params.architecture
+        );
         network = new neataptic.Network(
           params.trainingSet[0].input.length, 
           params.trainingSet[0].output.length
@@ -509,43 +521,32 @@ function evolve(params, callback){
 
     }, function(){
 
-      console.log(chalkAlert("\nNNC | ========================\nNNC | START EVOLVE\nNNC | ========================"
-        + "\nNNC | PROCESS NAME:  " + configuration.processName
-        + "\nNNC | IN:            " + params.trainingSet[0].input.length
-        + "\nNNC | OUT:           " + params.trainingSet[0].output.length
-        + "\nNNC | ITERATIONS:    " + options.iterations
-        + "\nNNC | TRAINING DATA: " + trainingSet.length
-        + "\nNNC | ========================\n"
+      console.log(chalkAlert("NNC | START EVOLVE"
+        + " | " + configuration.processName
+        + " | IN: " + params.trainingSet[0].input.length
+        + " | OUT: " + params.trainingSet[0].output.length
+        + " | ITRTNS: " + options.iterations
+        + " | TRAINING SET: " + trainingSet.length + " DATA PTS"
       ));
 
-      // async function networkEvolve() {
+      async function networkEvolve() {
 
-      //   let results = await network.evolve(trainingSet, options);
+        let results = await network.evolve(trainingSet, options);
 
-      //   results.threads = options.threads;
+        statsObj.evolve.endTime = moment().valueOf();
+        statsObj.evolve.elapsed = moment().valueOf() - statsObj.evolve.startTime;
 
-      //   if (callback !== undefined) { callback(null, results); }
-
-      // }
-
-      // networkEvolve().catch(function(err){
-
-      //   console.error(chalkError("NNC | " + configuration.processName + " | NETWORK EVOLVE ERROR: " + err));
-
-      //   process.send({op: "ERROR", processName: configuration.processName, error: err}, function(){
-
-      //     quit(jsonPrint(err));
-
-      //   });
-
-      // });
-
-      network.evolve(trainingSet, options)
-      .then(function(results){
         results.threads = options.threads;
+
         if (callback !== undefined) { callback(null, results); }
-      })
-      .catch(function(err){
+
+      }
+
+      networkEvolve().catch(function(err){
+
+        statsObj.evolve.endTime = moment().valueOf();
+        statsObj.evolve.elapsed = moment().valueOf() - statsObj.evolve.startTime;
+
         console.error(chalkError("NNC | " + configuration.processName + " | NETWORK EVOLVE ERROR: " + err));
 
         process.send({op: "ERROR", processName: configuration.processName, error: err}, function(){
@@ -553,7 +554,23 @@ function evolve(params, callback){
           quit(jsonPrint(err));
 
         });
+
       });
+
+      // network.evolve(trainingSet, options)
+      // .then(function(results){
+      //   results.threads = options.threads;
+      //   if (callback !== undefined) { callback(null, results); }
+      // })
+      // .catch(function(err){
+      //   console.error(chalkError("NNC | " + configuration.processName + " | NETWORK EVOLVE ERROR: " + err));
+
+      //   process.send({op: "ERROR", processName: configuration.processName, error: err}, function(){
+
+      //     quit(jsonPrint(err));
+
+      //   });
+      // });
 
 
     });
@@ -753,7 +770,7 @@ process.on("message", function(m) {
       ));
 
       initStatsUpdate(configuration, function(){
-        process.send({op: "INIT_COMPLETE", processName: configuration.processName, });
+        process.send({op: "INIT_COMPLETE", processName: configuration.processName});
       });
 
     break;
@@ -933,7 +950,6 @@ process.on("message", function(m) {
         error: m.error,
         iterations: m.iterations,
         mutationRate: m.mutationRate,
-        // activation: m.activation,
         cost: m.cost,
         clear: m.clear
       };
@@ -945,7 +961,6 @@ process.on("message", function(m) {
         architecture: m.architecture,
         mutation: m.mutation,
         mutationRate: m.mutationRate,
-        // activation: m.activation,
         equal: m.equal,
         cost: m.cost,
         clear: m.clear,
@@ -1007,6 +1022,11 @@ process.on("message", function(m) {
 
             let networkObj = {};
 
+            const defaultResults = {
+              error: 0,
+              iterations: 0
+            };
+
             networkObj.networkCreateMode = "evolve";
             networkObj.testRunId = statsObj.training.testRunId;
             networkObj.networkId = statsObj.training.testRunId;
@@ -1017,10 +1037,12 @@ process.on("message", function(m) {
             networkObj.numOutputs = exportedNetwork.output;
             networkObj.evolve = {};
             networkObj.evolve.results = {};
-            networkObj.evolve.results = results;
+            networkObj.evolve.results = defaults(results, defaultResults);
             networkObj.evolve.options = {};
             networkObj.evolve.options = evolveOptions;
-            networkObj.elapsed = statsObj.training.elapsed;
+            networkObj.startTime = statsObj.evolve.startTime;
+            networkObj.endTime = statsObj.evolve.endTime;
+            networkObj.elapsed = statsObj.evolve.elapsed;
 
            if (results.iterations < evolveOptions.iterations) {
 

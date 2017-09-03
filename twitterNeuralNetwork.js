@@ -1,6 +1,12 @@
 /*jslint node: true */
 "use strict";
 
+const neataptic = require("neataptic");
+const twitterTextParser = require("@threeceelabs/twitter-text-parser");
+const defaults = require("object.defaults/immutable");
+const deepcopy = require("deep-copy");
+const table = require("text-table");
+
 const inputTypes = ["emoji", "hashtags", "mentions", "urls", "words"];
 inputTypes.sort();
 
@@ -24,8 +30,6 @@ const DEFAULT_EVOLVE_THREADS = 1;
 const DEFAULT_EVOLVE_ARCHITECTURE = "random";
 const DEFAULT_EVOLVE_BEST_NETWORK = false;
 
-const DEFAULT_EVOLVE_ACTIVATION = "LOGISTIC"; // TAHN | RELU | IDENTITY | STEP
-// const DEFAULT_EVOLVE_ACTIVATION = "STEP"; // TAHN | RELU | IDENTITY | STEP
 const DEFAULT_EVOLVE_CLEAR = true;
 
 // const EVOLVE_COST_ARRAY = [
@@ -38,54 +42,27 @@ const DEFAULT_EVOLVE_CLEAR = true;
 //   // "HINGE"
 // ];
 
-const DEFAULT_EVOLVE_COST = "MSE";
-// const DEFAULT_EVOLVE_COST = "CROSS_ENTROPY";
+// const DEFAULT_EVOLVE_COST = "MSE";
+const DEFAULT_EVOLVE_COST = "CROSS_ENTROPY";
 // const DEFAULT_EVOLVE_COST = "BINARY";
 
 const DEFAULT_EVOLVE_ELITISM = 10;
 const DEFAULT_EVOLVE_EQUAL = true;
 const DEFAULT_EVOLVE_ERROR = 0.03;
 const DEFAULT_EVOLVE_LOG = 1;
-const DEFAULT_EVOLVE_MUTATION = "FFW";
+const DEFAULT_EVOLVE_MUTATION = neataptic.methods.mutation.FFW;
 const DEFAULT_EVOLVE_MUTATION_RATE = 0.5;
 const DEFAULT_EVOLVE_POPSIZE = 100;
-
-const EVOLVE_MUTATION_ARRAY = [
-  "FFW"
-];
 
 const EVOLVE_COST_ARRAY = [
   "CROSS_ENTROPY",
   "CROSS_ENTROPY",
-  "MSE",
-  "MSE",
-  "BINARY"
+  "MSE"
+  // "BINARY"
   // "MAE",
   // "MAPE",
   // "MSLE",
   // "HINGE"
-];
-
-const EVOLVE_ACTIVATION_ARRAY = [ 
-  // "LOGISTIC", 
-  // "TAHN", 
-  // "RELU", 
-  // "IDENTITY", 
-  "STEP"
-  // "STEP", 
-  // "STEP", 
-  // "STEP", 
-  // "STEP", 
-  // "SOFTSIGN", 
-  // "SINUSOID", 
-  // "GAUSSIAN", 
-  // "BENT_IDENTITY",
-  // "BIPOLAR",
-  // "BIPOLAR_SIGMOID",
-  // "HARD_TANH",
-  // "ABSOLUTE",
-  // "SELU",
-  // "INVERSE"
 ];
 
 const EVOLVE_MUTATION_RATE_RANGE = { min: 0.3, max: 0.8 } ;
@@ -168,14 +145,11 @@ requiredTrainingSet.add("vp");
 
 let slackChannel = "#nn";
 
-const neataptic = require("neataptic");
-const twitterTextParser = require("@threeceelabs/twitter-text-parser");
-const defaults = require("object.defaults/immutable");
-const deepcopy = require("deep-copy");
-const table = require("text-table");
 
 
 let configuration = {};
+
+configuration.enableRequiredTrainingSet = false;
 
 configuration.maxNeuralNetworkChildern = (process.env.TNN_MAX_NEURAL_NETWORK_CHILDREN !== undefined) ? process.env.TNN_MAX_NEURAL_NETWORK_CHILDREN : DEFAULT_MAX_NEURAL_NETWORK_CHILDREN;
 configuration.minSuccessRate = DEFAULT_MIN_SUCCESS_RATE;
@@ -209,7 +183,6 @@ configuration.evolve.mutation = DEFAULT_EVOLVE_MUTATION;
 configuration.evolve.mutationRate = DEFAULT_EVOLVE_MUTATION_RATE;
 configuration.evolve.popsize = DEFAULT_EVOLVE_POPSIZE;
 configuration.evolve.cost = DEFAULT_EVOLVE_COST;
-configuration.evolve.activation = DEFAULT_EVOLVE_ACTIVATION;
 
 configuration.train = {};
 configuration.train.threads = DEFAULT_TRAIN_THREADS;
@@ -712,7 +685,10 @@ function quit(options){
 
       const neuralNetworkChild = neuralNetworkChildHashMap[nnChildId].child;
 
-      if (neuralNetworkChild !== undefined) { neuralNetworkChild.kill("SIGINT"); }
+      if (neuralNetworkChild !== undefined) {
+        console.log(chalkAlert("*** KILL " + nnChildId));
+        neuralNetworkChild.kill("SIGKILL");
+      }
 
       delete neuralNetworkChildHashMap[nnChildId];
 
@@ -730,7 +706,10 @@ process.on( "SIGINT", function() {
 
     const neuralNetworkChild = neuralNetworkChildHashMap[nnChildId].child;
 
-    if (neuralNetworkChild !== undefined) { neuralNetworkChild.kill("SIGINT"); }
+    if (neuralNetworkChild !== undefined) {
+      console.log(chalkAlert("*** KILL " + nnChildId));
+      neuralNetworkChild.kill("SIGKILL");
+    }
 
     delete neuralNetworkChildHashMap[nnChildId];
 
@@ -744,7 +723,10 @@ process.on("exit", function() {
 
     const neuralNetworkChild = neuralNetworkChildHashMap[nnChildId].child;
 
-    if (neuralNetworkChild !== undefined) { neuralNetworkChild.kill("SIGINT"); }
+    if (neuralNetworkChild !== undefined) {
+      console.log(chalkAlert("*** KILL " + nnChildId));
+      neuralNetworkChild.kill("SIGKILL");
+    }
 
     delete neuralNetworkChildHashMap[nnChildId];
 
@@ -1190,7 +1172,7 @@ function printNetworkCreateResultsHashmap(){
   tableArray.push([
     "NNT | NNID",
     "SEED",
-    "MUT",
+    // "MUT",
     // "ACTV",
     "CLEAR",
     "COST",
@@ -1199,36 +1181,41 @@ function printNetworkCreateResultsHashmap(){
     "POP",
     "ELITE",
     // "START",
-    // "ELPSD",
+    "ELPSD",
+    "ITRNS",
+    "ERROR",
     "RES %"
   ]);
 
   async.each(Object.keys(networkCreateResultsHashmap), function(nnId, cb){
 
-    let networkObj = networkCreateResultsHashmap[nnId];
+    const networkObj = networkCreateResultsHashmap[nnId];
 
-    let results = networkObj.successRate;
-
-    let snId = (networkObj.seedNetworkId !== undefined) ? networkObj.seedNetworkId : "---";
+    const snId = (networkObj.seedNetworkId !== undefined) ? networkObj.seedNetworkId : "---";
+    const iterations = (networkObj.evolve.results !== undefined) ? networkObj.evolve.results.iterations : "---";
+    const error = (networkObj.evolve.results !== undefined) ? networkObj.evolve.results.error.toFixed(5) : "---";
 
     tableArray.push([
       "NNT | " + nnId,
       snId,
-      networkObj.evolve.options.mutation,
+      // networkObj.evolve.options.mutation,
       networkObj.evolve.options.clear,
       networkObj.evolve.options.cost,
       networkObj.evolve.options.equal,
       networkObj.evolve.options.mutationRate.toFixed(3),
       networkObj.evolve.options.popsize,
       networkObj.evolve.options.elitism,
-      results.toFixed(1)
+      msToTime(networkObj.elapsed),
+      iterations,
+      error,
+      networkObj.successRate.toFixed(1)
     ]);
 
     cb();
 
   }, function(){
 
-    const t = table(tableArray, { align: ["l", "l", "l", "l", "l", "l", "r", "r", "r", "r"] });
+    const t = table(tableArray, { align: ["l", "l", "l", "l", "l", "r", "r", "r", "l", "r", "r", "r"] });
 
     console.log("NNT | ============================================================================================================================================");
     console.log(t);
@@ -1645,14 +1632,12 @@ function initialize(cnf, callback){
   if (cnf.evolve.networkId === "false") {
     cnf.evolve.networkId = false;
   }
-  cnf.evolve.activation = process.env.TNN_EVOLVE_ACTIVATION || DEFAULT_EVOLVE_ACTIVATION ;
   cnf.evolve.clear = process.env.TNN_EVOLVE_CLEAR || DEFAULT_EVOLVE_CLEAR ;
   cnf.evolve.cost = process.env.TNN_EVOLVE_COST || DEFAULT_EVOLVE_COST ;
   cnf.evolve.elitism = process.env.TNN_EVOLVE_ELITISM || DEFAULT_EVOLVE_ELITISM ;
   cnf.evolve.equal = process.env.TNN_EVOLVE_EQUAL || DEFAULT_EVOLVE_EQUAL ;
   cnf.evolve.error = process.env.TNN_EVOLVE_ERROR || DEFAULT_EVOLVE_ERROR ;
   cnf.evolve.iterations = process.env.TNN_EVOLVE_ITERATIONS || DEFAULT_ITERATIONS ;
-  cnf.evolve.mutation = process.env.TNN_EVOLVE_MUTATION || DEFAULT_EVOLVE_MUTATION ;
   cnf.evolve.mutationRate = process.env.TNN_EVOLVE_MUTATION_RATE || DEFAULT_EVOLVE_MUTATION_RATE ;
   cnf.evolve.popsize = process.env.TNN_EVOLVE_POP_SIZE || DEFAULT_EVOLVE_POPSIZE ;
   cnf.evolve.threads = process.env.TNN_EVOLVE_THREADS || DEFAULT_EVOLVE_THREADS ;
@@ -2383,7 +2368,7 @@ function updateClassifiedUsers(cnf, callback){
 
                 let chk = chalkInfo;
 
-                if (trainingSetDatum.inputHits.length == 0) { chk = chalkAlert; }
+                if (trainingSetDatum.inputHits.length === 0) { chk = chalkAlert; }
 
                 console.log(chk("=+= PARSE USER TEXT COMPLETE"
                   + " | ["  + globalInputIndex + "] "
@@ -2395,7 +2380,7 @@ function updateClassifiedUsers(cnf, callback){
 
                 // IF NOT INPUT HITS, don't user for training
                 
-                if (trainingSetDatum.inputHits.length == 0) { 
+                if (trainingSetDatum.inputHits.length === 0) { 
                   return cb0();
                 }
 
@@ -2509,7 +2494,7 @@ function updateClassifiedUsers(cnf, callback){
         cb3();
       }
       // trainingSet.push({name: user.screenName, datum: trainingSetDatum});
-      else if (requiredTrainingSet.has(dataObj.user.screenName.toLowerCase())) {
+      else if (cnf.enableRequiredTrainingSet && requiredTrainingSet.has(dataObj.user.screenName.toLowerCase())) {
         console.log(chalkAlert("NNT | +++ ADD REQ TRAINING SET | @" + dataObj.user.screenName));
         trainingSetNormalized.push(dataObj);
         cb3();
@@ -2699,13 +2684,12 @@ function generateRandomEvolveConfig (cnf, callback){
 
   config.iterations = cnf.evolve.iterations;
   config.threads = cnf.evolve.threads;
-  config.mutation = randomItem(EVOLVE_MUTATION_ARRAY);
-  config.activation = randomItem(EVOLVE_ACTIVATION_ARRAY);
   config.cost = randomItem(EVOLVE_COST_ARRAY);
-  // config.clear = randomItem([true, false]);
-  config.clear = true;
-  config.equal = randomItem([true]);
+  config.clear = randomItem([true, false]);
+  // config.clear = true;
+  config.equal = randomItem([true, false]);
   config.error = cnf.evolve.error;
+  config.mutation = DEFAULT_EVOLVE_MUTATION;
   config.mutationRate = randomFloat(EVOLVE_MUTATION_RATE_RANGE.min, EVOLVE_MUTATION_RATE_RANGE.max);
   config.popsize = randomInt(EVOLVE_POP_SIZE_RANGE.min, EVOLVE_POP_SIZE_RANGE.max);
   config.elitism = randomInt(EVOLVE_ELITISM_RANGE.min, EVOLVE_ELITISM_RANGE.max);
@@ -2764,14 +2748,13 @@ function initNetworkCreate(nnChildId, nnId, cnf, callback){
         messageObj.network = {};
         messageObj.network = childConf.network;
         messageObj.iterations = childConf.iterations;
-        messageObj.mutation = childConf.mutation;
-        messageObj.activation = childConf.activation;
         messageObj.equal = childConf.equal;
         messageObj.popsize = childConf.popsize;
         messageObj.cost = childConf.cost;
         messageObj.elitism = childConf.elitism;
         messageObj.log = childConf.log;
         messageObj.error = childConf.error;
+        messageObj.mutation = childConf.mutation;
         messageObj.mutationRate = childConf.mutationRate;
         messageObj.clear = childConf.clear;
 
@@ -3312,6 +3295,8 @@ function initNeuralNetworkChild(cnf, callback){
           networkObj.evolve = {};
           networkObj.evolve.options = {};
           networkObj.evolve.options = omit(m.statsObj.evolve.options, ["network", "inputs", "outputs"]);
+          networkObj.evolve.results = {};
+          networkObj.evolve.results = m.networkObj.evolve.results;
 
           networkObj.test = {};
           networkObj.test = statsObj.tests[testObj.testRunId][m.processName];
