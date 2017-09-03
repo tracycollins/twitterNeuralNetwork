@@ -109,18 +109,18 @@ let statsObj = {};
 statsObj.hostname = hostname;
 statsObj.pid = process.pid;
 
+statsObj.startTime = moment().valueOf();
+statsObj.elapsed = 0;
+
 statsObj.memory = {};
 statsObj.memory.rss = process.memoryUsage().rss/(1024*1024);
 statsObj.memory.maxRss = process.memoryUsage().rss/(1024*1024);
 statsObj.memory.maxRssTime = moment().valueOf();
 
-statsObj.startTime = moment().valueOf();
-statsObj.elapsed = msToTime(moment().valueOf() - statsObj.startTime);
-
 statsObj.evolve = {};
-statsObj.evolve.startTime;
+statsObj.evolve.startTime = moment().valueOf();
 statsObj.evolve.endTime;
-statsObj.evolve.elapsed;
+statsObj.evolve.elapsed = 0;
 statsObj.evolve.options = {};
 statsObj.evolve.results = {};
 
@@ -239,14 +239,14 @@ function saveFile (path, file, jsonObj, callback){
 }
 
 function showStats(options){
-  if ((statsObj.training.startTime > 0) && (statsObj.training.endTime > 0)){
-    statsObj.training.elapsed = msToTime(statsObj.training.endTime - statsObj.training.startTime);
+  if ((statsObj.evolve.startTime > 0) && (statsObj.evolve.endTime > 0)){
+    statsObj.evolve.elapsed = statsObj.evolve.endTime - statsObj.evolve.startTime;
   }
-  else if (statsObj.training.startTime > 0){
-    statsObj.training.elapsed = msToTime(moment().valueOf() - statsObj.training.startTime);
+  else if (statsObj.evolve.startTime > 0){
+    statsObj.evolve.elapsed = moment().valueOf() - statsObj.evolve.startTime;
   }
 
-  statsObj.elapsed = msToTime(moment().valueOf() - statsObj.startTime);
+  statsObj.elapsed = moment().valueOf() - statsObj.startTime;
   statsObj.memory.rss = process.memoryUsage().rss/(1024*1024);
 
   if (statsObj.memory.rss > statsObj.memory.maxRss) {
@@ -256,9 +256,9 @@ function showStats(options){
 
   console.log(chalk.green("NNC | S"
     + " | START: " + moment(parseInt(statsObj.startTime)).format(compactDateTimeFormat)
-    + " | ELAPSED: " + statsObj.elapsed
-    + " | TRAINING START: " + moment(parseInt(statsObj.training.startTime)).format(compactDateTimeFormat)
-    + " | TRAINING ELAPSED: " + statsObj.elapsed
+    + " | ELAPSED: " + msToTime(statsObj.elapsed)
+    + " | TRAINING START: " + moment(parseInt(statsObj.evolve.startTime)).format(compactDateTimeFormat)
+    + " | TRAINING ELAPSED: " + msToTime(statsObj.evolve.elapsed)
   ));
 }
 
@@ -384,13 +384,15 @@ function evolve(params, callback){
   options.mutationRate = params.mutationRate;
   options.popsize = params.popsize;
 
+  let schedStartTime = moment().valueOf();
+
   statsObj.evolve.startTime = moment().valueOf();
-  statsObj.evolve.elapsed = moment().valueOf() - statsObj.evolve.startTime;
+  statsObj.evolve.elapsed = 0;
 
   options.schedule = {
     function: function(schedParams){
 
-      let elapsedInt = moment().valueOf() - startTime;
+      let elapsedInt = moment().valueOf() - schedStartTime;
       let iterationRate = elapsedInt/schedParams.iteration;
       let iterationRateSec = iterationRate/1000.0;
       let timeToComplete = iterationRate*(params.iterations - schedParams.iteration);
@@ -412,7 +414,7 @@ function evolve(params, callback){
       console.log("NNC | EVOLVE"
         + " | " + configuration.processName
         // + " | " + params.runId
-        + " | S: " + moment(startTime).format(compactDateTimeFormat)
+        + " | S: " + moment(schedStartTime).format(compactDateTimeFormat)
         + " | R: " + schedMsToTime(elapsedInt)
         + " | RATE: " + iterationRateSec.toFixed(1) + " s/I"
         + " | ETC: " + schedMsToTime(timeToComplete)
@@ -1014,6 +1016,8 @@ process.on("message", function(m) {
           }
           else {
 
+            console.log(chalkAlert("evolve results\n" + jsonPrint(results)));
+
             statsObj.training.endTime = moment().valueOf();
             statsObj.training.elapsed = results.time;
             statsObj.evolve.results = results;
@@ -1037,12 +1041,13 @@ process.on("message", function(m) {
             networkObj.numOutputs = exportedNetwork.output;
             networkObj.evolve = {};
             networkObj.evolve.results = {};
-            networkObj.evolve.results = defaults(results, defaultResults);
+            networkObj.evolve.results = results;
+            networkObj.evolve.results.error = ((results.error !== undefined) && results.error && (results.error < Infinity)) ? results.error : 0;
             networkObj.evolve.options = {};
             networkObj.evolve.options = evolveOptions;
             networkObj.startTime = statsObj.evolve.startTime;
             networkObj.endTime = statsObj.evolve.endTime;
-            networkObj.elapsed = statsObj.evolve.elapsed;
+            networkObj.evolve.elapsed = statsObj.training.elapsed;
 
            if (results.iterations < evolveOptions.iterations) {
 
@@ -1056,6 +1061,7 @@ process.on("message", function(m) {
                 + " | " + "THREADS: " + results.threads
                 + " | " + "ITERATIONS: " + results.iterations
                 + " | " + "ERROR: " + results.error
+                + " | " + "ELAPSED: " + msToTime(statsObj.evolve.elapsed)
               ));
 
             }
@@ -1067,6 +1073,7 @@ process.on("message", function(m) {
                 + " | " + "THREADS: " + results.threads
                 + " | " + "ITERATIONS: " + results.iterations
                 + " | " + "ERROR: " + results.error
+                + " | " + "ELAPSED: " + msToTime(statsObj.evolve.elapsed)
               ));
             }
 

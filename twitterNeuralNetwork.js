@@ -19,7 +19,7 @@ const DEFAULT_NETWORK_CREATE_MODE = "evolve";
 const DEFAULT_ITERATIONS = 10;
 const DEFAULT_SEED_NETWORK_ID = false;
 
-const DEFAULT_MIN_SUCCESS_RATE = 54; // percent
+const DEFAULT_MIN_SUCCESS_RATE = 65; // percent
 const OFFLINE_MODE = true;
 const DEFAULT_ENABLE_RANDOM = true;
 const DEFAULT_BATCH_MAX_INSTANCES = 3;
@@ -249,7 +249,8 @@ const chalkLog = chalk.gray;
 const chalkInfo = chalk.black;
 const chalkNetwork = chalk.blue;
 
-function msToTime(duration) {
+function msToTime(d) {
+  const duration = parseInt(d);
   let seconds = parseInt((duration / 1000) % 60);
   let minutes = parseInt((duration / (1000 * 60)) % 60);
   let hours = parseInt((duration / (1000 * 60 * 60)) % 24);
@@ -1193,7 +1194,9 @@ function printNetworkCreateResultsHashmap(){
 
     const snId = (networkObj.seedNetworkId !== undefined) ? networkObj.seedNetworkId : "---";
     const iterations = (networkObj.evolve.results !== undefined) ? networkObj.evolve.results.iterations : "---";
-    const error = (networkObj.evolve.results !== undefined) ? networkObj.evolve.results.error.toFixed(5) : "---";
+    const error = ((networkObj.evolve.results !== undefined) 
+      && (networkObj.evolve.results.error !== undefined)
+      && networkObj.evolve.results.error)  ? networkObj.evolve.results.error.toFixed(5) : "---";
 
     tableArray.push([
       "NNT | " + nnId,
@@ -1205,7 +1208,7 @@ function printNetworkCreateResultsHashmap(){
       networkObj.evolve.options.mutationRate.toFixed(3),
       networkObj.evolve.options.popsize,
       networkObj.evolve.options.elitism,
-      msToTime(networkObj.elapsed),
+      msToTime(networkObj.evolve.elapsed),
       iterations,
       error,
       networkObj.successRate.toFixed(1)
@@ -3226,7 +3229,7 @@ function initNeuralNetworkChild(cnf, callback){
           + "\nNNT |          " + m.processName
           + "\nNNT | NID:     " + m.networkObj.networkId
           + "\nNNT | SEED:    " + m.networkObj.seedNetworkId
-          + "\nNNT | ELAPSED: " + msToTime(m.networkObj.elapsed)
+          + "\nNNT | ELAPSED: " + msToTime(m.networkObj.evolve.elapsed)
           + "\nNNT | ITERTNS: " + m.statsObj.evolve.results.iterations
           + "\nNNT | ERROR:   " + m.statsObj.evolve.results.error
           + "\nNNT | INPUTS:  " + m.networkObj.network.input
@@ -3297,6 +3300,7 @@ function initNeuralNetworkChild(cnf, callback){
           networkObj.evolve.options = omit(m.statsObj.evolve.options, ["network", "inputs", "outputs"]);
           networkObj.evolve.results = {};
           networkObj.evolve.results = m.networkObj.evolve.results;
+          networkObj.evolve.elapsed = m.networkObj.evolve.elapsed;
 
           networkObj.test = {};
           networkObj.test = statsObj.tests[testObj.testRunId][m.processName];
