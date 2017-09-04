@@ -3318,7 +3318,7 @@ function initNeuralNetworkChild(cnf, callback){
 
           printNetworkCreateResultsHashmap();
 
-          if (results.iterations < evolveOptions.iterations) {
+          if (results.iterations < m.statsObj.evolve.options.iterations) {
             console.log(chalkLog("NNT | XXX | NOT SAVING NN FILE TO DROPBOX ... EARLY COMPLETE?"
               + " | " + networkObj.networkId
               + " | ITRNS: " + results.iterations
