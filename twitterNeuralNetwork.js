@@ -3313,8 +3313,8 @@ function initNeuralNetworkChild(cnf, callback){
           networkObj.test = statsObj.tests[testObj.testRunId][m.processName];
 
 
-          networkCreateResultsHashmap[networkObj.networkId] = {};
-          networkCreateResultsHashmap[networkObj.networkId] = omit(networkObj, ["network", "inputs", "outputs"]);
+          // networkCreateResultsHashmap[networkObj.networkId] = {};
+          // networkCreateResultsHashmap[networkObj.networkId] = omit(networkObj, ["network", "inputs", "outputs"]);
 
           printNetworkCreateResultsHashmap();
 
@@ -3333,6 +3333,9 @@ function initNeuralNetworkChild(cnf, callback){
           else if (results.successRate > cnf.minSuccessRate) {
 
             bestNetworkFile = m.networkObj.networkId + ".json";
+
+            networkCreateResultsHashmap[networkObj.networkId] = {};
+            networkCreateResultsHashmap[networkObj.networkId] = omit(networkObj, ["network", "inputs", "outputs"]);
 
             console.log(chalkLog("NNT | SAVING NN FILE TO DROPBOX"
               + " | " + bestNetworkFolder + "/" + bestNetworkFile
