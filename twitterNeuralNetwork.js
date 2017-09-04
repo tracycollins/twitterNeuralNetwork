@@ -3318,7 +3318,19 @@ function initNeuralNetworkChild(cnf, callback){
 
           printNetworkCreateResultsHashmap();
 
-          if (results.successRate > cnf.minSuccessRate) {
+          if (results.iterations < evolveOptions.iterations) {
+            console.log(chalkLog("NNT | XXX | NOT SAVING NN FILE TO DROPBOX ... EARLY COMPLETE?"
+              + " | " + networkObj.networkId
+              + " | ITRNS: " + results.iterations
+              + " | " + networkObj.successRate.toFixed(2) + "%"
+              + " | " + cnf.minSuccessRate.toFixed(2) + "%"
+            ));
+
+            printNetworkObj(networkObj.networkId, networkObj);
+
+            if (neuralNetworkChildHashMap[m.processName] !== undefined) { neuralNetworkChildHashMap[m.processName].ready = true; }
+          }
+          else if (results.successRate > cnf.minSuccessRate) {
 
             bestNetworkFile = m.networkObj.networkId + ".json";
 
