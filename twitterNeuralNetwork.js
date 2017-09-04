@@ -152,7 +152,9 @@ let configuration = {};
 configuration.enableRequiredTrainingSet = false;
 
 configuration.maxNeuralNetworkChildern = (process.env.TNN_MAX_NEURAL_NETWORK_CHILDREN !== undefined) ? process.env.TNN_MAX_NEURAL_NETWORK_CHILDREN : DEFAULT_MAX_NEURAL_NETWORK_CHILDREN;
-configuration.minSuccessRate = DEFAULT_MIN_SUCCESS_RATE;
+configuration.minSuccessRate = (process.env.TNN_MIN_SUCCESS_RATE !== undefined) 
+  ? process.env.TNN_MIN_SUCCESS_RATE 
+  : DEFAULT_MIN_SUCCESS_RATE;
 
 configuration.loadTrainingSetFromFile = false;
 
