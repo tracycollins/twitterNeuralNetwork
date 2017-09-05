@@ -957,6 +957,7 @@ process.on("message", function(m) {
       };
 
       statsObj.evolve.options = {};
+
       statsObj.evolve.options = {
         threads: m.threads,
         seedNetworkId: m.seedNetworkId,
@@ -1016,7 +1017,7 @@ process.on("message", function(m) {
           }
           else {
 
-            console.log(chalkAlert("evolve results\n" + jsonPrint(results)));
+            debug(chalkAlert("evolve results\n" + jsonPrint(results)));
 
             statsObj.training.endTime = moment().valueOf();
             statsObj.training.elapsed = results.time;

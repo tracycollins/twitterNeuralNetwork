@@ -19,7 +19,7 @@ const DEFAULT_NETWORK_CREATE_MODE = "evolve";
 const DEFAULT_ITERATIONS = 10;
 const DEFAULT_SEED_NETWORK_ID = false;
 
-const DEFAULT_MIN_SUCCESS_RATE = 65; // percent
+const DEFAULT_MIN_SUCCESS_RATE = 80; // percent
 const OFFLINE_MODE = true;
 const DEFAULT_ENABLE_RANDOM = true;
 const DEFAULT_BATCH_MAX_INSTANCES = 3;
@@ -3318,12 +3318,12 @@ function initNeuralNetworkChild(cnf, callback){
 
           printNetworkCreateResultsHashmap();
 
-          if (results.iterations < m.statsObj.evolve.options.iterations) {
+          if (m.statsObj.evolve.results.iterations < networkObj.evolve.options.iterations) {
             console.log(chalkLog("NNT | XXX | NOT SAVING NN FILE TO DROPBOX ... EARLY COMPLETE?"
               + " | " + networkObj.networkId
-              + " | ITRNS: " + results.iterations
+              + " | ITRNS: " + m.statsObj.evolve.results.iterations
+              + " | MIN: " + cnf.minSuccessRate.toFixed(2) + "%"
               + " | " + networkObj.successRate.toFixed(2) + "%"
-              + " | " + cnf.minSuccessRate.toFixed(2) + "%"
             ));
 
             printNetworkObj(networkObj.networkId, networkObj);
