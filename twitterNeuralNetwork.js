@@ -376,8 +376,9 @@ const enableStdin = { name: "enableStdin", alias: "i", type: Boolean, defaultVal
 const quitOnError = { name: "quitOnError", alias: "q", type: Boolean, defaultValue: true };
 const verbose = { name: "verbose", alias: "v", type: Boolean };
 
+const createTrainingSet = { name: "createTrainingSet", alias: "c", type: Boolean};
 const loadTrainingSetFromFile = { name: "loadTrainingSetFromFile", alias: "t", type: Boolean};
-const networkCreateMode = { name: "networkCreateMode", alias: "c", type: String, defaultValue: "evolve" };
+const networkCreateMode = { name: "networkCreateMode", alias: "n", type: String, defaultValue: "evolve" };
 const hiddenLayerSize = { name: "hiddenLayerSize", alias: "h", type: Number, defaultValue: DEFAULT_TRAIN_HIDDEN_LAYER_SIZE };
 const seedNetworkId = { name: "seedNetworkId", alias: "s", type: String };
 const useBestNetwork = { name: "useBestNetwork", alias: "b", type: Boolean };
@@ -385,6 +386,7 @@ const testMode = { name: "testMode", alias: "T", type: Boolean, defaultValue: fa
 const evolveIterations = { name: "evolveIterations", alias: "I", type: Number};
 
 const optionDefinitions = [
+  createTrainingSet,
   loadTrainingSetFromFile,
   networkCreateMode,
   hiddenLayerSize,
@@ -1623,6 +1625,15 @@ function initialize(cnf, callback){
     }
   }
 
+  if (process.env.TNN_CREATE_TRAINING_SET !== undefined) {
+    if (process.env.TNN_CREATE_TRAINING_SET === "true") {
+      cnf.createTrainingSet = true ;
+    }
+    else {
+      cnf.createTrainingSet = false ;
+    }
+  }
+
   if (process.env.TNN_EVOLVE_BEST_NETWORK !== undefined) {
     if (process.env.TNN_EVOLVE_BEST_NETWORK === "true") {
       cnf.useBestNetwork = true ;
@@ -1697,8 +1708,26 @@ function initialize(cnf, callback){
 
         if (loadedConfigObj.TNN_LOAD_TRAINING_SET_FROM_FILE  !== undefined){
           console.log("NNT | LOADED TNN_TRAIN_BEST_NETWORK: " + loadedConfigObj.TNN_LOAD_TRAINING_SET_FROM_FILE);
-          cnf.loadTrainingSetFromFile = loadedConfigObj.TNN_LOAD_TRAINING_SET_FROM_FILE;
+
+          if (loadedConfigObj.TNN_LOAD_TRAINING_SET_FROM_FILE === "true") {
+            cnf.loadTrainingSetFromFile = true;
+          }
+          else {
+            cnf.loadTrainingSetFromFile = false;
+          }
         }
+
+        if (loadedConfigObj.TNN_CREATE_TRAINING_SET  !== undefined){
+          console.log("NNT | CREATE TRAINING SET");
+
+          if (loadedConfigObj.TNN_CREATE_TRAINING_SET === "true") {
+            cnf.createTrainingSet = true;
+          }
+          else {
+            cnf.createTrainingSet = false;
+          }
+        }
+
 
         if (loadedConfigObj.TNN_MAX_NEURAL_NETWORK_CHILDREN !== undefined){
           console.log("NNT | LOADED TNN_MAX_NEURAL_NETWORK_CHILDREN: " + loadedConfigObj.TNN_MAX_NEURAL_NETWORK_CHILDREN);
@@ -2864,7 +2893,7 @@ function initMain(cnf, callback){
 
     console.log(chalkLog("NNT | LOADED " + Object.keys(classifiedUserHashmap).length + " TOTAL CLASSIFED USERS"));
 
-    if (cnf.loadTrainingSetFromFile) {
+    if (!cnf.createTrainingSet && cnf.loadTrainingSetFromFile) {
 
       console.log(chalkInfo("NNT | LOADING TRAINING SET FROM FILE " + trainingSetFolder + "/" + trainingSetFile));
 
