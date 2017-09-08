@@ -22,7 +22,7 @@
     "hashtag-regex": "^1.0.0",
     "keyword-extractor": "0.0.14",
     "mentions-regex": "^2.0.3",
-    "mongoose": "^4.11.9",
+    "mongoose": "^4.11.10",
     "mongoose-paginate": "^5.0.3",
     "neataptic": "^1.4.4",
     "node-emoji": "^1.8.1",
