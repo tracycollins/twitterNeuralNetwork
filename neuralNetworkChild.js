@@ -454,6 +454,12 @@ function evolve(params, callback){
       case "cost":
       console.log("NNC" + " | " + configuration.processName + " | EVOLVE OPTION | " + key + ": " + params[key]);
       options.cost = neataptic.methods.cost[params[key]];
+
+      // work-around for early complete bug
+      if (params[key] === "CROSS_ENTROPY") { 
+        options.threads = 1; 
+        console.log(chalkAlert("*** SETTING THREADS = 1 | BUG WORKAROUND ON CROSS_ENTROPY EARLY COMPLETE"));
+      } 
       break;
 
       default:

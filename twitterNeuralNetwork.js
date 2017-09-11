@@ -91,6 +91,7 @@ let trainingSetReady = false;
 let trainingSet = [];
 let trainingSetNormalized = [];
 let trainingSetNormalizedTotal = [];  // to be saved to dropbox
+// let trainingSetBasic = []; // only { input: xxx, output: ooo }
 
 let trainingSetLabels = {};
 trainingSetLabels.inputRaw = [];
@@ -332,7 +333,7 @@ let stdin;
 let db;
 let wordAssoDb;
 let User;
-let NeuralNetwork; // DB
+// let NeuralNetwork; // DB
 
 let userServer;
 
@@ -2002,7 +2003,7 @@ configEvents.once("INIT_MONGODB", function(){
   wordAssoDb = require("@threeceelabs/mongoose-twitter");
   db = wordAssoDb();
 
-  NeuralNetwork = require("mongoose").model("NeuralNetwork");
+  // NeuralNetwork = require("mongoose").model("NeuralNetwork");
   User = require("mongoose").model("User");
 
   userServer = require("@threeceelabs/user-server-controller");
@@ -2528,6 +2529,8 @@ function updateClassifiedUsers(cnf, callback){
 
       trainingSetNormalizedTotal.push(dataObj);
 
+      // trainingSetBasic.push({input: dataObj.input, output: dataObj.output});
+
       if (configuration.testMode) {
         testObj.testSet.push(dataObj);
         cb3();
@@ -2972,6 +2975,8 @@ function initMain(cnf, callback){
         ));
 
         trainingSetFile = "trainingSetNormalized_" + testObj.testRunId + ".json";
+
+        // saveFile({folder: trainingSetFolder, file: "trainingSetBasic", obj: trainingSetBasic});
 
         saveFile({
           folder: trainingSetFolder, 
