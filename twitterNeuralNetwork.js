@@ -1620,11 +1620,11 @@ function initialize(cnf, callback){
 
   if (process.env.TNN_LOAD_TRAINING_SET_FROM_FILE !== undefined) {
     console.log("NNT | ENV TNN_LOAD_TRAINING_SET_FROM_FILE: " + process.env.TNN_LOAD_TRAINING_SET_FROM_FILE);
-    if (process.env.TNN_LOAD_TRAINING_SET_FROM_FILE === "true") {
-      cnf.loadTrainingSetFromFile = true ;
+    if (!process.env.TNN_LOAD_TRAINING_SET_FROM_FILE || (process.env.TNN_LOAD_TRAINING_SET_FROM_FILE === "false")) {
+      cnf.loadTrainingSetFromFile = false ;
     }
     else {
-      cnf.loadTrainingSetFromFile = false ;
+      cnf.loadTrainingSetFromFile = true ;
     }
   }
 
@@ -1712,22 +1712,22 @@ function initialize(cnf, callback){
         if (loadedConfigObj.TNN_LOAD_TRAINING_SET_FROM_FILE  !== undefined){
           console.log("NNT | LOADED TNN_LOAD_TRAINING_SET_FROM_FILE: " + loadedConfigObj.TNN_LOAD_TRAINING_SET_FROM_FILE);
 
-          if (loadedConfigObj.TNN_LOAD_TRAINING_SET_FROM_FILE === "true") {
-            cnf.loadTrainingSetFromFile = true;
+          if (!loadedConfigObj.TNN_LOAD_TRAINING_SET_FROM_FILE || (loadedConfigObj.TNN_LOAD_TRAINING_SET_FROM_FILE === "false")) {
+            cnf.loadTrainingSetFromFile = false;
           }
           else {
-            cnf.loadTrainingSetFromFile = false;
+            cnf.loadTrainingSetFromFile = true;
           }
         }
 
         if (loadedConfigObj.TNN_CREATE_TRAINING_SET  !== undefined){
           console.log("NNT | CREATE TRAINING SET");
 
-          if (loadedConfigObj.TNN_CREATE_TRAINING_SET === "true") {
-            cnf.createTrainingSet = true;
+          if (!loadedConfigObj.TNN_CREATE_TRAINING_SET || (loadedConfigObj.TNN_CREATE_TRAINING_SET === "false")) {
+            cnf.createTrainingSet = false;
           }
           else {
-            cnf.createTrainingSet = false;
+            cnf.createTrainingSet = true;
           }
         }
 
