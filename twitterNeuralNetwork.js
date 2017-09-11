@@ -1618,6 +1618,7 @@ function initialize(cnf, callback){
 
 
   if (process.env.TNN_LOAD_TRAINING_SET_FROM_FILE !== undefined) {
+    console.log("NNT | ENV TNN_LOAD_TRAINING_SET_FROM_FILE: " + process.env.TNN_LOAD_TRAINING_SET_FROM_FILE);
     if (process.env.TNN_LOAD_TRAINING_SET_FROM_FILE === "true") {
       cnf.loadTrainingSetFromFile = true ;
     }
@@ -1708,7 +1709,7 @@ function initialize(cnf, callback){
         console.log("NNT | " + dropboxConfigFile + "\n" + jsonPrint(loadedConfigObj));
 
         if (loadedConfigObj.TNN_LOAD_TRAINING_SET_FROM_FILE  !== undefined){
-          console.log("NNT | LOADED TNN_TRAIN_BEST_NETWORK: " + loadedConfigObj.TNN_LOAD_TRAINING_SET_FROM_FILE);
+          console.log("NNT | LOADED TNN_LOAD_TRAINING_SET_FROM_FILE: " + loadedConfigObj.TNN_LOAD_TRAINING_SET_FROM_FILE);
 
           if (loadedConfigObj.TNN_LOAD_TRAINING_SET_FROM_FILE === "true") {
             cnf.loadTrainingSetFromFile = true;
