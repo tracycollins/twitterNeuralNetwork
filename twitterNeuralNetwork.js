@@ -158,6 +158,7 @@ configuration.minSuccessRate = (process.env.TNN_MIN_SUCCESS_RATE !== undefined)
   : DEFAULT_MIN_SUCCESS_RATE;
 
 configuration.loadTrainingSetFromFile = false;
+configuration.createTrainingSet = false;
 
 configuration.DROPBOX = {};
 configuration.DROPBOX.DROPBOX_WORD_ASSO_ACCESS_TOKEN = process.env.DROPBOX_WORD_ASSO_ACCESS_TOKEN ;
