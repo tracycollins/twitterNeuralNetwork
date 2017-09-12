@@ -4,7 +4,7 @@
   "description": "",
   "main": "twitterNeuralNetwork.js",
   "dependencies": {
-    "@threeceelabs/mongoose-twitter": "^1.0.25",
+    "@threeceelabs/mongoose-twitter": "^1.0.26",
     "@threeceelabs/twitter-text-parser": "^1.0.20",
     "@threeceelabs/user-server-controller": "^1.0.67",
     "array-normalize": "^1.1.3",
