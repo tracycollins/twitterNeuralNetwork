@@ -4,7 +4,8 @@
     "name": "tnn",
     "script": "twitterNeuralNetwork.js",
     "cwd": "/Volumes/RAID1/projects/twitterNeuralNetwork",
-    "autorestart": false,
+    "node_args": "--max-old-space-size=6144",
+    "autorestart": true,
     "env": {
       "NODE_ENV": "development",
       "GCLOUD_PROJECT": "graphic-tangent-627",
