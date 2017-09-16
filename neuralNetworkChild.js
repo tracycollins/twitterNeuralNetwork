@@ -21,9 +21,9 @@ const compactDateTimeFormat = "YYYYMMDD HHmmss";
 const neataptic = require("neataptic");
 let network;
 
-const mongoose = require("./config/mongoose");
-
-const db = mongoose();
+const mongoose = require("mongoose");
+const wordAssoDb = require("@threeceelabs/mongoose-twitter");
+const db = wordAssoDb();
 
 const NeuralNetwork = require("mongoose").model("NeuralNetwork");
 
