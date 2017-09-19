@@ -2027,7 +2027,7 @@ function updateClassifiedUsers(cnf, callback){
 
   statsObj.users.updatedClassified = 0;
 
-  async.each(classifiedUserIds, function(userId, cb0){
+  async.eachSeries(classifiedUserIds, function(userId, cb0){
 
     debug(chalkInfo("updateClassifiedUsers: userId: " + userId));
 
