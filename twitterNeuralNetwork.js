@@ -1620,6 +1620,16 @@ function initialize(cnf, callback){
   cnf.networkCreateMode = process.env.TNN_NETWORK_CREATE_MODE || DEFAULT_NETWORK_CREATE_MODE ;
 
 
+  if (process.env.TNN_CROSS_ENTROPY_WORKAROUND_ENABLED !== undefined) {
+    console.log("NNT | ENV TNN_CROSS_ENTROPY_WORKAROUND_ENABLED: " + process.env.TNN_CROSS_ENTROPY_WORKAROUND_ENABLED);
+    if (!process.env.TNN_CROSS_ENTROPY_WORKAROUND_ENABLED || (process.env.TNN_CROSS_ENTROPY_WORKAROUND_ENABLED === "false")) {
+      cnf.crossEntropyWorkAroundEnabled = false ;
+    }
+    else {
+      cnf.crossEntropyWorkAroundEnabled = true ;
+    }
+  }
+
   if (process.env.TNN_LOAD_TRAINING_SET_FROM_FILE !== undefined) {
     console.log("NNT | ENV TNN_LOAD_TRAINING_SET_FROM_FILE: " + process.env.TNN_LOAD_TRAINING_SET_FROM_FILE);
     if (!process.env.TNN_LOAD_TRAINING_SET_FROM_FILE || (process.env.TNN_LOAD_TRAINING_SET_FROM_FILE === "false")) {
@@ -1710,6 +1720,17 @@ function initialize(cnf, callback){
 
       if (!err) {
         console.log("NNT | " + dropboxConfigFile + "\n" + jsonPrint(loadedConfigObj));
+
+        if (loadedConfigObj.TNN_CROSS_ENTROPY_WORKAROUND_ENABLED  !== undefined){
+          console.log("NNT | TNN_CROSS_ENTROPY_WORKAROUND_ENABLED: " + loadedConfigObj.TNN_CROSS_ENTROPY_WORKAROUND_ENABLED);
+
+          if (!loadedConfigObj.TNN_CROSS_ENTROPY_WORKAROUND_ENABLED || (loadedConfigObj.TNN_CROSS_ENTROPY_WORKAROUND_ENABLED === "false")) {
+            cnf.crossEntropyWorkAroundEnabled = false;
+          }
+          else {
+            cnf.crossEntropyWorkAroundEnabled = true;
+          }
+        }
 
         if (loadedConfigObj.TNN_LOAD_TRAINING_SET_FROM_FILE  !== undefined){
           console.log("NNT | LOADED TNN_LOAD_TRAINING_SET_FROM_FILE: " + loadedConfigObj.TNN_LOAD_TRAINING_SET_FROM_FILE);
@@ -3062,17 +3083,7 @@ function initNeuralNetworkChild(cnf, callback){
   childEnv.env.DROPBOX_NNC_STATS_FILE = statsObj.runId + "_" + nnChildId + ".json";
   childEnv.env.NNC_PROCESS_NAME = nnChildId;
   childEnv.env.NODE_ENV = "production";
-
-  if (process.env.TNN_CROSS_ENTROPY_WORKAROUND_ENABLED  !== undefined){
-    console.log("NNT | TNN_CROSS_ENTROPY_WORKAROUND_ENABLED: " + process.env.TNN_CROSS_ENTROPY_WORKAROUND_ENABLED);
-
-    if (!process.env.TNN_CROSS_ENTROPY_WORKAROUND_ENABLED || (process.env.TNN_CROSS_ENTROPY_WORKAROUND_ENABLED === "false")) {
-      childEnv.env.TNN_CROSS_ENTROPY_WORKAROUND_ENABLED = false;
-    }
-    else {
-      childEnv.env.TNN_CROSS_ENTROPY_WORKAROUND_ENABLED = true;
-    }
-  }
+  childEnv.env.TNN_CROSS_ENTROPY_WORKAROUND_ENABLED = cnf.crossEntropyWorkAroundEnabled;
 
   const neuralNetworkChild = cp.fork("neuralNetworkChild.js", childEnv );
 
