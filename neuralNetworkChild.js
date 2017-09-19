@@ -40,6 +40,7 @@ process.title = process.env.NNC_PROCESS_NAME;
 
 let configuration = {};
 configuration.processName = process.env.NNC_PROCESS_NAME;
+configuration.crossEntropyWorkAroundEnabled = false;
 configuration.verbose = false;
 configuration.globalTestMode = false;
 configuration.defaultPopulationSize = 100;
@@ -456,7 +457,7 @@ function evolve(params, callback){
       options.cost = neataptic.methods.cost[params[key]];
 
       // work-around for early complete bug
-      if (params[key] === "CROSS_ENTROPY") { 
+      if (configuration.crossEntropyWorkAroundEnabled && (params[key] === "CROSS_ENTROPY")) { 
         options.threads = 1; 
         console.log(chalkAlert("*** SETTING THREADS = 1 | BUG WORKAROUND ON CROSS_ENTROPY EARLY COMPLETE"));
       } 
@@ -1109,6 +1110,7 @@ function initialize(cnf, callback){
   cnf.globalTestMode = process.env.TNN_GLOBAL_TEST_MODE || false ;
   cnf.testMode = process.env.TNN_TEST_MODE || false ;
   cnf.quitOnError = process.env.TNN_QUIT_ON_ERROR || false ;
+  cnf.crossEntropyWorkAroundEnabled = process.env.TNN_CROSS_ENTROPY_WORKAROUND_ENABLED || false;
 
   cnf.statsUpdateIntervalTime = process.env.TNN_STATS_UPDATE_INTERVAL || 60000;
 

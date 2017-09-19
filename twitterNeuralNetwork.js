@@ -12,6 +12,7 @@ inputTypes.sort();
 
 let networkIndex = 0;
 
+const MIN_INPUT_HITS = 10;
 const DEFAULT_MAX_NEURAL_NETWORK_CHILDREN = 2;
 const DEFAULT_TEST_RATIO = 0.1;
 
@@ -56,18 +57,17 @@ const DEFAULT_EVOLVE_POPSIZE = 100;
 
 const EVOLVE_COST_ARRAY = [
   "CROSS_ENTROPY",
-  "CROSS_ENTROPY",
-  "MSE"
-  // "BINARY"
+  "MSE",
+  "BINARY"
   // "MAE",
   // "MAPE",
   // "MSLE",
   // "HINGE"
 ];
 
-const EVOLVE_MUTATION_RATE_RANGE = { min: 0.3, max: 0.8 } ;
-const EVOLVE_POP_SIZE_RANGE = { min: 80, max: 160 } ;
-const EVOLVE_ELITISM_RANGE = { min: 1, max: 20 } ;
+const EVOLVE_MUTATION_RATE_RANGE = { min: 0.3, max: 0.85 } ;
+const EVOLVE_POP_SIZE_RANGE = { min: 100, max: 200 } ;
+const EVOLVE_ELITISM_RANGE = { min: 5, max: 25 } ;
 
 const DEFAULT_TRAIN_THREADS = 1;
 const DEFAULT_TRAIN_ARCHITECTURE = "perceptron";
@@ -605,25 +605,27 @@ function showStats(options){
       + " | 0: " + classifiedUserHistogram.none
     ));
 
-    Object.keys(neuralNetworkChildHashMap).forEach(function(nnChildId){
+    printNetworkCreateResultsHashmap();
 
-      if (statsObj.tests[testObj.testRunId][nnChildId] !== undefined) {
-        if (statsObj.tests[testObj.testRunId][nnChildId].results.successRate !== undefined) {
-          console.log(chalkLog("NNT"
-            + " | " + nnChildId
-            + " | " + testObj.testRunId
-            + " | " + configuration.networkCreateMode.toUpperCase()
-            + " | RUN: " + statsObj.elapsed
-            + " | ITR: " + configuration.evolve.iterations
-            + " | TESTS: " + statsObj.tests[testObj.testRunId][nnChildId].results.numTests
-            + " | PASS: " + statsObj.tests[testObj.testRunId][nnChildId].results.numPassed
-            + " | SKIP: " + statsObj.tests[testObj.testRunId][nnChildId].results.numSkipped
-            + " | RES: " + statsObj.tests[testObj.testRunId][nnChildId].results.successRate.toFixed(2) + " %"
-          ));
-        }
-      }
+    // Object.keys(neuralNetworkChildHashMap).forEach(function(nnChildId){
 
-    });
+    //   if (statsObj.tests[testObj.testRunId][nnChildId] !== undefined) {
+    //     if (statsObj.tests[testObj.testRunId][nnChildId].results.successRate !== undefined) {
+    //       console.log(chalkLog("NNT"
+    //         + " | " + nnChildId
+    //         + " | " + testObj.testRunId
+    //         + " | " + configuration.networkCreateMode.toUpperCase()
+    //         + " | RUN: " + statsObj.elapsed
+    //         + " | ITR: " + configuration.evolve.iterations
+    //         + " | TESTS: " + statsObj.tests[testObj.testRunId][nnChildId].results.numTests
+    //         + " | PASS: " + statsObj.tests[testObj.testRunId][nnChildId].results.numPassed
+    //         + " | SKIP: " + statsObj.tests[testObj.testRunId][nnChildId].results.numSkipped
+    //         + " | RES: " + statsObj.tests[testObj.testRunId][nnChildId].results.successRate.toFixed(2) + " %"
+    //       ));
+    //     }
+    //   }
+
+    // });
 
   }
 }
@@ -2410,7 +2412,7 @@ function updateClassifiedUsers(cnf, callback){
 
                 let chk = chalkInfo;
 
-                if (trainingSetDatum.inputHits.length === 0) { chk = chalkAlert; }
+                if (trainingSetDatum.inputHits.length < MIN_INPUT_HITS) { chk = chalkAlert; }
 
                 console.log(chk("=+= PARSE USER TEXT COMPLETE"
                   + " | ["  + globalInputIndex + "] "
@@ -2422,7 +2424,7 @@ function updateClassifiedUsers(cnf, callback){
 
                 // IF NOT INPUT HITS, don't user for training
                 
-                if (trainingSetDatum.inputHits.length === 0) { 
+                if (trainingSetDatum.inputHits.length < MIN_INPUT_HITS) { 
                   return cb0();
                 }
 
@@ -3060,7 +3062,17 @@ function initNeuralNetworkChild(cnf, callback){
   childEnv.env.DROPBOX_NNC_STATS_FILE = statsObj.runId + "_" + nnChildId + ".json";
   childEnv.env.NNC_PROCESS_NAME = nnChildId;
   childEnv.env.NODE_ENV = "production";
-  // childEnv.env.TNN_STATS_UPDATE_INTERVAL = 60000;
+
+  if (process.env.TNN_CROSS_ENTROPY_WORKAROUND_ENABLED  !== undefined){
+    console.log("NNT | TNN_CROSS_ENTROPY_WORKAROUND_ENABLED: " + process.env.TNN_CROSS_ENTROPY_WORKAROUND_ENABLED);
+
+    if (!process.env.TNN_CROSS_ENTROPY_WORKAROUND_ENABLED || (process.env.TNN_CROSS_ENTROPY_WORKAROUND_ENABLED === "false")) {
+      childEnv.env.TNN_CROSS_ENTROPY_WORKAROUND_ENABLED = false;
+    }
+    else {
+      childEnv.env.TNN_CROSS_ENTROPY_WORKAROUND_ENABLED = true;
+    }
+  }
 
   const neuralNetworkChild = cp.fork("neuralNetworkChild.js", childEnv );
 
@@ -3349,8 +3361,8 @@ function initNeuralNetworkChild(cnf, callback){
           networkObj.test = statsObj.tests[testObj.testRunId][m.processName];
 
 
-          // networkCreateResultsHashmap[networkObj.networkId] = {};
-          // networkCreateResultsHashmap[networkObj.networkId] = omit(networkObj, ["network", "inputs", "outputs"]);
+          networkCreateResultsHashmap[networkObj.networkId] = {};
+          networkCreateResultsHashmap[networkObj.networkId] = omit(networkObj, ["network", "inputs", "outputs"]);
 
           printNetworkCreateResultsHashmap();
 
@@ -3370,8 +3382,8 @@ function initNeuralNetworkChild(cnf, callback){
 
             bestNetworkFile = m.networkObj.networkId + ".json";
 
-            networkCreateResultsHashmap[networkObj.networkId] = {};
-            networkCreateResultsHashmap[networkObj.networkId] = omit(networkObj, ["network", "inputs", "outputs"]);
+            // networkCreateResultsHashmap[networkObj.networkId] = {};
+            // networkCreateResultsHashmap[networkObj.networkId] = omit(networkObj, ["network", "inputs", "outputs"]);
 
             console.log(chalkLog("NNT | SAVING NN FILE TO DROPBOX"
               + " | " + bestNetworkFolder + "/" + bestNetworkFile
@@ -3395,7 +3407,6 @@ function initNeuralNetworkChild(cnf, callback){
               if (neuralNetworkChildHashMap[m.processName] !== undefined) { neuralNetworkChildHashMap[m.processName].ready = true; }
 
             });
-
           }
           else {
             console.log(chalkLog("NNT | XXX | NOT SAVING NN FILE TO DROPBOX ... LESS THAN MIN SUCCESS"
