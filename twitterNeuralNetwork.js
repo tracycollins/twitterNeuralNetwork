@@ -1,6 +1,10 @@
 /*jslint node: true */
 "use strict";
 
+const ONE_SECOND = 1000;
+const ONE_MINUTE = 60 * ONE_SECOND;
+const ONE_HOUR = 60 * ONE_MINUTE;
+
 const neataptic = require("neataptic");
 const twitterTextParser = require("@threeceelabs/twitter-text-parser");
 const defaults = require("object.defaults/immutable");
@@ -150,6 +154,7 @@ let slackChannel = "#nn";
 
 let configuration = {};
 
+configuration.initMainIntervalTime = ONE_HOUR;
 configuration.enableRequiredTrainingSet = false;
 
 configuration.maxNeuralNetworkChildern = (process.env.TNN_MAX_NEURAL_NETWORK_CHILDREN !== undefined) ? process.env.TNN_MAX_NEURAL_NETWORK_CHILDREN : DEFAULT_MAX_NEURAL_NETWORK_CHILDREN;
@@ -633,6 +638,8 @@ function showStats(options){
 function quit(options){
 
   console.log(chalkAlert( "\n\nNNT | ... QUITTING ...\n\n" ));
+
+  clearInterval(initMainInterval);
 
   statsObj.elapsed = msToTime(moment().valueOf() - statsObj.startTime);
 
@@ -2908,6 +2915,10 @@ let nnChildId = "NNC_" + nnChildIndex;
 
 function initMain(cnf, callback){
 
+  console.log(chalkAlert("INIT MAIN"));
+
+  trainingSetReady = false;
+
   initClassifiedUserHashmap(cnf.classifiedUsersFolder, cnf.classifiedUsersFile, function(err, classifiedUsersObj){
 
     if (err) {
@@ -3026,9 +3037,8 @@ function initMain(cnf, callback){
         callback(null, trainingSetNormalized.length);
       });
     }
-
-
   });
+
 }
 
 
@@ -3503,10 +3513,25 @@ if (process.env.TNN_BATCH_MODE){
   slackChannel = "#nn_batch";
 }
 
+let initMainInterval;
+
 initTimeout(function(){
 
   initMain(configuration, function(){
     debug(chalkLog("INIT MAIN CALLBACK"));
   });
+
+  clearInterval(initMainInterval);
+
+  initMainInterval = setInterval(function(){
+
+    console.log(chalkAlert("INIT MAIN INTERVAL"));
+
+    initMain(configuration, function(){
+      debug(chalkLog("INIT MAIN CALLBACK"));
+    });
+
+  }, configuration.initMainIntervalTime);
+
 });
 
