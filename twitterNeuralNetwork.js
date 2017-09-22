@@ -464,7 +464,9 @@ const dropboxConfigHostFolder = "/config/utility/" + hostname;
 
 const dropboxConfigFile = hostname + "_" + configuration.DROPBOX.DROPBOX_TNN_CONFIG_FILE;
 
+const defaultTrainingSetFolder = dropboxConfigDefaultFolder + "/trainingSets";
 const trainingSetFolder = dropboxConfigHostFolder + "/trainingSets";
+const defaultTrainingSetFile = "trainingSet.json";
 let trainingSetFile = "trainingSet.json";
 
 const statsFolder = "/stats/" + hostname + "/neuralNetwork";
@@ -2934,12 +2936,12 @@ function initMain(cnf, callback){
 
     if (!cnf.createTrainingSet && cnf.loadTrainingSetFromFile) {
 
-      console.log(chalkInfo("NNT | LOADING TRAINING SET FROM FILE " + trainingSetFolder + "/" + trainingSetFile));
+      console.log(chalkInfo("NNT | LOADING DEFAULT TRAINING SET FROM FILE " + defaultTrainingSetFolder + "/" + defaultTrainingSetFile));
 
-      loadFile(trainingSetFolder, trainingSetFile, function(err, tsNormal){
+      loadFile(defaultTrainingSetFolder, defaultTrainingSetFile, function(err, tsNormal){
 
         if (err) {
-          console.error(chalkError("NNT | ERROR: loadFile: " + trainingSetFolder + "/" + trainingSetFile));
+          console.error(chalkError("NNT | ERROR: loadFile: " + defaultTrainingSetFolder + "/" + defaultTrainingSetFile));
           callback(err, null);
         }
         else {
@@ -3014,6 +3016,13 @@ function initMain(cnf, callback){
 
         // saveFile({folder: trainingSetFolder, file: "trainingSetBasic", obj: trainingSetBasic});
 
+        if (hostname === "google") {
+          console.log(chalkAlert("NNT | SAVED DEFAULT TRAINING SET TO DROPBOX"
+            + " | " + defaultTrainingSetFolder + "/" + defaultTrainingSetFile
+          );
+          saveFile({folder: defaultTrainingSetFolder, file: defaultTrainingSetFile, obj: trainingSetNormalizedTotal});
+        }
+
         saveFile({
           folder: trainingSetFolder, 
           file: trainingSetFile, 
@@ -3021,9 +3030,10 @@ function initMain(cnf, callback){
         }, function(err){
 
           if (err) {
-            console.error("*** SAVE TOTAL TRAINING SET FILE ERROR | " + trainingSetFolder + "/" + trainingSetFile 
+            console.error(chalkError("*** SAVE TOTAL TRAINING SET FILE ERROR"
+              + " | " + trainingSetFolder + "/" + trainingSetFile 
               + "\n" + jsonPrint(err)
-            );
+            ));
           }
           else {
             console.log("NNT | SAVED TOTAL TRAINING SET TO DROPBOX"
