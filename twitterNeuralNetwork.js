@@ -3019,7 +3019,7 @@ function initMain(cnf, callback){
         if (hostname === "google") {
           console.log(chalkAlert("NNT | SAVED DEFAULT TRAINING SET TO DROPBOX"
             + " | " + defaultTrainingSetFolder + "/" + defaultTrainingSetFile
-          );
+          ));
           saveFile({folder: defaultTrainingSetFolder, file: defaultTrainingSetFile, obj: trainingSetNormalizedTotal});
         }
 
