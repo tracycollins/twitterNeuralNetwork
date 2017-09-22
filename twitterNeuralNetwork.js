@@ -2551,6 +2551,8 @@ function updateClassifiedUsers(cnf, callback){
     testObj.inputHits = totalInputHits;
     testObj.inputHitAverage = inputHitAverage;
 
+    trainingSetNormalizedTotal = [];
+
     async.each(trainingSet, function(dataObj, cb3){
 
       if (maxMagnitude > 0) {
