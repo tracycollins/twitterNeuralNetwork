@@ -3539,9 +3539,11 @@ initTimeout(function(){
 
   initMainInterval = setInterval(function(){
 
+    console.log(chalkAlert("--- INIT MAIN INTERVAL | trainingSetReady: " + trainingSetReady));
+
     if (trainingSetReady) {
 
-      console.log(chalkAlert("INIT MAIN INTERVAL"));
+      console.log(chalkAlert("+++ INIT MAIN INTERVAL | trainingSetReady: " + trainingSetReady));
 
       initMain(configuration, function(){
         debug(chalkLog("INIT MAIN CALLBACK"));
