@@ -2553,6 +2553,7 @@ function updateClassifiedUsers(cnf, callback){
     testObj.inputHits = totalInputHits;
     testObj.inputHitAverage = inputHitAverage;
 
+    trainingSetNormalized = [];
     trainingSetNormalizedTotal = [];
 
     async.each(trainingSet, function(dataObj, cb3){
