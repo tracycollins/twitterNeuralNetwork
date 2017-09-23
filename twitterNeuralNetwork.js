@@ -5,7 +5,7 @@ const ONE_SECOND = 1000;
 const ONE_MINUTE = 60 * ONE_SECOND;
 const ONE_HOUR = 60 * ONE_MINUTE;
 
-const DEFAULT_INIT_MAIN_INTERVAL = process.env.INIT_MAIN_INTERVAL || ONE_MINUTE;
+const DEFAULT_INIT_MAIN_INTERVAL = process.env.INIT_MAIN_INTERVAL || ONE_HOUR;
 
 const neataptic = require("neataptic");
 const twitterTextParser = require("@threeceelabs/twitter-text-parser");
