@@ -5,6 +5,8 @@ const ONE_SECOND = 1000;
 const ONE_MINUTE = 60 * ONE_SECOND;
 const ONE_HOUR = 60 * ONE_MINUTE;
 
+const DEFAULT_INIT_MAIN_INTERVAL = process.env.INIT_MAIN_INTERVAL || ONE_MINUTE;
+
 const neataptic = require("neataptic");
 const twitterTextParser = require("@threeceelabs/twitter-text-parser");
 const defaults = require("object.defaults/immutable");
@@ -154,7 +156,7 @@ let slackChannel = "#nn";
 
 let configuration = {};
 
-configuration.initMainIntervalTime = ONE_HOUR;
+configuration.initMainIntervalTime = DEFAULT_INIT_MAIN_INTERVAL;
 configuration.enableRequiredTrainingSet = false;
 
 configuration.maxNeuralNetworkChildern = (process.env.TNN_MAX_NEURAL_NETWORK_CHILDREN !== undefined) ? process.env.TNN_MAX_NEURAL_NETWORK_CHILDREN : DEFAULT_MAX_NEURAL_NETWORK_CHILDREN;
@@ -3537,11 +3539,15 @@ initTimeout(function(){
 
   initMainInterval = setInterval(function(){
 
-    console.log(chalkAlert("INIT MAIN INTERVAL"));
+    if (trainingSetReady) {
 
-    initMain(configuration, function(){
-      debug(chalkLog("INIT MAIN CALLBACK"));
-    });
+      console.log(chalkAlert("INIT MAIN INTERVAL"));
+
+      initMain(configuration, function(){
+        debug(chalkLog("INIT MAIN CALLBACK"));
+      });
+
+    }
 
   }, configuration.initMainIntervalTime);
 
