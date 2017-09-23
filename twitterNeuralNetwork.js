@@ -2048,6 +2048,9 @@ configEvents.once("INIT_MONGODB", function(){
 // FUTURE: break up into updateClassifiedUsers and createTrainingSet
 function updateClassifiedUsers(cnf, callback){
 
+  trainingSet = [];
+  trainingSetNormalized = [];
+  trainingSetNormalizedTotal = [];
 
   let classifiedUserIds = Object.keys(classifiedUserHashmap);
   let maxMagnitude = 0;
@@ -2545,16 +2548,18 @@ function updateClassifiedUsers(cnf, callback){
 
     let inputHitAverage = totalInputHits/trainingSet.length;
 
-    console.log(chalkBlue("\nNNT | MAX MAGNITUDE:        " + maxMagnitude));
-    console.log(chalkBlue("NNT | TOTAL INPUT HITS:     " + totalInputHits));
-    console.log(chalkBlue("NNT | AVE INPUT HITS/DATUM: " + inputHitAverage.toFixed(3)));
+    console.log(chalkBlue("\nNNT | TRAINING SET LENGTH: " + trainingSet.length));
+    console.log(chalkBlue("NNT | MAX MAGNITUDE:         " + maxMagnitude));
+    console.log(chalkBlue("NNT | TOTAL INPUT HITS:      " + totalInputHits));
+    console.log(chalkBlue("NNT | AVE INPUT HITS/DATUM:  " + inputHitAverage.toFixed(3)));
+
     statsObj.normalization.magnitude.max = maxMagnitude;
 
     testObj.inputHits = totalInputHits;
     testObj.inputHitAverage = inputHitAverage;
 
-    trainingSetNormalized = [];
-    trainingSetNormalizedTotal = [];
+    // trainingSetNormalized = [];
+    // trainingSetNormalizedTotal = [];
 
     async.each(trainingSet, function(dataObj, cb3){
 
