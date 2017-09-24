@@ -156,6 +156,8 @@ let slackChannel = "#nn";
 
 let configuration = {};
 
+configuration.enableSeedNetwork = true;
+
 configuration.initMainIntervalTime = DEFAULT_INIT_MAIN_INTERVAL;
 configuration.enableRequiredTrainingSet = false;
 
@@ -1838,10 +1840,18 @@ function initialize(cnf, callback){
             console.log("NNT | --> COMMAND LINE CONFIG | train.hiddenLayerSize: " + cnf.train.hiddenLayerSize);
           }
           else if (arg === "seedNetworkId") {
-            cnf.train.networkId = commandLineConfig[arg];
-            cnf.evolve.networkId = commandLineConfig[arg];
-            console.log("NNT | --> COMMAND LINE CONFIG | train.network.networkId: " + cnf.train.networkId);
-            console.log("NNT | --> COMMAND LINE CONFIG | evolve.network.networkId: " + cnf.evolve.networkId);
+            if (commandLineConfig[arg] === "none") {
+              console.log("NNT | --> COMMAND LINE CONFIG | train.network.networkId: NONE");
+              console.log("NNT | --> COMMAND LINE CONFIG | evolve.network.networkId: NONE");
+              cnf.enableSeedNetwork = false;
+            }
+            else {
+              cnf.enableSeedNetwork = true;
+              cnf.train.networkId = commandLineConfig[arg];
+              cnf.evolve.networkId = commandLineConfig[arg];
+              console.log("NNT | --> COMMAND LINE CONFIG | train.network.networkId: " + cnf.train.networkId);
+              console.log("NNT | --> COMMAND LINE CONFIG | evolve.network.networkId: " + cnf.evolve.networkId);
+            }
           }
           else if (arg === "evolveIterations") {
             cnf.train.iterations = commandLineConfig[arg];
@@ -2761,7 +2771,7 @@ function generateRandomEvolveConfig (cnf, callback){
 
   config.seedNetworkId = (Math.random() < SEED_NETWORK_PROBABILITY) ? randomItem(bestNetworkHashMap.keys()) : false;
 
-  if (config.seedNetworkId) {
+  if (cnf.enableSeedNetwork && config.seedNetworkId) {
     config.network = bestNetworkHashMap.get(config.seedNetworkId).network;
   }
   else {
