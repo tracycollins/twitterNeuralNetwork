@@ -75,8 +75,8 @@ const EVOLVE_COST_ARRAY = [
   "MSE",
   "MSE",
   "MSE",
-  "BINARY",
-  "BINARY"
+  // "BINARY",
+  // "BINARY"
   // "MAE",
   // "MAPE",
   // "MSLE",
