@@ -298,6 +298,7 @@ function testEvolve(params, callback){
     mutation: neataptic.methods.mutation.FFW,
     equal: true,
     popsize: 100,
+    growth: 0.0001,
     elitism: 10,
     // log: 100,
     error: 0.03,
@@ -384,6 +385,7 @@ function evolve(params, callback){
   options.mutation = neataptic.methods.mutation.FFW;
   options.mutationRate = params.mutationRate;
   options.popsize = params.popsize;
+  options.growth = params.growth;
 
   let schedStartTime = moment().valueOf();
 
@@ -960,6 +962,7 @@ process.on("message", function(m) {
         iterations: m.iterations,
         mutationRate: m.mutationRate,
         cost: m.cost,
+        growth: m.growth,
         clear: m.clear
       };
 
@@ -976,6 +979,7 @@ process.on("message", function(m) {
         clear: m.clear,
         error: m.error,
         popsize: m.popsize,
+        growth: m.growth,
         elitism: m.elitism,
         iterations: m.iterations,
         log: m.log
@@ -1110,7 +1114,15 @@ function initialize(cnf, callback){
   cnf.globalTestMode = process.env.TNN_GLOBAL_TEST_MODE || false ;
   cnf.testMode = process.env.TNN_TEST_MODE || false ;
   cnf.quitOnError = process.env.TNN_QUIT_ON_ERROR || false ;
-  cnf.crossEntropyWorkAroundEnabled = process.env.TNN_CROSS_ENTROPY_WORKAROUND_ENABLED || false;
+
+  if (process.env.TNN_CROSS_ENTROPY_WORKAROUND_ENABLED !== undefined){
+    if (process.env.TNN_CROSS_ENTROPY_WORKAROUND_ENABLED === "false" || !process.env.TNN_CROSS_ENTROPY_WORKAROUND_ENABLED){
+      cnf.crossEntropyWorkAroundEnabled = false;
+    }
+    else {
+      cnf.crossEntropyWorkAroundEnabled = true;
+    }
+  }
 
   cnf.statsUpdateIntervalTime = process.env.TNN_STATS_UPDATE_INTERVAL || 60000;
 
