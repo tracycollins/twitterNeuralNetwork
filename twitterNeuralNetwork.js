@@ -2471,7 +2471,7 @@ function updateClassifiedUsers(cnf, callback){
                     console.log(chalkInfo("@" + user.screenName + " | " + classText + " | " + results.text));
                     text = text + "\n" + results.text;
                   }
-                  printHistogram("@" + user.screenName + " | " + classText, results.label.images);
+                  // printHistogram("@" + user.screenName + " | " + classText, results.label.images);
                   cb(null, text, results);
                 }
               });
@@ -2509,7 +2509,7 @@ function updateClassifiedUsers(cnf, callback){
               updateGlobalImageHistogram({user: user, histogram: bannerResults.label.images});
             }
 
-            console.log(chalkInfo("hist\n" + jsonPrint(hist)));
+            debug(chalkInfo("hist\n" + jsonPrint(hist)));
             // update user histogram in db
 
             userServer.updateHistograms({user: user, histograms: hist}, function(err, updateduser){
