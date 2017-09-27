@@ -2625,9 +2625,7 @@ function updateClassifiedUsers(cnf, callback){
                 const userInputHitAverage = 100 * trainingSetDatum.inputHits.length / globalInputIndex;
 
                 console.log(chk("=+= PARSE USER TEXT COMPLETE"
-                  + " | [ CL: " + statsObj.users.updatedClassified 
-                  + " UNCL: " + statsObj.users.notClassified 
-                  + " TOTAL: " + classifiedUserIds.length + " USERS ] "
+                  + " | " + statsObj.users.updatedClassified + "/" + classifiedUserIds.length + " USERS"
                   + " | INPUT HITS: " + trainingSetDatum.inputHits.length + "/" + globalInputIndex
                   + " - " + userInputHitAverage.toFixed(2)
                   + " | @" + trainingSetDatum.user.screenName
