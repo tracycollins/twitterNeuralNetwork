@@ -72,10 +72,7 @@ const DEFAULT_EVOLVE_GROWTH = 0.0001;
 
 const EVOLVE_COST_ARRAY = [
   "CROSS_ENTROPY",
-  "MSE",
-  "MSE",
-  "MSE",
-  // "BINARY",
+  "MSE"
   // "BINARY"
   // "MAE",
   // "MAPE",
