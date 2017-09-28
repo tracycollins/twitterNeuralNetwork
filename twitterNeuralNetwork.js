@@ -300,6 +300,7 @@ statsObj.users.updatedClassified = 0;
 statsObj.users.notFound = 0;
 statsObj.users.screenNameUndefined = 0;
 statsObj.errors = {};
+statsObj.errors.imageParse = {};
 statsObj.errors.users = {};
 statsObj.errors.users.findOne = 0;
 statsObj.startTimeMoment = moment();
@@ -2454,10 +2455,15 @@ function updateClassifiedUsers(cnf, callback){
             if (user.bannerImageUrl) {
               twitterImageParser.parseImage(user.bannerImageUrl, { screenName: user.screenName}, function(err, results){
                 if (err) {
-                  console.log(chalkError("PARSE BANNER IMAGE ERROR"
-                    + "\nREQ\n" + jsonPrint(results)
-                    + "\nERR\n" + jsonPrint(err)
+                  console.log(chalkError("*** PARSE BANNER IMAGE ERROR"
+                    + "REQ | " + results.text
+                    + "ERR | " + err.code + " | " + err.note
                   ));
+                  console.error(chalkError("*** PARSE BANNER IMAGE ERROR"
+                    + "REQ | " + results.text
+                    + "ERR | " + err.code + " | " + err.note
+                  ));
+                  statsObj.errors.imageParse[err.code] = (statsObj.errors.imageParse[err.code] === undefined) ? 1 : statsObj.errors.imageParse[err.code] += 1;
                   cb(null, text, null);
                 }
                 else {
