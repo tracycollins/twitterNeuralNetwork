@@ -2452,7 +2452,7 @@ function updateClassifiedUsers(cnf, callback){
             }
           },
           function userBannerImage(text, cb) {
-            if (user.bannerImageUrl) {
+            if (user.bannerImageUrl && !user.bannerImageAnalyzed) {
               twitterImageParser.parseImage(user.bannerImageUrl, { screenName: user.screenName}, function(err, results){
                 if (err) {
                   console.log(chalkError("*** PARSE BANNER IMAGE ERROR"
@@ -2478,6 +2478,12 @@ function updateClassifiedUsers(cnf, callback){
                   // printHistogram("@" + user.screenName + " | " + classText, results.label.images);
                   cb(null, text, results);
                 }
+              });
+            }
+            else if (user.bannerImageUrl && user.bannerImageAnalyzed) {
+              console.log(chalkAlert("BANNER ANALYZED: @" + user.screenName + " | " + jsonPrint(user.histograms.images)));
+              async.setImmediate(function() {
+                cb(null, text, null);
               });
             }
             else {
