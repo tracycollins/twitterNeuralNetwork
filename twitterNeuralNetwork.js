@@ -2525,7 +2525,7 @@ function updateClassifiedUsers(cnf, callback){
 
               // CREATE USER TRAINING/TEST SET DATUM
 
-              let typeIndexOffset = 0;  // to allow for paralles trainingSetDatum creation
+              let typeIndexOffset = 2;  // to allow for paralles trainingSetDatum creation
               // let trainingSetDatumInputIndex = 0;
 
               async.eachSeries(inputTypes, function(type, cb1){  // inputTypes = [ emoji, screenName, hashtag, word, url ]
