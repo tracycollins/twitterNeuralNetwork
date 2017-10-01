@@ -2557,7 +2557,7 @@ function updateClassifiedUsers(cnf, callback){
                     // trainingSetDatum.inputHits += 1;
                     trainingSetDatum.inputHits.push({ index: element });
 
-                    console.log(chalkBlue("+ DATUM BIT: " + type
+                    debug(chalkBlue("+ DATUM BIT: " + type
                       + " | typeIndexOffset: " + typeIndexOffset
                       + " | INPUT HITS: " + trainingSetDatum.inputHits.length 
                       + " | ["  + trainingSetDatumInputIndex + " / " + index + "] " + element + ": " + userHistograms[type][element]
