@@ -2613,7 +2613,7 @@ function updateClassifiedUsers(cnf, callback){
 
                   typeIndexOffset += inputArrays[type].length; 
 
-                  console.log(chalkAlert(
+                  debug(chalkAlert(
                     "typeIndexOffset: " + typeIndexOffset
                     + " | type: " + type
                     + " | inputArrays[type].length: " + inputArrays[type].length
