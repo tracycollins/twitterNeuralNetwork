@@ -2467,6 +2467,7 @@ function updateClassifiedUsers(cnf, callback){
                   cb(null, text, null);
                 }
                 else {
+                  user.bannerImageAnalyzed = true;
                   debug(chalkAlert("PARSE BANNER IMAGE"
                     + " | RESULTS\n" + jsonPrint(results)
                   ));
