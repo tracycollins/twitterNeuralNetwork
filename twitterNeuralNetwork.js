@@ -2199,7 +2199,7 @@ function updateClassifiedUsers(cnf, callback){
 
   statsObj.users.updatedClassified = 0;
 
-  async.eachLimit(classifiedUserIds, 5, function(userId, cb0){
+  async.eachLimit(classifiedUserIds, 10, function(userId, cb0){
 
     debug(chalkInfo("updateClassifiedUsers: userId: " + userId));
 
@@ -2546,7 +2546,7 @@ function updateClassifiedUsers(cnf, callback){
                 //    for each input element of input type, 
                 //       add 1 to trainingSetDatum arrar if element is in userHistogram
 
-                async.eachOfLimit(inputArrays[type], 10, function(element, index, cb2){
+                async.eachOf(inputArrays[type], function(element, index, cb2){
 
                   const trainingSetDatumInputIndex = typeIndexOffset + index;
 
