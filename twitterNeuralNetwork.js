@@ -2199,7 +2199,7 @@ function updateClassifiedUsers(cnf, callback){
 
   statsObj.users.updatedClassified = 0;
 
-  async.eachSeries(classifiedUserIds, function(userId, cb0){
+  async.eachLimit(classifiedUserIds, 5, function(userId, cb0){
 
     debug(chalkInfo("updateClassifiedUsers: userId: " + userId));
 
@@ -2456,13 +2456,13 @@ function updateClassifiedUsers(cnf, callback){
               twitterImageParser.parseImage(user.bannerImageUrl, { screenName: user.screenName}, function(err, results){
                 if (err) {
                   console.log(chalkError("*** PARSE BANNER IMAGE ERROR"
-                    + "REQ | " + results.text
-                    + "ERR | " + err.code + " | " + err.note
+                    + " | REQ: " + results.text
+                    + " | ERR: " + err.code + " | " + err.note
                   ));
-                  console.error(chalkError("*** PARSE BANNER IMAGE ERROR"
-                    + "REQ | " + results.text
-                    + "ERR | " + err.code + " | " + err.note
-                  ));
+                  // console.error(chalkError("*** PARSE BANNER IMAGE ERROR"
+                  //   + " | REQ: " + results.text
+                  //   + " | ERR: " + err.code + " | " + err.note
+                  // ));
                   statsObj.errors.imageParse[err.code] = (statsObj.errors.imageParse[err.code] === undefined) ? 1 : statsObj.errors.imageParse[err.code] += 1;
                   cb(null, text, null);
                 }
@@ -2494,10 +2494,6 @@ function updateClassifiedUsers(cnf, callback){
 
           if (!text || (text === undefined)) { text = " "; }
 
-          // if (bannerResults && bannerResults.text) {
-          //   text = text + "\n" + bannerResults.text;
-          // }
-
           // parse the user's text for hashtags, urls, emoji, screenNames, and words; create histogram
 
           twitterTextParser.parseText(text, {updateGlobalHistograms: true}, function(err, hist){
@@ -2525,11 +2521,12 @@ function updateClassifiedUsers(cnf, callback){
               const userHistograms = updateduser.histograms;
 
               // debug(chalkLog("user.description + status histograms\n" + jsonPrint(userHistograms)));
-
               // debug("user.description + status\n" + jsonPrint(text));
 
-
               // CREATE USER TRAINING/TEST SET DATUM
+
+              let typeIndexOffset = 0;  // to allow for paralles trainingSetDatum creation
+              // let trainingSetDatumInputIndex = 0;
 
               async.eachSeries(inputTypes, function(type, cb1){  // inputTypes = [ emoji, screenName, hashtag, word, url ]
 
@@ -2549,24 +2546,28 @@ function updateClassifiedUsers(cnf, callback){
                 //    for each input element of input type, 
                 //       add 1 to trainingSetDatum arrar if element is in userHistogram
 
-                async.eachOfSeries(inputArrays[type], function(element, index, cb2){
+                async.eachOfLimit(inputArrays[type], 10, function(element, index, cb2){
+
+                  const trainingSetDatumInputIndex = typeIndexOffset + index;
 
                   if ((userHistograms[type] !== undefined) && userHistograms[type][element]) {
 
-                    trainingSetDatum.input.push(1);
+                    // trainingSetDatum.input.push(1);
+                    trainingSetDatum.input[trainingSetDatumInputIndex] = 1;
                     // trainingSetDatum.inputHits += 1;
                     trainingSetDatum.inputHits.push({ index: element });
 
-                    debug(chalkBlue("+ DATUM BIT: " + type
+                    console.log(chalkBlue("+ DATUM BIT: " + type
+                      + " | typeIndexOffset: " + typeIndexOffset
                       + " | INPUT HITS: " + trainingSetDatum.inputHits.length 
-                      + " | ["  + globalInputIndex + " / " + index + "] " + element + ": " + userHistograms[type][element]
+                      + " | ["  + trainingSetDatumInputIndex + " / " + index + "] " + element + ": " + userHistograms[type][element]
                       + " | @" + trainingSetDatum.user.screenName 
                     ));
 
                     if ((globalInputIndex % 100 === 0) && (index % 10 === 0)){
                       console.log(chalkBlue("+ DATUM BIT: " + type
                         + " | INPUT HITS: " + trainingSetDatum.inputHits.length 
-                        + " | ["  + globalInputIndex + " / " + index + "] " + element + ": " + userHistograms[type][element]
+                        + " | ["  + trainingSetDatumInputIndex + " / " + index + "] " + element + ": " + userHistograms[type][element]
                         + " | @" + trainingSetDatum.user.screenName 
                       ));
                     }
@@ -2580,7 +2581,9 @@ function updateClassifiedUsers(cnf, callback){
                   }
                   else {
 
-                    trainingSetDatum.input.push(0);
+                    // trainingSetDatum.input.push(0);
+                    trainingSetDatum.input[trainingSetDatumInputIndex] = 0;
+                    // trainingSetDatum.inputHits[trainingSetDatumInputIndex] = { index: element };
                     // debug(chalkInfo("- DATUM BIT: " + type
                     //   + " | " + element 
                     // ));
@@ -2606,7 +2609,16 @@ function updateClassifiedUsers(cnf, callback){
                     });
 
                   }
-                }, function(err){
+                }, function(err){ // async.eachOfSeries(inputArrays[type]
+
+                  typeIndexOffset += inputArrays[type].length; 
+
+                  console.log(chalkAlert(
+                    "typeIndexOffset: " + typeIndexOffset
+                    + " | type: " + type
+                    + " | inputArrays[type].length: " + inputArrays[type].length
+                  ));
+
                   if (err) {
                     console.error("*** PARSE TEXT ERROR\n" + err);
                     return cb1(err);
@@ -2614,8 +2626,7 @@ function updateClassifiedUsers(cnf, callback){
                   debug(chalkAlert("DONE ARRAY: " + type));
                   cb1();
                 });
-
-              }, function(err){
+              }, function(err){  // async.eachSeries(inputTypes...)
 
                 if (err) {
                   console.error("*** PARSE TEXT ERROR\n" + err);
