@@ -295,6 +295,10 @@ statsObj.hostname = hostname;
 statsObj.pid = process.pid;
 statsObj.cpus = os.cpus().length;
 statsObj.users = {};
+statsObj.users.imageParse = {};
+statsObj.users.imageParse.parsed = 0;
+statsObj.users.imageParse.skipped = 0;
+
 statsObj.users.notClassified = 0;
 statsObj.users.updatedClassified = 0;
 statsObj.users.notFound = 0;
@@ -2467,6 +2471,7 @@ function updateClassifiedUsers(cnf, callback){
                   cb(null, text, null);
                 }
                 else {
+                  statsObj.users.imageParse.parsed += 1;
                   user.bannerImageAnalyzed = true;
                   debug(chalkAlert("PARSE BANNER IMAGE"
                     + " | RESULTS\n" + jsonPrint(results)
@@ -2481,7 +2486,8 @@ function updateClassifiedUsers(cnf, callback){
               });
             }
             else if (user.bannerImageUrl && user.bannerImageAnalyzed) {
-              console.log(chalkAlert("BANNER ANALYZED: @" + user.screenName + " | " + jsonPrint(user.histograms.images)));
+              statsObj.users.imageParse.skipped += 1;
+              console.log(chalkAlert("BANNER ANALYZED: @" + user.screenName + " | HITS: " + Object.keys(user.histograms.images)));
               async.setImmediate(function() {
                 cb(null, text, null);
               });
