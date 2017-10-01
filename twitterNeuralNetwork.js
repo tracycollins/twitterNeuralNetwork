@@ -2203,7 +2203,7 @@ function updateClassifiedUsers(cnf, callback){
 
   statsObj.users.updatedClassified = 0;
 
-  async.eachLimit(classifiedUserIds, 10, function(userId, cb0){
+  async.eachLimit(classifiedUserIds, 5, function(userId, cb0){
 
     debug(chalkInfo("updateClassifiedUsers: userId: " + userId));
 
