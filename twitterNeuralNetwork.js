@@ -2487,7 +2487,8 @@ function updateClassifiedUsers(cnf, callback){
             }
             else if (user.bannerImageUrl && user.bannerImageAnalyzed) {
               statsObj.users.imageParse.skipped += 1;
-              console.log(chalkAlert("BANNER ANALYZED: @" + user.screenName + " | HITS: " + Object.keys(user.histograms.images)));
+              const imageHits = (user.histograms.images === undefined) ? 0 : Object.keys(user.histograms.images);
+              console.log(chalkAlert("BANNER ANALYZED: @" + user.screenName + " | HITS: " + imageHits));
               async.setImmediate(function() {
                 cb(null, text, null);
               });
