@@ -6,7 +6,7 @@ const ONE_MINUTE = 60 * ONE_SECOND;
 const ONE_HOUR = 60 * ONE_MINUTE;
 
 const DEFAULT_MIN_SUCCESS_RATE = 30; // percent
-const DEFAULT_LOCAL_MIN_SUCCESS_RATE = 0.1; // percent
+const DEFAULT_LOCAL_MIN_SUCCESS_RATE = 1; // percent
 
 const DEFAULT_INIT_MAIN_INTERVAL = process.env.INIT_MAIN_INTERVAL || 2*ONE_HOUR;
 
