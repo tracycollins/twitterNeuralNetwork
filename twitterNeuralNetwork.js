@@ -5,8 +5,8 @@ const ONE_SECOND = 1000;
 const ONE_MINUTE = 60 * ONE_SECOND;
 const ONE_HOUR = 60 * ONE_MINUTE;
 
-const DEFAULT_MIN_SUCCESS_RATE = 30; // percent
-const DEFAULT_LOCAL_MIN_SUCCESS_RATE = 1; // percent
+const DEFAULT_MIN_SUCCESS_RATE = 45; // percent
+const DEFAULT_LOCAL_MIN_SUCCESS_RATE = 10; // percent
 
 const DEFAULT_INIT_MAIN_INTERVAL = process.env.INIT_MAIN_INTERVAL || 2*ONE_HOUR;
 
@@ -3730,7 +3730,10 @@ function initNeuralNetworkChild(cnf, callback){
 
             printNetworkObj("NNT | " + networkObj.networkId, networkObj);
 
-            if (neuralNetworkChildHashMap[m.processName] !== undefined) { neuralNetworkChildHashMap[m.processName].ready = true; }
+            if (neuralNetworkChildHashMap[m.processName] !== undefined) { 
+              neuralNetworkChildHashMap[m.processName] = {}; 
+              delete neuralNetworkChildHashMap[m.processName]; 
+            }
           }
 
         });
