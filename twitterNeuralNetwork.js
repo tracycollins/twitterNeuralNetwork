@@ -1,6 +1,8 @@
 /*jslint node: true */
 "use strict";
 
+const OFFLINE_MODE = false;
+
 const ONE_SECOND = 1000;
 const ONE_MINUTE = 60 * ONE_SECOND;
 const ONE_HOUR = 60 * ONE_MINUTE;
@@ -16,6 +18,7 @@ const twitterImageParser = require("@threeceelabs/twitter-image-parser");
 const defaults = require("object.defaults/immutable");
 const deepcopy = require("deep-copy");
 const table = require("text-table");
+const fs = require("fs");
 
 const inputTypes = ["emoji", "hashtags", "images", "mentions", "urls", "words"];
 inputTypes.sort();
@@ -35,7 +38,6 @@ const DEFAULT_NETWORK_CREATE_MODE = "evolve";
 const DEFAULT_ITERATIONS = 10;
 const DEFAULT_SEED_NETWORK_ID = false;
 
-// const OFFLINE_MODE = true;
 // const DEFAULT_ENABLE_RANDOM = true;
 // const DEFAULT_BATCH_MAX_INSTANCES = 3;
 const DEFAULT_BEST_NETWORK_NUMBER = 5;
@@ -983,10 +985,40 @@ function loadFile(path, file, callback) {
   debug(chalkInfo("LOAD FILE " + file));
   debug(chalkInfo("FULL PATH " + path + "/" + file));
 
-  dropboxClient.filesDownload({path: path + "/" + file})
+  let fullPath = path + "/" + file;
+
+  if (OFFLINE_MODE) {
+    if (hostname === "mbp2") {
+      fullPath = "/Users/tc/Dropbox/Apps/wordAssociation" + path + "/" + file;
+      debug(chalkInfo("OFFLINE_MODE: FULL PATH " + fullPath));
+    }
+    fs.readFile(fullPath, "utf8", function(err, data) {
+      debug(chalkLog(getTimeStamp()
+        + " | LOADING FILE FROM DROPBOX FILE"
+        + " | " + fullPath
+        // + "\n" + jsonPrint(data)
+      ));
+
+      if (file.match(/\.json$/gi)) {
+        try {
+          let fileObj = JSON.parse(data);
+          callback(null, fileObj);
+        }
+        catch(e){
+          console.trace(chalkError("NNT | JSON PARSE ERROR: " + e));
+          // callback(e, null);
+        }
+      }
+      else {
+        callback(null, null);
+      }
+    });
+   }
+  else {
+    dropboxClient.filesDownload({path: fullPath})
     .then(function(data) {
       debug(chalkLog(getTimeStamp()
-        + " | LOADING FILE FROM DROPBOX FILE: " + path + "/" + file
+        + " | LOADING FILE FROM DROPBOX FILE: " + fullPath
       ));
 
       let payload = data.fileBinary;
@@ -1007,18 +1039,18 @@ function loadFile(path, file, callback) {
       }
     })
     .catch(function(error) {
-      console.log(chalkError("NNT | DROPBOX loadFile ERROR: " + file + "\n" + error));
-      console.log(chalkError("NNT | !!! DROPBOX READ " + file + " ERROR"));
+      console.log(chalkError("NNT | DROPBOX loadFile ERROR: " + fullPath + "\n" + error));
+      console.log(chalkError("NNT | !!! DROPBOX READ " + fullPath + " ERROR"));
       console.log(chalkError("NNT | " + jsonPrint(error.error)));
 
       if (error.status === 404) {
-        console.error(chalkError("NNT | !!! DROPBOX READ FILE " + file + " NOT FOUND"
+        console.error(chalkError("NNT | !!! DROPBOX READ FILE " + fullPath + " NOT FOUND"
           + " ... SKIPPING ...")
         );
         return(callback(null, null));
       }
       if (error.status === 409) {
-        console.error(chalkError("NNT | !!! DROPBOX READ FILE " + file + " NOT FOUND"));
+        console.error(chalkError("NNT | !!! DROPBOX READ FILE " + fullPath + " NOT FOUND"));
         return(callback(error, null));
       }
       if (error.status === 0) {
@@ -1028,6 +1060,8 @@ function loadFile(path, file, callback) {
       }
       callback(error, null);
     });
+  }
+
 }
 
 let statsUpdateInterval;
