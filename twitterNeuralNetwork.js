@@ -7,6 +7,7 @@ const ONE_SECOND = 1000;
 const ONE_MINUTE = 60 * ONE_SECOND;
 const ONE_HOUR = 60 * ONE_MINUTE;
 
+const DEFAULT_GLOBAL_MIN_SUCCESS_RATE = 70; // percent
 const DEFAULT_MIN_SUCCESS_RATE = 45; // percent
 const DEFAULT_LOCAL_MIN_SUCCESS_RATE = 10; // percent
 
@@ -180,6 +181,10 @@ configuration.maxNeuralNetworkChildern = (process.env.TNN_MAX_NEURAL_NETWORK_CHI
 configuration.minSuccessRate = (process.env.TNN_MIN_SUCCESS_RATE !== undefined) 
   ? process.env.TNN_MIN_SUCCESS_RATE 
   : DEFAULT_MIN_SUCCESS_RATE;
+
+configuration.globalMinSuccessRate = (process.env.TNN_GLOBAL_MIN_SUCCESS_RATE !== undefined) 
+  ? process.env.TNN_GLOBAL_MIN_SUCCESS_RATE 
+  : DEFAULT_GLOBAL_MIN_SUCCESS_RATE;
 
 configuration.minLocalSuccessRate = DEFAULT_LOCAL_MIN_SUCCESS_RATE;
 configuration.loadTrainingSetFromFile = false;
@@ -3711,6 +3716,23 @@ function initNeuralNetworkChild(cnf, callback){
 
             bestNetworkFile = m.networkObj.networkId + ".json";
 
+            const entry = {
+              client_modified: moment().valueOf(),
+              name: bestNetworkFile,
+              content_hash: false
+            };
+
+            bestNetworkHashMap.set(networkObj.networkId, { entry: entry, network: networkObj});
+
+            if (results.successRate > cnf.globalMinSuccessRate) {
+
+              console.log(chalkLog("NNT | SAVING NN FILE TO DROPBOX GLOBAL BEST"
+                + " | " + globalBestNetworkFolder + "/" + bestNetworkFile
+              ));
+
+              saveFile({folder: globalBestNetworkFolder, file: bestNetworkFile, obj: networkObj});
+
+            }
             // networkCreateResultsHashmap[networkObj.networkId] = {};
             // networkCreateResultsHashmap[networkObj.networkId] = omit(networkObj, ["network", "inputs", "outputs"]);
 
