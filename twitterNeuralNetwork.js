@@ -1,7 +1,9 @@
 /*jslint node: true */
 "use strict";
 
-const OFFLINE_MODE = false;
+const OFFLINE_MODE = process.env.OFFLINE_MODE === "true" ? true : false;
+
+console.log("OFFLINE_MODE: " + OFFLINE_MODE);
 
 const ONE_SECOND = 1000;
 const ONE_MINUTE = 60 * ONE_SECOND;
