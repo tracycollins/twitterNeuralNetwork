@@ -9,7 +9,7 @@ const ONE_SECOND = 1000;
 const ONE_MINUTE = 60 * ONE_SECOND;
 const ONE_HOUR = 60 * ONE_MINUTE;
 
-const DEFAULT_GLOBAL_MIN_SUCCESS_RATE = 80; // percent
+const DEFAULT_GLOBAL_MIN_SUCCESS_RATE = 82; // percent
 const DEFAULT_MIN_SUCCESS_RATE = 75; // percent
 const DEFAULT_LOCAL_MIN_SUCCESS_RATE = 10; // percent
 
@@ -125,7 +125,6 @@ inputTypes.forEach(function(type){
 
 let inputArrays = {};
 
-
 let requiredTrainingSet = new Set();
 requiredTrainingSet.add("angela_rye");
 requiredTrainingSet.add("barackobama");
@@ -133,6 +132,7 @@ requiredTrainingSet.add("bfraser747");
 requiredTrainingSet.add("breitbartnews");
 requiredTrainingSet.add("danscavino");
 requiredTrainingSet.add("dnc");
+requiredTrainingSet.add("donaldjtrumpjr");
 requiredTrainingSet.add("foxandfriends");
 requiredTrainingSet.add("foxnews");
 requiredTrainingSet.add("gop");
@@ -158,6 +158,7 @@ requiredTrainingSet.add("realalexjones");
 requiredTrainingSet.add("realdonaldtrump");
 requiredTrainingSet.add("realjameswoods");
 requiredTrainingSet.add("senategop");
+requiredTrainingSet.add("senjohnmccain");
 requiredTrainingSet.add("sensanders");
 requiredTrainingSet.add("sheriffclarke");
 requiredTrainingSet.add("speakerryan");
@@ -3460,7 +3461,9 @@ function initNeuralNetworkChild(cnf, callback){
             + " | TEST EVOLVE XOR PASS"
           ));
 
-          if (neuralNetworkChildHashMap[m.processName] !== undefined) { neuralNetworkChildHashMap[m.processName].ready = true; }
+          if (neuralNetworkChildHashMap[m.processName] !== undefined) { 
+            neuralNetworkChildHashMap[m.processName].ready = true; 
+          }
 
           initNetworkCreateInterval(cnf);
 
@@ -3712,7 +3715,9 @@ function initNeuralNetworkChild(cnf, callback){
 
             printNetworkObj("NNT | " + networkObj.networkId, networkObj);
 
-            if (neuralNetworkChildHashMap[m.processName] !== undefined) { neuralNetworkChildHashMap[m.processName].ready = true; }
+            if (neuralNetworkChildHashMap[m.processName] !== undefined) { 
+              neuralNetworkChildHashMap[m.processName].ready = true; 
+            }
           }
           else if (results.successRate > cnf.minSuccessRate) {
 
@@ -3757,7 +3762,9 @@ function initNeuralNetworkChild(cnf, callback){
 
               printNetworkObj("NNT | " + networkObj.networkId, networkObj);
 
-              if (neuralNetworkChildHashMap[m.processName] !== undefined) { neuralNetworkChildHashMap[m.processName].ready = true; }
+              if (neuralNetworkChildHashMap[m.processName] !== undefined) { 
+                neuralNetworkChildHashMap[m.processName].ready = true;
+              }
 
             });
           }
@@ -3795,7 +3802,9 @@ function initNeuralNetworkChild(cnf, callback){
 
               printNetworkObj("NNT | " + networkObj.networkId, networkObj);
 
-              if (neuralNetworkChildHashMap[m.processName] !== undefined) { neuralNetworkChildHashMap[m.processName].ready = true; }
+              if (neuralNetworkChildHashMap[m.processName] !== undefined) { 
+                neuralNetworkChildHashMap[m.processName].ready = true; 
+              }
 
             });
           }
@@ -3808,10 +3817,15 @@ function initNeuralNetworkChild(cnf, callback){
 
             printNetworkObj("NNT | " + networkObj.networkId, networkObj);
 
+            // if (neuralNetworkChildHashMap[m.processName] !== undefined) { 
+            //   neuralNetworkChildHashMap[m.processName] = {}; 
+            //   delete neuralNetworkChildHashMap[m.processName]; 
+            // }
+
             if (neuralNetworkChildHashMap[m.processName] !== undefined) { 
-              neuralNetworkChildHashMap[m.processName] = {}; 
-              delete neuralNetworkChildHashMap[m.processName]; 
+              neuralNetworkChildHashMap[m.processName].ready = true; 
             }
+
           }
 
         });
