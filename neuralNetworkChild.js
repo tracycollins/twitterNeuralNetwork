@@ -1061,7 +1061,7 @@ process.on("message", function(m) {
             networkObj.endTime = statsObj.evolve.endTime;
             networkObj.evolve.elapsed = statsObj.training.elapsed;
 
-           if (results.iterations < evolveOptions.iterations) {
+           if (((results.error === 0) || (results.error > evolveOptions.error)) && (results.iterations < evolveOptions.iterations)) {
 
               statsObj.evolve.results.earlyComplete = true;
               networkObj.evolve.results.earlyComplete = true;
