@@ -35,7 +35,7 @@
     "random-int": "^1.0.0",
     "random-item": "^1.0.0",
     "regex": "^0.1.1",
-    "slack": "^9.0.5",
+    "slack": "^9.0.6",
     "slack-node": "^0.1.8",
     "string": "^3.3.3",
     "text-table": "^0.2.0"
