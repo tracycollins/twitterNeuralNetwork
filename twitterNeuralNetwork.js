@@ -1014,7 +1014,7 @@ function loadFile(path, file, callback) {
         }
         catch(e){
           console.trace(chalkError("NNT | JSON PARSE ERROR: " + e));
-          // callback(e, null);
+          callback(e, null);
         }
       }
       else {
