@@ -3150,7 +3150,7 @@ function initNetworkCreate(nnChildId, nnId, cnf, callback){
 
         neuralNetworkChildHashMap[nnChildId].child.send(messageObj, function(err){
           if (err) {
-            console.error(chalkError("NNT | *** NEURAL NETWORK CHILD SEND ERROR: " + err));
+            console.log(chalkError("NNT | *** NEURAL NETWORK CHILD SEND ERROR: " + err));
           }
           callback(err, null);
 
@@ -3380,7 +3380,7 @@ function initNetworkCreateInterval(cnf){
           initNetworkCreate(nnChildId, nnId, configuration, function(err, results){
             debug("initNetworkCreate results\n" + jsonPrint(results));
             if (err) {
-              console.error("NNT | *** INIT NETWORK CREATE ERROR ***\n" + jsonPrint(err));
+              console.log("NNT | *** INIT NETWORK CREATE ERROR ***\n" + jsonPrint(err));
             }
             else {
               console.log(chalkInfo("INIT NETWORK CREATE | " + nnId));
