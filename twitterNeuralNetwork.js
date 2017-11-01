@@ -1,7 +1,7 @@
 /*jslint node: true */
 "use strict";
 
-const OFFLINE_MODE = process.env.OFFLINE_MODE === "true" ? true : false;
+const OFFLINE_MODE = process.env.OFFLINE_MODE === "true" || false;
 
 console.log("OFFLINE_MODE: " + OFFLINE_MODE);
 
@@ -15,6 +15,31 @@ const DEFAULT_LOCAL_MIN_SUCCESS_RATE = 10; // percent
 
 const DEFAULT_INIT_MAIN_INTERVAL = process.env.INIT_MAIN_INTERVAL || 2*ONE_HOUR;
 
+const os = require("os");
+const util = require("util");
+const S = require("string");
+const moment = require("moment");
+const Dropbox = require("dropbox");
+const pick = require("object.pick");
+const omit = require("object.omit");
+const arrayUnique = require("array-unique");
+const Slack = require("slack-node");
+const cp = require("child_process");
+const arrayNormalize = require("array-normalize");
+const columnify = require("columnify");
+const mongoose = require("mongoose");
+const randomItem = require("random-item");
+const randomFloat = require("random-float");
+const randomInt = require("random-int");
+
+const EventEmitter2 = require("eventemitter2").EventEmitter2;
+const async = require("async");
+const chalk = require("chalk");
+const debug = require("debug")("tnn");
+const debugCache = require("debug")("cache");
+const debugQ = require("debug")("queue");
+const commandLineArgs = require("command-line-args");
+
 const neataptic = require("neataptic");
 const twitterTextParser = require("@threeceelabs/twitter-text-parser");
 const twitterImageParser = require("@threeceelabs/twitter-image-parser");
@@ -25,6 +50,8 @@ const fs = require("fs");
 
 const inputTypes = ["emoji", "hashtags", "images", "mentions", "urls", "words"];
 inputTypes.sort();
+
+let prevFileModifiedMoment = moment("2010-01-01");
 
 let networkIndex = 0;
 
@@ -141,6 +168,7 @@ requiredTrainingSet.add("hannity");
 requiredTrainingSet.add("hillaryclinton");
 requiredTrainingSet.add("jaketapper");
 requiredTrainingSet.add("jaredkushner");
+requiredTrainingSet.add("jeffsessions");
 requiredTrainingSet.add("kamalaharris");
 requiredTrainingSet.add("loudobbs");
 requiredTrainingSet.add("maddow");
@@ -168,7 +196,7 @@ requiredTrainingSet.add("vp");
 
 let slackChannel = "#nn";
 
-
+let initMainInterval;
 
 let configuration = {};
 
@@ -179,6 +207,9 @@ configuration.enableSeedNetwork = true;
 
 configuration.initMainIntervalTime = DEFAULT_INIT_MAIN_INTERVAL;
 configuration.enableRequiredTrainingSet = false;
+
+configuration.trainingSetsDir = "/config/utility/default/trainingSets";
+configuration.requiredTrainingSetFile = "requiredTrainingSet.txt";
 
 configuration.maxNeuralNetworkChildern = (process.env.TNN_MAX_NEURAL_NETWORK_CHILDREN !== undefined) ? process.env.TNN_MAX_NEURAL_NETWORK_CHILDREN : DEFAULT_MAX_NEURAL_NETWORK_CHILDREN;
 configuration.minSuccessRate = (process.env.TNN_MIN_SUCCESS_RATE !== undefined) 
@@ -245,30 +276,6 @@ const slackOAuthAccessToken = "xoxp-3708084981-3708084993-206468961315-ec62db579
 
 const defaultDateTimeFormat = "YYYY-MM-DD HH:mm:ss ZZ";
 const compactDateTimeFormat = "YYYYMMDD_HHmmss";
-
-const os = require("os");
-const util = require("util");
-const moment = require("moment");
-const Dropbox = require("dropbox");
-const pick = require("object.pick");
-const omit = require("object.omit");
-const arrayUnique = require("array-unique");
-const Slack = require("slack-node");
-const cp = require("child_process");
-const arrayNormalize = require("array-normalize");
-const columnify = require("columnify");
-const mongoose = require("mongoose");
-const randomItem = require("random-item");
-const randomFloat = require("random-float");
-const randomInt = require("random-int");
-
-const EventEmitter2 = require("eventemitter2").EventEmitter2;
-const async = require("async");
-const chalk = require("chalk");
-const debug = require("debug")("tnn");
-const debugCache = require("debug")("cache");
-const debugQ = require("debug")("queue");
-const commandLineArgs = require("command-line-args");
 
 let hostname = os.hostname();
 hostname = hostname.replace(/.local/g, "");
@@ -1001,6 +1008,16 @@ function loadFile(path, file, callback) {
       debug(chalkInfo("OFFLINE_MODE: FULL PATH " + fullPath));
     }
     fs.readFile(fullPath, "utf8", function(err, data) {
+
+      if (err) {
+        console.log(chalkError(getTimeStamp()
+          + " | *** ERROR LOADING FILE FROM DROPBOX FILE"
+          + " | " + fullPath
+          // + "\n" + jsonPrint(data)
+        ));
+        return(callback(err, null));
+      }
+
       debug(chalkLog(getTimeStamp()
         + " | LOADING FILE FROM DROPBOX FILE"
         + " | " + fullPath
@@ -1016,6 +1033,9 @@ function loadFile(path, file, callback) {
           console.trace(chalkError("NNT | JSON PARSE ERROR: " + e));
           callback(e, null);
         }
+      }
+      else if (file.match(/\.txt$/gi)) {
+        callback(null, data);
       }
       else {
         callback(null, null);
@@ -1041,6 +1061,9 @@ function loadFile(path, file, callback) {
           console.trace(chalkError("NNT | JSON PARSE ERROR: " + e));
           // callback(e, null);
         }
+      }
+      else if (file.match(/\.txt$/gi)) {
+        callback(null, data);
       }
       else {
         callback(null, null);
@@ -1069,7 +1092,109 @@ function loadFile(path, file, callback) {
       callback(error, null);
     });
   }
+}
 
+function getFileMetadata(path, file, callback) {
+
+  const fullPath = path + "/" + file;
+  debug(chalkInfo("FOLDER " + path));
+  debug(chalkInfo("FILE " + file));
+  debug(chalkInfo("getFileMetadata FULL PATH: " + fullPath));
+
+  dropboxClient.filesGetMetadata({path: fullPath})
+    .then(function(response) {
+      debug(chalkInfo("FILE META\n" + jsonPrint(response)));
+      return(callback(null, response));
+    })
+    .catch(function(error) {
+      console.log(chalkError("GET FILE METADATA ERROR\n" + jsonPrint(error)));
+      return(callback(error, null));
+    });
+}
+
+function initRequiredTrainingSet(cnf, callback){
+
+  console.log(chalkAlert("NNT | INIT REQUIRED TRAINING SET"));
+
+  getFileMetadata(cnf.trainingSetsDir, cnf.requiredTrainingSetFile, function(err, response){
+
+    if (err) {
+      return(callback(err, null));
+    }
+
+    const fileModifiedMoment = moment(new Date(response.client_modified));
+  
+    if (fileModifiedMoment.isSameOrBefore(prevFileModifiedMoment)){
+      console.log(chalkInfo("NNT | REQUIRED TRAINING SET FILE BEFORE OR EQUAL"
+        + " | " + cnf.trainingSetsDir + "/" + cnf.requiredTrainingSetFile
+        + " | PREV: " + prevFileModifiedMoment.format(compactDateTimeFormat)
+        + " | " + fileModifiedMoment.format(compactDateTimeFormat)
+      ));
+      configEvents.emit("REQUIRED_TRAINING_SET_CONFIG_COMPLETE");
+      callback(null);
+    }
+    else {
+      console.log(chalkInfo("NNT | REQUIRED TRAINING SET FILE AFTER"
+        + " | " + cnf.trainingSetsDir + "/" + cnf.requiredTrainingSetFile
+        + " | PREV: " + prevFileModifiedMoment.format(compactDateTimeFormat)
+        + " | " + fileModifiedMoment.format(compactDateTimeFormat)
+      ));
+
+      prevFileModifiedMoment = moment(fileModifiedMoment);
+
+      loadFile(cnf.trainingSetsDir, cnf.requiredTrainingSetFile, function(err, data){
+
+        if (err){
+          console.log(chalkError("NNT | LOAD REQUIRED TRAINING SET FILE ERROR"
+            + " | " + cnf.trainingSetsDir + "/" + cnf.requiredTrainingSetFile
+            + "\n" + err
+          ));
+          return(callback(err));
+        }
+
+        if (data  === undefined){
+          console.log(chalkError("NNT | DROPBOX REQUIRED TRAINING SET FILE DOWNLOAD DATA UNDEFINED ON FILE"
+            + " | " + cnf.trainingSetsDir + "/" + cnf.requiredTrainingSetFile
+          ));
+          return(callback("DROPBOX FILE DOWNLOAD DATA UNDEFINED"));
+        }
+
+        debug(chalkInfo("NNT | DROPBOX REQUIRED TRAINING SET FILE\n" + jsonPrint(data)));
+
+        const dataConvertAccent = data.fileBinary.toString().replace(/Ã©/g, "e");
+        const dataConvertTilde = dataConvertAccent.toString().replace(/Ã£/g, "a");
+        const dataArray = dataConvertTilde.toString().split("\n");
+
+        let requiredTrainingSetString;
+
+        requiredTrainingSet = new Set();
+
+        async.eachSeries(dataArray, function(trainingSetItem, cb){
+
+          trainingSetItem = trainingSetItem.replace(/^\s+/g, "");
+          trainingSetItem = trainingSetItem.replace(/\s+$/g, "");
+          trainingSetItem = trainingSetItem.replace(/\s+/g, " ");
+
+          requiredTrainingSetString = new S(trainingSetItem);
+          requiredTrainingSet.add(requiredTrainingSetString);
+          console.log(chalkInfo("NNT | +++ REQ TRAINING SET | " + requiredTrainingSetString));
+          cb();
+
+        }, function(err){
+          if (err) {
+            configEvents.emit("REQUIRED_TRAINING_SET_CONFIG_COMPLETE");
+            callback(err);
+          }
+          else {
+            configEvents.emit("REQUIRED_TRAINING_SET_CONFIG_COMPLETE");
+            console.log(chalkInfo("NNT | +++ REQ TRAINING SET | " + requiredTrainingSetString));
+            callback(null);
+          }
+        });
+
+      });
+    }
+  });
 }
 
 let statsUpdateInterval;
@@ -1196,7 +1321,7 @@ function loadBestNetworkDropboxFolder(folder, callback){
             if ((options.networkId !== undefined) 
               || (networkObj.successRate > configuration.minSuccessRate)) {
 
-              if (statsObj.trainingSet.totalInputs != networkObj.numInputs) {
+              if (statsObj.trainingSet.totalInputs !== networkObj.numInputs) {
                 console.log(chalkAlert("--- NNT | NN INPUT NUMBER MISMATCH"
                   + " | IN: " + networkObj.numInputs
                   + " | EXPECTED: " + statsObj.trainingSet.totalInputs
@@ -1334,14 +1459,12 @@ function printDatum(title, input){
   });
 }
 
-
 function printNetworkObj(title, nnObj){
   console.log(chalkNetwork(title
     // + " | " + nnObj.networkId
     + " | SUCCESS: " + nnObj.successRate.toFixed(2) + "%"
   ));
 }
-
 
 function loadBestNeuralNetworkFile(){
 
@@ -1742,8 +1865,8 @@ function initialize(cnf, callback){
     else {
       cnf.crossEntropyWorkAroundEnabled = true ;
     }
-
   }
+
   console.log(chalkAlert("NNT | crossEntropyWorkAroundEnabled: " + cnf.crossEntropyWorkAroundEnabled));
 
   if (process.env.TNN_LOAD_TRAINING_SET_FROM_FILE !== undefined) {
@@ -2188,8 +2311,6 @@ function printHistogram(title, hist){
       + "\n--------------------------------------------------------------"
     );
   });
-
-
 }
 
 function updateGlobalImageHistogram(params){
@@ -2529,7 +2650,13 @@ function updateClassifiedUsers(cnf, callback){
                   //   + " | REQ: " + results.text
                   //   + " | ERR: " + err.code + " | " + err.note
                   // ));
-                  statsObj.errors.imageParse[err.code] = (statsObj.errors.imageParse[err.code] === undefined) ? 1 : statsObj.errors.imageParse[err.code] += 1;
+
+                  if (statsObj.errors.imageParse[err.code] === undefined) {
+                    statsObj.errors.imageParse[err.code] = 1;
+                  }
+                  else {
+                    statsObj.errors.imageParse[err.code] += 1;
+                  }
                   cb(null, text, null);
                 }
                 else {
@@ -3263,32 +3390,35 @@ function initMain(cnf, callback){
           testObj.numInputs = trainingSetNormalizedTotal[0].input.length;
           testObj.numOutputs = trainingSetNormalizedTotal[0].output.length;
 
-          async.each(trainingSetNormalizedTotal, function(dataObj, cb){
+          initRequiredTrainingSet(cnf, function(err){
 
-            if (configuration.testMode) {
-              testObj.testSet.push(dataObj);
-              cb();
-            }
-            else if (requiredTrainingSet.has(dataObj.user.screenName.toLowerCase())) {
-              console.log(chalkAlert("NNT | +++ ADD REQ TRAINING SET | @" + dataObj.user.screenName));
-              trainingSetNormalized.push(dataObj);
-              cb();
-            }
-            else if (Math.random() > cnf.testSetRatio) {
-              trainingSetNormalized.push(dataObj);
-              cb();
-            }
-            else {
-              testObj.testSet.push(dataObj);
-              cb();
-            }
-          }, function(){
+            async.each(trainingSetNormalizedTotal, function(dataObj, cb){
 
-            trainingSetReady = true;
+              if (configuration.testMode) {
+                testObj.testSet.push(dataObj);
+                cb();
+              }
+              else if (requiredTrainingSet.has(dataObj.user.screenName.toLowerCase())) {
+                console.log(chalkAlert("NNT | +++ ADD REQ TRAINING SET | @" + dataObj.user.screenName));
+                trainingSetNormalized.push(dataObj);
+                cb();
+              }
+              else if (Math.random() > cnf.testSetRatio) {
+                trainingSetNormalized.push(dataObj);
+                cb();
+              }
+              else {
+                testObj.testSet.push(dataObj);
+                cb();
+              }
+            }, function(){
 
-            setTimeout(function(){
-              callback(null, trainingSetNormalizedTotal.length);
-            }, 3000);
+              trainingSetReady = true;
+
+              setTimeout(function(){
+                callback(null, trainingSetNormalizedTotal.length);
+              }, 3000);
+            });
 
           });
 
@@ -3705,6 +3835,8 @@ function initNeuralNetworkChild(cnf, callback){
 
           printNetworkCreateResultsHashmap();
 
+          let entry;
+
           if (m.statsObj.evolve.results.iterations < networkObj.evolve.options.iterations) {
             console.log(chalkLog("NNT | XXX | NOT SAVING NN FILE TO DROPBOX ... EARLY COMPLETE?"
               + " | " + networkObj.networkId
@@ -3723,7 +3855,7 @@ function initNeuralNetworkChild(cnf, callback){
 
             bestNetworkFile = m.networkObj.networkId + ".json";
 
-            const entry = {
+            entry = {
               client_modified: moment().valueOf(),
               name: bestNetworkFile,
               content_hash: false
@@ -3792,7 +3924,7 @@ function initNeuralNetworkChild(cnf, callback){
                 + " | " + localNetworkFile
               );
 
-              const entry = {
+              entry = {
                 client_modified: moment().valueOf(),
                 name: localNetworkFile,
                 content_hash: false
@@ -3917,7 +4049,6 @@ if (process.env.TNN_BATCH_MODE){
   slackChannel = "#nn_batch";
 }
 
-let initMainInterval;
 
 initTimeout(function(){
 
