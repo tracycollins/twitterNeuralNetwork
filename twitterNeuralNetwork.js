@@ -816,7 +816,7 @@ function quit(options){
       const neuralNetworkChild = neuralNetworkChildHashMap[nnChildId].child;
 
       if (neuralNetworkChild !== undefined) {
-        console.log(chalkAlert("*** KILL " + nnChildId));
+        console.log(chalkAlert("*** KILL CHILD ON QUIT | " + nnChildId));
         neuralNetworkChild.kill("SIGKILL");
       }
 
@@ -837,7 +837,7 @@ process.on( "SIGINT", function() {
     const neuralNetworkChild = neuralNetworkChildHashMap[nnChildId].child;
 
     if (neuralNetworkChild !== undefined) {
-      console.log(chalkAlert("*** KILL " + nnChildId));
+      console.log(chalkAlert("*** KILL CHILD ON SIGINT | " + nnChildId));
       neuralNetworkChild.kill("SIGKILL");
     }
 
@@ -854,7 +854,7 @@ process.on("exit", function() {
     const neuralNetworkChild = neuralNetworkChildHashMap[nnChildId].child;
 
     if (neuralNetworkChild !== undefined) {
-      console.log(chalkAlert("*** KILL " + nnChildId));
+      console.log(chalkAlert("*** KILL CHILD ON EXIT | " + nnChildId));
       neuralNetworkChild.kill("SIGKILL");
     }
 
@@ -3352,7 +3352,6 @@ function initMain(cnf, callback){
     }
 
     classifiedUserHashmap = classifiedUsersObj;
-    // classifiedUserHashmapReadyFlag = true;
 
     console.log(chalkLog("NNT | LOADED " + Object.keys(classifiedUserHashmap).length + " TOTAL CLASSIFED USERS"));
 
@@ -3380,6 +3379,9 @@ function initMain(cnf, callback){
           callback(err, null);
         }
         else {
+
+          trainingSetNormalized = [];
+          testObj.testSet = [];
 
           trainingSetNormalizedTotal = tsNormal;
           console.log(chalkLog("NNT | LOADED " + trainingSetNormalizedTotal.length
@@ -3508,7 +3510,9 @@ function initNetworkCreateInterval(cnf){
           networkIndex += 1;
 
           initNetworkCreate(nnChildId, nnId, configuration, function(err, results){
+
             debug("initNetworkCreate results\n" + jsonPrint(results));
+
             if (err) {
               console.log("NNT | *** INIT NETWORK CREATE ERROR ***\n" + jsonPrint(err));
             }

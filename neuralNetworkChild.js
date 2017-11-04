@@ -426,10 +426,8 @@ function evolve(params, callback){
         + " | F: " + schedParams.fitness.toFixed(5)
         + " | E: " + schedParams.error.toFixed(5)
       );
-
-      // process.send("EVOLVE_STATS", schedParams);
-
     },
+    
     iterations: params.log
   };
 
