@@ -3384,6 +3384,7 @@ function initMain(cnf, callback){
           testObj.testSet = [];
 
           trainingSetNormalizedTotal = tsNormal;
+          
           console.log(chalkLog("NNT | LOADED " + trainingSetNormalizedTotal.length
             + " | " + trainingSetNormalizedTotal[0].input.length + " INPUTS"
             + " | " + trainingSetNormalizedTotal[0].output.length + " OUTPUTS"
