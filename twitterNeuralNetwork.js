@@ -1176,9 +1176,21 @@ function initRequiredTrainingSet(cnf, callback){
           trainingSetItem = trainingSetItem.replace(/\s+/g, " ");
 
           requiredTrainingSetString = new S(trainingSetItem);
-          requiredTrainingSet.add(requiredTrainingSetString);
-          console.log(chalkInfo("NNT | +++ REQ TRAINING SET | " + requiredTrainingSetString));
-          cb();
+
+          if (requiredTrainingSetString !== ""){
+            requiredTrainingSet.add(requiredTrainingSetString);
+            console.log(chalkInfo("NNT | +++ REQ TRAINING SET | " + requiredTrainingSetString));
+            async.setImmediate(function() {
+              cb();
+            });
+          }
+          else {
+            console.log(chalkInfo("NNT | ??? REQ TRAINING SET | " + requiredTrainingSetString));
+            async.setImmediate(function() {
+              cb();
+            });
+          }
+
 
         }, function(err){
           if (err) {
@@ -3384,7 +3396,7 @@ function initMain(cnf, callback){
           testObj.testSet = [];
 
           trainingSetNormalizedTotal = tsNormal;
-          
+
           console.log(chalkLog("NNT | LOADED " + trainingSetNormalizedTotal.length
             + " | " + trainingSetNormalizedTotal[0].input.length + " INPUTS"
             + " | " + trainingSetNormalizedTotal[0].output.length + " OUTPUTS"
