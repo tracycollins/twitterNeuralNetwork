@@ -112,7 +112,7 @@ const EVOLVE_COST_ARRAY = [
   // "HINGE"
 ];
 
-const EVOLVE_MUTATION_RATE_RANGE = { min: 0.3, max: 0.85 } ;
+const EVOLVE_MUTATION_RATE_RANGE = { min: 0.5, max: 0.95 } ;
 const EVOLVE_POP_SIZE_RANGE = { min: 100, max: 200 } ;
 const EVOLVE_GROWTH_RANGE = { min: 0.00005, max: 0.00015 } ;
 const EVOLVE_ELITISM_RANGE = { min: 5, max: 25 } ;
