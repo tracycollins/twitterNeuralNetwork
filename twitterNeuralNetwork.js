@@ -13,7 +13,7 @@ const DEFAULT_GLOBAL_MIN_SUCCESS_RATE = 82; // percent
 const DEFAULT_MIN_SUCCESS_RATE = 75; // percent
 const DEFAULT_LOCAL_MIN_SUCCESS_RATE = 10; // percent
 
-const DEFAULT_INIT_MAIN_INTERVAL = process.env.INIT_MAIN_INTERVAL || 2*ONE_HOUR;
+const DEFAULT_INIT_MAIN_INTERVAL = process.env.INIT_MAIN_INTERVAL || 1*ONE_HOUR;
 
 const os = require("os");
 const util = require("util");
@@ -223,6 +223,7 @@ configuration.globalMinSuccessRate = (process.env.TNN_GLOBAL_MIN_SUCCESS_RATE !=
 configuration.minLocalSuccessRate = DEFAULT_LOCAL_MIN_SUCCESS_RATE;
 configuration.loadTrainingSetFromFile = false;
 configuration.createTrainingSet = false;
+configuration.createTrainingSetOnly = false;
 
 configuration.DROPBOX = {};
 configuration.DROPBOX.DROPBOX_WORD_ASSO_ACCESS_TOKEN = process.env.DROPBOX_WORD_ASSO_ACCESS_TOKEN ;
@@ -1900,6 +1901,15 @@ function initialize(cnf, callback){
     }
   }
 
+  if (process.env.TNN_CREATE_TRAINING_SET_ONLY !== undefined) {
+    if (process.env.TNN_CREATE_TRAINING_SET_ONLY === "true") {
+      cnf.createTrainingSetOnly = true ;
+    }
+    else {
+      cnf.createTrainingSetOnly = false ;
+    }
+  }
+
   if (process.env.TNN_EVOLVE_BEST_NETWORK !== undefined) {
     if (process.env.TNN_EVOLVE_BEST_NETWORK === "true") {
       cnf.useBestNetwork = true ;
@@ -2003,6 +2013,17 @@ function initialize(cnf, callback){
           }
           else {
             cnf.createTrainingSet = true;
+          }
+        }
+
+        if (loadedConfigObj.TNN_CREATE_TRAINING_SET_ONLY  !== undefined){
+          console.log("NNT | CREATE TRAINING SET ONLY");
+
+          if (!loadedConfigObj.TNN_CREATE_TRAINING_SET_ONLY || (loadedConfigObj.TNN_CREATE_TRAINING_SET_ONLY === "false")) {
+            cnf.createTrainingSetOnly = false;
+          }
+          else {
+            cnf.createTrainingSetOnly = true;
           }
         }
 
@@ -3351,7 +3372,7 @@ let nnChildId = "NNC_" + nnChildIndex;
 
 function initMain(cnf, callback){
 
-  console.log(chalkAlert("INIT MAIN"));
+  console.log(chalkAlert("***===*** INIT MAIN ***===***"));
 
   trainingSetReady = false;
 
@@ -3511,7 +3532,7 @@ function initNetworkCreateInterval(cnf){
 
   networkCreateInterval = setInterval(function(){
 
-    if (trainingSetReady) {
+    if (trainingSetReady && !cnf.createTrainingSetOnly) {
 
       Object.keys(neuralNetworkChildHashMap).forEach(function(nnChildId){
 
@@ -3612,7 +3633,9 @@ function initNeuralNetworkChild(cnf, callback){
             neuralNetworkChildHashMap[m.processName].ready = true; 
           }
 
-          initNetworkCreateInterval(cnf);
+          if (!cnf.createTrainingSetOnly) { 
+            initNetworkCreateInterval(cnf);
+          }
 
         }
         else {
