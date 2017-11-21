@@ -2419,7 +2419,8 @@ function updateClassifiedUsers(cnf, callback){
 
   statsObj.users.updatedClassified = 0;
 
-  async.eachLimit(classifiedUserIds, 5, function(userId, cb0){
+  // async.eachLimit(classifiedUserIds, 5, function(userId, cb0){
+  async.eachSeries(classifiedUserIds, function(userId, cb0){
 
     debug(chalkInfo("updateClassifiedUsers: userId: " + userId));
 
@@ -2756,13 +2757,9 @@ function updateClassifiedUsers(cnf, callback){
 
               const userHistograms = updateduser.histograms;
 
-              // debug(chalkLog("user.description + status histograms\n" + jsonPrint(userHistograms)));
-              // debug("user.description + status\n" + jsonPrint(text));
-
               // CREATE USER TRAINING/TEST SET DATUM
 
               let typeIndexOffset = 2;  // to allow for paralles trainingSetDatum creation
-              // let trainingSetDatumInputIndex = 0;
 
               async.eachSeries(inputTypes, function(type, cb1){  // inputTypes = [ emoji, screenName, hashtag, word, url ]
 
@@ -2780,7 +2777,7 @@ function updateClassifiedUsers(cnf, callback){
 
                 // for each input type, 
                 //    for each input element of input type, 
-                //       add 1 to trainingSetDatum arrar if element is in userHistogram
+                //       add 1 to trainingSetDatum array if element is in userHistogram
 
                 async.eachOf(inputArrays[type], function(element, index, cb2){
 
@@ -2788,9 +2785,7 @@ function updateClassifiedUsers(cnf, callback){
 
                   if ((userHistograms[type] !== undefined) && userHistograms[type][element]) {
 
-                    // trainingSetDatum.input.push(1);
                     trainingSetDatum.input[trainingSetDatumInputIndex] = 1;
-                    // trainingSetDatum.inputHits += 1;
                     trainingSetDatum.inputHits.push({ index: element });
 
                     debug(chalkBlue("+ DATUM BIT: " + type
@@ -2817,26 +2812,13 @@ function updateClassifiedUsers(cnf, callback){
                   }
                   else {
 
-                    // trainingSetDatum.input.push(0);
                     trainingSetDatum.input[trainingSetDatumInputIndex] = 0;
-                    // trainingSetDatum.inputHits[trainingSetDatumInputIndex] = { index: element };
-                    // debug(chalkInfo("- DATUM BIT: " + type
-                    //   + " | " + element 
-                    // ));
 
                     debug(chalkInfo("- DATUM BIT: " + type
                       + " | INPUT HITS: " + trainingSetDatum.inputHits.length 
                       + " | ["  + globalInputIndex + " / " + index + "] " + element
                       + " | @" + trainingSetDatum.user.screenName 
                     ));
-
-                    // if (globalInputIndex % 100 === 0){
-                    //   console.log(chalkInfo("- DATUM BIT: " + type
-                    //     + " | INPUT HITS: " + trainingSetDatum.inputHits.length 
-                    //     + " | ["  + globalInputIndex + " / " + index + "] " + element
-                    //     + " | @" + trainingSetDatum.user.screenName 
-                    //   ));
-                    // }
 
                     globalInputIndex += 1;
 
