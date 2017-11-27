@@ -931,6 +931,7 @@ process.on("message", function(m) {
       statsObj.training.startTime = moment().valueOf();
       statsObj.training.testRunId = m.testRunId;
       statsObj.training.seedNetworkId = m.seedNetworkId;
+      statsObj.training.seedNetworkRes = m.seedNetworkRes;
       statsObj.training.iterations = m.iterations;
       statsObj.training.trainingSet = {};
       statsObj.training.trainingSet.length = m.trainingSet.length;
@@ -948,6 +949,7 @@ process.on("message", function(m) {
         threads: m.threads,
         architecture: m.architecture,
         seedNetworkId: m.seedNetworkId,
+        seedNetworkRes: m.seedNetworkRes,
         inputs: m.inputs,
         outputs: m.outputs,
         trainingSet: m.trainingSet,
@@ -969,6 +971,7 @@ process.on("message", function(m) {
       statsObj.evolve.options = {
         threads: m.threads,
         seedNetworkId: m.seedNetworkId,
+        seedNetworkRes: m.seedNetworkRes,
         architecture: m.architecture,
         mutation: m.mutation,
         mutationRate: m.mutationRate,
@@ -992,6 +995,7 @@ process.on("message", function(m) {
           + " | " + configuration.processName
           + " | " + m.testRunId
           + " | SEED: " + m.seedNetworkId
+          + " | SEED RES %: " + m.seedNetworkRes.toFixed(2)
           + " | THRDs: " + m.threads
           + " | NN: " + m.network.networkId + " | " + m.network.successRate.toFixed(2) + "%"
           + " | IN: " + statsObj.training.trainingSet.numInputs
@@ -1001,10 +1005,11 @@ process.on("message", function(m) {
         ));
       }
       else {
-        console.log(chalkAlert("NNC | NEURAL NET EVOLVE | " + getTimeStamp()
+        console.log(chalkAlert("NNC | EVOLVE | " + getTimeStamp()
           + " | " + configuration.processName
           + " | " + m.testRunId
-          + " | SEED: " + m.seedNetworkId
+          + " | SEED: " + "---"
+          + " | SEED RES %: " + "---"
           + " | THRDs: " + m.threads
           + " | IN: " + statsObj.training.trainingSet.numInputs
           + " | OUT: " + statsObj.training.trainingSet.numOutputs
@@ -1045,6 +1050,7 @@ process.on("message", function(m) {
             networkObj.testRunId = statsObj.training.testRunId;
             networkObj.networkId = statsObj.training.testRunId;
             networkObj.seedNetworkId = statsObj.training.seedNetworkId;
+            networkObj.seedNetworkRes = statsObj.training.seedNetworkRes;
             networkObj.network = {};
             networkObj.network = exportedNetwork;
             networkObj.numInputs = exportedNetwork.input;
