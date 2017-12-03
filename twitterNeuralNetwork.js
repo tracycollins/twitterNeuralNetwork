@@ -4045,37 +4045,43 @@ function initTimeout(callback){
       seedOpt.networkId = cnf.seedNetworkId;
     }
 
-    loadSeedNeuralNetwork(seedOpt, function(err, results){
 
-      debug("loadSeedNeuralNetwork results\n" + jsonPrint(results));
+    if (cnf.createTrainingSetOnly) {
+      console.log(chalkInfo("CREATE TRAINING SET ONLY ... SKIP INIT NN CHILD"));
+      callback();
+    }
+    else {
+      loadSeedNeuralNetwork(seedOpt, function(err, results){
 
-      if (err){
-        console.log(chalkError("loadSeedNeuralNetwork ERROR\n" + jsonPrint(err)));
-        return(callback(err));
-      }
-
-      console.log(chalkLog("NNT | INIT NN CHILD"));
-
-      async.times(cnf.maxNeuralNetworkChildern, function(n, next) {
-
-        debug("INIT NN CHILD NUMBER " + n);
-
-        initNeuralNetworkChild(cnf, function(err, nnChildIndex) {
-          next(err, nnChildIndex);
-        });
-
-      }, function(err, children) {
+        debug("loadSeedNeuralNetwork results\n" + jsonPrint(results));
 
         if (err){
-          console.log(chalkError("INIT NEURAL NETWORK CHILDREN ERROR\n" + jsonPrint(err)));
+          console.log(chalkError("loadSeedNeuralNetwork ERROR\n" + jsonPrint(err)));
           return(callback(err));
         }
 
-        console.log(chalkLog("END INIT NEURAL NETWORK CHILDREN: " + children.length));
-        callback();
-      });
+        console.log(chalkLog("NNT | INIT NN CHILD"));
 
-    });
+        async.times(cnf.maxNeuralNetworkChildern, function(n, next) {
+
+          debug("INIT NN CHILD NUMBER " + n);
+
+          initNeuralNetworkChild(cnf, function(err, nnChildIndex) {
+            next(err, nnChildIndex);
+          });
+
+        }, function(err, children) {
+
+          if (err){
+            console.log(chalkError("INIT NEURAL NETWORK CHILDREN ERROR\n" + jsonPrint(err)));
+            return(callback(err));
+          }
+
+          console.log(chalkLog("END INIT NEURAL NETWORK CHILDREN: " + children.length));
+          callback();
+        });
+      });
+    }
 
   });
 }
