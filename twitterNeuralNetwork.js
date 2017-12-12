@@ -13,7 +13,7 @@ const DEFAULT_GLOBAL_MIN_SUCCESS_RATE = 92; // percent
 const DEFAULT_MIN_SUCCESS_RATE = 92; // percent
 const DEFAULT_LOCAL_MIN_SUCCESS_RATE = 90; // percent
 
-const DEFAULT_INIT_MAIN_INTERVAL = process.env.INIT_MAIN_INTERVAL || 1*ONE_HOUR;
+const DEFAULT_INIT_MAIN_INTERVAL = process.env.TNN_INIT_MAIN_INTERVAL || 1*ONE_HOUR;
 
 const os = require("os");
 const util = require("util");
