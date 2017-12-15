@@ -200,7 +200,7 @@ let initMainInterval;
 
 let configuration = {};
 
-configuration.forceBannerImageAnalysis = true;
+configuration.forceBannerImageAnalysis = false;
 configuration.interruptFlag = false;
 configuration.useLocalNetworksOnly = false;
 configuration.networkCreateIntervalTime = 10000;
@@ -2686,7 +2686,12 @@ function updateClassifiedUsers(cnf, callback){
             }
           },
           function userBannerImage(text, cb) {
-            if (user.bannerImageUrl && (!user.bannerImageAnalyzed || cnf.forceBannerImageAnalysis)) {
+            if (user.bannerImageUrl 
+              && (!user.bannerImageAnalyzed 
+                || (user.bannerImageAnalyzed !== user.bannerImageUrl)
+                || cnf.forceBannerImageAnalysis
+              )) 
+            {
               twitterImageParser.parseImage(user.bannerImageUrl, { screenName: user.screenName}, function(err, results){
                 if (err) {
                   console.log(chalkError("*** PARSE BANNER IMAGE ERROR"
@@ -2708,7 +2713,7 @@ function updateClassifiedUsers(cnf, callback){
                 }
                 else {
                   statsObj.users.imageParse.parsed += 1;
-                  user.bannerImageAnalyzed = true;
+                  user.bannerImageAnalyzed = user.bannerImageUrl;
                   debug(chalkAlert("PARSE BANNER IMAGE"
                     + " | RESULTS\n" + jsonPrint(results)
                   ));
@@ -2716,12 +2721,12 @@ function updateClassifiedUsers(cnf, callback){
                     debug(chalkInfo("@" + user.screenName + " | " + classText + " | " + results.text));
                     text = text + "\n" + results.text;
                   }
-                  // printHistogram("@" + user.screenName + " | " + classText, results.label.images);
+                  printHistogram("@" + user.screenName + " | " + classText, results.label.images);
                   cb(null, text, results);
                 }
               });
             }
-            else if (user.bannerImageUrl && user.bannerImageAnalyzed) {
+            else if (user.bannerImageUrl && user.bannerImageAnalyzed && (user.bannerImageUrl === user.bannerImageAnalyzed)) {
               statsObj.users.imageParse.skipped += 1;
               const imageHits = (user.histograms.images === undefined) ? 0 : Object.keys(user.histograms.images);
               console.log(chalkAlert("BANNER ANALYZED: @" + user.screenName + " | HITS: " + imageHits));
