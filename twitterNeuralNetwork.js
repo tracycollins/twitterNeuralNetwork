@@ -200,6 +200,7 @@ let initMainInterval;
 
 let configuration = {};
 
+configuration.forceBannerImageAnalysis = true;
 configuration.interruptFlag = false;
 configuration.useLocalNetworksOnly = false;
 configuration.networkCreateIntervalTime = 10000;
@@ -2685,7 +2686,7 @@ function updateClassifiedUsers(cnf, callback){
             }
           },
           function userBannerImage(text, cb) {
-            if (user.bannerImageUrl && !user.bannerImageAnalyzed) {
+            if (user.bannerImageUrl && (!user.bannerImageAnalyzed || cnf.forceBannerImageAnalysis)) {
               twitterImageParser.parseImage(user.bannerImageUrl, { screenName: user.screenName}, function(err, results){
                 if (err) {
                   console.log(chalkError("*** PARSE BANNER IMAGE ERROR"
