@@ -135,6 +135,7 @@ const DEFAULT_TRAIN_BATCH_SIZE = 1;
 let neuralNetworkChildHashMap = {};
 // let classifiedUserHashmapReadyFlag = false;
 let trainingSetReady = false;
+let createTrainingSetBusy = false;
 
 let trainingSet = [];
 let trainingSetNormalized = [];
@@ -737,7 +738,9 @@ function showStats(options){
       + " | 0: " + classifiedUserHistogram.none
     ));
 
-    printNetworkCreateResultsHashmap();
+    if (!configuration.createTrainingSetOnly) {
+      printNetworkCreateResultsHashmap();
+    }
 
     // Object.keys(neuralNetworkChildHashMap).forEach(function(nnChildId){
 
@@ -1000,11 +1003,11 @@ function saveFileRetry (timeout, path, file, jsonObj, callback){
     saveFile({folder:path, file:file, obj:jsonObj}, function(err){
       if (err) {
         console.log(chalkError("NNT | SAVE RETRY ON ERROR: " + path + "/" + file));
-        saveFileRetry(timeout, path, file, jsonObj);
+        // saveFileRetry(timeout, path, file, jsonObj);
       }
+      if (callback !== undefined) { callback(err); }
     });
   }, timeout);
-  if (callback !== undefined) { callback(); }
 }
 
 function loadFile(path, file, callback) {
@@ -1879,8 +1882,10 @@ function initialize(cnf, callback){
   cnf.quitOnError = process.env.TNN_QUIT_ON_ERROR || false ;
   cnf.enableStdin = process.env.TNN_ENABLE_STDIN || true ;
   cnf.networkCreateMode = process.env.TNN_NETWORK_CREATE_MODE || DEFAULT_NETWORK_CREATE_MODE ;
+  cnf.initMainIntervalTime = process.env.TNN_INIT_MAIN_INTERVAL || DEFAULT_INIT_MAIN_INTERVAL ;
 
   cnf.crossEntropyWorkAroundEnabled = false ;
+
   if (process.env.TNN_CROSS_ENTROPY_WORKAROUND_ENABLED !== undefined) {
     console.log("NNT | ENV TNN_CROSS_ENTROPY_WORKAROUND_ENABLED: " + process.env.TNN_CROSS_ENTROPY_WORKAROUND_ENABLED);
     if (!process.env.TNN_CROSS_ENTROPY_WORKAROUND_ENABLED || (process.env.TNN_CROSS_ENTROPY_WORKAROUND_ENABLED === "false")) {
@@ -2040,6 +2045,11 @@ function initialize(cnf, callback){
           }
         }
 
+
+        if (loadedConfigObj.TNN_INIT_MAIN_INTERVAL !== undefined){
+          console.log("NNT | LOADED TNN_INIT_MAIN_INTERVAL: " + loadedConfigObj.TNN_INIT_MAIN_INTERVAL);
+          cnf.initMainIntervalTime = loadedConfigObj.TNN_INIT_MAIN_INTERVAL;
+        }
 
         if (loadedConfigObj.TNN_MAX_NEURAL_NETWORK_CHILDREN !== undefined){
           console.log("NNT | LOADED TNN_MAX_NEURAL_NETWORK_CHILDREN: " + loadedConfigObj.TNN_MAX_NEURAL_NETWORK_CHILDREN);
@@ -2432,7 +2442,6 @@ function updateClassifiedUsers(cnf, callback){
 
   statsObj.users.updatedClassified = 0;
 
-  // async.eachLimit(classifiedUserIds, 5, function(userId, cb0){
   async.eachSeries(classifiedUserIds, function(userId, cb0){
 
     debug(chalkInfo("updateClassifiedUsers: userId: " + userId));
@@ -3376,6 +3385,7 @@ function initMain(cnf, callback){
   console.log(chalkAlert("***===*** INIT MAIN ***===***"));
 
   trainingSetReady = false;
+  createTrainingSetBusy = true;
 
   initClassifiedUserHashmap(cnf.classifiedUsersFolder, cnf.classifiedUsersFile, function(err, classifiedUsersObj){
 
@@ -3411,6 +3421,8 @@ function initMain(cnf, callback){
 
         if (err) {
           console.error(chalkError("NNT | ERROR: loadFile: " + folder + "/" + file));
+          trainingSetReady = false;
+          createTrainingSetBusy = false;
           callback(err, null);
         }
         else {
@@ -3452,6 +3464,7 @@ function initMain(cnf, callback){
             }, function(){
 
               trainingSetReady = true;
+              createTrainingSetBusy = false;
 
               setTimeout(function(){
                 callback(null, trainingSetNormalizedTotal.length);
@@ -3480,8 +3493,6 @@ function initMain(cnf, callback){
           return callback("NO TRAINING SET DATA POINTS", null);
         }
 
-        // let messageObj = {};
-
         console.log(chalkBlue("\nNNT | TRAINING SET NORMALIZED"
           + " | " + trainingSetNormalized.length + " DATA POINTS"
           + " | NN CREATE MODE: " + cnf.networkCreateMode
@@ -3489,8 +3500,6 @@ function initMain(cnf, callback){
         ));
 
         const tsFile = "trainingSetNormalized_" + testObj.testRunId + ".json";
-
-        // saveFile({folder: trainingSetFolder, file: "trainingSetBasic", obj: trainingSetBasic});
 
         if (hostname === "google") {
           console.log(chalkAlert("NNT | SAVED DEFAULT TRAINING SET TO DROPBOX"
@@ -3510,20 +3519,45 @@ function initMain(cnf, callback){
               + " | " + trainingSetFolder + "/" + tsFile 
               + "\n" + jsonPrint(err)
             ));
+
+            saveFileRetry (10*ONE_SECOND, trainingSetFolder, tsFile, trainingSetNormalizedTotal, function(err){
+              if (err) {
+                console.error(chalkError("*** SAVE RETRY TOTAL TRAINING SET FILE ERROR"
+                  + " | " + trainingSetFolder + "/" + tsFile 
+                  + "\n" + jsonPrint(err)
+                ));
+
+                trainingSetReady = false;
+                createTrainingSetBusy = false;
+
+                callback(null, trainingSetNormalized.length);
+              }
+              else {
+                trainingSetReady = true;
+                createTrainingSetBusy = false;
+
+                callback(null, trainingSetNormalized.length);
+              }
+            });
           }
           else {
             console.log("NNT | SAVED TOTAL TRAINING SET TO DROPBOX"
               + " | " + trainingSetFolder + "/" + tsFile
             );
+
             trainingSetReady = true;
+            createTrainingSetBusy = false;
+
+            callback(null, trainingSetNormalized.length);
           }
 
         });
 
-        callback(null, trainingSetNormalized.length);
       });
     }
+
   });
+
 }
 
 let networkCreateInterval;
@@ -3966,23 +4000,26 @@ if (process.env.TNN_BATCH_MODE){
 initTimeout(function(){
 
   initMain(configuration, function(){
-    debug(chalkLog("INIT MAIN CALLBACK"));
+    console.log(chalkLog("FIRST INIT MAIN CALLBACK"
+      + " | configuration.initMainIntervalTime: " + configuration.initMainIntervalTime
+    ));
   });
 
-  clearInterval(initMainInterval);
+  // clearInterval(initMainInterval);
 
   initMainInterval = setInterval(function(){
 
     console.log(chalkAlert("--- INIT MAIN INTERVAL | trainingSetReady: " + trainingSetReady));
 
-    if (trainingSetReady) {
+    console.log(chalkAlert("+++ INIT MAIN INTERVAL"
+      + " | trainingSetReady: " + trainingSetReady
+      + " | createTrainingSetBusy: " + createTrainingSetBusy
+    ));
 
-      console.log(chalkAlert("+++ INIT MAIN INTERVAL | trainingSetReady: " + trainingSetReady));
-
+    if (trainingSetReady || !createTrainingSetBusy) {
       initMain(configuration, function(){
-        debug(chalkLog("INIT MAIN CALLBACK"));
+        console.log(chalkLog("INIT MAIN CALLBACK"));
       });
-
     }
 
   }, configuration.initMainIntervalTime);
