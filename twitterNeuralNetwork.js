@@ -2997,6 +2997,7 @@ function updateClassifiedUsers(cnf, callback){
 
     console.log(chalkBlue("\nNNT | TRAINING SET LENGTH: " + trainingSet.length));
     console.log(chalkBlue("NNT | MAX MAGNITUDE:         " + maxMagnitude));
+    console.log(chalkBlue("NNT | NUMBER OF INPUTS:      " + testObj.numInputs));
     console.log(chalkBlue("NNT | TOTAL INPUT HITS:      " + totalInputHits));
     console.log(chalkBlue("NNT | AVE INPUT HITS/DATUM:  " + inputHitAverage.toFixed(3)));
 
@@ -3004,9 +3005,6 @@ function updateClassifiedUsers(cnf, callback){
 
     testObj.inputHits = totalInputHits;
     testObj.inputHitAverage = inputHitAverage;
-
-    // trainingSetNormalized = [];
-    // trainingSetNormalizedTotal = [];
 
     async.each(trainingSet, function(dataObj, cb3){
 
