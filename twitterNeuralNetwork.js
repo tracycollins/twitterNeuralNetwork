@@ -10,8 +10,8 @@ const ONE_MINUTE = 60 * ONE_SECOND;
 const ONE_HOUR = 60 * ONE_MINUTE;
 
 const DEFAULT_GLOBAL_MIN_SUCCESS_RATE = 92; // percent
-const DEFAULT_MIN_SUCCESS_RATE = 92; // percent
-const DEFAULT_LOCAL_MIN_SUCCESS_RATE = 90; // percent
+const DEFAULT_MIN_SUCCESS_RATE = 50; // percent
+const DEFAULT_LOCAL_MIN_SUCCESS_RATE = 50; // percent
 
 const DEFAULT_INIT_MAIN_INTERVAL = process.env.TNN_INIT_MAIN_INTERVAL || 1*ONE_HOUR;
 
@@ -1347,7 +1347,7 @@ function loadBestNetworkDropboxFolder(folder, callback){
           else {
 
             if ((options.networkId !== undefined) 
-              || (networkObj.successRate > configuration.minSuccessRate)) {
+              || (networkObj.successRate > configuration.globalMinSuccessRate)) {
 
               if (statsObj.trainingSet.totalInputs !== networkObj.numInputs) {
                 console.log(chalkAlert("--- NNT | NN INPUT NUMBER MISMATCH"
@@ -1401,7 +1401,7 @@ function loadBestNetworkDropboxFolder(folder, callback){
               .then(function(response){
                 debug("dropboxClient filesDelete response\n" + jsonPrint(response));
                 console.log(chalkAlert("NNT | XXX NN"
-                  + " | MIN SUCCESS RATE: " + configuration.minSuccessRate
+                  + " | GLOBAL MIN SUCCESS RATE: " + configuration.globalMinSuccessRate
                   + " | " + networkObj.successRate.toFixed(2) + "%"
                   + " | " + getTimeStamp(networkObj.createdAt)
                   + " | IN: " + networkObj.numInputs
@@ -2059,6 +2059,11 @@ function initialize(cnf, callback){
         if (loadedConfigObj.TNN_MIN_SUCCESS_RATE !== undefined){
           console.log("NNT | LOADED TNN_MIN_SUCCESS_RATE: " + loadedConfigObj.TNN_MIN_SUCCESS_RATE);
           cnf.minSuccessRate = loadedConfigObj.TNN_MIN_SUCCESS_RATE;
+        }
+
+        if (loadedConfigObj.TNN_GLOBAL_MIN_SUCCESS_RATE !== undefined){
+          console.log("NNT | LOADED TNN_GLOBAL_MIN_SUCCESS_RATE: " + loadedConfigObj.TNN_GLOBAL_MIN_SUCCESS_RATE);
+          cnf.globalMinSuccessRate = loadedConfigObj.TNN_GLOBAL_MIN_SUCCESS_RATE;
         }
 
         if (loadedConfigObj.TNN_EVOLVE_THREADS !== undefined){
@@ -3780,7 +3785,7 @@ function initNeuralNetworkChild(cnf, callback){
             console.log(chalkLog("NNT | XXX | NOT SAVING NN FILE TO DROPBOX ... EARLY COMPLETE?"
               + " | " + networkObj.networkId
               + " | ITRNS: " + m.statsObj.evolve.results.iterations
-              + " | MIN: " + cnf.minSuccessRate.toFixed(2) + "%"
+              + " | MIN: " + cnf.globalMinSuccessRate.toFixed(2) + "%"
               + " | " + networkObj.successRate.toFixed(2) + "%"
             ));
 
@@ -3882,10 +3887,10 @@ function initNeuralNetworkChild(cnf, callback){
           //   });
           // }
           else {
-            console.log(chalkLog("NNT | XXX | NOT SAVING NN FILE TO DROPBOX ... LESS THAN MIN SUCCESS"
+            console.log(chalkLog("NNT | XXX | NOT SAVING NN FILE TO DROPBOX ... LESS THAN GLOBAL MIN SUCCESS"
               + " | " + networkObj.networkId
               + " | " + networkObj.successRate.toFixed(2) + "%"
-              + " | " + cnf.minSuccessRate.toFixed(2) + "%"
+              + " | " + cnf.globalMinSuccessRate.toFixed(2) + "%"
             ));
 
             printNetworkObj("NNT | " + networkObj.networkId, networkObj);
