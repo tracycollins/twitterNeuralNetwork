@@ -19,6 +19,12 @@ const os = require("os");
 const util = require("util");
 const S = require("string");
 const moment = require("moment");
+
+const mongoose = require("mongoose");
+const wordAssoDb = require("@threeceelabs/mongoose-twitter");
+const userServer = require("@threeceelabs/user-server-controller");
+const User = mongoose.model("User", wordAssoDb.UserSchema);
+
 const Dropbox = require("dropbox");
 const pick = require("object.pick");
 const omit = require("object.omit");
@@ -27,7 +33,9 @@ const Slack = require("slack-node");
 const cp = require("child_process");
 const arrayNormalize = require("array-normalize");
 const columnify = require("columnify");
-const mongoose = require("mongoose");
+
+
+
 const randomItem = require("random-item");
 const randomFloat = require("random-float");
 const randomInt = require("random-int");
@@ -384,12 +392,12 @@ const configEvents = new EventEmitter2({
 
 let stdin;
 
-let db;
-let wordAssoDb;
-let User;
-// let NeuralNetwork; // DB
+// let db;
+// let wordAssoDb;
+// let User;
+// // let NeuralNetwork; // DB
 
-let userServer;
+// let userServer;
 
 const jsonPrint = function (obj, prefix){
   if (obj) {
@@ -2338,13 +2346,14 @@ console.log(chalkInfo("NNT | " + getTimeStamp()
 
 configEvents.once("INIT_MONGODB", function(){
 
-  wordAssoDb = require("@threeceelabs/mongoose-twitter");
-  db = wordAssoDb();
+  // wordAssoDb = require("@threeceelabs/mongoose-twitter");
+  // db = wordAssoDb();
 
-  // NeuralNetwork = require("mongoose").model("NeuralNetwork");
-  User = require("mongoose").model("User");
+  // // NeuralNetwork = require("mongoose").model("NeuralNetwork");
+  // // User = require("mongoose").model("User");
+  // User = mongoose.model("User", wordAssoDb.UserSchema);
 
-  userServer = require("@threeceelabs/user-server-controller");
+  // userServer = require("@threeceelabs/user-server-controller");
 });
 
 function printHistogram(title, hist){
