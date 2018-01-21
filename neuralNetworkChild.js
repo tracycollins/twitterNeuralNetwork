@@ -23,9 +23,11 @@ let network;
 
 const mongoose = require("mongoose");
 const wordAssoDb = require("@threeceelabs/mongoose-twitter");
-const db = wordAssoDb();
+// const db = wordAssoDb();
 
-const NeuralNetwork = require("mongoose").model("NeuralNetwork");
+// const NeuralNetwork = require("mongoose").model("NeuralNetwork");
+const neutralNetworkModel = require("../mongooseTwitter/models/neuralNetwork.server.model");
+const NeuralNetwork = mongoose.model("NeuralNetwork", neutralNetworkModel.NeuralNetworkSchema);
 
 
 const EventEmitter2 = require("eventemitter2").EventEmitter2;

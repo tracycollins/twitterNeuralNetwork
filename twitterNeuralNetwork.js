@@ -22,8 +22,14 @@ const moment = require("moment");
 
 const mongoose = require("mongoose");
 const wordAssoDb = require("@threeceelabs/mongoose-twitter");
+// const db = wordAssoDb();
+
+const userModel = require("../mongooseTwitter/models/user.server.model");
 const userServer = require("@threeceelabs/user-server-controller");
 const User = mongoose.model("User", wordAssoDb.UserSchema);
+
+// const neutralNetworkModel = require("../mongooseTwitter/models/neuralNetwork.server.model");
+const NeuralNetwork = mongoose.model("NeuralNetwork", wordAssoDb.NeuralNetworkSchema);
 
 const Dropbox = require("dropbox");
 const pick = require("object.pick");
@@ -2345,6 +2351,8 @@ console.log(chalkInfo("NNT | " + getTimeStamp()
 ));
 
 configEvents.once("INIT_MONGODB", function(){
+
+  console.log(chalkAlert("INIT_MONGODB"));
 
   // wordAssoDb = require("@threeceelabs/mongoose-twitter");
   // db = wordAssoDb();
