@@ -1,6 +1,6 @@
 {
   "name": "twitterneuralnetwork",
-  "version": "1.0.10",
+  "version": "1.0.11",
   "description": "twitter neural network",
   "main": "twitterNeuralNetwork.js",
   "dependencies": {
