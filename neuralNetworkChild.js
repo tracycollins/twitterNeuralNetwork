@@ -8,6 +8,9 @@ const async = require("async");
 const os = require("os");
 const omit = require("object.omit");
 const defaults = require("object.defaults/immutable");
+const util = require("util");
+const moment = require("moment");
+const debug = require("debug")("la");
 
 let hostname = os.hostname();
 hostname = hostname.replace(/\.home/g, "");
@@ -25,9 +28,10 @@ const mongoose = require("mongoose");
 const wordAssoDb = require("@threeceelabs/mongoose-twitter");
 // const db = wordAssoDb();
 
-// const NeuralNetwork = require("mongoose").model("NeuralNetwork");
 const neutralNetworkModel = require("../mongooseTwitter/models/neuralNetwork.server.model");
 const NeuralNetwork = mongoose.model("NeuralNetwork", neutralNetworkModel.NeuralNetworkSchema);
+// const NeuralNetwork = require("mongoose").model("NeuralNetwork");
+// const NeuralNetwork = mongoose.model("NeuralNetwork", neutralNetworkModel.NeuralNetworkSchema);
 
 
 const EventEmitter2 = require("eventemitter2").EventEmitter2;
@@ -50,10 +54,7 @@ configuration.testMode = false; //
 configuration.keepaliveInterval = 30*ONE_SECOND;
 configuration.rxQueueInterval = 1*ONE_SECOND;
 
-const util = require("util");
-const moment = require("moment");
 const Dropbox = require("dropbox");
-const debug = require("debug")("la");
 
 const chalk = require("chalk");
 const chalkAlert = chalk.red;
@@ -264,11 +265,6 @@ function showStats(options){
     + " | TRAINING ELAPSED: " + msToTime(statsObj.evolve.elapsed)
   ));
 }
-
-// process.on("SIGKILL", function() {
-//   console.log(chalkAlert("NNC | " + configuration.processName + " | *** SIGKILL ***"));
-//   quit("SIGKILL");
-// });
 
 process.on("SIGHUP", function() {
   console.log(chalkAlert("NNC | " + configuration.processName + " | *** SIGHUP ***"));
@@ -567,23 +563,6 @@ function evolve(params, callback){
         });
 
       });
-
-      // network.evolve(trainingSet, options)
-      // .then(function(results){
-      //   results.threads = options.threads;
-      //   if (callback !== undefined) { callback(null, results); }
-      // })
-      // .catch(function(err){
-      //   console.error(chalkError("NNC | " + configuration.processName + " | NETWORK EVOLVE ERROR: " + err));
-
-      //   process.send({op: "ERROR", processName: configuration.processName, error: err}, function(){
-
-      //     quit(jsonPrint(err));
-
-      //   });
-      // });
-
-
     });
 
   });
@@ -601,7 +580,6 @@ function train(params, callback){
     console.log(chalkAlert("NNC | START NETWORK DEFINED: " + options.network.networkId));
   }
 
-  // options.log = params.log;
   options.error = params.error;
   options.rate = params.rate;
   options.dropout = params.dropout;

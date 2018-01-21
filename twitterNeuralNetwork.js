@@ -22,14 +22,17 @@ const moment = require("moment");
 
 const mongoose = require("mongoose");
 const wordAssoDb = require("@threeceelabs/mongoose-twitter");
+// const db = wordAssoDb();
 
 const userServer = require("@threeceelabs/user-server-controller");
+const User = mongoose.model("User", wordAssoDb.UserSchema);
+// const userModel = require("../mongooseTwitter/models/user.server.model");
+// const User = mongoose.model("User", userModel.UserSchema);
 
-const neutralNetworkModel = require("../mongooseTwitter/models/neuralNetwork.server.model");
-const NeuralNetwork = mongoose.model("NeuralNetwork", neutralNetworkModel.NeuralNetworkSchema);
+// const neutralNetworkModel = require("../mongooseTwitter/models/neuralNetwork.server.model");
+// const NeuralNetwork = mongoose.model("NeuralNetwork", neutralNetworkModel.NeuralNetworkSchema);
+// const NeuralNetwork = mongoose.model("NeuralNetwork", wordAssoDb.NeuralNetworkSchema);
 
-const userModel = require("../mongooseTwitter/models/user.server.model");
-const User = mongoose.model("User", userModel.UserSchema);
 
 
 const Dropbox = require("dropbox");
