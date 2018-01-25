@@ -25,14 +25,20 @@ const neataptic = require("neataptic");
 let network;
 
 const mongoose = require("mongoose");
+mongoose.Promise = global.Promise;
+
+const neutralNetworkModel = require("@threeceelabs/mongoose-twitter/models/neuralNetwork.server.model");
+
+let NeuralNetwork;
+
 const wordAssoDb = require("@threeceelabs/mongoose-twitter");
-// const db = wordAssoDb();
+const dbConnection = wordAssoDb();
 
-const neutralNetworkModel = require("../mongooseTwitter/models/neuralNetwork.server.model");
-const NeuralNetwork = mongoose.model("NeuralNetwork", neutralNetworkModel.NeuralNetworkSchema);
-// const NeuralNetwork = require("mongoose").model("NeuralNetwork");
-// const NeuralNetwork = mongoose.model("NeuralNetwork", neutralNetworkModel.NeuralNetworkSchema);
-
+dbConnection.on("error", console.error.bind(console, "connection error:"));
+dbConnection.once("open", function() {
+  console.log("CONNECT: TWEET SERVER MONGOOSE default connection open");
+  NeuralNetwork = mongoose.model("NeuralNetwork", neutralNetworkModel.NeuralNetworkSchema);
+});
 
 const EventEmitter2 = require("eventemitter2").EventEmitter2;
 let configEvents = new EventEmitter2({
