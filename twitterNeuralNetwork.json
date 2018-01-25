@@ -5,7 +5,8 @@
     "script": "twitterNeuralNetwork.js",
     "cwd": "/home/tc/twitterNeuralNetwork",
     "node_args": "--max-old-space-size=6144",
-    "autorestart": false,
+    "autorestart": true,
+    "restart_delay": 60000,
     "env": {
       "NODE_ENV": "production",
       "GCLOUD_PROJECT": "graphic-tangent-627",
