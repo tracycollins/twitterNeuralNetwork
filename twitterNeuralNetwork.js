@@ -61,7 +61,8 @@ const fs = require("fs");
 const inputTypes = ["emoji", "hashtags", "images", "mentions", "urls", "words"];
 inputTypes.sort();
 
-let prevFileModifiedMoment = moment("2010-01-01");
+let prevTrainingSetFileModifiedMoment = moment("2010-01-01");
+let prevRequiredTrainingSetFileModifiedMoment = moment("2010-01-01");
 
 let networkIndex = 0;
 
@@ -72,16 +73,17 @@ let neutralImageHistogram = {};
 
 const MIN_INPUT_HITS = 10;
 const DEFAULT_MAX_NEURAL_NETWORK_CHILDREN = 2;
-const DEFAULT_TEST_RATIO = 0.1;
+const DEFAULT_TEST_RATIO = 0.20;
 
 const DEFAULT_NETWORK_CREATE_MODE = "evolve";
 const DEFAULT_ITERATIONS = 10;
 const DEFAULT_SEED_NETWORK_ID = false;
+const DEFAULT_SEED_NETWORK_PROBABILITY = 0.75;
 
 // const DEFAULT_ENABLE_RANDOM = true;
 // const DEFAULT_BATCH_MAX_INSTANCES = 3;
 const DEFAULT_BEST_NETWORK_NUMBER = 5;
-const SEED_NETWORK_PROBABILITY = 0.9;
+const SEED_NETWORK_PROBABILITY = DEFAULT_SEED_NETWORK_PROBABILITY;
 
 const DEFAULT_EVOLVE_THREADS = 1;
 const DEFAULT_EVOLVE_ARCHITECTURE = "random";
@@ -216,6 +218,7 @@ configuration.interruptFlag = false;
 configuration.useLocalNetworksOnly = false;
 configuration.networkCreateIntervalTime = 10000;
 configuration.enableSeedNetwork = true;
+configuration.seedNetworkProbability = DEFAULT_SEED_NETWORK_PROBABILITY;
 
 configuration.initMainIntervalTime = DEFAULT_INIT_MAIN_INTERVAL;
 configuration.enableRequiredTrainingSet = false;
@@ -682,7 +685,6 @@ function printNetworkCreateResultsHashmap(){
 
     const snId = (networkObj.seedNetworkId !== undefined) ? networkObj.seedNetworkId : "---";
     const snIdRes = (networkObj.seedNetworkId !== undefined) ? networkObj.seedNetworkRes.toFixed(2) : "---";
-    // const snIdRes = (networkObj.seedNetworkId !== undefined) ? bestNetworkHashMap.get(networkObj.seedNetworkId).network.successRate : "---";
 
     const iterations = (networkObj.evolve.results !== undefined) ? networkObj.evolve.results.iterations : "---";
     const error = ((networkObj.evolve.results !== undefined) 
@@ -887,7 +889,6 @@ process.on("exit", function() {
     delete neuralNetworkChildHashMap[nnChildId];
 
   });
-
 });
 
 
@@ -1150,23 +1151,23 @@ function initRequiredTrainingSet(cnf, callback){
 
     const fileModifiedMoment = moment(new Date(response.client_modified));
   
-    if (fileModifiedMoment.isSameOrBefore(prevFileModifiedMoment)){
+    if (fileModifiedMoment.isSameOrBefore(prevTrainingSetFileModifiedMoment)){
       console.log(chalkInfo("NNT | REQUIRED TRAINING SET FILE BEFORE OR EQUAL"
         + " | " + cnf.trainingSetsDir + "/" + cnf.requiredTrainingSetFile
-        + " | PREV: " + prevFileModifiedMoment.format(compactDateTimeFormat)
+        + " | PREV: " + prevTrainingSetFileModifiedMoment.format(compactDateTimeFormat)
         + " | " + fileModifiedMoment.format(compactDateTimeFormat)
       ));
       configEvents.emit("REQUIRED_TRAINING_SET_CONFIG_COMPLETE");
       callback(null);
     }
     else {
-      console.log(chalkInfo("NNT | REQUIRED TRAINING SET FILE AFTER"
+      console.log(chalkInfo("NNT | ... REQUIRED TRAINING SET FILE AFTER"
         + " | " + cnf.trainingSetsDir + "/" + cnf.requiredTrainingSetFile
-        + " | PREV: " + prevFileModifiedMoment.format(compactDateTimeFormat)
+        + " | PREV: " + prevTrainingSetFileModifiedMoment.format(compactDateTimeFormat)
         + " | " + fileModifiedMoment.format(compactDateTimeFormat)
       ));
 
-      prevFileModifiedMoment = moment(fileModifiedMoment);
+      prevTrainingSetFileModifiedMoment = moment(fileModifiedMoment);
 
       loadFile(cnf.trainingSetsDir, cnf.requiredTrainingSetFile, function(err, data){
 
@@ -1206,15 +1207,15 @@ function initRequiredTrainingSet(cnf, callback){
           if (requiredTrainingSetString !== ""){
             requiredTrainingSet.add(requiredTrainingSetString);
             console.log(chalkInfo("NNT | +++ REQ TRAINING SET | " + requiredTrainingSetString));
-            // async.setImmediate(function() {
+            async.setImmediate(function() {
               cb();
-            // });
+            });
           }
           else {
             console.log(chalkInfo("NNT | ??? REQ TRAINING SET | " + requiredTrainingSetString));
-            // async.setImmediate(function() {
+            async.setImmediate(function() {
               cb();
-            // });
+            });
           }
 
 
@@ -1257,7 +1258,7 @@ function initStatsUpdate(cnf, callback){
 
 function loadBestNetworkDropboxFolder(folder, callback){
 
-  console.log(chalkNetwork("NNT | LOADING DROPBOX BEST NN FOLDER | " + folder));
+  console.log(chalkNetwork("NNT | ... LOADING DROPBOX BEST NN FOLDER | " + folder));
 
   if (configuration.useLocalNetworksOnly) {
     return (callback(null, []));
@@ -1430,23 +1431,6 @@ function loadBestNetworkDropboxFolder(folder, callback){
               });
             }
 
-
-            // console.log(chalkInfo("NNT | DB BEST NN"
-            //   + " | " + networkObj.successRate.toFixed(2) + "%"
-            //   + " | " + getTimeStamp(networkObj.createdAt)
-            //   + " | " + networkObj.networkId
-            //   + " | " + networkObj.networkCreateMode
-            //   + " | IN: " + networkObj.numInputs
-            //   + " | OUT: " + networkObj.numOutputs
-            // ));
-
-            // entry.network = {};
-            // entry.network = networkObj;
-
-            // bestNetworkHashMap.set(entry.name, entry);
-            // nnArray.push(networkObj);
-            // cb();
-
           }
 
         });
@@ -1508,7 +1492,7 @@ function loadBestNeuralNetworkFile(){
 
   return new Promise(function(resolve, reject) {
 
-    console.log(chalkNetwork("NNT | LOADING DROPBOX BEST NEURAL NETWORK | " + globalBestNetworkFolder));
+    console.log(chalkNetwork("NNT | ... LOADING DROPBOX BEST NEURAL NETWORK | " + globalBestNetworkFolder));
 
     loadBestNetworkDropboxFolder(globalBestNetworkFolder, function(err, dropboxNetworksArray){
 
@@ -1563,7 +1547,7 @@ function loadBestNeuralNetworkFile(){
           }
           else if (currentBestNetwork) {
 
-            printNetworkObj("NNT | LOADING NEURAL NETWORK", nnCurrent);
+            printNetworkObj("NNT | ... LOADING NEURAL NETWORK", nnCurrent);
 
             if (currentBestNetwork.networkId !== nnCurrent.networkId) {
 
@@ -1720,7 +1704,7 @@ function loadNeuralNetwork(options, callback){
 
 function loadSeedNeuralNetwork(options, callback){
 
-  console.log(chalkNetwork("NNT | LOADING SEED NETWORK FROM DB\nOPTIONS: " + jsonPrint(options)));
+  console.log(chalkNetwork("NNT | ... LOADING SEED NETWORK FROM DB\nOPTIONS: " + jsonPrint(options)));
 
   let findQuery = {};
   // let findOneNetwork = false;
@@ -1728,12 +1712,12 @@ function loadSeedNeuralNetwork(options, callback){
   if ((options.networkId !== undefined) && (options.networkId !== "false")) {
 
     if (options.networkId === "BEST") {
-      console.log(chalkAlert("NNT | LOADING " + DEFAULT_BEST_NETWORK_NUMBER + " BEST NETWORKS"));
+      console.log(chalkAlert("NNT | ... LOADING " + DEFAULT_BEST_NETWORK_NUMBER + " BEST NETWORKS"));
     }
     else {
       // findOneNetwork = true;
       findQuery.networkId = options.networkId;
-      console.log(chalkAlert("NNT | LOADING SEED NETWORK " + options.folder + "/" + options.networkId));
+      console.log(chalkAlert("NNT | ... LOADING SEED NETWORK " + options.folder + "/" + options.networkId));
     }
 
   }
@@ -1893,6 +1877,7 @@ function initialize(cnf, callback){
   cnf.enableStdin = process.env.TNN_ENABLE_STDIN || true ;
   cnf.networkCreateMode = process.env.TNN_NETWORK_CREATE_MODE || DEFAULT_NETWORK_CREATE_MODE ;
   cnf.initMainIntervalTime = process.env.TNN_INIT_MAIN_INTERVAL || DEFAULT_INIT_MAIN_INTERVAL ;
+  cnf.seedNetworkProbability = process.env.TNN_SEED_NETWORK_PROBABILITY || DEFAULT_SEED_NETWORK_PROBABILITY ;
 
   cnf.crossEntropyWorkAroundEnabled = false ;
 
@@ -2055,6 +2040,11 @@ function initialize(cnf, callback){
           }
         }
 
+
+        if (loadedConfigObj.TNN_SEED_NETWORK_PROBABILITY !== undefined){
+          console.log("NNT | LOADED TNN_SEED_NETWORK_PROBABILITY: " + loadedConfigObj.TNN_SEED_NETWORK_PROBABILITY);
+          cnf.seedNetworkProbability = loadedConfigObj.TNN_SEED_NETWORK_PROBABILITY;
+        }
 
         if (loadedConfigObj.TNN_INIT_MAIN_INTERVAL !== undefined){
           console.log("NNT | LOADED TNN_INIT_MAIN_INTERVAL: " + loadedConfigObj.TNN_INIT_MAIN_INTERVAL);
@@ -3222,7 +3212,8 @@ function generateRandomEvolveConfig (cnf, callback){
 
   console.log(chalkLog("NNT | --------------------------------------------------------"));
 
-  config.seedNetworkId = (Math.random() < SEED_NETWORK_PROBABILITY) ? randomItem(bestNetworkHashMap.keys()) : false;
+  // config.seedNetworkId = (Math.random() < SEED_NETWORK_PROBABILITY) ? randomItem(bestNetworkHashMap.keys()) : false;
+  config.seedNetworkId = (Math.random() < cnf.seedNetworkProbability) ? randomItem(bestNetworkHashMap.keys()) : false;
 
   if (cnf.enableSeedNetwork && config.seedNetworkId) {
     config.network = bestNetworkHashMap.get(config.seedNetworkId).network;
@@ -3414,7 +3405,7 @@ function initMain(cnf, callback){
     classifiedUserHashmap = {};
     classifiedUserHashmap = classifiedUsersObj;
 
-    console.log(chalkLog("NNT | LOADED " + Object.keys(classifiedUserHashmap).length + " TOTAL CLASSIFED USERS"));
+    console.log(chalkInfo("NNT | LOADED " + Object.keys(classifiedUserHashmap).length + " TOTAL CLASSIFED USERS"));
 
     if (!cnf.createTrainingSet && (cnf.loadTrainingSetFromFile || cnf.trainingSetFile !== undefined)) {
 
@@ -3422,76 +3413,109 @@ function initMain(cnf, callback){
       let file;
 
       if (cnf.trainingSetFile !== undefined) {
-        console.log(chalkInfo("NNT | LOADING DEFAULT TRAINING SET FROM FILE " + trainingSetFolder + "/" + cnf.trainingSetFile));
+        console.log(chalkInfo("NNT | ... LOADING DEFAULT TRAINING SET FROM FILE " + trainingSetFolder + "/" + cnf.trainingSetFile));
         folder = trainingSetFolder;
         file = cnf.trainingSetFile;
       }
       else {
-        console.log(chalkInfo("NNT | LOADING DEFAULT TRAINING SET FROM FILE " + defaultTrainingSetFolder + "/" + defaultTrainingSetFile));
+        console.log(chalkInfo("NNT | ... LOADING DEFAULT TRAINING SET FROM FILE " + defaultTrainingSetFolder + "/" + defaultTrainingSetFile));
         folder = defaultTrainingSetFolder;
         file = defaultTrainingSetFile;
       }
 
 
-      loadFile(folder, file, function(err, tsNormal){
+      getFileMetadata(folder, file, function(err, response){
+
+        const fullPath = folder + "/" + file;
 
         if (err) {
-          console.error(chalkError("NNT | ERROR: loadFile: " + folder + "/" + file));
-          trainingSetReady = false;
-          createTrainingSetBusy = false;
-          callback(err, null);
+          console.log(chalkError("*** GET " + fullPath + " FILE METADATA ERROR\n" + jsonPrint(err)));
+          return(callback(err));
+        }
+
+        const fileModifiedMoment = moment(new Date(response.client_modified));
+      
+        if (fileModifiedMoment.isSameOrBefore(prevTrainingSetFileModifiedMoment)){
+          console.log(chalkInfo("NNT | TRAINING SET FILE BEFORE OR EQUAL"
+            + " | " + fullPath
+            + " | PREV: " + prevTrainingSetFileModifiedMoment.format(compactDateTimeFormat)
+            + " | " + fileModifiedMoment.format(compactDateTimeFormat)
+          ));
+          trainingSetReady = true;
+          callback(null);
         }
         else {
+
+          trainingSetReady = false;
+
+          console.log(chalkInfo("NNT | ... TRAINING SET FILE AFTER"
+            + " | " + folder + "/" + file
+            + " | PREV: " + prevTrainingSetFileModifiedMoment.format(compactDateTimeFormat)
+            + " | " + fileModifiedMoment.format(compactDateTimeFormat)
+          ));
+
+          prevTrainingSetFileModifiedMoment = moment(fileModifiedMoment);
 
           trainingSetNormalized = [];
           testObj.testSet = [];
 
-          trainingSetNormalizedTotal = tsNormal;
+          loadFile(folder, file, function(err, tsNormal){
 
-          console.log(chalkLog("NNT | LOADED " + trainingSetNormalizedTotal.length
-            + " | " + trainingSetNormalizedTotal[0].input.length + " INPUTS"
-            + " | " + trainingSetNormalizedTotal[0].output.length + " OUTPUTS"
-          ));
-
-          testObj.numInputs = trainingSetNormalizedTotal[0].input.length;
-          testObj.numOutputs = trainingSetNormalizedTotal[0].output.length;
-
-          initRequiredTrainingSet(cnf, function(err){
-
-            async.each(trainingSetNormalizedTotal, function(dataObj, cb){
-
-              if (configuration.testMode) {
-                testObj.testSet.push(dataObj);
-                cb();
-              }
-              else if (requiredTrainingSet.has(dataObj.user.screenName.toLowerCase())) {
-                console.log(chalkAlert("NNT | +++ ADD REQ TRAINING SET | @" + dataObj.user.screenName));
-                trainingSetNormalized.push(dataObj);
-                cb();
-              }
-              else if (Math.random() > cnf.testSetRatio) {
-                trainingSetNormalized.push(dataObj);
-                cb();
-              }
-              else {
-                testObj.testSet.push(dataObj);
-                cb();
-              }
-            }, function(){
-
-              trainingSetReady = true;
+            if (err) {
+              console.error(chalkError("NNT | ERROR: loadFile: " + folder + "/" + file));
+              trainingSetReady = false;
               createTrainingSetBusy = false;
+              callback(err, null);
+            }
+            else {
 
-              setTimeout(function(){
-                callback(null, trainingSetNormalizedTotal.length);
-              }, 3000);
-            });
+              trainingSetNormalizedTotal = tsNormal;
 
+              console.log(chalkLog("NNT | LOADED TRAINING SET" 
+                + " | " + trainingSetNormalizedTotal.length + " DATA POINTS"
+                + " | " + trainingSetNormalizedTotal[0].input.length + " INPUTS"
+                + " | " + trainingSetNormalizedTotal[0].output.length + " OUTPUTS"
+              ));
+
+              testObj.numInputs = trainingSetNormalizedTotal[0].input.length;
+              testObj.numOutputs = trainingSetNormalizedTotal[0].output.length;
+
+              initRequiredTrainingSet(cnf, function(err){
+
+                async.each(trainingSetNormalizedTotal, function(dataObj, cb){
+
+                  if (configuration.testMode) {
+                    testObj.testSet.push(dataObj);
+                    cb();
+                  }
+                  else if (requiredTrainingSet.has(dataObj.user.screenName.toLowerCase())) {
+                    console.log(chalkAlert("NNT | +++ ADD REQ TRAINING SET | @" + dataObj.user.screenName));
+                    trainingSetNormalized.push(dataObj);
+                    cb();
+                  }
+                  else if (Math.random() > cnf.testSetRatio) {
+                    trainingSetNormalized.push(dataObj);
+                    cb();
+                  }
+                  else {
+                    testObj.testSet.push(dataObj);
+                    cb();
+                  }
+                }, function(){
+
+                  trainingSetReady = true;
+                  createTrainingSetBusy = false;
+
+                  setTimeout(function(){
+                    callback(null, trainingSetNormalizedTotal.length);
+                  }, 3000);
+                });
+              });
+            }
           });
-
         }
-
       });
+
     }
     else {
       updateClassifiedUsers(cnf, function(err, clUsHist){
@@ -3573,7 +3597,6 @@ function initMain(cnf, callback){
     }
 
   });
-
 }
 
 let networkCreateInterval;
@@ -3786,7 +3809,6 @@ function initNeuralNetworkChild(cnf, callback){
           networkObj.test = {};
           networkObj.test = statsObj.tests[testObj.testRunId][m.processName];
 
-
           networkCreateResultsHashmap[networkObj.networkId] = {};
           networkCreateResultsHashmap[networkObj.networkId] = omit(networkObj, ["network", "inputs", "outputs"]);
 
@@ -3795,7 +3817,7 @@ function initNeuralNetworkChild(cnf, callback){
           let entry;
 
           if (m.statsObj.evolve.results.iterations < networkObj.evolve.options.iterations) {
-            console.log(chalkLog("NNT | XXX | NOT SAVING NN FILE TO DROPBOX ... EARLY COMPLETE?"
+            console.log(chalkError("NNT | XXX | NOT SAVING NN FILE TO DROPBOX ... EARLY COMPLETE?"
               + " | " + networkObj.networkId
               + " | ITRNS: " + m.statsObj.evolve.results.iterations
               + " | MIN: " + cnf.globalMinSuccessRate.toFixed(2) + "%"
@@ -3808,7 +3830,6 @@ function initNeuralNetworkChild(cnf, callback){
               neuralNetworkChildHashMap[m.processName].ready = true; 
             }
           }
-          // else if (results.successRate > cnf.minSuccessRate) {
           else if ((m.networkObj.seedNetworkId && (results.successRate > m.networkObj.seedNetworkRes))
                   || ((m.networkObj.seedNetworkId === undefined) && (results.successRate > cnf.minSuccessRate))) {
 
@@ -3824,17 +3845,15 @@ function initNeuralNetworkChild(cnf, callback){
 
             if (results.successRate > cnf.globalMinSuccessRate) {
 
-              console.log(chalkLog("NNT | SAVING NN FILE TO DROPBOX GLOBAL BEST"
+              console.log(chalkInfo("NNT | ... SAVING NN FILE TO DROPBOX GLOBAL BEST"
                 + " | " + globalBestNetworkFolder + "/" + bestNetworkFile
               ));
 
               saveFile({folder: globalBestNetworkFolder, file: bestNetworkFile, obj: networkObj});
 
             }
-            // networkCreateResultsHashmap[networkObj.networkId] = {};
-            // networkCreateResultsHashmap[networkObj.networkId] = omit(networkObj, ["network", "inputs", "outputs"]);
 
-            console.log(chalkLog("NNT | SAVING NN FILE TO DROPBOX"
+            console.log(chalkInfo("NNT | ... SAVING NN FILE TO DROPBOX"
               + " | " + bestNetworkFolder + "/" + bestNetworkFile
             ));
 
@@ -3859,59 +3878,36 @@ function initNeuralNetworkChild(cnf, callback){
 
             });
           }
-          // else if (results.successRate > cnf.minLocalSuccessRate) {
 
-          //   const localNetworkFile = m.networkObj.networkId + ".json";
-
-          //   // networkCreateResultsHashmap[networkObj.networkId] = {};
-          //   // networkCreateResultsHashmap[networkObj.networkId] = omit(networkObj, ["network", "inputs", "outputs"]);
-
-          //   console.log(chalkLog("NNT | SAVING NN FILE TO LOCAL DROPBOX"
-          //     + " | " + localNetworkFolder + "/" + localNetworkFile
-          //   ));
-
-          //   saveFile({
-          //     folder: localNetworkFolder, 
-          //     file: localNetworkFile, 
-          //     obj: networkObj
-          //   }, function(err){
-
-          //     if (err) {
-          //       console.error(chalkError("SAVE LOCAL BEST NETWORK ERROR " + err));
-          //     }
-          //     console.log("NNT | SAVED NETWORK TO LOCAL DROPBOX"
-          //       + " | " + localNetworkFile
-          //     );
-
-          //     entry = {
-          //       client_modified: moment().valueOf(),
-          //       name: localNetworkFile,
-          //       content_hash: false
-          //     };
-
-          //     bestNetworkHashMap.set(networkObj.networkId, { entry: entry, network: networkObj});
-
-          //     printNetworkObj("NNT | " + networkObj.networkId, networkObj);
-
-          //     if (neuralNetworkChildHashMap[m.processName] !== undefined) { 
-          //       neuralNetworkChildHashMap[m.processName].ready = true; 
-          //     }
-
-          //   });
-          // }
           else {
-            console.log(chalkLog("NNT | XXX | NOT SAVING NN FILE TO DROPBOX ... LESS THAN GLOBAL MIN SUCCESS"
+            console.log(chalkInfo("NNT | XXX | NOT SAVING NN FILE TO GLOBAL DROPBOX ... LESS THAN GLOBAL MIN SUCCESS"
               + " | " + networkObj.networkId
               + " | " + networkObj.successRate.toFixed(2) + "%"
               + " | " + cnf.globalMinSuccessRate.toFixed(2) + "%"
             ));
 
-            printNetworkObj("NNT | " + networkObj.networkId, networkObj);
 
-            // if (neuralNetworkChildHashMap[m.processName] !== undefined) { 
-            //   neuralNetworkChildHashMap[m.processName] = {}; 
-            //   delete neuralNetworkChildHashMap[m.processName]; 
-            // }
+            if (results.successRate > cnf.minLocalSuccessRate) {
+
+              const localNetworkFile = m.networkObj.networkId + ".json";
+
+              entry = {
+                client_modified: moment().valueOf(),
+                name: bestNetworkFile,
+                content_hash: false
+              };
+
+              bestNetworkHashMap.set(networkObj.networkId, { entry: entry, network: networkObj});
+
+              console.log(chalkInfo("NNT | ... SAVING NN FILE TO DROPBOX LOCAL BEST"
+                + " | " + localNetworkFolder + "/" + localNetworkFile
+              ));
+
+              saveFile({folder: localNetworkFolder, file: localNetworkFile, obj: networkObj});
+
+            }
+
+            printNetworkObj("NNT | " + networkObj.networkId, networkObj);
 
             if (neuralNetworkChildHashMap[m.processName] !== undefined) { 
               neuralNetworkChildHashMap[m.processName].ready = true; 
@@ -4013,10 +4009,16 @@ if (process.env.TNN_BATCH_MODE){
 }
 
 
+// setTimeout(function() {
+//   console.log("NNT | **** Finished closing connections ****"
+//     + "\n\n NNT | ***** RELOADING twitterNeuralNet.js NOW *****\n\n");
+//   process.exit(0);
+// }, 5000);
+
 initTimeout(function(){
 
   initMain(configuration, function(){
-    console.log(chalkLog("FIRST INIT MAIN CALLBACK"
+    debug(chalkLog("FIRST INIT MAIN CALLBACK"
       + " | configuration.initMainIntervalTime: " + configuration.initMainIntervalTime
     ));
   });
@@ -4034,7 +4036,7 @@ initTimeout(function(){
 
     if (trainingSetReady || !createTrainingSetBusy) {
       initMain(configuration, function(){
-        console.log(chalkLog("INIT MAIN CALLBACK"));
+        debug(chalkLog("INIT MAIN CALLBACK"));
       });
     }
 
