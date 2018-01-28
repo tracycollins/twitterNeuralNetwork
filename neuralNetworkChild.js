@@ -696,13 +696,17 @@ function evolve(params, callback){
             );
             cb0();            
           }
-          else {
+          else if (i < network.input) {
             console.log(chalkError("*** NOT INPUT NODE [" + i  + "]\n" + jsonPrint(network.nodes[i])));
             cb0("NOT INPUT NODE");            
           }
+          else {
+            console.log(chalkInfo("... NOT INPUT or OUTPUT NODE [" + i  + "]\n" + jsonPrint(network.nodes[i])));
+            cb0();
+          }
         }, function(err){
           if (err) {
-            return;
+            return callback(err, null);
           }
           trainingSetPrepAndEvolve(params, options, function(err, results){
             callback(err, results);
