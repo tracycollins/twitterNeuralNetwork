@@ -3557,9 +3557,9 @@ function initMain(cnf, callback){
               trainingSetNormalizedTotal = tsNormal;
 
               console.log(chalkLog("NNT | LOADED TRAINING SET" 
-                + " | " + trainingSetNormalizedTotal.length + " DATA POINTS"
-                + " | " + trainingSetNormalizedTotal[0].input.length + " INPUTS"
-                + " | " + trainingSetNormalizedTotal[0].output.length + " OUTPUTS"
+                + " | " + trainingSetNormalizedTotal.meta.setSize + " DATA POINTS"
+                + " | " + trainingSetNormalizedTotal.meta.numInputs + " INPUTS"
+                + " | " + trainingSetNormalizedTotal.meta.numOutputs + " OUTPUTS"
               ));
 
               testObj.numInputs = trainingSetNormalizedTotal.meta.numInputs;
@@ -3567,7 +3567,7 @@ function initMain(cnf, callback){
 
               initRequiredTrainingSet(cnf, function(err){
 
-                async.each(trainingSetNormalizedTotal, function(dataObj, cb){
+                async.each(trainingSetNormalizedTotal.data, function(dataObj, cb){
 
                   if (configuration.testMode) {
                     testObj.testSet.push(dataObj);
