@@ -1167,23 +1167,22 @@ function initRequiredTrainingSet(cnf, callback){
 
     const fileModifiedMoment = moment(new Date(response.client_modified));
   
-    if (fileModifiedMoment.isSameOrBefore(prevTrainingSetFileModifiedMoment)){
+    if (fileModifiedMoment.isSameOrBefore(prevRequiredTrainingSetFileModifiedMoment)){
       console.log(chalkInfo("NNT | REQUIRED TRAINING SET FILE BEFORE OR EQUAL"
         + " | " + cnf.trainingSetsDir + "/" + cnf.requiredTrainingSetFile
-        + " | PREV: " + prevTrainingSetFileModifiedMoment.format(compactDateTimeFormat)
+        + " | PREV: " + prevRequiredTrainingSetFileModifiedMoment.format(compactDateTimeFormat)
         + " | " + fileModifiedMoment.format(compactDateTimeFormat)
       ));
-      configEvents.emit("REQUIRED_TRAINING_SET_CONFIG_COMPLETE");
       callback(null);
     }
     else {
       console.log(chalkInfo("NNT | ... REQUIRED TRAINING SET FILE AFTER"
         + " | " + cnf.trainingSetsDir + "/" + cnf.requiredTrainingSetFile
-        + " | PREV: " + prevTrainingSetFileModifiedMoment.format(compactDateTimeFormat)
+        + " | PREV: " + prevRequiredTrainingSetFileModifiedMoment.format(compactDateTimeFormat)
         + " | " + fileModifiedMoment.format(compactDateTimeFormat)
       ));
 
-      prevTrainingSetFileModifiedMoment = moment(fileModifiedMoment);
+      prevRequiredTrainingSetFileModifiedMoment = moment(fileModifiedMoment);
 
       loadFile(cnf.trainingSetsDir, cnf.requiredTrainingSetFile, function(err, data){
 
@@ -1237,12 +1236,10 @@ function initRequiredTrainingSet(cnf, callback){
 
         }, function(err){
           if (err) {
-            configEvents.emit("REQUIRED_TRAINING_SET_CONFIG_COMPLETE");
             callback(err);
           }
           else {
-            configEvents.emit("REQUIRED_TRAINING_SET_CONFIG_COMPLETE");
-            console.log(chalkInfo("NNT | +++ REQ TRAINING SET | " + requiredTrainingSetString));
+            console.log(chalkInfo("NNT | INIT REQ TRAINING SET COMPLETE| " + requiredTrainingSet.size));
             callback(null);
           }
         });
@@ -3567,33 +3564,44 @@ function initMain(cnf, callback){
 
               initRequiredTrainingSet(cnf, function(err){
 
-                async.each(trainingSetNormalizedTotal.data, function(dataObj, cb){
+                async.eachSeries(trainingSetNormalizedTotal.data, function(dataObj, cb){
 
                   if (configuration.testMode) {
                     testObj.testSet.push(dataObj);
-                    cb();
+                    async.setImmediate(function() { 
+                      cb(); 
+                    });
                   }
                   else if (requiredTrainingSet.has(dataObj.user.screenName.toLowerCase())) {
                     console.log(chalkAlert("NNT | +++ ADD REQ TRAINING SET | @" + dataObj.user.screenName));
                     trainingSetNormalized.data.push(dataObj);
-                    cb();
+                    async.setImmediate(function() { 
+                      cb(); 
+                    });
                   }
                   else if (Math.random() > cnf.testSetRatio) {
                     trainingSetNormalized.data.push(dataObj);
-                    cb();
+                    async.setImmediate(function() { 
+                      cb(); 
+                    });
                   }
                   else {
                     testObj.testSet.push(dataObj);
-                    cb();
+                    async.setImmediate(function() { 
+                      cb(); 
+                    });
                   }
                 }, function(){
 
                   trainingSetReady = true;
                   createTrainingSetBusy = false;
 
+                  trainingSetNormalizedTotal.meta.setSize = trainingSetNormalizedTotal.data.length;
+                  trainingSetNormalized.meta.setSize = trainingSetNormalized.data.length;
+
                   setTimeout(function(){
-                    callback(null, trainingSetNormalizedTotal.length);
-                  }, 3000);
+                    callback(null, trainingSetNormalizedTotal.meta.setSize);
+                  }, 1000);
                 });
               });
             }
@@ -3623,8 +3631,9 @@ function initMain(cnf, callback){
           return callback("NO TRAINING SET DATA POINTS", null);
         }
 
+        trainingSetNormalized.meta.setSize = trainingSetNormalized.data.length;
         console.log(chalkBlue("\nNNT | TRAINING SET NORMALIZED"
-          + " | " + trainingSetNormalized.data.length + " DATA POINTS"
+          + " | " + trainingSetNormalized.meta.setSize + " DATA POINTS"
           + " | NN CREATE MODE: " + cnf.networkCreateMode
           // + " | " + jsonPrint(trainingSetNormalized[0])
         ));
