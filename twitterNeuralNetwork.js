@@ -1,7 +1,7 @@
 /*jslint node: true */
 "use strict";
 
-const TEST_MODE = true;
+const TEST_MODE = false;
 const TEST_MODE_LENGTH = 1000;
 
 const OFFLINE_MODE = process.env.OFFLINE_MODE === "true" || false;
@@ -550,9 +550,9 @@ const defaultTrainingSetFile = "trainingSet.json";
 const statsFolder = "/stats/" + hostname + "/neuralNetwork";
 const statsFile = "twitterNeuralNetworkStats_" + statsObj.runId + ".json";
 
-// const globalBestNetworkFolder = "/config/utility/best/neuralNetworks";
+const globalBestNetworkFolder = "/config/utility/best/neuralNetworks";
 const bestNetworkFolder = "/config/utility/" + hostname + "/neuralNetworks/best";
-const globalBestNetworkFolder = bestNetworkFolder;
+// const globalBestNetworkFolder = bestNetworkFolder;
 const localNetworkFolder = "/config/utility/" + hostname + "/neuralNetworks/local";
 let bestNetworkFile;
 
