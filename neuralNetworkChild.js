@@ -129,6 +129,8 @@ statsObj.memory.rss = process.memoryUsage().rss/(1024*1024);
 statsObj.memory.maxRss = process.memoryUsage().rss/(1024*1024);
 statsObj.memory.maxRssTime = moment().valueOf();
 
+statsObj.inputTypes = [];
+
 statsObj.evolve = {};
 statsObj.evolve.startTime = moment().valueOf();
 statsObj.evolve.endTime;
@@ -369,29 +371,139 @@ function testEvolve(params, callback){
   });
 }
 
+function printDatum(title, input){
+
+  // console.log("\nNNT | ------------- " + title + " -------------");
+  // console.log("printDatum\n" + jsonPrint(input));
+
+  let row = "";
+  let col = 0;
+  let rowNum = 0;
+  const COLS = 50;
+
+  console.log("\nNNT | ------------- " + title + " -------------");
+
+  input.forEach(function(bit, i){
+    if (i === 0) {
+      row = row + bit.toFixed(10) + " | " ;
+    }
+    else if (i === 1) {
+      row = row + bit.toFixed(10);
+    }
+    else if (i === 2) {
+      console.log("NNT | ROW " + rowNum + " | " + row);
+      row = bit ? "X" : ".";
+      col = 1;
+      rowNum += 1;
+    }
+    else if (col < COLS){
+      row = row + (bit ? "X" : ".");
+      col += 1;
+    }
+    else {
+      console.log("NNT | ROW " + rowNum + " | " + row);
+      row = bit ? "X" : ".";
+      col = 1;
+      rowNum += 1;
+    }
+  });
+}
+
+function convertDatum(datum, callback){
+
+  // console.log("convertedDatum");
+
+  let convertedDatum = {};
+  convertedDatum.user = {};
+  convertedDatum.user = datum.user;
+  convertedDatum.input = [];
+  convertedDatum.output = [];
+
+  switch (datum.classification) {
+    case "left":
+    convertedDatum.output = [1, 0, 0];
+    break;
+    case "neutral":
+    convertedDatum.output = [0, 1, 0];
+    break;
+    case "right":
+    convertedDatum.output = [0, 0, 1];
+    break;
+    case "default":
+    convertedDatum.output = [0, 0, 0];
+  }
+
+  convertedDatum.input.push(datum.inputHits.sentiment[0].magnitude);
+  convertedDatum.input.push(datum.inputHits.sentiment[1].score);
+
+  // console.log("datum.inputHits.sentiment\n " + jsonPrint(datum.inputHits.sentiment));
+
+  // let inputTypeArray = Object.keys(statsObj.inputs);
+
+  // console.log("inputTypeArray: " + inputTypeArray);
+
+  async.eachSeries(statsObj.inputTypes, function(inputType, cb0){
+    // console.log("convertedDatum | " + inputType);
+
+    async.eachSeries(statsObj.inputs[inputType], function(inName, cb1){
+      const inputName = inName;
+      // console.log("convertedDatum | " + inputType + " |   " + inputName);
+      if (datum.inputHits[inputType].includes(inputName)){
+        // console.log(chalkAlert("convertedDatum | " + inputType + " | * " + inputName));
+        convertedDatum.input.push(1);
+        async.setImmediate(function() {
+          cb1();
+        });
+      }
+      else {
+        // console.log("convertedDatum | " + inputType + " | - " + inputName);
+        convertedDatum.input.push(0);
+        async.setImmediate(function() {
+          cb1();
+        });
+      }
+    }, function(){
+      // async.setImmediate(function() {
+        cb0();
+      // });
+    });
+
+  }, function(){
+    // printDatum(convertedDatum.user.screenName, convertedDatum.input);
+    callback(null, convertedDatum);
+  });
+
+}
+
 function trainingSetPrepAndEvolve(params, options, callback){
 
   let trainingSet = [];
 
-  async.each(params.trainingSet, function(datumObj, cb){
+  async.eachSeries(params.trainingSet.data, function(datum, cb){
 
-    debug("DATUM | " + datumObj.output + " | " + datumObj.user.screenName);
+    convertDatum(datum, function(err, datumObj){
 
-    trainingSet.push({ 
-      input: datumObj.input, 
-      output: datumObj.output
-    });
+      debug("DATUM | " + datumObj.output + " | " + datumObj.user.screenName);
 
-    async.setImmediate(function() {
-      cb();
+      trainingSet.push({ 
+        input: datumObj.input, 
+        output: datumObj.output
+      });
+
+      async.setImmediate(function() {
+        cb();
+      });
+
     });
 
   }, function(){
 
     console.log(chalkAlert("NNC | START EVOLVE"
       + " | " + configuration.processName
-      + " | IN: " + params.trainingSet[0].input.length
-      + " | OUT: " + params.trainingSet[0].output.length
+      + " | IN: " + params.trainingSet.meta.numInputs
+      + " | IN: " + trainingSet[0].input.length
+      + " | OUT: " + params.trainingSet.meta.numOutputs
+      + " | OUT: " + trainingSet[0].output.length
       + " | ITRTNS: " + options.iterations
       + " | TRAINING SET: " + trainingSet.length + " DATA PTS"
     ));
@@ -592,7 +704,9 @@ function evolve(params, callback){
           if (err) {
             return;
           }
-          trainingSetPrepAndEvolve(params, options, callback);
+          trainingSetPrepAndEvolve(params, options, function(err, results){
+            callback(err, results);
+          });
         });
 
         console.log("NNC"
@@ -612,12 +726,12 @@ function evolve(params, callback){
         );
 
         network = new neataptic.architect.Perceptron(
-          params.trainingSet[0].input.length, 
+          params.trainingSet.meta.numInputs, 
           params.hiddenLayerSize,
-          params.trainingSet[0].output.length
+          params.trainingSet.meta.numOutputs
         );
 
-        inputArraySize = params.trainingSet[0].input.length;
+        inputArraySize = params.trainingSet.meta.numInputs;
 
         async.eachOfSeries(network.nodes, function(node, i, cb0){
           if (network.nodes[i].type === "input"){
@@ -657,7 +771,9 @@ function evolve(params, callback){
           if (err) {
             return;
           }
-          trainingSetPrepAndEvolve(params, options, callback);
+          trainingSetPrepAndEvolve(params, options, function(err, results){
+            callback(err, results);
+          });
         });
       break;
 
@@ -667,11 +783,11 @@ function evolve(params, callback){
           + " | " + params.architecture
         );
         network = new neataptic.Network(
-          params.trainingSet[0].input.length, 
-          params.trainingSet[0].output.length
+          params.trainingSet.meta.numInputs, 
+          params.trainingSet.meta.numOutputs
         );
 
-        inputArraySize = params.trainingSet[0].input.length;
+        inputArraySize = params.trainingSet.meta.numInputs;
 
         async.eachOfSeries(network.nodes, function(node, i, cb0){
           if (network.nodes[i].type === "input"){
@@ -711,7 +827,9 @@ function evolve(params, callback){
           if (err) {
             return;
           }
-          trainingSetPrepAndEvolve(params, options, callback);
+          trainingSetPrepAndEvolve(params, options, function(err, results){
+            callback(err, results);
+          });
         });
 
     }
@@ -819,9 +937,9 @@ function train(params, callback){
         );
 
         network = new neataptic.architect.Perceptron(
-          params.trainingSet[0].input.length, 
+          params.trainingSet.meta.numInputs, 
           options.hiddenLayerSize,
-          params.trainingSet[0].output.length
+          params.trainingSet.meta.numOutputs
         );
     }
 
@@ -841,9 +959,9 @@ function train(params, callback){
     }, function(){
 
       console.log(chalkAlert("\nNNC | ========================\nNNC | START TRAIN"
-        + "\nNNC | IN:       " + params.trainingSet[0].input.length
+        + "\nNNC | IN:       " + params.trainingSet.meta.numInputs
         + "\nNNC | HIDDEN:   " + options.hiddenLayerSize
-        + "\nNNC | OUT:      " + params.trainingSet[0].output.length
+        + "\nNNC | OUT:      " + params.trainingSet.meta.numOutputs
         + "\nNNC | TRAINING: " + trainingSet.length
       ));
 
@@ -902,6 +1020,7 @@ process.on("message", function(m) {
 
     case "INIT":
       statsObj.testRunId = m.testRunId;
+      statsObj.inputTypes = m.inputTypes;
       // statsFile = "neuralNetworkChildStats_" + statsObj.pid + "_" + statsObj.testRunId + ".json";
       console.log(chalkInfo("NNC | STATS FILE: " + statsFolder + "/" + statsFile));
       console.log(chalkInfo("NNC | NEURAL NET INIT"
@@ -926,135 +1045,135 @@ process.on("message", function(m) {
       process.send({op:"STATS", processName: configuration.processName, statsObj: statsObj});
     break;
 
-    case "TRAIN":
+    // case "TRAIN":
 
-      statsObj.training.startTime = moment().valueOf();
-      statsObj.training.testRunId = m.testRunId;
-      statsObj.training.iterations = m.iterations;
-      statsObj.training.trainingSet = {};
-      statsObj.training.trainingSet.length = m.trainingSet.length;
-      statsObj.training.trainingSet.numInputs = m.trainingSet[0].input.length;
-      statsObj.training.trainingSet.numOutputs = m.trainingSet[0].output.length;
+    //   statsObj.training.startTime = moment().valueOf();
+    //   statsObj.training.testRunId = m.testRunId;
+    //   statsObj.training.iterations = m.iterations;
+    //   statsObj.training.trainingSet = {};
+    //   statsObj.training.trainingSet.length = m.trainingSet.length;
+    //   statsObj.training.trainingSet.numInputs = m.trainingSet[0].input.length;
+    //   statsObj.training.trainingSet.numOutputs = m.trainingSet[0].output.length;
 
-      statsObj.inputs = {};
-      statsObj.inputs = m.inputs;
-      statsObj.outputs = {};
-      statsObj.outputs = m.outputs;
+    //   statsObj.inputs = {};
+    //   statsObj.inputs = m.inputs;
+    //   statsObj.outputs = {};
+    //   statsObj.outputs = m.outputs;
 
-      trainParams = {
-        runId: m.testRunId,
-        architecture: m.architecture,
-        inputs: m.inputs,
-        hiddenLayerSize: m.hiddenLayerSize,
-        outputs: m.outputs,
-        trainingSet: m.trainingSet,
-        log: m.log,
-        error: m.error,
-        cost: m.cost,
-        rate: m.rate,
-        dropout: m.dropout,
-        shuffle: m.shuffle,
-        iterations: m.iterations,
-        clear: m.clear,
-        momentum: m.momentum,
-        ratePolicy: m.ratePolicy,
-        batchSize: m.batchSize
-      };
+    //   trainParams = {
+    //     runId: m.testRunId,
+    //     architecture: m.architecture,
+    //     inputs: m.inputs,
+    //     hiddenLayerSize: m.hiddenLayerSize,
+    //     outputs: m.outputs,
+    //     trainingSet: m.trainingSet,
+    //     log: m.log,
+    //     error: m.error,
+    //     cost: m.cost,
+    //     rate: m.rate,
+    //     dropout: m.dropout,
+    //     shuffle: m.shuffle,
+    //     iterations: m.iterations,
+    //     clear: m.clear,
+    //     momentum: m.momentum,
+    //     ratePolicy: m.ratePolicy,
+    //     batchSize: m.batchSize
+    //   };
 
-      statsObj.train.options = {        
-        architecture: m.architecture,
-        inputs: m.inputs,
-        hiddenLayerSize: m.hiddenLayerSize,
-        outputs: m.outputs,
-        log: m.log,
-        error: m.error,
-        cost: m.cost,
-        rate: m.rate,
-        dropout: m.dropout,
-        shuffle: m.shuffle,
-        iterations: m.iterations,
-        clear: m.clear,
-        momentum: m.momentum,
-        ratePolicy: m.ratePolicy,
-        batchSize: m.batchSize
-      };
+    //   statsObj.train.options = {        
+    //     architecture: m.architecture,
+    //     inputs: m.inputs,
+    //     hiddenLayerSize: m.hiddenLayerSize,
+    //     outputs: m.outputs,
+    //     log: m.log,
+    //     error: m.error,
+    //     cost: m.cost,
+    //     rate: m.rate,
+    //     dropout: m.dropout,
+    //     shuffle: m.shuffle,
+    //     iterations: m.iterations,
+    //     clear: m.clear,
+    //     momentum: m.momentum,
+    //     ratePolicy: m.ratePolicy,
+    //     batchSize: m.batchSize
+    //   };
 
-      if (m.network && (m.network !== undefined)) {
+    //   if (m.network && (m.network !== undefined)) {
 
-        trainParams.network = m.network;
-        statsObj.train.options = m.network;
+    //     trainParams.network = m.network;
+    //     statsObj.train.options = m.network;
 
-        console.log(chalkAlert("\n\nNNC | NEURAL NET TRAIN | " + getTimeStamp()
-          + "\nNNC | RUN ID:     " + m.testRunId
-          + "\nNNC | NETWORK:    " + m.network.networkId + " | " + m.network.successRate.toFixed(2) + "%"
-          // + "\nNETWORK:    " + jsonPrint(m.network)
-          + "\nNNC | INPUTS:     " + statsObj.training.trainingSet.numInputs
-          + "\nNNC | OUTPUTS:    " + statsObj.training.trainingSet.numOutputs
-          + "\nNNC | DATA PTS:   " + m.trainingSet.length
-          + "\nNNC | ITERATIONS: " + statsObj.training.iterations
-          + "\n"
-        ));
-      }
-      else {
-        console.log(chalkAlert("\n\nNNC | NEURAL NET TRAIN | " + getTimeStamp()
-          + "\nNNC | RUN ID:     " + m.testRunId
-          + "\nNNC | INPUTS:     " + statsObj.training.trainingSet.numInputs
-          + "\nNNC | OUTPUTS:    " + statsObj.training.trainingSet.numOutputs
-          + "\nNNC | DATA PTS:   " + m.trainingSet.length
-          + "\nNNC | ITERATIONS: " + statsObj.training.iterations
-          + "\n"
-        ));
-      }
+    //     console.log(chalkAlert("\n\nNNC | NEURAL NET TRAIN | " + getTimeStamp()
+    //       + "\nNNC | RUN ID:     " + m.testRunId
+    //       + "\nNNC | NETWORK:    " + m.network.networkId + " | " + m.network.successRate.toFixed(2) + "%"
+    //       // + "\nNETWORK:    " + jsonPrint(m.network)
+    //       + "\nNNC | INPUTS:     " + statsObj.training.trainingSet.numInputs
+    //       + "\nNNC | OUTPUTS:    " + statsObj.training.trainingSet.numOutputs
+    //       + "\nNNC | DATA PTS:   " + m.trainingSet.length
+    //       + "\nNNC | ITERATIONS: " + statsObj.training.iterations
+    //       + "\n"
+    //     ));
+    //   }
+    //   else {
+    //     console.log(chalkAlert("\n\nNNC | NEURAL NET TRAIN | " + getTimeStamp()
+    //       + "\nNNC | RUN ID:     " + m.testRunId
+    //       + "\nNNC | INPUTS:     " + statsObj.training.trainingSet.numInputs
+    //       + "\nNNC | OUTPUTS:    " + statsObj.training.trainingSet.numOutputs
+    //       + "\nNNC | DATA PTS:   " + m.trainingSet.length
+    //       + "\nNNC | ITERATIONS: " + statsObj.training.iterations
+    //       + "\n"
+    //     ));
+    //   }
 
-      train(trainParams, function(err, results){
+    //   train(trainParams, function(err, results){
 
-        if (err) {
-          console.error(chalkError("NNC | TRAIN ERROR: " + err));
-          console.trace("NNC | TRAIN ERROR");
-          process.send({op: "ERROR", processName: configuration.processName, error: err}, function(){
-            quit(jsonPrint(err));
-          });
-        }
-        else {
+    //     if (err) {
+    //       console.error(chalkError("NNC | TRAIN ERROR: " + err));
+    //       console.trace("NNC | TRAIN ERROR");
+    //       process.send({op: "ERROR", processName: configuration.processName, error: err}, function(){
+    //         quit(jsonPrint(err));
+    //       });
+    //     }
+    //     else {
 
-          console.log(chalkAlert("\nNNC | TRAIN COMPLETE | " + getTimeStamp()
-            + " | RUN ID: " + m.testRunId
-            + " | TIME: " + results.time
-            + " | ITERATIONS: " + results.iterations
-            + " | ERROR: " + results.error
-            + "\n"
-          ));
+    //       console.log(chalkAlert("\nNNC | TRAIN COMPLETE | " + getTimeStamp()
+    //         + " | RUN ID: " + m.testRunId
+    //         + " | TIME: " + results.time
+    //         + " | ITERATIONS: " + results.iterations
+    //         + " | ERROR: " + results.error
+    //         + "\n"
+    //       ));
 
-          statsObj.training.endTime = moment().valueOf();
-          statsObj.training.elapsed = results.time;
+    //       statsObj.training.endTime = moment().valueOf();
+    //       statsObj.training.elapsed = results.time;
 
-          let exportedNetwork = network.toJSON();
+    //       let exportedNetwork = network.toJSON();
 
-          let networkObj = new NeuralNetwork();
-          networkObj.networkCreateMode = "train";
-          networkObj.testRunId = statsObj.training.testRunId;
-          networkObj.networkId = statsObj.training.testRunId + "_" + configuration.processName;
-          networkObj.network = exportedNetwork;
-          networkObj.inputs = statsObj.inputs;
-          networkObj.outputs = statsObj.outputs;
-          networkObj.train = {};
-          networkObj.train.results = {};
-          networkObj.train.results = results;
-          networkObj.train.options = {};
-          networkObj.train.options = omit(trainParams, "network");
-          networkObj.train.options = omit(networkObj.train.options, "input");
-          networkObj.train.options = omit(networkObj.train.options, "output");
-          if (trainParams.network){
-            networkObj.train.options.network = {};
-            networkObj.train.options.network.networkId = trainParams.network.networkId;
-          }
-          networkObj.elapsed = statsObj.training.elapsed;
+    //       let networkObj = new NeuralNetwork();
+    //       networkObj.networkCreateMode = "train";
+    //       networkObj.testRunId = statsObj.training.testRunId;
+    //       networkObj.networkId = statsObj.training.testRunId + "_" + configuration.processName;
+    //       networkObj.network = exportedNetwork;
+    //       networkObj.inputs = statsObj.inputs;
+    //       networkObj.outputs = statsObj.outputs;
+    //       networkObj.train = {};
+    //       networkObj.train.results = {};
+    //       networkObj.train.results = results;
+    //       networkObj.train.options = {};
+    //       networkObj.train.options = omit(trainParams, "network");
+    //       networkObj.train.options = omit(networkObj.train.options, "input");
+    //       networkObj.train.options = omit(networkObj.train.options, "output");
+    //       if (trainParams.network){
+    //         networkObj.train.options.network = {};
+    //         networkObj.train.options.network.networkId = trainParams.network.networkId;
+    //       }
+    //       networkObj.elapsed = statsObj.training.elapsed;
 
-          process.send({op:"TRAIN_COMPLETE", processName: configuration.processName, networkObj: networkObj, statsObj: statsObj});
-          showStats();
-        }
-      });
-    break;
+    //       process.send({op:"TRAIN_COMPLETE", processName: configuration.processName, networkObj: networkObj, statsObj: statsObj});
+    //       showStats();
+    //     }
+    //   });
+    // break;
     
 
     case "EVOLVE":
@@ -1065,9 +1184,9 @@ process.on("message", function(m) {
       statsObj.training.seedNetworkRes = m.seedNetworkRes;
       statsObj.training.iterations = m.iterations;
       statsObj.training.trainingSet = {};
-      statsObj.training.trainingSet.length = m.trainingSet.length;
-      statsObj.training.trainingSet.numInputs = m.trainingSet[0].input.length;
-      statsObj.training.trainingSet.numOutputs = m.trainingSet[0].output.length;
+      statsObj.training.trainingSet.length = m.trainingSet.meta.setSize;
+      statsObj.training.trainingSet.numInputs = m.trainingSet.meta.numInputs;
+      statsObj.training.trainingSet.numOutputs = m.trainingSet.meta.numOutputs;
 
       statsObj.inputs = {};
       statsObj.inputs = m.inputs;
@@ -1130,9 +1249,9 @@ process.on("message", function(m) {
           + " | SEED RES %: " + m.seedNetworkRes.toFixed(2)
           + "\n THREADs: " + m.threads
           + "\n NET: " + m.network.networkId + " | " + m.network.successRate.toFixed(2) + "%"
-          + " | IN: " + statsObj.training.trainingSet.numInputs
-          + " | OUT: " + statsObj.training.trainingSet.numOutputs
-          + "\n TRAINING SET: " + m.trainingSet.length
+          + " | IN: " + m.trainingSet.meta.numInputs
+          + " | OUT: " + m.trainingSet.meta.numOutputs
+          + "\n TRAINING SET: " + m.trainingSet.meta.setSize
           + " | ITRS: " + statsObj.training.iterations
         ));
       }
@@ -1143,9 +1262,9 @@ process.on("message", function(m) {
           + "\n SEED: " + "---"
           + " | SEED RES %: " + "---"
           + "\n THREADs: " + m.threads
-          + " | IN: " + statsObj.training.trainingSet.numInputs
-          + " | OUT: " + statsObj.training.trainingSet.numOutputs
-          + "\n TRAINING SET: " + m.trainingSet.length
+          + " | IN: " + m.trainingSet.meta.numInputs
+          + " | OUT: " + m.trainingSet.meta.numOutputs
+          + "\n TRAINING SET: " + m.trainingSet.meta.setSize
           + " | ITRS: " + statsObj.training.iterations
         ));
       }

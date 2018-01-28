@@ -1,6 +1,9 @@
 /*jslint node: true */
 "use strict";
 
+const TEST_MODE = true;
+const TEST_MODE_LENGTH = 1000;
+
 const OFFLINE_MODE = process.env.OFFLINE_MODE === "true" || false;
 
 console.log("OFFLINE_MODE: " + OFFLINE_MODE);
@@ -152,9 +155,18 @@ let trainingSetReady = false;
 let createTrainingSetBusy = false;
 
 let trainingSet = [];
-let trainingSetNormalized = [];
-let trainingSetNormalizedTotal = [];  // to be saved to dropbox
-// let trainingSetBasic = []; // only { input: xxx, output: ooo }
+let trainingSetNormalized = {};
+trainingSetNormalized.meta = {};
+trainingSetNormalized.meta.numInputs = 0;
+trainingSetNormalized.meta.numOutputs = 3;
+trainingSetNormalized.meta.setSize = 0;
+trainingSetNormalized.data = [];
+
+let trainingSetNormalizedTotal = {};  // to be saved to dropbox
+trainingSetNormalizedTotal.meta = {};
+trainingSetNormalizedTotal.meta.numInputs = 0;
+trainingSetNormalizedTotal.meta.numOutputs = 3;
+trainingSetNormalizedTotal.meta.setSize = 0;
 
 let trainingSetLabels = {};
 trainingSetLabels.inputsRaw = [];
@@ -251,7 +263,7 @@ configuration.DROPBOX.DROPBOX_TNN_STATS_FILE = process.env.DROPBOX_TNN_STATS_FIL
 
 configuration.normalization = null;
 configuration.verbose = false;
-configuration.testMode = false; // per tweet test mode
+configuration.testMode = true; // per tweet test mode
 configuration.testSetRatio = DEFAULT_TEST_RATIO;
 
 configuration.evolve = {};
@@ -531,8 +543,8 @@ const dropboxConfigFile = hostname + "_" + configuration.DROPBOX.DROPBOX_TNN_CON
 
 const defaultTrainingSetFolder = dropboxConfigDefaultFolder + "/trainingSets";
 const trainingSetFolder = dropboxConfigHostFolder + "/trainingSets";
-// const defaultTrainingSetFile = "trainingSet.json";
-const defaultTrainingSetFile = "trainingSet_test.json";
+const defaultTrainingSetFile = "trainingSet.json";
+// const defaultTrainingSetFile = "trainingSet_test.json";
 // let trainingSetFile = "trainingSet.json";
 
 const statsFolder = "/stats/" + hostname + "/neuralNetwork";
@@ -1457,7 +1469,7 @@ function printDatum(title, input){
   let rowNum = 0;
   const COLS = 50;
 
-  debug("\nNNT | ------------- " + title + " -------------");
+  console.log("\nNNT | ------------- " + title + " -------------");
 
   input.forEach(function(bit, i){
     if (i === 0) {
@@ -1467,7 +1479,7 @@ function printDatum(title, input){
       row = row + bit.toFixed(10);
     }
     else if (i === 2) {
-      debug("NNT | ROW " + rowNum + " | " + row);
+      console.log("NNT | ROW " + rowNum + " | " + row);
       row = bit ? "X" : ".";
       col = 1;
       rowNum += 1;
@@ -1477,7 +1489,7 @@ function printDatum(title, input){
       col += 1;
     }
     else {
-      debug("NNT | ROW " + rowNum + " | " + row);
+      console.log("NNT | ROW " + rowNum + " | " + row);
       row = bit ? "X" : ".";
       col = 1;
       rowNum += 1;
@@ -1773,6 +1785,8 @@ function initInputArrays(cnf, callback){
         inputArrays[inputType] = {};
         inputArrays[inputType] = inputArrayObj[inputType];
 
+        statsObj.trainingSet.totalInputs += inputArrayObj[inputType].length;
+
         trainingSetLabels.inputs[inputType] = inputArrays[inputType];
 
         trainingSetLabels.inputsRaw = trainingSetLabels.inputsRaw.concat(inputArrays[inputType]);  // inputsRaw is one unified array of input labels
@@ -1788,7 +1802,9 @@ function initInputArrays(cnf, callback){
           callback(err);
         }
         else {
-          console.log(chalkBlue("NNT | LOADED INPUT ARRAYS FROM SEED NETWORK"));
+          console.log(chalkBlue("NNT | LOADED INPUT ARRAYS FROM SEED NETWORK"
+            + " | INPUTS: " + statsObj.trainingSet.totalInputs
+          ));
           callback(null);
         }
 
@@ -2426,10 +2442,15 @@ function updateGlobalImageHistogram(params){
 function updateClassifiedUsers(cnf, callback){
 
   trainingSet = [];
-  trainingSetNormalized = [];
-  trainingSetNormalizedTotal = [];
+  trainingSetNormalized.data = [];
+  trainingSetNormalizedTotal.data = [];
 
   let classifiedUserIds = Object.keys(classifiedUserHashmap);
+
+  if (TEST_MODE) {
+    classifiedUserIds.length = TEST_MODE_LENGTH;
+  }
+
   let maxMagnitude = 0;
   let totalInputHits = 0;
 
@@ -2442,6 +2463,8 @@ function updateClassifiedUsers(cnf, callback){
   statsObj.users.updatedClassified = 0;
 
   async.eachSeries(classifiedUserIds, function(userId, cb0){
+
+    let numInputHits = 0;
 
     debug(chalkInfo("updateClassifiedUsers: userId: " + userId));
 
@@ -2556,7 +2579,7 @@ function updateClassifiedUsers(cnf, callback){
         ));
 
 
-        let globalInputIndex = 0;
+        let globalInputIndex = 2;
 
         let trainingSetDatum = {};
 
@@ -2564,15 +2587,20 @@ function updateClassifiedUsers(cnf, callback){
         trainingSetDatum.user.userId = user.userId;
         trainingSetDatum.user.screenName = user.screenName;
         trainingSetDatum.classification = classification;
-        trainingSetDatum.inputHits = [];
 
-        trainingSetDatum.input = [];
+        trainingSetDatum.inputHits = {};
+        trainingSetDatum.inputHits.sentiment = [];
 
-        trainingSetDatum.input.push(sentimentObj.magnitude);
-        globalInputIndex += 1;
+        trainingSetDatum.inputHits.sentiment.push({ magnitude: sentimentObj.magnitude});
+        trainingSetDatum.inputHits.sentiment.push({ score: sentimentObj.score});
 
-        trainingSetDatum.input.push(sentimentObj.score);
-        globalInputIndex += 1;
+        // trainingSetDatum.input = [];
+
+        // trainingSetDatum.input.push(sentimentObj.magnitude);
+        // globalInputIndex += 1;
+
+        // trainingSetDatum.input.push(sentimentObj.score);
+        // globalInputIndex += 1;
 
         // KLUDGE!!!! should only need to create trainingSetLabels once per network creation
 
@@ -2806,25 +2834,28 @@ function updateClassifiedUsers(cnf, callback){
                 //    for each input element of input type, 
                 //       add 1 to trainingSetDatum array if element is in userHistogram
 
+                trainingSetDatum.inputHits[type] = [];
+
                 async.eachOf(inputArrays[type], function(element, index, cb2){
 
                   const trainingSetDatumInputIndex = typeIndexOffset + index;
 
                   if ((userHistograms[type] !== undefined) && userHistograms[type][element]) {
 
-                    trainingSetDatum.input[trainingSetDatumInputIndex] = 1;
-                    trainingSetDatum.inputHits.push({ index: element });
+                    numInputHits++;
+                    // trainingSetDatum.input[trainingSetDatumInputIndex] = 1;
+                    trainingSetDatum.inputHits[type].push(element);
 
                     debug(chalkBlue("+ DATUM BIT: " + type
                       + " | typeIndexOffset: " + typeIndexOffset
-                      + " | INPUT HITS: " + trainingSetDatum.inputHits.length 
+                      + " | INPUT HITS: " + numInputHits 
                       + " | ["  + trainingSetDatumInputIndex + " / " + index + "] " + element + ": " + userHistograms[type][element]
                       + " | @" + trainingSetDatum.user.screenName 
                     ));
 
                     if ((globalInputIndex % 100 === 0) && (index % 10 === 0)){
                       console.log(chalkBlue("+ DATUM BIT: " + type
-                        + " | INPUT HITS: " + trainingSetDatum.inputHits.length 
+                        + " | INPUT HITS: " + numInputHits 
                         + " | ["  + trainingSetDatumInputIndex + " / " + index + "] " + element + ": " + userHistograms[type][element]
                         + " | @" + trainingSetDatum.user.screenName 
                       ));
@@ -2839,10 +2870,10 @@ function updateClassifiedUsers(cnf, callback){
                   }
                   else {
 
-                    trainingSetDatum.input[trainingSetDatumInputIndex] = 0;
+                    // trainingSetDatum.input[trainingSetDatumInputIndex] = 0;
 
                     debug(chalkInfo("- DATUM BIT: " + type
-                      + " | INPUT HITS: " + trainingSetDatum.inputHits.length 
+                      + " | INPUT HITS: " + numInputHits 
                       + " | ["  + globalInputIndex + " / " + index + "] " + element
                       + " | @" + trainingSetDatum.user.screenName 
                     ));
@@ -2882,13 +2913,13 @@ function updateClassifiedUsers(cnf, callback){
 
                 let chk = chalkInfo;
 
-                if (trainingSetDatum.inputHits.length < MIN_INPUT_HITS) { chk = chalkAlert; }
+                if (numInputHits < MIN_INPUT_HITS) { chk = chalkAlert; }
 
-                const userInputHitAverage = 100 * trainingSetDatum.inputHits.length / globalInputIndex;
+                const userInputHitAverage = 100 * numInputHits / globalInputIndex;
 
                 console.log(chk("=+= PARSE USER TEXT COMPLETE"
                   + " | " + statsObj.users.updatedClassified + "/" + classifiedUserIds.length + " USERS"
-                  + " | INPUT HITS: " + trainingSetDatum.inputHits.length + "/" + globalInputIndex
+                  + " | INPUT HITS: " + numInputHits + "/" + globalInputIndex
                   + " - " + userInputHitAverage.toFixed(2)
                   + " | @" + trainingSetDatum.user.screenName
                   // + "\n" + t
@@ -2897,35 +2928,18 @@ function updateClassifiedUsers(cnf, callback){
 
                 // IF NOT INPUT HITS, don't user for training
                 
-                if (trainingSetDatum.inputHits.length < MIN_INPUT_HITS) { 
+                if (numInputHits < MIN_INPUT_HITS) { 
                   return cb0();
                 }
 
-                trainingSetDatum.output = [];
+                totalInputHits += numInputHits;
 
-                switch (trainingSetDatum.classification){
-                  case "left":
-                    trainingSetDatum.output = [1,0,0];
-                  break;
-                  case "neutral":
-                    trainingSetDatum.output = [0,1,0];
-                  break;
-                  case "right":
-                    trainingSetDatum.output = [0,0,1];
-                  break;
-                  default:
-                    trainingSetDatum.output = [0,0,0];
-                }
+                testObj.numInputs = globalInputIndex;
+                testObj.numOutputs = 3;
 
-                totalInputHits += trainingSetDatum.inputHits.length;
+                debug("trainingSet " + trainingSet.length + " | INPUT:  " + globalInputIndex);
+                debug("trainingSetDatum OUTPUT: " + trainingSetDatum.classification);
 
-                testObj.numInputs = trainingSetDatum.input.length;
-                testObj.numOutputs = trainingSetDatum.output.length;
-
-                debug("trainingSet " + trainingSet.length + " | INPUT:  " + trainingSetDatum.input.length);
-                debug("trainingSetDatum OUTPUT: " + trainingSetDatum.classification + " | " + trainingSetDatum.output);
-
-                // trainingSet.push({screenName: trainingSetDatum.user.screenName.toLowerCase(), datum: trainingSetDatum});
                 trainingSet.push(trainingSetDatum);
 
                 if (configuration.interruptFlag) {
@@ -2947,7 +2961,7 @@ function updateClassifiedUsers(cnf, callback){
           console.log(chalkLog("NNT | " + statsObj.users.notClassified + " USERS NOT CLASSIFIED"));
         }
 
-        console.log(chalkBlue("NNT | USER KW>DB"
+        console.log(chalkBlue("NNT NOT CL USER | USER KW>DB"
           + " | KW: " + keywordArray
           + " | " + classification
           + " | " + user.userId
@@ -3009,14 +3023,16 @@ function updateClassifiedUsers(cnf, callback){
     async.each(trainingSet, function(dataObj, cb3){
 
       if (maxMagnitude > 0) {
-        let normMagnitude = dataObj.input[0]/maxMagnitude;
-        dataObj.input[0] = normMagnitude;
+        // let normMagnitude = dataObj.input[0]/maxMagnitude;
+        // dataObj.input[0] = normMagnitude;
+        let normMagnitude = dataObj.inputHits.sentiment.magnitude/maxMagnitude;
+        dataObj.inputHits.sentiment.magnitude = normMagnitude;
       }
       else {
-        dataObj.input[0] = 0;
+        dataObj.inputHits.sentiment.magnitude = 0;
       }
 
-      trainingSetNormalizedTotal.push(dataObj);
+      trainingSetNormalizedTotal.data.push(dataObj);
 
       // trainingSetBasic.push({input: dataObj.input, output: dataObj.output});
 
@@ -3027,11 +3043,11 @@ function updateClassifiedUsers(cnf, callback){
       // trainingSet.push({name: user.screenName, datum: trainingSetDatum});
       else if (cnf.enableRequiredTrainingSet && requiredTrainingSet.has(dataObj.user.screenName.toLowerCase())) {
         console.log(chalkAlert("NNT | +++ ADD REQ TRAINING SET | @" + dataObj.user.screenName));
-        trainingSetNormalized.push(dataObj);
+        trainingSetNormalized.data.push(dataObj);
         cb3();
       }
       else if (Math.random() > cnf.testSetRatio) {
-        trainingSetNormalized.push(dataObj);
+        trainingSetNormalized.data.push(dataObj);
         cb3();
       }
       else {
@@ -3040,6 +3056,12 @@ function updateClassifiedUsers(cnf, callback){
       }
 
     }, function(err){
+      trainingSetNormalized.meta.numInputs = testObj.numInputs;
+      trainingSetNormalized.meta.numOutputs = testObj.numOutputs;
+      trainingSetNormalized.meta.setSize = trainingSetNormalized.data.length;
+      trainingSetNormalizedTotal.meta.numInputs = testObj.numInputs;
+      trainingSetNormalizedTotal.meta.numOutputs = testObj.numOutputs;
+      trainingSetNormalizedTotal.meta.setSize = trainingSetNormalizedTotal.data.length;
       callback(err, null);
     });
   });
@@ -3049,6 +3071,67 @@ function activateNetwork(n, input){
 
   const output = n.activate(input);
   return output;
+}
+
+function convertDatum(datum, callback){
+
+  // console.log("convertedDatum");
+
+  let convertedDatum = {};
+  convertedDatum.user = {};
+  convertedDatum.user = datum.user;
+  convertedDatum.input = [];
+  convertedDatum.output = [];
+
+  switch (datum.classification) {
+    case "left":
+    convertedDatum.output = [1, 0, 0];
+    break;
+    case "neutral":
+    convertedDatum.output = [0, 1, 0];
+    break;
+    case "right":
+    convertedDatum.output = [0, 0, 1];
+    break;
+    case "default":
+    convertedDatum.output = [0, 0, 0];
+  }
+
+  convertedDatum.input.push(datum.inputHits.sentiment[0].magnitude);
+  convertedDatum.input.push(datum.inputHits.sentiment[1].score);
+
+  // let inputTypeArray = Object.keys(trainingSetLabels.inputs[inputType]);
+
+  async.eachSeries(inputTypes, function(inputType, cb0){
+    // console.log("convertedDatum | " + inputType);
+
+    async.eachSeries(inputArrays[inputType], function(inName, cb1){
+      const inputName = inName;
+      // console.log("convertedDatum | " + inputType + " |   " + inputName);
+      if (datum.inputHits[inputType].includes(inputName)){
+        // console.log(chalkAlert("convertedDatum | " + inputType + " | * " + inputName));
+        convertedDatum.input.push(1);
+        async.setImmediate(function() {
+          cb1();
+        });
+      }
+      else {
+        // console.log("convertedDatum | " + inputType + " | - " + inputName);
+        convertedDatum.input.push(0);
+        async.setImmediate(function() {
+          cb1();
+        });
+      }
+    }, function(){
+      // async.setImmediate(function() {
+        cb0();
+      // });
+    });
+
+  }, function(){
+    callback(null, convertedDatum);
+  });
+
 }
 
 function testNetwork(nwJson, testObj, callback){
@@ -3067,68 +3150,71 @@ function testNetwork(nwJson, testObj, callback){
   let successRate = 0;
   let testResultArray = [];
 
-  async.each(testObj.testSet, function(testDatumObj, cb){
+  async.each(testObj.testSet, function(datum, cb){
 
-    if (testDatumObj.input.length !== testObj.numInputs) {
-      console.error(chalkError("NNT | MISMATCH INPUT"
-        + " | TEST INPUTS: " + testDatumObj.input.length 
-        + " | NETW INPUTS: " + testObj.numInputs 
-      ));
-      cb("MISMATCH INPUT");
-    }
+    convertDatum(datum, function(err, testDatumObj){
 
-
-    const testOutput = activateNetwork(nw, testDatumObj.input);
-
-    debug(chalkLog("========================================"));
-
-    numTested += 1;
-
-    indexOfMax(testOutput, function(testMaxOutputIndex, to){
-
-      debug("INDEX OF MAX TEST OUTPUT: " + to);
-
-      indexOfMax(testDatumObj.output, function(expectedMaxOutputIndex, eo){
-
-        debug("INDEX OF MAX TEST OUTPUT: " + eo);
-
-        let passed = (testMaxOutputIndex === expectedMaxOutputIndex);
-
-        numPassed = passed ? numPassed+1 : numPassed;
-
-        successRate = 100 * numPassed/(numTested + numSkipped);
-
-        let currentChalk = passed ? chalkLog : chalkAlert;
-
-        testResultArray.push(
-          {
-            P: passed,
-            EO: testDatumObj.output,
-            EOI: expectedMaxOutputIndex,
-            TO: testOutput, 
-            TOI: testMaxOutputIndex
-          }
-        );
-
-        const t = "@" + testDatumObj.user.screenName + " | " + testDatumObj.classification;
-        printDatum(t, testDatumObj.input);
-
-        debug(currentChalk("TEST RESULT: " + passed 
-          + " | " + successRate.toFixed(2) + "%"
-          // + "\n" + "TO: " + testOutput 
-          + "\n" + testOutput[0]
-          + " " + testOutput[1]
-          + " " + testOutput[2]
-          + " | TMOI: " + testMaxOutputIndex
-          // + "\n" + "EO: " + testDatum.output 
-          + "\n" + testDatumObj.output[0]
-          + " " + testDatumObj.output[1]
-          + " " + testDatumObj.output[2]
-          + " | EMOI: " + expectedMaxOutputIndex
-          // + "\n==================================="
+      if (testDatumObj.input.length !== testObj.numInputs) {
+        console.error(chalkError("NNT | MISMATCH INPUT"
+          + " | TEST INPUTS: " + testDatumObj.input.length 
+          + " | NETW INPUTS: " + testObj.numInputs 
         ));
+        cb("MISMATCH INPUT");
+      }
 
-        cb();
+      const testOutput = activateNetwork(nw, testDatumObj.input);
+
+      debug(chalkLog("========================================"));
+
+      numTested += 1;
+
+      indexOfMax(testOutput, function(testMaxOutputIndex, to){
+
+        debug("INDEX OF MAX TEST OUTPUT: " + to);
+
+        indexOfMax(testDatumObj.output, function(expectedMaxOutputIndex, eo){
+
+          debug("INDEX OF MAX TEST OUTPUT: " + eo);
+
+          let passed = (testMaxOutputIndex === expectedMaxOutputIndex);
+
+          numPassed = passed ? numPassed+1 : numPassed;
+
+          successRate = 100 * numPassed/(numTested + numSkipped);
+
+          let currentChalk = passed ? chalkLog : chalkAlert;
+
+          testResultArray.push(
+            {
+              P: passed,
+              EO: testDatumObj.output,
+              EOI: expectedMaxOutputIndex,
+              TO: testOutput, 
+              TOI: testMaxOutputIndex
+            }
+          );
+
+          // const t = "@" + testDatumObj.user.screenName + " | " + testDatumObj.classification;
+          // printDatum(t, testDatumObj.input);
+
+          debug(currentChalk("TEST RESULT: " + passed 
+            + " | " + successRate.toFixed(2) + "%"
+            // + "\n" + "TO: " + testOutput 
+            + "\n" + testOutput[0]
+            + " " + testOutput[1]
+            + " " + testOutput[2]
+            + " | TMOI: " + testMaxOutputIndex
+            // + "\n" + "EO: " + testDatum.output 
+            + "\n" + testDatumObj.output[0]
+            + " " + testDatumObj.output[1]
+            + " " + testDatumObj.output[2]
+            + " | EMOI: " + expectedMaxOutputIndex
+            // + "\n==================================="
+          ));
+
+          cb();
+        });
+
       });
 
     });
@@ -3150,7 +3236,7 @@ function testNetwork(nwJson, testObj, callback){
 
 function initClassifiedUserHashmap(folder, file, callback){
 
-  console.log(chalkInfo("NNT | INIT CLASSIFED USERS HASHMAP FROM DB"));
+  console.log(chalkInfo("NNT | INIT CLASSIFIED USERS HASHMAP FROM DB"));
 
   loadFile(folder, file, function(err, dropboxClassifiedUsersObj){
     if (err) {
@@ -3159,8 +3245,8 @@ function initClassifiedUserHashmap(folder, file, callback){
       callback(err, file);
     }
     else {
-      console.log(chalkInfo("NNT | LOADED CLASSIFED USERS FILE: " + folder + "/" + file));
-      console.log(chalkInfo("NNT | DROPBOX DEFAULT | " + Object.keys(dropboxClassifiedUsersObj).length + " CLASSIFED USERS"));
+      console.log(chalkInfo("NNT | LOADED CLASSIFIED USERS FILE: " + folder + "/" + file));
+      console.log(chalkInfo("NNT | DROPBOX DEFAULT | " + Object.keys(dropboxClassifiedUsersObj).length + " CLASSIFIED USERS"));
 
       const params = { auto: false };
 
@@ -3170,8 +3256,8 @@ function initClassifiedUserHashmap(folder, file, callback){
           callback(err, null);
         }
         else {
-          console.log(chalkInfo("NNT | LOADED CLASSIFED USERS FROM DB"
-            + " | " + results.count + " CLASSIFED"
+          console.log(chalkInfo("NNT | LOADED CLASSIFIED USERS FROM DB"
+            + " | " + results.count + " CLASSIFIED"
             + " | " + results.manual + " MAN"
             + " | " + results.auto + " AUTO"
             + " | " + results.matchRate.toFixed(1) + "% MATCH"
@@ -3278,7 +3364,7 @@ function initNetworkCreate(nnChildId, nnId, cnf, callback){
         messageObj.inputsRaw = trainingSetLabels.inputsRaw;
         messageObj.outputs = {};
         messageObj.outputs = trainingSetLabels.outputs;
-        messageObj.trainingSet = [];
+        messageObj.trainingSet = {};
         messageObj.trainingSet = trainingSetNormalized;
         messageObj.normalization = {};
         messageObj.normalization = statsObj.normalization;
@@ -3299,8 +3385,8 @@ function initNetworkCreate(nnChildId, nnId, cnf, callback){
         messageObj.mutationRate = childConf.mutationRate;
         messageObj.clear = childConf.clear;
 
-        statsObj.tests[testObj.testRunId][nnId].numInputs = trainingSetNormalized[0].input.length;
-        statsObj.tests[testObj.testRunId][nnId].numOutputs = trainingSetNormalized[0].output.length;
+        statsObj.tests[testObj.testRunId][nnId].numInputs = trainingSetNormalized.meta.numInputs;
+        statsObj.tests[testObj.testRunId][nnId].numOutputs = trainingSetNormalized.meta.numOutputs;
 
         statsObj.evolve[nnId].options = omit(messageObj, ["network", "trainingSet", "inputs", "outputs"]);
 
@@ -3314,8 +3400,10 @@ function initNetworkCreate(nnChildId, nnId, cnf, callback){
         console.log(chalkBlue("\nNNT | START NETWORK EVOLVE"));
 
         console.log(chalkBlue("NNT | TEST RUN ID: " + messageObj.testRunId
-          + "\nNNT | TRAINING SET LENGTH: " + messageObj.trainingSet.length
+          + "\nNNT | TRAINING SET LENGTH: " + messageObj.trainingSet.meta.setSize
           + "\nNNT | TEST SET LENGTH:     " + testObj.testSet.length
+          + "\nNNT | INPUTS:              " + messageObj.trainingSet.meta.numInputs
+          + "\nNNT | OUTPUTS:             " + messageObj.trainingSet.meta.numOutputs
           + "\nNNT | ITERATIONS:          " + messageObj.iterations
         ));
 
@@ -3391,15 +3479,15 @@ function initMain(cnf, callback){
   initClassifiedUserHashmap(cnf.classifiedUsersFolder, cnf.classifiedUsersFile, function(err, classifiedUsersObj){
 
     if (err) {
-      console.error(chalkError("NNT | *** ERROR: CLASSIFED USER HASHMAP NOT INITIALIED: ", err));
-      quit("CLASSIFED USER HASHMAP NOT INITIALIED");
+      console.error(chalkError("NNT | *** ERROR: CLASSIFIED USER HASHMAP NOT INITIALIED: ", err));
+      quit("CLASSIFIED USER HASHMAP NOT INITIALIED");
       return;
     }
 
     classifiedUserHashmap = {};
     classifiedUserHashmap = classifiedUsersObj;
 
-    console.log(chalkInfo("NNT | LOADED " + Object.keys(classifiedUserHashmap).length + " TOTAL CLASSIFED USERS"));
+    console.log(chalkInfo("NNT | LOADED " + Object.keys(classifiedUserHashmap).length + " TOTAL CLASSIFIED USERS"));
 
     if (!cnf.createTrainingSet && (cnf.loadTrainingSetFromFile || cnf.trainingSetFile !== undefined)) {
 
@@ -3450,7 +3538,10 @@ function initMain(cnf, callback){
 
           prevTrainingSetFileModifiedMoment = moment(fileModifiedMoment);
 
-          trainingSetNormalized = [];
+          trainingSetNormalized.meta = {};
+          trainingSetNormalized.meta.numInputs = statsObj.trainingSet.totalInputs;
+          trainingSetNormalized.meta.numOutputs = 3;
+          trainingSetNormalized.data = [];
           testObj.testSet = [];
 
           loadFile(folder, file, function(err, tsNormal){
@@ -3471,8 +3562,8 @@ function initMain(cnf, callback){
                 + " | " + trainingSetNormalizedTotal[0].output.length + " OUTPUTS"
               ));
 
-              testObj.numInputs = trainingSetNormalizedTotal[0].input.length;
-              testObj.numOutputs = trainingSetNormalizedTotal[0].output.length;
+              testObj.numInputs = trainingSetNormalizedTotal.meta.numInputs;
+              testObj.numOutputs = trainingSetNormalizedTotal.meta.numOutputs;
 
               initRequiredTrainingSet(cnf, function(err){
 
@@ -3484,11 +3575,11 @@ function initMain(cnf, callback){
                   }
                   else if (requiredTrainingSet.has(dataObj.user.screenName.toLowerCase())) {
                     console.log(chalkAlert("NNT | +++ ADD REQ TRAINING SET | @" + dataObj.user.screenName));
-                    trainingSetNormalized.push(dataObj);
+                    trainingSetNormalized.data.push(dataObj);
                     cb();
                   }
                   else if (Math.random() > cnf.testSetRatio) {
-                    trainingSetNormalized.push(dataObj);
+                    trainingSetNormalized.data.push(dataObj);
                     cb();
                   }
                   else {
@@ -3509,9 +3600,14 @@ function initMain(cnf, callback){
           });
         }
       });
-
     }
     else {
+
+      trainingSetNormalized.meta = {};
+      trainingSetNormalized.meta.numInputs = statsObj.trainingSet.totalInputs;
+      trainingSetNormalized.meta.numOutputs = 3;
+      trainingSetNormalized.data = [];
+
       updateClassifiedUsers(cnf, function(err, clUsHist){
 
         debug("updateClassifiedUsers clUsHist\n" + jsonPrint(clUsHist));
@@ -3521,14 +3617,14 @@ function initMain(cnf, callback){
           quit("UPDATE CLASSIFIED USER ERROR");
         }
 
-        if (trainingSetNormalized.length === 0) {
+        if (trainingSetNormalized.data.length === 0) {
           console.error("NNT | *** NO TRAINING SET DATA POINTS ??? ***\n" + jsonPrint(err));
           quit("NO TRAINING SET DATA POINTS");
           return callback("NO TRAINING SET DATA POINTS", null);
         }
 
         console.log(chalkBlue("\nNNT | TRAINING SET NORMALIZED"
-          + " | " + trainingSetNormalized.length + " DATA POINTS"
+          + " | " + trainingSetNormalized.data.length + " DATA POINTS"
           + " | NN CREATE MODE: " + cnf.networkCreateMode
           // + " | " + jsonPrint(trainingSetNormalized[0])
         ));
@@ -3564,13 +3660,13 @@ function initMain(cnf, callback){
                 trainingSetReady = false;
                 createTrainingSetBusy = false;
 
-                callback(null, trainingSetNormalized.length);
+                callback(null, trainingSetNormalized.data.length);
               }
               else {
                 trainingSetReady = true;
                 createTrainingSetBusy = false;
 
-                callback(null, trainingSetNormalized.length);
+                callback(null, trainingSetNormalized.data.length);
               }
             });
           }
@@ -3582,7 +3678,7 @@ function initMain(cnf, callback){
             trainingSetReady = true;
             createTrainingSetBusy = false;
 
-            callback(null, trainingSetNormalized.length);
+            callback(null, trainingSetNormalized.data.length);
           }
 
         });
@@ -3681,7 +3777,7 @@ function initNeuralNetworkChild(cnf, callback){
       case "READY":
         statsObj.neuralNetworkReady = true;
         console.log(chalkLog("NNT | INIT NEURAL NETWORK | " + m.processName));
-        neuralNetworkChild.send({op: "INIT", testRunId: testObj.testRunId});
+        neuralNetworkChild.send({op: "INIT", testRunId: testObj.testRunId, inputTypes: inputTypes});
       break;
 
       case "STATS":
