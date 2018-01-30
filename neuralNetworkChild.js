@@ -80,9 +80,6 @@ function jsonPrint (obj){
   }
 }
 
-
-
-// debug("neataptic\n" + jsonPrint(neataptic));
 debug("NNC | process.env\n" + jsonPrint(process.env));
 
 console.log("\n\nNNC | =================================");
@@ -226,7 +223,6 @@ function saveFile (path, file, jsonObj, callback){
     process.send({op:"ERROR", processName: configuration.processName, error: err, statsObj: statsObj}, function(){
       quit();
     });
-    // if (callback !== undefined) { return callback(err, null); }
   }
 
   dropboxClient.filesUpload(options)
@@ -436,40 +432,27 @@ function convertDatum(datum, callback){
   convertedDatum.input.push(datum.inputHits.sentiment[0].magnitude);
   convertedDatum.input.push(datum.inputHits.sentiment[1].score);
 
-  // console.log("datum.inputHits.sentiment\n " + jsonPrint(datum.inputHits.sentiment));
-
-  // let inputTypeArray = Object.keys(statsObj.inputs);
-
-  // console.log("inputTypeArray: " + inputTypeArray);
-
   async.eachSeries(statsObj.inputTypes, function(inputType, cb0){
-    // console.log("convertedDatum | " + inputType);
 
     async.eachSeries(statsObj.inputs[inputType], function(inName, cb1){
       const inputName = inName;
-      // console.log("convertedDatum | " + inputType + " |   " + inputName);
       if (datum.inputHits[inputType].includes(inputName)){
-        // console.log(chalkAlert("convertedDatum | " + inputType + " | * " + inputName));
         convertedDatum.input.push(1);
         async.setImmediate(function() {
           cb1();
         });
       }
       else {
-        // console.log("convertedDatum | " + inputType + " | - " + inputName);
         convertedDatum.input.push(0);
         async.setImmediate(function() {
           cb1();
         });
       }
     }, function(){
-      // async.setImmediate(function() {
-        cb0();
-      // });
+      cb0();
     });
 
   }, function(){
-    // printDatum(convertedDatum.user.screenName, convertedDatum.input);
     callback(null, convertedDatum);
   });
 
@@ -626,7 +609,6 @@ function evolve(params, callback){
 
       case "mutation":
       console.log("NNC" + " | " + configuration.processName + " | EVOLVE OPTION | " + key + ": " + "FFW");
-      // options.mutation = neataptic.methods.mutation[params[key]];
       break;
             
       case "cost":
@@ -1048,138 +1030,7 @@ process.on("message", function(m) {
       showStats();
       process.send({op:"STATS", processName: configuration.processName, statsObj: statsObj});
     break;
-
-    // case "TRAIN":
-
-    //   statsObj.training.startTime = moment().valueOf();
-    //   statsObj.training.testRunId = m.testRunId;
-    //   statsObj.training.iterations = m.iterations;
-    //   statsObj.training.trainingSet = {};
-    //   statsObj.training.trainingSet.length = m.trainingSet.length;
-    //   statsObj.training.trainingSet.numInputs = m.trainingSet[0].input.length;
-    //   statsObj.training.trainingSet.numOutputs = m.trainingSet[0].output.length;
-
-    //   statsObj.inputs = {};
-    //   statsObj.inputs = m.inputs;
-    //   statsObj.outputs = {};
-    //   statsObj.outputs = m.outputs;
-
-    //   trainParams = {
-    //     runId: m.testRunId,
-    //     architecture: m.architecture,
-    //     inputs: m.inputs,
-    //     hiddenLayerSize: m.hiddenLayerSize,
-    //     outputs: m.outputs,
-    //     trainingSet: m.trainingSet,
-    //     log: m.log,
-    //     error: m.error,
-    //     cost: m.cost,
-    //     rate: m.rate,
-    //     dropout: m.dropout,
-    //     shuffle: m.shuffle,
-    //     iterations: m.iterations,
-    //     clear: m.clear,
-    //     momentum: m.momentum,
-    //     ratePolicy: m.ratePolicy,
-    //     batchSize: m.batchSize
-    //   };
-
-    //   statsObj.train.options = {        
-    //     architecture: m.architecture,
-    //     inputs: m.inputs,
-    //     hiddenLayerSize: m.hiddenLayerSize,
-    //     outputs: m.outputs,
-    //     log: m.log,
-    //     error: m.error,
-    //     cost: m.cost,
-    //     rate: m.rate,
-    //     dropout: m.dropout,
-    //     shuffle: m.shuffle,
-    //     iterations: m.iterations,
-    //     clear: m.clear,
-    //     momentum: m.momentum,
-    //     ratePolicy: m.ratePolicy,
-    //     batchSize: m.batchSize
-    //   };
-
-    //   if (m.network && (m.network !== undefined)) {
-
-    //     trainParams.network = m.network;
-    //     statsObj.train.options = m.network;
-
-    //     console.log(chalkAlert("\n\nNNC | NEURAL NET TRAIN | " + getTimeStamp()
-    //       + "\nNNC | RUN ID:     " + m.testRunId
-    //       + "\nNNC | NETWORK:    " + m.network.networkId + " | " + m.network.successRate.toFixed(2) + "%"
-    //       // + "\nNETWORK:    " + jsonPrint(m.network)
-    //       + "\nNNC | INPUTS:     " + statsObj.training.trainingSet.numInputs
-    //       + "\nNNC | OUTPUTS:    " + statsObj.training.trainingSet.numOutputs
-    //       + "\nNNC | DATA PTS:   " + m.trainingSet.length
-    //       + "\nNNC | ITERATIONS: " + statsObj.training.iterations
-    //       + "\n"
-    //     ));
-    //   }
-    //   else {
-    //     console.log(chalkAlert("\n\nNNC | NEURAL NET TRAIN | " + getTimeStamp()
-    //       + "\nNNC | RUN ID:     " + m.testRunId
-    //       + "\nNNC | INPUTS:     " + statsObj.training.trainingSet.numInputs
-    //       + "\nNNC | OUTPUTS:    " + statsObj.training.trainingSet.numOutputs
-    //       + "\nNNC | DATA PTS:   " + m.trainingSet.length
-    //       + "\nNNC | ITERATIONS: " + statsObj.training.iterations
-    //       + "\n"
-    //     ));
-    //   }
-
-    //   train(trainParams, function(err, results){
-
-    //     if (err) {
-    //       console.error(chalkError("NNC | TRAIN ERROR: " + err));
-    //       console.trace("NNC | TRAIN ERROR");
-    //       process.send({op: "ERROR", processName: configuration.processName, error: err}, function(){
-    //         quit(jsonPrint(err));
-    //       });
-    //     }
-    //     else {
-
-    //       console.log(chalkAlert("\nNNC | TRAIN COMPLETE | " + getTimeStamp()
-    //         + " | RUN ID: " + m.testRunId
-    //         + " | TIME: " + results.time
-    //         + " | ITERATIONS: " + results.iterations
-    //         + " | ERROR: " + results.error
-    //         + "\n"
-    //       ));
-
-    //       statsObj.training.endTime = moment().valueOf();
-    //       statsObj.training.elapsed = results.time;
-
-    //       let exportedNetwork = network.toJSON();
-
-    //       let networkObj = new NeuralNetwork();
-    //       networkObj.networkCreateMode = "train";
-    //       networkObj.testRunId = statsObj.training.testRunId;
-    //       networkObj.networkId = statsObj.training.testRunId + "_" + configuration.processName;
-    //       networkObj.network = exportedNetwork;
-    //       networkObj.inputs = statsObj.inputs;
-    //       networkObj.outputs = statsObj.outputs;
-    //       networkObj.train = {};
-    //       networkObj.train.results = {};
-    //       networkObj.train.results = results;
-    //       networkObj.train.options = {};
-    //       networkObj.train.options = omit(trainParams, "network");
-    //       networkObj.train.options = omit(networkObj.train.options, "input");
-    //       networkObj.train.options = omit(networkObj.train.options, "output");
-    //       if (trainParams.network){
-    //         networkObj.train.options.network = {};
-    //         networkObj.train.options.network.networkId = trainParams.network.networkId;
-    //       }
-    //       networkObj.elapsed = statsObj.training.elapsed;
-
-    //       process.send({op:"TRAIN_COMPLETE", processName: configuration.processName, networkObj: networkObj, statsObj: statsObj});
-    //       showStats();
-    //     }
-    //   });
-    // break;
     
-
     case "EVOLVE":
 
       statsObj.training.startTime = moment().valueOf();
@@ -1273,88 +1124,83 @@ process.on("message", function(m) {
         ));
       }
 
-      // setTimeout(function(){
+      evolve(evolveOptions, function(err, results){
 
-        evolve(evolveOptions, function(err, results){
+        if (err) {
+          console.error(chalkError("NNC | EVOLVE ERROR: " + err));
+          console.trace("NNC | EVOLVE ERROR");
+          process.send({op: "ERROR", processName: configuration.processName, error: err}, function(){
+            quit(jsonPrint(err));
+          });
+        }
+        else {
 
-          if (err) {
-            console.error(chalkError("NNC | EVOLVE ERROR: " + err));
-            console.trace("NNC | EVOLVE ERROR");
-            process.send({op: "ERROR", processName: configuration.processName, error: err}, function(){
-              quit(jsonPrint(err));
-            });
+          debug(chalkAlert("evolve results\n" + jsonPrint(results)));
+
+          statsObj.training.endTime = moment().valueOf();
+          statsObj.training.elapsed = results.time;
+          statsObj.evolve.results = results;
+
+          let exportedNetwork = network.toJSON();
+
+          let networkObj = {};
+
+          const defaultResults = {
+            error: 0,
+            iterations: 0
+          };
+
+          networkObj.networkCreateMode = "evolve";
+          networkObj.testRunId = statsObj.training.testRunId;
+          networkObj.networkId = statsObj.training.testRunId;
+          networkObj.seedNetworkId = statsObj.training.seedNetworkId;
+          networkObj.seedNetworkRes = statsObj.training.seedNetworkRes;
+          networkObj.network = {};
+          networkObj.network = exportedNetwork;
+          networkObj.numInputs = exportedNetwork.input;
+          networkObj.numOutputs = exportedNetwork.output;
+          networkObj.evolve = {};
+          networkObj.evolve.results = {};
+          networkObj.evolve.results = results;
+          networkObj.evolve.results.error = ((results.error !== undefined) && results.error && (results.error < Infinity)) ? results.error : 0;
+          networkObj.evolve.options = {};
+          networkObj.evolve.options = evolveOptions;
+          networkObj.startTime = statsObj.evolve.startTime;
+          networkObj.endTime = statsObj.evolve.endTime;
+          networkObj.evolve.elapsed = statsObj.training.elapsed;
+
+         if (((results.error === 0) || (results.error > evolveOptions.error)) && (results.iterations < evolveOptions.iterations)) {
+
+            statsObj.evolve.results.earlyComplete = true;
+            networkObj.evolve.results.earlyComplete = true;
+
+            console.log(chalkError("NNC | EVOLVE COMPLETE EARLY???"
+              + " | " + configuration.processName
+              + " | " + getTimeStamp()
+              + " | " + "TIME: " + results.time
+              + " | " + "THREADS: " + results.threads
+              + " | " + "ITERATIONS: " + results.iterations
+              + " | " + "ERROR: " + results.error
+              + " | " + "ELAPSED: " + msToTime(statsObj.evolve.elapsed)
+            ));
+
           }
           else {
-
-            debug(chalkAlert("evolve results\n" + jsonPrint(results)));
-
-            statsObj.training.endTime = moment().valueOf();
-            statsObj.training.elapsed = results.time;
-            statsObj.evolve.results = results;
-
-            let exportedNetwork = network.toJSON();
-
-            let networkObj = {};
-
-            const defaultResults = {
-              error: 0,
-              iterations: 0
-            };
-
-            networkObj.networkCreateMode = "evolve";
-            networkObj.testRunId = statsObj.training.testRunId;
-            networkObj.networkId = statsObj.training.testRunId;
-            networkObj.seedNetworkId = statsObj.training.seedNetworkId;
-            networkObj.seedNetworkRes = statsObj.training.seedNetworkRes;
-            networkObj.network = {};
-            networkObj.network = exportedNetwork;
-            networkObj.numInputs = exportedNetwork.input;
-            networkObj.numOutputs = exportedNetwork.output;
-            networkObj.evolve = {};
-            networkObj.evolve.results = {};
-            networkObj.evolve.results = results;
-            networkObj.evolve.results.error = ((results.error !== undefined) && results.error && (results.error < Infinity)) ? results.error : 0;
-            networkObj.evolve.options = {};
-            networkObj.evolve.options = evolveOptions;
-            networkObj.startTime = statsObj.evolve.startTime;
-            networkObj.endTime = statsObj.evolve.endTime;
-            networkObj.evolve.elapsed = statsObj.training.elapsed;
-
-           if (((results.error === 0) || (results.error > evolveOptions.error)) && (results.iterations < evolveOptions.iterations)) {
-
-              statsObj.evolve.results.earlyComplete = true;
-              networkObj.evolve.results.earlyComplete = true;
-
-              console.log(chalkError("NNC | EVOLVE COMPLETE EARLY???"
-                + " | " + configuration.processName
-                + " | " + getTimeStamp()
-                + " | " + "TIME: " + results.time
-                + " | " + "THREADS: " + results.threads
-                + " | " + "ITERATIONS: " + results.iterations
-                + " | " + "ERROR: " + results.error
-                + " | " + "ELAPSED: " + msToTime(statsObj.evolve.elapsed)
-              ));
-
-            }
-            else {
-              console.log(chalkAlert("NNC | EVOLVE COMPLETE"
-                + " | " + configuration.processName
-                + " | " + getTimeStamp()
-                + " | " + "TIME: " + results.time
-                + " | " + "THREADS: " + results.threads
-                + " | " + "ITERATIONS: " + results.iterations
-                + " | " + "ERROR: " + results.error
-                + " | " + "ELAPSED: " + msToTime(statsObj.evolve.elapsed)
-              ));
-            }
-
-            process.send({op:"EVOLVE_COMPLETE", processName: configuration.processName, networkObj: networkObj, statsObj: statsObj});
-            showStats();
+            console.log(chalkAlert("NNC | EVOLVE COMPLETE"
+              + " | " + configuration.processName
+              + " | " + getTimeStamp()
+              + " | " + "TIME: " + results.time
+              + " | " + "THREADS: " + results.threads
+              + " | " + "ITERATIONS: " + results.iterations
+              + " | " + "ERROR: " + results.error
+              + " | " + "ELAPSED: " + msToTime(statsObj.evolve.elapsed)
+            ));
           }
-        });
 
-      // }, 5000);
-
+          process.send({op:"EVOLVE_COMPLETE", processName: configuration.processName, networkObj: networkObj, statsObj: statsObj});
+          showStats();
+        }
+      });
 
     break;
 
