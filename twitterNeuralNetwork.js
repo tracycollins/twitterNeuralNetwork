@@ -3291,6 +3291,8 @@ function initMain(cnf, callback){
           quit("UPDATE CLASSIFIED USER ERROR");
         }
 
+        trainingSetReady = true;
+        createTrainingSetBusy = false;
         initMainReady = true;
 
         callback(null);
