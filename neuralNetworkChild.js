@@ -405,7 +405,7 @@ function printDatum(title, input){
   });
 }
 
-function convertDatum(datum, callback){
+function convertDatum(params, datum, generateInputRaw, callback){
 
   // console.log("convertedDatum");
 
@@ -414,6 +414,7 @@ function convertDatum(datum, callback){
   convertedDatum.user = datum.user;
   convertedDatum.input = [];
   convertedDatum.output = [];
+  convertedDatum.inputRaw = [];
 
   switch (datum.classification) {
     case "left":
@@ -434,8 +435,14 @@ function convertDatum(datum, callback){
 
   async.eachSeries(statsObj.inputTypes, function(inputType, cb0){
 
-    async.eachSeries(statsObj.inputs[inputType], function(inName, cb1){
+    async.eachSeries(params.inputs[inputType], function(inName, cb1){
+
       const inputName = inName;
+
+      if (generateInputRaw) {
+        convertedDatum.inputRaw.push(inputName);
+      }
+
       if (datum.inputHits[inputType].includes(inputName)){
         convertedDatum.input.push(1);
         async.setImmediate(function() {
@@ -448,6 +455,7 @@ function convertDatum(datum, callback){
           cb1();
         });
       }
+
     }, function(){
       cb0();
     });
@@ -461,12 +469,21 @@ function convertDatum(datum, callback){
 function trainingSetPrepAndEvolve(params, options, callback){
 
   let trainingSet = [];
+  let inputRaw = [];
+  let generateInputRaw = true;
+
 
   async.eachSeries(params.trainingSet.data, function(datum, cb){
 
-    convertDatum(datum, function(err, datumObj){
+    convertDatum(params, datum, generateInputRaw, function(err, datumObj){
 
-      debug("DATUM | " + datumObj.output + " | " + datumObj.user.screenName);
+      if (datumObj.inputRaw.length > 0) { 
+        generateInputRaw = false;
+        inputRaw = datumObj.inputRaw;
+      }
+
+
+      debug("TRAIN DATUM | " + datumObj.output + " | " + datumObj.user.screenName);
 
       trainingSet.push({ 
         input: datumObj.input, 
@@ -623,9 +640,9 @@ function evolve(params, callback){
       break;
 
 
-      case "inputsRaw":
-        console.log("NNC" + " | " + configuration.processName + " | EVOLVE OPTION | " + key + ": " + params[key].length);
-      break;
+      // case "inputsRaw":
+      //   console.log("NNC" + " | " + configuration.processName + " | EVOLVE OPTION | " + key + ": " + params[key].length);
+      // break;
 
       default:
         if ((key !== "log") && (key !== "trainingSet")){
@@ -648,59 +665,16 @@ function evolve(params, callback){
 
         inputArraySize = network.input;
 
-        async.eachOfSeries(network.nodes, function(node, i, cb0){
-          if (network.nodes[i].type === "input"){
-            if (i >= network.input) {
-              console.log(chalkError("INPUT MISMATCH"))
-              return cb0("INPUT MISMATCH?");
-            }
-            network.nodes[i].name = params.inputsRaw[i];
-            debug("+ EVOLVE NN IN" 
-              + " [" + i + "]"
-              + " | " + params.inputsRaw[i]
-              + " | " + network.nodes[i].name
-            );
-            cb0();
-          }
-          else if (network.nodes[i].type === "output") {
-            if (i === (network.nodes.length-3)){
-              network.nodes[i].name = "left";
-            }
-            if (i === (network.nodes.length-2)){
-              network.nodes[i].name = "neutral";
-            }
-            if (i === (network.nodes.length-1)){
-              network.nodes[i].name = "right";
-            }
-            debug("+ EVOLVE NN OUT" 
-              + " [" + i + "]"
-              + " | " + network.nodes[i].name
-            );
-            cb0();            
-          }
-          else if (i < network.input) {
-            console.log(chalkError("*** NOT INPUT NODE [" + i  + "]\n" + jsonPrint(network.nodes[i])));
-            cb0("NOT INPUT NODE");            
-          }
-          else {
-            console.log(chalkInfo("... NOT INPUT or OUTPUT NODE [" + i  + "]\n" + jsonPrint(network.nodes[i])));
-            cb0();
-          }
-        }, function(err){
-          if (err) {
-            return callback(err, null);
-          }
-          trainingSetPrepAndEvolve(params, options, function(err, results){
-            callback(err, results);
-          });
-        });
-
         console.log("NNC"
           + " | " + configuration.processName
           + " | EVOLVE ARCH | LOADED: " + options.network.networkId
           + " | IN: " + options.network.network.input
           + " | OUT: " + options.network.network.output
         );
+
+        trainingSetPrepAndEvolve(params, options, function(err, results){
+          callback(err, results);
+        });
 
       break;
 
@@ -719,48 +693,10 @@ function evolve(params, callback){
 
         inputArraySize = params.trainingSet.meta.numInputs;
 
-        async.eachOfSeries(network.nodes, function(node, i, cb0){
-          if (network.nodes[i].type === "input"){
-            if (i >= network.input) {
-              console.log(chalkError("INPUT MISMATCH"))
-              return cb0("INPUT MISMATCH?");
-            }
-            network.nodes[i].name = params.inputsRaw[i];
-            console.log("+ EVOLVE NN IN" 
-              + " [" + i + "]"
-              + " | " + params.inputsRaw[i]
-              + " | " + network.nodes[i].name
-            );
-            cb0();
-          }
-          else if (network.nodes[i].type === "output") {
-            if (i === (network.nodes.length-3)){
-              network.nodes[i].name = "left";
-            }
-            if (i === (network.nodes.length-2)){
-              network.nodes[i].name = "neutral";
-            }
-            if (i === (network.nodes.length-1)){
-              network.nodes[i].name = "right";
-            }
-            debug("+ EVOLVE NN OUT" 
-              + " [" + i + "]"
-              + " | " + network.nodes[i].name
-            );
-            cb0();            
-          }
-          else {
-            console.log(chalkError("*** NOT INPUT NODE [" + i  + "]\n" + jsonPrint(network.nodes[i])));
-            cb0("NOT INPUT NODE");
-          }
-        }, function(err){
-          if (err) {
-            return;
-          }
-          trainingSetPrepAndEvolve(params, options, function(err, results){
-            callback(err, results);
-          });
+        trainingSetPrepAndEvolve(params, options, function(err, results){
+          callback(err, results);
         });
+
       break;
 
       default:
@@ -775,47 +711,8 @@ function evolve(params, callback){
 
         inputArraySize = params.trainingSet.meta.numInputs;
 
-        async.eachOfSeries(network.nodes, function(node, i, cb0){
-          if (network.nodes[i].type === "input"){
-            if (i >= network.input) {
-              console.log(chalkError("INPUT MISMATCH"))
-              return cb0("INPUT MISMATCH?");
-            }
-            network.nodes[i].name = params.inputsRaw[i];
-            debug("+ EVOLVE NN IN" 
-              + " [" + i + "]"
-              + " | " + params.inputsRaw[i]
-              + " | " + network.nodes[i].name
-            );
-            cb0();
-          }
-          else if (network.nodes[i].type === "output") {
-            if (i === (network.nodes.length-3)){
-              network.nodes[i].name = "left";
-            }
-            if (i === (network.nodes.length-2)){
-              network.nodes[i].name = "neutral";
-            }
-            if (i === (network.nodes.length-1)){
-              network.nodes[i].name = "right";
-            }
-            debug("+ EVOLVE NN OUT" 
-              + " [" + i + "]"
-              + " | " + network.nodes[i].name
-            );
-            cb0();            
-          }
-          else {
-            console.log(chalkError("*** NOT INPUT NODE [" + i  + "]\n" + jsonPrint(network.nodes[i])));
-            cb0("NOT INPUT NODE");
-          }
-        }, function(err){
-          if (err) {
-            return;
-          }
-          trainingSetPrepAndEvolve(params, options, function(err, results){
-            callback(err, results);
-          });
+        trainingSetPrepAndEvolve(params, options, function(err, results){
+          callback(err, results);
         });
 
     }
@@ -1038,10 +935,6 @@ process.on("message", function(m) {
       statsObj.training.seedNetworkId = m.seedNetworkId;
       statsObj.training.seedNetworkRes = m.seedNetworkRes;
       statsObj.training.iterations = m.iterations;
-      statsObj.training.trainingSet = {};
-      statsObj.training.trainingSet.length = m.trainingSet.meta.setSize;
-      statsObj.training.trainingSet.numInputs = m.trainingSet.meta.numInputs;
-      statsObj.training.trainingSet.numOutputs = m.trainingSet.meta.numOutputs;
 
       statsObj.inputs = {};
       statsObj.inputs = m.inputs;
@@ -1056,7 +949,6 @@ process.on("message", function(m) {
         seedNetworkId: m.seedNetworkId,
         seedNetworkRes: m.seedNetworkRes,
         inputs: m.inputs,
-        inputsRaw: m.inputsRaw,
         outputs: m.outputs,
         trainingSet: m.trainingSet,
         mutation: m.mutation,
@@ -1124,6 +1016,8 @@ process.on("message", function(m) {
         ));
       }
 
+      debugger;
+
       evolve(evolveOptions, function(err, results){
 
         if (err) {
@@ -1159,6 +1053,10 @@ process.on("message", function(m) {
           networkObj.network = exportedNetwork;
           networkObj.numInputs = exportedNetwork.input;
           networkObj.numOutputs = exportedNetwork.output;
+          networkObj.inputs = {};
+          networkObj.inputs = evolveOptions.inputs;
+          networkObj.outputs = {};
+          networkObj.outputs = evolveOptions.outputs;
           networkObj.evolve = {};
           networkObj.evolve.results = {};
           networkObj.evolve.results = results;
