@@ -1,7 +1,7 @@
 /*jslint node: true */
 "use strict";
 
-const TEST_MODE_LENGTH = 100;
+const TEST_MODE_LENGTH = 50;
 
 const OFFLINE_MODE = process.env.OFFLINE_MODE === "true" || false;
 
@@ -1785,7 +1785,7 @@ function initialize(cnf, callback){
 
   cnf.classifiedUsersFile = process.env.TNN_CLASSIFIED_USERS_FILE || classifiedUsersFile;
   cnf.classifiedUsersFolder = classifiedUsersFolder;
-  cnf.statsUpdateIntervalTime = process.env.TNN_STATS_UPDATE_INTERVAL || 60000;
+  cnf.statsUpdateIntervalTime = process.env.TNN_STATS_UPDATE_INTERVAL || 300000;
 
   debug(chalkWarn("dropboxConfigFolder: " + dropboxConfigFolder));
   debug(chalkWarn("dropboxConfigFile  : " + dropboxConfigFile));
@@ -2195,7 +2195,6 @@ function printHistogram(title, hist){
 // FUTURE: break up into updateClassifiedUsers and createTrainingSet
 function updateClassifiedUsers(cnf, callback){
 
-
   let classifiedUserIds = Object.keys(classifiedUserHashmap);
 
   if (cnf.testMode) {
@@ -2212,29 +2211,45 @@ function updateClassifiedUsers(cnf, callback){
 
   statsObj.users.updatedClassified = 0;
 
-  async.eachSeries(classifiedUserIds, function(userId, cb0){
+  let userIndex = 0;
+  let classifiedUsersPercent = 0;
+  let classifiedUsersStartMoment = moment();
+  let classifiedUsersEndMoment = moment();
+  let classifiedUsersElapsed = 0;
+  let classifiedUsersRemain = 0;
+  let classifiedUsersRate = 0;
 
-    debug(chalkInfo("updateClassifiedUsers: userId: " + userId));
+  async.eachSeries(classifiedUserIds, function(userId, cb0){
 
     User.findOne({userId: userId.toString()}, function(err, user){
 
+      userIndex += 1;
+
       if (err){
-        console.error(chalkError("UPDATE CLASSIFIED USERS: USER FIND ONE ERROR: " + err));
+        console.error(chalkError("NNT | *** UPDATE CLASSIFIED USERS: USER FIND ONE ERROR: " + err));
         statsObj.errors.users.findOne += 1;
         return(cb0(err));
       }
 
       if (!user){
-        debug(chalkError("UPDATE CLASSIFIED USERS: USER NOT FOUND: " + userId));
+        console.log(chalkAlert("NNT | *** UPDATE CLASSIFIED USERS: USER NOT FOUND: UID: " + userId));
         statsObj.users.notFound += 1;
+        statsObj.users.notClassified += 1;
         return(cb0());
       }
 
       if (user.screenName === undefined) {
-        console.log(chalkError("NNT | UPDATE CLASSIFIED USERS: USER SCREENNAME UNDEFINED\n" + jsonPrint(user)));
+        console.log(chalkError("NNT | *** UPDATE CLASSIFIED USERS: USER SCREENNAME UNDEFINED\n" + jsonPrint(user)));
         statsObj.users.screenNameUndefined += 1;
+        statsObj.users.notClassified += 1;
         return(cb0("USER SCREENNAME UNDEFINED", null));
       }
+
+      debug(chalkInfo("NNT | UPDATE CL USR <DB"
+        + " [" + userIndex + "/" + classifiedUserIds.length + "]"
+        + " | " + user.userId
+        + " | @" + user.screenName
+      ));
 
       let sentimentText;
 
@@ -2312,20 +2327,34 @@ function updateClassifiedUsers(cnf, callback){
 
         statsObj.users.updatedClassified += 1;
 
-        if (statsObj.users.updatedClassified % 100 === 0){
-          console.log(chalkInfo("NNT | " + statsObj.users.updatedClassified + " USERS CLASSIFIED"));
+        classifiedUsersPercent = 100 * (statsObj.users.notClassified + statsObj.users.updatedClassified)/classifiedUserIds.length;
+        classifiedUsersElapsed = (moment().valueOf() - classifiedUsersStartMoment.valueOf()); // mseconds
+        classifiedUsersRate = classifiedUsersElapsed/statsObj.users.updatedClassified; // msecs/userClassified
+        classifiedUsersRemain = (classifiedUserIds.length - (statsObj.users.notClassified + statsObj.users.updatedClassified)) * classifiedUsersRate; // mseconds
+        classifiedUsersEndMoment = moment();
+        classifiedUsersEndMoment.add(classifiedUsersRemain, "ms");
+
+        if ((statsObj.users.notClassified + statsObj.users.updatedClassified) % 20 === 0){
+          console.log(chalkInfo("NNT"
+            + " | START: " + classifiedUsersStartMoment.format(compactDateTimeFormat)
+            + " | ELAPSED: " + msToTime(classifiedUsersElapsed)
+            + " | REMAIN: " + msToTime(classifiedUsersRemain)
+            + " | ETC: " + classifiedUsersEndMoment.format(compactDateTimeFormat)
+            + " | " + (statsObj.users.notClassified + statsObj.users.updatedClassified) + "/" + classifiedUserIds.length
+            + " (" + classifiedUsersPercent.toFixed(1) + "%)"
+            + " USERS CLASSIFIED"
+          ));
+
+          console.log(chalkLog("NNT | CL U HIST"
+            + " | L: " + classifiedUserHistogram.left
+            + " | R: " + classifiedUserHistogram.right
+            + " | N: " + classifiedUserHistogram.neutral
+            + " | +: " + classifiedUserHistogram.positive
+            + " | -: " + classifiedUserHistogram.negative
+            + " | 0: " + classifiedUserHistogram.none
+          ));
+
         }
-
-
-        debug(currentChalk("CL U HIST"
-          + " | L: " + classifiedUserHistogram.left
-          + " | R: " + classifiedUserHistogram.right
-          + " | N: " + classifiedUserHistogram.neutral
-          + " | +: " + classifiedUserHistogram.positive
-          + " | -: " + classifiedUserHistogram.negative
-          + " | 0: " + classifiedUserHistogram.none
-        ));
-
         // create text input from user text in screenName, name, statusText, retweetText and description
 
         async.waterfall([
@@ -2521,6 +2550,12 @@ function updateClassifiedUsers(cnf, callback){
 
               trainingSetUsersHashMap.set(subUser.userId, subUser);
 
+              debug("CL USR >DB"
+                + " | " + subUser.userId
+                + " | @" + subUser.screenName
+                + " | KW: " + Object.keys(subUser.keywords)[0]
+              );
+
               cb0();
 
             });
@@ -2533,7 +2568,7 @@ function updateClassifiedUsers(cnf, callback){
 
         statsObj.users.notClassified += 1;
 
-        if (statsObj.users.notClassified % 100 === 0){
+        if (statsObj.users.notClassified % 10 === 0){
           console.log(chalkLog("NNT | " + statsObj.users.notClassified + " USERS NOT CLASSIFIED"));
         }
 
@@ -2550,7 +2585,34 @@ function updateClassifiedUsers(cnf, callback){
           + " | SEN: " + sentimentText
         ));
 
-        // console.log(chalkBlue("NNT | KEYWORDS: " + ));
+        classifiedUsersPercent = 100 * (statsObj.users.notClassified + statsObj.users.updatedClassified)/classifiedUserIds.length;
+        classifiedUsersElapsed = (moment().valueOf() - classifiedUsersStartMoment.valueOf()); // mseconds
+        classifiedUsersRate = classifiedUsersElapsed/statsObj.users.updatedClassified; // msecs/userClassified
+        classifiedUsersRemain = (classifiedUserIds.length - (statsObj.users.notClassified + statsObj.users.updatedClassified)) * classifiedUsersRate; // mseconds
+        classifiedUsersEndMoment = moment();
+        classifiedUsersEndMoment.add(classifiedUsersRemain, "ms");
+
+        if ((statsObj.users.notClassified + statsObj.users.updatedClassified) % 20 === 0){
+          console.log(chalkInfo("NNT"
+            + " | START: " + classifiedUsersStartMoment.format(compactDateTimeFormat)
+            + " | ELAPSED: " + msToTime(classifiedUsersElapsed)
+            + " | REMAIN: " + msToTime(classifiedUsersRemain)
+            + " | ETC: " + classifiedUsersEndMoment.format(compactDateTimeFormat)
+            + " | " + (statsObj.users.notClassified + statsObj.users.updatedClassified) + "/" + classifiedUserIds.length
+            + " (" + classifiedUsersPercent.toFixed(1) + "%)"
+            + " USERS CLASSIFIED"
+          ));
+
+          console.log(chalkLog("NNT | CL U HIST"
+            + " | L: " + classifiedUserHistogram.left
+            + " | R: " + classifiedUserHistogram.right
+            + " | N: " + classifiedUserHistogram.neutral
+            + " | +: " + classifiedUserHistogram.positive
+            + " | -: " + classifiedUserHistogram.negative
+            + " | 0: " + classifiedUserHistogram.none
+          ));
+
+        }
 
         user.keywords = classifiedUserHashmap[userId];
 
@@ -2575,7 +2637,24 @@ function updateClassifiedUsers(cnf, callback){
       }
     }
 
-    console.log(chalkLog("NNT | CL U HIST"
+    classifiedUsersPercent = 100 * (statsObj.users.notClassified + statsObj.users.updatedClassified)/classifiedUserIds.length;
+    classifiedUsersElapsed = (moment().valueOf() - classifiedUsersStartMoment.valueOf()); // mseconds
+    classifiedUsersRate = classifiedUsersElapsed/statsObj.users.updatedClassified; // msecs/userClassified
+    classifiedUsersRemain = (classifiedUserIds.length - (statsObj.users.notClassified + statsObj.users.updatedClassified)) * classifiedUsersRate; // mseconds
+    classifiedUsersEndMoment = moment();
+    classifiedUsersEndMoment.add(classifiedUsersRemain, "ms");
+
+    console.log(chalkAlert("NNT | === END CLASSIFY USERS ==="
+      + " | START: " + classifiedUsersStartMoment.format(compactDateTimeFormat)
+      + " | ELAPSED: " + msToTime(classifiedUsersElapsed)
+      + " | REMAIN: " + msToTime(classifiedUsersRemain)
+      + " | ETC: " + classifiedUsersEndMoment.format(compactDateTimeFormat)
+      + " | " + (statsObj.users.notClassified + statsObj.users.updatedClassified) + "/" + classifiedUserIds.length
+      + " (" + classifiedUsersPercent.toFixed(1) + "%)"
+      + " USERS CLASSIFIED"
+    ));
+
+    console.log(chalkAlert("NNT | CL U HIST"
       + " | L: " + classifiedUserHistogram.left
       + " | R: " + classifiedUserHistogram.right
       + " | N: " + classifiedUserHistogram.neutral
@@ -2584,9 +2663,10 @@ function updateClassifiedUsers(cnf, callback){
       + " | 0: " + classifiedUserHistogram.none
     ));
 
-    console.log(chalkBlue("NNT | MAX MAGNITUDE:         " + maxMagnitude));
 
     statsObj.normalization.magnitude.max = maxMagnitude;
+
+    showStats();
 
     callback(null);
 
@@ -3022,7 +3102,7 @@ function generateRandomEvolveConfig (cnf, callback){
   config.elitism = randomInt(EVOLVE_ELITISM_RANGE.min, EVOLVE_ELITISM_RANGE.max);
   config.log = cnf.evolve.log;
 
-  if (cnf.loadTrainingSetFromFile && trainingSetReady) {
+  if (!cnf.createTrainingSet && cnf.loadTrainingSetFromFile && trainingSetReady) {
 
 
     const trainingSetIds = Object.keys(trainingSetHashMap);
@@ -3031,6 +3111,8 @@ function generateRandomEvolveConfig (cnf, callback){
     console.log(chalkAlert("LOAD TRAINING SET FROM HASHMAP: " + trainingSetId));
 
     const tSet = trainingSetHashMap[trainingSetId];
+
+    // console.log("tSet\n" + jsonPrint(tSet));
 
     config.trainingSet = {};
     config.trainingSet.meta = {};
@@ -3043,6 +3125,9 @@ function generateRandomEvolveConfig (cnf, callback){
     callback(null, config);
   }
   else {
+
+    console.log(chalkAlert("... START CREATE TRAINING SET"));
+
     generateTrainingTestSets(config.inputs, trainingSetUsersHashMap, function(err, results){
       if (err) {
         return(callback(err, null));
@@ -3642,9 +3727,6 @@ function initTimeout(callback){
     requiredTrainingSet.forEach(function(userId) {
       console.log(chalkLog("NNT | ... REQ TRAINING SET | @" + userId));
     });
-
-    console.log(chalkLog("SAVE TEST"));
-
 
     let seedOpt = {};
     seedOpt.folder = globalBestNetworkFolder;
