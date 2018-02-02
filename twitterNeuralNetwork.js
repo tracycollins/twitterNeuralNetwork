@@ -1,7 +1,7 @@
 /*jslint node: true */
 "use strict";
 
-const TEST_MODE_LENGTH = 50;
+const TEST_MODE_LENGTH = 100;
 
 const OFFLINE_MODE = process.env.OFFLINE_MODE === "true" || false;
 
@@ -1362,9 +1362,9 @@ function loadBestNetworkDropboxFolder(folder, callback){
 
     let nnArray = [];
 
-    if (configuration.testMode) {
-      response.entries.length = 2;
-    }
+    // if (configuration.testMode) {
+    //   response.entries.length = 2;
+    // }
 
     async.eachSeries(response.entries, function(entry, cb){
 
@@ -3011,6 +3011,11 @@ function generateTrainingTestSets (inputsObj, userHashMap, callback){
 
       }, function(err){ // async.eachOfSeries(inputs[type]
 
+        if (err) {
+          console.error("*** PARSE TEXT ERROR\n" + err);
+          return cb1(err);
+        }
+
         typeIndexOffset += inputs[type].length; 
 
         debug(chalkAlert(
@@ -3019,10 +3024,6 @@ function generateTrainingTestSets (inputsObj, userHashMap, callback){
           + " | inputs[type].length: " + inputs[type].length
         ));
 
-        if (err) {
-          console.error("*** PARSE TEXT ERROR\n" + err);
-          return cb1(err);
-        }
 
         // console.log(chalkAlert("DONE ARRAY: " + type));
         async.setImmediate(function() {
@@ -3126,12 +3127,14 @@ function generateRandomEvolveConfig (cnf, callback){
   config.seedInputsId = randomItem(inputsHashMap.keys());
 
   if (cnf.enableSeedNetwork && config.seedNetworkId) {
+    console.log("NNT | seedNetworkId: " + config.seedNetworkId);
     config.network = bestNetworkHashMap.get(config.seedNetworkId).network;
     config.inputsId = config.seedNetworkId;
     config.inputs = {};
     config.inputs = config.network.inputs;
   }
   else {
+    console.log("NNT | seedInputsId: " + config.seedInputsId);
     config.architecture = "random";
     config.inputsId = config.seedInputsId;
     config.inputs = inputsHashMap.get(config.seedInputsId).inputs;
@@ -3177,7 +3180,7 @@ function generateRandomEvolveConfig (cnf, callback){
 
     console.log(chalkAlert("NNT | ... START CREATE TRAINING SET"));
 
-    generateTrainingTestSets(config.inputs, trainingSetUsersHashMap, function(err, results){
+    generateTrainingTestSets(config, trainingSetUsersHashMap, function(err, results){
       if (err) {
         return(callback(err, null));
       }
@@ -3427,6 +3430,7 @@ function initMain(cnf, callback){
         }
 
         console.log(chalkAlert("NNT | ... START CREATE TRAINING SET"));
+        console.log(chalkAlert("NNT | inputsHashMap keys: " + inputsHashMap.keys()));
 
         const randomInputId = randomItem(inputsHashMap.keys());
         const randomInputs = inputsHashMap.get(randomInputId);
