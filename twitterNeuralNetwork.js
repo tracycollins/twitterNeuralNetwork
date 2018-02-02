@@ -506,10 +506,12 @@ const dropboxConfigFile = hostname + "_" + configuration.DROPBOX.DROPBOX_TNN_CON
 const defaultInputsFolder = dropboxConfigDefaultFolder + "/inputs";
 
 const defaultTrainingSetFolder = dropboxConfigDefaultFolder + "/trainingSets";
-const trainingSetFolder = dropboxConfigHostFolder + "/trainingSets";
-const defaultTrainingSetFile = "trainingSet.json";
-// const defaultTrainingSetFile = "trainingSet_test.json";
+const trainingSetFolder = defaultTrainingSetFolder;
+
+const localTrainingSetFolder = dropboxConfigHostFolder + "/trainingSets";
 let localTrainingSetFile = "trainingSet_" + statsObj.runId + ".json";
+
+const defaultTrainingSetFile = "trainingSet.json";
 
 const statsFolder = "/stats/" + hostname + "/neuralNetwork";
 const statsFile = "twitterNeuralNetworkStats_" + statsObj.runId + ".json";
@@ -3195,13 +3197,20 @@ function generateRandomEvolveConfig (cnf, callback){
 
       console.log(chalkLog("NNT | TRAINING SET META\n" + jsonPrint(results.trainingSet.meta)));
 
-      // results.trainingSetId = statsObj.runId + "_" + config.inputsId;
-
       trainingSetHashMap[results.trainingSetId] = deepcopy(results);
 
-      saveFile({folder: trainingSetFolder, file: localTrainingSetFile, obj: results}, function(err){
-        callback(null, config);
-      });
+      if (hostname === "google") {
+        saveFile({folder: defaultTrainingSetFolder, file: defaultTrainingSetFile, obj: results}, function(err){
+          console.log("NNT | SAVED TRAINING SET: " + defaultTrainingSetFolder + "/" + defaultTrainingSetFile);
+          callback(null, config);
+        });
+      }
+      else {
+        saveFile({folder: localTrainingSetFolder, file: localTrainingSetFile, obj: results}, function(err){
+          console.log("NNT | SAVED TRAINING SET: " + localTrainingSetFolder + "/" + localTrainingSetFile);
+          callback(null, config);
+        });
+      }
 
     });
   }
@@ -3442,16 +3451,31 @@ function initMain(cnf, callback){
 
           trainingSetHashMap[results.trainingSetId] = deepcopy(results);
 
-          saveFile({folder: trainingSetFolder, file: localTrainingSetFile, obj: results}, function(err){
+          if (hostname === "google") {
+            saveFile({folder: defaultTrainingSetFolder, file: defaultTrainingSetFile, obj: results}, function(err){
 
-            console.log("NNT | SAVED TRAINING SET: " + trainingSetFolder + "/" + localTrainingSetFile);
+              console.log("NNT | SAVED TRAINING SET: " + defaultTrainingSetFolder + "/" + defaultTrainingSetFile);
 
-            trainingSetReady = true;
-            createTrainingSetBusy = false;
-            initMainReady = true;
+              trainingSetReady = true;
+              createTrainingSetBusy = false;
+              initMainReady = true;
 
-            callback(null);
-          });
+              callback(null);
+            });
+          }
+          else {
+            saveFile({folder: localTrainingSetFolder, file: localTrainingSetFile, obj: results}, function(err){
+
+              console.log("NNT | SAVED TRAINING SET: " + localTrainingSetFolder + "/" + localTrainingSetFile);
+
+              trainingSetReady = true;
+              createTrainingSetBusy = false;
+              initMainReady = true;
+
+              callback(null);
+            });
+          }
+
         });
 
       });
