@@ -407,7 +407,7 @@ function printDatum(title, input){
 
 function convertDatum(params, datum, generateInputRaw, callback){
 
-  // console.log("convertedDatum");
+  // console.log("convertedDatum params\n" + jsonPrint(params));
 
   let convertedDatum = {};
   convertedDatum.user = {};
@@ -430,8 +430,40 @@ function convertDatum(params, datum, generateInputRaw, callback){
     convertedDatum.output = [0, 0, 0];
   }
 
-  convertedDatum.input.push(datum.inputHits.sentiment[0].magnitude);
-  convertedDatum.input.push(datum.inputHits.sentiment[1].score);
+  let magnitudeNormalized = 0;
+  let scoreNormalized = 0.5;
+
+  if (params.normalization.magnitude.max !== undefined) {
+    if (!params.normalization.magnitude.max) {
+      params.normalization.magnitude.max = 5; // KLUDGE!!
+    }
+    magnitudeNormalized = datum.inputHits.sentiment[0].magnitude/params.normalization.magnitude.max;
+    convertedDatum.input.push(magnitudeNormalized);
+    debug("NNC | MAG  "
+      + " | MIN:  " + params.normalization.magnitude.min.toFixed(2)
+      + " | MAX: " + params.normalization.magnitude.max.toFixed(2)
+      + " | ORG: " + datum.inputHits.sentiment[0].magnitude.toFixed(2)
+      + " | NORM: " + magnitudeNormalized.toFixed(2)
+    );
+  }
+  else {
+    convertedDatum.input.push(datum.inputHits.sentiment[0].magnitude);
+  }
+
+  if ((params.normalization.score.min !== undefined) && (params.normalization.score.max !== undefined)) {
+    scoreNormalized = (datum.inputHits.sentiment[1].score + Math.abs(params.normalization.score.min))/(Math.abs(params.normalization.score.min) + Math.abs(params.normalization.score.max));
+    convertedDatum.input.push(scoreNormalized);
+    debug("NNC | SCORE"
+      + " | MIN: " + params.normalization.score.min.toFixed(2)
+      + " | MAX: " + params.normalization.score.max.toFixed(2)
+      + " | ORG: " + datum.inputHits.sentiment[1].score.toFixed(2)
+      + " | NORM: " + scoreNormalized.toFixed(2)
+    );
+  }
+  else {
+    convertedDatum.input.push(datum.inputHits.sentiment[1].score);
+  }
+
 
   async.eachSeries(statsObj.inputTypes, function(inputType, cb0){
 
@@ -471,6 +503,9 @@ function trainingSetPrepAndEvolve(params, options, callback){
   let trainingSet = [];
   let inputRaw = [];
   let generateInputRaw = true;
+
+  console.log("NNC | TRAINING SET PREP + EVOLVE"
+  );
 
 
   async.eachSeries(params.trainingSet.data, function(datum, cb){
@@ -951,6 +986,7 @@ process.on("message", function(m) {
         inputs: m.inputs,
         outputs: m.outputs,
         trainingSet: m.trainingSet,
+        normalization: m.normalization,
         mutation: m.mutation,
         equal: m.equal,
         popsize: m.popsize,

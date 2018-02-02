@@ -15,7 +15,7 @@ const DEFAULT_GLOBAL_MIN_SUCCESS_RATE = 92; // percent
 const DEFAULT_MIN_SUCCESS_RATE = 50; // percent
 const DEFAULT_LOCAL_MIN_SUCCESS_RATE = 50; // percent
 
-const DEFAULT_INIT_MAIN_INTERVAL = process.env.TNN_INIT_MAIN_INTERVAL || 1*ONE_HOUR;
+const DEFAULT_INIT_MAIN_INTERVAL = process.env.TNN_INIT_MAIN_INTERVAL || 10*ONE_MINUTE;
 
 const os = require("os");
 const util = require("util");
@@ -142,33 +142,9 @@ const DEFAULT_TRAIN_BATCH_SIZE = 1;
 
 let trainingSetHashMap = {};
 let neuralNetworkChildHashMap = {};
-// let classifiedUserHashmapReadyFlag = false;
 let initMainReady = false;
 let trainingSetReady = false;
 let createTrainingSetBusy = false;
-
-// let trainingSet = [];
-// let trainingSetNormalized = {};
-// trainingSetNormalized.meta = {};
-// trainingSetNormalized.meta.numInputs = 0;
-// trainingSetNormalized.meta.numOutputs = 3;
-// trainingSetNormalized.meta.setSize = 0;
-// trainingSetNormalized.data = [];
-
-// let trainingSetNormalizedTotal = {};  // to be saved to dropbox
-// trainingSetNormalizedTotal.meta = {};
-// trainingSetNormalizedTotal.meta.numInputs = 0;
-// trainingSetNormalizedTotal.meta.numOutputs = 3;
-// trainingSetNormalizedTotal.meta.setSize = 0;
-
-// let trainingSetLabels = {};
-// trainingSetLabels.inputsRaw = [];
-// trainingSetLabels.inputs = {};
-// trainingSetLabels.outputs = ["left", "neutral", "right"];
-
-// inputTypes.forEach(function(type){
-//   trainingSetLabels.inputs[type] = [];
-// });
 
 let inputArrays = {};
 
@@ -493,8 +469,8 @@ statsObj.normalization = {};
 statsObj.normalization.score = {};
 statsObj.normalization.magnitude = {};
 
-statsObj.normalization.score.min = -1.0;
-statsObj.normalization.score.max = 1.0;
+statsObj.normalization.score.min = 1.0;
+statsObj.normalization.score.max = -1.0;
 statsObj.normalization.magnitude.min = 0;
 statsObj.normalization.magnitude.max = -Infinity;
 
@@ -2155,14 +2131,6 @@ configEvents.once("INIT_MONGODB", function(){
 
   console.log(chalkAlert("INIT_MONGODB"));
 
-  // wordAssoDb = require("@threeceelabs/mongoose-twitter");
-  // db = wordAssoDb();
-
-  // // NeuralNetwork = require("mongoose").model("NeuralNetwork");
-  // // User = require("mongoose").model("User");
-  // User = mongoose.model("User", wordAssoDb.UserSchema);
-
-  // userServer = require("@threeceelabs/user-server-controller");
 });
 
 function printHistogram(title, hist){
@@ -2201,12 +2169,22 @@ function updateClassifiedUsers(cnf, callback){
     classifiedUserIds.length = TEST_MODE_LENGTH;
   }
 
-  let maxMagnitude = 0;
+  let maxMagnitude = -Infinity;
+  let minScore = 1;
+  let maxScore = -1;
 
   console.log(chalkBlue("NNT | UPDATE CLASSIFIED USERS: " + classifiedUserIds.length));
 
+  // statsObj.normalization.score.min = -1.0;
+  // statsObj.normalization.score.max = 1.0;
+  // statsObj.normalization.magnitude.min = 0;
+  // statsObj.normalization.magnitude.max = -Infinity;
+
   if (cnf.normalization) {
     maxMagnitude = cnf.normalization.magnitude.max;
+    minScore = cnf.normalization.score.min;
+    maxScore = cnf.normalization.score.max;
+    console.log(chalkAlert("NNT | SET NORMALIZATION\n" + jsonPrint(cnf.normalization)));
   }
 
   statsObj.users.updatedClassified = 0;
@@ -2265,6 +2243,8 @@ function updateClassifiedUsers(cnf, callback){
 
         if (!cnf.normalization) {
           maxMagnitude = Math.max(maxMagnitude, sentimentObj.magnitude);
+          minScore = Math.min(minScore, sentimentObj.score);
+          maxScore = Math.max(maxScore, sentimentObj.score);
         }
       }
 
@@ -2665,6 +2645,13 @@ function updateClassifiedUsers(cnf, callback){
 
 
     statsObj.normalization.magnitude.max = maxMagnitude;
+    statsObj.normalization.score.min = minScore;
+    statsObj.normalization.score.max = maxScore;
+
+    console.log(chalkAlert("NNT | CL U HIST | NORMALIZATION"
+      + " | MAG " + statsObj.normalization.magnitude.min + " min /" + statsObj.normalization.magnitude.max + " max"
+      + " | SCORE " + statsObj.normalization.score.min + " min /" + statsObj.normalization.score.max + " max"
+    ));
 
     showStats();
 
@@ -2679,7 +2666,7 @@ function activateNetwork(n, input){
   return output;
 }
 
-function convertDatum(inputs, datum, callback){
+function convertDatum(params, inputs, datum, callback){
 
   let convertedDatum = {};
   convertedDatum.user = {};
@@ -2701,8 +2688,39 @@ function convertDatum(inputs, datum, callback){
     convertedDatum.output = [0, 0, 0];
   }
 
-  convertedDatum.input.push(datum.inputHits.sentiment[0].magnitude);
-  convertedDatum.input.push(datum.inputHits.sentiment[1].score);
+  // convertedDatum.input.push(datum.inputHits.sentiment[0].magnitude);
+  // convertedDatum.input.push(datum.inputHits.sentiment[1].score);
+
+  let magnitudeNormalized = 0;
+  let scoreNormalized = 0.5;
+
+  if (params.normalization.magnitude.max !== undefined) {
+    magnitudeNormalized = datum.inputHits.sentiment[0].magnitude/params.normalization.magnitude.max;
+    convertedDatum.input.push(magnitudeNormalized);
+    debug("NNC | MAG  "
+      + " | MIN:  " + params.normalization.magnitude.min.toFixed(2)
+      + " | MAX: " + params.normalization.magnitude.max.toFixed(2)
+      + " | ORG: " + datum.inputHits.sentiment[0].magnitude.toFixed(2)
+      + " | NORM: " + magnitudeNormalized.toFixed(2)
+    );
+  }
+  else {
+    convertedDatum.input.push(datum.inputHits.sentiment[0].magnitude);
+  }
+
+  if ((params.normalization.score.min !== undefined) && (params.normalization.score.max !== undefined)) {
+    scoreNormalized = (datum.inputHits.sentiment[1].score + Math.abs(params.normalization.score.min))/(Math.abs(params.normalization.score.min) + Math.abs(params.normalization.score.max));
+    convertedDatum.input.push(scoreNormalized);
+    debug("NNC | SCORE"
+      + " | MIN: " + params.normalization.score.min.toFixed(2)
+      + " | MAX: " + params.normalization.score.max.toFixed(2)
+      + " | ORG: " + datum.inputHits.sentiment[1].score.toFixed(2)
+      + " | NORM: " + scoreNormalized.toFixed(2)
+    );
+  }
+  else {
+    convertedDatum.input.push(datum.inputHits.sentiment[1].score);
+  }
 
 
   async.eachSeries(inputTypes, function(inputType, cb0){
@@ -2732,7 +2750,6 @@ function convertDatum(inputs, datum, callback){
   }, function(){
     callback(null, convertedDatum);
   });
-
 }
 
 function testNetwork(nwObj, testObj, callback){
@@ -2754,9 +2771,12 @@ function testNetwork(nwObj, testObj, callback){
   let successRate = 0;
   let testResultArray = [];
 
+  let convertDatumParams = {};
+  convertDatumParams.normalization = statsObj.normalization;
+
   async.each(testObj.testSet.data, function(datum, cb){
 
-    convertDatum(nwObj.inputs, datum, function(err, testDatumObj){
+    convertDatum(convertDatumParams, nwObj.inputs, datum, function(err, testDatumObj){
 
       if (testDatumObj.input.length !== testObj.testSet.meta.numInputs) {
         console.error(chalkError("NNT | MISMATCH INPUT"
@@ -2871,10 +2891,15 @@ function initClassifiedUserHashmap(folder, file, callback){
   });
 }
 
-function generateTrainingTestSets (inputs, userHashMap, callback){
+function generateTrainingTestSets (inputsObj, userHashMap, callback){
+
+  const inputs = deepcopy(inputsObj.inputs);
 
   const userIds = userHashMap.keys();
-  let globalInputIndex = 2;
+
+  // console.log(chalkInfo("GENERATE TRAINING SET | " + userIds.length + " USERS"));
+
+  // let globalInputIndex = 2;
   let numInputHits = 0;
 
   let trainingSet = {};
@@ -2886,13 +2911,21 @@ function generateTrainingTestSets (inputs, userHashMap, callback){
   testSet.data = [];
 
   let totalInputHits = 0;
+
+  // statsObj.normalization.score.min = 1.0;
+  // statsObj.normalization.score.max = -1.0;
+  // statsObj.normalization.magnitude.min = 0;
+  // statsObj.normalization.magnitude.max = -Infinity;
+
   let maxMagnitude = 0;
+  let maxScore = 0;
+  let minScore = 0;
 
-  const inTypes = Object.keys(inputs);
-
-  debug("generateTrainingTestSets inputs\ninTypes: " + inTypes + "\n" + jsonPrint(inputs));
+  debug("generateTrainingTestSets inputs\ninputTypes: " + inputTypes + "\n" + jsonPrint(inputsObj.inputs));
 
   async.each(userIds, function(userId, cb0){ 
+
+    let globalInputIndex = 2;
 
     const user = userHashMap.get(userId);
     const userHistograms = user.histograms;
@@ -2925,9 +2958,8 @@ function generateTrainingTestSets (inputs, userHashMap, callback){
     trainingSetDatum.inputHits.sentiment.push({ magnitude: sentimentObj.magnitude});
     trainingSetDatum.inputHits.sentiment.push({ score: sentimentObj.score});
 
-    globalInputIndex = 2;
 
-    async.eachSeries(inTypes, function(type, cb1){  // inputTypes = [ emoji, screenName, hashtag, images, word, url ]
+    async.eachSeries(inputTypes, function(type, cb1){  // inputTypes = [ emoji, screenName, hashtag, images, word, url ]
 
       trainingSetDatum.inputHits[type] = [];
 
@@ -2949,7 +2981,7 @@ function generateTrainingTestSets (inputs, userHashMap, callback){
           ));
 
           if ((globalInputIndex % 100 === 0) && (index % 10 === 0)){
-            console.log(chalkBlue("+ DATUM BIT: " + type
+            debug(chalkBlue("+ DATUM BIT: " + type
               + " | INPUT HITS: " + numInputHits 
               + " | ["  + trainingSetDatumInputIndex + " / " + index + "] " + element + ": " + userHistograms[type][element]
               + " | @" + trainingSetDatum.user.screenName 
@@ -2958,9 +2990,9 @@ function generateTrainingTestSets (inputs, userHashMap, callback){
 
           globalInputIndex += 1;
 
-          // async.setImmediate(function() {
+          async.setImmediate(function() {
             cb2();
-          // });
+          });
         }
         else {
 
@@ -2972,9 +3004,9 @@ function generateTrainingTestSets (inputs, userHashMap, callback){
 
           globalInputIndex += 1;
 
-          // async.setImmediate(function() {
+          async.setImmediate(function() {
             cb2();
-          // });
+          });
         }
 
       }, function(err){ // async.eachOfSeries(inputs[type]
@@ -2992,8 +3024,10 @@ function generateTrainingTestSets (inputs, userHashMap, callback){
           return cb1(err);
         }
 
-        debug(chalkAlert("DONE ARRAY: " + type));
-        cb1();
+        // console.log(chalkAlert("DONE ARRAY: " + type));
+        async.setImmediate(function() {
+          cb1();
+        });
 
       });
 
@@ -3019,7 +3053,9 @@ function generateTrainingTestSets (inputs, userHashMap, callback){
       // IF NOT INPUT HITS, don't user for training
       
       if (numInputHits < MIN_INPUT_HITS) { 
-        return cb0();
+        async.setImmediate(function() { 
+          return cb0(); 
+        });
       }
 
       totalInputHits += numInputHits;
@@ -3030,12 +3066,14 @@ function generateTrainingTestSets (inputs, userHashMap, callback){
 
       if (Math.random() > configuration.testSetRatio) {
         trainingSet.data.push(trainingSetDatum);
+        trainingSet.meta.numInputs = globalInputIndex;
         async.setImmediate(function() { 
           cb0(); 
         });
       }
       else {
         testSet.data.push(trainingSetDatum);
+        testSet.meta.numInputs = globalInputIndex;
         async.setImmediate(function() { 
           cb0(); 
         });
@@ -3045,13 +3083,24 @@ function generateTrainingTestSets (inputs, userHashMap, callback){
   }, function(err){
 
     const trainingSetId = moment().format(compactDateTimeFormat);
-    trainingSet.meta.numInputs = globalInputIndex;
     trainingSet.meta.numOutputs = 3;
     trainingSet.meta.setSize = trainingSet.data.length;
 
-    testSet.meta.numInputs = globalInputIndex;
     testSet.meta.numOutputs = 3;
     testSet.meta.setSize = testSet.data.length;
+
+    console.log(chalkInfo("NNT | END GENERATE TRAINING SET"
+      + "\nNNT | TRAINING SET ID: " + trainingSetId
+      + " | NUM INPUTS: " + trainingSet.meta.numInputs
+      + " | NUM OUTPUTS: " + trainingSet.meta.numOutputs
+      + " | SIZE: " + trainingSet.meta.setSize
+      + "\nNNT | TEST SET"
+      + " | NUM INPUTS: " + testSet.meta.numInputs
+      + " | NUM OUTPUTS: " + testSet.meta.numOutputs
+      + " | SIZE: " + testSet.meta.setSize
+      // + "\n trainingSet.meta\n" + jsonPrint(trainingSet.meta) 
+      // + "\n testSet.meta\n" + jsonPrint(testSet.meta)
+    ));
 
     callback(err, {trainingSetId: trainingSetId, trainingSet: trainingSet, testSet: testSet});
   });
@@ -3126,7 +3175,7 @@ function generateRandomEvolveConfig (cnf, callback){
   }
   else {
 
-    console.log(chalkAlert("... START CREATE TRAINING SET"));
+    console.log(chalkAlert("NNT | ... START CREATE TRAINING SET"));
 
     generateTrainingTestSets(config.inputs, trainingSetUsersHashMap, function(err, results){
       if (err) {
@@ -3141,7 +3190,7 @@ function generateRandomEvolveConfig (cnf, callback){
       config.testSet = {};
       config.testSet = results.testSet;
 
-      debug(chalkLog("NNT RANDOM CONFIG\n" + jsonPrint(config)));
+      console.log(chalkLog("NNT | TRAINING SET META\n" + jsonPrint(results.trainingSet.meta)));
 
       // results.trainingSetId = statsObj.runId + "_" + config.inputsId;
 
@@ -3153,8 +3202,6 @@ function generateRandomEvolveConfig (cnf, callback){
 
     });
   }
-
-
 }
 
 function initNetworkCreate(nnChildId, nnId, cnf, callback){
@@ -3269,7 +3316,7 @@ function initMain(cnf, callback){
 
   initMainReady = false;
 
-  console.log(chalkAlert("***===*** INIT MAIN ***===***"));
+  console.log(chalkAlert("NNT | ***===*** INIT MAIN ***===*** | INTERVAL: " + msToTime(cnf.initMainIntervalTime)));
 
   initClassifiedUserHashmap(cnf.classifiedUsersFolder, cnf.classifiedUsersFile, function(err, classifiedUsersObj){
 
@@ -3369,6 +3416,9 @@ function initMain(cnf, callback){
     }
     else {
 
+      createTrainingSetBusy = true;
+      trainingSetReady = false;
+
       updateClassifiedUsers(cnf, function(err){
 
         if (err) {
@@ -3376,11 +3426,29 @@ function initMain(cnf, callback){
           quit("UPDATE CLASSIFIED USER ERROR");
         }
 
-        trainingSetReady = true;
-        createTrainingSetBusy = false;
-        initMainReady = true;
+        console.log(chalkAlert("NNT | ... START CREATE TRAINING SET"));
 
-        callback(null);
+        const randomInputId = randomItem(inputsHashMap.keys());
+        const randomInputs = inputsHashMap.get(randomInputId);
+
+        generateTrainingTestSets(randomInputs, trainingSetUsersHashMap, function(err, results){
+          if (err) {
+            return(callback(err, null));
+          }
+
+          trainingSetHashMap[results.trainingSetId] = deepcopy(results);
+
+          saveFile({folder: trainingSetFolder, file: localTrainingSetFile, obj: results}, function(err){
+
+            console.log("NNT | SAVED TRAINING SET: " + trainingSetFolder + "/" + localTrainingSetFile);
+
+            trainingSetReady = true;
+            createTrainingSetBusy = false;
+            initMainReady = true;
+
+            callback(null);
+          });
+        });
 
       });
     }
@@ -3736,7 +3804,7 @@ function initTimeout(callback){
     }
 
     if (cnf.createTrainingSetOnly) {
-      console.log(chalkInfo("*** CREATE TRAINING SET ONLY ... SKIP INIT NN CHILD ***"));
+      console.log(chalkInfo("NNT | *** CREATE TRAINING SET ONLY ... SKIP INIT NN CHILD ***"));
       callback();
     }
     else {
@@ -3789,9 +3857,7 @@ initTimeout(function(){
 
   initMainInterval = setInterval(function(){
 
-    console.log(chalkAlert("--- INIT MAIN INTERVAL | trainingSetReady: " + trainingSetReady));
-
-    console.log(chalkAlert("+++ INIT MAIN INTERVAL"
+    console.log(chalkAlert("NNT | +++ INIT MAIN INTERVAL"
       + " | trainingSetReady: " + trainingSetReady
       + " | createTrainingSetBusy: " + createTrainingSetBusy
     ));
