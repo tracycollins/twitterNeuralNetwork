@@ -2202,7 +2202,8 @@ function updateClassifiedUsers(cnf, callback){
 
   async.eachSeries(classifiedUserIds, function(userId, cb0){
 
-    User.findOne({userId: userId.toString()}, function(err, user){
+    // User.findOne({userId: userId.toString()}, function(err, user){
+    User.findOne( { $or:[ {userId: userId.toString()}, {screenName: userId.toLowerCase()} ]}, function(err, user){
 
       userIndex += 1;
 
