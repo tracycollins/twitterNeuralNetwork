@@ -3366,6 +3366,8 @@ function initMain(cnf, callback){
 
         if (err) {
           console.log(chalkError("*** GET " + fullPath + " FILE METADATA ERROR\n" + jsonPrint(err)));
+          initMainReady = true;
+          createTrainingSetBusy = false;
           return(callback(err));
         }
 
@@ -3378,6 +3380,8 @@ function initMain(cnf, callback){
             + " | " + fileModifiedMoment.format(compactDateTimeFormat)
           ));
           trainingSetReady = true;
+          initMainReady = true;
+          createTrainingSetBusy = false;
           callback(null);
         }
         else {
@@ -3398,6 +3402,7 @@ function initMain(cnf, callback){
               console.error(chalkError("NNT | ERROR: loadFile: " + folder + "/" + file));
               trainingSetReady = false;
               createTrainingSetBusy = false;
+              initMainReady = true;
               callback(err, null);
             }
             else {
@@ -3416,11 +3421,6 @@ function initMain(cnf, callback){
 
               callback(null, null);
 
-              // initRequiredTrainingSet(cnf, function(err){
-
-              //   callback(null, null);
-
-              // });
             }
           });
         }
@@ -3446,6 +3446,9 @@ function initMain(cnf, callback){
 
         generateTrainingTestSets(randomInputs, trainingSetUsersHashMap, function(err, results){
           if (err) {
+            initMainReady = true;
+            trainingSetReady = true;
+            createTrainingSetBusy = false;
             return(callback(err, null));
           }
 
