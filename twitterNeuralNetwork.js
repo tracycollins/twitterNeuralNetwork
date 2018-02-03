@@ -2190,6 +2190,7 @@ function updateClassifiedUsers(cnf, callback){
   }
 
   statsObj.users.updatedClassified = 0;
+  statsObj.users.notClassified = 0;
 
   let userIndex = 0;
   let classifiedUsersPercent = 0;
