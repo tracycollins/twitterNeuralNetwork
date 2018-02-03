@@ -120,9 +120,9 @@ const EVOLVE_COST_ARRAY = [
   // "HINGE"
 ];
 
-const EVOLVE_MUTATION_RATE_RANGE = { min: 0.5, max: 0.95 } ;
-const EVOLVE_POP_SIZE_RANGE = { min: 100, max: 200 } ;
-const EVOLVE_GROWTH_RANGE = { min: 0.00005, max: 0.00015 } ;
+const EVOLVE_MUTATION_RATE_RANGE = { min: 0.25, max: 0.95 } ;
+const EVOLVE_POP_SIZE_RANGE = { min: 100, max: 500 } ;
+const EVOLVE_GROWTH_RANGE = { min: 0.000025, max: 0.00030 } ;
 const EVOLVE_ELITISM_RANGE = { min: 5, max: 25 } ;
 
 const DEFAULT_TRAIN_THREADS = 1;
@@ -3455,6 +3455,16 @@ function initMain(cnf, callback){
           }
 
           trainingSetHashMap[results.trainingSetId] = deepcopy(results);
+
+          statsObj.classifiedUserHistogram = {};
+          statsObj.classifiedUserHistogram = classifiedUserHistogram;
+
+          classifiedUserHistogram.left = 0;
+          classifiedUserHistogram.right = 0;
+          classifiedUserHistogram.neutral = 0;
+          classifiedUserHistogram.positive = 0;
+          classifiedUserHistogram.negative = 0;
+          classifiedUserHistogram.none = 0;
 
           if (hostname === "google") {
             saveFile({folder: defaultTrainingSetFolder, file: defaultTrainingSetFile, obj: results}, function(err){
