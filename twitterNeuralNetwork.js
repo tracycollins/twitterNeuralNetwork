@@ -3203,8 +3203,26 @@ function generateRandomEvolveConfig (cnf, callback){
 
       if (hostname === "google") {
         saveFile({folder: defaultTrainingSetFolder, file: defaultTrainingSetFile, obj: results}, function(err){
-          console.log("NNT | SAVED TRAINING SET: " + defaultTrainingSetFolder + "/" + defaultTrainingSetFile);
-          callback(null, config);
+          if (err) {
+
+            console.log("NNT | *** ERROR ... RETRY SAVE TRAINING SET: " + defaultTrainingSetFolder + "/" + defaultTrainingSetFile);
+
+            saveFileRetry(5000, defaultTrainingSetFolder, defaultTrainingSetFile, results, function(err){
+              if (err) {
+                console.log("NNT | *** ERROR SAVE TRAINING SET: " + defaultTrainingSetFolder + "/" + defaultTrainingSetFile);
+                callback(err, config);
+              }
+              else {
+                console.log("NNT | SAVED TRAINING SET: " + defaultTrainingSetFolder + "/" + defaultTrainingSetFile);
+                callback(null, config);
+              }
+
+            });
+          }
+          else {
+            console.log("NNT | SAVED TRAINING SET: " + defaultTrainingSetFolder + "/" + defaultTrainingSetFile);
+            callback(null, config);
+          }
         });
       }
       else {
