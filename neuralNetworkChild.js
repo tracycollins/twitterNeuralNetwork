@@ -126,7 +126,7 @@ statsObj.memory.rss = process.memoryUsage().rss/(1024*1024);
 statsObj.memory.maxRss = process.memoryUsage().rss/(1024*1024);
 statsObj.memory.maxRssTime = moment().valueOf();
 
-statsObj.inputTypes = [];
+// statsObj.inputTypes = [];
 
 statsObj.evolve = {};
 statsObj.evolve.startTime = moment().valueOf();
@@ -195,8 +195,8 @@ function quit(message) {
   console.log("NNC | " + process.argv[1]
     + " | NEURAL NET **** QUITTING"
     + " | CAUSE: " + msg
-    + " | PID: " + process.pid
-    
+    + " | PROCESS NAME: " + configuration.processName
+    + " | PID: " + process.pid    
   );
   process.exit();
 }
@@ -407,6 +407,8 @@ function printDatum(title, input){
 
 function convertDatum(params, datum, generateInputRaw, callback){
 
+  const inputTypes = Object.keys(params.inputs).sort();
+
   // console.log("convertedDatum params\n" + jsonPrint(params));
 
   let convertedDatum = {};
@@ -465,7 +467,7 @@ function convertDatum(params, datum, generateInputRaw, callback){
   }
 
 
-  async.eachSeries(statsObj.inputTypes, function(inputType, cb0){
+  async.eachSeries(inputTypes, function(inputType, cb0){
 
     async.eachSeries(params.inputs[inputType], function(inName, cb1){
 
@@ -505,10 +507,12 @@ function trainingSetPrepAndEvolve(params, options, callback){
   let generateInputRaw = true;
 
   console.log("NNC | TRAINING SET PREP + EVOLVE"
+    + " | DATA LENGTH: " + params.trainingSet.data.length
   );
 
-
   async.eachSeries(params.trainingSet.data, function(datum, cb){
+
+    // console.log("datum\n" + jsonPrint(datum));
 
     convertDatum(params, datum, generateInputRaw, function(err, datumObj){
 
@@ -583,10 +587,10 @@ function evolve(params, callback){
 
   let options = {};
 
-  if ((params.network !== undefined) && params.network) {
-    options.network = params.network;
+  if ((params.network !== undefined) && params.networkObj) {
+    options.networkObj = params.networkObj;
     params.architecture = "loadedNetwork";
-    debug(chalkAlert("NNC | START NETWORK DEFINED: " + options.network.networkId));
+    debug(chalkAlert("NNC | START NETWORK DEFINED: " + options.networkObj.networkId));
   }
 
   options.threads = params.threads;
@@ -696,15 +700,15 @@ function evolve(params, callback){
     switch (params.architecture) {
 
       case "loadedNetwork":
-        network = neataptic.Network.fromJSON(options.network.network);
+        network = neataptic.Network.fromJSON(options.networkObj.network);
 
         inputArraySize = network.input;
 
         console.log("NNC"
           + " | " + configuration.processName
-          + " | EVOLVE ARCH | LOADED: " + options.network.networkId
-          + " | IN: " + options.network.network.input
-          + " | OUT: " + options.network.network.output
+          + " | EVOLVE ARCH | LOADED: " + options.networkObj.networkId
+          + " | IN: " + options.networkObj.network.input
+          + " | OUT: " + options.networkObj.network.output
         );
 
         trainingSetPrepAndEvolve(params, options, function(err, results){
@@ -737,7 +741,9 @@ function evolve(params, callback){
       default:
         console.log("NNC | EVOLVE ARCH"
           + " | " + configuration.processName
-          + " | " + params.architecture
+          + " | " + params.architecture.toUpperCase()
+          + " | INPUTS: " + params.trainingSet.meta.numInputs
+          + " | OUTPUTS: " + params.trainingSet.meta.numOutputs
         );
         network = new neataptic.Network(
           params.trainingSet.meta.numInputs, 
@@ -761,10 +767,10 @@ function train(params, callback){
 
   let options = {};
 
-  if ((params.network !== undefined) && params.network) {
-    options.network = params.network;
+  if ((params.network !== undefined) && params.networkObj) {
+    options.networkObj = params.network;
     params.architecture = "loadedNetwork";
-    console.log(chalkAlert("NNC | START NETWORK DEFINED: " + options.network.networkId));
+    console.log(chalkAlert("NNC | START NETWORK DEFINED: " + options.networkObj.networkId));
   }
 
   options.error = params.error;
@@ -842,8 +848,8 @@ function train(params, callback){
     switch (params.architecture) {
 
       case "loadedNetwork":
-        console.log("NNC | TRAIN ARCH | LOADED: " + options.network.networkId);
-        network = neataptic.Network.fromJSON(options.network.network);
+        console.log("NNC | TRAIN ARCH | LOADED: " + options.networkObj.networkId);
+        network = neataptic.Network.fromJSON(options.networkObj.network);
 
       break;
 
@@ -938,8 +944,6 @@ process.on("message", function(m) {
 
     case "INIT":
       statsObj.testRunId = m.testRunId;
-      statsObj.inputTypes = m.inputTypes;
-      // statsFile = "neuralNetworkChildStats_" + statsObj.pid + "_" + statsObj.testRunId + ".json";
       console.log(chalkInfo("NNC | STATS FILE: " + statsFolder + "/" + statsFile));
       console.log(chalkInfo("NNC | NEURAL NET INIT"
         + " | PROCESS NAME: " + configuration.processName
@@ -971,6 +975,7 @@ process.on("message", function(m) {
       statsObj.training.seedNetworkRes = m.seedNetworkRes;
       statsObj.training.iterations = m.iterations;
 
+      statsObj.inputsId = m.inputsId;
       statsObj.inputs = {};
       statsObj.inputs = m.inputs;
       statsObj.outputs = {};
@@ -983,6 +988,7 @@ process.on("message", function(m) {
         architecture: m.architecture,
         seedNetworkId: m.seedNetworkId,
         seedNetworkRes: m.seedNetworkRes,
+        inputsId: m.inputsId,
         inputs: m.inputs,
         outputs: m.outputs,
         trainingSet: m.trainingSet,
@@ -1020,10 +1026,10 @@ process.on("message", function(m) {
         log: m.log
       };
 
-      if (m.network && (m.network !== undefined)) {
+      if (m.networkObj && (m.networkObj !== undefined)) {
 
-        evolveOptions.network = m.network;
-        statsObj.evolve.options.network = m.network;
+        evolveOptions.networkObj = m.networkObj;
+        statsObj.evolve.options.networkObj = m.networkObj;
 
         console.log(chalkAlert("NNC | EVOLVE | " + getTimeStamp()
           + " | " + configuration.processName
@@ -1031,7 +1037,7 @@ process.on("message", function(m) {
           + "\n SEED: " + m.seedNetworkId
           + " | SEED RES %: " + m.seedNetworkRes.toFixed(2)
           + "\n THREADs: " + m.threads
-          + "\n NET: " + m.network.networkId + " | " + m.network.successRate.toFixed(2) + "%"
+          + "\n NET: " + m.networkObj.networkId + " | " + m.networkObj.successRate.toFixed(2) + "%"
           + " | IN: " + m.trainingSet.meta.numInputs
           + " | OUT: " + m.trainingSet.meta.numOutputs
           + "\n TRAINING SET: " + m.trainingSet.meta.setSize
@@ -1051,8 +1057,6 @@ process.on("message", function(m) {
           + " | ITRS: " + statsObj.training.iterations
         ));
       }
-
-      debugger;
 
       evolve(evolveOptions, function(err, results){
 
@@ -1089,6 +1093,7 @@ process.on("message", function(m) {
           networkObj.network = exportedNetwork;
           networkObj.numInputs = exportedNetwork.input;
           networkObj.numOutputs = exportedNetwork.output;
+          networkObj.inputsId = evolveOptions.inputsId;
           networkObj.inputs = {};
           networkObj.inputs = evolveOptions.inputs;
           networkObj.outputs = {};
