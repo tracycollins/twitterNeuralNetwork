@@ -3502,6 +3502,9 @@ function initMain(cnf, callback){
 
   console.log(chalkAlert("NNT | ***===*** INIT MAIN ***===*** | INTERVAL: " + msToTime(cnf.initMainIntervalTime)));
 
+  loadInputsDropboxFolder(defaultInputsFolder, function(err){
+  });
+
   initClassifiedUserHashmap(cnf.classifiedUsersFolder, cnf.classifiedUsersFile, function(err, classifiedUsersObj){
 
     if (err) {
