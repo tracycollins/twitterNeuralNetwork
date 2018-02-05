@@ -3022,26 +3022,13 @@ function initClassifiedUserHashmap(folder, file, callback){
   });
 }
 
-// function generateTrainingTestSets (inputsObj, userHashMap, callback){
 function generateTrainingTestSets (inputsIds, userHashMap, callback){
 
-
-  // const inputsIds = inHashMap.keys();
   const userIds = userHashMap.keys();
 
   console.log(chalkInfo("NNT | GENERATE TRAINING SET | " + userIds.length + " USERS | " + inputsIds.length + " INPUT GROUPS"));
 
-  // let globalInputIndex = 2;
-
-  // statsObj.normalization.score.min = 1.0;
-  // statsObj.normalization.score.max = -1.0;
-  // statsObj.normalization.magnitude.min = 0;
-  // statsObj.normalization.magnitude.max = -Infinity;
-  // debug("generateTrainingTestSets inputs\ninputTypes: " + inputTypes + "\n" + jsonPrint(inputsObj.inputs));
-
   async.each(inputsIds, function(inputsId, cb0){ 
-
-    // debugger;
 
     if (!inputsHashMap.has(inputsId)) {
       console.log(chalkError("*** INPUTS ID NOT IN HASH: " + inputsId));
@@ -3063,10 +3050,6 @@ function generateTrainingTestSets (inputsIds, userHashMap, callback){
         + " | LEN: " + inputs[inputType].length
       ));
     });
-
-    // let globalInputIndex = 2;
-    // let totalInputHits = 0;
-    // let numInputHits = 0;
 
     let maxMagnitude = 0;
     let maxScore = 0;
@@ -3242,9 +3225,7 @@ function generateTrainingTestSets (inputsIds, userHashMap, callback){
         return cb0(err);
       }
 
-      // const trainingSetId = statsObj.runId + "_" + inputsId;
       const trainingSetId = inputsId;
-      // trainingSetIndex += 1;
 
       trainingSet.meta.numOutputs = 3;
       trainingSet.meta.setSize = trainingSet.data.length;
@@ -3274,16 +3255,6 @@ function generateTrainingTestSets (inputsIds, userHashMap, callback){
 
       saveFileQueue.push({folder: folder, file: file, obj: trainingSetObj});
 
-      // if (hostname === "google") {
-
-      //   saveFileQueue.push({folder: defaultTrainingSetFolder, file: file, obj: trainingSetObj});
-
-      // }
-      // else {
-
-      //   saveFileQueue.push({folder: localTrainingSetFolder, file: file, obj: trainingSetObj});
-      // }
-
       setTimeout(function(){
         cb0();
       }, 2000);
@@ -3302,9 +3273,6 @@ function generateTrainingTestSets (inputsIds, userHashMap, callback){
 function generateRandomEvolveConfig (cnf, callback){
 
   let config = {};
-
-  // let trainingSetId;
-  // let trainingSetIds;
 
   config.networkCreateMode = "evolve";
 
@@ -3357,11 +3325,6 @@ function generateRandomEvolveConfig (cnf, callback){
 
   if (!cnf.createTrainingSet && cnf.loadTrainingSetFromFile && trainingSetReady) {
 
-    // const trainingSetId = statsObj.runId + "_" + inputsId;
-
-    // const trainingSetIds = trainingSetHashMap.keys();
-    // const trainingSetId = trainingSetIds[0];
-
     console.log(chalkAlert("LOAD TRAINING SET FROM HASHMAP: " + config.inputsId));
 
     if (!trainingSetHashMap.has(config.inputsId)) {
@@ -3370,8 +3333,6 @@ function generateRandomEvolveConfig (cnf, callback){
     }
 
     const tSet = trainingSetHashMap.get(config.inputsId);
-
-    // console.log("tSet\n" + jsonPrint(tSet));
 
     config.trainingSet = {};
     config.trainingSet.meta = {};
@@ -3393,9 +3354,6 @@ function generateRandomEvolveConfig (cnf, callback){
         return(callback(err, null));
       }
 
-      // debugger;
-
-      // trainingSetId = randomItem(trainingSetHashMap.keys());
       const trainingSetObj = trainingSetHashMap.get(config.inputsId);
 
       console.log(chalkAlert("NNT | USING TRAINING SET " + config.inputsId));
@@ -3652,6 +3610,7 @@ function initNetworkCreateInterval(cnf){
 
             if (err) {
               console.log("NNT | *** INIT NETWORK CREATE ERROR ***\n" + jsonPrint(err));
+              neuralNetworkChildHashMap[nnChildId].ready = true ;
             }
             else {
               console.log(chalkInfo("NETWORK CREATED | " + nnId));
