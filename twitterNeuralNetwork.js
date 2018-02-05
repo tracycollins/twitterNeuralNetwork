@@ -1,7 +1,7 @@
 /*jslint node: true */
 "use strict";
 
-const TEST_MODE_LENGTH = 500;
+const TEST_MODE_LENGTH = 1000;
 const TEST_DROPBOX_NN_LOAD = 3;
 const USE_LOCAL_TRAINING_SETS = false;
 const DEFAULT_MAX_NEURAL_NETWORK_CHILDREN = 2;
