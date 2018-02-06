@@ -3,8 +3,10 @@
 
 const async = require("async");
 const moment = require("moment");
-const compactDateTimeFormat = "YYYYMMDD HHmmss";
+const histogramParser = require("@threeceelabs/histogram-parser");
 const neataptic = require("./js/neataptic");
+
+const compactDateTimeFormat = "YYYYMMDD HHmmss";
 
 let network;
 

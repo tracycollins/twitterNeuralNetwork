@@ -2288,7 +2288,6 @@ console.log(chalkInfo("NNT | " + getTimeStamp()
 configEvents.once("INIT_MONGODB", function(){
 
   console.log(chalkAlert("INIT_MONGODB"));
-
 });
 
 function printHistogram(title, hist){
@@ -3297,8 +3296,6 @@ function generateTrainingTestSets (inputsIds, userHashMap, callback){
     callback(err);
 
   });
-
-
 }
 
 function generateRandomEvolveConfig (cnf, callback){
