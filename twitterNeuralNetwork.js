@@ -2377,12 +2377,6 @@ function initialize(cnf, callback){
 
           debug("initStatsUpdate cnf2\n" + jsonPrint(cnf2));
 
-          // loadHistogramsDropboxFolder(defaultHistogramsFolder, function(err){});
-
-          // loadInputsDropboxFolder(defaultInputsFolder, function(err){
-          //   return(callback(err, cnf2));
-          // });
-
           loadHistogramsDropboxFolder(defaultHistogramsFolder, function(err){
             loadInputsDropboxFolder(defaultInputsFolder, function(err){
               return(callback(err, cnf2));
@@ -3499,7 +3493,8 @@ function generateTrainingTestSets (inputsIds, userHashMap, callback){
       trainingSetHashMap.set(trainingSetId, trainingSetObj);
 
       const file = "trainingSet_" + trainingSetId + ".json";
-      let folder = (hostname === "google") ? defaultTrainingSetFolder : localTrainingSetFolder;
+      // let folder = (hostname === "google") ? defaultTrainingSetFolder : localTrainingSetFolder;
+      let folder = localTrainingSetFolder;
 
       saveFileQueue.push({folder: folder, file: file, obj: trainingSetObj});
 
