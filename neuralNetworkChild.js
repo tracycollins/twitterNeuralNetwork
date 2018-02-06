@@ -678,11 +678,6 @@ function evolve(params, callback){
       } 
       break;
 
-
-      // case "inputsRaw":
-      //   console.log("NNC" + " | " + configuration.processName + " | EVOLVE OPTION | " + key + ": " + params[key].length);
-      // break;
-
       default:
         if ((key !== "log") && (key !== "trainingSet")){
           console.log("NNC" + " | " + configuration.processName + " | EVOLVE OPTION | " + key + ": " + params[key]);
@@ -696,6 +691,8 @@ function evolve(params, callback){
 
     let inputArraySize;
     let i = 0;
+
+    network = {};
 
     switch (params.architecture) {
 
@@ -843,7 +840,7 @@ function train(params, callback){
 
   }, function(){
 
-    // const hiddenLayerSize = parseInt(0.5*(params.trainingSet[0].input.length));
+    network = {};
 
     switch (params.architecture) {
 
