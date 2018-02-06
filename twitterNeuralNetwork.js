@@ -10,7 +10,7 @@ const DEFAULT_TEST_RATIO = 0.20;
 const DEFAULT_NETWORK_CREATE_MODE = "evolve";
 const DEFAULT_ITERATIONS = 10;
 const DEFAULT_SEED_NETWORK_ID = false;
-const DEFAULT_SEED_NETWORK_PROBABILITY = 0;
+const DEFAULT_SEED_NETWORK_PROBABILITY = 0.5;
 
 const MIN_INPUT_HITS = 10;
 
@@ -381,6 +381,8 @@ let bestNetworkHashMap = new HashMap();
 let histogramsHashMap = new HashMap();
 let inputsHashMap = new HashMap();
 let trainingSetUsersHashMap = new HashMap();
+
+let inputsNetworksHashMap = {};
 
 let currentBestNetwork;
 let networkCreateResultsHashmap = {};
@@ -1415,6 +1417,10 @@ function loadHistogramsDropboxFolder(folder, callback){
 
               inputsHashMap.set(newInputsObj.inputsId, newInputsObj);
 
+              if (inputsNetworksHashMap[newInputsObj.inputsId] === undefined) {
+                inputsNetworksHashMap[newInputsObj.inputsId] = new Set();
+              }
+
               const newInputsFile = histogramsObj.histogramsId + ".json";
 
               saveFileQueue.push({folder: defaultInputsFolder, file: newInputsFile, obj: newInputsObj});
@@ -1485,6 +1491,11 @@ function loadInputsDropboxFolder(folder, callback){
             ));
 
             inputsHashMap.set(inputsObj.inputsId, inputsObj);
+
+            if (inputsNetworksHashMap[inputsObj.inputsId] === undefined) {
+              inputsNetworksHashMap[inputsObj.inputsId] = new Set();
+            }
+
             cb();
 
           });
@@ -1528,6 +1539,10 @@ function loadInputsDropboxFolder(folder, callback){
           else {
 
             inputsHashMap.set(inputsObj.inputsId, inputsObj);
+
+            if (inputsNetworksHashMap[inputsObj.inputsId] === undefined) {
+              inputsNetworksHashMap[inputsObj.inputsId] = new Set();
+            }
 
             const inputTypes = Object.keys(inputsObj.inputs);
 
@@ -1700,6 +1715,11 @@ function loadBestNetworkDropboxFolders(folders, callback){
               bestNetworkHashMap.set(networkObj.networkId, { entry: entry, networkObj: networkObj});
               inputsHashMap.set(networkObj.inputsId, {inputsId: networkObj.inputsId, inputs:networkObj.inputs});
 
+              if (inputsNetworksHashMap[networkObj.inputsId] === undefined) {
+                inputsNetworksHashMap[networkObj.inputsId] = new Set();
+              }
+              inputsNetworksHashMap[networkObj.inputsId].add(networkObj.networkId);
+
               numNetworksLoaded += 1;
 
               if (!currentBestNetwork || (networkObj.successRate > currentBestNetwork.successRate)) {
@@ -1764,6 +1784,11 @@ function loadBestNetworkDropboxFolders(folders, callback){
 
                 bestNetworkHashMap.set(networkObj.networkId, { entry: entry, networkObj: networkObj});
                 inputsHashMap.set(networkObj.inputsId, {inputsId: networkObj.inputsId, inputs:networkObj.inputs});
+
+                if (inputsNetworksHashMap[networkObj.inputsId] === undefined) {
+                  inputsNetworksHashMap[networkObj.inputsId] = new Set();
+                }
+                inputsNetworksHashMap[networkObj.inputsId].add(networkObj.networkId);
 
                 numNetworksLoaded += 1;
 
@@ -1992,6 +2017,7 @@ function initialize(cnf, callback){
   cnf.enableStdin = process.env.TNN_ENABLE_STDIN || true ;
   cnf.networkCreateMode = process.env.TNN_NETWORK_CREATE_MODE || DEFAULT_NETWORK_CREATE_MODE ;
   cnf.initMainIntervalTime = process.env.TNN_INIT_MAIN_INTERVAL || DEFAULT_INIT_MAIN_INTERVAL ;
+  cnf.inputsId = process.env.TNN_INPUTS_ID || false ;
   cnf.seedNetworkProbability = process.env.TNN_SEED_NETWORK_PROBABILITY || DEFAULT_SEED_NETWORK_PROBABILITY ;
 
   cnf.crossEntropyWorkAroundEnabled = false ;
@@ -2161,6 +2187,10 @@ function initialize(cnf, callback){
           }
         }
 
+        if (loadedConfigObj.TNN_INPUTS_ID !== undefined){
+          console.log("NNT | LOADED TNN_INPUTS_ID: " + loadedConfigObj.TNN_INPUTS_ID);
+          cnf.inputsId = loadedConfigObj.TNN_INPUTS_ID;
+        }
 
         if (loadedConfigObj.TNN_SEED_NETWORK_PROBABILITY !== undefined){
           console.log("NNT | LOADED TNN_SEED_NETWORK_PROBABILITY: " + loadedConfigObj.TNN_SEED_NETWORK_PROBABILITY);
@@ -2452,12 +2482,6 @@ function initialize(cnf, callback){
               console.log(chalkError("NNT | ERROR initStatsUpdate\n" + jsonPrint(err)));
             }
             debug("initStatsUpdate cnf2\n" + jsonPrint(cnf2));
-
-            // loadHistogramsDropboxFolder(defaultHistogramsFolder, function(err){});
-
-            // loadInputsDropboxFolder(defaultInputsFolder, function(err){
-            //   return(callback(err, cnf2));
-            // });
 
             loadHistogramsDropboxFolder(defaultHistogramsFolder, function(err){
               loadInputsDropboxFolder(defaultInputsFolder, function(err){
@@ -3497,6 +3521,7 @@ function generateRandomEvolveConfig (cnf, callback){
   let config = {};
 
   config.networkCreateMode = "evolve";
+  config.seedNetworkId = false;
 
   console.log(chalkLog("NNT | NETWORK CREATE MODE: " + config.networkCreateMode));
     
@@ -3508,8 +3533,20 @@ function generateRandomEvolveConfig (cnf, callback){
 
   console.log(chalkLog("NNT | --------------------------------------------------------"));
 
-  config.seedNetworkId = (Math.random() < cnf.seedNetworkProbability) ? randomItem(bestNetworkHashMap.keys()) : false;
-  config.seedInputsId = cnf.inputsId ? cnf.inputsId : randomItem(inputsHashMap.keys());
+  if (cnf.inputsId) {
+    config.seedInputsId = cnf.inputsId;
+    if (inputsNetworksHashMap[cnf.inputsId] !== undefined){
+      if (inputsNetworksHashMap[cnf.inputsId].size > 0) {
+        config.seedNetworkId = (Math.random() < cnf.seedNetworkProbability) ? randomItem([...inputsNetworksHashMap[cnf.inputsId]]) : false;
+      }
+    }
+  }
+  else {
+    config.seedInputsId = randomItem(inputsHashMap.keys());
+    config.seedNetworkId = (Math.random() < cnf.seedNetworkProbability) ? randomItem(bestNetworkHashMap.keys()) : false;
+  }
+
+
 
   if (cnf.enableSeedNetwork && config.seedNetworkId) {
     console.log("NNT | seedNetworkId: " + config.seedNetworkId);
@@ -4056,6 +4093,11 @@ function initNeuralNetworkChild(cnf, callback){
 
             bestNetworkHashMap.set(networkObj.networkId, { entry: entry, networkObj: networkObj});
             inputsHashMap.set(networkObj.inputsId, {inputsId: networkObj.inputsId, inputs:networkObj.inputs});
+
+            if (inputsNetworksHashMap[networkObj.inputsId] === undefined) {
+              inputsNetworksHashMap[networkObj.inputsId] = new Set();
+            }
+            inputsNetworksHashMap[networkObj.inputsId].add(networkObj.networkId);
 
             if (results.successRate > cnf.globalMinSuccessRate) {
 
