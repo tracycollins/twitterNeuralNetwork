@@ -3,7 +3,8 @@
 
 const async = require("async");
 const moment = require("moment");
-const histogramParser = require("@threeceelabs/histogram-parser");
+// const histogramParser = require("@threeceelabs/histogram-parser");
+const histogramParser = require("../histogram-parser");
 const neataptic = require("./js/neataptic");
 
 const compactDateTimeFormat = "YYYYMMDD HHmmss";
@@ -150,13 +151,49 @@ function testEvolve(params, callback){
   });
 }
 
-setTimeout(function(){
-  console.log("RUN")
+const testHistogram = {};
+testHistogram.emoji = {};
+testHistogram.emoji = {
+  ":ocean:": {
+    "total": 31,
+    "left": 26,
+    "neutral": 2,
+    "right": 2,
+    "positive": 0,
+    "negative": 0,
+    "uncategorized": 1
+  },
+  ":blue_heart:": {
+    "total": 16,
+    "left": 9,
+    "neutral": 0,
+    "right": 6,
+    "positive": 0,
+    "negative": 0,
+    "uncategorized": 1
+  },
+  "🤪": {
+    "total": 2,
+    "left": 1,
+    "neutral": 0,
+    "right": 1,
+    "positive": 0,
+    "negative": 0,
+    "uncategorized": 0
+  }
+}
 
-  testEvolve({runId: "hey"}, function(pass){
-    console.log("TEST: " + pass);
-  });
+histogramParser.parse({histogram: testHistogram}, function(err, results){
+  console.log("HISTOGRAM PARSER RESULTS\n" + jsonPrint(results));
+});
 
-}, 1000);
+// setTimeout(function(){
+//   console.log("RUN")
+
+//   testEvolve({runId: "hey"}, function(pass){
+//     console.log("TEST: " + pass);
+//   });
+
+// }, 1000);
 
 
