@@ -941,7 +941,7 @@ function saveFile (params, callback){
 
         console.log(chalkInfo("NNT | DROPBOX FILE"
           + " | " + params.folder
-          + " | " + getTimeStamp(entry.client_modified)
+          + " | LAST MOD: " + moment(new Date(entry.client_modified)).format(compactDateTimeFormat)
           + " | " + entry.name
           // + " | " + entry.content_hash
           // + "\n" + jsonPrint(entry)
@@ -1292,7 +1292,7 @@ function loadInputsDropboxFolder(folder, callback){
     async.eachSeries(response.entries, function(entry, cb){
 
       console.log(chalkInfo("NNT | DROPBOX INPUTS FILE FOUND"
-        + " | " + getTimeStamp(entry.client_modified)
+        + " | LAST MOD: " + moment(new Date(entry.client_modified)).format(compactDateTimeFormat)
         + " | " + entry.name
         // + " | " + entry.content_hash
         // + "\n" + jsonPrint(entry)
@@ -1303,7 +1303,7 @@ function loadInputsDropboxFolder(folder, callback){
         if (inputsHashMap.get(entry.name).entry.content_hash !== entry.content_hash) {
 
           console.log(chalkInfo("NNT | DROPBOX INPUTS CONTENT CHANGE"
-            + " | " + getTimeStamp(entry.client_modified)
+            + " | LAST MOD: " + moment(new Date(entry.client_modified)).format(compactDateTimeFormat)
             + " | " + entry.name
             + "\nCUR HASH: " + entry.content_hash
             + "\nOLD HASH: " + inputsHashMap.get(entry.name).entry.content_hash
@@ -1329,7 +1329,7 @@ function loadInputsDropboxFolder(folder, callback){
         else{
           debug(chalkLog("NNT | DROPBOX INPUTS CONTENT SAME  "
             + " | " + entry.name
-            + " | " + getTimeStamp(entry.client_modified)
+            + " | LAST MOD: " + moment(new Date(entry.client_modified)).format(compactDateTimeFormat)
           ));
           cb();
         }
@@ -1420,7 +1420,7 @@ function loadTrainingSetsDropboxFolder(folder, callback){
     async.eachSeries(response.entries, function(entry, cb){
 
       console.log(chalkInfo("NNT | DROPBOX TRAINING SET FOUND"
-        + " | " + getTimeStamp(entry.client_modified)
+        + " | LAST MOD: " + moment(new Date(entry.client_modified)).format(compactDateTimeFormat)
         + " | " + entry.name
       ));
 
@@ -1487,22 +1487,30 @@ function loadBestNetworkDropboxFolders(folders, callback){
       //   response.entries.length = TEST_DROPBOX_NN_LOAD;
       // }
 
+      console.log(chalkNetwork("NNT | DROPBOX BEST NETWORKS FOLDER FILES " + folder
+        + " | " + response.entries.length + " FILES FOUND"
+      ));
+
       async.eachSeries(response.entries, function(entry, cb1){
 
-        console.log(chalkInfo("NNT | DROPBOX BEST NETWORK FOUND"
-          + " | " + getTimeStamp(entry.client_modified)
+        const networkId = entry.name.split(".")[0];
+
+        debug(chalkInfo("NNT | DROPBOX BEST NETWORK FOUND"
+          + " | LAST MOD: " + moment(new Date(entry.client_modified)).format(compactDateTimeFormat)
+          + " | " + networkId
           + " | " + entry.name
         ));
 
-        if (bestNetworkHashMap.has(entry.name)){
 
-          if (bestNetworkHashMap.get(entry.name).entry.content_hash !== entry.content_hash) {
+        if (bestNetworkHashMap.has(networkId)){
 
-            console.log(chalkInfo("NNT | DROPBOX BEST NETWORK CONTENT CHANGE"
-              + " | " + getTimeStamp(entry.client_modified)
+          if (bestNetworkHashMap.get(networkId).entry.content_hash !== entry.content_hash) {
+
+            console.log(chalkNetwork("NNT | DROPBOX BEST NETWORK CONTENT CHANGE"
+              + " | LAST MOD: " + moment(new Date(entry.client_modified)).format(compactDateTimeFormat)
               + " | " + entry.name
               + "\nCUR HASH: " + entry.content_hash
-              + "\nOLD HASH: " + bestNetworkHashMap.get(entry.name).entry.content_hash
+              + "\nOLD HASH: " + bestNetworkHashMap.get(networkId).entry.content_hash
             ));
 
             loadFile(folder, entry.name, function(err, networkObj){
@@ -1517,7 +1525,7 @@ function loadBestNetworkDropboxFolders(folders, callback){
                 return cb1("NETWORK OBJ INPUTS ID UNDEFINED");
               }
 
-              console.log(chalkInfo("NNT | DROPBOX BEST NETWORK"
+              console.log(chalkNetwork("NNT | DROPBOX BEST NETWORK"
                 + " | " + networkObj.successRate.toFixed(2) + "%"
                 + " | " + getTimeStamp(networkObj.createdAt)
                 + " | " + networkObj.networkId
@@ -1531,6 +1539,19 @@ function loadBestNetworkDropboxFolders(folders, callback){
 
               numNetworksLoaded += 1;
 
+              if (!currentBestNetwork || (networkObj.successRate > currentBestNetwork.successRate)) {
+                currentBestNetwork = networkObj;
+                console.log(chalkAlert("NNT | * NEW BEST NN"
+                  + " | " + bestNetworkHashMap.count() + " NNs IN HM"
+                  + " | " + networkObj.successRate.toFixed(2) + "%"
+                  + " | " + getTimeStamp(networkObj.createdAt)
+                  + " | IN: " + networkObj.numInputs
+                  + " | OUT: " + networkObj.numOutputs
+                  + " | " + networkObj.networkCreateMode
+                  + " | " + networkObj.networkId
+                ));
+              }
+
               cb1();
 
             });
@@ -1538,7 +1559,7 @@ function loadBestNetworkDropboxFolders(folders, callback){
           else{
             debug(chalkLog("NNT | DROPBOX BEST NETWORK CONTENT SAME  "
               + " | " + entry.name
-              + " | " + getTimeStamp(entry.client_modified)
+              + " | LAST MOD: " + moment(new Date(entry.client_modified)).format(compactDateTimeFormat)
             ));
             cb1();
           }
@@ -1583,7 +1604,7 @@ function loadBestNetworkDropboxFolders(folders, callback){
 
                 numNetworksLoaded += 1;
 
-                console.log(chalkInfo("NNT | + NN HASH MAP"
+                console.log(chalkNetwork("NNT | + NN HASH MAP"
                   + " | " + bestNetworkHashMap.count() + " NNs IN HM"
                   + " | " + networkObj.successRate.toFixed(2) + "%"
                   + " | " + getTimeStamp(networkObj.createdAt)
@@ -3833,7 +3854,7 @@ function initNeuralNetworkChild(cnf, callback){
             bestNetworkFile = m.networkObj.networkId + ".json";
 
             entry = {
-              client_modified: moment().valueOf(),
+              client_modified: moment(),
               name: bestNetworkFile,
               content_hash: false
             };
@@ -3855,7 +3876,7 @@ function initNeuralNetworkChild(cnf, callback){
               const localNetworkFile = m.networkObj.networkId + ".json";
 
               entry = {
-                client_modified: moment().valueOf(),
+                client_modified: moment(),
                 name: bestNetworkFile,
                 content_hash: false
               };
