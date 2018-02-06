@@ -40,7 +40,7 @@ const wordAssoDb = require("@threeceelabs/mongoose-twitter");
 const userServer = require("@threeceelabs/user-server-controller");
 const User = mongoose.model("User", wordAssoDb.UserSchema);
 
-const histogramParser = require("../histogram-parser");
+const histogramParser = require("@threeceelabs/histogram-parser");
 
 require("isomorphic-fetch");
 const Dropbox = require("dropbox").Dropbox;
