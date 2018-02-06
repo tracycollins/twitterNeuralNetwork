@@ -529,7 +529,6 @@ const statsFile = "twitterNeuralNetworkStats_" + statsObj.runId + ".json";
 
 const globalBestNetworkFolder = "/config/utility/best/neuralNetworks";
 const localBestNetworkFolder = "/config/utility/" + hostname + "/neuralNetworks/best";
-// const globalBestNetworkFolder = bestNetworkFolder;
 const localNetworkFolder = "/config/utility/" + hostname + "/neuralNetworks/local";
 let bestNetworkFile;
 
@@ -3502,8 +3501,16 @@ function initMain(cnf, callback){
 
   console.log(chalkAlert("NNT | ***===*** INIT MAIN ***===*** | INTERVAL: " + msToTime(cnf.initMainIntervalTime)));
 
-  loadInputsDropboxFolder(defaultInputsFolder, function(err){
-  });
+  loadInputsDropboxFolder(defaultInputsFolder, function(err){});
+
+  let seedOpt = {};
+  seedOpt.folders = [globalBestNetworkFolder, localBestNetworkFolder];
+
+  if (cnf.seedNetworkId) {
+    seedOpt.networkId = cnf.seedNetworkId;
+  }
+
+  loadSeedNeuralNetwork(seedOpt, function(err, results){});
 
   initClassifiedUserHashmap(cnf.classifiedUsersFolder, cnf.classifiedUsersFile, function(err, classifiedUsersObj){
 
