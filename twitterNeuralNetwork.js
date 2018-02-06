@@ -3882,10 +3882,10 @@ function initNeuralNetworkChild(cnf, callback){
               };
 
               console.log(chalkInfo("NNT | ... SAVING NN FILE TO DROPBOX LOCAL BEST"
-                + " | " + localNetworkFolder + "/" + localNetworkFile
+                + " | " + localBestNetworkFolder + "/" + localNetworkFile
               ));
 
-              saveFileQueue.push({folder: localNetworkFolder, file: localNetworkFile, obj: networkObj});
+              saveFileQueue.push({folder: localBestNetworkFolder, file: localNetworkFile, obj: networkObj});
 
             }
 
