@@ -158,6 +158,7 @@ var config = __webpack_require__(1);
 function Node (type, name) {
   this.type = type || 'hidden';
   this.name = name || 'noname';
+  this.inputType = (type === "input") ? "" : null;
   this.bias = (type === 'input') ? 0 : Math.random() * 0.2 - 0.1;
   this.squash = methods.activation.LOGISTIC;
 
@@ -188,7 +189,11 @@ function Node (type, name) {
     gated: 0
   };
 
-  console.log("NODE name: " + this.name);
+  console.log("NODE" 
+    + " | TYPE: " + this.type
+    + " | NAME: " + this.name
+    + " | INPUT TYPE: " + this.inputType
+  );
 }
 
 Node.prototype = {
@@ -556,6 +561,7 @@ Node.prototype = {
   toJSON: function () {
     var json = {
       name: this.name,
+      inputType: this.inputType,
       bias: this.bias,
       type: this.type,
       squash: this.squash.name,
@@ -572,6 +578,7 @@ Node.prototype = {
 Node.fromJSON = function (json) {
   var node = new Node();
   node.name = json.name;
+  node.inputType = json.inputType;
   node.bias = json.bias;
   node.type = json.type;
   node.mask = json.mask;

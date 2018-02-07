@@ -469,7 +469,9 @@ function convertDatum(params, datum, generateInputRaw, callback){
 
   async.eachSeries(inputTypes, function(inputType, cb0){
 
-    async.eachSeries(params.inputs[inputType], function(inName, cb1){
+    const inNames = params.inputs[inputType].sort();
+
+    async.eachSeries(inNames, function(inName, cb1){
 
       const inputName = inName;
 
@@ -689,17 +691,12 @@ function evolve(params, callback){
 
   }, function(){
 
-    let inputArraySize;
-    let i = 0;
-
     network = {};
 
     switch (params.architecture) {
 
       case "loadedNetwork":
         network = neataptic.Network.fromJSON(options.networkObj.network);
-
-        inputArraySize = network.input;
 
         console.log("NNC"
           + " | " + configuration.processName
@@ -727,8 +724,6 @@ function evolve(params, callback){
           params.trainingSet.meta.numOutputs
         );
 
-        inputArraySize = params.trainingSet.meta.numInputs;
-
         trainingSetPrepAndEvolve(params, options, function(err, results){
           callback(err, results);
         });
@@ -742,12 +737,11 @@ function evolve(params, callback){
           + " | INPUTS: " + params.trainingSet.meta.numInputs
           + " | OUTPUTS: " + params.trainingSet.meta.numOutputs
         );
+
         network = new neataptic.Network(
           params.trainingSet.meta.numInputs, 
           params.trainingSet.meta.numOutputs
         );
-
-        inputArraySize = params.trainingSet.meta.numInputs;
 
         trainingSetPrepAndEvolve(params, options, function(err, results){
           callback(err, results);

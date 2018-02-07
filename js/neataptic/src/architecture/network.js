@@ -1252,6 +1252,10 @@ Network.crossOver = function (network1, network2, equal) {
     newNode.squash = node.squash;
     newNode.type = node.type;
 
+    if (node.type === "input") {
+      newNode.inputType = "";
+    }
+
     offspring.nodes.push(newNode);
   }
 

@@ -15,6 +15,7 @@ function Node (type, name) {
   this.squash = methods.activation.LOGISTIC;
   this.type = type || 'hidden';
   this.name = (name === undefined) ? "noname" : name;
+  this.inputType = (type === "input") ? "" : null;
 
   this.activation = 0;
   this.state = 0;
@@ -410,6 +411,7 @@ Node.prototype = {
     var json = {
       bias: this.bias,
       name: this.name,
+      inputType: this.inputType,
       type: this.type,
       squash: this.squash.name,
       mask: this.mask
@@ -427,6 +429,7 @@ Node.fromJSON = function (json) {
   node.bias = json.bias;
   node.type = json.type;
   node.name = json.name;
+  node.inputType = json.inputType;
   node.mask = json.mask;
   node.squash = methods.activation[json.squash];
 
