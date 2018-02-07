@@ -1070,8 +1070,8 @@ function loadFile(path, file, callback) {
           callback(null, fileObj);
         }
         catch(e){
-          console.trace(chalkError("NNT | JSON PARSE ERROR: " + fullPath + "\n" + e));
-          // callback(e, null);
+          console.trace(chalkError("NNT | JSON PARSE ERROR: " + fullPath + "\n" + jsonPrint(e)));
+          callback(null, null);
         }
       }
       else if (file.match(/\.txt$/gi)) {
@@ -1392,8 +1392,6 @@ function loadHistogramsDropboxFolder(folder, callback){
                 + " | " + Object.keys(histogramsObj.histograms[histogramType]).length + " ENTRIES"
               );
               totalHistograms += Object.keys(histogramsObj.histograms[histogramType]).length;
-
-
             });
 
             console.log("NNT | " + histogramsObj.histogramsId + " | TOTAL histograms TYPE: " + totalHistograms);
@@ -1427,7 +1425,6 @@ function loadHistogramsDropboxFolder(folder, callback){
 
               cb();
             });
-
 
           }
 
