@@ -4253,6 +4253,17 @@ initTimeout(function(){
         debug(chalkLog("INIT MAIN CALLBACK"));
       });
     }
+    else {
+      console.log(chalkAlert("NNT | ... INIT MAIN INTERVAL | NOT READY"
+        + " | LOADING HISTOGRAMS + INPUTS "
+      ));
+
+      loadHistogramsDropboxFolder(defaultHistogramsFolder, function(err){
+        loadInputsDropboxFolder(defaultInputsFolder, function(err){
+          // return(callback(err, cnf2));
+        });
+      });
+    }
 
   }, configuration.initMainIntervalTime);
 
