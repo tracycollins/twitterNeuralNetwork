@@ -3,7 +3,7 @@
 
 const TEST_MODE_LENGTH = 1000;
 const TEST_DROPBOX_NN_LOAD = 3;
-const USE_LOCAL_TRAINING_SETS = false;
+const DEFAULT_USE_LOCAL_TRAINING_SETS = false;
 const DEFAULT_MAX_NEURAL_NETWORK_CHILDREN = 2;
 const DEFAULT_TEST_RATIO = 0.20;
 
@@ -207,7 +207,7 @@ let configuration = {};
 
 configuration.saveFileQueueInterval = 1000;
 
-configuration.useLocalTrainingSets = USE_LOCAL_TRAINING_SETS;
+configuration.useLocalTrainingSets = DEFAULT_USE_LOCAL_TRAINING_SETS;
 
 configuration.forceBannerImageAnalysis = false;
 configuration.interruptFlag = false;
@@ -439,6 +439,7 @@ const verbose = { name: "verbose", alias: "v", type: Boolean };
 const maxNeuralNetworkChildern = { name: "maxNeuralNetworkChildern", alias: "N", type: Number};
 const createTrainingSetOnly = { name: "createTrainingSetOnly", alias: "C", type: Boolean};
 const createTrainingSet = { name: "createTrainingSet", alias: "c", type: Boolean};
+const useLocalTrainingSets = { name: "useLocalTrainingSets", alias: "L", type: Boolean};
 const loadTrainingSetFromFile = { name: "loadTrainingSetFromFile", alias: "t", type: Boolean};
 const inputsId = { name: "inputsId", alias: "i", type: String};
 const trainingSetFile = { name: "trainingSetFile", alias: "T", type: String};
@@ -453,6 +454,7 @@ const optionDefinitions = [
   maxNeuralNetworkChildern,
   createTrainingSetOnly,
   createTrainingSet,
+  useLocalTrainingSets,
   loadTrainingSetFromFile,
   inputsId,
   trainingSetFile,
@@ -527,6 +529,7 @@ const dropboxConfigFile = hostname + "_" + configuration.DROPBOX.DROPBOX_TNN_CON
 
 const defaultHistogramsFolder = dropboxConfigDefaultFolder + "/histograms";
 const defaultInputsFolder = dropboxConfigDefaultFolder + "/inputs";
+const localInputsFolder = dropboxConfigHostFolder + "/inputs";
 
 const defaultTrainingSetFolder = dropboxConfigDefaultFolder + "/trainingSets";
 const trainingSetFolder = defaultTrainingSetFolder;
@@ -1421,7 +1424,10 @@ function loadHistogramsDropboxFolder(folder, callback){
 
               const newInputsFile = histogramsObj.histogramsId + ".json";
 
-              saveFileQueue.push({folder: defaultInputsFolder, file: newInputsFile, obj: newInputsObj});
+
+              let folder = (hostname === "google") ? defaultInputsFolder : localInputsFolder;
+
+              saveFileQueue.push({folder: folder, file: newInputsFile, obj: newInputsObj});
 
               cb();
             });
@@ -2060,6 +2066,15 @@ function initialize(cnf, callback){
     }
   }
 
+  if (process.env.TNN_USE_LOCAL_TRAINING_SETS !== undefined) {
+    console.log("NNT | ENV TNN_USE_LOCAL_TRAINING_SETS: " + process.env.TNN_USE_LOCAL_TRAINING_SETS);
+    if (!process.env.TNN_USE_LOCAL_TRAINING_SETS || (process.env.TNN_USE_LOCAL_TRAINING_SETS === "false")) {
+      cnf.useLocalTrainingSets = false ;
+    }
+    else {
+      cnf.useLocalTrainingSets = true ;
+    }
+  }
 
   if (process.env.TNN_EVOLVE_BEST_NETWORK !== undefined) {
     if (process.env.TNN_EVOLVE_BEST_NETWORK === "true") {
@@ -2181,6 +2196,17 @@ function initialize(cnf, callback){
           }
           else if (!cnf.createTrainingSet && !cnf.createTrainingSetOnly) {
             cnf.loadTrainingSetFromFile = true;
+          }
+        }
+
+        if (loadedConfigObj.TNN_USE_LOCAL_TRAINING_SETS  !== undefined){
+          console.log("NNT | LOADED TNN_USE_LOCAL_TRAINING_SETS: " + loadedConfigObj.TNN_USE_LOCAL_TRAINING_SETS);
+
+          if (!loadedConfigObj.TNN_USE_LOCAL_TRAINING_SETS || (loadedConfigObj.TNN_USE_LOCAL_TRAINING_SETS === "false")) {
+            cnf.useLocalTrainingSets = false;
+          }
+          else {
+            cnf.useLocalTrainingSets = true;
           }
         }
 
@@ -3490,8 +3516,8 @@ function generateTrainingTestSets (inputsIds, userHashMap, callback){
       trainingSetHashMap.set(trainingSetId, trainingSetObj);
 
       const file = "trainingSet_" + trainingSetId + ".json";
-      // let folder = (hostname === "google") ? defaultTrainingSetFolder : localTrainingSetFolder;
-      let folder = localTrainingSetFolder;
+      let folder = (hostname === "google") ? defaultTrainingSetFolder : localTrainingSetFolder;
+      // let folder = localTrainingSetFolder;
 
       saveFileQueue.push({folder: folder, file: file, obj: trainingSetObj});
 
