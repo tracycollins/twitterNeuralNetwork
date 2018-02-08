@@ -205,6 +205,7 @@ let initMainInterval;
 
 let configuration = {};
 
+configuration.inputsIdArray = [];
 configuration.saveFileQueueInterval = 1000;
 
 configuration.useLocalTrainingSets = DEFAULT_USE_LOCAL_TRAINING_SETS;
@@ -1399,7 +1400,8 @@ function loadHistogramsDropboxFolder(folder, callback){
 
             console.log("NNT | " + histogramsObj.histogramsId + " | TOTAL histograms TYPE: " + totalHistograms);
 
-            histogramParser.parse({histogram: histogramsObj.histograms}, function(err, histResults){
+            histogramParser.parse({histogram: histogramsObj.histograms, totalMin: 9}, function(err, histResults){
+
               debug(chalkNetwork("HISTOGRAMS RESULTS\n" + jsonPrint(histResults)));
 
               let newInputsObj = {};
@@ -2210,10 +2212,15 @@ function initialize(cnf, callback){
           }
         }
 
-        if (loadedConfigObj.TNN_INPUTS_ID !== undefined){
-          console.log("NNT | LOADED TNN_INPUTS_ID: " + loadedConfigObj.TNN_INPUTS_ID);
-          cnf.inputsId = loadedConfigObj.TNN_INPUTS_ID;
+        if (loadedConfigObj.TNN_INPUTS_IDS !== undefined){
+          console.log("NNT | LOADED TNN_INPUTS_IDS: " + loadedConfigObj.TNN_INPUTS_IDS);
+          cnf.inputsIdArray = loadedConfigObj.TNN_INPUTS_IDS;
         }
+
+        // if (loadedConfigObj.TNN_INPUTS_ID !== undefined){
+        //   console.log("NNT | LOADED TNN_INPUTS_ID: " + loadedConfigObj.TNN_INPUTS_ID);
+        //   cnf.inputsId = loadedConfigObj.TNN_INPUTS_ID;
+        // }
 
         if (loadedConfigObj.TNN_SEED_NETWORK_PROBABILITY !== undefined){
           console.log("NNT | LOADED TNN_SEED_NETWORK_PROBABILITY: " + loadedConfigObj.TNN_SEED_NETWORK_PROBABILITY);
@@ -3552,10 +3559,20 @@ function generateRandomEvolveConfig (cnf, callback){
   console.log(chalkLog("NNT | --------------------------------------------------------"));
 
   if (cnf.inputsId) {
+    console.log(chalkAlert("LOADING INPUTS USING INPUTS ID ARRAY: " + jsonPrint(cnf.inputsIdArray)));
     config.seedInputsId = cnf.inputsId;
     if (inputsNetworksHashMap[cnf.inputsId] !== undefined){
       if (inputsNetworksHashMap[cnf.inputsId].size > 0) {
         config.seedNetworkId = (Math.random() < cnf.seedNetworkProbability) ? randomItem([...inputsNetworksHashMap[cnf.inputsId]]) : false;
+      }
+    }
+  }
+  else if (cnf.inputsIdArray.length > 0) {
+    console.log(chalkAlert("LOADING INPUTS USING INPUTS ID ARRAY: " + jsonPrint(cnf.inputsIdArray)));
+    config.seedInputsId = randomItem(cnf.inputsIdArray);
+    if (inputsNetworksHashMap[config.seedInputsId] !== undefined){
+      if (inputsNetworksHashMap[config.seedInputsId].size > 0) {
+        config.seedNetworkId = (Math.random() < cnf.seedNetworkProbability) ? randomItem([...inputsNetworksHashMap[config.seedInputsId]]) : false;
       }
     }
   }
