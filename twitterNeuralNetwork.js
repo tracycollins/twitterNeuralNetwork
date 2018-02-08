@@ -1314,15 +1314,18 @@ function loadHistogramsDropboxFolder(folder, callback){
         // + "\n" + jsonPrint(entry)
       ));
 
-      if (histogramsHashMap.has(entry.name)){
+      const entryNameArray = entry.name.split(".");
+      const histogramsId = entryNameArray[0];
 
-        if (histogramsHashMap.get(entry.name).entry.content_hash !== entry.content_hash) {
+      if (histogramsHashMap.has(histogramsId)){
+
+        if (histogramsHashMap.get(histogramsId).entry.content_hash !== entry.content_hash) {
 
           console.log(chalkInfo("NNT | DROPBOX HISTOGRAMS CONTENT CHANGE"
             + " | LAST MOD: " + moment(new Date(entry.client_modified)).format(compactDateTimeFormat)
             + " | " + entry.name
             + "\nCUR HASH: " + entry.content_hash
-            + "\nOLD HASH: " + histogramsHashMap.get(entry.name).entry.content_hash
+            + "\nOLD HASH: " + histogramsHashMap.get(histogramsId).entry.content_hash
           ));
 
           loadFile(folder, entry.name, function(err, histogramsObj){
