@@ -1,6 +1,8 @@
 /*jslint node: true */
 "use strict";
 
+const bestRuntimeNetworkFileName = "bestRuntimeNetwork.json";
+
 const TEST_MODE_LENGTH = 1000;
 const TEST_DROPBOX_NN_LOAD = 3;
 const DEFAULT_USE_LOCAL_TRAINING_SETS = false;
@@ -1641,7 +1643,7 @@ function loadBestNetworkDropboxFolders (folders, callback){
 
   let numNetworksLoaded = 0;
 
-  console.log(chalkNetwork("NNT | ... LOADING DROPBOX BEST NN FOLDERS | " + folders));
+  debug(chalkNetwork("NNT | ... LOADING DROPBOX BEST NN FOLDERS | " + folders));
 
   // if (configuration.useLocalNetworksOnly) {
   //   return (callback(null, []));
@@ -1649,7 +1651,7 @@ function loadBestNetworkDropboxFolders (folders, callback){
 
   async.eachSeries(folders, function(folder, cb0){
 
-    console.log(chalkNetwork("NNT | ... LOADING DROPBOX BEST NN FOLDER | " + folder));
+    debug(chalkNetwork("NNT | ... LOADING DROPBOX BEST NN FOLDER | " + folder));
 
     let options = {path: folder};
 
@@ -1665,11 +1667,16 @@ function loadBestNetworkDropboxFolders (folders, callback){
         response.entries.length = TEST_DROPBOX_NN_LOAD;
       }
 
-      console.log(chalkNetwork("NNT | DROPBOX BEST NETWORKS FOLDER FILES " + folder
+      debug(chalkNetwork("NNT | DROPBOX BEST NETWORKS FOLDER FILES " + folder
         + " | " + response.entries.length + " FILES FOUND"
       ));
 
       async.eachSeries(response.entries, function(entry, cb1){
+
+        if (entry.name === bestRuntimeNetworkFileName) {
+          console.log(chalkInfo("... SKIPPING LOAD OF " + entry.name));
+          return(cb1());
+        }
 
         const entryNameArray = entry.name.split(".");
         const networkId = entryNameArray[0];
@@ -1679,7 +1686,6 @@ function loadBestNetworkDropboxFolders (folders, callback){
           + " | " + networkId
           + " | " + entry.name
         ));
-
 
         if (bestNetworkHashMap.has(networkId)){
 
@@ -1930,7 +1936,7 @@ function loadConfigFile(folder, file, callback) {
   
     if (fileModifiedMoment.isSameOrBefore(prevConfigFileModifiedMoment)){
 
-      console.log(chalkInfo("NNT | CONFIG FILE BEFORE OR EQUAL"
+      debug(chalkInfo("NNT | CONFIG FILE BEFORE OR EQUAL"
         + " | " + fullPath
         + " | PREV: " + prevConfigFileModifiedMoment.format(compactDateTimeFormat)
         + " | " + fileModifiedMoment.format(compactDateTimeFormat)
@@ -4326,7 +4332,7 @@ function initNetworkCreateInterval(cnf){
           if (err) {
             console.log(chalkError("*** LOAD BEST NETWORK ERROR in initNetworkCreateInterval " + err));
           }
-          else {
+          else if (numNetworksLoaded > 0) {
             console.log(chalkAlert("LOADED BEST NETWORK FOLDERS: " + bestNetworkFolders + " | " + numNetworksLoaded + " NETWORKS LOADED"));
           }
 
