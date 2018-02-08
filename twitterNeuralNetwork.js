@@ -2023,6 +2023,7 @@ function initialize(cnf, callback){
   cnf.networkCreateMode = process.env.TNN_NETWORK_CREATE_MODE || DEFAULT_NETWORK_CREATE_MODE ;
   cnf.initMainIntervalTime = process.env.TNN_INIT_MAIN_INTERVAL || DEFAULT_INIT_MAIN_INTERVAL ;
   cnf.inputsId = process.env.TNN_INPUTS_ID || false ;
+  cnf.inputsIdArray = process.env.TNN_INPUTS_IDS || [] ;
   cnf.seedNetworkProbability = process.env.TNN_SEED_NETWORK_PROBABILITY || DEFAULT_SEED_NETWORK_PROBABILITY ;
 
   cnf.crossEntropyWorkAroundEnabled = false ;
@@ -2217,10 +2218,10 @@ function initialize(cnf, callback){
           cnf.inputsIdArray = loadedConfigObj.TNN_INPUTS_IDS;
         }
 
-        // if (loadedConfigObj.TNN_INPUTS_ID !== undefined){
-        //   console.log("NNT | LOADED TNN_INPUTS_ID: " + loadedConfigObj.TNN_INPUTS_ID);
-        //   cnf.inputsId = loadedConfigObj.TNN_INPUTS_ID;
-        // }
+        if (loadedConfigObj.TNN_INPUTS_ID !== undefined){
+          console.log("NNT | LOADED TNN_INPUTS_ID: " + loadedConfigObj.TNN_INPUTS_ID);
+          cnf.inputsId = loadedConfigObj.TNN_INPUTS_ID;
+        }
 
         if (loadedConfigObj.TNN_SEED_NETWORK_PROBABILITY !== undefined){
           console.log("NNT | LOADED TNN_SEED_NETWORK_PROBABILITY: " + loadedConfigObj.TNN_SEED_NETWORK_PROBABILITY);
