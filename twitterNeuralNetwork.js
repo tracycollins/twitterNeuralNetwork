@@ -1412,6 +1412,7 @@ function loadHistogramsDropboxFolder(folder, callback){
 
               let newInputsObj = {};
               newInputsObj.inputsId = histogramsObj.histogramsId;
+              newInputsObj.entry = {};
               newInputsObj.meta = {};
               newInputsObj.inputs = {};
 
@@ -1424,7 +1425,20 @@ function loadHistogramsDropboxFolder(folder, callback){
 
               debug(chalkNetwork("NEW INPUTS\n" + jsonPrint(newInputsObj)));
 
-              inputsHashMap.set(newInputsObj.inputsId, newInputsObj);
+              // inputsHashMap.set(newInputsObj.inputsId, newInputsObj);
+
+              let inputsObj = {};
+
+              if (inputsHashMap.has(histogramsObj.histogramsId)) {
+                newInputsObj.entry = inputsHashMap.get(histogramsObj.histogramsId).entry;
+                inputsHashMap.set(histogramsObj.histogramsId, newInputsObj);
+              }
+              else {
+                newInputsObj.entry.name = histogramsObj.histogramsId + ".json";
+                newInputsObj.entry.content_hash = false;
+                newInputsObj.entry.client_modified = moment();
+                inputsHashMap.set(histogramsObj.histogramsId, newInputsObj);
+              }
 
               if (inputsNetworksHashMap[newInputsObj.inputsId] === undefined) {
                 inputsNetworksHashMap[newInputsObj.inputsId] = new Set();
@@ -1471,22 +1485,27 @@ function loadInputsDropboxFolder(folder, callback){
 
     async.eachSeries(response.entries, function(entry, cb){
 
+      const entryNameArray = entry.name.split(".");
+      const entryInputsId = entryNameArray[0];
+
       console.log(chalkInfo("NNT | DROPBOX INPUTS FILE FOUND"
         + " | LAST MOD: " + moment(new Date(entry.client_modified)).format(compactDateTimeFormat)
+        + " | INPUTS ID: " + entryInputsId
         + " | " + entry.name
         // + " | " + entry.content_hash
         // + "\n" + jsonPrint(entry)
       ));
 
-      if (inputsHashMap.has(entry.name)){
 
-        if (inputsHashMap.get(entry.name).entry.content_hash !== entry.content_hash) {
+      if (inputsHashMap.has(entryInputsId)){
+
+        if (inputsHashMap.get(entryInputsId).entry.content_hash !== entry.content_hash) {
 
           console.log(chalkInfo("NNT | DROPBOX INPUTS CONTENT CHANGE"
             + " | LAST MOD: " + moment(new Date(entry.client_modified)).format(compactDateTimeFormat)
             + " | " + entry.name
             + "\nCUR HASH: " + entry.content_hash
-            + "\nOLD HASH: " + inputsHashMap.get(entry.name).entry.content_hash
+            + "\nOLD HASH: " + inputsHashMap.get(entryInputsId).entry.content_hash
           ));
 
           loadFile(folder, entry.name, function(err, inputsObj){
@@ -1500,6 +1519,9 @@ function loadInputsDropboxFolder(folder, callback){
               + " | " + entry.name
               + " | " + inputsObj.inputsId
             ));
+
+            inputsObj.entry = {};
+            inputsObj.entry = entry;
 
             inputsHashMap.set(inputsObj.inputsId, inputsObj);
 
@@ -1530,24 +1552,29 @@ function loadInputsDropboxFolder(folder, callback){
           else if ((inputsObj === undefined) || !inputsObj) {
             console.log(chalkError("NNT | DROPBOX INPUTS LOAD FILE ERROR | JSON UNDEFINED ??? "));
 
-            dropboxClient.filesDelete({path: folder + "/" + entry.name})
-            .then(function(response){
-              debug("dropboxClient filesDelete response\n" + jsonPrint(response));
-              console.log(chalkAlert("NNT | XXX NN"
-                + " | " + entry.name
-              ));
-              cb();
-            })
-            .catch(function(err){
-              console.log(chalkError("NNT | *** ERROR: XXX NN"
-                + " | " + folder + "/" + entry.name
-                + " | " + jsonPrint(err)
-              ));
-              cb();
-            });
+            cb();
+
+            // dropboxClient.filesDelete({path: folder + "/" + entry.name})
+            // .then(function(response){
+            //   debug("dropboxClient filesDelete response\n" + jsonPrint(response));
+            //   console.log(chalkAlert("NNT | XXX NN"
+            //     + " | " + entry.name
+            //   ));
+            //   cb();
+            // })
+            // .catch(function(err){
+            //   console.log(chalkError("NNT | *** ERROR: XXX NN"
+            //     + " | " + folder + "/" + entry.name
+            //     + " | " + jsonPrint(err)
+            //   ));
+            //   cb();
+            // });
 
           }
           else {
+
+            inputsObj.entry = {};
+            inputsObj.entry = entry;
 
             inputsHashMap.set(inputsObj.inputsId, inputsObj);
 
@@ -1618,24 +1645,67 @@ function loadTrainingSetsDropboxFolder(folder, callback){
         return cb();
       }
 
-      loadFile(folder, entry.name, function(err, trainingSetObj){
+      const entryNameArray = entry.name.split(".");
+      const trainingSetId = entryNameArray[0];
 
-        if (err) {
-          console.log(chalkError("NNT | DROPBOX TRAINING SET LOAD FILE ERROR: " + err));
-          return cb("NNT | DROPBOX TRAINING SET LOAD FILE ERROR: " + err);
+      if (trainingSetHashMap.has(trainingSetId)){
+
+        if (trainingSetHashMap.get(trainingSetId).entry.content_hash !== entry.content_hash) {
+
+          console.log(chalkInfo("NNT | DROPBOX TRAINING SET CONTENT CHANGE"
+            + " | LAST MOD: " + moment(new Date(entry.client_modified)).format(compactDateTimeFormat)
+            + " | " + entry.name
+            + "\nCUR HASH: " + entry.content_hash
+            + "\nOLD HASH: " + trainingSetHashMap.get(trainingSetId).entry.content_hash
+          ));
+
+          loadFile(folder, entry.name, function(err, trainingSetObj){
+
+            if (err) {
+              console.log(chalkError("NNT | DROPBOX TRAINING SET LOAD FILE ERROR: " + err));
+              return(cb());
+            }
+
+            console.log(chalkInfo("NNT | DROPBOX TRAINING SET"
+              + " | " + entry.name
+              + " | " + trainingSetObj.trainingSetId
+            ));
+
+            trainingSetHashMap.set(trainingSetObj.trainingSetId, trainingSetObj);
+            cb();
+
+          });
         }
+        else{
+          debug(chalkLog("NNT | DROPBOX TRAINING SET CONTENT SAME  "
+            + " | " + entry.name
+            + " | LAST MOD: " + moment(new Date(entry.client_modified)).format(compactDateTimeFormat)
+          ));
+          cb();
+        }
+      }
+      else {
 
-        trainingSetHashMap.set(trainingSetObj.trainingSetId, trainingSetObj);
+        loadFile(folder, entry.name, function(err, trainingSetObj){
 
-        console.log(chalkNetwork("NNT | LOADED DROPBOX TRAINING SET"
-          + " | " + folder + "/" + entry.name
-          + " | " + trainingSetObj.trainingSetId
-          + " | META\n" + jsonPrint(trainingSetObj.trainingSet.meta)
-        ));
+          if (err) {
+            console.log(chalkError("NNT | DROPBOX TRAINING SET LOAD FILE ERROR: " + err));
+            return cb("NNT | DROPBOX TRAINING SET LOAD FILE ERROR: " + err);
+          }
 
-        cb();
+          trainingSetHashMap.set(trainingSetObj.trainingSetId, trainingSetObj);
 
-      });
+          console.log(chalkNetwork("NNT | LOADED DROPBOX TRAINING SET"
+            + " | " + folder + "/" + entry.name
+            + " | " + trainingSetObj.trainingSetId
+            + " | META\n" + jsonPrint(trainingSetObj.trainingSet.meta)
+          ));
+
+          cb();
+
+        });
+
+      }
 
     }, function(){
       if (callback !== undefined) { callback(null); }
@@ -1734,7 +1804,23 @@ function loadBestNetworkDropboxFolders (folders, callback){
               ));
 
               bestNetworkHashMap.set(networkObj.networkId, { entry: entry, networkObj: networkObj});
-              inputsHashMap.set(networkObj.inputsId, {inputsId: networkObj.inputsId, inputs:networkObj.inputs});
+
+              let inputsObj = {};
+
+              if (inputsHashMap.has(networkObj.inputsId)) {
+                inputsObj = inputsHashMap.get(networkObj.inputsId);
+                inputsObj.inputs = networkObj.inputs;
+                inputsHashMap.set(networkObj.inputsId, inputsObj);
+              }
+              else {
+                inputsObj.inputsId = networkObj.inputsId;
+                inputsObj.inputs = networkObj.inputs;
+                inputsObj.entry = {};
+                inputsObj.entry.name = networkObj.inputsId + ".json";
+                inputsObj.entry.content_hash = false;
+                inputsObj.entry.client_modified = moment();
+                inputsHashMap.set(networkObj.inputsId, inputsObj);
+              }
 
               if (inputsNetworksHashMap[networkObj.inputsId] === undefined) {
                 inputsNetworksHashMap[networkObj.inputsId] = new Set();
@@ -1806,7 +1892,24 @@ function loadBestNetworkDropboxFolders (folders, callback){
               ) {
 
                 bestNetworkHashMap.set(networkObj.networkId, { entry: entry, networkObj: networkObj});
-                inputsHashMap.set(networkObj.inputsId, {inputsId: networkObj.inputsId, inputs:networkObj.inputs});
+                // inputsHashMap.set(networkObj.inputsId, {inputsId: networkObj.inputsId, inputs:networkObj.inputs});
+
+                let inputsObj = {};
+
+                if (inputsHashMap.has(networkObj.inputsId)) {
+                  inputsObj = inputsHashMap.get(networkObj.inputsId);
+                  inputsObj.inputs = networkObj.inputs;
+                  inputsHashMap.set(networkObj.inputsId, inputsObj);
+                }
+                else {
+                  inputsObj.inputsId = networkObj.inputsId;
+                  inputsObj.inputs = networkObj.inputs;
+                  inputsObj.entry = {};
+                  inputsObj.entry.name = networkObj.inputsId + ".json";
+                  inputsObj.entry.content_hash = false;
+                  inputsObj.entry.client_modified = moment();
+                  inputsHashMap.set(networkObj.inputsId, inputsObj);
+                }
 
                 if (inputsNetworksHashMap[networkObj.inputsId] === undefined) {
                   inputsNetworksHashMap[networkObj.inputsId] = new Set();
@@ -4589,7 +4692,24 @@ function initNeuralNetworkChild(cnf, callback){
             };
 
             bestNetworkHashMap.set(networkObj.networkId, { entry: entry, networkObj: networkObj});
-            inputsHashMap.set(networkObj.inputsId, {inputsId: networkObj.inputsId, inputs:networkObj.inputs});
+            // inputsHashMap.set(networkObj.inputsId, {inputsId: networkObj.inputsId, inputs:networkObj.inputs});
+
+            let inputsObj = {};
+
+            if (inputsHashMap.has(networkObj.inputsId)) {
+              inputsObj = inputsHashMap.get(networkObj.inputsId);
+              inputsObj.inputs = networkObj.inputs;
+              inputsHashMap.set(networkObj.inputsId, inputsObj);
+            }
+            else {
+              inputsObj.inputsId = networkObj.inputsId;
+              inputsObj.inputs = networkObj.inputs;
+              inputsObj.entry = {};
+              inputsObj.entry.name = networkObj.inputsId + ".json";
+              inputsObj.entry.content_hash = false;
+              inputsObj.entry.client_modified = moment();
+              inputsHashMap.set(networkObj.inputsId, inputsObj);
+            }
 
             if (inputsNetworksHashMap[networkObj.inputsId] === undefined) {
               inputsNetworksHashMap[networkObj.inputsId] = new Set();
