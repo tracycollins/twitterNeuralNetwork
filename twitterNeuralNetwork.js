@@ -1674,7 +1674,7 @@ function loadBestNetworkDropboxFolders (folders, callback){
       async.eachSeries(response.entries, function(entry, cb1){
 
         if (entry.name === bestRuntimeNetworkFileName) {
-          console.log(chalkInfo("... SKIPPING LOAD OF " + entry.name));
+          debug(chalkInfo("... SKIPPING LOAD OF " + entry.name));
           return(cb1());
         }
 
@@ -4322,7 +4322,7 @@ function initNetworkCreateInterval(cnf){
           console.log(chalkAlert("+++ RELOADED CONFIG " + dropboxConfigHostFolder + "/" + dropboxConfigFile));
         }
         else {
-          console.log(chalkAlert("... NO RELOAD CONFIG LOAD" + dropboxConfigHostFolder + "/" + dropboxConfigFile));
+          debug(chalkAlert("... NO RELOAD CONFIG FILE" + dropboxConfigHostFolder + "/" + dropboxConfigFile));
         }
 
         const bestNetworkFolders = [globalBestNetworkFolder];
