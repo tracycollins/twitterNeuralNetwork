@@ -1,6 +1,8 @@
 /*jslint node: true */
 "use strict";
 
+const DEFAULT_HISTOGRAM_PARSE_TOTAL_MIN = 7;
+
 const bestRuntimeNetworkFileName = "bestRuntimeNetwork.json";
 
 const TEST_MODE_LENGTH = 1000;
@@ -204,6 +206,8 @@ let configuration = {};
 
 configuration.inputsIdArray = [];
 configuration.saveFileQueueInterval = 1000;
+
+configuration.histogramParseTotalMin = DEFAULT_HISTOGRAM_PARSE_TOTAL_MIN;
 
 configuration.useLocalTrainingSets = DEFAULT_USE_LOCAL_TRAINING_SETS;
 
@@ -1395,9 +1399,11 @@ function loadHistogramsDropboxFolder(folder, callback){
               totalHistograms += Object.keys(histogramsObj.histograms[histogramType]).length;
             });
 
-            console.log("NNT | " + histogramsObj.histogramsId + " | TOTAL histograms TYPE: " + totalHistograms);
+            console.log("NNT | " + histogramsObj.histogramsId 
+              + " | TOTAL histograms TYPE: " + totalHistograms
+            );
 
-            histogramParser.parse({histogram: histogramsObj.histograms, totalMin: 9}, function(err, histResults){
+            histogramParser.parse({histogram: histogramsObj.histograms, totalMin: configuration.histogramParseTotalMin}, function(err, histResults){
 
               debug(chalkNetwork("HISTOGRAMS RESULTS\n" + jsonPrint(histResults)));
 
@@ -1961,6 +1967,11 @@ function loadConfigFile(folder, file, callback) {
 
           console.log(chalkAlert("NNT | LOADED CONFIG FILE: " + dropboxConfigFile + "\n" + jsonPrint(loadedConfigObj)));
 
+          if (loadedConfigObj.TNN_HISTOGRAM_PARSE_TOTAL_MIN !== undefined){
+            console.log("NNT | LOADED TNN_HISTOGRAM_PARSE_TOTAL_MIN: " + loadedConfigObj.TNN_HISTOGRAM_PARSE_TOTAL_MIN);
+            configuration.histogramParseTotalMin = loadedConfigObj.TNN_HISTOGRAM_PARSE_TOTAL_MIN;
+          }
+
           if (loadedConfigObj.TNN_CROSS_ENTROPY_WORKAROUND_ENABLED  !== undefined){
             console.log("NNT | TNN_CROSS_ENTROPY_WORKAROUND_ENABLED: " + loadedConfigObj.TNN_CROSS_ENTROPY_WORKAROUND_ENABLED);
 
@@ -2429,6 +2440,8 @@ function initialize(cnf, callback){
   cnf.inputsIdArray = process.env.TNN_INPUTS_IDS || [] ;
   cnf.seedNetworkProbability = process.env.TNN_SEED_NETWORK_PROBABILITY || DEFAULT_SEED_NETWORK_PROBABILITY ;
 
+  cnf.histogramParseTotalMin = process.env.TNN_HISTOGRAM_PARSE_TOTAL_MIN || DEFAULT_HISTOGRAM_PARSE_TOTAL_MIN ;
+
   cnf.crossEntropyWorkAroundEnabled = false ;
 
   if (process.env.TNN_CROSS_ENTROPY_WORKAROUND_ENABLED !== undefined) {
@@ -2562,6 +2575,11 @@ function initialize(cnf, callback){
         console.log("NNT | " + dropboxConfigFile + "\n" + jsonPrint(loadedConfigObj));
 
         prevConfigFileModifiedMoment = moment();
+
+        if (loadedConfigObj.TNN_HISTOGRAM_PARSE_TOTAL_MIN !== undefined){
+          console.log("NNT | LOADED TNN_HISTOGRAM_PARSE_TOTAL_MIN: " + loadedConfigObj.TNN_HISTOGRAM_PARSE_TOTAL_MIN);
+          cnf.histogramParseTotalMin = loadedConfigObj.TNN_HISTOGRAM_PARSE_TOTAL_MIN;
+        }
 
         if (loadedConfigObj.TNN_CROSS_ENTROPY_WORKAROUND_ENABLED  !== undefined){
           console.log("NNT | TNN_CROSS_ENTROPY_WORKAROUND_ENABLED: " + loadedConfigObj.TNN_CROSS_ENTROPY_WORKAROUND_ENABLED);
