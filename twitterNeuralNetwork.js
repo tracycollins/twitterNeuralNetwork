@@ -1519,13 +1519,11 @@ function loadInputsDropboxFolder(folder, callback){
 
         if (oldContentHash !== entry.content_hash) {
 
-        // if (inputsHashMap.get(entryInputsId).entry.content_hash !== entry.content_hash) {
-
           console.log(chalkInfo("NNT | DROPBOX INPUTS CONTENT CHANGE"
             + " | LAST MOD: " + moment(new Date(entry.client_modified)).format(compactDateTimeFormat)
             + " | " + entry.name
             + "\nCUR HASH: " + entry.content_hash
-            + "\nOLD HASH: " + inputsHashMap.get(entryInputsId).entry.content_hash
+            + "\nOLD HASH: " + oldContentHash
           ));
 
           loadFile(folder, entry.name, function(err, inputsObj){
@@ -1671,14 +1669,21 @@ function loadTrainingSetsDropboxFolder(folder, callback){
 
       if (trainingSetHashMap.has(trainingSetId)){
 
-        if (trainingSetHashMap.get(trainingSetId).entry.content_hash !== entry.content_hash) {
+        let curTrainingSetObj = trainingSetHashMap.get(trainingSetId);
+        let oldContentHash = false;
+
+        if ((curTrainingSetObj.entry !== undefined) && (curTrainingSetObj.entry.content_hash !== undefined)){
+          oldContentHash = curTrainingSetObj.entry.content_hash;
+        }
+
+        if (oldContentHash !== entry.content_hash) {
 
           console.log(chalkInfo("NNT | DROPBOX TRAINING SET CONTENT CHANGE"
             + " | LAST MOD: " + moment(new Date(entry.client_modified)).format(compactDateTimeFormat)
             + " | TRAINING SET ID: " + trainingSetId
             + " | " + entry.name
             + "\nCUR HASH: " + entry.content_hash
-            + "\nOLD HASH: " + trainingSetHashMap.get(trainingSetId).entry.content_hash
+            + "\nOLD HASH: " + oldContentHash
           ));
 
           loadFile(folder, entry.name, function(err, trainingSetObj){
@@ -1736,6 +1741,7 @@ function loadTrainingSetsDropboxFolder(folder, callback){
   })
   .catch(function(err){
     console.log(chalkError("NNT | *** DROPBOX FILES LIST FOLDER ERROR\n" + jsonPrint(err)));
+    quit();
     if (callback !== undefined) { callback(err, null); }
   });
 }
@@ -1790,13 +1796,20 @@ function loadBestNetworkDropboxFolders (folders, callback){
 
         if (bestNetworkHashMap.has(networkId)){
 
-          if (bestNetworkHashMap.get(networkId).entry.content_hash !== entry.content_hash) {
+          let curNetworkObj = bestNetworkHashMap.get(networkId);
+          let oldContentHash = false;
+
+          if ((curNetworkObj.entry !== undefined) && (curNetworkObj.entry.content_hash !== undefined)){
+            oldContentHash = curNetworkObj.entry.content_hash;
+          }
+
+          if (oldContentHash !== entry.content_hash) {
 
             console.log(chalkNetwork("NNT | DROPBOX BEST NETWORK CONTENT CHANGE"
               + " | LAST MOD: " + moment(new Date(entry.client_modified)).format(compactDateTimeFormat)
               + " | " + entry.name
               + "\nCUR HASH: " + entry.content_hash
-              + "\nOLD HASH: " + bestNetworkHashMap.get(networkId).entry.content_hash
+              + "\nOLD HASH: " + oldContentHash
             ));
 
             loadFile(folder, entry.name, function(err, networkObj){
@@ -1948,7 +1961,7 @@ function loadBestNetworkDropboxFolders (folders, callback){
                   + " | IN: " + networkObj.numInputs
                   + " | OUT: " + networkObj.numOutputs
                   + " | " + networkObj.networkCreateMode
-                  + " | " + networkId
+                  // + " | " + networkId
                   + " | " + networkObj.networkId
                 ));
 
