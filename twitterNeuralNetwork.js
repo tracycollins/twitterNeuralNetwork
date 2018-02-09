@@ -1349,6 +1349,9 @@ function loadHistogramsDropboxFolder(folder, callback){
               + " | " + histogramsObj.histogramsId
             ));
 
+            histogramsObj.entry = {};
+            histogramsObj.entry = entry;
+
             histogramsHashMap.set(histogramsObj.histogramsId, histogramsObj);
             cb();
 
@@ -1392,6 +1395,8 @@ function loadHistogramsDropboxFolder(folder, callback){
           }
           else {
 
+            histogramsObj.entry = {};
+            histogramsObj.entry = entry;
             histogramsHashMap.set(histogramsObj.histogramsId, histogramsObj);
 
             const histogramTypes = Object.keys(histogramsObj.histograms);
@@ -1693,9 +1698,13 @@ function loadTrainingSetsDropboxFolder(folder, callback){
               return(cb());
             }
 
+            trainingSetObj.entry = {};
+            trainingSetObj.entry = entry;
+
             console.log(chalkInfo("NNT | DROPBOX TRAINING SET"
               + " | " + entry.name
               + " | " + trainingSetObj.trainingSetId
+              + "\n" + jsonPrint(trainingSetObj.entry)
             ));
 
             trainingSetHashMap.set(trainingSetObj.trainingSetId, trainingSetObj);
@@ -1720,12 +1729,16 @@ function loadTrainingSetsDropboxFolder(folder, callback){
             return cb("NNT | DROPBOX TRAINING SET LOAD FILE ERROR: " + err);
           }
 
+          trainingSetObj.entry = {};
+          trainingSetObj.entry = entry;
+
           trainingSetHashMap.set(trainingSetObj.trainingSetId, trainingSetObj);
 
           console.log(chalkNetwork("NNT | LOADED DROPBOX TRAINING SET"
             + " | " + folder + "/" + entry.name
             + " | " + trainingSetObj.trainingSetId
-            + " | META\n" + jsonPrint(trainingSetObj.trainingSet.meta)
+            + "\n" + jsonPrint(trainingSetObj.entry)
+            // + " | META\n" + jsonPrint(trainingSetObj.trainingSet.meta)
           ));
 
           cb();
@@ -4354,6 +4367,7 @@ function initMain(cnf, callback){
 
   initMainReady = false;
 
+  showStats();
   console.log(chalkAlert("NNT | ***===*** INIT MAIN ***===*** | INTERVAL: " + msToTime(cnf.initMainIntervalTime)));
 
 
