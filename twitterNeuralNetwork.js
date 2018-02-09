@@ -989,6 +989,7 @@ function saveFile (params, callback){
       });
     })
     .catch(function(err){
+      console.log(chalkError("NNT | *** DROPBOX FILES LIST FOLDER ERROR: " + err));
       console.log(chalkError("NNT | *** DROPBOX FILES LIST FOLDER ERROR\n" + jsonPrint(err)));
       if (callback !== undefined) { callback(err, null); }
     });
@@ -1319,14 +1320,21 @@ function loadHistogramsDropboxFolder(folder, callback){
 
       if (histogramsHashMap.has(histogramsId)){
 
-        if (histogramsHashMap.get(histogramsId).entry.content_hash !== entry.content_hash) {
+        let curHistogramObj = histogramsHashMap.get(histogramsId);
+        let oldContentHash = false;
+
+        if ((curHistogramObj.entry !== undefined) && (curHistogramObj.entry.content_hash !== undefined)){
+          oldContentHash = curHistogramObj.entry.content_hash;
+        }
+
+        if (oldContentHash !== entry.content_hash) {
 
           console.log(chalkInfo("NNT | DROPBOX HISTOGRAMS CONTENT CHANGE"
             + " | LAST MOD: " + moment(new Date(entry.client_modified)).format(compactDateTimeFormat)
             + " | " + entry.name
             + " | HIST ID: " + histogramsId
             + "\nCUR HASH: " + entry.content_hash
-            + "\nOLD HASH: " + histogramsHashMap.get(histogramsId).entry.content_hash
+            + "\nOLD HASH: " + oldContentHash
           ));
 
           loadFile(folder, entry.name, function(err, histogramsObj){
@@ -1465,7 +1473,10 @@ function loadHistogramsDropboxFolder(folder, callback){
 
   })
   .catch(function(err){
-    console.log(chalkError("NNT | *** DROPBOX FILES LIST FOLDER ERROR\n" + jsonPrint(err)));
+    console.log(chalkError("NNT | *** DROPBOX FILES LIST FOLDER ERROR: " + err));
+    console.error(chalkError("NNT | *** DROPBOX FILES LIST FOLDER ERROR: " + err));
+    quit();
+    // console.log(chalkError("NNT | *** DROPBOX FILES LIST FOLDER ERROR\n" + jsonPrint(err)));
     if (callback !== undefined) { callback(err); }
   });
 }
@@ -1497,10 +1508,18 @@ function loadInputsDropboxFolder(folder, callback){
         // + "\n" + jsonPrint(entry)
       ));
 
-
       if (inputsHashMap.has(entryInputsId)){
 
-        if (inputsHashMap.get(entryInputsId).entry.content_hash !== entry.content_hash) {
+        let curInputsObj = inputsHashMap.get(entryInputsId);
+        let oldContentHash = false;
+
+        if ((curInputsObj.entry !== undefined) && (curInputsObj.entry.content_hash !== undefined)){
+          oldContentHash = curInputsObj.entry.content_hash;
+        }
+
+        if (oldContentHash !== entry.content_hash) {
+
+        // if (inputsHashMap.get(entryInputsId).entry.content_hash !== entry.content_hash) {
 
           console.log(chalkInfo("NNT | DROPBOX INPUTS CONTENT CHANGE"
             + " | LAST MOD: " + moment(new Date(entry.client_modified)).format(compactDateTimeFormat)
@@ -1612,6 +1631,7 @@ function loadInputsDropboxFolder(folder, callback){
   })
   .catch(function(err){
     console.log(chalkError("NNT | *** DROPBOX FILES LIST FOLDER ERROR\n" + jsonPrint(err)));
+    quit();
     if (callback !== undefined) { callback(err); }
   });
 }
@@ -1643,7 +1663,7 @@ function loadTrainingSetsDropboxFolder(folder, callback){
 
       if (!entry.name.endsWith(".json")){
         console.log("NNT | ... IGNORE DROPBOX TRAINING SETS FOLDER FILE: " + entry.name);
-        return cb();
+        return(cb());
       }
 
       const entryNameArray = entry.name.split(".");
