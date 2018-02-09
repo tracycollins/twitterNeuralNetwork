@@ -1748,7 +1748,7 @@ function loadBestNetworkDropboxFolders (folders, callback){
 
   let numNetworksLoaded = 0;
 
-  console.log(chalkNetwork("NNT | ... LOADING DROPBOX BEST NN FOLDERS"
+  debug(chalkNetwork("NNT | ... LOADING DROPBOX BEST NN FOLDERS"
     + " | " + folders.length + " FOLDERS"
     + "\n" + jsonPrint(folders)
   ));
@@ -1759,7 +1759,7 @@ function loadBestNetworkDropboxFolders (folders, callback){
 
   async.eachSeries(folders, function(folder, cb0){
 
-    console.log(chalkNetwork("NNT | ... LOADING DROPBOX BEST NN FOLDER | " + folder));
+    debug(chalkNetwork("NNT | ... LOADING DROPBOX BEST NN FOLDER | " + folder));
 
     let options = {path: folder};
 
