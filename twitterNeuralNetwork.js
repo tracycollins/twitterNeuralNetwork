@@ -1315,7 +1315,7 @@ function loadHistogramsDropboxFolder(folder, callback){
       ));
 
       const entryNameArray = entry.name.split(".");
-      const histogramsId = entryNameArray[0];
+      const histogramsId = entryNameArray[0].replace("histograms_", "");
 
       if (histogramsHashMap.has(histogramsId)){
 
@@ -1324,6 +1324,7 @@ function loadHistogramsDropboxFolder(folder, callback){
           console.log(chalkInfo("NNT | DROPBOX HISTOGRAMS CONTENT CHANGE"
             + " | LAST MOD: " + moment(new Date(entry.client_modified)).format(compactDateTimeFormat)
             + " | " + entry.name
+            + " | HIST ID: " + histogramsId
             + "\nCUR HASH: " + entry.content_hash
             + "\nOLD HASH: " + histogramsHashMap.get(histogramsId).entry.content_hash
           ));
