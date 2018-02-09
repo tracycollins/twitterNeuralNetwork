@@ -91,21 +91,7 @@ const DEFAULT_EVOLVE_ARCHITECTURE = "random";
 const DEFAULT_EVOLVE_BEST_NETWORK = false;
 
 const DEFAULT_EVOLVE_CLEAR = true;
-
-// const EVOLVE_COST_ARRAY = [
-//   "CROSS_ENTROPY",
-//   "MSE",
-//   "BINARY"
-//   // "MAE",TEST COMPLETE
-//   // "MAPE",
-//   // "MSLE",
-//   // "HINGE"
-// ];
-
-// const DEFAULT_EVOLVE_COST = "MSE";
 const DEFAULT_EVOLVE_COST = "CROSS_ENTROPY";
-// const DEFAULT_EVOLVE_COST = "BINARY";
-
 const DEFAULT_EVOLVE_ELITISM = 10;
 const DEFAULT_EVOLVE_EQUAL = true;
 const DEFAULT_EVOLVE_ERROR = 0.03;
@@ -1428,6 +1414,7 @@ function loadHistogramsDropboxFolder(folder, callback){
               newInputsObj.inputsId = histogramsObj.histogramsId;
               newInputsObj.entry = {};
               newInputsObj.meta = {};
+              newInputsObj.meta.histogramParseTotalMin = configuration.histogramParseTotalMin;
               newInputsObj.inputs = {};
 
               const inputTypes = Object.keys(histResults.entries);
@@ -3609,14 +3596,13 @@ function updateClassifiedUsers(cnf, callback){
     classifiedUsersEndMoment = moment();
     classifiedUsersEndMoment.add(classifiedUsersRemain, "ms");
 
-    console.log(chalkAlert("NNT | === END CLASSIFY USERS ==="
-      + " | START: " + classifiedUsersStartMoment.format(compactDateTimeFormat)
-      + " | ELAPSED: " + msToTime(classifiedUsersElapsed)
-      + " | REMAIN: " + msToTime(classifiedUsersRemain)
-      + " | ETC: " + classifiedUsersEndMoment.format(compactDateTimeFormat)
-      + " | " + (statsObj.users.notClassified + statsObj.users.updatedClassified) + "/" + classifiedUserIds.length
-      + " (" + classifiedUsersPercent.toFixed(1) + "%)"
-      + " USERS CLASSIFIED"
+    console.log(chalkAlert("\nNNT | ======================= END CLASSIFY USERS ======================="
+      + "\nNNT | ==== START:   " + classifiedUsersStartMoment.format(compactDateTimeFormat)
+      + "\nNNT | ==== ELAPSED: " + msToTime(classifiedUsersElapsed)
+      + "\nNNT | ==== REMAIN:  " + msToTime(classifiedUsersRemain)
+      + "\nNNT | ==== ETC:     " + classifiedUsersEndMoment.format(compactDateTimeFormat)
+      + "\nNNT | ====          " + (statsObj.users.notClassified + statsObj.users.updatedClassified) + "/" + classifiedUserIds.length
+      + " (" + classifiedUsersPercent.toFixed(1) + "%)" + " USERS CLASSIFIED"
     ));
 
     console.log(chalkAlert("NNT | CL U HIST"
@@ -4088,6 +4074,7 @@ function generateTrainingTestSets (inputsIds, userHashMap, callback){
 
       testSet.meta.numOutputs = 3;
       testSet.meta.setSize = testSet.data.length;
+      testSet.meta.histogramParseTotalMin = testSet.data.length;
 
       console.log(chalkInfo("NNT | END GENERATE TRAINING SET"
         + "\nNNT | TRAINING SET ID: " + trainingSetId
@@ -4119,7 +4106,9 @@ function generateTrainingTestSets (inputsIds, userHashMap, callback){
 
   }, function(err){
 
-    console.log(chalkAlert("NNT | END GENERATE ALL TRAINING SETS"));
+    console.log(chalkAlert("\nNNT | ======================= END GENERATE ALL TRAINING SETS ======================="
+    ));
+
     callback(err);
 
   });
@@ -4933,9 +4922,11 @@ initTimeout(function(){
         + " | LOADING HISTOGRAMS + INPUTS "
       ));
 
-      loadHistogramsDropboxFolder(defaultHistogramsFolder, function(err){
-        loadInputsDropboxFolder(defaultInputsFolder, function(err){
-          // return(callback(err, cnf2));
+      loadConfigFile(dropboxConfigHostFolder, dropboxConfigFile, function(err, configLoadedFlag){
+        loadHistogramsDropboxFolder(defaultHistogramsFolder, function(err){
+          loadInputsDropboxFolder(defaultInputsFolder, function(err){
+            // return(callback(err, cnf2));
+          });
         });
       });
     }
