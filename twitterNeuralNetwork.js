@@ -1790,7 +1790,7 @@ function loadBestNetworkDropboxFolders (folders, callback){
               }
 
               // if (networkObj.networkId === networkId) {
-              if (networkObj.networkId == networkId) {
+              if (networkObj.networkId !== networkId) {
                 console.log(chalkError("*** NETWORK OBJ NETWORK ID MISMATCH | " + networkObj.networkId + " | " + networkId));
                 return cb1("NETWORK OBJ NETWORK ID MISMATCH");
               }
