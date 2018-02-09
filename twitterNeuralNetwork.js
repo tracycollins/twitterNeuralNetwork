@@ -1647,7 +1647,7 @@ function loadTrainingSetsDropboxFolder(folder, callback){
       }
 
       const entryNameArray = entry.name.split(".");
-      const trainingSetId = entryNameArray[0];
+      const trainingSetId = entryNameArray[0].replace("trainingSet_", "");
 
       if (trainingSetHashMap.has(trainingSetId)){
 
@@ -1655,6 +1655,7 @@ function loadTrainingSetsDropboxFolder(folder, callback){
 
           console.log(chalkInfo("NNT | DROPBOX TRAINING SET CONTENT CHANGE"
             + " | LAST MOD: " + moment(new Date(entry.client_modified)).format(compactDateTimeFormat)
+            + " | TRAINING SET ID: " + trainingSetId
             + " | " + entry.name
             + "\nCUR HASH: " + entry.content_hash
             + "\nOLD HASH: " + trainingSetHashMap.get(trainingSetId).entry.content_hash
