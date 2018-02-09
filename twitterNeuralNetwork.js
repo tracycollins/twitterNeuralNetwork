@@ -111,8 +111,8 @@ const EVOLVE_COST_ARRAY = [
   // "HINGE"
 ];
 
-const EVOLVE_MUTATION_RATE_RANGE = { min: 0.25, max: 0.85 } ;
-const EVOLVE_POP_SIZE_RANGE = { min: 100, max: 150 } ;
+const EVOLVE_MUTATION_RATE_RANGE = { min: 0.35, max: 0.75 } ;
+const EVOLVE_POP_SIZE_RANGE = { min: 120, max: 120 } ;
 const EVOLVE_GROWTH_RANGE = { min: 0.00005, max: 0.00015 } ;
 const EVOLVE_ELITISM_RANGE = { min: 5, max: 20 } ;
 
@@ -1639,7 +1639,7 @@ function loadTrainingSetsDropboxFolder(folder, callback){
 
     async.eachSeries(response.entries, function(entry, cb){
 
-      console.log(chalkInfo("NNT | DROPBOX TRAINING SET FOUND"
+      console.log(chalkLog("NNT | DROPBOX TRAINING SET FOUND"
         + " | LAST MOD: " + moment(new Date(entry.client_modified)).format(compactDateTimeFormat)
         + " | " + entry.name
       ));
@@ -1685,7 +1685,7 @@ function loadTrainingSetsDropboxFolder(folder, callback){
 
             console.log(chalkInfo("NNT | DROPBOX TRAINING SET"
               + " [" + trainingSetHashMap.count() + "]"
-              + " | " + trainingSetObj.meta.numInputs + " INPUTS"
+              + " | " + trainingSetObj.trainingSet.meta.numInputs + " INPUTS"
               + " | " + entry.name
               + " | " + trainingSetObj.trainingSetId
               + "\n" + jsonPrint(trainingSetObj.entry)
@@ -1719,7 +1719,7 @@ function loadTrainingSetsDropboxFolder(folder, callback){
 
           console.log(chalkNetwork("NNT | LOADED DROPBOX TRAINING SET"
             + " [" + trainingSetHashMap.count() + "]"
-            + " | " + trainingSetObj.meta.numInputs + " INPUTS"
+            + " | " + trainingSetObj.trainingSet.meta.numInputs + " INPUTS"
             + " | " + folder + "/" + entry.name
             + " | " + trainingSetObj.trainingSetId
             // + "\n" + jsonPrint(trainingSetObj.entry)
@@ -1748,7 +1748,10 @@ function loadBestNetworkDropboxFolders (folders, callback){
 
   let numNetworksLoaded = 0;
 
-  debug(chalkNetwork("NNT | ... LOADING DROPBOX BEST NN FOLDERS | " + folders));
+  console.log(chalkNetwork("NNT | ... LOADING DROPBOX BEST NN FOLDERS"
+    + " | " + folders.length + " FOLDERS"
+    + "\n" + jsonPrint(folders)
+  ));
 
   // if (configuration.useLocalNetworksOnly) {
   //   return (callback(null, []));
@@ -1756,16 +1759,16 @@ function loadBestNetworkDropboxFolders (folders, callback){
 
   async.eachSeries(folders, function(folder, cb0){
 
-    debug(chalkNetwork("NNT | ... LOADING DROPBOX BEST NN FOLDER | " + folder));
+    console.log(chalkNetwork("NNT | ... LOADING DROPBOX BEST NN FOLDER | " + folder));
 
     let options = {path: folder};
 
     dropboxClient.filesListFolder(options)
     .then(function(response){
 
-      debug(chalkLog("DROPBOX LIST FOLDER"
+      console.log(chalkLog("DROPBOX LIST FOLDER"
         + " | " + options.path
-        + " | " + jsonPrint(response)
+        // + " | " + jsonPrint(response)
       ));
 
       if (configuration.testMode) {
@@ -4146,59 +4149,87 @@ function generateRandomEvolveConfig (cnf, callback){
     config.seedInputsId = cnf.inputsId;
     if (inputsNetworksHashMap[cnf.inputsId] !== undefined){
       if (inputsNetworksHashMap[cnf.inputsId].size > 0) {
-        config.seedNetworkId = (Math.random() < cnf.seedNetworkProbability) ? randomItem([...inputsNetworksHashMap[cnf.inputsId]]) : false;
+        config.seedNetworkId = (Math.random() <= cnf.seedNetworkProbability) ? randomItem([...inputsNetworksHashMap[cnf.inputsId]]) : false;
       }
     }
   }
   else if (inputsIdSet.size > 0) {
     console.log(chalkAlert("LOADING INPUTS USING INPUTS ID SET: " + jsonPrint([...inputsIdSet])));
-    config.seedInputsId = randomItem([...inputsIdSet]);
-    if (inputsNetworksHashMap[config.seedInputsId] !== undefined){
-      if (inputsNetworksHashMap[config.seedInputsId].size > 0) {
-        config.seedNetworkId = (Math.random() < cnf.seedNetworkProbability) ? randomItem([...inputsNetworksHashMap[config.seedInputsId]]) : false;
+    const keys = Object.keys(inputsNetworksHashMap);
+
+    // keys.forEach(function(key){
+    //   const inIdSet = inputsNetworksHashMap[key];
+    //   console.log("NNT | INPUTS ID " + key + " | " + inIdSet.size + " NETWORKS");
+    // });
+
+    let tempInputsIdArray = [];
+
+    async.each(keys, function(key, cb){
+      if (inputsNetworksHashMap[key].size > 0) {
+        tempInputsIdArray.push(key);
       }
-    }
+      console.log("NNT | INPUTS ID " + key + " | " + inputsNetworksHashMap[key].size + " NETWORKS");
+      cb();
+    }, function(){
+      config.seedInputsId = randomItem(tempInputsIdArray);
+      config.seedNetworkId = (Math.random() <= cnf.seedNetworkProbability) ? randomItem([...inputsNetworksHashMap[config.seedInputsId]]) : false;
+    });
+
+    // if (inputsNetworksHashMap[config.seedInputsId] !== undefined){
+    //   if (inputsNetworksHashMap[config.seedInputsId].size > 0) {
+    //     config.seedNetworkId = (Math.random() <= cnf.seedNetworkProbability) ? randomItem([...inputsNetworksHashMap[config.seedInputsId]]) : false;
+    //     // console.log("NNT | SEED | INPUTS ID " + config.seedInputsId + " | " + inputsNetworksHashMap[config.seedInputsId].size + " NETWORKS | NETWORK: " + config.seedNetworkId);
+    //   }
+    //   else {
+    //     // console.log("NNT | INPUTS ID " + key + " | " + inIdSet.size + " NETWORKS");
+    //   }
+    // }
   }
   else {
     config.seedInputsId = randomItem(inputsHashMap.keys());
-    config.seedNetworkId = (Math.random() < cnf.seedNetworkProbability) ? randomItem(bestNetworkHashMap.keys()) : false;
+    config.seedNetworkId = (Math.random() <= cnf.seedNetworkProbability) ? randomItem(bestNetworkHashMap.keys()) : false;
   }
 
+  config.iterations = cnf.evolve.iterations;
+  config.threads = cnf.evolve.threads;
+  config.log = cnf.evolve.log;
+  config.mutation = DEFAULT_EVOLVE_MUTATION;
 
+  config.cost = randomItem(EVOLVE_COST_ARRAY);
+  config.clear = randomItem([true, false]);
+  config.equal = true;
+  config.error = cnf.evolve.error;
+  config.mutationRate = randomFloat(EVOLVE_MUTATION_RATE_RANGE.min, EVOLVE_MUTATION_RATE_RANGE.max);
+  config.popsize = randomInt(EVOLVE_POP_SIZE_RANGE.min, EVOLVE_POP_SIZE_RANGE.max);
+  config.growth = randomFloat(EVOLVE_GROWTH_RANGE.min, EVOLVE_GROWTH_RANGE.max);
+  config.elitism = randomInt(EVOLVE_ELITISM_RANGE.min, EVOLVE_ELITISM_RANGE.max);
 
   if (cnf.enableSeedNetwork && config.seedNetworkId) {
-    console.log("NNT | seedNetworkId: " + config.seedNetworkId);
+    console.log("NNT | SEED NETWORK | seedNetworkId: " + config.seedNetworkId);
     const networkObj = bestNetworkHashMap.get(config.seedNetworkId).networkObj;
     config.networkObj = deepcopy(networkObj);
     config.architecture = "loadedNetwork";
     config.inputsId = networkObj.inputsId;
     config.inputs = {};
-    // config.inputs = networkObj.inputs;
-    console.log("NNT | networkObj.inputsId: " + networkObj.inputsId);
     config.inputs = inputsHashMap.get(networkObj.inputsId).inputs;
+    console.log("NNT | networkObj.inputsId: " + networkObj.inputsId);
+
+    config.cost = networkObj.evolve.options.cost;
+    config.clear = networkObj.evolve.options.clear;
+    config.equal = networkObj.evolve.options.equal;
+    config.error = networkObj.evolve.options.error;
+    config.mutationRate = networkObj.evolve.options.mutationRate;
+    config.popsize = networkObj.evolve.options.popsize;
+    config.growth = networkObj.evolve.options.growth;
+    config.elitism = networkObj.evolve.options.elitism;
   }
   else {
-    console.log("NNT | seedInputsId: " + config.seedInputsId);
+    console.log("NNT | RANDOM ARCH | seedInputsId: " + config.seedInputsId);
     config.architecture = "random";
     config.inputsId = config.seedInputsId;
     config.inputs = {};
     config.inputs = inputsHashMap.get(config.seedInputsId).inputs;
   }
-
-  config.iterations = cnf.evolve.iterations;
-  config.threads = cnf.evolve.threads;
-  config.cost = randomItem(EVOLVE_COST_ARRAY);
-  config.clear = randomItem([true, false]);
-  // config.clear = true;
-  // config.equal = randomItem([true, false]);
-  config.equal = true;
-  config.error = cnf.evolve.error;
-  config.mutation = DEFAULT_EVOLVE_MUTATION;
-  config.mutationRate = randomFloat(EVOLVE_MUTATION_RATE_RANGE.min, EVOLVE_MUTATION_RATE_RANGE.max);
-  config.popsize = randomInt(EVOLVE_POP_SIZE_RANGE.min, EVOLVE_POP_SIZE_RANGE.max);
-  config.growth = randomFloat(EVOLVE_GROWTH_RANGE.min, EVOLVE_GROWTH_RANGE.max);
-  config.elitism = randomInt(EVOLVE_ELITISM_RANGE.min, EVOLVE_ELITISM_RANGE.max);
-  config.log = cnf.evolve.log;
 
   if (!cnf.createTrainingSet && !cnf.createTrainingSetOnly && cnf.loadTrainingSetFromFile && trainingSetReady) {
 
@@ -4425,7 +4456,6 @@ function initMain(cnf, callback){
             callback(null, null);
 
           });
-
         }
         else {
 
@@ -4695,7 +4725,7 @@ function initNeuralNetworkChild(cnf, callback){
           networkObj.outputs = m.networkObj.outputs;
           networkObj.evolve = {};
           networkObj.evolve.options = {};
-          networkObj.evolve.options = omit(m.statsObj.evolve.options, ["network", "inputs", "outputs"]);
+          networkObj.evolve.options = omit(m.statsObj.evolve.options, ["networkObj", "inputs", "outputs"]);
           networkObj.evolve.results = {};
           networkObj.evolve.results = m.networkObj.evolve.results;
           networkObj.evolve.elapsed = m.networkObj.evolve.elapsed;
@@ -4766,6 +4796,11 @@ function initNeuralNetworkChild(cnf, callback){
               inputsNetworksHashMap[networkObj.inputsId] = new Set();
             }
             inputsNetworksHashMap[networkObj.inputsId].add(networkObj.networkId);
+            console.log(chalkInfo("NNT | INPUTS ID"
+              + " | " + networkObj.inputsId
+              + " | INPUTS: " + inputsObj.meta.numInputs
+              + " | " + inputsNetworksHashMap[networkObj.inputsId].size + " NETWORKS"
+            ));
 
             if (results.successRate >= cnf.globalMinSuccessRate) {
 
