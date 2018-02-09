@@ -1753,10 +1753,6 @@ function loadBestNetworkDropboxFolders (folders, callback){
     + "\n" + jsonPrint(folders)
   ));
 
-  // if (configuration.useLocalNetworksOnly) {
-  //   return (callback(null, []));
-  // }
-
   async.eachSeries(folders, function(folder, cb0){
 
     debug(chalkNetwork("NNT | ... LOADING DROPBOX BEST NN FOLDER | " + folder));
