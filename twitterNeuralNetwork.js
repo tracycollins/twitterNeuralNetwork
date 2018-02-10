@@ -1296,7 +1296,7 @@ function loadHistogramsDropboxFolder(folder, callback){
 
     async.eachSeries(response.entries, function(entry, cb){
 
-      console.log(chalkInfo("NNT | DROPBOX HISTOGRAMS FILE FOUND"
+      debug(chalkInfo("NNT | DROPBOX HISTOGRAMS FILE FOUND"
         + " | LAST MOD: " + moment(new Date(entry.client_modified)).format(compactDateTimeFormat)
         + " | " + entry.name
         // + " | " + entry.content_hash
@@ -1497,7 +1497,7 @@ function loadInputsDropboxFolder(folder, callback){
       const entryNameArray = entry.name.split(".");
       const entryInputsId = entryNameArray[0];
 
-      console.log(chalkInfo("NNT | DROPBOX INPUTS FILE FOUND"
+      debug(chalkInfo("NNT | DROPBOX INPUTS FILE FOUND"
         + " | LAST MOD: " + moment(new Date(entry.client_modified)).format(compactDateTimeFormat)
         + " | INPUTS ID: " + entryInputsId
         + " | " + entry.name
