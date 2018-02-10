@@ -1923,6 +1923,8 @@ function loadBestNetworkDropboxFolders (folders, callback){
             }
             else {
 
+              if (networkObj.matchRate === undefined) { networkObj.matchRate = 0; }
+
               if ((options.networkId !== undefined) 
                 || ((folder === "/config/utility/best/neuralNetworks") && (networkObj.successRate > configuration.globalMinSuccessRate))
                 || ((folder !== "/config/utility/best/neuralNetworks") && (networkObj.successRate > configuration.localMinSuccessRate))
@@ -1957,7 +1959,8 @@ function loadBestNetworkDropboxFolders (folders, callback){
 
                 console.log(chalkNetwork("NNT | + NN HASH MAP"
                   + " | " + bestNetworkHashMap.count() + " NNs IN HM"
-                  + " | " + networkObj.successRate.toFixed(2) + "%"
+                  + " | SR: " + networkObj.successRate.toFixed(2) + "%"
+                  + " | MR: " + networkObj.matchRate.toFixed(2) + "%"
                   + " | " + getTimeStamp(networkObj.createdAt)
                   + " | IN: " + networkObj.numInputs
                   + " | OUT: " + networkObj.numOutputs
@@ -1972,7 +1975,8 @@ function loadBestNetworkDropboxFolders (folders, callback){
 
                   console.log(chalkAlert("NNT | * NEW BEST NN"
                     + " | " + bestNetworkHashMap.count() + " NNs IN HM"
-                    + " | " + networkObj.successRate.toFixed(2) + "%"
+                  + " | SR: " + networkObj.successRate.toFixed(2) + "%"
+                  + " | MR: " + networkObj.matchRate.toFixed(2) + "%"
                     + " | " + getTimeStamp(networkObj.createdAt)
                     + " | IN: " + networkObj.numInputs
                     + " | OUT: " + networkObj.numOutputs
@@ -1984,7 +1988,8 @@ function loadBestNetworkDropboxFolders (folders, callback){
                 cb1();
 
               }
-              else {
+              else if (((hostname === "google") && (folder === globalBestNetworkFolder))
+                || ((hostname !== "google") && (folder === localBestNetworkFolder)) ) {
 
                console.log(chalkAlert("NNT | DELETING NN"
                   + " | MIN SUCCESS RATE: GLOBAL: " + configuration.globalMinSuccessRate + " LOCAL: " + configuration.localMinSuccessRate
@@ -2022,6 +2027,9 @@ function loadBestNetworkDropboxFolders (folders, callback){
                   ));
                   cb1(err);
                 });
+              }
+              else {
+                cb1();
               }
 
             }

@@ -1076,6 +1076,8 @@ process.on("message", function(m) {
           };
 
           networkObj.networkCreateMode = "evolve";
+          networkObj.successRate = 0;
+          networkObj.matchRate = 0;
           networkObj.testRunId = statsObj.training.testRunId;
           networkObj.networkId = statsObj.training.testRunId;
           networkObj.seedNetworkId = statsObj.training.seedNetworkId;
