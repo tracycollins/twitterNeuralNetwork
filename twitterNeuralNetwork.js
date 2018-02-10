@@ -1816,6 +1816,8 @@ function loadBestNetworkDropboxFolders (folders, callback){
                 return(cb1(err));
               }
 
+              if (networkObj.matchRate === undefined) { networkObj.matchRate = 0; }
+
               if (networkObj.inputsId === undefined) {
                 console.log(chalkError("*** NETWORK OBJ INPUTS ID UNDEFINED | entry.name: " + entry.name + " | networkObj.networkId: " + networkObj.networkId));
                 console.log(chalkError("*** NETWORK OBJ INPUTS ID UNDEFINED | networkObj:" + jsonPrint(networkObj)));
@@ -1830,6 +1832,7 @@ function loadBestNetworkDropboxFolders (folders, callback){
 
               console.log(chalkNetwork("NNT | DROPBOX BEST NETWORK"
                 + " | " + networkObj.successRate.toFixed(2) + "%"
+                + " | " + networkObj.matchRate.toFixed(2) + "%"
                 + " | " + getTimeStamp(networkObj.createdAt)
                 + " | " + networkObj.networkId
                 + " | " + networkObj.networkCreateMode
@@ -1871,6 +1874,7 @@ function loadBestNetworkDropboxFolders (folders, callback){
                 console.log(chalkAlert("NNT | * NEW BEST NN"
                   + " | " + bestNetworkHashMap.count() + " NNs IN HM"
                   + " | " + networkObj.successRate.toFixed(2) + "%"
+                  + " | " + networkObj.matchRate.toFixed(2) + "%"
                   + " | " + getTimeStamp(networkObj.createdAt)
                   + " | IN: " + networkObj.numInputs
                   + " | OUT: " + networkObj.numOutputs
