@@ -1817,7 +1817,8 @@ function loadBestNetworkDropboxFolders (folders, callback){
               }
 
               if (networkObj.inputsId === undefined) {
-                console.log(chalkError("*** NETWORK OBJ INPUTS ID UNDEFINED | " + networkObj.networkId));
+                console.log(chalkError("*** NETWORK OBJ INPUTS ID UNDEFINED | entry.name: " + entry.name + " | networkObj.networkId: " + networkObj.networkId));
+                console.log(chalkError("*** NETWORK OBJ INPUTS ID UNDEFINED | networkObj:" + jsonPrint(networkObj)));
                 return cb1("NETWORK OBJ INPUTS ID UNDEFINED");
               }
 
@@ -1985,11 +1986,23 @@ function loadBestNetworkDropboxFolders (folders, callback){
               }
               else {
 
+               console.log(chalkAlert("NNT | DELETING NN"
+                  + " | MIN SUCCESS RATE: GLOBAL: " + configuration.globalMinSuccessRate + " LOCAL: " + configuration.localMinSuccessRate
+                  + " | " + networkObj.successRate.toFixed(2) + "%"
+                  + " | " + getTimeStamp(networkObj.createdAt)
+                  + " | IN: " + networkObj.numInputs
+                  + " | OUT: " + networkObj.numOutputs
+                  + " | " + networkObj.networkCreateMode
+                  + " | " + networkObj.networkId
+                ));
+
                 bestNetworkHashMap.delete(networkObj.networkId);
 
                 dropboxClient.filesDelete({path: folder + "/" + entry.name})
                 .then(function(response){
+
                   debug("dropboxClient filesDelete response\n" + jsonPrint(response));
+
                   console.log(chalkAlert("NNT | XXX NN"
                     + " | MIN SUCCESS RATE: GLOBAL: " + configuration.globalMinSuccessRate + " LOCAL: " + configuration.localMinSuccessRate
                     + " | " + networkObj.successRate.toFixed(2) + "%"
@@ -1999,6 +2012,7 @@ function loadBestNetworkDropboxFolders (folders, callback){
                     + " | " + networkObj.networkCreateMode
                     + " | " + networkObj.networkId
                   ));
+
                   cb1();
                 })
                 .catch(function(err){
