@@ -1321,8 +1321,8 @@ function loadHistogramsDropboxFolder(folder, callback){
             + " | LAST MOD: " + moment(new Date(entry.client_modified)).format(compactDateTimeFormat)
             + " | " + entry.name
             + " | HIST ID: " + histogramsId
-            + "\nCUR HASH: " + entry.content_hash
-            + "\nOLD HASH: " + oldContentHash
+            // + "\nCUR HASH: " + entry.content_hash
+            // + "\nOLD HASH: " + oldContentHash
           ));
 
           loadFile(folder, entry.name, function(err, histogramsObj){
@@ -1519,8 +1519,8 @@ function loadInputsDropboxFolder(folder, callback){
           console.log(chalkInfo("NNT | DROPBOX INPUTS CONTENT CHANGE"
             + " | LAST MOD: " + moment(new Date(entry.client_modified)).format(compactDateTimeFormat)
             + " | " + entry.name
-            + "\nCUR HASH: " + entry.content_hash
-            + "\nOLD HASH: " + oldContentHash
+            // + "\nCUR HASH: " + entry.content_hash
+            // + "\nOLD HASH: " + oldContentHash
           ));
 
           loadFile(folder, entry.name, function(err, inputsObj){
@@ -1621,7 +1621,7 @@ function loadInputsDropboxFolder(folder, callback){
 
 function loadTrainingSetsDropboxFolder(folder, callback){
 
-  console.log(chalkNetwork("NNT | ... LOADING DROPBOX TRAINING SETS FOLDER | " + folder));
+  debug(chalkNetwork("NNT | ... LOADING DROPBOX TRAINING SETS FOLDER | " + folder));
 
   if (configuration.useLocalNetworksOnly) {
     return (callback(null, []));
@@ -1639,7 +1639,7 @@ function loadTrainingSetsDropboxFolder(folder, callback){
 
     async.eachSeries(response.entries, function(entry, cb){
 
-      console.log(chalkLog("NNT | DROPBOX TRAINING SET FOUND"
+      debug(chalkLog("NNT | DROPBOX TRAINING SET FOUND"
         + " | LAST MOD: " + moment(new Date(entry.client_modified)).format(compactDateTimeFormat)
         + " | " + entry.name
       ));
@@ -1667,8 +1667,8 @@ function loadTrainingSetsDropboxFolder(folder, callback){
             + " | LAST MOD: " + moment(new Date(entry.client_modified)).format(compactDateTimeFormat)
             + " | TRAINING SET ID: " + trainingSetId
             + " | " + entry.name
-            + "\nCUR HASH: " + entry.content_hash
-            + "\nOLD HASH: " + oldContentHash
+            // + "\nCUR HASH: " + entry.content_hash
+            // + "\nOLD HASH: " + oldContentHash
           ));
 
           loadFile(folder, entry.name, function(err, trainingSetObj){
@@ -1805,8 +1805,8 @@ function loadBestNetworkDropboxFolders (folders, callback){
             console.log(chalkNetwork("NNT | DROPBOX BEST NETWORK CONTENT CHANGE"
               + " | LAST MOD: " + moment(new Date(entry.client_modified)).format(compactDateTimeFormat)
               + " | " + entry.name
-              + "\nCUR HASH: " + entry.content_hash
-              + "\nOLD HASH: " + oldContentHash
+              // + "\nCUR HASH: " + entry.content_hash
+              // + "\nOLD HASH: " + oldContentHash
             ));
 
             loadFile(folder, entry.name, function(err, networkObj){
@@ -2549,7 +2549,7 @@ function loadNeuralNetwork(options, callback){
 
 function loadSeedNeuralNetwork(options, callback){
 
-  console.log(chalkNetwork("NNT | ... LOADING SEED NETWORK FROM DB\nOPTIONS: " + jsonPrint(options)));
+  debug(chalkNetwork("NNT | ... LOADING SEED NETWORK FROM DB\nOPTIONS: " + jsonPrint(options)));
 
   let findQuery = {};
 
@@ -2577,7 +2577,7 @@ function loadSeedNeuralNetwork(options, callback){
       if (callback !== undefined) { callback(err, null); }
     }
     else if (numNetworksLoaded === 0){
-      console.log(chalkAlert("NNT | *** NO BEST NETWORKS LOADED"));
+      console.log(chalkInfo("NNT | ... NO BEST NETWORKS CHANGED / LOADED"));
       if (callback !== undefined) { callback(err, null); }
     }
     else {
@@ -4176,13 +4176,9 @@ function generateRandomEvolveConfig (cnf, callback){
     }
   }
   else if (inputsIdSet.size > 0) {
-    console.log(chalkAlert("LOADING INPUTS USING INPUTS ID SET: " + jsonPrint([...inputsIdSet])));
+    debug(chalkAlert("LOADING INPUTS USING INPUTS ID SET: " + jsonPrint([...inputsIdSet])));
+    console.log(chalkAlert("LOADING INPUTS USING INPUTS ID SET: " + inputsIdSet.size + " SET SIZE"));
     const keys = Object.keys(inputsNetworksHashMap);
-
-    // keys.forEach(function(key){
-    //   const inIdSet = inputsNetworksHashMap[key];
-    //   console.log("NNT | INPUTS ID " + key + " | " + inIdSet.size + " NETWORKS");
-    // });
 
     let tempInputsIdArray = [];
 
@@ -4197,15 +4193,6 @@ function generateRandomEvolveConfig (cnf, callback){
       config.seedNetworkId = (Math.random() <= cnf.seedNetworkProbability) ? randomItem([...inputsNetworksHashMap[config.seedInputsId]]) : false;
     });
 
-    // if (inputsNetworksHashMap[config.seedInputsId] !== undefined){
-    //   if (inputsNetworksHashMap[config.seedInputsId].size > 0) {
-    //     config.seedNetworkId = (Math.random() <= cnf.seedNetworkProbability) ? randomItem([...inputsNetworksHashMap[config.seedInputsId]]) : false;
-    //     // console.log("NNT | SEED | INPUTS ID " + config.seedInputsId + " | " + inputsNetworksHashMap[config.seedInputsId].size + " NETWORKS | NETWORK: " + config.seedNetworkId);
-    //   }
-    //   else {
-    //     // console.log("NNT | INPUTS ID " + key + " | " + inIdSet.size + " NETWORKS");
-    //   }
-    // }
   }
   else {
     config.seedInputsId = randomItem(inputsHashMap.keys());
