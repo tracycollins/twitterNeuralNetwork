@@ -1,7 +1,8 @@
 /*jslint node: true */
 "use strict";
 
-const DEFAULT_HISTOGRAM_PARSE_TOTAL_MIN = 7;
+const DEFAULT_HISTOGRAM_PARSE_TOTAL_MIN = 4;
+const DEFAULT_HISTOGRAM_PARSE_DOMINANT_MIN = 0.4;
 
 const bestRuntimeNetworkFileName = "bestRuntimeNetwork.json";
 
@@ -196,6 +197,7 @@ configuration.inputsIdArray = [];
 configuration.saveFileQueueInterval = 1000;
 
 configuration.histogramParseTotalMin = DEFAULT_HISTOGRAM_PARSE_TOTAL_MIN;
+configuration.histogramParseDominantMin = DEFAULT_HISTOGRAM_PARSE_DOMINANT_MIN;
 
 configuration.useLocalTrainingSets = DEFAULT_USE_LOCAL_TRAINING_SETS;
 
@@ -518,6 +520,7 @@ const dropboxConfigHostFolder = "/config/utility/" + hostname;
 const dropboxConfigFile = hostname + "_" + configuration.DROPBOX.DROPBOX_TNN_CONFIG_FILE;
 
 const defaultHistogramsFolder = dropboxConfigDefaultFolder + "/histograms";
+const localHistogramsFolder = dropboxConfigHostFolder + "/histograms";
 const defaultInputsFolder = dropboxConfigDefaultFolder + "/inputs";
 const localInputsFolder = dropboxConfigHostFolder + "/inputs";
 
@@ -1410,7 +1413,7 @@ function loadHistogramsDropboxFolder(folder, callback){
               + " | TOTAL histograms TYPE: " + totalHistograms
             );
 
-            histogramParser.parse({histogram: histogramsObj.histograms, totalMin: configuration.histogramParseTotalMin}, function(err, histResults){
+            histogramParser.parse({histogram: histogramsObj.histograms, dominantMin: configuration.histogramParseDominantMin, totalMin: configuration.histogramParseTotalMin}, function(err, histResults){
 
               debug(chalkNetwork("HISTOGRAMS RESULTS\n" + jsonPrint(histResults)));
 
@@ -1420,6 +1423,7 @@ function loadHistogramsDropboxFolder(folder, callback){
               newInputsObj.meta = {};
               newInputsObj.meta.numInputs = 0;
               newInputsObj.meta.histogramParseTotalMin = configuration.histogramParseTotalMin;
+              newInputsObj.meta.histogramParseDominantMin = configuration.histogramParseDominantMin;
               newInputsObj.inputs = {};
 
               const inputTypes = Object.keys(histResults.entries);
@@ -2140,6 +2144,11 @@ function loadConfigFile(folder, file, callback) {
             configuration.histogramParseTotalMin = loadedConfigObj.TNN_HISTOGRAM_PARSE_TOTAL_MIN;
           }
 
+          if (loadedConfigObj.TNN_HISTOGRAM_PARSE_DOMINANT_MIN !== undefined){
+            console.log("NNT | LOADED TNN_HISTOGRAM_PARSE_DOMINANT_MIN: " + loadedConfigObj.TNN_HISTOGRAM_PARSE_DOMINANT_MIN);
+            configuration.histogramParseDominantMin = loadedConfigObj.TNN_HISTOGRAM_PARSE_DOMINANT_MIN;
+          }
+
           if (loadedConfigObj.TNN_CROSS_ENTROPY_WORKAROUND_ENABLED  !== undefined){
             console.log("NNT | TNN_CROSS_ENTROPY_WORKAROUND_ENABLED: " + loadedConfigObj.TNN_CROSS_ENTROPY_WORKAROUND_ENABLED);
 
@@ -2615,6 +2624,7 @@ function initialize(cnf, callback){
   cnf.seedNetworkProbability = process.env.TNN_SEED_NETWORK_PROBABILITY || DEFAULT_SEED_NETWORK_PROBABILITY ;
 
   cnf.histogramParseTotalMin = process.env.TNN_HISTOGRAM_PARSE_TOTAL_MIN || DEFAULT_HISTOGRAM_PARSE_TOTAL_MIN ;
+  cnf.histogramParseDominantMin = process.env.TNN_HISTOGRAM_PARSE_DOMINANT_MIN || DEFAULT_HISTOGRAM_PARSE_DOMINANT_MIN ;
 
   cnf.crossEntropyWorkAroundEnabled = false ;
 
@@ -2753,6 +2763,11 @@ function initialize(cnf, callback){
         if (loadedConfigObj.TNN_HISTOGRAM_PARSE_TOTAL_MIN !== undefined){
           console.log("NNT | LOADED TNN_HISTOGRAM_PARSE_TOTAL_MIN: " + loadedConfigObj.TNN_HISTOGRAM_PARSE_TOTAL_MIN);
           cnf.histogramParseTotalMin = loadedConfigObj.TNN_HISTOGRAM_PARSE_TOTAL_MIN;
+        }
+
+        if (loadedConfigObj.TNN_HISTOGRAM_PARSE_DOMINANT_MIN !== undefined){
+          console.log("NNT | LOADED TNN_HISTOGRAM_PARSE_DOMINANT_MIN: " + loadedConfigObj.TNN_HISTOGRAM_PARSE_DOMINANT_MIN);
+          cnf.histogramParseDominantMin = loadedConfigObj.TNN_HISTOGRAM_PARSE_DOMINANT_MIN;
         }
 
         if (loadedConfigObj.TNN_CROSS_ENTROPY_WORKAROUND_ENABLED  !== undefined){
@@ -4106,20 +4121,20 @@ function generateTrainingTestSets (inputsIds, userHashMap, callback){
 
       trainingSet.meta.numOutputs = 3;
       trainingSet.meta.setSize = trainingSet.data.length;
+      trainingSet.meta.histogramParseTotalMin = configuration.histogramParseTotalMin;
+      trainingSet.meta.histogramParseDominantMin = configuration.histogramParseDominantMin;
 
       testSet.meta.numOutputs = 3;
       testSet.meta.setSize = testSet.data.length;
-      testSet.meta.histogramParseTotalMin = testSet.data.length;
 
-      console.log(chalkInfo("NNT | END GENERATE TRAINING SET"
-        + "\nNNT | TRAINING SET ID: " + trainingSetId
-        + " | NUM INPUTS: " + trainingSet.meta.numInputs
-        + " | NUM OUTPUTS: " + trainingSet.meta.numOutputs
+      console.log(chalkInfo("NNT | +++ TRAINING SET"
+        + " | ID: " + trainingSetId
+        + " | IN: " + trainingSet.meta.numInputs
+        + " | OUT: " + trainingSet.meta.numOutputs
         + " | SIZE: " + trainingSet.meta.setSize
-        + "\nNNT | TEST SET"
-        + " | NUM INPUTS: " + testSet.meta.numInputs
-        + " | NUM OUTPUTS: " + testSet.meta.numOutputs
-        + " | SIZE: " + testSet.meta.setSize
+        // + " | NUM INPUTS: " + testSet.meta.numInputs
+        // + " | NUM OUTPUTS: " + testSet.meta.numOutputs
+        + " | TEST SET SIZE: " + testSet.meta.setSize
         // + "\n trainingSet.meta\n" + jsonPrint(trainingSet.meta) 
         // + "\n testSet.meta\n" + jsonPrint(testSet.meta)
       ));
@@ -4478,8 +4493,8 @@ function initMain(cnf, callback){
               quit("UPDATE CLASSIFIED USER ERROR");
             }
 
-            console.log(chalkAlert("NNT | ... START CREATE TRAINING SET"));
-            console.log(chalkAlert("NNT | inputsHashMap keys: " + inputsHashMap.keys()));
+            console.log(chalkAlert("NNT | ... START CREATE TRAINING SETS: NUM OF INPUTS SETS: " + inputsHashMap.count()));
+            // console.log(chalkAlert("NNT | inputsHashMap keys: " + inputsHashMap.keys()));
 
 
             loadInputsDropboxFolder(defaultInputsFolder, function(err){
