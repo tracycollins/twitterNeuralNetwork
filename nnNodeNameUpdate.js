@@ -195,7 +195,7 @@ const globalBestNetworkFolder = "/config/utility/best/neuralNetworks";
 const localNetworkFolder = "/config/utility/" + hostname + "/neuralNetworks/local";
 const bestNetworkFolder = "/config/utility/" + hostname + "/neuralNetworks/best";
 
-configuration.neuralNetworkFolder = globalBestNetworkFolder;
+configuration.neuralNetworkFolder = bestNetworkFolder;
 
 console.log("NNT | DROPBOX_TNN_CONFIG_FILE: " + configuration.DROPBOX.DROPBOX_TNN_CONFIG_FILE);
 console.log("NNT | DROPBOX_TNN_STATS_FILE : " + configuration.DROPBOX.DROPBOX_TNN_STATS_FILE);
