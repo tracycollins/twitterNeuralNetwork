@@ -4204,8 +4204,9 @@ function generateRandomEvolveConfig (cnf, callback){
       console.log("NNT | INPUTS ID " + key + " | " + inputsNetworksHashMap[key].size + " NETWORKS");
       cb();
     }, function(){
-      config.seedInputsId = randomItem(tempInputsIdArray);
-      config.seedNetworkId = (Math.random() <= cnf.seedNetworkProbability) ? randomItem([...inputsNetworksHashMap[config.seedInputsId]]) : false;
+      config.seedInputsId = randomItem(inputsHashMap.keys());  // will be ignored if config.seednetworkId gets set below
+      const tempNetworkInputsId = randomItem(tempInputsIdArray);
+      config.seedNetworkId = (Math.random() <= cnf.seedNetworkProbability) ? randomItem([...inputsNetworksHashMap[tempNetworkInputsId]]) : false;
     });
 
   }

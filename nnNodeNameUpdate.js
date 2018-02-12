@@ -195,7 +195,7 @@ const globalBestNetworkFolder = "/config/utility/best/neuralNetworks";
 const localNetworkFolder = "/config/utility/" + hostname + "/neuralNetworks/local";
 const bestNetworkFolder = "/config/utility/" + hostname + "/neuralNetworks/best";
 
-configuration.neuralNetworkFolder = globalBestNetworkFolder;
+configuration.neuralNetworkFolder = bestNetworkFolder;
 
 console.log("NNT | DROPBOX_TNN_CONFIG_FILE: " + configuration.DROPBOX.DROPBOX_TNN_CONFIG_FILE);
 console.log("NNT | DROPBOX_TNN_STATS_FILE : " + configuration.DROPBOX.DROPBOX_TNN_STATS_FILE);
@@ -703,15 +703,17 @@ function loadNetworkDropboxFolder(folder, callback){
         ));
 
         networkObj.network.nodes[0].name = "magnitude";
+        networkObj.network.nodes[0].inputType = "sentiment";
         networkObj.network.nodes[1].name = "score";
+        networkObj.network.nodes[1].inputType = "sentiment";
 
-        const nnInputTypes = Object.keys(networkObj.inputs);
+        const nnInputTypes = Object.keys(networkObj.inputs).sort();
 
         let nodeIndex = 2; // skip 
 
         async.eachSeries(nnInputTypes, function(inputType, cb0){
 
-          const typeInputArray = networkObj.inputs[inputType];
+          const typeInputArray = networkObj.inputs[inputType].sort();
 
           async.eachSeries(typeInputArray, function(inputName, cb1){
 
@@ -721,6 +723,7 @@ function loadNetworkDropboxFolder(folder, callback){
               return cb1("NOT INPUT ERROR");
             }
             networkObj.network.nodes[nodeIndex].name = inputName;
+            networkObj.network.nodes[nodeIndex].inputType = inputType;
             nodeIndex++;
 
             cb1();
