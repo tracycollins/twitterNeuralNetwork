@@ -40,6 +40,7 @@ const os = require("os");
 const util = require("util");
 const S = require("string");
 const moment = require("moment");
+const _ = require("lodash");
 
 const mongoose = require("mongoose");
 const wordAssoDb = require("@threeceelabs/mongoose-twitter");
@@ -3767,17 +3768,11 @@ function testNetwork(nwObj, testObj, callback){
   let convertDatumParams = {};
   convertDatumParams.normalization = statsObj.normalization;
 
-  async.each(testObj.testSet.data, function(datum, cb){
+  let shuffledTestData = _.shuffle(testObj.testSet.data);
+
+  async.eachSeries(shuffledTestData, function(datum, cb){
 
     convertDatum(convertDatumParams, nwObj.inputsObj.inputs, datum, function(err, testDatumObj){
-
-      // if (testDatumObj.input.length !== testObj.testSet.meta.numInputs) {
-      //   console.error(chalkError("NNT | MISMATCH INPUT"
-      //     + " | TEST INPUTS: " + testDatumObj.input.length 
-      //     + " | NETW INPUTS: " + testObj.testSet.meta.numInputs 
-      //   ));
-      //   return cb("MISMATCH INPUT");
-      // }
 
       const testOutput = activateNetwork(nw, testDatumObj.input);
 
@@ -3886,7 +3881,8 @@ function initClassifiedUserHashmap(folder, file, callback){
 
 function generateGlobalTrainingTestSet (userHashMap, callback){
 
-  const userIds = userHashMap.keys();
+  const uIds = userHashMap.keys();
+  const userIds = _.shuffle(uIds);
 
   console.log(chalkAlert("NNT | ===================================================="));
   console.log(chalkAlert("NNT | GENERATE TRAINING SET | " + userIds.length + " USERS"));
@@ -3989,258 +3985,6 @@ function generateGlobalTrainingTestSet (userHashMap, callback){
 
   });
 }
-
-
-// function generateTrainingTestSets (inputsIds, userHashMap, callback){
-
-//   const userIds = userHashMap.keys();
-
-//   console.log(chalkInfo("NNT | GENERATE TRAINING SET | " + userIds.length + " USERS | " + inputsIds.length + " INPUT GROUPS"));
-
-//   async.each(inputsIds, function(inputsId, cb0){ 
-
-//     if (!inputsHashMap.has(inputsId)) {
-//       console.log(chalkError("*** INPUTS ID NOT IN HASH: " + inputsId));
-//       return cb0("INPUTS ID NOT IN HASH: " + inputsId);
-//     }
-
-//     const inputsObj = inputsHashMap.get(inputsId);
-//     const inputs = inputsObj.inputs;
-//     const inputTypes = Object.keys(inputs).sort();
-
-//     console.log(chalkInfo("NNT | GENERATE TRAINING SET FOR INPUTS"
-//       + " | INPUTS ID: " + inputsId
-//       + " | INPUT TYPES: " + inputTypes
-//     ));
-
-//     inputTypes.forEach(function(inputType){
-//       console.log(chalkInfo("NNT | "
-//         + " | INPUT TYPE: " + inputType
-//         + " | LEN: " + inputs[inputType].length
-//       ));
-//     });
-
-//     let maxMagnitude = 0;
-//     let maxScore = 0;
-//     let minScore = 0;
-
-//     let trainingSet = {};
-//     trainingSet.meta = {};
-//     trainingSet.data = [];
-
-//     let testSet = {};
-//     testSet.meta = {};
-//     testSet.data = [];
-
-//     async.each(userIds, function(userId, cb1){ 
-
-//       let globalInputIndex = 2;
-//       let totalInputHits = 0;
-//       let numInputHits = 0;
-
-//       const user = userHashMap.get(userId);
-//       const userHistograms = user.histograms;
-
-//       let sentimentObj = {};
-//       sentimentObj.magnitude = 0;
-//       sentimentObj.score = 0;
-
-//       if ((user.languageAnalysis !== undefined)
-//         && (user.languageAnalysis.sentiment !== undefined)) {
-
-//         sentimentObj.magnitude = user.languageAnalysis.sentiment.magnitude || 0;
-//         sentimentObj.score = user.languageAnalysis.sentiment.score || 0;
-
-//         if (!configuration.normalization) {
-//           maxMagnitude = Math.max(maxMagnitude, sentimentObj.magnitude);
-//         }
-//       }
-
-//       let typeIndexOffset = 2;  // to allow for paralles trainingSetDatum creation
-
-//       let trainingSetDatum = {};
-//       trainingSetDatum.user = {};
-//       trainingSetDatum.user.screenName = user.screenName;
-//       trainingSetDatum.inputHits = {};
-
-//       trainingSetDatum.inputHits.sentiment = [];
-
-//       trainingSetDatum.inputHits.sentiment.push({ magnitude: sentimentObj.magnitude});
-//       trainingSetDatum.inputHits.sentiment.push({ score: sentimentObj.score});
-
-//       async.eachSeries(inputTypes, function(type, cb2){  // inputTypes = [ emoji, screenName, hashtag, images, word, url ]
-
-//         trainingSetDatum.inputHits[type] = [];
-
-//         const inputNames = inputs[type].sort();
-
-//         async.eachOfSeries(inputNames, function(element, index, cb3){
-
-//           const trainingSetDatumInputIndex = typeIndexOffset + index;
-
-//           if ((userHistograms[type] !== undefined) && userHistograms[type][element]) { // cb3
-
-//             numInputHits +=1;
-
-//             trainingSetDatum.inputHits[type].push(element);
-
-//             debug(chalkBlue("+ DATUM BIT: " + type
-//               + " | typeIndexOffset: " + typeIndexOffset
-//               + " | INPUT HITS: " + numInputHits 
-//               + " | ["  + trainingSetDatumInputIndex + " / " + index + "] " + element + ": " + userHistograms[type][element]
-//               + " | @" + trainingSetDatum.user.screenName 
-//             ));
-
-//             if ((globalInputIndex % 100 === 0) && (index % 10 === 0)){
-//               debug(chalkBlue("+ DATUM BIT: " + type
-//                 + " | INPUT HITS: " + numInputHits 
-//                 + " | ["  + trainingSetDatumInputIndex + " / " + index + "] " + element + ": " + userHistograms[type][element]
-//                 + " | @" + trainingSetDatum.user.screenName 
-//               ));
-//             }
-
-//             globalInputIndex += 1;
-
-//             // async.setImmediate(function() {
-//               cb3();
-//             // });
-//           }
-//           else { // cb3
-
-//             debug(chalkInfo("- DATUM BIT: " + type
-//               + " | INPUT HITS: " + numInputHits 
-//               + " | ["  + globalInputIndex + " / " + index + "] " + element
-//               + " | @" + trainingSetDatum.user.screenName 
-//             ));
-
-//             globalInputIndex += 1;
-
-//             // async.setImmediate(function() {
-//               cb3();
-//             // });
-//           }
-//         }, function(err){ // cb2  async.eachOfSeries(inputs[type]
-
-//           if (err) { // cb2
-//             console.error("*** PARSE TEXT ERROR\n" + err);
-//             return cb2(err);
-//           }
-
-//           typeIndexOffset += inputs[type].length; 
-
-//           debug(chalkAlert(
-//             "typeIndexOffset: " + typeIndexOffset
-//             + " | type: " + type
-//             + " | inputs[type].length: " + inputs[type].length
-//           ));
-
-
-//           // console.log(chalkAlert("DONE ARRAY: " + type));
-//           // async.setImmediate(function() {
-//             cb2();
-//           // });
-//         });
-//       }, function(err){  // cb1 async.eachSeries(inputTypes...)
-
-//         if (err) {
-//           console.error("*** PARSE TEXT ERROR\n" + err);
-//           return cb1(err);
-//         }
-
-//         let chk = chalkInfo;
-
-//         if (numInputHits < MIN_INPUT_HITS) { chk = chalkAlert; }
-
-//         const userInputHitAverage = 100 * numInputHits / globalInputIndex;
-
-//         debug(chk("=+= PARSE USER TEXT COMPLETE"
-//           + " | INPUT HITS: " + numInputHits + "/" + globalInputIndex
-//           + " - " + userInputHitAverage.toFixed(2)
-//           + " | @" + trainingSetDatum.user.screenName
-//         ));
-
-//         // IF NOT INPUT HITS, don't user for training
-        
-//         if (numInputHits < MIN_INPUT_HITS) { 
-//           // async.setImmediate(function() { 
-//             return cb1(); 
-//           // });
-//         }
-
-//         totalInputHits += numInputHits;
-
-//         const keywordArray = Object.keys(user.keywords);
-
-//         trainingSetDatum.classification = (keywordArray[0] !== undefined) ? keywordArray[0] : false;
-
-//         if (Math.random() > configuration.testSetRatio) {
-//           trainingSet.data.push(trainingSetDatum);
-//           trainingSet.meta.numInputs = globalInputIndex;
-//           // async.setImmediate(function() { 
-//             cb1(); 
-//           // });
-//         }
-//         else {
-//           testSet.data.push(trainingSetDatum);
-//           testSet.meta.numInputs = globalInputIndex;
-//           // async.setImmediate(function() { 
-//             cb1(); 
-//           // });
-//         }
-//       });
-//     }, function(err) {  // cb0 
-
-//       if (err) {
-//         console.log(chalkError("GENERATE TRAINING SET ERROR\n" + jsonPrint(err)));
-//         return cb0(err);
-//       }
-
-//       const trainingSetId = inputsId;
-
-//       trainingSet.meta.numOutputs = 3;
-//       trainingSet.meta.setSize = trainingSet.data.length;
-//       trainingSet.meta.histogramParseTotalMin = configuration.histogramParseTotalMin;
-//       trainingSet.meta.histogramParseDominantMin = configuration.histogramParseDominantMin;
-
-//       testSet.meta.numOutputs = 3;
-//       testSet.meta.setSize = testSet.data.length;
-
-//       console.log(chalkInfo("NNT | +++ TRAINING SET"
-//         + " | ID: " + trainingSetId
-//         + " | IN: " + trainingSet.meta.numInputs
-//         + " | OUT: " + trainingSet.meta.numOutputs
-//         + " | SIZE: " + trainingSet.meta.setSize
-//         // + " | NUM INPUTS: " + testSet.meta.numInputs
-//         // + " | NUM OUTPUTS: " + testSet.meta.numOutputs
-//         + " | TEST SET SIZE: " + testSet.meta.setSize
-//         // + "\n trainingSet.meta\n" + jsonPrint(trainingSet.meta) 
-//         // + "\n testSet.meta\n" + jsonPrint(testSet.meta)
-//       ));
-
-//       const trainingSetObj = {trainingSetId: trainingSetId, trainingSet: trainingSet, testSet: testSet};
-
-//       trainingSetHashMap.set(trainingSetId, trainingSetObj);
-
-//       const file = "trainingSet_" + trainingSetId + ".json";
-//       let folder = (hostname === "google") ? defaultTrainingSetFolder : localTrainingSetFolder;
-//       // let folder = localTrainingSetFolder;
-
-//       saveFileQueue.push({folder: folder, file: file, obj: trainingSetObj});
-
-//       setTimeout(function(){
-//         cb0();
-//       }, 2000);
-//     });
-
-//   }, function(err){
-
-//     console.log(chalkAlert("\nNNT | ======================= END GENERATE ALL TRAINING SETS ======================="
-//     ));
-
-//     callback(err);
-
-//   });
-// }
 
 function generateRandomEvolveConfig (cnf, callback){
 
@@ -4352,7 +4096,7 @@ function generateRandomEvolveConfig (cnf, callback){
     config.trainingSet.meta = {};
     config.trainingSet.meta = tObj.trainingSetObj.trainingSet.meta;
     config.trainingSet.data = [];
-    config.trainingSet.data = tObj.trainingSetObj.trainingSet.data;
+    config.trainingSet.data = _.shuffle(tObj.trainingSetObj.trainingSet.data);
     config.testSet = {};
     config.testSet = tObj.trainingSetObj.testSet;
 
@@ -4364,7 +4108,6 @@ function generateRandomEvolveConfig (cnf, callback){
 
     console.log(chalkAlert("NNT | ... START CREATE TRAINING SET"));
 
-    // generateTrainingTestSets([config.inputsId], trainingSetUsersHashMap, function(err){
     generateGlobalTrainingTestSet(trainingSetUsersHashMap, function(err){
 
       if (err) {
@@ -4380,7 +4123,7 @@ function generateRandomEvolveConfig (cnf, callback){
       config.trainingSet.meta = {};
       config.trainingSet.meta = tObj.trainingSetObj.trainingSet.meta;
       config.trainingSet.data = [];
-      config.trainingSet.data = tObj.trainingSetObj.trainingSet.data;
+      config.trainingSet.data = _.shuffle(tObj.trainingSetObj.trainingSet.data);
       config.testSet = {};
       config.testSet = tObj.trainingSetObj.testSet;
 

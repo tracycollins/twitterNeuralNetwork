@@ -30,6 +30,7 @@
     "hashtag-regex": "^1.0.0",
     "isomorphic-fetch": "^2.2.1",
     "keyword-extractor": "0.0.15",
+    "lodash": "^4.17.5",
     "mentions-regex": "^2.0.3",
     "moment": "^2.20.1",
     "mongoose": "^5.0.4",
