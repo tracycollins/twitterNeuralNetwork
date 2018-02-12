@@ -686,6 +686,10 @@ function loadNetworkDropboxFolder(folder, callback){
         // + "\n" + jsonPrint(entry)
       ));
 
+      if (entry.name === "bestRuntimeNetwork.json") {
+        return cb();
+      }
+
       loadFile(folder, entry.name, function(err, networkObj){
 
         if (err) {
