@@ -407,13 +407,13 @@ function printDatum(title, input){
 
 function convertDatum(params, datum, generateInputRaw, callback){
 
-  const inputTypes = Object.keys(params.inputs).sort();
+  const inputTypes = Object.keys(params.inputsObj.inputs).sort();
 
   // console.log("convertedDatum params\n" + jsonPrint(params));
 
   let convertedDatum = {};
   convertedDatum.user = {};
-  convertedDatum.user = datum.user;
+  convertedDatum.user = datum.screenName;
   convertedDatum.input = [];
   convertedDatum.output = [];
   convertedDatum.inputRaw = [];
@@ -432,44 +432,44 @@ function convertDatum(params, datum, generateInputRaw, callback){
     convertedDatum.output = [0, 0, 0];
   }
 
-  let magnitudeNormalized = 0;
-  let scoreNormalized = 0.5;
+  // let magnitudeNormalized = 0;
+  // let scoreNormalized = 0.5;
 
-  if (params.normalization.magnitude.max !== undefined) {
-    if (!params.normalization.magnitude.max) {
-      params.normalization.magnitude.max = 5; // KLUDGE!!
-    }
-    magnitudeNormalized = datum.inputHits.sentiment[0].magnitude/params.normalization.magnitude.max;
-    convertedDatum.input.push(magnitudeNormalized);
-    debug("NNC | MAG  "
-      + " | MIN:  " + params.normalization.magnitude.min.toFixed(2)
-      + " | MAX: " + params.normalization.magnitude.max.toFixed(2)
-      + " | ORG: " + datum.inputHits.sentiment[0].magnitude.toFixed(2)
-      + " | NORM: " + magnitudeNormalized.toFixed(2)
-    );
-  }
-  else {
-    convertedDatum.input.push(datum.inputHits.sentiment[0].magnitude);
-  }
+  // if (params.normalization.magnitude.max !== undefined) {
+  //   if (!params.normalization.magnitude.max) {
+  //     params.normalization.magnitude.max = 5; // KLUDGE!!
+  //   }
+  //   magnitudeNormalized = datum.inputHits.sentiment[0].magnitude/params.normalization.magnitude.max;
+  //   convertedDatum.input.push(magnitudeNormalized);
+  //   debug("NNC | MAG  "
+  //     + " | MIN:  " + params.normalization.magnitude.min.toFixed(2)
+  //     + " | MAX: " + params.normalization.magnitude.max.toFixed(2)
+  //     + " | ORG: " + datum.inputHits.sentiment[0].magnitude.toFixed(2)
+  //     + " | NORM: " + magnitudeNormalized.toFixed(2)
+  //   );
+  // }
+  // else {
+  //   convertedDatum.input.push(datum.inputHits.sentiment[0].magnitude);
+  // }
 
-  if ((params.normalization.score.min !== undefined) && (params.normalization.score.max !== undefined)) {
-    scoreNormalized = (datum.inputHits.sentiment[1].score + Math.abs(params.normalization.score.min))/(Math.abs(params.normalization.score.min) + Math.abs(params.normalization.score.max));
-    convertedDatum.input.push(scoreNormalized);
-    debug("NNC | SCORE"
-      + " | MIN: " + params.normalization.score.min.toFixed(2)
-      + " | MAX: " + params.normalization.score.max.toFixed(2)
-      + " | ORG: " + datum.inputHits.sentiment[1].score.toFixed(2)
-      + " | NORM: " + scoreNormalized.toFixed(2)
-    );
-  }
-  else {
-    convertedDatum.input.push(datum.inputHits.sentiment[1].score);
-  }
+  // if ((params.normalization.score.min !== undefined) && (params.normalization.score.max !== undefined)) {
+  //   scoreNormalized = (datum.inputHits.sentiment[1].score + Math.abs(params.normalization.score.min))/(Math.abs(params.normalization.score.min) + Math.abs(params.normalization.score.max));
+  //   convertedDatum.input.push(scoreNormalized);
+  //   debug("NNC | SCORE"
+  //     + " | MIN: " + params.normalization.score.min.toFixed(2)
+  //     + " | MAX: " + params.normalization.score.max.toFixed(2)
+  //     + " | ORG: " + datum.inputHits.sentiment[1].score.toFixed(2)
+  //     + " | NORM: " + scoreNormalized.toFixed(2)
+  //   );
+  // }
+  // else {
+  //   convertedDatum.input.push(datum.inputHits.sentiment[1].score);
+  // }
 
 
   async.eachSeries(inputTypes, function(inputType, cb0){
 
-    const inNames = params.inputs[inputType].sort();
+    const inNames = params.inputsObj.inputs[inputType].sort();
 
     async.eachSeries(inNames, function(inName, cb1){
 
@@ -479,7 +479,7 @@ function convertDatum(params, datum, generateInputRaw, callback){
         convertedDatum.inputRaw.push(inputName);
       }
 
-      if (datum.inputHits[inputType].includes(inputName)){
+      if ((datum.histograms[inputType] !== undefined) && (datum.histograms[inputType][inputName] !== undefined)){
         convertedDatum.input.push(1);
         async.setImmediate(function() {
           cb1();
@@ -541,7 +541,7 @@ function trainingSetPrepAndEvolve(params, options, callback){
 
     console.log(chalkAlert("NNC | START EVOLVE"
       + " | " + configuration.processName
-      + " | IN: " + params.trainingSet.meta.numInputs
+      + " | IN: " + params.inputsObj.meta.numInputs
       + " | IN: " + trainingSet[0].input.length
       + " | OUT: " + params.trainingSet.meta.numOutputs
       + " | OUT: " + trainingSet[0].output.length
@@ -734,13 +734,13 @@ function evolve(params, callback){
         console.log("NNC | EVOLVE ARCH"
           + " | " + configuration.processName
           + " | " + params.architecture.toUpperCase()
-          + " | INPUTS: " + params.trainingSet.meta.numInputs
+          + " | INPUTS: " + params.inputsObj.meta.numInputs
           + " | OUTPUTS: " + params.trainingSet.meta.numOutputs
         );
 
         network = new neataptic.Network(
-          params.trainingSet.meta.numInputs, 
-          params.trainingSet.meta.numOutputs
+          params.inputsObj.meta.numInputs, 
+          3
         );
 
         // network.nodes[0].name = "magnitude";
@@ -1032,8 +1032,8 @@ process.on("message", function(m) {
       statsObj.training.iterations = m.iterations;
 
       statsObj.inputsId = m.inputsId;
-      statsObj.inputs = {};
-      statsObj.inputs = m.inputs;
+      statsObj.inputsObj = {};
+      statsObj.inputsObj = m.inputsObj;
       statsObj.outputs = {};
       statsObj.outputs = m.outputs;
 
@@ -1045,7 +1045,7 @@ process.on("message", function(m) {
         seedNetworkId: m.seedNetworkId,
         seedNetworkRes: m.seedNetworkRes,
         inputsId: m.inputsId,
-        inputs: m.inputs,
+        inputsObj: m.inputsObj,
         outputs: m.outputs,
         trainingSet: m.trainingSet,
         normalization: m.normalization,
@@ -1094,8 +1094,8 @@ process.on("message", function(m) {
           + " | SEED RES %: " + m.seedNetworkRes.toFixed(2)
           + "\n THREADs: " + m.threads
           + "\n NET: " + m.networkObj.networkId + " | " + m.networkObj.successRate.toFixed(2) + "%"
-          + " | IN: " + m.trainingSet.meta.numInputs
-          + " | OUT: " + m.trainingSet.meta.numOutputs
+          // + " | IN: " + m.trainingSet.meta.numInputs
+          // + " | OUT: " + m.trainingSet.meta.numOutputs
           + "\n TRAINING SET: " + m.trainingSet.meta.setSize
           + " | ITRS: " + statsObj.training.iterations
         ));
@@ -1107,8 +1107,8 @@ process.on("message", function(m) {
           + "\n SEED: " + "---"
           + " | SEED RES %: " + "---"
           + "\n THREADs: " + m.threads
-          + " | IN: " + m.trainingSet.meta.numInputs
-          + " | OUT: " + m.trainingSet.meta.numOutputs
+          // + " | IN: " + m.trainingSet.meta.numInputs
+          // + " | OUT: " + m.trainingSet.meta.numOutputs
           + "\n TRAINING SET: " + m.trainingSet.meta.setSize
           + " | ITRS: " + statsObj.training.iterations
         ));
@@ -1133,18 +1133,19 @@ process.on("message", function(m) {
 
           let exportedNetwork = network.toJSON();
 
-          exportedNetwork.nodes[0].name = "magnitude";
-          exportedNetwork.nodes[0].inputType = "sentiment";
-          exportedNetwork.nodes[1].name = "score";
-          exportedNetwork.nodes[1].inputType = "sentiment";
+          // exportedNetwork.nodes[0].name = "magnitude";
+          // exportedNetwork.nodes[0].inputType = "sentiment";
+          // exportedNetwork.nodes[1].name = "score";
+          // exportedNetwork.nodes[1].inputType = "sentiment";
 
-          const nnInputTypes = Object.keys(evolveOptions.inputs).sort();
+          const nnInputTypes = Object.keys(evolveOptions.inputsObj.inputs).sort();
 
-          let nodeIndex = 2; // skip 
+          // let nodeIndex = 2; // skip 
+          let nodeIndex = 0; // 
 
           async.eachSeries(nnInputTypes, function(inputType, cb0){
 
-            const typeInputArray = evolveOptions.inputs[inputType].sort();
+            const typeInputArray = evolveOptions.inputsObj.inputs[inputType].sort();
 
             async.eachSeries(typeInputArray, function(inputName, cb1){
 
@@ -1167,7 +1168,7 @@ process.on("message", function(m) {
                 return cb0(err);
               }
 
-              console.log("... END NN NODE NAME TYPE: " + inputType);
+              debug("... END NN NODE NAME TYPE: " + inputType);
               cb0(err);
 
             });
@@ -1179,7 +1180,7 @@ process.on("message", function(m) {
             }
 
             nodeIndex = exportedNetwork.nodes.length - exportedNetwork.output;
-            console.log("OUTPUT INDEX START " + nodeIndex);
+            debug("OUTPUT INDEX START " + nodeIndex);
 
             if (exportedNetwork.nodes[nodeIndex].type !== "output") {
               console.log(chalkError("NOT OUTPUT ERROR " 
@@ -1196,7 +1197,7 @@ process.on("message", function(m) {
             nodeIndex++;
             exportedNetwork.nodes[nodeIndex].name = "right";
 
-            console.log("... END NETWORK NODE UPDATE: " + statsObj.training.testRunIde);
+            debug("... END NETWORK NODE UPDATE: " + statsObj.training.testRunId);
 
             let networkObj = {};
 
@@ -1217,8 +1218,8 @@ process.on("message", function(m) {
             networkObj.numInputs = exportedNetwork.input;
             networkObj.numOutputs = exportedNetwork.output;
             networkObj.inputsId = evolveOptions.inputsId;
-            networkObj.inputs = {};
-            networkObj.inputs = evolveOptions.inputs;
+            networkObj.inputsObj = {};
+            networkObj.inputsObj = evolveOptions.inputsObj;
             networkObj.outputs = {};
             networkObj.outputs = evolveOptions.outputs;
             networkObj.evolve = {};
