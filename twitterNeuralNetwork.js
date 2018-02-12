@@ -50,7 +50,8 @@ const User = mongoose.model("User", wordAssoDb.UserSchema);
 const histogramParser = require("@threeceelabs/histogram-parser");
 
 require("isomorphic-fetch");
-const Dropbox = require("dropbox").Dropbox;
+// const Dropbox = require("dropbox").Dropbox;
+const Dropbox = require("./js/dropbox").Dropbox;
 const pick = require("object.pick");
 const omit = require("object.omit");
 // const arrayUnique = require("array-unique");

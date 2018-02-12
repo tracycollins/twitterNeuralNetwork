@@ -62,7 +62,8 @@ configuration.keepaliveInterval = 30*ONE_SECOND;
 configuration.rxQueueInterval = 1*ONE_SECOND;
 
 require("isomorphic-fetch");
-const Dropbox = require('dropbox').Dropbox;
+// const Dropbox = require('dropbox').Dropbox;
+const Dropbox = require("./js/dropbox").Dropbox;
 
 const chalk = require("chalk");
 const chalkAlert = chalk.red;

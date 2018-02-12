@@ -12,7 +12,8 @@ const moment = require("moment");
 const arrayUnique = require("array-unique");
 
 require("isomorphic-fetch");
-const Dropbox = require('dropbox').Dropbox;
+// const Dropbox = require('dropbox').Dropbox;
+const Dropbox = require("./js/dropbox").Dropbox;
 
 const EventEmitter2 = require("eventemitter2").EventEmitter2;
 const async = require("async");
