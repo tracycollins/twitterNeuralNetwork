@@ -1,6 +1,6 @@
 {
   "name": "twitterneuralnetwork",
-  "version": "1.0.19",
+  "version": "1.0.20",
   "description": "twitter neural network",
   "main": "twitterNeuralNetwork.js",
   "dependencies": {
@@ -30,6 +30,7 @@
     "hashmap": "^2.3.0",
     "hashtag-regex": "^1.0.0",
     "isomorphic-fetch": "^2.2.1",
+    "jsonfile": "^4.0.0",
     "keyword-extractor": "0.0.15",
     "lodash": "^4.17.5",
     "mentions-regex": "^2.0.3",
