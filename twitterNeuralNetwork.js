@@ -12,7 +12,7 @@ const DEFAULT_HISTOGRAM_PARSE_DOMINANT_MIN = 0.4;
 
 const bestRuntimeNetworkFileName = "bestRuntimeNetwork.json";
 
-const TEST_MODE_LENGTH = 100;
+const TEST_MODE_LENGTH = 50;
 const TEST_DROPBOX_NN_LOAD = 5;
 const DEFAULT_USE_LOCAL_TRAINING_SETS = false;
 const DEFAULT_MAX_NEURAL_NETWORK_CHILDREN = 2;
@@ -59,6 +59,8 @@ const histogramParser = require("@threeceelabs/histogram-parser");
 require("isomorphic-fetch");
 // const Dropbox = require("dropbox").Dropbox;
 const Dropbox = require("./js/dropbox").Dropbox;
+const dropboxStreamingUpload = require("dropbox-streaming-upload").default;
+
 const pick = require("object.pick");
 const omit = require("object.omit");
 // const arrayUnique = require("array-unique");
@@ -202,6 +204,8 @@ let slackChannel = "#nn";
 let initMainInterval;
 
 let configuration = {};
+
+configuration.dropboxMaxFileUpload = DROPBOX_MAX_FILE_UPLOAD;
 
 configuration.inputsIdArray = [];
 configuration.saveFileQueueInterval = 1000;
@@ -894,17 +898,91 @@ function saveFile (params, callback){
 
   let options = {};
 
-  options.contents = JSON.stringify(params.obj, null, 2);
-  options.path = fullPath;
-  options.mode = params.mode || "overwrite";
-  options.autorename = params.autorename || false;
-
   if (params.localFlag) {
-    jsonfile.writeFile(fullPath, params.obj, function (err) {
-      if (callback !== undefined) { return callback(err); }
-    });
+
+    const source = fs.createReadStream(fullPath);
+
+    const jsonfileOptions = {};
+    // jsonfileOptions = {};
+
+    options.access_token = configuration.DROPBOX.DROPBOX_WORD_ASSO_ACCESS_TOKEN;
+    options.readable_stream = source;
+    options.file_size = sizeof(params.obj);
+    options.destination = params.dropboxFolder + "/" + params.file;
+    options.autorename = true;
+    options.mode = params.mode || "overwrite";
+    // options.mode = "overwrite";
+
+    console.log(chalkAlert("... SAVING " + fullPath + " > " + options.destination));
+
+    // jsonfile.writeFileSync(fullPath, params.obj, jsonfileOptions, function (err) {
+    jsonfile.writeFileSync(fullPath, params.obj, jsonfileOptions);
+
+      dropboxStreamingUpload(options).then(function(successMetadata) {
+        const savedSize = successMetadata.size/ONE_MEGABYTE;
+
+        console.log(chalkLog("SAVED DROPBOX JSON"
+          + " | " + successMetadata.path_display
+          + " | " + savedSize.toFixed(2) + " MBYTES"
+          // + " successMetadata\n" + jsonPrint(successMetadata)
+          // + " successMetadata\n" + jsonPrint(successMetadata)
+        ));
+
+        if (callback !== undefined) { return callback(null); }
+      })
+      .catch(function(error){
+
+          if (error.statusCode === 409){
+            console.error(chalkError("NNT | " + moment().format(compactDateTimeFormat) 
+              + " | !!! ERROR DROBOX JSON WRITE | FILE: " + fullPath 
+              + " | ERROR: PATH CONFLICT"
+              + " OPTIONS\n" + jsonPrint(options)
+            ));
+            if (callback !== undefined) { return callback(error.error_summary); }
+          }
+          if (error.status === 413){
+            console.error(chalkError("NNT | " + moment().format(compactDateTimeFormat) 
+              + " | !!! ERROR DROBOX JSON WRITE | FILE: " + fullPath 
+              + " | ERROR: 413"
+              // + " ERROR\n" + jsonPrint(error.error)
+            ));
+            if (callback !== undefined) { return callback(error.error_summary); }
+          }
+          else if (error.status === 429){
+            console.error(chalkError("NNT | " + moment().format(compactDateTimeFormat) 
+              + " | !!! ERROR DROBOX JSON WRITE | FILE: " + fullPath 
+              + " | ERROR: TOO MANY WRITES"
+              // + " ERROR\n" + "jsonPrint"(error.error)
+            ));
+            if (callback !== undefined) { return callback(error.error_summary); }
+          }
+          else if (error.status === 500){
+            console.error(chalkError("NNT | " + moment().format(compactDateTimeFormat) 
+              + " | !!! ERROR DROBOX JSON WRITE | FILE: " + fullPath 
+              + " | ERROR: DROPBOX SERVER ERROR"
+              // + " ERROR\n" + jsonPrint(error.error)
+            ));
+            if (callback !== undefined) { return callback(error.error_summary); }
+          }
+          else {
+            console.trace(chalkError("NNT | " + moment().format(compactDateTimeFormat) 
+              + " | !!! ERROR DROBOX JSON WRITE | FILE: " + fullPath 
+              + " | ERROR: " + error
+              + " | ERROR\n" + jsonPrint(error)
+              // + " ERROR\n" + jsonPrint(params)
+            ));
+            if (callback !== undefined) { return callback(error); }
+          }
+      });
+
+    // });
   }
   else {
+
+    options.contents = JSON.stringify(params.obj, null, 2);
+    options.autorename = params.autorename || false;
+    options.mode = params.mode || "overwrite";
+    options.path = fullPath;
 
     const dbFileUpload = function () {
 
@@ -1303,6 +1381,12 @@ function initStatsUpdate(cnf, callback){
 
 function loadHistogramsDropboxFolder(folder, callback){
 
+  if (configuration.createTrainingSetOnly) {
+    if (callback !== undefined) { 
+      return callback(null); 
+    }
+  }
+
   console.log(chalkNetwork("NNT | ... LOADING DROPBOX HISTOGRAMS FOLDER | " + folder));
 
   let options = {path: folder};
@@ -1481,6 +1565,12 @@ function loadHistogramsDropboxFolder(folder, callback){
 }
 
 function loadInputsDropboxFolder(folder, callback){
+
+  if (configuration.createTrainingSetOnly) {
+    if (callback !== undefined) { 
+      return callback(null); 
+    }
+  }
 
   console.log(chalkNetwork("NNT | ... LOADING DROPBOX INPUTS FOLDER | " + folder));
 
@@ -1694,10 +1784,11 @@ function loadTrainingSetsDropboxFolder(folder, callback){
 
             console.log(chalkInfo("NNT | DROPBOX TRAINING SET"
               + " [" + trainingSetHashMap.count() + "]"
-              + " | " + trainingSetObj.trainingSet.meta.numInputs + " INPUTS"
+              + " | TRAINING SET SIZE: " + trainingSetObj.trainingSet.meta.setSize
+              // + " | " + trainingSetObj.trainingSet.meta.numInputs + " INPUTS"
               + " | " + entry.name
               + " | " + trainingSetObj.trainingSetId
-              + "\n" + jsonPrint(trainingSetObj.entry)
+              // + "\n" + jsonPrint(trainingSetObj.entry)
             ));
 
             cb();
@@ -1725,7 +1816,7 @@ function loadTrainingSetsDropboxFolder(folder, callback){
 
           console.log(chalkNetwork("NNT | LOADED DROPBOX TRAINING SET"
             + " [" + trainingSetHashMap.count() + "]"
-            + " | " + trainingSetObj.trainingSet.meta.setSize + " DATUMS"
+            + " | TRAINING SET SIZE: " + trainingSetObj.trainingSet.meta.setSize
             + " | " + folder + "/" + entry.name
             + " | " + trainingSetObj.trainingSetId
             // + "\n" + jsonPrint(trainingSetObj.entry)
@@ -1751,6 +1842,15 @@ function loadTrainingSetsDropboxFolder(folder, callback){
 }
 
 function loadBestNetworkDropboxFolders (folders, callback){
+
+      // if (callback !== undefined) { callback(err, numNetworksLoaded); }
+
+  if (configuration.createTrainingSetOnly) {
+    if (callback !== undefined) { 
+      return callback(null, 0); 
+    }
+  }
+
 
   let numNetworksLoaded = 0;
 
@@ -3912,7 +4012,6 @@ function generateGlobalTrainingTestSet (userHashMap, callback){
   async.eachSeries(userIds, function(userId, cb){ 
 
     const user = userHashMap.get(userId);
-    const userHistograms = user.histograms;
 
     let sentimentObj = {};
     sentimentObj.magnitude = 0;
@@ -3988,25 +4087,36 @@ function generateGlobalTrainingTestSet (userHashMap, callback){
 
     trainingSetHashMap.set(trainingSetObj.trainingSetId, {entry: trainingSetEntry, trainingSetObj: trainingSetObj} );
 
-    const hostLocalTrainingSetFolder = "/Users/tc/Dropbox/Apps/wordAssociation/config/utility/" + hostname + "/trainingSets";
+    const hostLocalTrainingSetFolder = __dirname;
     const googleLocalTrainingSetFolder = "/home/tc/wordAssociation/config/trainingSets";
 
     const file = "trainingSet_" + trainingSetId + ".json";
-    let folder = (hostname === "google") ? defaultTrainingSetFolder : localTrainingSetFolder;
+    let dropboxFolder = (hostname === "google") ? defaultTrainingSetFolder : localTrainingSetFolder;
+    let folder = dropboxFolder;
     let localFlag = false;
 
     const trainingSetObjSize = sizeof(trainingSetObj);
 
-    if (trainingSetObjSize > DROPBOX_MAX_FILE_UPLOAD) {
+    if (configuration.testMode) {
+      configuration.dropboxMaxFileUpload = ONE_MEGABYTE;
+    }
+
+    if (trainingSetObjSize > configuration.dropboxMaxFileUpload) {
+
       localFlag = true;
+
       folder = (hostname === "google") ? googleLocalTrainingSetFolder : hostLocalTrainingSetFolder;
-      console.log(chalkAlert("NNT | *** TRAINING SET MEMORY SIZE > " + (sizeof(trainingSetObj)/ONE_MEGABYTE).toFixed(2) + " BYTES"
-        + " | " + (DROPBOX_MAX_FILE_UPLOAD/ONE_MEGABYTE).toFixed(2) + " DROPBOX_MAX_FILE_UPLOAD"
-        + " | SAVING LOCALLY: " + folder
+
+      const objSizeMBytes = sizeof(trainingSetObj)/ONE_MEGABYTE;
+      const maxSizeMBytes = DROPBOX_MAX_FILE_UPLOAD/ONE_MEGABYTE;
+
+      console.log(chalkAlert("NNT | *** TRAINING SET MEMORY SIZE > " + objSizeMBytes.toFixed(2) + " MBYTES"
+        + " | " + maxSizeMBytes.toFixed(2) + " DROPBOX_MAX_FILE_UPLOAD"
+        + " | SAVING LOCALLY FIRST: " + folder + "/" + file
       ));
     }
 
-    saveFileQueue.push({localFlag: localFlag, folder: folder, file: file, obj: trainingSetObj});
+    saveFileQueue.push({localFlag: localFlag, folder: folder, dropboxFolder: dropboxFolder, file: file, obj: trainingSetObj});
 
     console.log(chalkAlert("\nNNT | ======================= END GENERATE GLOBAL TRAINING SET ======================="));
     callback(null);
@@ -4106,6 +4216,8 @@ function generateRandomEvolveConfig (cnf, callback){
     config.inputsObj = inputsHashMap.get(config.seedInputsId).inputsObj;
   }
 
+  let tObj = {};
+
   if (!cnf.createTrainingSet && !cnf.createTrainingSetOnly && cnf.loadTrainingSetFromFile && trainingSetReady) {
 
     console.log(chalkAlert("LOAD GLOBAL TRAINING SET FROM HASHMAP: " + GLOBAL_TRAINING_SET_ID));
@@ -4115,7 +4227,7 @@ function generateRandomEvolveConfig (cnf, callback){
       return callback("TRAINING SET NOT IN HASHMAP: " + GLOBAL_TRAINING_SET_ID, null);
     }
 
-    const tObj = trainingSetHashMap.get(GLOBAL_TRAINING_SET_ID);
+    tObj = trainingSetHashMap.get(GLOBAL_TRAINING_SET_ID);
 
     console.log(chalkAlert("NNT | USING TRAINING SET " + tObj.trainingSetObj.trainingSetId));
 
@@ -4142,7 +4254,7 @@ function generateRandomEvolveConfig (cnf, callback){
         return(callback(err, null));
       }
 
-      const tObj = trainingSetHashMap.get(GLOBAL_TRAINING_SET_ID);
+      tObj = trainingSetHashMap.get(GLOBAL_TRAINING_SET_ID);
 
       console.log(chalkAlert("NNT | USING TRAINING SET " + GLOBAL_TRAINING_SET_ID));
 
