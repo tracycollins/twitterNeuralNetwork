@@ -2019,7 +2019,9 @@ function loadBestNetworkDropboxFolders (folders, callback){
 
               if ((options.networkId !== undefined) 
                 || ((folder === "/config/utility/best/neuralNetworks") && (networkObj.successRate > configuration.globalMinSuccessRate))
+                || ((folder === "/config/utility/best/neuralNetworks") && (networkObj.matchRate > configuration.globalMinSuccessRate))
                 || ((folder !== "/config/utility/best/neuralNetworks") && (networkObj.successRate > configuration.localMinSuccessRate))
+                || ((folder !== "/config/utility/best/neuralNetworks") && (networkObj.matchRate > configuration.localMinSuccessRate))
               ) {
 
                 bestNetworkHashMap.set(networkObj.networkId, { entry: entry, networkObj: networkObj});
@@ -2063,7 +2065,7 @@ function loadBestNetworkDropboxFolders (folders, callback){
                   + " | " + networkObj.networkId
                 ));
 
-                if (!currentBestNetwork || (networkObj.successRate > currentBestNetwork.successRate)) {
+                if (!currentBestNetwork || (networkObj.matchRate > currentBestNetwork.matchRate)) {
 
                   currentBestNetwork = networkObj;
 
