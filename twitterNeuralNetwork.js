@@ -4000,8 +4000,8 @@ function generateGlobalTrainingTestSet (userHashMap, callback){
     if (trainingSetObjSize > DROPBOX_MAX_FILE_UPLOAD) {
       localFlag = true;
       folder = (hostname === "google") ? googleLocalTrainingSetFolder : hostLocalTrainingSetFolder;
-      console.log(chalkAlert("NNT | *** TRAINING SET MEMORY SIZE > " + (sizeof(trainingSetObj)/ONE_MEGABYTE) + " BYTES"
-        + " | " + (DROPBOX_MAX_FILE_UPLOAD/ONE_MEGABYTE) + " DROPBOX_MAX_FILE_UPLOAD"
+      console.log(chalkAlert("NNT | *** TRAINING SET MEMORY SIZE > " + (sizeof(trainingSetObj)/ONE_MEGABYTE).toFixed(2) + " BYTES"
+        + " | " + (DROPBOX_MAX_FILE_UPLOAD/ONE_MEGABYTE).toFixed(2) + " DROPBOX_MAX_FILE_UPLOAD"
         + " | SAVING LOCALLY: " + folder
       ));
     }
