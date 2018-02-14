@@ -1,6 +1,6 @@
 {
   "name": "twitterneuralnetwork",
-  "version": "1.0.20",
+  "version": "1.0.21",
   "description": "twitter neural network",
   "main": "twitterNeuralNetwork.js",
   "dependencies": {
@@ -35,7 +35,7 @@
     "lodash": "^4.17.5",
     "mentions-regex": "^2.0.3",
     "moment": "^2.20.1",
-    "mongoose": "^5.0.4",
+    "mongoose": "^5.0.5",
     "mongoose-paginate": "^5.0.3",
     "neataptic": "^1.4.7",
     "node-emoji": "^1.8.1",
