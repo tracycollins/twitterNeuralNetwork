@@ -1697,7 +1697,7 @@ function loadInputsDropboxFolder(folder, callback){
             let totalInputs = 0;
 
             inputTypes.forEach(function(inputType){
-              console.log("NNT | " + inputsObj.inputsId + " | INPUT TYPE: " + inputType + " | " + inputsObj.inputs[inputType].length + " INPUTS");
+              debug("NNT | " + inputsObj.inputsId + " | INPUT TYPE: " + inputType + " | " + inputsObj.inputs[inputType].length + " INPUTS");
               totalInputs += inputsObj.inputs[inputType].length;
             });
 
@@ -3118,11 +3118,11 @@ function initialize(cnf, callback){
 
           debug("initStatsUpdate cnf2\n" + jsonPrint(cnf2));
 
-          loadHistogramsDropboxFolder(defaultHistogramsFolder, function(err){
+          // loadHistogramsDropboxFolder(defaultHistogramsFolder, function(err){
             loadInputsDropboxFolder(defaultInputsFolder, function(err){
               return(callback(err, cnf2));
             });
-          });
+          // });
 
         });
       }
@@ -3218,11 +3218,11 @@ function initialize(cnf, callback){
             }
             debug("initStatsUpdate cnf2\n" + jsonPrint(cnf2));
 
-            loadHistogramsDropboxFolder(defaultHistogramsFolder, function(err){
+            // loadHistogramsDropboxFolder(defaultHistogramsFolder, function(err){
               loadInputsDropboxFolder(defaultInputsFolder, function(err){
                 return(callback(err, cnf2));
               });
-            });
+            // });
 
           });
         }
@@ -4394,8 +4394,8 @@ function initMain(cnf, callback){
   showStats();
   console.log(chalkAlert("NNT | ***===*** INIT MAIN ***===*** | INTERVAL: " + msToTime(cnf.initMainIntervalTime)));
 
-  loadHistogramsDropboxFolder(defaultHistogramsFolder, function(err){
-    loadInputsDropboxFolder(defaultInputsFolder, function(err){
+  // loadHistogramsDropboxFolder(defaultHistogramsFolder, function(err){
+    // loadInputsDropboxFolder(defaultInputsFolder, function(err){
       let seedOpt = {};
       seedOpt.folders = [globalBestNetworkFolder, localBestNetworkFolder];
 
@@ -4466,39 +4466,41 @@ function initMain(cnf, callback){
             // console.log(chalkAlert("NNT | inputsHashMap keys: " + inputsHashMap.keys()));
 
 
-            loadInputsDropboxFolder(defaultInputsFolder, function(err){
+            loadHistogramsDropboxFolder(defaultHistogramsFolder, function(err){
+              loadInputsDropboxFolder(defaultInputsFolder, function(err){
 
-              generateGlobalTrainingTestSet(trainingSetUsersHashMap, function(err){
+                generateGlobalTrainingTestSet(trainingSetUsersHashMap, function(err){
 
-                if (err) {
-                  initMainReady = true;
+                  if (err) {
+                    initMainReady = true;
+                    trainingSetReady = true;
+                    createTrainingSetBusy = false;
+                    return(callback(err, null));
+                  }
+
+                  statsObj.classifiedUserHistogram = {};
+                  statsObj.classifiedUserHistogram = classifiedUserHistogram;
+
+                  classifiedUserHistogram.left = 0;
+                  classifiedUserHistogram.right = 0;
+                  classifiedUserHistogram.neutral = 0;
+                  classifiedUserHistogram.positive = 0;
+                  classifiedUserHistogram.negative = 0;
+                  classifiedUserHistogram.none = 0;
+
                   trainingSetReady = true;
                   createTrainingSetBusy = false;
-                  return(callback(err, null));
-                }
+                  initMainReady = true;
 
-                statsObj.classifiedUserHistogram = {};
-                statsObj.classifiedUserHistogram = classifiedUserHistogram;
-
-                classifiedUserHistogram.left = 0;
-                classifiedUserHistogram.right = 0;
-                classifiedUserHistogram.neutral = 0;
-                classifiedUserHistogram.positive = 0;
-                classifiedUserHistogram.negative = 0;
-                classifiedUserHistogram.none = 0;
-
-                trainingSetReady = true;
-                createTrainingSetBusy = false;
-                initMainReady = true;
-
-                callback(null, null);
+                  callback(null, null);
+                });
               });
             });
           });
         }
       });
-    });
-  });
+    // });
+  // });
 }
 
 let networkCreateInterval;
