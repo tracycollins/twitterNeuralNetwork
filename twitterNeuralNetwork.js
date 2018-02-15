@@ -1086,18 +1086,18 @@ function saveFile (params, callback){
   }
 }
 
-function saveFileRetry (timeout, path, file, jsonObj, callback){
-  setTimeout(function(){
-    console.log(chalkError("NNT | SAVE RETRY | TIMEOUT: " + timeout + " | " + path + "/" + file));
-    saveFile({folder:path, file:file, obj:jsonObj}, function(err){
-      if (err) {
-        console.log(chalkError("NNT | SAVE RETRY ON ERROR: " + path + "/" + file));
-        // saveFileRetry(timeout, path, file, jsonObj);
-      }
-      if (callback !== undefined) { callback(err); }
-    });
-  }, timeout);
-}
+// function saveFileRetry (timeout, path, file, jsonObj, callback){
+//   setTimeout(function(){
+//     console.log(chalkError("NNT | SAVE RETRY | TIMEOUT: " + timeout + " | " + path + "/" + file));
+//     saveFile({folder:path, file:file, obj:jsonObj}, function(err){
+//       if (err) {
+//         console.log(chalkError("NNT | SAVE RETRY ON ERROR: " + path + "/" + file));
+//         // saveFileRetry(timeout, path, file, jsonObj);
+//       }
+//       if (callback !== undefined) { callback(err); }
+//     });
+//   }, timeout);
+// }
 
 function loadFile(path, file, callback) {
 
@@ -1381,7 +1381,10 @@ function initStatsUpdate(cnf, callback){
 
 function loadHistogramsDropboxFolder(folder, callback){
 
-  if (configuration.createTrainingSetOnly) {
+  if (!configuration.createTrainingSetOnly) {
+
+    console.log(chalkNetwork("NNT | NOT CREATING TRAINING SET ... SKIPPING LOADING DROPBOX HISTOGRAMS FOLDER | " + folder));
+
     if (callback !== undefined) { 
       return callback(null); 
     }
@@ -4462,11 +4465,10 @@ function initMain(cnf, callback){
               quit("UPDATE CLASSIFIED USER ERROR");
             }
 
-            console.log(chalkAlert("NNT | ... START CREATE TRAINING SETS: NUM OF INPUTS SETS: " + inputsHashMap.count()));
-            // console.log(chalkAlert("NNT | inputsHashMap keys: " + inputsHashMap.keys()));
-
+            console.log(chalkAlert("NNT | ... START CREATE TRAINING SET"));
 
             loadHistogramsDropboxFolder(defaultHistogramsFolder, function(err){
+
               loadInputsDropboxFolder(defaultInputsFolder, function(err){
 
                 generateGlobalTrainingTestSet(trainingSetUsersHashMap, function(err){
