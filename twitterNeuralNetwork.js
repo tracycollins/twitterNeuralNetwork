@@ -4395,7 +4395,10 @@ function initMain(cnf, callback){
   initMainReady = false;
 
   showStats();
-  console.log(chalkAlert("NNT | ***===*** INIT MAIN ***===*** | INTERVAL: " + msToTime(cnf.initMainIntervalTime)));
+  console.log(chalkAlert("NNT | ***===*** INIT MAIN ***===***"
+    + " | " + getTimeStamp()
+    + " | INTERVAL: " + msToTime(cnf.initMainIntervalTime)
+  ));
 
   // loadHistogramsDropboxFolder(defaultHistogramsFolder, function(err){
     // loadInputsDropboxFolder(defaultInputsFolder, function(err){
