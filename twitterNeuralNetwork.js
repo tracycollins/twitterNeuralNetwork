@@ -915,8 +915,8 @@ function saveFile (params, callback){
 
     console.log(chalkAlert("... SAVING " + fullPath + " > " + options.destination));
 
-    // jsonfile.writeFileSync(fullPath, params.obj, jsonfileOptions, function (err) {
-    jsonfile.writeFileSync(fullPath, params.obj, jsonfileOptions);
+    jsonfile.writeFile(fullPath, params.obj, jsonfileOptions, function (err) {
+    // jsonfile.writeFileSync(fullPath, params.obj, jsonfileOptions);
 
       dropboxStreamingUpload(options).then(function(successMetadata) {
         const savedSize = successMetadata.size/ONE_MEGABYTE;
@@ -975,7 +975,7 @@ function saveFile (params, callback){
           }
       });
 
-    // });
+    });
   }
   else {
 
