@@ -2701,7 +2701,7 @@ function initialize(cnf, callback){
     console.log("\nNNT | %%%%%%%%%%%%%%\nNNT |  DEBUG ENABLED \nNNT | %%%%%%%%%%%%%%\n");
   }
 
-  cnf.processName = process.env.TNN_PROCESS_NAME || "twitterNeuralNetwork";
+  cnf.processName = process.env.TNN_PROCESS_NAME || "node_twitterNeuralNetwork";
   cnf.runId = process.env.TNN_RUN_ID || statsObj.runId;
 
   cnf.verbose = process.env.TNN_VERBOSE_MODE || false ;
@@ -4095,7 +4095,7 @@ function generateGlobalTrainingTestSet (userHashMap, callback){
     const hostLocalTrainingSetFolder = __dirname;
     const googleLocalTrainingSetFolder = "/home/tc/wordAssociation/config/trainingSets";
 
-    const file = "trainingSet_" + trainingSetId + ".json";
+    const file = trainingSetId + "_" + statsObj.runId + ".json";
     let dropboxFolder = (hostname === "google") ? defaultTrainingSetFolder : localTrainingSetFolder;
     let folder = dropboxFolder;
     let localFlag = false;
@@ -4870,7 +4870,11 @@ function initTimeout(callback){
 
     configuration = cnf;
 
-    console.log(chalkBlue("\n\nNNT | " + cnf.processName + " STARTED " + getTimeStamp() + "\n" + jsonPrint(configuration)));
+    console.log(chalkBlue("\n\nNNT"
+      + " | " + cnf.processName 
+      + " STARTED " + getTimeStamp() 
+      + "\n" + jsonPrint(configuration)
+    ));
 
     requiredTrainingSet.forEach(function(userId) {
       console.log(chalkLog("NNT | ... REQ TRAINING SET | @" + userId));
