@@ -918,6 +918,11 @@ function saveFile (params, callback){
     jsonfile.writeFile(fullPath, params.obj, jsonfileOptions, function (err) {
     // jsonfile.writeFileSync(fullPath, params.obj, jsonfileOptions);
 
+      if (err) {
+        console.log(chalkError("JSON WRITE FILE ERROR: " + err));
+        if (callback !== undefined) { return callback(null); }
+      }
+
       dropboxStreamingUpload(options).then(function(successMetadata) {
         const savedSize = successMetadata.size/ONE_MEGABYTE;
 
