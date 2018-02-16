@@ -12,7 +12,7 @@ const DEFAULT_HISTOGRAM_PARSE_DOMINANT_MIN = 0.4;
 
 const bestRuntimeNetworkFileName = "bestRuntimeNetwork.json";
 
-const TEST_MODE_LENGTH = 50;
+const TEST_MODE_LENGTH = 2500;
 const TEST_DROPBOX_NN_LOAD = 5;
 const DEFAULT_USE_LOCAL_TRAINING_SETS = false;
 const DEFAULT_MAX_NEURAL_NETWORK_CHILDREN = 2;
@@ -150,6 +150,7 @@ let trainingSetHashMap = new HashMap();
 // let trainingSetHashMap = {};
 let neuralNetworkChildHashMap = {};
 let initMainReady = false;
+let initMainBusy = false;
 let trainingSetReady = false;
 let createTrainingSetBusy = false;
 
@@ -900,85 +901,90 @@ function saveFile (params, callback){
 
   if (params.localFlag) {
 
-    const source = fs.createReadStream(fullPath);
 
     const jsonfileOptions = {};
-    // jsonfileOptions = {};
 
     options.access_token = configuration.DROPBOX.DROPBOX_WORD_ASSO_ACCESS_TOKEN;
-    options.readable_stream = source;
     options.file_size = sizeof(params.obj);
     options.destination = params.dropboxFolder + "/" + params.file;
     options.autorename = true;
     options.mode = params.mode || "overwrite";
-    // options.mode = "overwrite";
+    options.mode = "overwrite";
 
     console.log(chalkAlert("... SAVING " + fullPath + " > " + options.destination));
 
-    jsonfile.writeFile(fullPath, params.obj, jsonfileOptions, function (err) {
-    // jsonfile.writeFileSync(fullPath, params.obj, jsonfileOptions);
+    jsonfile.writeFile(fullPath, params.obj, function (err) {
+    // jsonfile.writeFileSync(fullPath, params.obj);
 
       if (err) {
         console.log(chalkError("JSON WRITE FILE ERROR: " + err));
         if (callback !== undefined) { return callback(null); }
       }
 
-      dropboxStreamingUpload(options).then(function(successMetadata) {
-        const savedSize = successMetadata.size/ONE_MEGABYTE;
+      setTimeout(function(){
 
-        console.log(chalkLog("SAVED DROPBOX JSON"
-          + " | " + successMetadata.path_display
-          + " | " + savedSize.toFixed(2) + " MBYTES"
-          // + " successMetadata\n" + jsonPrint(successMetadata)
-          // + " successMetadata\n" + jsonPrint(successMetadata)
-        ));
+        const source = fs.createReadStream(fullPath);
 
-        if (callback !== undefined) { return callback(null); }
-      })
-      .catch(function(error){
+        options.readable_stream = source;
 
-          if (error.statusCode === 409){
-            console.error(chalkError("NNT | " + moment().format(compactDateTimeFormat) 
-              + " | !!! ERROR DROBOX JSON WRITE | FILE: " + fullPath 
-              + " | ERROR: PATH CONFLICT"
-              + " OPTIONS\n" + jsonPrint(options)
-            ));
-            if (callback !== undefined) { return callback(error.error_summary); }
-          }
-          if (error.status === 413){
-            console.error(chalkError("NNT | " + moment().format(compactDateTimeFormat) 
-              + " | !!! ERROR DROBOX JSON WRITE | FILE: " + fullPath 
-              + " | ERROR: 413"
-              // + " ERROR\n" + jsonPrint(error.error)
-            ));
-            if (callback !== undefined) { return callback(error.error_summary); }
-          }
-          else if (error.status === 429){
-            console.error(chalkError("NNT | " + moment().format(compactDateTimeFormat) 
-              + " | !!! ERROR DROBOX JSON WRITE | FILE: " + fullPath 
-              + " | ERROR: TOO MANY WRITES"
-              // + " ERROR\n" + "jsonPrint"(error.error)
-            ));
-            if (callback !== undefined) { return callback(error.error_summary); }
-          }
-          else if (error.status === 500){
-            console.error(chalkError("NNT | " + moment().format(compactDateTimeFormat) 
-              + " | !!! ERROR DROBOX JSON WRITE | FILE: " + fullPath 
-              + " | ERROR: DROPBOX SERVER ERROR"
-              // + " ERROR\n" + jsonPrint(error.error)
-            ));
-            if (callback !== undefined) { return callback(error.error_summary); }
-          }
-          else {
-            console.trace(chalkError("NNT | " + moment().format(compactDateTimeFormat) 
-              + " | !!! ERROR DROBOX JSON WRITE | FILE: " + fullPath 
-              + " | ERROR: " + error
-              + " | ERROR\n" + jsonPrint(error)
-              // + " ERROR\n" + jsonPrint(params)
-            ));
-            if (callback !== undefined) { return callback(error); }
-          }
-      });
+        dropboxStreamingUpload(options).then(function(successMetadata) {
+          const savedSize = successMetadata.size/ONE_MEGABYTE;
+
+          console.log(chalkLog("SAVED DROPBOX JSON"
+            + " | " + successMetadata.path_display
+            + " | " + savedSize.toFixed(2) + " MBYTES"
+            // + " successMetadata\n" + jsonPrint(successMetadata)
+            // + " successMetadata\n" + jsonPrint(successMetadata)
+          ));
+
+          if (callback !== undefined) { return callback(null); }
+        })
+        .catch(function(error){
+
+            if (error.statusCode === 409){
+              console.error(chalkError("NNT | " + moment().format(compactDateTimeFormat) 
+                + " | !!! ERROR DROBOX JSON WRITE | FILE: " + fullPath 
+                + " | ERROR: PATH CONFLICT"
+                + " OPTIONS\n" + jsonPrint(options)
+              ));
+              if (callback !== undefined) { return callback(error.error_summary); }
+            }
+            if (error.status === 413){
+              console.error(chalkError("NNT | " + moment().format(compactDateTimeFormat) 
+                + " | !!! ERROR DROBOX JSON WRITE | FILE: " + fullPath 
+                + " | ERROR: 413"
+                // + " ERROR\n" + jsonPrint(error.error)
+              ));
+              if (callback !== undefined) { return callback(error.error_summary); }
+            }
+            else if (error.status === 429){
+              console.error(chalkError("NNT | " + moment().format(compactDateTimeFormat) 
+                + " | !!! ERROR DROBOX JSON WRITE | FILE: " + fullPath 
+                + " | ERROR: TOO MANY WRITES"
+                // + " ERROR\n" + "jsonPrint"(error.error)
+              ));
+              if (callback !== undefined) { return callback(error.error_summary); }
+            }
+            else if (error.status === 500){
+              console.error(chalkError("NNT | " + moment().format(compactDateTimeFormat) 
+                + " | !!! ERROR DROBOX JSON WRITE | FILE: " + fullPath 
+                + " | ERROR: DROPBOX SERVER ERROR"
+                // + " ERROR\n" + jsonPrint(error.error)
+              ));
+              if (callback !== undefined) { return callback(error.error_summary); }
+            }
+            else {
+              console.trace(chalkError("NNT | " + moment().format(compactDateTimeFormat) 
+                + " | !!! ERROR DROBOX JSON WRITE | FILE: " + fullPath 
+                + " | ERROR: " + error
+                + " | ERROR\n" + jsonPrint(error)
+                // + " ERROR\n" + jsonPrint(params)
+              ));
+              if (callback !== undefined) { return callback(error); }
+            }
+        });
+
+      }, 1000);
 
     });
   }
@@ -1090,19 +1096,6 @@ function saveFile (params, callback){
     }
   }
 }
-
-// function saveFileRetry (timeout, path, file, jsonObj, callback){
-//   setTimeout(function(){
-//     console.log(chalkError("NNT | SAVE RETRY | TIMEOUT: " + timeout + " | " + path + "/" + file));
-//     saveFile({folder:path, file:file, obj:jsonObj}, function(err){
-//       if (err) {
-//         console.log(chalkError("NNT | SAVE RETRY ON ERROR: " + path + "/" + file));
-//         // saveFileRetry(timeout, path, file, jsonObj);
-//       }
-//       if (callback !== undefined) { callback(err); }
-//     });
-//   }, timeout);
-// }
 
 function loadFile(path, file, callback) {
 
@@ -1549,7 +1542,7 @@ function loadHistogramsDropboxFolder(folder, callback){
 
               const fldr = (hostname === "google") ? defaultInputsFolder : localInputsFolder;
 
-              saveFileQueue.push({localFlag: false, folder: fldr, file: newInputsFile, obj: newInputsObj});
+              // saveFileQueue.push({localFlag: false, folder: fldr, file: newInputsFile, obj: newInputsObj});
 
               cb();
             });
@@ -4398,6 +4391,7 @@ let nnChildId = "NNC_" + nnChildIndex;
 function initMain(cnf, callback){
 
   initMainReady = false;
+  initMainBusy = true;
 
   showStats();
   console.log(chalkAlert("NNT | ***===*** INIT MAIN ***===***"
@@ -4448,12 +4442,14 @@ function initMain(cnf, callback){
             if (err) {
               console.log(chalkError("*** LOAD TRAINING SETS FOLDER\n" + jsonPrint(err)));
               initMainReady = true;
+              initMainBusy = false;
               createTrainingSetBusy = false;
               trainingSetReady = false;
               return(callback(err, null));
             }
 
             initMainReady = true;
+            initMainBusy = false;
             createTrainingSetBusy = false;
             trainingSetReady = true;
 
@@ -4483,6 +4479,7 @@ function initMain(cnf, callback){
 
                   if (err) {
                     initMainReady = true;
+                    initMainBusy = false;
                     trainingSetReady = true;
                     createTrainingSetBusy = false;
                     return(callback(err, null));
@@ -4501,6 +4498,7 @@ function initMain(cnf, callback){
                   trainingSetReady = true;
                   createTrainingSetBusy = false;
                   initMainReady = true;
+                  initMainBusy = false;
 
                   callback(null, null);
                 });
@@ -4949,27 +4947,31 @@ initTimeout(function(){
   initMainInterval = setInterval(function(){
 
     console.log(chalkAlert("NNT | +++ INIT MAIN INTERVAL"
+      + " | initMainReady: " + initMainReady
       + " | trainingSetReady: " + trainingSetReady
       + " | createTrainingSetBusy: " + createTrainingSetBusy
     ));
 
     if (initMainReady) {
-      initMain(configuration, function(){
-        debug(chalkLog("INIT MAIN CALLBACK"));
+      loadConfigFile(dropboxConfigHostFolder, dropboxConfigFile, function(err, configLoadedFlag){
+        initMain(configuration, function(){
+          debug(chalkLog("INIT MAIN CALLBACK"));
+        });
       });
     }
     else {
       console.log(chalkAlert("NNT | ... INIT MAIN INTERVAL | NOT READY"
-        + " | LOADING HISTOGRAMS + INPUTS "
+        // + " | LOADING HISTOGRAMS + INPUTS "
       ));
 
-      loadConfigFile(dropboxConfigHostFolder, dropboxConfigFile, function(err, configLoadedFlag){
-        loadHistogramsDropboxFolder(defaultHistogramsFolder, function(err){
-          loadInputsDropboxFolder(defaultInputsFolder, function(err){
-            // return(callback(err, cnf2));
-          });
-        });
-      });
+      // loadConfigFile(dropboxConfigHostFolder, dropboxConfigFile, function(err, configLoadedFlag){
+      //   initMainBusy = false;
+      //   // loadHistogramsDropboxFolder(defaultHistogramsFolder, function(err){
+      //     // loadInputsDropboxFolder(defaultInputsFolder, function(err){
+      //       // return(callback(err, cnf2));
+      //     // });
+      //   // });
+      // });
     }
 
   }, configuration.initMainIntervalTime);
