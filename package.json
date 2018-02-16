@@ -4,6 +4,7 @@
   "description": "twitter neural network",
   "main": "twitterNeuralNetwork.js",
   "dependencies": {
+    "@davvo/drbx": "^2.1.0",
     "@google-cloud/vision": "^0.15.2",
     "@threeceelabs/histogram-parser": "^1.0.7",
     "@threeceelabs/mongoose-twitter": "^1.0.83",
@@ -53,7 +54,8 @@
     "slack-node": "^0.1.8",
     "string": "^3.3.3",
     "text-table": "^0.2.0",
-    "util": "^0.10.3"
+    "util": "^0.10.3",
+    "write-json-file": "^2.3.0"
   },
   "devDependencies": {},
   "scripts": {

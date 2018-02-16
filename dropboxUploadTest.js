@@ -751,26 +751,10 @@ function showStats(options){
   else {
     console.log(chalkLog("NNT | S"
       + " | CPUs: " + statsObj.cpus
-      + " | " + testObj.testRunId
-      + " | " + configuration.networkCreateMode.toUpperCase()
       + " | RUN " + statsObj.elapsed
       + " | NOW " + moment().format(compactDateTimeFormat)
       + " | STRT " + moment(parseInt(statsObj.startTime)).format(compactDateTimeFormat)
-      + " | ITR " + configuration.evolve.iterations
     ));
-
-    console.log(chalkLog("NNT | CL U HIST"
-      + " | L: " + classifiedUserHistogram.left
-      + " | R: " + classifiedUserHistogram.right
-      + " | N: " + classifiedUserHistogram.neutral
-      + " | +: " + classifiedUserHistogram.positive
-      + " | -: " + classifiedUserHistogram.negative
-      + " | 0: " + classifiedUserHistogram.none
-    ));
-
-    if (!configuration.createTrainingSetOnly) {
-      printNetworkCreateResultsHashmap();
-    }
 
   }
 }
@@ -779,82 +763,11 @@ function quit(options){
 
   console.log(chalkAlert( "\n\nNNT | ... QUITTING ...\n\n" ));
 
-  clearInterval(initMainInterval);
-
   statsObj.elapsed = msToTime(moment().valueOf() - statsObj.startTime);
 
-  if (process.env.TNN_BATCH_MODE){
-    slackChannel = "#nn_batch";
-  }
-
-  let slackText = "";
-
-  if (options !== undefined) {
-
-    if (options.networkObj !== undefined) {
-      const snid = (options.networkObj.evolve && (options.networkObj.evolve.options.network !== undefined)) 
-        ? options.networkObj.evolve.options.networkObj.networkId 
-        + " | " + options.networkObj.evolve.options.networkObj.successRate.toFixed(2) + "%"
-        : "-" ;
-
-      slackText = "\n*" + statsObj.runId + "*";
-
-      async.eachSeries(Object.keys(neuralNetworkChildHashMap), function(nnChildId, cb){
-
-        if (statsObj.tests[testObj.testRunId][nnChildId].results) {
-          slackText = slackText + "\n*RES: " + statsObj.tests[testObj.testRunId][nnChildId].results.successRate.toFixed(2) + " %*";
-        }
-        slackText = slackText + " | RUN " + statsObj.elapsed;
-        slackText = slackText + "\nTESTS: " + statsObj.tests[testObj.testRunId][nnChildId].results.numTests;
-        slackText = slackText + " | PASS: " + statsObj.tests[testObj.testRunId][nnChildId].results.numPassed;
-        slackText = slackText + " | SKIP: " + statsObj.tests[testObj.testRunId][nnChildId].results.numSkipped;
-        slackText = slackText + " | SEED NET: " + snid;
-        slackText = slackText + "\nEVOLVE OPTIONS\n" + jsonPrint(statsObj.evolve[nnChildId].options);
-        slackText = slackText + "\nTRAIN OPTIONS\n" + jsonPrint(statsObj.train[nnChildId].options);
-
-        cb();
-
-      }, function(){
-        console.log("NNT | SLACK TEXT: " + slackText);
-        slackPostMessage(slackChannel, slackText);
-      });
-
-    }
-    else {
-
-      slackText = "\n*" + statsObj.runId + "*";
-      slackText = slackText + " | RUN " + statsObj.elapsed;
-      slackText = slackText + " | QUIT CAUSE: " + options;
-
-      console.log("NNT | SLACK TEXT: " + slackText);
-
-      slackPostMessage(slackChannel, slackText);
-    }
-
-  }
-
   showStats();
+  process.exit();
 
-  setTimeout(function(){
-
-    Object.keys(neuralNetworkChildHashMap).forEach(function(nnChildId){
-
-      const neuralNetworkChild = neuralNetworkChildHashMap[nnChildId].child;
-
-      if (neuralNetworkChild !== undefined) {
-        console.log(chalkAlert("*** KILL CHILD ON QUIT | " + nnChildId));
-        neuralNetworkChild.kill("SIGKILL");
-      }
-
-      delete neuralNetworkChildHashMap[nnChildId];
-
-    });
-
-    setTimeout(function(){
-      process.exit();
-    }, 3000);
-
-  }, 1000);
 }
 
 process.on( "SIGINT", function() {
@@ -918,6 +831,13 @@ function saveFile (params, callback){
 
     writeJsonFile(fullPath, params.obj)
     .then(function() {
+    // jsonfile.writeFile(fullPath, params.obj, function (err) {
+    // jsonfile.writeFileSync(fullPath, params.obj);
+
+      // if (err) {
+      //   console.log(chalkError("JSON WRITE FILE ERROR: " + err));
+      //   if (callback !== undefined) { return callback(null); }
+      // }
 
       console.log(chalkAlert("NNT | SAVED LOCALLY | " + objSizeMBytes.toFixed(2) + " MB | " + fullPath));
       console.log(chalkAlert("NNT | ... PAUSE 5 SEC TO FINISH FILE SAVE | " + objSizeMBytes.toFixed(2) + " MB | " + fullPath));
@@ -928,76 +848,67 @@ function saveFile (params, callback){
 
         const source = fs.createReadStream(fullPath);
 
-        const stats = fs.statSync(fullPath);
-        const fileSizeInBytes = stats["size"];
-        const savedSize = fileSizeInBytes/ONE_MEGABYTE;
+        options.readable_stream = source;
 
-        console.log(chalkLog("NNT | ... SAVING DROPBOX JSON"
-          + " | " + getTimeStamp()
-          + " | " + savedSize.toFixed(2) + " MBYTES"
-          + "\n SRC: " + fullPath
-          + "\n DST: " + options.destination
-          // + " successMetadata\n" + jsonPrint(successMetadata)
-          // + " successMetadata\n" + jsonPrint(successMetadata)
-        ));
+        dropboxStreamingUpload(options).then(function(successMetadata) {
 
-        const drbx = require("@davvo/drbx")({
-          token: configuration.DROPBOX.DROPBOX_WORD_ASSO_ACCESS_TOKEN
-        });
+          const savedSize = successMetadata.size/ONE_MEGABYTE;
 
-        let localReadStream = fs.createReadStream(fullPath);
-        let remoteWriteStream = drbx.file(options.destination).createWriteStream();
+          showStats();
 
-
-        let bytesRead = 0;
-        let chunksRead = 0;
-        let mbytesRead = 0;
-        let percentRead = 0;
-
-        localReadStream.pipe(remoteWriteStream);
-
-        localReadStream.on('data', (chunk) => {
-          bytesRead += chunk.length;
-          mbytesRead = bytesRead/ONE_MEGABYTE;
-          percentRead = 100 * bytesRead/fileSizeInBytes;
-          chunksRead += 1;
-          if (chunksRead % 100 === 0){
-            console.log(chalkInfo("NNT | LOCAL READ"
-              + " | " + mbytesRead.toFixed(2) + " / " + savedSize.toFixed(2) + " MB"
-              + " (" + percentRead.toFixed(2) + "%)"
-            ));
-          }
-        });
-
-        localReadStream.on('close', function(){
-          console.error('READ CLOSED');
-        });
-
-        remoteWriteStream.on('close', function(){
-          console.error('WRITE CLOSED');
-        });
-
-        localReadStream.on('end', function(){
-          console.log(chalkInfo("NNT | LOCAL READ COMPLETE"
-            + " | " + mbytesRead.toFixed(2) + " / " + savedSize.toFixed(2) + " MB"
-            + " (" + percentRead.toFixed(2) + "%)"
+          console.log(chalkLog("NNT | SAVED DROPBOX JSON"
+            + " | " + getTimeStamp()
+            + " | " + successMetadata.path_display
+            + " | " + savedSize.toFixed(2) + " MBYTES"
+            // + " successMetadata\n" + jsonPrint(successMetadata)
+            // + " successMetadata\n" + jsonPrint(successMetadata)
           ));
-          localReadStream.close();
-        });
 
-        localReadStream.on('error', function(err){
-          console.error('READ ERROR');
-          if (callback !== undefined) { return callback(err); }
-        });
-
-        remoteWriteStream.on('end', function(){
-          console.error('WRITE COMPLETE');
           if (callback !== undefined) { return callback(null); }
-        });
+        })
+        .catch(function(error){
 
-        remoteWriteStream.on('error', function(err){
-          console.error('WRITE ERROR');
-          if (callback !== undefined) { return callback(err); }
+            if (error.statusCode === 409){
+              console.error(chalkError("NNT | " + moment().format(compactDateTimeFormat) 
+                + " | !!! ERROR DROBOX JSON WRITE | FILE: " + fullPath 
+                + " | ERROR: PATH CONFLICT"
+                + " OPTIONS\n" + jsonPrint(options)
+              ));
+              if (callback !== undefined) { return callback(error.error_summary); }
+            }
+            if (error.status === 413){
+              console.error(chalkError("NNT | " + moment().format(compactDateTimeFormat) 
+                + " | !!! ERROR DROBOX JSON WRITE | FILE: " + fullPath 
+                + " | ERROR: 413"
+                // + " ERROR\n" + jsonPrint(error.error)
+              ));
+              if (callback !== undefined) { return callback(error.error_summary); }
+            }
+            else if (error.status === 429){
+              console.error(chalkError("NNT | " + moment().format(compactDateTimeFormat) 
+                + " | !!! ERROR DROBOX JSON WRITE | FILE: " + fullPath 
+                + " | ERROR: TOO MANY WRITES"
+                // + " ERROR\n" + "jsonPrint"(error.error)
+              ));
+              if (callback !== undefined) { return callback(error.error_summary); }
+            }
+            else if (error.status === 500){
+              console.error(chalkError("NNT | " + moment().format(compactDateTimeFormat) 
+                + " | !!! ERROR DROBOX JSON WRITE | FILE: " + fullPath 
+                + " | ERROR: DROPBOX SERVER ERROR"
+                // + " ERROR\n" + jsonPrint(error.error)
+              ));
+              if (callback !== undefined) { return callback(error.error_summary); }
+            }
+            else {
+              console.trace(chalkError("NNT | " + moment().format(compactDateTimeFormat) 
+                + " | !!! ERROR DROBOX JSON WRITE | FILE: " + fullPath 
+                + " | ERROR: " + error
+                + " | ERROR\n" + jsonPrint(error)
+                // + " ERROR\n" + jsonPrint(params)
+              ));
+              if (callback !== undefined) { return callback(error); }
+            }
         });
 
       }, 5000);
@@ -2724,7 +2635,7 @@ function initialize(cnf, callback){
     console.log("\nNNT | %%%%%%%%%%%%%%\nNNT |  DEBUG ENABLED \nNNT | %%%%%%%%%%%%%%\n");
   }
 
-  cnf.processName = process.env.TNN_PROCESS_NAME || "node_twitterNeuralNetwork";
+  cnf.processName = process.env.TNN_PROCESS_NAME || "node_dropboxUploadTest";
   cnf.runId = process.env.TNN_RUN_ID || statsObj.runId;
 
   cnf.verbose = process.env.TNN_VERBOSE_MODE || false ;
@@ -4965,46 +4876,190 @@ if (process.env.TNN_BATCH_MODE){
   slackChannel = "#nn_batch";
 }
 
-initTimeout(function(){
+const sourceFolderName = "/Volumes/RAID1/projects/twitterNeuralNetwork";
+// const destFolderName = "/Users/tc/Dropbox/Apps/wordAssociation/config/utility/macpro2/trainingSets";
+const destFolderName = "/config/utility/macpro2/trainingSets";
+const fileName = "globalTrainingSet_macpro2_45638_20180216_101910.json"; //
+// const fileName = "globalTrainingSet_macpro2_44648_20180216_100917.json";
+// const fileName = "dropboxUploadTest.js";
+const sourceFullPath = sourceFolderName + "/" + fileName;
+const destFullPath = destFolderName + "/" + fileName;
 
-  initSaveFileQueue(configuration);
+const source = fs.createReadStream(sourceFullPath);
 
-  initMain(configuration, function(){
-    debug(chalkLog("FIRST INIT MAIN CALLBACK"
-      + " | configuration.initMainIntervalTime: " + configuration.initMainIntervalTime
-    ));
-  });
+const stats = fs.statSync(sourceFullPath);
+const fileSizeInBytes = stats["size"];
+const savedSize = fileSizeInBytes/ONE_MEGABYTE;
 
-  initMainInterval = setInterval(function(){
+let options = {};
+options.access_token = configuration.DROPBOX.DROPBOX_WORD_ASSO_ACCESS_TOKEN;
+options.file_size = fileSizeInBytes;
+options.destination = destFolderName;
+// options.forced_chunked_upload = true;
+// options.autorename = true;
+// options.mode = "overwrite";
+options.readable_stream = source;
 
-    console.log(chalkAlert("NNT | +++ INIT MAIN INTERVAL"
-      + " | initMainReady: " + initMainReady
-      + " | trainingSetReady: " + trainingSetReady
-      + " | createTrainingSetBusy: " + createTrainingSetBusy
-    ));
+console.log(chalkLog("NNT | ... SAVING DROPBOX JSON"
+  + " | " + getTimeStamp()
+  + " | " + savedSize.toFixed(2) + " MBYTES"
+  + "\n SRC: " + sourceFullPath
+  + "\n DST: " + destFullPath
+  // + " successMetadata\n" + jsonPrint(successMetadata)
+  // + " successMetadata\n" + jsonPrint(successMetadata)
+));
 
-    if (initMainReady) {
-      loadConfigFile(dropboxConfigHostFolder, dropboxConfigFile, function(err, configLoadedFlag){
-        initMain(configuration, function(){
-          debug(chalkLog("INIT MAIN CALLBACK"));
-        });
-      });
-    }
-    else {
-      console.log(chalkAlert("NNT | ... INIT MAIN INTERVAL | NOT READY"
-        // + " | LOADING HISTOGRAMS + INPUTS "
-      ));
-
-      // loadConfigFile(dropboxConfigHostFolder, dropboxConfigFile, function(err, configLoadedFlag){
-      //   initMainBusy = false;
-      //   // loadHistogramsDropboxFolder(defaultHistogramsFolder, function(err){
-      //     // loadInputsDropboxFolder(defaultInputsFolder, function(err){
-      //       // return(callback(err, cnf2));
-      //     // });
-      //   // });
-      // });
-    }
-
-  }, configuration.initMainIntervalTime);
+const drbx = require("@davvo/drbx")({
+  token: configuration.DROPBOX.DROPBOX_WORD_ASSO_ACCESS_TOKEN
 });
+
+let localReadStream = fs.createReadStream(sourceFullPath);
+let remoteWriteStream = drbx.file(destFullPath).createWriteStream();
+
+
+let bytesRead = 0;
+let chunksRead = 0;
+let mbytesRead = 0;
+
+localReadStream.pipe(remoteWriteStream);
+
+localReadStream.on('data', (chunk) => {
+  bytesRead += chunk.length;
+  mbytesRead = bytesRead/ONE_MEGABYTE;
+  chunksRead += 1;
+  if (chunksRead % 100 === 0){
+    console.log(mbytesRead.toFixed(2) + "/" + savedSize.toFixed(2) + " MB READ");
+  }
+});
+
+localReadStream.on('close', function(){
+  console.error('READ CLOSED');
+});
+
+remoteWriteStream.on('close', function(){
+  console.error('WRITE CLOSED');
+});
+
+localReadStream.on('end', function(){
+  console.error('READ COMPLETE');
+  console.log(mbytesRead.toFixed(2) + "/" + savedSize.toFixed(2) + " MB READ");
+  localReadStream.close();
+});
+
+localReadStream.on('error', function(){
+  console.error('READ ERROR');
+  quit();
+});
+
+remoteWriteStream.on('end', function(){
+  console.error('WRITE COMPLETE');
+  quit();
+});
+
+remoteWriteStream.on('error', function(){
+  console.error('WRITE ERROR');
+  quit();
+});
+
+
+// dropboxStreamingUpload(options).then(function(successMetadata) {
+
+//   const savedSize = successMetadata.size/ONE_MEGABYTE;
+
+//   console.log(chalkLog("NNT | SAVED DROPBOX JSON"
+//     + " | " + getTimeStamp()
+//     + " | " + successMetadata.path_display
+//     + " | " + savedSize.toFixed(2) + " MBYTES"
+//     // + " successMetadata\n" + jsonPrint(successMetadata)
+//     // + " successMetadata\n" + jsonPrint(successMetadata)
+//   ));
+
+//   quit();
+
+// })
+// .catch(function(error){
+
+//     if (error.statusCode === 409){
+//       console.error(chalkError("NNT | " + moment().format(compactDateTimeFormat) 
+//         + " | !!! ERROR DROBOX JSON WRITE | FILE: " + fullPath 
+//         + " | ERROR: PATH CONFLICT"
+//         + " OPTIONS\n" + jsonPrint(options)
+//       ));
+//     }
+//     if (error.status === 413){
+//       console.error(chalkError("NNT | " + moment().format(compactDateTimeFormat) 
+//         + " | !!! ERROR DROBOX JSON WRITE | FILE: " + fullPath 
+//         + " | ERROR: 413"
+//         // + " ERROR\n" + jsonPrint(error.error)
+//       ));
+//     }
+//     else if (error.status === 429){
+//       console.error(chalkError("NNT | " + moment().format(compactDateTimeFormat) 
+//         + " | !!! ERROR DROBOX JSON WRITE | FILE: " + fullPath 
+//         + " | ERROR: TOO MANY WRITES"
+//         // + " ERROR\n" + "jsonPrint"(error.error)
+//       ));
+//     }
+//     else if (error.status === 500){
+//       console.error(chalkError("NNT | " + moment().format(compactDateTimeFormat) 
+//         + " | !!! ERROR DROBOX JSON WRITE | FILE: " + fullPath 
+//         + " | ERROR: DROPBOX SERVER ERROR"
+//         // + " ERROR\n" + jsonPrint(error.error)
+//       ));
+//     }
+//     else {
+//       console.trace(chalkError("NNT | " + moment().format(compactDateTimeFormat) 
+//         + " | !!! ERROR DROBOX JSON WRITE | FILE: " + fullPath 
+//         + " | ERROR: " + error
+//         + " | ERROR\n" + jsonPrint(error)
+//         // + " ERROR\n" + jsonPrint(params)
+//       ));
+//     }
+
+//       quit();
+
+// });
+
+// initTimeout(function(){
+
+//   initSaveFileQueue(configuration);
+
+//   initMain(configuration, function(){
+//     debug(chalkLog("FIRST INIT MAIN CALLBACK"
+//       + " | configuration.initMainIntervalTime: " + configuration.initMainIntervalTime
+//     ));
+//   });
+
+//   initMainInterval = setInterval(function(){
+
+//     console.log(chalkAlert("NNT | +++ INIT MAIN INTERVAL"
+//       + " | initMainReady: " + initMainReady
+//       + " | trainingSetReady: " + trainingSetReady
+//       + " | createTrainingSetBusy: " + createTrainingSetBusy
+//     ));
+
+//     if (initMainReady) {
+//       loadConfigFile(dropboxConfigHostFolder, dropboxConfigFile, function(err, configLoadedFlag){
+//         initMain(configuration, function(){
+//           debug(chalkLog("INIT MAIN CALLBACK"));
+//         });
+//       });
+//     }
+//     else {
+//       console.log(chalkAlert("NNT | ... INIT MAIN INTERVAL | NOT READY"
+//         // + " | LOADING HISTOGRAMS + INPUTS "
+//       ));
+
+//       // loadConfigFile(dropboxConfigHostFolder, dropboxConfigFile, function(err, configLoadedFlag){
+//       //   initMainBusy = false;
+//       //   // loadHistogramsDropboxFolder(defaultHistogramsFolder, function(err){
+//       //     // loadInputsDropboxFolder(defaultInputsFolder, function(err){
+//       //       // return(callback(err, cnf2));
+//       //     // });
+//       //   // });
+//       // });
+//     }
+
+//   }, configuration.initMainIntervalTime);
+// });
 
