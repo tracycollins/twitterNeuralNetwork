@@ -7,6 +7,7 @@ const ONE_MEGABYTE = 1024 * ONE_KILOBYTE;
 const DROPBOX_MAX_FILE_UPLOAD = 140 * ONE_MEGABYTE; // bytes
 const GLOBAL_TRAINING_SET_ID = "globalTrainingSet";
 
+const DEFAULT_GENERATE_TRAINING_SET_ONLY = false;
 const DEFAULT_HISTOGRAM_PARSE_TOTAL_MIN = 4;
 const DEFAULT_HISTOGRAM_PARSE_DOMINANT_MIN = 0.4;
 
@@ -207,6 +208,7 @@ let initMainInterval;
 
 let configuration = {};
 
+configuration.generateTrainingSetOnly = DEFAULT_GENERATE_TRAINING_SET_ONLY;
 configuration.dropboxMaxFileUpload = DROPBOX_MAX_FILE_UPLOAD;
 
 configuration.inputsIdArray = [];
@@ -4057,7 +4059,7 @@ function generateGlobalTrainingTestSet (userHashMap, callback){
 
     user.classification = (keywordArray[0] !== undefined) ? keywordArray[0] : false;
 
-    if (hostname === "google") {
+    if (configuration.generateTrainingSetOnly) {
       trainingSet.data.push(user);
       async.setImmediate(function() { 
         cb(); 
