@@ -13,7 +13,7 @@ const DEFAULT_HISTOGRAM_PARSE_DOMINANT_MIN = 0.4;
 
 const bestRuntimeNetworkFileName = "bestRuntimeNetwork.json";
 
-const TEST_MODE_LENGTH = 1500;
+const TEST_MODE_LENGTH = 10;
 const TEST_DROPBOX_NN_LOAD = 5;
 const DEFAULT_USE_LOCAL_TRAINING_SETS = false;
 const DEFAULT_MAX_NEURAL_NETWORK_CHILDREN = 2;
