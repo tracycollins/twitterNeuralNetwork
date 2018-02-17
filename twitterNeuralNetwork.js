@@ -1189,7 +1189,7 @@ function loadFile(path, file, callback) {
         }
         catch(e){
           console.trace(chalkError("NNT | JSON PARSE ERROR: " + fullPath  + " | ERROR: " + e + "\n" + jsonPrint(e)));
-          callback(null, null);
+          callback(e, null);
         }
       }
       else if (file.match(/\.txt$/gi)) {
