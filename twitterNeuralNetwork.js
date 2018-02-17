@@ -1954,8 +1954,8 @@ function loadBestNetworkDropboxFolders (folders, callback){
             loadFile(folder, entry.name, function(err, networkObj){
 
               if (err) {
-                console.log(chalkError("NNT | DROPBOX BEST NETWORK LOAD FILE ERROR: " + err));
-                return(cb1(err));
+                console.log(chalkError("NNT | DROPBOX BEST NETWORK RELOAD FILE ERROR: " + err));
+                return(cb1());
               }
 
               if (networkObj.matchRate === undefined) { networkObj.matchRate = 0; }
