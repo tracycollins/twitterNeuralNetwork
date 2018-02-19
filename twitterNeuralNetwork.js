@@ -65,7 +65,6 @@ const Dropbox = require("./js/dropbox").Dropbox;
 
 const pick = require("object.pick");
 const omit = require("object.omit");
-// const arrayUnique = require("array-unique");
 const Slack = require("slack-node");
 const cp = require("child_process");
 const arrayNormalize = require("array-normalize");
@@ -95,8 +94,6 @@ const fs = require("fs");
 
 let prevConfigFileModifiedMoment = moment("2010-01-01");
 let prevClassifiedUsersFileModifiedMoment = moment("2010-01-01");
-// let prevTrainingSetFileModifiedMoment = moment("2010-01-01");
-// let prevRequiredTrainingSetFileModifiedMoment = moment("2010-01-01");
 
 let networkIndex = 0;
 
@@ -4445,14 +4442,16 @@ function initMain(cnf, callback){
   loadSeedNeuralNetwork(seedOpt, function(err0, results){
     if (err0) {
       console.log(chalkError("*** ERROR loadSeedNeuralNetwork\n" + jsonPrint(err0)));
+      initMainReady = true;
+      return (callback(err0, null));
     }
 
     initClassifiedUserHashmap(cnf.classifiedUsersFolder, cnf.classifiedUsersFile, function(err, classifiedUsersObj){
 
       if (err) {
         console.error(chalkError("NNT | *** ERROR: CLASSIFIED USER HASHMAP NOT INITIALIED: ", err));
-        quit("CLASSIFIED USER HASHMAP NOT INITIALIED");
-        return;
+        initMainReady = true;
+        return (callback(err, null));
       }
 
       classifiedUserHashmap = {};
