@@ -1487,13 +1487,6 @@ function loadHistogramsDropboxFolder(folder, callback){
                 inputsNetworksHashMap[newInputsObj.inputsId] = new Set();
               }
 
-              // const newInputsFile = histogramsObj.histogramsId + ".json";
-
-
-              // const fldr = (hostname === "google") ? defaultInputsFolder : localInputsFolder;
-
-              // saveFileQueue.push({localFlag: false, folder: fldr, file: newInputsFile, obj: newInputsObj});
-
               cb();
             });
 
@@ -4108,7 +4101,8 @@ function generateGlobalTrainingTestSet (userHashMap, callback){
     ));
 
     let trainingSetObj = {};
-    trainingSetObj.trainingSetId = trainingSetId;
+    // trainingSetObj.trainingSetId = trainingSetId;
+    trainingSetObj.trainingSetId = "globalTrainingSet";
     trainingSetObj.globalTrainingSetFlag = true;
     trainingSetObj.normalization = {};
     trainingSetObj.normalization = statsObj.normalization;
