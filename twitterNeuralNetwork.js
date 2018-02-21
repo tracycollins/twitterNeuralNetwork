@@ -974,15 +974,16 @@ function saveFile (params, callback){
         });
 
         localReadStream.on("close", function(){
-          console.error("READ CLOSED");
+          console.log(chalkAlert("NNT | LOCAL STREAM READ CLOSED | SOURCE: " + fullPath));
         });
 
         remoteWriteStream.on("close", function(){
-          console.error("WRITE CLOSED");
+          console.log(chalkAlert("NNT | REMOTE STREAM WRITE CLOSED | DEST: " + options.destination));
         });
 
         localReadStream.on("end", function(){
           console.log(chalkInfo("NNT | LOCAL READ COMPLETE"
+            + " | SOURCE: " + fullPath
             + " | " + mbytesRead.toFixed(2) + " / " + savedSize.toFixed(2) + " MB"
             + " (" + percentRead.toFixed(2) + "%)"
           ));
@@ -990,17 +991,17 @@ function saveFile (params, callback){
         });
 
         localReadStream.on("error", function(err){
-          console.error("READ ERROR");
+          console.error("NNT | *** LOCAL STREAM READ ERROR | " + err);
           if (callback !== undefined) { return callback(err); }
         });
 
         remoteWriteStream.on("end", function(){
-          console.error("WRITE COMPLETE");
+          console.log(chalkAlert("NNT | REMOTE STREAM WRITE END | DEST: " + options.destination));
           if (callback !== undefined) { return callback(null); }
         });
 
         remoteWriteStream.on("error", function(err){
-          console.error("WRITE ERROR");
+          console.error("NNT | *** REMOTE STREAM WRITE ERROR | DEST: " + options.destination + "\n" + err);
           if (callback !== undefined) { return callback(err); }
         });
 
