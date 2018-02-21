@@ -1502,7 +1502,7 @@ function loadHistogramsDropboxFolder(folder, callback){
   .catch(function(err){
     console.log(chalkError("NNT | *** DROPBOX FILES LIST FOLDER ERROR: " + err));
     console.error(chalkError("NNT | *** DROPBOX FILES LIST FOLDER ERROR: " + err));
-    quit();
+    quit("DROPBOX FILES LIST FOLDER ERROR");
     // console.log(chalkError("NNT | *** DROPBOX FILES LIST FOLDER ERROR\n" + jsonPrint(err)));
     if (callback !== undefined) { callback(err); }
   });
@@ -1663,7 +1663,7 @@ function loadInputsDropboxFolder(folder, callback){
   })
   .catch(function(err){
     console.log(chalkError("NNT | *** DROPBOX FILES LIST FOLDER ERROR\n" + jsonPrint(err)));
-    quit();
+    quit("DROPBOX FILES LIST FOLDER ERROR");
     if (callback !== undefined) { callback(err); }
   });
 }
@@ -1792,7 +1792,7 @@ function loadTrainingSetsDropboxFolder(folder, callback){
   })
   .catch(function(err){
     console.log(chalkError("NNT | *** DROPBOX FILES LIST FOLDER ERROR\n" + jsonPrint(err)));
-    quit();
+    quit("DROPBOX FILES LIST FOLDER ERROR");
     if (callback !== undefined) { callback(err); }
   });
 }
@@ -4888,7 +4888,7 @@ function initTimeout(callback){
 
     if (err && (err.status !== 404)) {
       console.error(chalkError("NNT | ***** INIT ERROR *****\n" + jsonPrint(err)));
-      quit();
+      quit("INIT ERROR");
     }
 
     configuration = cnf;
@@ -4987,17 +4987,7 @@ initTimeout(function(){
     }
     else {
       console.log(chalkAlert("NNT | ... INIT MAIN INTERVAL | NOT READY"
-        // + " | LOADING HISTOGRAMS + INPUTS "
       ));
-
-      // loadConfigFile(dropboxConfigHostFolder, dropboxConfigFile, function(err, configLoadedFlag){
-      //   initMainBusy = false;
-      //   // loadHistogramsDropboxFolder(defaultHistogramsFolder, function(err){
-      //     // loadInputsDropboxFolder(defaultInputsFolder, function(err){
-      //       // return(callback(err, cnf2));
-      //     // });
-      //   // });
-      // });
     }
 
   }, configuration.initMainIntervalTime);
