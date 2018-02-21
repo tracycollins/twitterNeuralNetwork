@@ -4614,7 +4614,7 @@ function initNeuralNetworkChild(cnf, callback){
 
   childEnv.env = configuration.DROPBOX;
   childEnv.env.DROPBOX_NNC_STATS_FILE = statsObj.runId + "_" + nnChildId + ".json";
-  childEnv.env.NNC_PROCESS_NAME = nnChildId;
+  childEnv.env.NNC_PROCESS_NAME = "node_" + nnChildId;
   childEnv.env.NODE_ENV = "production";
   childEnv.env.TNN_CROSS_ENTROPY_WORKAROUND_ENABLED = cnf.crossEntropyWorkAroundEnabled;
 

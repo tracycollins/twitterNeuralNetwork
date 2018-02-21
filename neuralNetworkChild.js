@@ -202,53 +202,6 @@ function quit(message) {
   process.exit();
 }
 
-
-// function saveFile (path, file, jsonObj, callback){
-
-//   const fullPath = path + "/" + file;
-
-//   debug(chalkInfo("LOAD FOLDER " + path));
-//   debug(chalkInfo("LOAD FILE " + file));
-//   debug(chalkInfo("NNC | SAVE FILE FULL PATH " + fullPath));
-
-//   let options = {};
-//   options.path = fullPath;
-//   options.mode = "overwrite";
-//   options.autorename = false;
-
-//   try {
-//     options.contents = JSON.stringify(jsonObj, null, 2);
-//   }
-//   catch (err){
-//     console.error(chalkError("NNC | *** SAVE FILE JSON STRINGIFY ERROR: " + err));
-//     process.send({op:"ERROR", processName: configuration.processName, error: err, statsObj: statsObj}, function(){
-//       quit();
-//     });
-//   }
-
-//   dropboxClient.filesUpload(options)
-//     .then(function(response){
-//       debug(chalkLog("SAVED DROPBOX JSON | " + options.path));
-//       if (callback !== undefined) { callback(null, response); }
-//     })
-//     .catch(function(err){
-//       console.error(chalkError("NNC | " + moment().format(defaultDateTimeFormat) 
-//         + " | !!! ERROR DROBOX JSON WRITE | FILE: " + fullPath 
-//       ));
-//       if (err.status === 429) {
-//         console.error("TOO MANY DROPBOX WRITES");
-//         if (callback !== undefined) { callback(null, null); }
-//       }
-//       else {
-//         console.error("NNC | ERROR\nNNC | " + jsonPrint(err));
-//         console.error("NNC | ERROR.ERRORNNC | \n" + jsonPrint(err.error));
-//         process.send({op: "ERROR", processName: configuration.processName, error: err}, function(){
-//           quit(jsonPrint(err));
-//         });
-//       }
-//     });
-// }
-
 function showStats(options){
   if ((statsObj.evolve.startTime > 0) && (statsObj.evolve.endTime > 0)){
     statsObj.evolve.elapsed = statsObj.evolve.endTime - statsObj.evolve.startTime;
