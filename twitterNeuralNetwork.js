@@ -522,8 +522,10 @@ statsObj.tests[testObj.testRunId] = {};
 statsObj.evolve = {};
 statsObj.train = {};
 
+process.title = "node_wordAssoServer";
 console.log("\n\nNNT | =================================");
 console.log("NNT | HOST:          " + hostname);
+console.log("NNT | PROCESS TITLE: " + process.title);
 console.log("NNT | PROCESS ID:    " + process.pid);
 console.log("NNT | RUN ID:        " + statsObj.runId);
 console.log("NNT | PROCESS ARGS:  " + util.inspect(process.argv, {showHidden: false, depth: 1}));
