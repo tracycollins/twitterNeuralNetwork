@@ -4128,7 +4128,7 @@ function generateGlobalTrainingTestSet (userHashMap, callback){
 
 
     let dropboxFolder = (hostname === "google") ? "/home/tc/Dropbox/Apps/wordAssociation/config/utility/default/trainingSets" : localTrainingSetFolder;
-    // let localFlag = false;
+    let localFlag = (hostname === "google") ? true : false ;
 
     if (configuration.testMode) {
       dropboxFolder = (hostname === "google") ? "/home/tc/Dropbox/Apps/wordAssociation/config/utility/default/trainingSets_test" : localTrainingSetFolder;
@@ -4136,7 +4136,16 @@ function generateGlobalTrainingTestSet (userHashMap, callback){
 
     let folder = dropboxFolder;
 
-    saveFileQueue.push({localFlag: false, folder: folder, file: file, obj: trainingSetObj});
+    let fullPath = folder + "/" + file;
+
+    fs.writeFile(fullPath, trainingSetObj, function(err){  
+      // throws an error, you could also catch it here
+      if (err) throw err;
+      console.log(chalkAlert("\nNNT | ======================= END GENERATE GLOBAL TRAINING SET ======================="));
+      callback(null);
+    });
+    // saveFileQueue.push({localFlag: local, folder: folder, file: file, obj: trainingSetObj});
+    // saveFileQueue.push({localFlag: localFlag, folder: folder, dropboxFolder: dropboxFolder, file: file, obj: trainingSetObj});
 
     // const trainingSetObjSize = sizeof(trainingSetObj);
 
@@ -4165,8 +4174,8 @@ function generateGlobalTrainingTestSet (userHashMap, callback){
 
     // saveFileQueue.push({localFlag: localFlag, folder: folder, dropboxFolder: dropboxFolder, file: file, obj: trainingSetObj});
 
-    console.log(chalkAlert("\nNNT | ======================= END GENERATE GLOBAL TRAINING SET ======================="));
-    callback(null);
+    // console.log(chalkAlert("\nNNT | ======================= END GENERATE GLOBAL TRAINING SET ======================="));
+    // callback(null);
 
   });
 }
