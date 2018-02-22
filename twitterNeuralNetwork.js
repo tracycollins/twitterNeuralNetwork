@@ -4473,7 +4473,7 @@ function initMain(cnf, callback){
     + " | INTERVAL: " + msToTime(cnf.initMainIntervalTime)
   ));
 
-  loadInputsDropboxFolder(defaultInputsFolder);
+  loadInputsDropboxFolder(defaultInputsFolder, function(){});
 
   let seedOpt = {};
   seedOpt.folders = [globalBestNetworkFolder, localBestNetworkFolder];
@@ -4660,7 +4660,7 @@ function initNeuralNetworkChild(cnf, callback){
 
   childEnv.env = configuration.DROPBOX;
   childEnv.env.DROPBOX_NNC_STATS_FILE = statsObj.runId + "_" + nnChildId + ".json";
-  childEnv.env.NNC_PROCESS_NAME = "node_" + nnChildId;
+  childEnv.env.NNC_PROCESS_NAME = nnChildId;
   childEnv.env.NODE_ENV = "production";
   childEnv.env.TNN_CROSS_ENTROPY_WORKAROUND_ENABLED = cnf.crossEntropyWorkAroundEnabled;
 
