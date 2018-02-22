@@ -4121,36 +4121,49 @@ function generateGlobalTrainingTestSet (userHashMap, callback){
 
     trainingSetHashMap.set(trainingSetObj.trainingSetId, {entry: trainingSetEntry, trainingSetObj: trainingSetObj} );
 
-    const hostLocalTrainingSetFolder = __dirname;
-    const googleLocalTrainingSetFolder = "/home/tc/wordAssociation/config/trainingSets";
+    // const hostLocalTrainingSetFolder = __dirname;
+    // const googleLocalTrainingSetFolder = "/home/tc/wordAssociation/config/trainingSets";
 
-    const file = trainingSetId + ".json";
-    let dropboxFolder = (hostname === "google") ? defaultTrainingSetFolder : localTrainingSetFolder;
-    let folder = dropboxFolder;
-    let localFlag = false;
+    let file = trainingSetId + ".json";
 
-    const trainingSetObjSize = sizeof(trainingSetObj);
+
+    let dropboxFolder = (hostname === "google") ? "/home/tc/Dropbox/Apps/wordAssociation/config/utility/default/trainingSets" : localTrainingSetFolder;
+    // let localFlag = false;
 
     if (configuration.testMode) {
-      configuration.dropboxMaxFileUpload = ONE_MEGABYTE;
+      dropboxFolder = (hostname === "google") ? "/home/tc/Dropbox/Apps/wordAssociation/config/utility/default/trainingSets_test" : localTrainingSetFolder;
     }
 
-    if (trainingSetObjSize > configuration.dropboxMaxFileUpload) {
+    let folder = dropboxFolder;
 
-      localFlag = true;
+    saveFileQueue.push({localFlag: false, folder: folder, file: file, obj: trainingSetObj});
 
-      folder = (hostname === "google") ? googleLocalTrainingSetFolder : hostLocalTrainingSetFolder;
+    // const trainingSetObjSize = sizeof(trainingSetObj);
 
-      const objSizeMBytes = sizeof(trainingSetObj)/ONE_MEGABYTE;
-      const maxSizeMBytes = DROPBOX_MAX_FILE_UPLOAD/ONE_MEGABYTE;
 
-      console.log(chalkAlert("NNT | *** TRAINING SET MEMORY SIZE > " + objSizeMBytes.toFixed(2) + " MBYTES"
-        + " | " + maxSizeMBytes.toFixed(2) + " DROPBOX_MAX_FILE_UPLOAD"
-        + " | SAVING LOCALLY FIRST: " + folder + "/" + file
-      ));
-    }
+// /home/tc/Dropbox/Apps/wordAssociation/config/utility/default/trainingSets
 
-    saveFileQueue.push({localFlag: localFlag, folder: folder, dropboxFolder: dropboxFolder, file: file, obj: trainingSetObj});
+    // if (configuration.testMode) {
+    //   configuration.dropboxMaxFileUpload = ONE_MEGABYTE;
+    // }
+
+    // if (trainingSetObjSize > configuration.dropboxMaxFileUpload) {
+
+
+    //   localFlag = true;
+
+    //   folder = (hostname === "google") ? googleLocalTrainingSetFolder : hostLocalTrainingSetFolder;
+
+    //   const objSizeMBytes = sizeof(trainingSetObj)/ONE_MEGABYTE;
+    //   const maxSizeMBytes = DROPBOX_MAX_FILE_UPLOAD/ONE_MEGABYTE;
+
+    //   console.log(chalkAlert("NNT | *** TRAINING SET MEMORY SIZE > " + objSizeMBytes.toFixed(2) + " MBYTES"
+    //     + " | " + maxSizeMBytes.toFixed(2) + " DROPBOX_MAX_FILE_UPLOAD"
+    //     + " | SAVING LOCALLY FIRST: " + folder + "/" + file
+    //   ));
+    // }
+
+    // saveFileQueue.push({localFlag: localFlag, folder: folder, dropboxFolder: dropboxFolder, file: file, obj: trainingSetObj});
 
     console.log(chalkAlert("\nNNT | ======================= END GENERATE GLOBAL TRAINING SET ======================="));
     callback(null);
