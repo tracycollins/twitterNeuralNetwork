@@ -544,8 +544,8 @@ const dropboxConfigFile = hostname + "_" + configuration.DROPBOX.DROPBOX_TNN_CON
 const defaultHistogramsFolder = dropboxConfigDefaultFolder + "/histograms";
 // const localHistogramsFolder = dropboxConfigHostFolder + "/histograms";
 const localInputsFolder = dropboxConfigHostFolder + "/inputs";
-// const defaultInputsFolder = dropboxConfigDefaultFolder + "/inputs";
-const defaultInputsFolder = localInputsFolder;
+const defaultInputsFolder = dropboxConfigDefaultFolder + "/inputs";
+// const defaultInputsFolder = localInputsFolder;
 
 const defaultTrainingSetFolder = dropboxConfigDefaultFolder + "/trainingSets";
 // const trainingSetFolder = defaultTrainingSetFolder;
@@ -1321,195 +1321,200 @@ function initStatsUpdate(cnf, callback){
   callback(null, cnf);
 }
 
-function loadHistogramsDropboxFolder(folder, callback){
+// function loadHistogramsDropboxFolder(folder, callback){
 
-  if (!configuration.createTrainingSetOnly) {
+//   if (!configuration.createTrainingSetOnly) {
 
-    console.log(chalkNetwork("NNT | NOT CREATING TRAINING SET ... SKIPPING LOADING DROPBOX HISTOGRAMS FOLDER | " + folder));
+//     console.log(chalkNetwork("NNT | NOT CREATING TRAINING SET ... SKIPPING LOADING DROPBOX HISTOGRAMS FOLDER | " + folder));
 
-    if (callback !== undefined) { 
-      return callback(null); 
-    }
-  }
+//     if (callback !== undefined) { 
+//       return callback(null); 
+//     }
+//   }
 
-  console.log(chalkNetwork("NNT | ... LOADING DROPBOX HISTOGRAMS FOLDER | " + folder));
+//   console.log(chalkNetwork("NNT | ... LOADING DROPBOX HISTOGRAMS FOLDER | " + folder));
 
-  let options = {path: folder};
+//   let options = {path: folder};
 
-  dropboxClient.filesListFolder(options)
-  .then(function(response){
+//   dropboxClient.filesListFolder(options)
+//   .then(function(response){
 
-    debug(chalkLog("DROPBOX LIST FOLDER"
-      + " | " + options.path
-      + " | " + jsonPrint(response)
-    ));
+//     debug(chalkLog("DROPBOX LIST FOLDER"
+//       + " | " + options.path
+//       + " | " + jsonPrint(response)
+//     ));
 
-    async.eachSeries(response.entries, function(entry, cb){
+//     console.log(chalkNetwork("NNT | ... LOADING " + response.entries.length + " HISTOGRAMS IN FOLDER | " + folder));
 
-      debug(chalkInfo("NNT | DROPBOX HISTOGRAMS FILE FOUND"
-        + " | LAST MOD: " + moment(new Date(entry.client_modified)).format(compactDateTimeFormat)
-        + " | " + entry.name
-        // + " | " + entry.content_hash
-        // + "\n" + jsonPrint(entry)
-      ));
+//     async.eachSeries(response.entries, function(entry, cb){
 
-      const entryNameArray = entry.name.split(".");
-      const histogramsId = entryNameArray[0].replace("histograms_", "");
+//       debug(chalkInfo("NNT | DROPBOX HISTOGRAMS FILE FOUND"
+//         + " | LAST MOD: " + moment(new Date(entry.client_modified)).format(compactDateTimeFormat)
+//         + " | " + entry.name
+//         // + " | " + entry.content_hash
+//         // + "\n" + jsonPrint(entry)
+//       ));
 
-      if (histogramsHashMap.has(histogramsId)){
+//       const entryNameArray = entry.name.split(".");
+//       const histogramsId = entryNameArray[0].replace("histograms_", "");
 
-        let curHistogramObj = histogramsHashMap.get(histogramsId);
-        let oldContentHash = false;
+//       if (histogramsHashMap.has(histogramsId)){
 
-        if ((curHistogramObj.entry !== undefined) && (curHistogramObj.entry.content_hash !== undefined)){
-          oldContentHash = curHistogramObj.entry.content_hash;
-        }
+//         let curHistogramObj = histogramsHashMap.get(histogramsId);
+//         let oldContentHash = false;
 
-        if (oldContentHash !== entry.content_hash) {
+//         if ((curHistogramObj.entry !== undefined) && (curHistogramObj.entry.content_hash !== undefined)){
+//           oldContentHash = curHistogramObj.entry.content_hash;
+//         }
 
-          console.log(chalkInfo("NNT | DROPBOX HISTOGRAMS CONTENT CHANGE"
-            + " | LAST MOD: " + moment(new Date(entry.client_modified)).format(compactDateTimeFormat)
-            + " | " + entry.name
-            + " | HIST ID: " + histogramsId
-            // + "\nCUR HASH: " + entry.content_hash
-            // + "\nOLD HASH: " + oldContentHash
-          ));
+//         if (oldContentHash !== entry.content_hash) {
 
-          loadFile(folder, entry.name, function(err, histogramsObj){
+//           console.log(chalkInfo("NNT | DROPBOX HISTOGRAMS CONTENT CHANGE"
+//             + " | LAST MOD: " + moment(new Date(entry.client_modified)).format(compactDateTimeFormat)
+//             + " | " + entry.name
+//             + " | HIST ID: " + histogramsId
+//             // + "\nCUR HASH: " + entry.content_hash
+//             // + "\nOLD HASH: " + oldContentHash
+//           ));
 
-            if (err) {
-              console.log(chalkError("NNT | DROPBOX HISTOGRAMS LOAD FILE ERROR: " + err));
-              cb();
-            }
-            else if ((histogramsObj === undefined) || !histogramsObj) {
-              console.log(chalkError("NNT | DROPBOX HISTOGRAMS LOAD FILE ERROR | JSON UNDEFINED ??? "));
+//           loadFile(folder, entry.name, function(err, histogramsObj){
 
-              cb();
-            }
-            else {
+//             if (err) {
+//               console.log(chalkError("NNT | DROPBOX HISTOGRAMS LOAD FILE ERROR: " + err));
+//               cb();
+//             }
+//             else if ((histogramsObj === undefined) || !histogramsObj) {
+//               console.log(chalkError("NNT | DROPBOX HISTOGRAMS LOAD FILE ERROR | JSON UNDEFINED ??? "));
 
-              console.log(chalkInfo("NNT | DROPBOX HISTOGRAMS"
-                + " | " + entry.name
-                + " | " + histogramsObj.histogramsId
-              ));
+//               cb();
+//             }
+//             else {
 
-              histogramsHashMap.set(histogramsObj.histogramsId, { entry: entry, histogramsObj: histogramsObj });
-              cb();
-            }
+//               console.log(chalkInfo("NNT | DROPBOX HISTOGRAMS"
+//                 + " | " + entry.name
+//                 + " | " + histogramsObj.histogramsId
+//               ));
 
-          });
-        }
-        else{
-          debug(chalkLog("NNT | DROPBOX HISTOGRAMS CONTENT SAME  "
-            + " | " + entry.name
-            + " | LAST MOD: " + moment(new Date(entry.client_modified)).format(compactDateTimeFormat)
-          ));
-          cb();
-        }
-      }
-      else {
+//               histogramsHashMap.set(histogramsObj.histogramsId, { entry: entry, histogramsObj: histogramsObj });
+//               cb();
+//             }
 
-        loadFile(folder, entry.name, function(err, histogramsObj){
+//           });
+//         }
+//         else{
+//           debug(chalkLog("NNT | DROPBOX HISTOGRAMS CONTENT SAME  "
+//             + " | " + entry.name
+//             + " | LAST MOD: " + moment(new Date(entry.client_modified)).format(compactDateTimeFormat)
+//           ));
+//           cb();
+//         }
+//       }
+//       else {
 
-          if (err) {
-            console.log(chalkError("NNT | DROPBOX HISTOGRAMS LOAD FILE ERROR: " + err));
-            cb();
-          }
-          else if ((histogramsObj === undefined) || !histogramsObj) {
-            console.log(chalkError("NNT | DROPBOX HISTOGRAMS LOAD FILE ERROR | JSON UNDEFINED ??? "));
+//         loadFile(folder, entry.name, function(err, histogramsObj){
 
-            cb();
-          }
-          else {
+//           if (err) {
+//             console.log(chalkError("NNT | DROPBOX HISTOGRAMS LOAD FILE ERROR: " + err));
+//             cb();
+//           }
+//           else if ((histogramsObj === undefined) || !histogramsObj) {
+//             console.log(chalkError("NNT | DROPBOX HISTOGRAMS LOAD FILE ERROR | JSON UNDEFINED ??? "));
 
-            histogramsHashMap.set(histogramsObj.histogramsId, { entry: entry, histogramsObj: histogramsObj });
+//             cb();
+//           }
+//           else {
 
-            const histogramTypes = Object.keys(histogramsObj.histograms);
+//             histogramsHashMap.set(histogramsObj.histogramsId, { entry: entry, histogramsObj: histogramsObj });
 
-            console.log(chalkInfo("NNT | + HISTOGRAMS HASH MAP"
-              + " | " + histogramsHashMap.count() + " INs IN HM"
-              + " | " + histogramsObj.histogramsId
-            ));
+//             const histogramTypes = Object.keys(histogramsObj.histograms);
 
-            let totalHistograms = 0;
+//             console.log(chalkInfo("NNT | + HISTOGRAMS HASH MAP"
+//               + " | " + histogramsHashMap.count() + " INs IN HM"
+//               + " | " + histogramsObj.histogramsId
+//             ));
 
-            histogramTypes.forEach(function(histogramType){
-              debug("NNT | " + histogramsObj.histogramsId 
-                + " | HISTOGRAM TYPE: " + histogramType 
-                + " | " + Object.keys(histogramsObj.histograms[histogramType]).length + " ENTRIES"
-              );
-              totalHistograms += Object.keys(histogramsObj.histograms[histogramType]).length;
-            });
+//             let totalHistograms = 0;
 
-            console.log("NNT | " + histogramsObj.histogramsId 
-              + " | TOTAL histograms TYPE: " + totalHistograms
-            );
+//             histogramTypes.forEach(function(histogramType){
+//               debug("NNT | " + histogramsObj.histogramsId 
+//                 + " | HISTOGRAM TYPE: " + histogramType 
+//                 + " | " + Object.keys(histogramsObj.histograms[histogramType]).length + " ENTRIES"
+//               );
+//               totalHistograms += Object.keys(histogramsObj.histograms[histogramType]).length;
+//             });
 
-            histogramParser.parse({histogram: histogramsObj.histograms, dominantMin: configuration.histogramParseDominantMin, totalMin: configuration.histogramParseTotalMin}, function(err, histResults){
+//             console.log("NNT | " + histogramsObj.histogramsId 
+//               + " | TOTAL histograms TYPE: " + totalHistograms
+//             );
 
-              if (err){
-                console.log(chalkError("HISTOGRAM PARSE ERROR: " + err));
-                return cb();
-              }
+//             cb();
 
-              debug(chalkNetwork("HISTOGRAMS RESULTS\n" + jsonPrint(histResults)));
 
-              let newInputsObj = {};
-              newInputsObj.inputsId = histogramsObj.histogramsId;
-              newInputsObj.meta = {};
-              newInputsObj.meta.numInputs = 0;
-              newInputsObj.meta.histogramParseTotalMin = configuration.histogramParseTotalMin;
-              newInputsObj.meta.histogramParseDominantMin = configuration.histogramParseDominantMin;
-              newInputsObj.inputs = {};
+//             // histogramParser.parse({histogram: histogramsObj.histograms, dominantMin: configuration.histogramParseDominantMin, totalMin: configuration.histogramParseTotalMin}, function(err, histResults){
 
-              const inputTypes = Object.keys(histResults.entries);
+//             //   if (err){
+//             //     console.log(chalkError("HISTOGRAM PARSE ERROR: " + err));
+//             //     return cb();
+//             //   }
 
-              inputTypes.forEach(function(type){
-                newInputsObj.inputs[type] = [];
-                newInputsObj.inputs[type] = Object.keys(histResults.entries[type].dominantEntries).sort();
-                newInputsObj.meta.numInputs += newInputsObj.inputs[type].length;
-              });
+//             //   debug(chalkNetwork("HISTOGRAMS RESULTS\n" + jsonPrint(histResults)));
 
-              debug(chalkNetwork("NEW INPUTS\n" + jsonPrint(newInputsObj)));
+//             //   let newInputsObj = {};
+//             //   newInputsObj.inputsId = histogramsObj.histogramsId;
+//             //   newInputsObj.meta = {};
+//             //   newInputsObj.meta.numInputs = 0;
+//             //   newInputsObj.meta.histogramParseTotalMin = configuration.histogramParseTotalMin;
+//             //   newInputsObj.meta.histogramParseDominantMin = configuration.histogramParseDominantMin;
+//             //   newInputsObj.inputs = {};
 
-              let inputsEntry = {};
+//             //   const inputTypes = Object.keys(histResults.entries);
 
-              if (inputsHashMap.has(histogramsObj.histogramsId)) {
-                inputsEntry = inputsHashMap.get(histogramsObj.histogramsId).entry;
-              }
-              else {
-                inputsEntry.name = histogramsObj.histogramsId + ".json";
-                inputsEntry.content_hash = false;
-                inputsEntry.client_modified = moment();
-              }
+//             //   inputTypes.forEach(function(type){
+//             //     newInputsObj.inputs[type] = [];
+//             //     newInputsObj.inputs[type] = Object.keys(histResults.entries[type].dominantEntries).sort();
+//             //     newInputsObj.meta.numInputs += newInputsObj.inputs[type].length;
+//             //   });
 
-              inputsHashMap.set(histogramsObj.histogramsId, { entry: inputsEntry, inputsObj: newInputsObj});
-              inputsIdSet.add(histogramsObj.histogramsId);
+//             //   debug(chalkNetwork("NEW INPUTS\n" + jsonPrint(newInputsObj)));
 
-              if (inputsNetworksHashMap[newInputsObj.inputsId] === undefined) {
-                inputsNetworksHashMap[newInputsObj.inputsId] = new Set();
-              }
+//             //   let inputsEntry = {};
 
-              cb();
-            });
+//             //   if (inputsHashMap.has(histogramsObj.histogramsId)) {
+//             //     inputsEntry = inputsHashMap.get(histogramsObj.histogramsId).entry;
+//             //   }
+//             //   else {
+//             //     inputsEntry.name = histogramsObj.histogramsId + ".json";
+//             //     inputsEntry.content_hash = false;
+//             //     inputsEntry.client_modified = moment();
+//             //   }
 
-          }
+//             //   inputsHashMap.set(histogramsObj.histogramsId, { entry: inputsEntry, inputsObj: newInputsObj});
+//             //   inputsIdSet.add(histogramsObj.histogramsId);
 
-        });
-      }
-    }, function(){
-      if (callback !== undefined) { callback(null); }
-    });
+//             //   if (inputsNetworksHashMap[newInputsObj.inputsId] === undefined) {
+//             //     inputsNetworksHashMap[newInputsObj.inputsId] = new Set();
+//             //   }
 
-  })
-  .catch(function(err){
-    console.log(chalkError("NNT | *** DROPBOX FILES LIST FOLDER ERROR: " + err));
-    console.error(chalkError("NNT | *** DROPBOX FILES LIST FOLDER ERROR: " + err));
-    quit("DROPBOX FILES LIST FOLDER ERROR");
-    // console.log(chalkError("NNT | *** DROPBOX FILES LIST FOLDER ERROR\n" + jsonPrint(err)));
-    if (callback !== undefined) { callback(err); }
-  });
-}
+//             //   cb();
+//             // });
+
+//           }
+
+//         });
+//       }
+//     }, function(){
+//       if (callback !== undefined) { callback(null); }
+//     });
+
+//   })
+//   .catch(function(err){
+//     console.log(chalkError("NNT | *** DROPBOX FILES LIST FOLDER ERROR: " + err));
+//     console.error(chalkError("NNT | *** DROPBOX FILES LIST FOLDER ERROR: " + err));
+//     quit("DROPBOX FILES LIST FOLDER ERROR");
+//     // console.log(chalkError("NNT | *** DROPBOX FILES LIST FOLDER ERROR\n" + jsonPrint(err)));
+//     if (callback !== undefined) { callback(err); }
+//   });
+// }
 
 function loadInputsDropboxFolder(folder, callback){
 
@@ -1801,8 +1806,6 @@ function loadTrainingSetsDropboxFolder(folder, callback){
 }
 
 function loadBestNetworkDropboxFolders (folders, callback){
-
-      // if (callback !== undefined) { callback(err, numNetworksLoaded); }
 
   if (configuration.createTrainingSetOnly) {
     if (callback !== undefined) { 
@@ -2109,6 +2112,76 @@ function loadBestNetworkDropboxFolders (folders, callback){
   });
 }
 
+// function generateInputSets(params, callback) {
+
+//   const histIds = histogramsHashMap.keys();
+
+//   console.log(chalkInfo("NNT | GENERATING INPUT SETS FROM " + histIds.length + " HISTOGRAMS IN HM"));
+
+//   async.eachSeries(histIds, function(histogramsId, cb){
+
+//     const histogramsObj = histogramsHashMap.get(histogramsId);
+
+//     const histogramTypes = Object.keys(histogramsObj.histograms);
+
+//     console.log(chalkInfo("NNT | GENERATING INPUT SET"
+//       + " | HISTOGRAM ID: " + histogramsId
+//       + " | " + histogramTypes.length + " HISTOGRAM TYPES"
+//       + " | " + histogramTypes
+//     ));
+
+//     histogramParser.parse({histogram: histogramsObj.histograms, dominantMin: params.histogramParseDominantMin, totalMin: params.histogramParseTotalMin}, function(err, histResults){
+
+//       if (err){
+//         console.log(chalkError("HISTOGRAM PARSE ERROR: " + err));
+//         return cb();
+//       }
+
+//       debug(chalkNetwork("HISTOGRAMS RESULTS\n" + jsonPrint(histResults)));
+
+//       let newInputsObj = {};
+//       newInputsObj.inputsId = histogramsObj.histogramsId;
+//       newInputsObj.meta = {};
+//       newInputsObj.meta.numInputs = 0;
+//       newInputsObj.meta.histogramParseTotalMin = params.histogramParseTotalMin;
+//       newInputsObj.meta.histogramParseDominantMin = params.histogramParseDominantMin;
+//       newInputsObj.inputs = {};
+
+//       const inputTypes = Object.keys(histResults.entries);
+
+//       inputTypes.forEach(function(type){
+//         newInputsObj.inputs[type] = [];
+//         newInputsObj.inputs[type] = Object.keys(histResults.entries[type].dominantEntries).sort();
+//         newInputsObj.meta.numInputs += newInputsObj.inputs[type].length;
+//       });
+
+//       debug(chalkNetwork("NEW INPUTS\n" + jsonPrint(newInputsObj)));
+
+//       let inputsEntry = {};
+
+//       if (inputsHashMap.has(histogramsId)) {
+//         console.log(chalkAlert("NNT | GENERATE INPUT SETS | ??? INPUT SET ALREADY IN HASHMAP ... SKIPPING | " + histogramsId));
+//         return cb();
+//       }
+
+//       inputsEntry.name = histogramsObj.histogramsId + ".json";
+//       inputsEntry.content_hash = false;
+//       inputsEntry.client_modified = moment();
+
+//       inputsHashMap.set(histogramsObj.histogramsId, { entry: inputsEntry, inputsObj: newInputsObj});
+//       inputsIdSet.add(histogramsObj.histogramsId);
+
+//       if (inputsNetworksHashMap[newInputsObj.inputsId] === undefined) {
+//         inputsNetworksHashMap[newInputsObj.inputsId] = new Set();
+//       }
+
+//       cb();
+//     });
+
+//   }, function(err){
+//     if (callback !== undefined) { callback(err, inputsIdSet.size); }
+//   });
+// }
 // function printDatum(title, input){
 
 //   let row = "";
@@ -2783,203 +2856,298 @@ function initialize(cnf, callback){
   debug(chalkWarn("dropboxConfigFolder: " + dropboxConfigFolder));
   debug(chalkWarn("dropboxConfigFile  : " + dropboxConfigFile));
 
-  if (process.env.TNN_BATCH_MODE) {
+  loadFile(dropboxConfigHostFolder, dropboxConfigFile, function(err, loadedConfigObj){
 
-    console.log(chalkAlert("\n\nNNT | BATCH MODE\n\n"));
+    let commandLineConfigKeys;
+    let configArgs;
 
-    initStatsUpdate(cnf, function(err, cnf2){
-      if (err) {
-        console.log(chalkError("NNT | ERROR initStatsUpdate\n" + jsonPrint(err)));
+    if (!err && loadedConfigObj !== undefined) {
+      console.log("NNT | " + dropboxConfigFile + "\n" + jsonPrint(loadedConfigObj));
+
+      prevConfigFileModifiedMoment = moment();
+
+      if (loadedConfigObj.TNN_HISTOGRAM_PARSE_TOTAL_MIN !== undefined){
+        console.log("NNT | LOADED TNN_HISTOGRAM_PARSE_TOTAL_MIN: " + loadedConfigObj.TNN_HISTOGRAM_PARSE_TOTAL_MIN);
+        cnf.histogramParseTotalMin = loadedConfigObj.TNN_HISTOGRAM_PARSE_TOTAL_MIN;
       }
-      debug("initStatsUpdate cnf2\n" + jsonPrint(cnf2));
 
-      loadHistogramsDropboxFolder(defaultHistogramsFolder, function(err){
-        if (err) {
-        console.log(chalkError("NNT | ERROR loadHistogramsDropboxFolder\n" + jsonPrint(err)));
+      if (loadedConfigObj.TNN_HISTOGRAM_PARSE_DOMINANT_MIN !== undefined){
+        console.log("NNT | LOADED TNN_HISTOGRAM_PARSE_DOMINANT_MIN: " + loadedConfigObj.TNN_HISTOGRAM_PARSE_DOMINANT_MIN);
+        cnf.histogramParseDominantMin = loadedConfigObj.TNN_HISTOGRAM_PARSE_DOMINANT_MIN;
+      }
+
+      if (loadedConfigObj.TNN_CROSS_ENTROPY_WORKAROUND_ENABLED  !== undefined){
+        console.log("NNT | TNN_CROSS_ENTROPY_WORKAROUND_ENABLED: " + loadedConfigObj.TNN_CROSS_ENTROPY_WORKAROUND_ENABLED);
+
+        if (!loadedConfigObj.TNN_CROSS_ENTROPY_WORKAROUND_ENABLED || (loadedConfigObj.TNN_CROSS_ENTROPY_WORKAROUND_ENABLED === "false")) {
+          cnf.crossEntropyWorkAroundEnabled = false;
         }
-        loadInputsDropboxFolder(defaultInputsFolder, function(err){
-          if (err) {
-          console.log(chalkError("NNT | ERROR loadInputsDropboxFolder\n" + jsonPrint(err)));
-          }
-          return(callback(err, cnf2));
+        else {
+          cnf.crossEntropyWorkAroundEnabled = true;
+        }
+      }
+
+      if (loadedConfigObj.TNN_CREATE_TRAINING_SET  !== undefined){
+        console.log("NNT | CREATE TRAINING SET");
+
+        if (!loadedConfigObj.TNN_CREATE_TRAINING_SET || (loadedConfigObj.TNN_CREATE_TRAINING_SET === "false")) {
+          cnf.createTrainingSet = false;
+        }
+        else {
+          cnf.createTrainingSet = true;
+        }
+      }
+
+      if (loadedConfigObj.TNN_CREATE_TRAINING_SET_ONLY  !== undefined){
+        console.log("NNT | CREATE TRAINING SET ONLY");
+
+        if (!loadedConfigObj.TNN_CREATE_TRAINING_SET_ONLY || (loadedConfigObj.TNN_CREATE_TRAINING_SET_ONLY === "false")) {
+          cnf.createTrainingSetOnly = false;
+        }
+        else {
+          cnf.createTrainingSet = true;
+          cnf.createTrainingSetOnly = true;
+        }
+      }
+
+      if (loadedConfigObj.TNN_LOAD_TRAINING_SET_FROM_FILE  !== undefined){
+        console.log("NNT | LOADED TNN_LOAD_TRAINING_SET_FROM_FILE: " + loadedConfigObj.TNN_LOAD_TRAINING_SET_FROM_FILE);
+
+        if (!loadedConfigObj.TNN_LOAD_TRAINING_SET_FROM_FILE || (loadedConfigObj.TNN_LOAD_TRAINING_SET_FROM_FILE === "false")) {
+          cnf.loadTrainingSetFromFile = false;
+        }
+        else if (!cnf.createTrainingSet && !cnf.createTrainingSetOnly) {
+          cnf.loadTrainingSetFromFile = true;
+        }
+      }
+
+      if (loadedConfigObj.TNN_USE_LOCAL_TRAINING_SETS  !== undefined){
+        console.log("NNT | LOADED TNN_USE_LOCAL_TRAINING_SETS: " + loadedConfigObj.TNN_USE_LOCAL_TRAINING_SETS);
+
+        if (!loadedConfigObj.TNN_USE_LOCAL_TRAINING_SETS || (loadedConfigObj.TNN_USE_LOCAL_TRAINING_SETS === "false")) {
+          cnf.useLocalTrainingSets = false;
+        }
+        else {
+          cnf.useLocalTrainingSets = true;
+        }
+      }
+
+      if (loadedConfigObj.TNN_INPUTS_IDS !== undefined){
+        console.log("NNT | LOADED TNN_INPUTS_IDS: " + loadedConfigObj.TNN_INPUTS_IDS);
+        cnf.inputsIdArray = loadedConfigObj.TNN_INPUTS_IDS;
+        cnf.inputsIdArray.forEach(function(inputsId){
+          inputsIdSet.add(inputsId);
         });
+      }
+
+      if (loadedConfigObj.TNN_INPUTS_ID !== undefined){
+        console.log("NNT | LOADED TNN_INPUTS_ID: " + loadedConfigObj.TNN_INPUTS_ID);
+        cnf.inputsId = loadedConfigObj.TNN_INPUTS_ID;
+      }
+
+      if (loadedConfigObj.TNN_SEED_NETWORK_PROBABILITY !== undefined){
+        console.log("NNT | LOADED TNN_SEED_NETWORK_PROBABILITY: " + loadedConfigObj.TNN_SEED_NETWORK_PROBABILITY);
+        cnf.seedNetworkProbability = loadedConfigObj.TNN_SEED_NETWORK_PROBABILITY;
+      }
+
+      if (loadedConfigObj.TNN_INIT_MAIN_INTERVAL !== undefined){
+        console.log("NNT | LOADED TNN_INIT_MAIN_INTERVAL: " + loadedConfigObj.TNN_INIT_MAIN_INTERVAL);
+        cnf.initMainIntervalTime = loadedConfigObj.TNN_INIT_MAIN_INTERVAL;
+      }
+
+      if (loadedConfigObj.TNN_MAX_NEURAL_NETWORK_CHILDREN !== undefined){
+        console.log("NNT | LOADED TNN_MAX_NEURAL_NETWORK_CHILDREN: " + loadedConfigObj.TNN_MAX_NEURAL_NETWORK_CHILDREN);
+        cnf.maxNeuralNetworkChildern = loadedConfigObj.TNN_MAX_NEURAL_NETWORK_CHILDREN;
+      }
+
+      if (loadedConfigObj.TNN_GLOBAL_MIN_SUCCESS_RATE !== undefined){
+        console.log("NNT | LOADED TNN_GLOBAL_MIN_SUCCESS_RATE: " + loadedConfigObj.TNN_GLOBAL_MIN_SUCCESS_RATE);
+        cnf.globalMinSuccessRate = loadedConfigObj.TNN_GLOBAL_MIN_SUCCESS_RATE;
+      }
+
+      if (loadedConfigObj.TNN_LOCAL_MIN_SUCCESS_RATE !== undefined){
+        console.log("NNT | LOADED TNN_LOCAL_MIN_SUCCESS_RATE: " + loadedConfigObj.TNN_LOCAL_MIN_SUCCESS_RATE);
+        cnf.localMinSuccessRate = loadedConfigObj.TNN_LOCAL_MIN_SUCCESS_RATE;
+      }
+
+      if (loadedConfigObj.TNN_EVOLVE_THREADS !== undefined){
+        console.log("NNT | LOADED TNN_EVOLVE_THREADS: " + loadedConfigObj.TNN_EVOLVE_THREADS);
+        cnf.evolve.threads = loadedConfigObj.TNN_EVOLVE_THREADS;
+      }
+
+      if (loadedConfigObj.TNN_SEED_NETWORK_ID  !== undefined){
+        console.log("NNT | LOADED TNN_SEED_NETWORK_ID: " + loadedConfigObj.TNN_SEED_NETWORK_ID);
+        cnf.evolve.networkId = loadedConfigObj.TNN_SEED_NETWORK_ID;
+        cnf.train.networkId = loadedConfigObj.TNN_SEED_NETWORK_ID;
+      }
+
+      if (loadedConfigObj.TNN_TRAIN_BEST_NETWORK  !== undefined){
+        console.log("NNT | LOADED TNN_TRAIN_BEST_NETWORK: " + loadedConfigObj.TNN_TRAIN_BEST_NETWORK);
+        cnf.train.useBestNetwork = loadedConfigObj.TNN_TRAIN_BEST_NETWORK;
+      }
+
+      if (loadedConfigObj.TNN_EVOLVE_BEST_NETWORK  !== undefined){
+        console.log("NNT | LOADED TNN_EVOLVE_BEST_NETWORK: " + loadedConfigObj.TNN_EVOLVE_BEST_NETWORK);
+        cnf.evolve.useBestNetwork = loadedConfigObj.TNN_EVOLVE_BEST_NETWORK;
+      }
+
+      if (loadedConfigObj.TNN_EVOLVE_ITERATIONS  !== undefined){
+        console.log("NNT | LOADED TNN_EVOLVE_ITERATIONS: " + loadedConfigObj.TNN_EVOLVE_ITERATIONS);
+        cnf.evolve.iterations = loadedConfigObj.TNN_EVOLVE_ITERATIONS;
+      }
+
+      if (loadedConfigObj.TNN_TRAIN_ITERATIONS  !== undefined){
+        console.log("NNT | LOADED TNN_TRAIN_ITERATIONS: " + loadedConfigObj.TNN_TRAIN_ITERATIONS);
+        cnf.train.iterations = loadedConfigObj.TNN_TRAIN_ITERATIONS;
+      }
+
+      if (loadedConfigObj.TNN_VERBOSE_MODE  !== undefined){
+        console.log("NNT | LOADED TNN_VERBOSE_MODE: " + loadedConfigObj.TNN_VERBOSE_MODE);
+        cnf.verbose = loadedConfigObj.TNN_VERBOSE_MODE;
+      }
+
+      if (loadedConfigObj.TNN_TEST_MODE  !== undefined){
+        console.log("NNT | LOADED TNN_TEST_MODE: " + loadedConfigObj.TNN_TEST_MODE);
+        cnf.testMode = loadedConfigObj.TNN_TEST_MODE;
+      }
+
+      if (loadedConfigObj.TNN_ENABLE_STDIN  !== undefined){
+        console.log("NNT | LOADED TNN_ENABLE_STDIN: " + loadedConfigObj.TNN_ENABLE_STDIN);
+        cnf.enableStdin = loadedConfigObj.TNN_ENABLE_STDIN;
+      }
+
+      if (loadedConfigObj.TNN_STATS_UPDATE_INTERVAL  !== undefined) {
+        console.log("NNT | LOADED TNN_STATS_UPDATE_INTERVAL: " + loadedConfigObj.TNN_STATS_UPDATE_INTERVAL);
+        cnf.statsUpdateIntervalTime = loadedConfigObj.TNN_STATS_UPDATE_INTERVAL;
+      }
+
+      if (loadedConfigObj.TNN_KEEPALIVE_INTERVAL  !== undefined) {
+        console.log("NNT | LOADED TNN_KEEPALIVE_INTERVAL: " + loadedConfigObj.TNN_KEEPALIVE_INTERVAL);
+        cnf.keepaliveInterval = loadedConfigObj.TNN_KEEPALIVE_INTERVAL;
+      }
+
+      // OVERIDE CONFIG WITH COMMAND LINE ARGS
+
+      commandLineConfigKeys = Object.keys(commandLineConfig);
+
+      commandLineConfigKeys.forEach(function(arg){
+        if ((arg === "createTrainingSet") || (arg === "createTrainingSetOnly")) {
+          cnf.loadTrainingSetFromFile = false;
+          cnf[arg] = commandLineConfig[arg];
+          console.log("NNT | --> COMMAND LINE CONFIG | " + arg + ": " + cnf[arg]);
+        }
+        else if (arg === "hiddenLayerSize") {
+          cnf.train.hiddenLayerSize = commandLineConfig[arg];
+          console.log("NNT | --> COMMAND LINE CONFIG | train.hiddenLayerSize: " + cnf.train.hiddenLayerSize);
+        }
+        else if (arg === "seedNetworkId") {
+          if (commandLineConfig[arg] === "none") {
+            console.log("NNT | --> COMMAND LINE CONFIG | train.networkObj.networkId: NONE");
+            console.log("NNT | --> COMMAND LINE CONFIG | evolve.networkObj.networkId: NONE");
+            cnf.enableSeedNetwork = false;
+          }
+          else {
+            cnf.enableSeedNetwork = true;
+            cnf.train.networkId = commandLineConfig[arg];
+            cnf.evolve.networkId = commandLineConfig[arg];
+            console.log("NNT | --> COMMAND LINE CONFIG | train.networkObj.networkId: " + cnf.train.networkId);
+            console.log("NNT | --> COMMAND LINE CONFIG | evolve.networkObj.networkId: " + cnf.evolve.networkId);
+          }
+        }
+        else if (arg === "evolveIterations") {
+          cnf.train.iterations = commandLineConfig[arg];
+          cnf.evolve.iterations = commandLineConfig[arg];
+          console.log("NNT | --> COMMAND LINE CONFIG | train.iterations: " + cnf.train.iterations);
+          console.log("NNT | --> COMMAND LINE CONFIG | evolve.iterations: " + cnf.evolve.iterations);
+        }
+        else {
+          cnf[arg] = commandLineConfig[arg];
+          console.log("NNT | --> COMMAND LINE CONFIG | " + arg + ": " + cnf[arg]);
+        }
       });
 
+      configArgs = Object.keys(cnf);
 
-    });
-  }
-  else{
+      configArgs.forEach(function(arg){
+        if (arg === "evolve") {
+          console.log("NNT | FINAL CONFIG | " + arg + ": " + jsonPrint(cnf[arg]));
+        }
+        else {
+          console.log("NNT | FINAL CONFIG | " + arg + ": " + cnf[arg]);
+        }
+      });
 
-    loadFile(dropboxConfigHostFolder, dropboxConfigFile, function(err, loadedConfigObj){
+      if (cnf.enableStdin){
 
-      let commandLineConfigKeys;
-      let configArgs;
+        console.log("NNT | STDIN ENABLED");
 
-      if (!err && loadedConfigObj !== undefined) {
-        console.log("NNT | " + dropboxConfigFile + "\n" + jsonPrint(loadedConfigObj));
+        stdin = process.stdin;
+        if(stdin.setRawMode  !== undefined) {
+          stdin.setRawMode( true );
+        }
+        stdin.resume();
+        stdin.setEncoding( "utf8" );
+        stdin.on( "data", function( key ){
 
-        prevConfigFileModifiedMoment = moment();
+          switch (key) {
+            case "\u0003":
+              process.exit();
+            break;
 
-        if (loadedConfigObj.TNN_HISTOGRAM_PARSE_TOTAL_MIN !== undefined){
-          console.log("NNT | LOADED TNN_HISTOGRAM_PARSE_TOTAL_MIN: " + loadedConfigObj.TNN_HISTOGRAM_PARSE_TOTAL_MIN);
-          cnf.histogramParseTotalMin = loadedConfigObj.TNN_HISTOGRAM_PARSE_TOTAL_MIN;
+            case "v":
+              configuration.verbose = !configuration.verbose;
+              console.log(chalkRedBold("NNT | VERBOSE: " + configuration.verbose));
+            break;
+            case "n":
+              configuration.interruptFlag = true;
+              console.log(chalkRedBold("NNT | *** INTERRUPT ***"));
+            break;
+            case "q":
+              quit();
+            break;
+            case "Q":
+              quit();
+            break;
+            case "s":
+              showStats();
+            break;
+            case "S":
+              showStats(true);
+            break;
+            default:
+              console.log(
+                "\n" + "q/Q: quit"
+                + "\n" + "s: showStats"
+                + "\n" + "S: showStats verbose"
+              );
+          }
+
+        });
+      }
+
+      initStatsUpdate(cnf, function(err, cnf2){
+
+        if (err) {
+          console.log(chalkError("NNT | ERROR initStatsUpdate\n" + err));
+          return(callback(err, cnf2));
         }
 
-        if (loadedConfigObj.TNN_HISTOGRAM_PARSE_DOMINANT_MIN !== undefined){
-          console.log("NNT | LOADED TNN_HISTOGRAM_PARSE_DOMINANT_MIN: " + loadedConfigObj.TNN_HISTOGRAM_PARSE_DOMINANT_MIN);
-          cnf.histogramParseDominantMin = loadedConfigObj.TNN_HISTOGRAM_PARSE_DOMINANT_MIN;
-        }
+        debug("initStatsUpdate cnf2\n" + jsonPrint(cnf2));
 
-        if (loadedConfigObj.TNN_CROSS_ENTROPY_WORKAROUND_ENABLED  !== undefined){
-          console.log("NNT | TNN_CROSS_ENTROPY_WORKAROUND_ENABLED: " + loadedConfigObj.TNN_CROSS_ENTROPY_WORKAROUND_ENABLED);
-
-          if (!loadedConfigObj.TNN_CROSS_ENTROPY_WORKAROUND_ENABLED || (loadedConfigObj.TNN_CROSS_ENTROPY_WORKAROUND_ENABLED === "false")) {
-            cnf.crossEntropyWorkAroundEnabled = false;
-          }
-          else {
-            cnf.crossEntropyWorkAroundEnabled = true;
-          }
-        }
-
-        if (loadedConfigObj.TNN_CREATE_TRAINING_SET  !== undefined){
-          console.log("NNT | CREATE TRAINING SET");
-
-          if (!loadedConfigObj.TNN_CREATE_TRAINING_SET || (loadedConfigObj.TNN_CREATE_TRAINING_SET === "false")) {
-            cnf.createTrainingSet = false;
-          }
-          else {
-            cnf.createTrainingSet = true;
-          }
-        }
-
-        if (loadedConfigObj.TNN_CREATE_TRAINING_SET_ONLY  !== undefined){
-          console.log("NNT | CREATE TRAINING SET ONLY");
-
-          if (!loadedConfigObj.TNN_CREATE_TRAINING_SET_ONLY || (loadedConfigObj.TNN_CREATE_TRAINING_SET_ONLY === "false")) {
-            cnf.createTrainingSetOnly = false;
-          }
-          else {
-            cnf.createTrainingSet = true;
-            cnf.createTrainingSetOnly = true;
-          }
-        }
-
-        if (loadedConfigObj.TNN_LOAD_TRAINING_SET_FROM_FILE  !== undefined){
-          console.log("NNT | LOADED TNN_LOAD_TRAINING_SET_FROM_FILE: " + loadedConfigObj.TNN_LOAD_TRAINING_SET_FROM_FILE);
-
-          if (!loadedConfigObj.TNN_LOAD_TRAINING_SET_FROM_FILE || (loadedConfigObj.TNN_LOAD_TRAINING_SET_FROM_FILE === "false")) {
-            cnf.loadTrainingSetFromFile = false;
-          }
-          else if (!cnf.createTrainingSet && !cnf.createTrainingSetOnly) {
-            cnf.loadTrainingSetFromFile = true;
-          }
-        }
-
-        if (loadedConfigObj.TNN_USE_LOCAL_TRAINING_SETS  !== undefined){
-          console.log("NNT | LOADED TNN_USE_LOCAL_TRAINING_SETS: " + loadedConfigObj.TNN_USE_LOCAL_TRAINING_SETS);
-
-          if (!loadedConfigObj.TNN_USE_LOCAL_TRAINING_SETS || (loadedConfigObj.TNN_USE_LOCAL_TRAINING_SETS === "false")) {
-            cnf.useLocalTrainingSets = false;
-          }
-          else {
-            cnf.useLocalTrainingSets = true;
-          }
-        }
-
-        if (loadedConfigObj.TNN_INPUTS_IDS !== undefined){
-          console.log("NNT | LOADED TNN_INPUTS_IDS: " + loadedConfigObj.TNN_INPUTS_IDS);
-          cnf.inputsIdArray = loadedConfigObj.TNN_INPUTS_IDS;
-          cnf.inputsIdArray.forEach(function(inputsId){
-            inputsIdSet.add(inputsId);
+        // loadHistogramsDropboxFolder(defaultHistogramsFolder, function(err){
+          loadInputsDropboxFolder(defaultInputsFolder, function(err){
+            return(callback(err, cnf2));
           });
-        }
+        // });
 
-        if (loadedConfigObj.TNN_INPUTS_ID !== undefined){
-          console.log("NNT | LOADED TNN_INPUTS_ID: " + loadedConfigObj.TNN_INPUTS_ID);
-          cnf.inputsId = loadedConfigObj.TNN_INPUTS_ID;
-        }
+      });
+    }
+    else {
+      console.error(chalkError("NNT | ERROR LOAD DROPBOX CONFIG: " + dropboxConfigFile
+        + "\n" + jsonPrint(err)
+      ));
 
-        if (loadedConfigObj.TNN_SEED_NETWORK_PROBABILITY !== undefined){
-          console.log("NNT | LOADED TNN_SEED_NETWORK_PROBABILITY: " + loadedConfigObj.TNN_SEED_NETWORK_PROBABILITY);
-          cnf.seedNetworkProbability = loadedConfigObj.TNN_SEED_NETWORK_PROBABILITY;
-        }
-
-        if (loadedConfigObj.TNN_INIT_MAIN_INTERVAL !== undefined){
-          console.log("NNT | LOADED TNN_INIT_MAIN_INTERVAL: " + loadedConfigObj.TNN_INIT_MAIN_INTERVAL);
-          cnf.initMainIntervalTime = loadedConfigObj.TNN_INIT_MAIN_INTERVAL;
-        }
-
-        if (loadedConfigObj.TNN_MAX_NEURAL_NETWORK_CHILDREN !== undefined){
-          console.log("NNT | LOADED TNN_MAX_NEURAL_NETWORK_CHILDREN: " + loadedConfigObj.TNN_MAX_NEURAL_NETWORK_CHILDREN);
-          cnf.maxNeuralNetworkChildern = loadedConfigObj.TNN_MAX_NEURAL_NETWORK_CHILDREN;
-        }
-
-        if (loadedConfigObj.TNN_GLOBAL_MIN_SUCCESS_RATE !== undefined){
-          console.log("NNT | LOADED TNN_GLOBAL_MIN_SUCCESS_RATE: " + loadedConfigObj.TNN_GLOBAL_MIN_SUCCESS_RATE);
-          cnf.globalMinSuccessRate = loadedConfigObj.TNN_GLOBAL_MIN_SUCCESS_RATE;
-        }
-
-        if (loadedConfigObj.TNN_LOCAL_MIN_SUCCESS_RATE !== undefined){
-          console.log("NNT | LOADED TNN_LOCAL_MIN_SUCCESS_RATE: " + loadedConfigObj.TNN_LOCAL_MIN_SUCCESS_RATE);
-          cnf.localMinSuccessRate = loadedConfigObj.TNN_LOCAL_MIN_SUCCESS_RATE;
-        }
-
-        if (loadedConfigObj.TNN_EVOLVE_THREADS !== undefined){
-          console.log("NNT | LOADED TNN_EVOLVE_THREADS: " + loadedConfigObj.TNN_EVOLVE_THREADS);
-          cnf.evolve.threads = loadedConfigObj.TNN_EVOLVE_THREADS;
-        }
-
-        if (loadedConfigObj.TNN_SEED_NETWORK_ID  !== undefined){
-          console.log("NNT | LOADED TNN_SEED_NETWORK_ID: " + loadedConfigObj.TNN_SEED_NETWORK_ID);
-          cnf.evolve.networkId = loadedConfigObj.TNN_SEED_NETWORK_ID;
-          cnf.train.networkId = loadedConfigObj.TNN_SEED_NETWORK_ID;
-        }
-
-        if (loadedConfigObj.TNN_TRAIN_BEST_NETWORK  !== undefined){
-          console.log("NNT | LOADED TNN_TRAIN_BEST_NETWORK: " + loadedConfigObj.TNN_TRAIN_BEST_NETWORK);
-          cnf.train.useBestNetwork = loadedConfigObj.TNN_TRAIN_BEST_NETWORK;
-        }
-
-        if (loadedConfigObj.TNN_EVOLVE_BEST_NETWORK  !== undefined){
-          console.log("NNT | LOADED TNN_EVOLVE_BEST_NETWORK: " + loadedConfigObj.TNN_EVOLVE_BEST_NETWORK);
-          cnf.evolve.useBestNetwork = loadedConfigObj.TNN_EVOLVE_BEST_NETWORK;
-        }
-
-        if (loadedConfigObj.TNN_EVOLVE_ITERATIONS  !== undefined){
-          console.log("NNT | LOADED TNN_EVOLVE_ITERATIONS: " + loadedConfigObj.TNN_EVOLVE_ITERATIONS);
-          cnf.evolve.iterations = loadedConfigObj.TNN_EVOLVE_ITERATIONS;
-        }
-
-        if (loadedConfigObj.TNN_TRAIN_ITERATIONS  !== undefined){
-          console.log("NNT | LOADED TNN_TRAIN_ITERATIONS: " + loadedConfigObj.TNN_TRAIN_ITERATIONS);
-          cnf.train.iterations = loadedConfigObj.TNN_TRAIN_ITERATIONS;
-        }
-
-        if (loadedConfigObj.TNN_VERBOSE_MODE  !== undefined){
-          console.log("NNT | LOADED TNN_VERBOSE_MODE: " + loadedConfigObj.TNN_VERBOSE_MODE);
-          cnf.verbose = loadedConfigObj.TNN_VERBOSE_MODE;
-        }
-
-        if (loadedConfigObj.TNN_TEST_MODE  !== undefined){
-          console.log("NNT | LOADED TNN_TEST_MODE: " + loadedConfigObj.TNN_TEST_MODE);
-          cnf.testMode = loadedConfigObj.TNN_TEST_MODE;
-        }
-
-        if (loadedConfigObj.TNN_ENABLE_STDIN  !== undefined){
-          console.log("NNT | LOADED TNN_ENABLE_STDIN: " + loadedConfigObj.TNN_ENABLE_STDIN);
-          cnf.enableStdin = loadedConfigObj.TNN_ENABLE_STDIN;
-        }
-
-        if (loadedConfigObj.TNN_STATS_UPDATE_INTERVAL  !== undefined) {
-          console.log("NNT | LOADED TNN_STATS_UPDATE_INTERVAL: " + loadedConfigObj.TNN_STATS_UPDATE_INTERVAL);
-          cnf.statsUpdateIntervalTime = loadedConfigObj.TNN_STATS_UPDATE_INTERVAL;
-        }
-
-        if (loadedConfigObj.TNN_KEEPALIVE_INTERVAL  !== undefined) {
-          console.log("NNT | LOADED TNN_KEEPALIVE_INTERVAL: " + loadedConfigObj.TNN_KEEPALIVE_INTERVAL);
-          cnf.keepaliveInterval = loadedConfigObj.TNN_KEEPALIVE_INTERVAL;
-        }
-
+      if (err.status === 404){
         // OVERIDE CONFIG WITH COMMAND LINE ARGS
 
         commandLineConfigKeys = Object.keys(commandLineConfig);
@@ -2995,18 +3163,10 @@ function initialize(cnf, callback){
             console.log("NNT | --> COMMAND LINE CONFIG | train.hiddenLayerSize: " + cnf.train.hiddenLayerSize);
           }
           else if (arg === "seedNetworkId") {
-            if (commandLineConfig[arg] === "none") {
-              console.log("NNT | --> COMMAND LINE CONFIG | train.networkObj.networkId: NONE");
-              console.log("NNT | --> COMMAND LINE CONFIG | evolve.networkObj.networkId: NONE");
-              cnf.enableSeedNetwork = false;
-            }
-            else {
-              cnf.enableSeedNetwork = true;
-              cnf.train.networkId = commandLineConfig[arg];
-              cnf.evolve.networkId = commandLineConfig[arg];
-              console.log("NNT | --> COMMAND LINE CONFIG | train.networkObj.networkId: " + cnf.train.networkId);
-              console.log("NNT | --> COMMAND LINE CONFIG | evolve.networkObj.networkId: " + cnf.evolve.networkId);
-            }
+            cnf.train.networkId = commandLineConfig[arg];
+            cnf.evolve.networkId = commandLineConfig[arg];
+            console.log("NNT | --> COMMAND LINE CONFIG | train.networkObj.networkId: " + cnf.train.networkId);
+            console.log("NNT | --> COMMAND LINE CONFIG | evolve.networkObj.networkId: " + cnf.evolve.networkId);
           }
           else if (arg === "evolveIterations") {
             cnf.train.iterations = commandLineConfig[arg];
@@ -3023,12 +3183,7 @@ function initialize(cnf, callback){
         configArgs = Object.keys(cnf);
 
         configArgs.forEach(function(arg){
-          if (arg === "evolve") {
-            console.log("NNT | FINAL CONFIG | " + arg + ": " + jsonPrint(cnf[arg]));
-          }
-          else {
-            console.log("NNT | FINAL CONFIG | " + arg + ": " + cnf[arg]);
-          }
+          console.log("NNT | _FINAL CONFIG | " + arg + ": " + cnf[arg]);
         });
 
         if (cnf.enableStdin){
@@ -3047,14 +3202,9 @@ function initialize(cnf, callback){
               case "\u0003":
                 process.exit();
               break;
-
               case "v":
                 configuration.verbose = !configuration.verbose;
                 console.log(chalkRedBold("NNT | VERBOSE: " + configuration.verbose));
-              break;
-              case "n":
-                configuration.interruptFlag = true;
-                console.log(chalkRedBold("NNT | *** INTERRUPT ***"));
               break;
               case "q":
                 quit();
@@ -3075,17 +3225,13 @@ function initialize(cnf, callback){
                   + "\n" + "S: showStats verbose"
                 );
             }
-
           });
         }
 
         initStatsUpdate(cnf, function(err, cnf2){
-
           if (err) {
-            console.log(chalkError("NNT | ERROR initStatsUpdate\n" + err));
-            return(callback(err, cnf2));
+            console.log(chalkError("NNT | ERROR initStatsUpdate\n" + jsonPrint(err)));
           }
-
           debug("initStatsUpdate cnf2\n" + jsonPrint(cnf2));
 
           // loadHistogramsDropboxFolder(defaultHistogramsFolder, function(err){
@@ -3097,111 +3243,10 @@ function initialize(cnf, callback){
         });
       }
       else {
-        console.error(chalkError("NNT | ERROR LOAD DROPBOX CONFIG: " + dropboxConfigFile
-          + "\n" + jsonPrint(err)
-        ));
-
-        if (err.status === 404){
-          // OVERIDE CONFIG WITH COMMAND LINE ARGS
-
-          commandLineConfigKeys = Object.keys(commandLineConfig);
-
-          commandLineConfigKeys.forEach(function(arg){
-            if ((arg === "createTrainingSet") || (arg === "createTrainingSetOnly")) {
-              cnf.loadTrainingSetFromFile = false;
-              cnf[arg] = commandLineConfig[arg];
-              console.log("NNT | --> COMMAND LINE CONFIG | " + arg + ": " + cnf[arg]);
-            }
-            else if (arg === "hiddenLayerSize") {
-              cnf.train.hiddenLayerSize = commandLineConfig[arg];
-              console.log("NNT | --> COMMAND LINE CONFIG | train.hiddenLayerSize: " + cnf.train.hiddenLayerSize);
-            }
-            else if (arg === "seedNetworkId") {
-              cnf.train.networkId = commandLineConfig[arg];
-              cnf.evolve.networkId = commandLineConfig[arg];
-              console.log("NNT | --> COMMAND LINE CONFIG | train.networkObj.networkId: " + cnf.train.networkId);
-              console.log("NNT | --> COMMAND LINE CONFIG | evolve.networkObj.networkId: " + cnf.evolve.networkId);
-            }
-            else if (arg === "evolveIterations") {
-              cnf.train.iterations = commandLineConfig[arg];
-              cnf.evolve.iterations = commandLineConfig[arg];
-              console.log("NNT | --> COMMAND LINE CONFIG | train.iterations: " + cnf.train.iterations);
-              console.log("NNT | --> COMMAND LINE CONFIG | evolve.iterations: " + cnf.evolve.iterations);
-            }
-            else {
-              cnf[arg] = commandLineConfig[arg];
-              console.log("NNT | --> COMMAND LINE CONFIG | " + arg + ": " + cnf[arg]);
-            }
-          });
-
-          configArgs = Object.keys(cnf);
-
-          configArgs.forEach(function(arg){
-            console.log("NNT | _FINAL CONFIG | " + arg + ": " + cnf[arg]);
-          });
-
-          if (cnf.enableStdin){
-
-            console.log("NNT | STDIN ENABLED");
-
-            stdin = process.stdin;
-            if(stdin.setRawMode  !== undefined) {
-              stdin.setRawMode( true );
-            }
-            stdin.resume();
-            stdin.setEncoding( "utf8" );
-            stdin.on( "data", function( key ){
-
-              switch (key) {
-                case "\u0003":
-                  process.exit();
-                break;
-                case "v":
-                  configuration.verbose = !configuration.verbose;
-                  console.log(chalkRedBold("NNT | VERBOSE: " + configuration.verbose));
-                break;
-                case "q":
-                  quit();
-                break;
-                case "Q":
-                  quit();
-                break;
-                case "s":
-                  showStats();
-                break;
-                case "S":
-                  showStats(true);
-                break;
-                default:
-                  console.log(
-                    "\n" + "q/Q: quit"
-                    + "\n" + "s: showStats"
-                    + "\n" + "S: showStats verbose"
-                  );
-              }
-            });
-          }
-
-          initStatsUpdate(cnf, function(err, cnf2){
-            if (err) {
-              console.log(chalkError("NNT | ERROR initStatsUpdate\n" + jsonPrint(err)));
-            }
-            debug("initStatsUpdate cnf2\n" + jsonPrint(cnf2));
-
-            // loadHistogramsDropboxFolder(defaultHistogramsFolder, function(err){
-              loadInputsDropboxFolder(defaultInputsFolder, function(err){
-                return(callback(err, cnf2));
-              });
-            // });
-
-          });
-        }
-        else {
-          callback(err, null);
-        }
-       }
-    });
-  }
+        callback(err, null);
+      }
+     }
+  });
 }
 
 console.log(chalkInfo("NNT | " + getTimeStamp() 
@@ -4016,7 +4061,6 @@ function initClassifiedUserHashmap(folder, file, callback){
 
     }
   });
-
 }
 
 function generateGlobalTrainingTestSet (userHashMap, callback){
@@ -4127,11 +4171,11 @@ function generateGlobalTrainingTestSet (userHashMap, callback){
     let file = "globalTrainingSet.json";
 
 
-    let dropboxFolder = (hostname === "google") ? "/home/tc/Dropbox/Apps/wordAssociation/config/utility/default/trainingSets" : localTrainingSetFolder;
+    let dropboxFolder = (hostname === "google") ? "/home/tc/Dropbox/Apps/wordAssociation/config/utility/default/trainingSets" : "/Users/tc/Dropbox/Apps/wordAssociation/config/utility/" + hostname + "/trainingSets";
     // let localFlag = (hostname === "google") ? true : false ;
 
     if (configuration.testMode) {
-      dropboxFolder = (hostname === "google") ? "/home/tc/Dropbox/Apps/wordAssociation/config/utility/default/trainingSets_test" : localTrainingSetFolder;
+      dropboxFolder = (hostname === "google") ? "/home/tc/Dropbox/Apps/wordAssociation/config/utility/default/trainingSets_test" : "/Users/tc/Dropbox/Apps/wordAssociation/config/utility/" + hostname + "/trainingSets_test";
     }
 
     let folder = dropboxFolder;
@@ -4154,39 +4198,6 @@ function generateGlobalTrainingTestSet (userHashMap, callback){
       ));
       if (callback !== undefined) { return callback(error); }
     });
-
-    // saveFileQueue.push({localFlag: local, folder: folder, file: file, obj: trainingSetObj});
-    // saveFileQueue.push({localFlag: localFlag, folder: folder, dropboxFolder: dropboxFolder, file: file, obj: trainingSetObj});
-
-    // const trainingSetObjSize = sizeof(trainingSetObj);
-
-
-// /home/tc/Dropbox/Apps/wordAssociation/config/utility/default/trainingSets
-
-    // if (configuration.testMode) {
-    //   configuration.dropboxMaxFileUpload = ONE_MEGABYTE;
-    // }
-
-    // if (trainingSetObjSize > configuration.dropboxMaxFileUpload) {
-
-
-    //   localFlag = true;
-
-    //   folder = (hostname === "google") ? googleLocalTrainingSetFolder : hostLocalTrainingSetFolder;
-
-    //   const objSizeMBytes = sizeof(trainingSetObj)/ONE_MEGABYTE;
-    //   const maxSizeMBytes = DROPBOX_MAX_FILE_UPLOAD/ONE_MEGABYTE;
-
-    //   console.log(chalkAlert("NNT | *** TRAINING SET MEMORY SIZE > " + objSizeMBytes.toFixed(2) + " MBYTES"
-    //     + " | " + maxSizeMBytes.toFixed(2) + " DROPBOX_MAX_FILE_UPLOAD"
-    //     + " | SAVING LOCALLY FIRST: " + folder + "/" + file
-    //   ));
-    // }
-
-    // saveFileQueue.push({localFlag: localFlag, folder: folder, dropboxFolder: dropboxFolder, file: file, obj: trainingSetObj});
-
-    // console.log(chalkAlert("\nNNT | ======================= END GENERATE GLOBAL TRAINING SET ======================="));
-    // callback(null);
 
   });
 }
