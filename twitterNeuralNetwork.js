@@ -4473,6 +4473,8 @@ function initMain(cnf, callback){
     + " | INTERVAL: " + msToTime(cnf.initMainIntervalTime)
   ));
 
+  loadInputsDropboxFolder(defaultInputsFolder);
+
   let seedOpt = {};
   seedOpt.folders = [globalBestNetworkFolder, localBestNetworkFolder];
 
