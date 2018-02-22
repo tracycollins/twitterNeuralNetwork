@@ -4124,11 +4124,11 @@ function generateGlobalTrainingTestSet (userHashMap, callback){
     // const hostLocalTrainingSetFolder = __dirname;
     // const googleLocalTrainingSetFolder = "/home/tc/wordAssociation/config/trainingSets";
 
-    let file = trainingSetId + ".json";
+    let file = "globalTrainingSet.json";
 
 
     let dropboxFolder = (hostname === "google") ? "/home/tc/Dropbox/Apps/wordAssociation/config/utility/default/trainingSets" : localTrainingSetFolder;
-    let localFlag = (hostname === "google") ? true : false ;
+    // let localFlag = (hostname === "google") ? true : false ;
 
     if (configuration.testMode) {
       dropboxFolder = (hostname === "google") ? "/home/tc/Dropbox/Apps/wordAssociation/config/utility/default/trainingSets_test" : localTrainingSetFolder;
@@ -4138,11 +4138,11 @@ function generateGlobalTrainingTestSet (userHashMap, callback){
 
     let fullPath = folder + "/" + file;
 
-    console.log(chalkAlert("NNT |SAVE FILE " + fullPath));
+    console.log(chalkAlert("NNT | SAVING TRAINING SET: " + fullPath));
 
     writeJsonFile(fullPath, trainingSetObj)
     .then(function() {
-      console.log(chalkAlert("\nNNT | ======================= END GENERATE GLOBAL TRAINING SET ======================="));
+      console.log(chalkAlert("NNT | ======================= END GENERATE GLOBAL TRAINING SET ======================="));
       callback(null);
     })
     .catch(function(error){
