@@ -4138,12 +4138,23 @@ function generateGlobalTrainingTestSet (userHashMap, callback){
 
     let fullPath = folder + "/" + file;
 
-    fs.writeFile(fullPath, trainingSetObj, function(err){  
-      // throws an error, you could also catch it here
-      if (err) throw err;
+    console.log(chalkAlert("NNT |SAVE FILE " + fullPath));
+
+    writeJsonFile(fullPath, trainingSetObj)
+    .then(function() {
       console.log(chalkAlert("\nNNT | ======================= END GENERATE GLOBAL TRAINING SET ======================="));
       callback(null);
+    })
+    .catch(function(error){
+      console.trace(chalkError("NNT | " + moment().format(compactDateTimeFormat) 
+        + " | !!! ERROR DROBOX JSON WRITE | FILE: " + fullPath 
+        + " | ERROR: " + error
+        + " | ERROR\n" + jsonPrint(error)
+        // + " ERROR\n" + jsonPrint(params)
+      ));
+      if (callback !== undefined) { return callback(error); }
     });
+
     // saveFileQueue.push({localFlag: local, folder: folder, file: file, obj: trainingSetObj});
     // saveFileQueue.push({localFlag: localFlag, folder: folder, dropboxFolder: dropboxFolder, file: file, obj: trainingSetObj});
 
