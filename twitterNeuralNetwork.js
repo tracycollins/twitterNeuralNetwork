@@ -4461,7 +4461,7 @@ function initNetworkCreate(nnChildId, nnId, cnf, callback){
 }
 
 let nnChildIndex = 0;
-let nnChildId = "NNC_" + nnChildIndex;
+let nnChildId = "node_NNC_" + nnChildIndex;
 
 function initMain(cnf, callback){
 
