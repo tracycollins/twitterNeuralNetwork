@@ -1,6 +1,10 @@
 /*jslint node: true */
 "use strict";
 
+const NN_CHILD_PREFIX = "node_NNC_"
+let nnChildIndex = 0;
+let nnChildId = NN_CHILD_PREFIX + nnChildIndex;
+
 const ONE_KILOBYTE = 1024;
 const ONE_MEGABYTE = 1024 * ONE_KILOBYTE;
 
@@ -522,7 +526,7 @@ statsObj.tests[testObj.testRunId] = {};
 statsObj.evolve = {};
 statsObj.train = {};
 
-process.title = "node_wordAssoServer";
+process.title = "node_twitterNeuralNetwork";
 console.log("\n\nNNT | =================================");
 console.log("NNT | HOST:          " + hostname);
 console.log("NNT | PROCESS TITLE: " + process.title);
@@ -4460,8 +4464,6 @@ function initNetworkCreate(nnChildId, nnId, cnf, callback){
   });
 }
 
-let nnChildIndex = 0;
-let nnChildId = "node_NNC_" + nnChildIndex;
 
 function initMain(cnf, callback){
 
@@ -4647,7 +4649,7 @@ function initNetworkCreateInterval(cnf){
 
 function initNeuralNetworkChild(cnf, callback){
 
-  nnChildId = "NNC_" + nnChildIndex;
+  nnChildId = NN_CHILD_PREFIX + nnChildIndex;
 
   console.log(chalkAlert("+++ NEW NEURAL NETWORK CHILD | NNC ID: " + nnChildId));
 
