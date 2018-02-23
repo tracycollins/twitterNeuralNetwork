@@ -129,7 +129,7 @@ const EVOLVE_COST_ARRAY = [
 ];
 
 const EVOLVE_MUTATION_RATE_RANGE = { min: 0.35, max: 0.75 } ;
-const EVOLVE_POP_SIZE_RANGE = { min: 120, max: 120 } ;
+const EVOLVE_POP_SIZE_RANGE = { min: 50, max: 50 } ;
 const EVOLVE_GROWTH_RANGE = { min: 0.00005, max: 0.00015 } ;
 const EVOLVE_ELITISM_RANGE = { min: 5, max: 20 } ;
 
@@ -3957,34 +3957,37 @@ function generateRandomEvolveConfig (cnf, callback){
     }
   }
   else if (inputsIdSet.size > 0) {
-    debug(chalkAlert("NNT | LOADING INPUTS USING INPUTS ID SET: " + jsonPrint([...inputsIdSet])));
+  // else if (cnf.inputsIdArray.length > 0) {
+    console.log(chalkAlert("NNT | LOADING INPUTS USING INPUTS ID SET: " + jsonPrint(Array.from(inputsIdSet))));
     console.log(chalkAlert("NNT | LOADING INPUTS USING INPUTS ID SET: " + inputsIdSet.size + " SET SIZE"));
-    const keys = Object.keys(inputsNetworksHashMap);
+    // const keys = Object.keys(inputsNetworksHashMap);
+    // const keys = ...inputsIdSet;
 
-    let tempInputsIdArray = [];
+    // let tempInputsIdArray = [];
 
-    async.each(keys, function(inId, cb){
-      if (inputsNetworksHashMap[inId].size > 0) {
-        tempInputsIdArray.push(inId);
-      }
-      const tempInputsMeta = inputsHashMap.get(inId).inputsObj.meta;
-      console.log("NNT"
-        + " | ID: " + inId
-        + " | INPUTS: " + tempInputsMeta.numInputs
-        + " | " + inputsNetworksHashMap[inId].size + " NNs"
-      );
-      cb();
-    }, function(){
+    // async.each(keys, function(inId, cb){
+    //   if (inputsNetworksHashMap[inId].size > 0) {
+    //     tempInputsIdArray.push(inId);
+    //   }
+    //   const tempInputsMeta = inputsHashMap.get(inId).inputsObj.meta;
+    //   console.log("NNT"
+    //     + " | ID: " + inId
+    //     + " | INPUTS: " + tempInputsMeta.numInputs
+    //     + " | " + inputsNetworksHashMap[inId].size + " NNs"
+    //   );
+    //   cb();
+    // }, function(){
       // config.seedInputsId = randomItem(inputsHashMap.keys());  // will be ignored if config.seednetworkId gets set below
-      config.seedInputsId = randomItem([...inputsIdSet]);  // will be ignored if config.seednetworkId gets set below
-      const tempNetworkInputsId = randomItem(tempInputsIdArray);
-      if (inputsNetworksHashMap[tempNetworkInputsId].size === 0) {
-        config.seedNetworkId = false;
-      }
-      else {
-        config.seedNetworkId = (Math.random() <= cnf.seedNetworkProbability) ? randomItem([...inputsNetworksHashMap[tempNetworkInputsId]]) : false;
-      }
-    });
+    config.seedInputsId = randomItem(Array.from(inputsIdSet));  // will be ignored if config.seednetworkId gets set below
+    console.log(chalkAlert("NNT | config.seedInputsId: " + config.seedInputsId));
+    // const tempNetworkInputsId = randomItem(tempInputsIdArray);
+    if ((inputsNetworksHashMap[config.seedInputsId] === undefined) || (inputsNetworksHashMap[config.seedInputsId].size === 0)) {
+      config.seedNetworkId = false;
+    }
+    else {
+      config.seedNetworkId = (Math.random() <= cnf.seedNetworkProbability) ? randomItem(Array.from(inputsNetworksHashMap[config.seedInputsId])) : false;
+    }
+    // });
 
   }
   else {
