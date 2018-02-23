@@ -2436,7 +2436,7 @@ function loadSeedNeuralNetwork(options, callback){
         + " | FOLDERS: " + options.folders
         + "\nNNT | " + err
       ));
-      quit("LOAD DROPBOX BEST NETWORK ERR");
+      // quit("LOAD DROPBOX BEST NETWORK ERR");
       if (callback !== undefined) { callback(err, null); }
     }
     else if (numNetworksLoaded === 0){
@@ -4463,7 +4463,8 @@ function initNeuralNetworkChild(cnf, callback){
         }
         else {
           console.error(chalkError("NNT | *** TEST EVOLVE XOR FAILED *** | " + m.processName));
-          quit("TEST EVOLVE FAILED");
+          console.log(chalkInfo("NNT | *** RETRY *** TEST NEURAL NETWORK | " + m.processName));
+          neuralNetworkChild.send({op: "TEST_EVOLVE"});
         }
       break;
 
