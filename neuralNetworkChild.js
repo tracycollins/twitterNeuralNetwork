@@ -525,7 +525,7 @@ function trainingSetPrepAndEvolve(params, options, callback){
 
       process.send({op: "ERROR", processName: configuration.processName, error: err}, function(){
 
-        quit(jsonPrint(err));
+        if (callback !== undefined) { callback(err, null); }
 
       });
 

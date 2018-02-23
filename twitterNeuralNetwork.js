@@ -1,7 +1,7 @@
 /*jslint node: true */
 "use strict";
 
-const NN_CHILD_PREFIX = "node_NNC_"
+const NN_CHILD_PREFIX = "node_NNC_";
 let nnChildIndex = 0;
 let nnChildId = NN_CHILD_PREFIX + nnChildIndex;
 
@@ -151,15 +151,14 @@ const DEFAULT_TRAIN_BATCH_SIZE = 1;
 const HashMap = require("hashmap").HashMap;
 
 let trainingSetHashMap = new HashMap();
-// let trainingSetHashMap = {};
 let neuralNetworkChildHashMap = {};
 let initMainReady = false;
-// let initMainBusy = false;
 let trainingSetReady = false;
 let createTrainingSetBusy = false;
 
 let inputArrays = {};
 
+let skipLoadNetworkSet = new Set();
 let requiredTrainingSet = new Set();
 // requiredTrainingSet.add("angela_rye");
 // requiredTrainingSet.add("barackobama");
@@ -1336,6 +1335,7 @@ function loadInputsDropboxFolder(folder, callback){
   console.log(chalkNetwork("NNT | ... LOADING DROPBOX INPUTS FOLDER | " + folder));
 
   let options = {path: folder};
+  let skippedInputsFiles = 0;
 
   dropboxClient.filesListFolder(options)
   .then(function(response){
@@ -1358,7 +1358,15 @@ function loadInputsDropboxFolder(folder, callback){
         // + "\n" + jsonPrint(entry)
       ));
 
-      if (inputsHashMap.has(entryInputsId)){
+      if (!configuration.inputsIdArray.includes(entryInputsId)){
+        debug(chalkInfo("NNT | DROPBOX INPUTS NOT IN INPUTS ID ARRAY ... SKIPPING"
+          + " | " + entryInputsId
+          + " | " + configuration.inputsIdArray
+        ));
+        skippedInputsFiles += 1;
+        cb();
+      }
+      else if (inputsHashMap.has(entryInputsId)){
 
         let curInputsObj = inputsHashMap.get(entryInputsId);
         let oldContentHash = false;
@@ -1474,6 +1482,9 @@ function loadInputsDropboxFolder(folder, callback){
         });
       }
     }, function(){
+      if (skippedInputsFiles > 0) {
+        console.log(chalkAlert("NNT | SKIPPED LOAD OF " + skippedInputsFiles + " INPUTS FILES | " + folder));
+      }
       if (callback !== undefined) { callback(null); }
     });
 
@@ -1667,6 +1678,7 @@ function loadBestNetworkDropboxFolders (folders, callback){
           return(cb1());
         }
 
+
         const entryNameArray = entry.name.split(".");
         const networkId = entryNameArray[0];
 
@@ -1676,7 +1688,11 @@ function loadBestNetworkDropboxFolders (folders, callback){
           + " | " + entry.name
         ));
 
-        if (bestNetworkHashMap.has(networkId)){
+        if (skipLoadNetworkSet.has(networkId)){
+          debug(chalkInfo("NNT | NN IN SKIP LOAD NN SET ... SKIPPING LOAD OF " + networkId));
+          cb1();
+        }
+        else if (bestNetworkHashMap.has(networkId)){
 
           let curNetworkObj = bestNetworkHashMap.get(networkId);
           let oldContentHash = false;
@@ -1792,7 +1808,12 @@ function loadBestNetworkDropboxFolders (folders, callback){
 
               if (networkObj.matchRate === undefined) { networkObj.matchRate = 0; }
 
-              if ((options.networkId !== undefined) 
+              if (!configuration.inputsIdArray.includes(networkObj.inputsId)) {
+                console.log(chalkInfo("NNT | NN INPUTS NOT IN INPUTS ID ARRAY ... SKIPPING LOAD OF " + entry.name));
+                skipLoadNetworkSet.add(networkObj.networkId);
+                cb1();
+              }
+              else if ((options.networkId !== undefined) 
                 || ((folder === "/config/utility/best/neuralNetworks") && (networkObj.successRate > configuration.globalMinSuccessRate))
                 || ((folder === "/config/utility/best/neuralNetworks") && (networkObj.matchRate > configuration.globalMinSuccessRate))
                 || ((folder !== "/config/utility/best/neuralNetworks") && (networkObj.successRate > configuration.localMinSuccessRate))
@@ -2134,6 +2155,7 @@ function loadConfigFile(folder, file, callback) {
           if (loadedConfigObj.TNN_INPUTS_IDS !== undefined){
             console.log("NNT | LOADED TNN_INPUTS_IDS: " + loadedConfigObj.TNN_INPUTS_IDS);
             configuration.inputsIdArray = loadedConfigObj.TNN_INPUTS_IDS;
+            inputsIdSet.clear();
             configuration.inputsIdArray.forEach(function(inputsId){
               inputsIdSet.add(inputsId);
             });
@@ -2638,6 +2660,7 @@ function initialize(cnf, callback){
 
       if (loadedConfigObj.TNN_INPUTS_IDS !== undefined){
         console.log("NNT | LOADED TNN_INPUTS_IDS: " + loadedConfigObj.TNN_INPUTS_IDS);
+        inputsIdSet.clear();
         cnf.inputsIdArray = loadedConfigObj.TNN_INPUTS_IDS;
         cnf.inputsIdArray.forEach(function(inputsId){
           inputsIdSet.add(inputsId);
@@ -3939,11 +3962,16 @@ function generateRandomEvolveConfig (cnf, callback){
 
     let tempInputsIdArray = [];
 
-    async.each(keys, function(key, cb){
-      if (inputsNetworksHashMap[key].size > 0) {
-        tempInputsIdArray.push(key);
+    async.each(keys, function(inId, cb){
+      if (inputsNetworksHashMap[inId].size > 0) {
+        tempInputsIdArray.push(inId);
       }
-      console.log("NNT | INPUTS ID " + key + " | " + inputsNetworksHashMap[key].size + " NETWORKS");
+      const tempInputsMeta = inputsHashMap.get(inId).inputsObj.meta;
+      console.log("NNT"
+        + " | ID: " + inId
+        + " | INPUTS: " + tempInputsMeta.numInputs
+        + " | " + inputsNetworksHashMap[inId].size + " NNs"
+      );
       cb();
     }, function(){
       config.seedInputsId = randomItem(inputsHashMap.keys());  // will be ignored if config.seednetworkId gets set below
@@ -4563,9 +4591,17 @@ function initNeuralNetworkChild(cnf, callback){
 
             if (results.successRate >= cnf.globalMinSuccessRate) {
 
-              console.log(chalkInfo("NNT | ... SAVING NN FILE TO DROPBOX GLOBAL BEST"
+              console.log(chalkInfo("NNT | ### SAVING NN FILE TO DROPBOX GLOBAL BEST"
                 + " | " + globalBestNetworkFolder + "/" + bestNetworkFile
               ));
+
+              let slackText = "\n*" + statsObj.runId + "*";
+              slackText = slackText + "\nBEST: " + bestNetworkFile;
+              slackText = slackText + "\n  SR: " + results.successRate.toFixed(2);
+
+              console.log("NNT | SLACK TEXT: " + slackText);
+
+              slackPostMessage(slackChannel, slackText);
 
               saveFileQueue.push({localFlag: false, folder: globalBestNetworkFolder, file: bestNetworkFile, obj: networkObj});
 
@@ -4699,10 +4735,6 @@ function initTimeout(callback){
     }
 
   });
-}
-
-if (process.env.TNN_BATCH_MODE){
-  slackChannel = "#nn_batch";
 }
 
 initTimeout(function(){
