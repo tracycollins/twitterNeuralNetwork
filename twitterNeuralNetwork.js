@@ -1567,7 +1567,7 @@ function loadTrainingSetsDropboxFolder(folder, callback){
               ));
 
               cb();
-          }
+            }
 
           });
         }

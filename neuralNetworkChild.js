@@ -588,7 +588,7 @@ function evolve(params, callback){
 
       console.log("NNC | EVOLVE"
         + " | " + configuration.processName
-        // + " | " + params.runId
+        + " | IN: " + params.inputsObj.meta.numInputs
         + " | S: " + moment(schedStartTime).format(compactDateTimeFormat)
         + " | R: " + schedMsToTime(elapsedInt)
         + " | RATE: " + iterationRateSec.toFixed(1) + " s/I"
