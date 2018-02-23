@@ -129,7 +129,7 @@ const EVOLVE_COST_ARRAY = [
 ];
 
 const EVOLVE_MUTATION_RATE_RANGE = { min: 0.35, max: 0.75 } ;
-const EVOLVE_POP_SIZE_RANGE = { min: 50, max: 50 } ;
+const EVOLVE_POP_SIZE_RANGE = { min: DEFAULT_EVOLVE_POPSIZE, max: DEFAULT_EVOLVE_POPSIZE } ;
 const EVOLVE_GROWTH_RANGE = { min: 0.00005, max: 0.00015 } ;
 const EVOLVE_ELITISM_RANGE = { min: 5, max: 20 } ;
 
