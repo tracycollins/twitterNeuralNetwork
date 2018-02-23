@@ -1620,7 +1620,7 @@ function loadTrainingSetsDropboxFolder(folder, callback){
   })
   .catch(function(err){
     console.log(chalkError("NNT | *** DROPBOX FILES LIST FOLDER ERROR\n" + jsonPrint(err)));
-    quit("DROPBOX FILES LIST FOLDER ERROR");
+    // quit("DROPBOX FILES LIST FOLDER ERROR");
     if (callback !== undefined) { callback(err); }
   });
 }
