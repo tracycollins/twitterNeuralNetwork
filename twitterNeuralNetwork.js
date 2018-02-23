@@ -1933,6 +1933,7 @@ function loadBestNetworkDropboxFolders (folders, callback){
       });
     })
     .catch(function(err){
+      console.log(chalkError("NNT | *** DROPBOX FILES LIST FOLDER ERROR: " + err));
       console.log(chalkError("NNT | *** DROPBOX FILES LIST FOLDER ERROR\n" + jsonPrint(err)));
       cb0(err);
     });
