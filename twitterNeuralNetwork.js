@@ -4689,7 +4689,7 @@ function initTimeout(callback){
       quit("INIT ERROR");
     }
 
-    configuration = cnf;
+    configuration = deepcopy(cnf);
 
     console.log(chalkBlue("\n\nNNT"
       + " | " + cnf.processName 
