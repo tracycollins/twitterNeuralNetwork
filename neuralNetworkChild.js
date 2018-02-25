@@ -131,7 +131,7 @@ statsObj.memory.maxRssTime = moment().valueOf();
 
 statsObj.evolve = {};
 statsObj.evolve.startTime = moment().valueOf();
-statsObj.evolve.endTime;
+statsObj.evolve.endTime = moment().valueOf();
 statsObj.evolve.elapsed = 0;
 statsObj.evolve.options = {};
 statsObj.evolve.results = {};
@@ -359,6 +359,8 @@ function printDatum(title, input){
   });
 }
 
+// let maxInputsHashMap = {};
+
 function convertDatum(params, datum, generateInputRaw, callback){
 
   const inputTypes = Object.keys(params.inputsObj.inputs).sort();
@@ -384,6 +386,7 @@ function convertDatum(params, datum, generateInputRaw, callback){
     break;
     case "default":
     convertedDatum.output = [0, 0, 0];
+    break;
   }
 
   // let magnitudeNormalized = 0;
@@ -423,6 +426,8 @@ function convertDatum(params, datum, generateInputRaw, callback){
 
   async.eachSeries(inputTypes, function(inputType, cb0){
 
+    // if (maxInputsHashMap[inputType] === undefined) { maxInputsHashMap[inputType] = {}; }
+
     const inNames = params.inputsObj.inputs[inputType].sort();
 
     async.eachSeries(inNames, function(inName, cb1){
@@ -434,7 +439,11 @@ function convertDatum(params, datum, generateInputRaw, callback){
       }
 
       if ((datum.histograms[inputType] !== undefined) && (datum.histograms[inputType][inputName] !== undefined)){
-        convertedDatum.input.push(1);
+        // convertedDatum.input.push(1);
+
+        convertedDatum.input.push(datum.histograms[inputType][inputName]);
+
+
         async.setImmediate(function() {
           cb1();
         });
@@ -453,7 +462,6 @@ function convertDatum(params, datum, generateInputRaw, callback){
   }, function(){
     callback(null, convertedDatum);
   });
-
 }
 
 function trainingSetPrepAndEvolve(params, options, callback){
@@ -461,6 +469,8 @@ function trainingSetPrepAndEvolve(params, options, callback){
   let trainingSet = [];
   let inputRaw = [];
   let generateInputRaw = true;
+  
+  maxInputsHashMap = {};
 
   console.log("NNC | TRAINING SET PREP + EVOLVE"
     + " | DATA LENGTH: " + params.trainingSet.data.length
@@ -476,7 +486,6 @@ function trainingSetPrepAndEvolve(params, options, callback){
         generateInputRaw = false;
         inputRaw = datumObj.inputRaw;
       }
-
 
       debug("TRAIN DATUM | " + datumObj.output + " | " + datumObj.user.screenName);
 
@@ -511,6 +520,8 @@ function trainingSetPrepAndEvolve(params, options, callback){
       statsObj.evolve.elapsed = moment().valueOf() - statsObj.evolve.startTime;
 
       results.threads = options.threads;
+      results.maxInputsHashMap = {};
+      results.maxInputsHashMap = maxInputsHashMap;
 
       if (callback !== undefined) { callback(null, results); }
 
@@ -531,9 +542,7 @@ function trainingSetPrepAndEvolve(params, options, callback){
 
     });
   });
-
 }
-
 
 function evolve(params, callback){
 
@@ -719,7 +728,7 @@ function evolve(params, callback){
         //     }
         //     network.nodes[nodeIndex].name = inputName;
         //     network.nodes[nodeIndex].inputType = inputType;
-        //     nodeIndex++;
+        //     nodeIndex += 1;
 
         //     cb1();
 
@@ -753,9 +762,9 @@ function evolve(params, callback){
         //   }
 
         //   network.nodes[nodeIndex].name = "left";
-        //   nodeIndex++;
+        //   nodeIndex += 1;
         //   network.nodes[nodeIndex].name = "neutral";
-        //   nodeIndex++;
+        //   nodeIndex += 1;
         //   network.nodes[nodeIndex].name = "right";
 
         //   console.log("... END NETWORK NODE UPDATE: " + configuration.processName);
@@ -770,156 +779,6 @@ function evolve(params, callback){
 
   });
 }
-
-// function train(params, callback){
-
-//   if (params.architecture === undefined) { params.architecture = "perceptron"; }
-
-//   let options = {};
-
-//   if ((params.network !== undefined) && params.networkObj) {
-//     options.networkObj = params.network;
-//     params.architecture = "loadedNetwork";
-//     console.log(chalkAlert("NNC | START NETWORK DEFINED: " + options.networkObj.networkId));
-//   }
-
-//   options.error = params.error;
-//   options.rate = params.rate;
-//   options.dropout = params.dropout;
-//   options.shuffle = params.shuffle;
-//   options.iterations = params.iterations;
-//   options.clear = params.clear;
-//   options.momentum = params.momentum;
-//   options.batchSize = params.batchSize;
-//   options.hiddenLayerSize = params.hiddenLayerSize;
-
-//   const startTime = moment().valueOf();
-
-//   options.schedule = {
-
-//     function: function(schedParams){
-
-//       let elapsedInt = moment().valueOf() - startTime;
-
-//       function schedMsToTime(duration) {
-//         let seconds = parseInt((duration / 1000) % 60);
-//         let minutes = parseInt((duration / (1000 * 60)) % 60);
-//         let hours = parseInt((duration / (1000 * 60 * 60)) % 24);
-//         let days = parseInt(duration / (1000 * 60 * 60 * 24));
-
-//         days = (days < 10) ? "0" + days : days;
-//         hours = (hours < 10) ? "0" + hours : hours;
-//         minutes = (minutes < 10) ? "0" + minutes : minutes;
-//         seconds = (seconds < 10) ? "0" + seconds : seconds;
-
-//         return days + ":" + hours + ":" + minutes + ":" + seconds;
-//       }
-
-//       console.log("NNC | TRAIN "
-//         + " | " + params.runId
-//         + " | S: " + moment(startTime).format(compactDateTimeFormat)
-//         + " | R: " + schedMsToTime(elapsedInt)
-//         + " | I: " + schedParams.iteration + " / " + params.iterations
-//         // + " | F: " + schedParams.rate.toFixed(1)
-//         + " | E: " + schedParams.error.toFixed(5)
-//         // + " | schedParams\n" + jsonPrint(schedParams)
-//       );
-
-//     },
-//     iterations: 1
-//   };
-
-//   async.each(Object.keys(options), function(key, cb){
-
-//     if (key === "network") {
-//       console.log("NNC"
-//         + " | TRAIN OPTION | NETWORK: " + options[key].networkId 
-//         + " | IN: " + options[key].input
-//         + " | OUT: " + options[key].output
-//         + " | " + options[key].successRate.toFixed(2) + "%"
-//       );
-//     }
-//     else if (key === "cost") {
-//       console.log("NNC | TRAIN OPTION | " + key + ": " + options[key]);
-//       options.cost = neataptic.Methods.Cost[key];
-//     }
-//     else if (key === "ratePolicy") {
-//       console.log("NNC | TRAIN OPTION | " + key + ": " + options[key]);
-//       options.ratePolicy = neataptic.Methods.Rate[options[key]];
-//       // options.mutation = neataptic.methods.mutation.FFW;
-//     }
-//     cb();
-
-
-//   }, function(){
-
-//     network = {};
-
-//     switch (params.architecture) {
-
-//       case "loadedNetwork":
-//         console.log("NNC | TRAIN ARCH | LOADED: " + options.networkObj.networkId);
-//         network = neataptic.Network.fromJSON(options.networkObj.network);
-
-//       break;
-
-//       default:
-//         console.log("NNC | TRAIN ARCH"
-//           + "   | " + params.architecture
-//           + " | HIDDEN LAYER NODES: " + options.hiddenLayerSize
-//           + "\n"
-//         );
-
-//         network = new neataptic.architect.Perceptron(
-//           params.trainingSet.meta.numInputs, 
-//           options.hiddenLayerSize,
-//           params.trainingSet.meta.numOutputs
-//         );
-//     }
-
-//     let trainingSet = [];
-
-//     async.each(params.trainingSet, function(datumObj, cb){
-
-//       debug("DATUM | " + datumObj.user.screenName);
-
-//       trainingSet.push({ 
-//         input: datumObj.input, 
-//         output: datumObj.output
-//       });
-
-//       cb();
-
-//     }, function(){
-
-//       console.log(chalkAlert("\nNNC | ========================\nNNC | START TRAIN"
-//         + "\nNNC | IN:       " + params.trainingSet.meta.numInputs
-//         + "\nNNC | HIDDEN:   " + options.hiddenLayerSize
-//         + "\nNNC | OUT:      " + params.trainingSet.meta.numOutputs
-//         + "\nNNC | TRAINING: " + trainingSet.length
-//       ));
-
-//       async function networkTrain() {
-
-//         console.log(chalkAlert("\n\nNNC | START TRAIN\nNNC | OPTIONS\nNNC | " + jsonPrint(options)));
-
-//         const results = await network.train(trainingSet, options);
-
-//         if (callback !== undefined) { callback(null, results); }
-//       }
-
-//       networkTrain().catch(function(err){
-//         console.error(chalkError("NNC | NETWORK TRAIN ERROR: " + err));
-//         process.send({op: "ERROR", processName: configuration.processName, error: err}, function(){
-//           quit(jsonPrint(err));
-//         });
-//       });
-
-//     });
-
-//   });
-// }
-
 
 function initStatsUpdate(cnf, callback){
 
@@ -1112,7 +971,7 @@ process.on("message", function(m) {
 
               exportedNetwork.nodes[nodeIndex].name = inputName;
               exportedNetwork.nodes[nodeIndex].inputType = inputType;
-              nodeIndex++;
+              nodeIndex += 1;
 
               cb1();
 
@@ -1146,9 +1005,9 @@ process.on("message", function(m) {
             }
 
             exportedNetwork.nodes[nodeIndex].name = "left";
-            nodeIndex++;
+            nodeIndex += 1;
             exportedNetwork.nodes[nodeIndex].name = "neutral";
-            nodeIndex++;
+            nodeIndex += 1;
             exportedNetwork.nodes[nodeIndex].name = "right";
 
             debug("... END NETWORK NODE UPDATE: " + statsObj.training.testRunId);

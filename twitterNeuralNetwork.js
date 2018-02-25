@@ -17,7 +17,7 @@ const DEFAULT_HISTOGRAM_PARSE_DOMINANT_MIN = 0.4;
 
 const bestRuntimeNetworkFileName = "bestRuntimeNetwork.json";
 
-const TEST_MODE_LENGTH = 10;
+const TEST_MODE_LENGTH = 100;
 const TEST_DROPBOX_NN_LOAD = 5;
 const DEFAULT_USE_LOCAL_TRAINING_SETS = false;
 const DEFAULT_MAX_NEURAL_NETWORK_CHILDREN = 2;
@@ -3013,8 +3013,12 @@ configEvents.once("INIT_MONGODB", function(){
 //   });
 // }
 
+let userMaxInputHashMap = {};
+
 // FUTURE: break up into updateClassifiedUsers and createTrainingSet
 function updateClassifiedUsers(cnf, callback){
+
+  userServer.resetMaxInputsHashMap();
 
   let classifiedUserIds = Object.keys(classifiedUserHashmap);
 
@@ -3369,7 +3373,7 @@ function updateClassifiedUsers(cnf, callback){
             debug(chalkInfo("hist\n" + jsonPrint(hist)));
             // update user histogram in db
 
-            userServer.updateHistograms({user: user, histograms: hist}, function(err, updatedUser){
+            userServer.updateHistograms({user: user, histograms: hist, accumulateFlag: false}, function(err, updatedUser){
 
               if (err) {
                 console.error("*** UPDATE USER HISTOGRAMS ERROR\n" + err);
@@ -3467,6 +3471,9 @@ function updateClassifiedUsers(cnf, callback){
         console.log(chalkError("NNT | UPDATE CLASSIFIED USERS ERROR: " + err));
       }
     }
+
+    userMaxInputHashMap = userServer.getMaxInputsHashMap();
+    console.log("MAX INPUT HASHMAP\n" + jsonPrint(userMaxInputHashMap));
 
     classifiedUsersPercent = 100 * (statsObj.users.notClassified + statsObj.users.updatedClassified)/classifiedUserIds.length;
     classifiedUsersElapsed = (moment().valueOf() - classifiedUsersStartMoment.valueOf()); // mseconds
@@ -3899,11 +3906,13 @@ function generateGlobalTrainingTestSet (userHashMap, callback){
     let file = "globalTrainingSet.json";
 
 
-    let dropboxFolder = (hostname === "google") ? "/home/tc/Dropbox/Apps/wordAssociation/config/utility/default/trainingSets" : "/Users/tc/Dropbox/Apps/wordAssociation/config/utility/" + hostname + "/trainingSets";
+    let dropboxFolder = (hostname === "google") ? "/home/tc/Dropbox/Apps/wordAssociation/config/utility/default/trainingSets" 
+    : "/Users/tc/Dropbox/Apps/wordAssociation/config/utility/" + hostname + "/trainingSets";
     // let localFlag = (hostname === "google") ? true : false ;
 
     if (configuration.testMode) {
-      dropboxFolder = (hostname === "google") ? "/home/tc/Dropbox/Apps/wordAssociation/config/utility/default/trainingSets_test" : "/Users/tc/Dropbox/Apps/wordAssociation/config/utility/" + hostname + "/trainingSets_test";
+      dropboxFolder = (hostname === "google") ? "/home/tc/Dropbox/Apps/wordAssociation/config/utility/default/trainingSets_test" 
+      : "/Users/tc/Dropbox/Apps/wordAssociation/config/utility/" + hostname + "/trainingSets_test";
     }
 
     let folder = dropboxFolder;
