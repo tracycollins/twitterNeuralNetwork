@@ -4374,29 +4374,65 @@ function initNetworkCreateInterval(cnf){
             console.log(chalkAlert("LOADED BEST NETWORK FOLDERS: " + bestNetworkFolders + " | " + numNetworksLoaded + " NETWORKS LOADED"));
           }
 
-          Object.keys(neuralNetworkChildHashMap).forEach(function(nnChildId){
 
-            if (neuralNetworkChildHashMap[nnChildId].ready) {
+          // async.times(cnf.maxNeuralNetworkChildern, function initNnChild (n, next) {
 
-              neuralNetworkChildHashMap[nnChildId].ready = false ;
+          //   debug("INIT NN CHILD NUMBER " + n);
 
-              const nnId = testObj.testRunId + "_" + nnChildId + "_" + networkIndex;
-              networkIndex += 1;
+          //   initNeuralNetworkChild(cnf, function(err, nnChildIndex) {
+          //     next(err, nnChildIndex);
+          //   });
+          // }, function(err, children) {
 
-              initNetworkCreate(nnChildId, nnId, configuration, function(err, results){
+          //   if (err){
+          //     console.log(chalkError("INIT NEURAL NETWORK CHILDREN ERROR\n" + jsonPrint(err)));
+          //     return(callback(err));
+          //   }
 
-                debug("initNetworkCreate results\n" + jsonPrint(results));
+          //   console.log(chalkLog("END INIT NEURAL NETWORK CHILDREN: " + children.length));
+          //   callback();
+          // });
 
-                if (err) {
-                  console.log("NNT | *** INIT NETWORK CREATE ERROR ***\n" + jsonPrint(err));
-                  neuralNetworkChildHashMap[nnChildId].ready = true ;
-                }
-                else {
-                  console.log(chalkInfo("NETWORK CREATED | " + nnId));
-                }
-              });
-            }
-          });
+          if (Object.keys(neuralNetworkChildHashMap).length < cnf.maxNeuralNetworkChildern) {
+            initNeuralNetworkChild(cnf, function(err, nnChildIndex) {
+            });
+          }
+          else if (Object.keys(neuralNetworkChildHashMap).length > cnf.maxNeuralNetworkChildern) {
+
+            Object.keys(neuralNetworkChildHashMap).forEach(function(nnChildId){
+
+              if (neuralNetworkChildHashMap[nnChildId].ready && (Object.keys(neuralNetworkChildHashMap).length > cnf.maxNeuralNetworkChildern)) {
+                console.log("NNT | XXX DELETING NNC " + nnChildId + " | OVER MAX CHILDREN " + cnf.maxNeuralNetworkChildern);
+                delete neuralNetworkChildHashMap[nnChildId] ;
+              }
+            });
+          }
+          else {
+            Object.keys(neuralNetworkChildHashMap).forEach(function(nnChildId){
+
+              if (neuralNetworkChildHashMap[nnChildId].ready) {
+
+                neuralNetworkChildHashMap[nnChildId].ready = false ;
+
+                const nnId = testObj.testRunId + "_" + nnChildId + "_" + networkIndex;
+                networkIndex += 1;
+
+                initNetworkCreate(nnChildId, nnId, configuration, function(err, results){
+
+                  debug("initNetworkCreate results\n" + jsonPrint(results));
+
+                  if (err) {
+                    console.log("NNT | *** INIT NETWORK CREATE ERROR ***\n" + jsonPrint(err));
+                    neuralNetworkChildHashMap[nnChildId].ready = true ;
+                  }
+                  else {
+                    console.log(chalkInfo("NNT | NETWORK CREATED | " + nnId));
+                  }
+                });
+              }
+            });
+          }
+
 
         });
 
