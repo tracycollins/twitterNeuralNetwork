@@ -329,37 +329,25 @@ function printDatum(title, input){
   let row = "";
   let col = 0;
   let rowNum = 0;
-  const COLS = 50;
+  const COLS = 20;
 
   console.log("\nNNT | ------------- " + title + " -------------");
 
-  input.forEach(function(bit, i){
-    if (i === 0) {
-      row = row + bit.toFixed(10) + " | " ;
-    }
-    else if (i === 1) {
-      row = row + bit.toFixed(10);
-    }
-    else if (i === 2) {
-      console.log("NNT | ROW " + rowNum + " | " + row);
-      row = bit ? "X" : ".";
-      col = 1;
-      rowNum += 1;
-    }
-    else if (col < COLS){
-      row = row + (bit ? "X" : ".");
+  input.forEach(function(value, i){
+    if (col < COLS){
+      // row = row + (bit ? "X" : ".");
+      row = row + " " + value.toFixed(2);
       col += 1;
     }
     else {
       console.log("NNT | ROW " + rowNum + " | " + row);
-      row = bit ? "X" : ".";
+      // row = bit ? "X" : ".";
+      row = value.toFixed(2);
       col = 1;
       rowNum += 1;
     }
   });
 }
-
-// let maxInputsHashMap = {};
 
 function convertDatum(params, datum, generateInputRaw, callback){
 
@@ -389,44 +377,8 @@ function convertDatum(params, datum, generateInputRaw, callback){
     break;
   }
 
-  // let magnitudeNormalized = 0;
-  // let scoreNormalized = 0.5;
-
-  // if (params.normalization.magnitude.max !== undefined) {
-  //   if (!params.normalization.magnitude.max) {
-  //     params.normalization.magnitude.max = 5; // KLUDGE!!
-  //   }
-  //   magnitudeNormalized = datum.inputHits.sentiment[0].magnitude/params.normalization.magnitude.max;
-  //   convertedDatum.input.push(magnitudeNormalized);
-  //   debug("NNC | MAG  "
-  //     + " | MIN:  " + params.normalization.magnitude.min.toFixed(2)
-  //     + " | MAX: " + params.normalization.magnitude.max.toFixed(2)
-  //     + " | ORG: " + datum.inputHits.sentiment[0].magnitude.toFixed(2)
-  //     + " | NORM: " + magnitudeNormalized.toFixed(2)
-  //   );
-  // }
-  // else {
-  //   convertedDatum.input.push(datum.inputHits.sentiment[0].magnitude);
-  // }
-
-  // if ((params.normalization.score.min !== undefined) && (params.normalization.score.max !== undefined)) {
-  //   scoreNormalized = (datum.inputHits.sentiment[1].score + Math.abs(params.normalization.score.min))/(Math.abs(params.normalization.score.min) + Math.abs(params.normalization.score.max));
-  //   convertedDatum.input.push(scoreNormalized);
-  //   debug("NNC | SCORE"
-  //     + " | MIN: " + params.normalization.score.min.toFixed(2)
-  //     + " | MAX: " + params.normalization.score.max.toFixed(2)
-  //     + " | ORG: " + datum.inputHits.sentiment[1].score.toFixed(2)
-  //     + " | NORM: " + scoreNormalized.toFixed(2)
-  //   );
-  // }
-  // else {
-  //   convertedDatum.input.push(datum.inputHits.sentiment[1].score);
-  // }
-
-
   async.eachSeries(inputTypes, function(inputType, cb0){
 
-    // if (maxInputsHashMap[inputType] === undefined) { maxInputsHashMap[inputType] = {}; }
 
     const inNames = params.inputsObj.inputs[inputType].sort();
 
@@ -441,8 +393,14 @@ function convertDatum(params, datum, generateInputRaw, callback){
       if ((datum.histograms[inputType] !== undefined) && (datum.histograms[inputType][inputName] !== undefined)){
         // convertedDatum.input.push(1);
 
-        convertedDatum.input.push(datum.histograms[inputType][inputName]);
-
+        if ((params.trainingSet.maxInputHashMap === undefined) || (params.trainingSet.maxInputHashMap[inputType] === undefined)) {
+          debug(chalkAlert("UNDEFINED??? params.trainingSet.maxInputHashMap." + inputType + " | " + inputName));
+          convertedDatum.input.push(1);
+        }
+        else {
+          const inputValue = (params.trainingSet.maxInputHashMap[inputType][inputName] > 0) ? datum.histograms[inputType][inputName]/params.trainingSet.maxInputHashMap[inputType][inputName] : 1;
+          convertedDatum.input.push(inputValue);
+        }
 
         async.setImmediate(function() {
           cb1();
@@ -470,8 +428,6 @@ function trainingSetPrepAndEvolve(params, options, callback){
   let inputRaw = [];
   let generateInputRaw = true;
   
-  maxInputsHashMap = {};
-
   console.log("NNC | TRAINING SET PREP + EVOLVE"
     + " | DATA LENGTH: " + params.trainingSet.data.length
   );
@@ -487,7 +443,8 @@ function trainingSetPrepAndEvolve(params, options, callback){
         inputRaw = datumObj.inputRaw;
       }
 
-      debug("TRAIN DATUM | " + datumObj.output + " | " + datumObj.user.screenName);
+      // console.log("TRAIN DATUM | " + datumObj.output + " | " + datumObj.user);
+      // printDatum(datumObj.user, datumObj.input);
 
       trainingSet.push({ 
         input: datumObj.input, 
@@ -520,8 +477,6 @@ function trainingSetPrepAndEvolve(params, options, callback){
       statsObj.evolve.elapsed = moment().valueOf() - statsObj.evolve.startTime;
 
       results.threads = options.threads;
-      results.maxInputsHashMap = {};
-      results.maxInputsHashMap = maxInputsHashMap;
 
       if (callback !== undefined) { callback(null, results); }
 

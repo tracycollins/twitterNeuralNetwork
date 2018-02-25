@@ -17,7 +17,7 @@ const DEFAULT_HISTOGRAM_PARSE_DOMINANT_MIN = 0.4;
 
 const bestRuntimeNetworkFileName = "bestRuntimeNetwork.json";
 
-const TEST_MODE_LENGTH = 100;
+const TEST_MODE_LENGTH = 1000;
 const TEST_DROPBOX_NN_LOAD = 5;
 const DEFAULT_USE_LOCAL_TRAINING_SETS = false;
 const DEFAULT_MAX_NEURAL_NETWORK_CHILDREN = 2;
@@ -3798,7 +3798,7 @@ function initClassifiedUserHashmap(folder, file, callback){
   });
 }
 
-function generateGlobalTrainingTestSet (userHashMap, callback){
+function generateGlobalTrainingTestSet (userHashMap, maxInputHashMap, callback){
 
   const uIds = userHashMap.keys();
   const userIds = _.shuffle(uIds);
@@ -3888,6 +3888,8 @@ function generateGlobalTrainingTestSet (userHashMap, callback){
     trainingSetObj.globalTrainingSetFlag = true;
     trainingSetObj.normalization = {};
     trainingSetObj.normalization = statsObj.normalization;
+    trainingSetObj.maxInputHashMap = {};
+    trainingSetObj.maxInputHashMap = maxInputHashMap;
     trainingSetObj.trainingSet = {};
     trainingSetObj.trainingSet = trainingSet;
     trainingSetObj.testSet = {};
@@ -4069,6 +4071,8 @@ function generateRandomEvolveConfig (cnf, callback){
 
     config.trainingSetId = tObj.trainingSetObj.trainingSetId;
     config.trainingSet = {};
+    config.trainingSet.maxInputHashMap = {};
+    config.trainingSet.maxInputHashMap = tObj.trainingSetObj.maxInputHashMap;
     config.trainingSet.meta = {};
     config.trainingSet.meta = tObj.trainingSetObj.trainingSet.meta;
     config.trainingSet.data = [];
@@ -4084,7 +4088,7 @@ function generateRandomEvolveConfig (cnf, callback){
 
     console.log(chalkAlert("NNT | ... START CREATE TRAINING SET"));
 
-    generateGlobalTrainingTestSet(trainingSetUsersHashMap, function(err){
+    generateGlobalTrainingTestSet(trainingSetUsersHashMap, userMaxInputHashMap, function(err){
 
       if (err) {
         return(callback(err, null));
@@ -4096,6 +4100,8 @@ function generateRandomEvolveConfig (cnf, callback){
 
       config.trainingSetId = tObj.trainingSetObj.trainingSetId;
       config.trainingSet = {};
+      config.trainingSet.maxInputHashMap = {};
+      config.trainingSet.maxInputHashMap = tObj.trainingSetObj.maxInputHashMap;
       config.trainingSet.meta = {};
       config.trainingSet.meta = tObj.trainingSetObj.trainingSet.meta;
       config.trainingSet.data = [];
@@ -4305,7 +4311,7 @@ function initMain(cnf, callback){
 
           console.log(chalkAlert("NNT | ... START CREATE TRAINING SET"));
 
-          generateGlobalTrainingTestSet(trainingSetUsersHashMap, function(err){
+          generateGlobalTrainingTestSet(trainingSetUsersHashMap, userMaxInputHashMap, function(err){
 
             if (err) {
               initMainReady = true;
