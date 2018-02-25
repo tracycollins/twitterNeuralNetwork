@@ -4344,7 +4344,7 @@ function initMain(cnf, callback){
 
 let networkCreateInterval;
 
-function initNetworkCreateInterval(cnf){
+function initNetworkCreateInterval(){
 
   clearInterval(networkCreateInterval);
 
@@ -4393,16 +4393,28 @@ function initNetworkCreateInterval(cnf){
           //   callback();
           // });
 
-          if (Object.keys(neuralNetworkChildHashMap).length < cnf.maxNeuralNetworkChildern) {
-            initNeuralNetworkChild(cnf, function(err, nnChildIndex) {
+          if (Object.keys(neuralNetworkChildHashMap).length < configuration.maxNeuralNetworkChildern) {
+            console.log(chalkAlert("NNT | +++ CREATING NNC"
+              + " | CURRENT NUM NNC: " + Object.keys(neuralNetworkChildHashMap).length
+              + " | MAX NUM NNC: " + configuration.maxNeuralNetworkChildern
+            ));
+            initNeuralNetworkChild(configuration, function(err, nnChildIndex) {
             });
           }
-          else if (Object.keys(neuralNetworkChildHashMap).length > cnf.maxNeuralNetworkChildern) {
+          else if (Object.keys(neuralNetworkChildHashMap).length > configuration.maxNeuralNetworkChildern) {
 
+            console.log(chalkAlert("NNT | XXX DELETING NNC"
+              + " | CURRENT NUM NNC: " + Object.keys(neuralNetworkChildHashMap).length
+              + " | MAX NUM NNC: " + configuration.maxNeuralNetworkChildern
+            ));
             Object.keys(neuralNetworkChildHashMap).forEach(function(nnChildId){
 
-              if (neuralNetworkChildHashMap[nnChildId].ready && (Object.keys(neuralNetworkChildHashMap).length > cnf.maxNeuralNetworkChildern)) {
-                console.log("NNT | XXX DELETING NNC " + nnChildId + " | OVER MAX CHILDREN " + cnf.maxNeuralNetworkChildern);
+              if (neuralNetworkChildHashMap[nnChildId].ready && (Object.keys(neuralNetworkChildHashMap).length > configuration.maxNeuralNetworkChildern)) {
+                console.log(chalkAlert("NNT | XXX DELETING NNC"
+                  + " | " + nnChildId
+                  + " | CURRENT NUM NNC: " + Object.keys(neuralNetworkChildHashMap).length
+                  + " | MAX NUM NNC: " + configuration.maxNeuralNetworkChildern
+                ));
                 delete neuralNetworkChildHashMap[nnChildId] ;
               }
             });
@@ -4440,7 +4452,7 @@ function initNetworkCreateInterval(cnf){
 
     }
 
-  }, cnf.networkCreateIntervalTime);
+  }, configuration.networkCreateIntervalTime);
 }
 
 function initNeuralNetworkChild(cnf, callback){
@@ -4515,7 +4527,7 @@ function initNeuralNetworkChild(cnf, callback){
           }
 
           if (!cnf.createTrainingSetOnly) { 
-            initNetworkCreateInterval(cnf);
+            initNetworkCreateInterval();
           }
 
         }
