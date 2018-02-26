@@ -108,7 +108,6 @@ const DEFAULT_EVOLVE_ARCHITECTURE = "random";
 const DEFAULT_EVOLVE_BEST_NETWORK = false;
 
 const DEFAULT_EVOLVE_CLEAR = true;
-const DEFAULT_EVOLVE_COST = "CROSS_ENTROPY";
 const DEFAULT_EVOLVE_ELITISM = 10;
 const DEFAULT_EVOLVE_EQUAL = true;
 const DEFAULT_EVOLVE_ERROR = 0.03;
@@ -118,8 +117,12 @@ const DEFAULT_EVOLVE_MUTATION_RATE = 0.5;
 const DEFAULT_EVOLVE_POPSIZE = 100;
 const DEFAULT_EVOLVE_GROWTH = 0.0001;
 
-const EVOLVE_COST_ARRAY = [
+const DEFAULT_EVOLVE_COST = "MSE";
+const DEFAULT_EVOLVE_COST_ARRAY = [
   "CROSS_ENTROPY",
+  "CROSS_ENTROPY",
+  "MSE",
+  "MSE",
   "MSE"
   // "BINARY"
   // "MAE",
@@ -237,6 +240,10 @@ configuration.trainingSetFile = "trainingSet.json";
 configuration.requiredTrainingSetFile = "requiredTrainingSet.txt";
 
 configuration.maxNeuralNetworkChildern = (process.env.TNN_MAX_NEURAL_NETWORK_CHILDREN !== undefined) ? process.env.TNN_MAX_NEURAL_NETWORK_CHILDREN : DEFAULT_MAX_NEURAL_NETWORK_CHILDREN;
+
+configuration.costArray = (process.env.TNN_EVOLVE_COST_ARRAY !== undefined) 
+  ? process.env.TNN_EVOLVE_COST_ARRAY 
+  : DEFAULT_EVOLVE_COST_ARRAY;
 
 configuration.globalMinSuccessRate = (process.env.TNN_GLOBAL_MIN_SUCCESS_RATE !== undefined) 
   ? process.env.TNN_GLOBAL_MIN_SUCCESS_RATE 
@@ -2182,6 +2189,11 @@ function loadConfigFile(folder, file, callback) {
             configuration.maxNeuralNetworkChildern = loadedConfigObj.TNN_MAX_NEURAL_NETWORK_CHILDREN;
           }
 
+          if (loadedConfigObj.TNN_EVOLVE_COST_ARRAY !== undefined){
+            console.log("NNT | LOADED TNN_EVOLVE_COST_ARRAY: " + loadedConfigObj.TNN_EVOLVE_COST_ARRAY);
+            configuration.costArray = loadedConfigObj.TNN_EVOLVE_COST_ARRAY;
+          }
+
           if (loadedConfigObj.TNN_GLOBAL_MIN_SUCCESS_RATE !== undefined){
             console.log("NNT | LOADED TNN_GLOBAL_MIN_SUCCESS_RATE: " + loadedConfigObj.TNN_GLOBAL_MIN_SUCCESS_RATE);
             configuration.globalMinSuccessRate = loadedConfigObj.TNN_GLOBAL_MIN_SUCCESS_RATE;
@@ -2686,6 +2698,11 @@ function initialize(cnf, callback){
       if (loadedConfigObj.TNN_MAX_NEURAL_NETWORK_CHILDREN !== undefined){
         console.log("NNT | LOADED TNN_MAX_NEURAL_NETWORK_CHILDREN: " + loadedConfigObj.TNN_MAX_NEURAL_NETWORK_CHILDREN);
         cnf.maxNeuralNetworkChildern = loadedConfigObj.TNN_MAX_NEURAL_NETWORK_CHILDREN;
+      }
+
+      if (loadedConfigObj.TNN_EVOLVE_COST_ARRAY !== undefined){
+        console.log("NNT | LOADED TNN_EVOLVE_COST_ARRAY: " + loadedConfigObj.TNN_EVOLVE_COST_ARRAY);
+        configuration.costArray = loadedConfigObj.TNN_EVOLVE_COST_ARRAY;
       }
 
       if (loadedConfigObj.TNN_GLOBAL_MIN_SUCCESS_RATE !== undefined){
@@ -4011,7 +4028,7 @@ function generateRandomEvolveConfig (cnf, callback){
   config.log = cnf.evolve.log;
   config.mutation = DEFAULT_EVOLVE_MUTATION;
 
-  config.cost = randomItem(EVOLVE_COST_ARRAY);
+  config.cost = randomItem(cnf.costArray);
   config.clear = randomItem([true, false]);
   config.equal = true;
   config.error = cnf.evolve.error;
