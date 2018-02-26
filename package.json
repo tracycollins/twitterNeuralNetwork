@@ -7,7 +7,7 @@
     "@davvo/drbx": "^2.1.0",
     "@google-cloud/vision": "^0.15.2",
     "@threeceelabs/histogram-parser": "^1.0.7",
-    "@threeceelabs/mongoose-twitter": "^1.0.85",
+    "@threeceelabs/mongoose-twitter": "^1.0.86",
     "@threeceelabs/twitter-image-parser": "^1.0.37",
     "@threeceelabs/twitter-text-parser": "^1.0.37",
     "@threeceelabs/user-server-controller": "^1.0.175",
