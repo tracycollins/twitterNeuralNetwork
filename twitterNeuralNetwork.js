@@ -706,7 +706,7 @@ function printNetworkCreateResultsHashmap(){
     "M RATE",
     "POP",
     "ELITE",
-    // "START",
+    "START",
     "ELPSD",
     "ITRNS",
     "ERROR",
@@ -725,6 +725,9 @@ function printNetworkCreateResultsHashmap(){
       && (networkObj.evolve.results.error !== undefined)
       && networkObj.evolve.results.error)  ? networkObj.evolve.results.error.toFixed(5) : "---";
 
+    const successRate = (networkObj.successRate !== undefined) ? networkObj.successRate.toFixed(2) : "---";
+    const elapsed = (networkObj.evolve.elapsed !== undefined) ? networkObj.evolve.elapsed : (moment().valueOf() - networkObj.evolve.start);
+
     tableArray.push([
       "NNT | " + nnId,
       snId,
@@ -737,17 +740,18 @@ function printNetworkCreateResultsHashmap(){
       networkObj.evolve.options.mutationRate.toFixed(3),
       networkObj.evolve.options.popsize,
       networkObj.evolve.options.elitism,
-      msToTime(networkObj.evolve.elapsed),
+      getTimeStamp(networkObj.evolve.start),
+      msToTime(elapsed),
       iterations,
       error,
-      networkObj.successRate.toFixed(2)
+      successRate
     ]);
 
     cb();
 
   }, function(){
 
-    const t = table(tableArray, { align: ["l", "l", "l", "r", "l", "l", "l", "l", "r", "r", "r", "l", "r", "r", "r"] });
+    const t = table(tableArray, { align: ["l", "l", "l", "r", "l", "l", "l", "l", "r", "r", "r", "l", "l", "r", "r", "r"] });
 
     console.log("NNT | ============================================================================================================================================");
     console.log(t);
@@ -3985,38 +3989,16 @@ function generateRandomEvolveConfig (cnf, callback){
     }
   }
   else if (inputsIdSet.size > 0) {
-  // else if (cnf.inputsIdArray.length > 0) {
     console.log(chalkAlert("NNT | LOADING INPUTS USING INPUTS ID SET: " + jsonPrint(Array.from(inputsIdSet))));
     console.log(chalkAlert("NNT | LOADING INPUTS USING INPUTS ID SET: " + inputsIdSet.size + " SET SIZE"));
-    // const keys = Object.keys(inputsNetworksHashMap);
-    // const keys = ...inputsIdSet;
-
-    // let tempInputsIdArray = [];
-
-    // async.each(keys, function(inId, cb){
-    //   if (inputsNetworksHashMap[inId].size > 0) {
-    //     tempInputsIdArray.push(inId);
-    //   }
-    //   const tempInputsMeta = inputsHashMap.get(inId).inputsObj.meta;
-    //   console.log("NNT"
-    //     + " | ID: " + inId
-    //     + " | INPUTS: " + tempInputsMeta.numInputs
-    //     + " | " + inputsNetworksHashMap[inId].size + " NNs"
-    //   );
-    //   cb();
-    // }, function(){
-      // config.seedInputsId = randomItem(inputsHashMap.keys());  // will be ignored if config.seednetworkId gets set below
     config.seedInputsId = randomItem(Array.from(inputsIdSet));  // will be ignored if config.seednetworkId gets set below
     console.log(chalkAlert("NNT | config.seedInputsId: " + config.seedInputsId));
-    // const tempNetworkInputsId = randomItem(tempInputsIdArray);
     if ((inputsNetworksHashMap[config.seedInputsId] === undefined) || (inputsNetworksHashMap[config.seedInputsId].size === 0)) {
       config.seedNetworkId = false;
     }
     else {
       config.seedNetworkId = (Math.random() <= cnf.seedNetworkProbability) ? randomItem(Array.from(inputsNetworksHashMap[config.seedInputsId])) : false;
     }
-    // });
-
   }
   else {
     config.seedInputsId = randomItem(inputsHashMap.keys());
@@ -4054,14 +4036,6 @@ function generateRandomEvolveConfig (cnf, callback){
     config.popsize = randomItem([config.popsize, networkObj.evolve.options.popsize]);
     config.growth = randomItem([config.growth, networkObj.evolve.options.growth]);
     config.elitism = randomItem([config.elitism, networkObj.evolve.options.elitism]);
-
-    // config.clear = networkObj.evolve.options.clear;
-    // config.equal = networkObj.evolve.options.equal;
-    // config.error = networkObj.evolve.options.error;
-    // config.mutationRate = networkObj.evolve.options.mutationRate;
-    // config.popsize = networkObj.evolve.options.popsize;
-    // config.growth = networkObj.evolve.options.growth;
-    // config.elitism = networkObj.evolve.options.elitism;
   }
   else {
     console.log("NNT | RANDOM ARCH | seedInputsId: " + config.seedInputsId);
@@ -4228,6 +4202,26 @@ function initNetworkCreate(nnChildId, nnId, cnf, callback){
             console.log(chalkError("NNT | *** NEURAL NETWORK CHILD SEND ERROR: " + err));
           }
           callback(err, null);
+
+          networkCreateResultsHashmap[messageObj.testRunId] = {};
+
+          let networkCreateObj = {};
+          networkCreateObj.networkId = messageObj.testRunId;
+          networkCreateObj.seedNetworkId = messageObj.seedNetworkId;
+          networkCreateObj.seedNetworkRes = messageObj.seedNetworkRes;
+          networkCreateObj.numInputs = messageObj.inputsObj.meta.numInputs;
+          networkCreateObj.inputsId = messageObj.inputsId;
+          networkCreateObj.evolve = {};
+          networkCreateObj.evolve.start = moment().valueOf();
+          networkCreateObj.evolve.complete = false;
+          networkCreateObj.evolve.options = {};
+          networkCreateObj.evolve.options = pick(childConf, ["clear", "cost", "growth", "equal", "mutationRate", "popsize", "elitism"]);;
+
+          // console.log("networkCreateObj\n" + jsonPrint(networkCreateObj));
+
+          networkCreateResultsHashmap[messageObj.testRunId] = networkCreateObj;
+
+          printNetworkCreateResultsHashmap();
 
         });
 
@@ -4609,6 +4603,7 @@ function initNeuralNetworkChild(cnf, callback){
 
           let networkObj = {};
 
+
           networkObj.networkId = m.networkObj.networkId;
           networkObj.seedNetworkId = m.networkObj.seedNetworkId;
           networkObj.seedNetworkRes = m.networkObj.seedNetworkRes;
@@ -4626,6 +4621,7 @@ function initNeuralNetworkChild(cnf, callback){
           networkObj.outputs = {};
           networkObj.outputs = m.networkObj.outputs;
           networkObj.evolve = {};
+          networkObj.evolve.start = networkCreateResultsHashmap[networkObj.networkId].evolve.start;
           networkObj.evolve.options = {};
           networkObj.evolve.options = omit(m.statsObj.evolve.options, ["networkObj", "inputs", "outputs"]);
           networkObj.evolve.results = {};
