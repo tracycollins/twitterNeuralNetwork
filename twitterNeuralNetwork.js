@@ -49,10 +49,8 @@ let saveFileQueue = [];
 
 const os = require("os");
 const util = require("util");
-// const S = require("string");
 const moment = require("moment");
 const _ = require("lodash");
-// const jsonfile = require("jsonfile");
 const writeJsonFile = require("write-json-file");
 const sizeof = require("object-sizeof");
 
@@ -67,7 +65,6 @@ const histogramParser = require("@threeceelabs/histogram-parser");
 require("isomorphic-fetch");
 // const Dropbox = require("dropbox").Dropbox;
 const Dropbox = require("./js/dropbox").Dropbox;
-// const dropboxStreamingUpload = require("dropbox-streaming-upload").default;
 
 const pick = require("object.pick");
 const omit = require("object.omit");
