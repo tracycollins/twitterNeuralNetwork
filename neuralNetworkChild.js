@@ -432,7 +432,9 @@ function trainingSetPrepAndEvolve(params, options, callback){
     + " | DATA LENGTH: " + params.trainingSet.data.length
   );
 
-  async.eachSeries(params.trainingSet.data, function(datum, cb){
+  const shuffledTrainingData = _.shuffle(params.trainingSet.data);
+
+  async.eachSeries(shuffledTrainingData, function(datum, cb){
 
     // console.log("datum\n" + jsonPrint(datum));
 
