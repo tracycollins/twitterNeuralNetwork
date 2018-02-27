@@ -4222,35 +4222,47 @@ function initNetworkCreate(nnChildId, nnId, cnf, callback){
   });
 }
 
+let allCompleteFlag = false;
 function allComplete(){
 
-  async.each(Object.keys(neuralNetworkChildHashMap), function(nnChildId, cb){
-    if (neuralNetworkChildHashMap[nnChildId].status === "COMPLETE"){
-      cb();
+  if (Object.keys(neuralNetworkChildHashMap).length === 0 ) { 
+    allCompleteFlag = false;
+    return;
+  }
+
+  let index = 0;
+
+  Object.keys(neuralNetworkChildHashMap).forEach(function(nnChildId){
+
+    index += 1;
+    console.log(chalkAlert("allComplete | NNC " + nnChildId + " STATUS: " + neuralNetworkChildHashMap[nnChildId].status));
+
+    if (neuralNetworkChildHashMap[nnChildId].status !== "COMPLETE"){
+      allCompleteFlag = false;
+      return;
     }
-    else {
-      cb(true);
+    if (index === Object.keys(neuralNetworkChildHashMap).length) { 
+      allCompleteFlag = true;
+      return;
     }
-  }, function(notComplete){
-    if (notComplete) {
-      return false;
-    }
-    return true;
   });
 
-}
+};
+
 
 function initMain(cnf, callback){
 
+  allComplete();
   initMainReady = false;
 
   showStats();
   console.log(chalkAlert("NNT | ***===*** INIT MAIN ***===***"
     + " | " + getTimeStamp()
+    + " | ALL COMPLETE: " + allCompleteFlag
     + " | INTERVAL: " + msToTime(cnf.initMainIntervalTime)
   ));
 
-  if (configuration.quitOnComplete && allComplete()) {
+  if (configuration.quitOnComplete && allCompleteFlag) {
     initMainReady = true;
     quit("QUIT ON COMPLETE");
     return callback(null, null);
