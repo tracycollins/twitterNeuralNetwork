@@ -3074,7 +3074,7 @@ function updateClassifiedUsers(cnf, callback){
       }
 
       if (!user){
-        console.log(chalkAlert("NNT | *** UPDATE CLASSIFIED USERS: USER NOT FOUND: UID: " + userId));
+        console.log(chalkLog("NNT | *** UPDATE CLASSIFIED USERS: USER NOT FOUND: UID: " + userId));
         statsObj.users.notFound += 1;
         statsObj.users.notClassified += 1;
         return(cb0());
@@ -3110,6 +3110,12 @@ function updateClassifiedUsers(cnf, callback){
           minScore = Math.min(minScore, sentimentObj.score);
           maxScore = Math.max(maxScore, sentimentObj.score);
         }
+      }
+      else {
+        user.languageAnalysis = {};
+        user.languageAnalysis.sentiment = {};
+        user.languageAnalysis.sentiment.magnitude = 0;
+        user.languageAnalysis.sentiment.score = 0;
       }
 
       sentimentText = "M: " + sentimentObj.magnitude.toFixed(2) + " S: " + sentimentObj.score.toFixed(2);
@@ -3389,7 +3395,6 @@ function updateClassifiedUsers(cnf, callback){
                 return(cb0(err));
               }
 
-
               const subUser = pick(updatedUser, ["userId", "screenName", "name", "languageAnalysis", "keywords", "keywordsAuto", "histograms"]);
 
               trainingSetUsersHashMap.set(subUser.userId, subUser);
@@ -3482,7 +3487,7 @@ function updateClassifiedUsers(cnf, callback){
     }
 
     userMaxInputHashMap = userServer.getMaxInputsHashMap();
-    console.log("MAX INPUT HASHMAP\n" + jsonPrint(userMaxInputHashMap));
+    debug("MAX INPUT HASHMAP\n" + jsonPrint(userMaxInputHashMap));
 
     classifiedUsersPercent = 100 * (statsObj.users.notClassified + statsObj.users.updatedClassified)/classifiedUserIds.length;
     classifiedUsersElapsed = (moment().valueOf() - classifiedUsersStartMoment.valueOf()); // mseconds
@@ -4297,7 +4302,6 @@ function initMain(cnf, callback){
       if (cnf.loadTrainingSetFromFile) {
 
         let folder;
-        // let file;
 
         if (cnf.useLocalTrainingSets) {
           console.log(chalkInfo("NNT | ... LOADING LOCAL TRAINING SETS FROM FOLDER " + localTrainingSetFolder));

@@ -391,15 +391,32 @@ function convertDatum(params, datum, generateInputRaw, callback){
         convertedDatum.inputRaw.push(inputName);
       }
 
-      if ((datum.histograms[inputType] !== undefined) && (datum.histograms[inputType][inputName] !== undefined)){
+      if (inputType === "sentiment") {
+        // console.log("SENTIMENT | " + inNames + "\ndatum\n" + jsonPrint(datum));
+        if (datum.languageAnalysis[inputName] === undefined) {
+          convertedDatum.input.push(0);
+          // console.log("INPUT | " + inputType + " | " + inputName + ": " + 0);
+        }
+        else {
+          convertedDatum.input.push(datum.languageAnalysis[inputName]);
+          console.log("INPUT | " + inputType + " | " + inputName + ": " + datum.languageAnalysis[inputName]);
+        }
+        async.setImmediate(function() {
+          cb1();
+        });
+      }
+      else if ((datum.histograms[inputType] !== undefined) && (datum.histograms[inputType][inputName] !== undefined)){
         // convertedDatum.input.push(1);
 
-        if ((params.trainingSet.maxInputHashMap === undefined) || (params.trainingSet.maxInputHashMap[inputType] === undefined)) {
+        if ((params.trainingSet.maxInputHashMap === undefined) 
+          || (params.trainingSet.maxInputHashMap[inputType] === undefined)) {
           debug(chalkAlert("UNDEFINED??? params.trainingSet.maxInputHashMap." + inputType + " | " + inputName));
           convertedDatum.input.push(1);
         }
         else {
-          const inputValue = (params.trainingSet.maxInputHashMap[inputType][inputName] > 0) ? datum.histograms[inputType][inputName]/params.trainingSet.maxInputHashMap[inputType][inputName] : 1;
+          const inputValue = (params.trainingSet.maxInputHashMap[inputType][inputName] > 0) 
+            ? datum.histograms[inputType][inputName]/params.trainingSet.maxInputHashMap[inputType][inputName] 
+            : 1;
           convertedDatum.input.push(inputValue);
         }
 
@@ -663,71 +680,6 @@ function evolve(params, callback){
           params.inputsObj.meta.numInputs, 
           3
         );
-
-        // network.nodes[0].name = "magnitude";
-        // network.nodes[0].inputType = "sentiment";
-        // network.nodes[1].name = "score";
-        // network.nodes[1].inputType = "sentiment";
-
-        // const nnInputTypes = Object.keys(params.inputs);
-
-        // let nodeIndex = 2; // skip 
-
-        // async.eachSeries(nnInputTypes, function(inputType, cb0){
-
-        //   const typeInputArray = params.inputs[inputType];
-
-        //   async.eachSeries(typeInputArray, function(inputName, cb1){
-
-        //     console.log("IN [" + nodeIndex + "]: " + inputName);
-        //     if (network.nodes[nodeIndex].type !== "input") {
-        //       console.log(chalkError("NOT INPUT ERROR " + nodeIndex + " | " + inputName));
-        //       return cb1("NN NOT INPUT NODE ERROR");
-        //     }
-        //     network.nodes[nodeIndex].name = inputName;
-        //     network.nodes[nodeIndex].inputType = inputType;
-        //     nodeIndex += 1;
-
-        //     cb1();
-
-        //   }, function(err){
-
-        //     if (err) {
-        //       return cb0(err);
-        //     }
-
-        //     console.log("... END " + inputType);
-        //     cb0(err);
-
-        //   });
-
-        // }, function(err){
-
-        //   if (err) {
-        //     return callback(err, null);
-        //   }
-
-        //   nodeIndex = network.nodes.length - network.output;
-        //   console.log("OUTPUT INDEX START " + nodeIndex);
-
-        //   if (network.nodes[nodeIndex].type !== "output") {
-        //     console.log(chalkError("NOT OUTPUT ERROR " 
-        //       + nodeIndex 
-        //       + "\n" + jsonPrint(network.nodes[nodeIndex])
-        //     ));
-        //     console.log(folder + "/" + entry.name);
-        //     return callback("NN NOT OUTPUT NODE ERROR", null);
-        //   }
-
-        //   network.nodes[nodeIndex].name = "left";
-        //   nodeIndex += 1;
-        //   network.nodes[nodeIndex].name = "neutral";
-        //   nodeIndex += 1;
-        //   network.nodes[nodeIndex].name = "right";
-
-        //   console.log("... END NETWORK NODE UPDATE: " + configuration.processName);
-
-        // });
 
         trainingSetPrepAndEvolve(params, options, function(err, results){
           callback(err, results);
