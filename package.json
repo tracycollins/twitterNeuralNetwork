@@ -5,7 +5,7 @@
   "main": "twitterNeuralNetwork.js",
   "dependencies": {
     "@davvo/drbx": "^2.1.0",
-    "@google-cloud/vision": "^0.15.2",
+    "@google-cloud/vision": "^0.16.0",
     "@threeceelabs/histogram-parser": "^1.0.7",
     "@threeceelabs/mongoose-twitter": "^1.0.86",
     "@threeceelabs/twitter-image-parser": "^1.0.37",
@@ -22,7 +22,7 @@
     "console.table": "^0.10.0",
     "debug": "^3.1.0",
     "deep-copy": "^1.4.2",
-    "dropbox": "^3.0.5",
+    "dropbox": "^4.0.0",
     "dropbox-streaming-upload": "^1.0.2",
     "emoji-regex": "^6.5.1",
     "eventemitter2": "^5.0.1",

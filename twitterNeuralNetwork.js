@@ -562,27 +562,20 @@ const dropboxConfigHostFolder = "/config/utility/" + hostname;
 const dropboxConfigFile = hostname + "_" + configuration.DROPBOX.DROPBOX_TNN_CONFIG_FILE;
 
 const defaultHistogramsFolder = dropboxConfigDefaultFolder + "/histograms";
-// const localHistogramsFolder = dropboxConfigHostFolder + "/histograms";
 const localInputsFolder = dropboxConfigHostFolder + "/inputs";
 const defaultInputsFolder = dropboxConfigDefaultFolder + "/inputs";
 // const defaultInputsFolder = localInputsFolder;
 
 const defaultTrainingSetFolder = dropboxConfigDefaultFolder + "/trainingSets";
-// const trainingSetFolder = defaultTrainingSetFolder;
-
 const localTrainingSetFolder = dropboxConfigHostFolder + "/trainingSets";
-// let localTrainingSetFile = "trainingSet_" + statsObj.runId + ".json";
-
-// const defaultTrainingSetFile = "trainingSet.json";
 
 const statsFolder = "/stats/" + hostname + "/neuralNetwork";
 const statsFile = "twitterNeuralNetworkStats_" + statsObj.runId + ".json";
 
 const globalBestNetworkFolder = "/config/utility/best/neuralNetworks";
 const localBestNetworkFolder = "/config/utility/" + hostname + "/neuralNetworks/best";
-// const localNetworkFolder = "/config/utility/" + hostname + "/neuralNetworks/local";
-let bestNetworkFile;
 
+let bestNetworkFile;
 
 debug("statsFolder : " + statsFolder);
 debug("statsFile : " + statsFile);
@@ -4035,7 +4028,13 @@ function generateRandomEvolveConfig (cnf, callback){
     config.architecture = "random";
     config.inputsId = config.seedInputsId;
     config.inputsObj = {};
-    config.inputsObj = inputsHashMap.get(config.seedInputsId).inputsObj;
+
+    if (inputsHashMap.has(config.seedInputsId)) {
+      config.inputsObj = inputsHashMap.get(config.seedInputsId).inputsObj;
+    }
+    else {
+      console.log("NNT *** ERROR *** | RANDOM ARCH | seedInputsId " + config.seedInputsId + " NOT IN inputsHashMap");
+    }
   }
 
   let tObj = {};

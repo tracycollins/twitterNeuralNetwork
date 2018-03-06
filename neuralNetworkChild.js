@@ -38,7 +38,7 @@ const dbConnection = wordAssoDb();
 
 dbConnection.on("error", console.error.bind(console, "connection error:"));
 dbConnection.once("open", function() {
-  console.log("CONNECT: TWEET SERVER MONGOOSE default connection open");
+  console.log("NNC | CONNECT: TWEET SERVER MONGOOSE DEFAULT CONNECTION OPEN");
   NeuralNetwork = mongoose.model("NeuralNetwork", neutralNetworkModel.NeuralNetworkSchema);
 });
 
