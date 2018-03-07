@@ -53,6 +53,7 @@ const moment = require("moment");
 const _ = require("lodash");
 const writeJsonFile = require("write-json-file");
 const sizeof = require("object-sizeof");
+const ora = require("ora");
 
 const mongoose = require("mongoose");
 const wordAssoDb = require("@threeceelabs/mongoose-twitter");
@@ -210,6 +211,8 @@ let slackChannel = "#nn";
 let initMainInterval;
 
 let configuration = {};
+
+configuration.processName = process.env.TNN_PROCESS_NAME || "node_twitterNeuralNetwork";
 
 configuration.generateTrainingSetOnly = DEFAULT_GENERATE_TRAINING_SET_ONLY;
 configuration.dropboxMaxFileUpload = DROPBOX_MAX_FILE_UPLOAD;
@@ -1195,6 +1198,9 @@ function loadFile(path, file, callback) {
     });
    }
   else {
+
+    const spinnerLoadFile = ora().start("NNT | LOADING DROPBOX " + fullPath + " ...");
+
     dropboxClient.filesDownload({path: fullPath})
     .then(function(data) {
 
@@ -1203,23 +1209,28 @@ function loadFile(path, file, callback) {
         + " | LOADING FILE FROM DROPBOX: [" + toMegabytes(data.size).toFixed(3) + " MB] | " + fullPath
       ));
 
+
       let payload = data.fileBinary;
       debug(payload);
 
       if (file.match(/\.json$/gi)) {
         try {
           let fileObj = JSON.parse(payload);
+          spinnerLoadFile.succeed("NNT | LOADED DROPBOX " + fullPath);
           callback(null, fileObj);
         }
         catch(e){
+          spinnerLoadFile.fail("NNT | *** FAIL LOAD DROPBOX " + fullPath);
           console.trace(chalkError("NNT | JSON PARSE ERROR: " + fullPath  + " | ERROR: " + e + "\n" + jsonPrint(e)));
           callback(e, null);
         }
       }
       else if (file.match(/\.txt$/gi)) {
+        spinnerLoadFile.succeed("NNT | LOADED DROPBOX " + fullPath);
         callback(null, data);
       }
       else {
+        spinnerLoadFile.fail("NNT | *** FAIL LOAD DROPBOX " + fullPath);
         console.log(chalkLog("NNT"
           + " | " + getTimeStamp()
           + " | ??? LOADING FILE FROM DROPBOX FILE | NOT .json OR .txt: " + fullPath
@@ -1228,6 +1239,7 @@ function loadFile(path, file, callback) {
       }
     })
     .catch(function(error) {
+      spinnerLoadFile.fail("NNT | *** FAIL LOAD DROPBOX " + fullPath);
       console.log(chalkError("NNT | DROPBOX loadFile ERROR: " + fullPath + "\n" + error));
       console.log(chalkError("NNT | !!! DROPBOX READ " + fullPath + " ERROR"));
       console.log(chalkError("NNT | " + jsonPrint(error.error)));
