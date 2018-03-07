@@ -4706,9 +4706,8 @@ function initNeuralNetworkChild(cnf, callback){
                 + " | " + globalBestNetworkFolder + "/" + bestNetworkFile
               ));
 
-              let slackText = "\n*" + statsObj.runId + "*";
-              slackText = slackText + "\nBEST: " + bestNetworkFile;
-              slackText = slackText + "\n  SR: " + results.successRate.toFixed(2);
+              let slackText = "\n*BEST: " + results.successRate.toFixed(2) + "*";
+              slackText = slackText + "\n" + m.networkObj.networkId;
 
               console.log("NNT | SLACK TEXT: " + slackText);
 
