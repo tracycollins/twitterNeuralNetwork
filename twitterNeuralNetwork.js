@@ -61,8 +61,6 @@ const wordAssoDb = require("@threeceelabs/mongoose-twitter");
 const userServer = require("@threeceelabs/user-server-controller");
 const User = mongoose.model("User", wordAssoDb.UserSchema);
 
-// const histogramParser = require("@threeceelabs/histogram-parser");
-
 require("isomorphic-fetch");
 // const Dropbox = require("dropbox").Dropbox;
 const Dropbox = require("./js/dropbox").Dropbox;
@@ -264,7 +262,6 @@ configuration.localMinSuccessRate = (process.env.TNN_LOCAL_MIN_SUCCESS_RATE !== 
   ? process.env.TNN_LOCAL_MIN_SUCCESS_RATE 
   : DEFAULT_LOCAL_MIN_SUCCESS_RATE;
 
-// configuration.localMinSuccessRate = DEFAULT_LOCAL_MIN_SUCCESS_RATE;
 configuration.loadTrainingSetFromFile = false;
 configuration.createTrainingSet = false;
 configuration.createTrainingSetOnly = false;
@@ -4708,6 +4705,8 @@ function initNeuralNetworkChild(cnf, callback){
 
               let slackText = "\n*BEST: " + results.successRate.toFixed(2) + "*";
               slackText = slackText + "\n" + m.networkObj.networkId;
+              slackText = slackText + "\nIN: " + m.networkObj.inputsId;
+              slackText = slackText + "\nINPUTS: " + m.networkObj.input;
 
               console.log("NNT | SLACK TEXT: " + slackText);
 
