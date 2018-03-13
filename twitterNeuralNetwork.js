@@ -3125,7 +3125,6 @@ function updateClassifiedUsers(cnf, callback){
       const keywordArray = Object.keys(user.keywords);
 
       const classification = (keywordArray[0] !== undefined) ? keywordArray[0] : false;
-      const threeceeFollowing = (user.threeceeFollowing) ? user.threeceeFollowing.screenName : "-";
 
       if (classification) {
 
@@ -3171,10 +3170,9 @@ function updateClassifiedUsers(cnf, callback){
           + " | " + user.screenName
           + " | " + user.userId
           + " | " + user.name
-          + " | 3C FOLLOW: " + threeceeFollowing
+          + " | 3C FOLLOW: " + user.threeceeFollowing
           + " | FLLWs: " + user.followersCount
           + " | FRNDs: " + user.friendsCount
-          // + " | " + jsonPrint(user.keywords)
         ));
 
         statsObj.users.updatedClassified += 1;
@@ -3425,12 +3423,11 @@ function updateClassifiedUsers(cnf, callback){
 
         console.log(chalkBlue("NNT *** USR DB NOT CL"
           + " | KW: " + keywordArray
-          // + " | CL: " + classification
           + " | CLHashMap: " + Object.keys(classifiedUserHashmap[userId])
           + " | " + user.userId
           + " | " + user.screenName
           + " | " + user.name
-          + " | 3CF: " + threeceeFollowing
+          + " | 3CF: " + user.threeceeFollowing
           + " | FLs: " + user.followersCount
           + " | FRs: " + user.friendsCount
           + " | SEN: " + sentimentText
