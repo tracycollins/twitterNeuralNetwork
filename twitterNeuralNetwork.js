@@ -85,8 +85,8 @@ const debugCache = require("debug")("cache");
 const debugQ = require("debug")("queue");
 const commandLineArgs = require("command-line-args");
 
-const neataptic = require("neataptic");
-// const neataptic = require("./js/neataptic");
+// const neataptic = require("neataptic");
+const neataptic = require("./js/neataptic");
 
 const twitterTextParser = require("@threeceelabs/twitter-text-parser");
 const twitterImageParser = require("@threeceelabs/twitter-image-parser");
