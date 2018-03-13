@@ -4608,7 +4608,7 @@ function initNeuralNetworkChild(cnf, callback){
               let slackText = "\n*BEST: " + results.successRate.toFixed(2) + "*";
               slackText = slackText + "\n" + m.networkObj.networkId;
               slackText = slackText + "\nIN: " + m.networkObj.inputsId;
-              slackText = slackText + "\nINPUTS: " + m.networkObj.input;
+              slackText = slackText + "\nINPUTS: " + m.networkObj.network.input;
 
               console.log("NNT | SLACK TEXT: " + slackText);
 
