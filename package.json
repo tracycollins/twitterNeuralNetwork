@@ -6,7 +6,7 @@
   "dependencies": {
     "@davvo/drbx": "^2.1.0",
     "@google-cloud/vision": "^0.16.0",
-    "@threeceelabs/histogram-parser": "^1.0.13",
+    "@threeceelabs/histogram-parser": "^1.0.14",
     "@threeceelabs/mongoose-twitter": "^1.0.86",
     "@threeceelabs/twitter-image-parser": "^1.0.38",
     "@threeceelabs/twitter-text-parser": "^1.0.38",
