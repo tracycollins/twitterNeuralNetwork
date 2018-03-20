@@ -63,8 +63,8 @@ const userServer = require("@threeceelabs/user-server-controller");
 const User = mongoose.model("User", wordAssoDb.UserSchema);
 
 require("isomorphic-fetch");
-// const Dropbox = require("dropbox").Dropbox;
-const Dropbox = require("./js/dropbox").Dropbox;
+const Dropbox = require("dropbox").Dropbox;
+// const Dropbox = require("./js/dropbox").Dropbox;
 
 const pick = require("object.pick");
 const omit = require("object.omit");
@@ -1090,12 +1090,15 @@ function saveFile (params, callback){
 
     if (options.mode === "add") {
 
-      dropboxClient.filesListFolder({path: params.folder})
+      dropboxClient.filesListFolder({path: params.folder, limit: 10})
       .then(function(response){
 
-        debug(chalkLog("DROPBOX LIST FOLDER"
-          + " | " + options.path
-          + " | " + jsonPrint(response)
+        console.log(chalkLog("DROPBOX LIST FOLDER"
+          + " | ENTRIES: " + response.entries.length
+          + " | CURSOR (trunc): " + response.cursor.substr(-10)
+          + " | MORE: " + response.has_more
+          + " | PATH:" + options.path
+          // + " | " + jsonPrint(response)
         ));
 
         let fileExits = false;
@@ -1205,7 +1208,6 @@ function loadFile(path, file, callback) {
         + " | " + chalkLog(getTimeStamp()
         + " | LOADING FILE FROM DROPBOX: [" + toMegabytes(data.size).toFixed(3) + " MB] | " + fullPath
       ));
-
 
       let payload = data.fileBinary;
       debug(payload);
@@ -1347,6 +1349,76 @@ function initStatsUpdate(cnf, callback){
   callback(null, cnf);
 }
 
+function loadDropboxFolder(options, callback){
+
+  console.log(chalkNetwork("NNT | ... LOADING DROPBOX FOLDER | " + options.path));
+
+  let results = {};
+  results.entries = [];
+
+  let cursor;
+  let more = false;
+
+  dropboxClient.filesListFolder(options)
+  .then(function(response){
+
+    cursor = response.cursor;
+    more = response.has_more;
+    results.entries = response.entries;
+
+    console.log(chalkLog("DROPBOX LIST FOLDER"
+      + " | PATH:" + options.path
+      + " | ENTRIES: " + response.entries.length
+      + " | CURSOR (trunc): " + cursor.substr(-10)
+      + " | LIMIT: " + options.limit
+      + " | MORE: " + more
+    ));
+
+    async.whilst(
+
+      function() {
+        return (more);
+      },
+
+      function(cb){
+
+        dropboxClient.filesListFolderContinue({cursor: cursor})
+        .then(function(responseCont){
+
+          cursor = responseCont.cursor;
+          more = responseCont.has_more;
+          results.entries = results.entries.concat(responseCont.entries);
+
+          console.log(chalkLog("DROPBOX LIST FOLDER CONT"
+            + " | PATH:" + options.path
+            + " | ENTRIES: " + responseCont.entries.length + "/" + results.entries.length
+            + " | CURSOR (trunc): " + responseCont.cursor.substr(-10)
+            + " | LIMIT: " + options.limit
+            + " | MORE: " + more
+          ));
+
+          cb();
+
+        })
+        .catch(function(err){
+          console.log(chalkError("NNT | *** DROPBOX FILES LIST FOLDER ERROR: " + err));
+          console.log(chalkError("NNT | *** DROPBOX FILES LIST FOLDER ERROR\n" + jsonPrint(err)));
+          cb(err);
+        });
+      },
+
+      function(err){
+        callback(err, results);
+      });
+
+  })
+  .catch(function(err){
+    console.log(chalkError("NNT | *** DROPBOX FILES LIST FOLDER ERROR: " + err));
+    console.log(chalkError("NNT | *** DROPBOX FILES LIST FOLDER ERROR\n" + jsonPrint(err)));
+    callback(err, null);
+  });
+}
+
 function loadInputsDropboxFolder(folder, callback){
 
   if (configuration.createTrainingSetOnly) {
@@ -1357,18 +1429,20 @@ function loadInputsDropboxFolder(folder, callback){
 
   console.log(chalkNetwork("NNT | ... LOADING DROPBOX INPUTS FOLDER | " + folder));
 
-  let options = {path: folder};
+  let options = {
+    path: folder,
+    limit: 10
+  };
   let skippedInputsFiles = 0;
 
-  dropboxClient.filesListFolder(options)
-  .then(function(response){
+  loadDropboxFolder(options, function(err, results){
 
-    debug(chalkLog("DROPBOX LIST FOLDER"
-      + " | " + options.path
-      + " | " + jsonPrint(response)
+    console.log(chalkLog("DROPBOX LIST INPUTS FOLDER"
+      + " | ENTRIES: " + results.entries.length
+      + " | PATH:" + options.path
     ));
 
-    async.eachSeries(response.entries, function(entry, cb){
+    async.eachSeries(results.entries, function(entry, cb){
 
       const entryNameArray = entry.name.split(".");
       const entryInputsId = entryNameArray[0];
@@ -1510,12 +1584,6 @@ function loadInputsDropboxFolder(folder, callback){
       }
       if (callback !== undefined) { callback(null); }
     });
-
-  })
-  .catch(function(err){
-    console.log(chalkError("NNT | *** DROPBOX FILES LIST FOLDER ERROR: " + err));
-    console.log(chalkError("NNT | *** DROPBOX FILES LIST FOLDER ERROR\n" + jsonPrint(err)));
-    if (callback !== undefined) { callback(err); }
   });
 }
 
@@ -1523,14 +1591,20 @@ function loadTrainingSetsDropboxFolder(folder, callback){
 
   console.log(chalkNetwork("NNT | ... LOADING DROPBOX TRAINING SETS FOLDER | " + folder));
 
-  let options = {path: folder};
+  let options = {
+    path: folder,
+    limit: 10
+  };
 
   dropboxClient.filesListFolder(options)
   .then(function(response){
 
-    debug(chalkLog("NNT | DROPBOX LIST FOLDER"
-      + " | " + options.path
-      + " | NUM ENTRIES: " + response.entries.length
+    console.log(chalkLog("DROPBOX LIST FOLDER"
+      + " | ENTRIES: " + response.entries.length
+      + " | CURSOR (trunc): " + response.cursor.substr(-10)
+      + " | MORE: " + response.has_more
+      + " | PATH:" + options.path
+      // + " | " + jsonPrint(response)
     ));
 
     async.eachSeries(response.entries, function(entry, cb){
@@ -1656,7 +1730,6 @@ function loadBestNetworkDropboxFolders (folders, callback){
     }
   }
 
-
   let numNetworksLoaded = 0;
 
   debug(chalkNetwork("NNT | ... LOADING DROPBOX BEST NN FOLDERS"
@@ -1668,14 +1741,20 @@ function loadBestNetworkDropboxFolders (folders, callback){
 
     debug(chalkNetwork("NNT | ... LOADING DROPBOX BEST NN FOLDER | " + folder));
 
-    let options = {path: folder};
+    let options = {
+      path: folder,
+      limit: 10
+    };
 
-    dropboxClient.filesListFolder(options)
-    .then(function(response){
+    loadDropboxFolder(options, function(err, response){
 
-      debug(chalkLog("DROPBOX LIST FOLDER"
-        + " | " + options.path
-        // + " | " + jsonPrint(response)
+      if (err) {
+        return(cb0(err));
+      }
+
+      console.log(chalkLog("DROPBOX LIST FOLDER"
+        + " | ENTRIES: " + response.entries.length
+        + " | PATH:" + options.path
       ));
 
       if (response.entries.length === 0) {
@@ -1700,7 +1779,6 @@ function loadBestNetworkDropboxFolders (folders, callback){
           debug(chalkInfo("... SKIPPING LOAD OF " + entry.name));
           return(cb1());
         }
-
 
         const entryNameArray = entry.name.split(".");
         const networkId = entryNameArray[0];
@@ -1954,11 +2032,7 @@ function loadBestNetworkDropboxFolders (folders, callback){
       }, function(err){
         cb0(err);
       });
-    })
-    .catch(function(err){
-      console.log(chalkError("NNT | *** DROPBOX FILES LIST FOLDER ERROR: " + err));
-      console.log(chalkError("NNT | *** DROPBOX FILES LIST FOLDER ERROR\n" + jsonPrint(err)));
-      cb0(err);
+
     });
 
   }, function(err){
@@ -2393,7 +2467,6 @@ function loadConfigFile(folder, file, callback) {
     }
 
   });
-
 }
 
 function loadSeedNeuralNetwork(options, callback){
@@ -2435,7 +2508,6 @@ function loadSeedNeuralNetwork(options, callback){
       }
 
     }
-
   });
 }
 
@@ -2996,33 +3068,6 @@ configEvents.once("INIT_MONGODB", function(){
 
   console.log(chalkAlert("INIT_MONGODB"));
 });
-
-// function printHistogram(title, hist){
-//   let tableArray = [];
-
-//   const sortedLabels = Object.keys(hist).sort(function(a,b){
-//     return hist[b] - hist[a];
-//   });
-
-//   async.eachSeries(sortedLabels, function(label, cb){
-//     if (inputArrays.images.includes(label)){
-//       tableArray.push(["HIT", hist[label], label]);
-//       cb();
-//     }
-//     else {
-//       tableArray.push(["---", hist[label], label]);
-//       cb();
-//     }
-//   }, function(){
-//     console.log(
-//         "--------------------------------------------------------------"
-//       + "\n" + title + " | " + sortedLabels.length + " IMAGE ENTRIES"  
-//       + "\n--------------------------------------------------------------\n"
-//       + table(tableArray, { align: [ "r", "l", "l"] })
-//       + "\n--------------------------------------------------------------"
-//     );
-//   });
-// }
 
 let userMaxInputHashMap = {};
 
@@ -4272,109 +4317,111 @@ function initMain(cnf, callback){
     return callback(null, null);
   }
 
-  loadInputsDropboxFolder(defaultInputsFolder, function(){});
+  loadInputsDropboxFolder(defaultInputsFolder, function(){
 
-  let seedOpt = {};
-  seedOpt.folders = [globalBestNetworkFolder, localBestNetworkFolder];
+    let seedOpt = {};
+    seedOpt.folders = [globalBestNetworkFolder, localBestNetworkFolder];
 
-  if (cnf.seedNetworkId) {
-    seedOpt.networkId = cnf.seedNetworkId;
-  }
-
-  loadSeedNeuralNetwork(seedOpt, function(err0, results){
-    if (err0) {
-      console.log(chalkError("*** ERROR loadSeedNeuralNetwork\n" + jsonPrint(err0)));
-      initMainReady = true;
-      return (callback(err0, null));
+    if (cnf.seedNetworkId) {
+      seedOpt.networkId = cnf.seedNetworkId;
     }
 
-    initClassifiedUserHashmap(cnf.classifiedUsersFolder, cnf.classifiedUsersFile, function(err, classifiedUsersObj){
-
-      if (err) {
-        console.error(chalkError("NNT | *** ERROR: CLASSIFIED USER HASHMAP NOT INITIALIED: ", err));
+    loadSeedNeuralNetwork(seedOpt, function(err0, results){
+      if (err0) {
+        console.log(chalkError("*** ERROR loadSeedNeuralNetwork\n" + jsonPrint(err0)));
         initMainReady = true;
-        return (callback(err, null));
+        return (callback(err0, null));
       }
 
-      classifiedUserHashmap = {};
-      classifiedUserHashmap = classifiedUsersObj;
+      initClassifiedUserHashmap(cnf.classifiedUsersFolder, cnf.classifiedUsersFile, function(err, classifiedUsersObj){
 
-      console.log(chalkInfo("NNT | LOADED " + Object.keys(classifiedUserHashmap).length + " TOTAL CLASSIFIED USERS"));
-
-      if (cnf.loadTrainingSetFromFile) {
-
-        let folder;
-
-        if (cnf.useLocalTrainingSets) {
-          console.log(chalkInfo("NNT | ... LOADING LOCAL TRAINING SETS FROM FOLDER " + localTrainingSetFolder));
-          folder = localTrainingSetFolder;
-        }
-        else {
-          console.log(chalkInfo("NNT | ... LOADING DEFAULT TRAINING SETS FROM FOLDER " + defaultTrainingSetFolder));
-          folder = defaultTrainingSetFolder;
-        }
-
-        loadTrainingSetsDropboxFolder(folder, function(err){
-
-          if (err) {
-            console.log(chalkError("*** LOAD TRAINING SETS FOLDER\n" + jsonPrint(err)));
-            initMainReady = true;
-            createTrainingSetBusy = false;
-            trainingSetReady = false;
-            return(callback(err, null));
-          }
-
+        if (err) {
+          console.error(chalkError("NNT | *** ERROR: CLASSIFIED USER HASHMAP NOT INITIALIED: ", err));
           initMainReady = true;
-          createTrainingSetBusy = false;
-          trainingSetReady = true;
+          return (callback(err, null));
+        }
 
-          callback(null, null);
+        classifiedUserHashmap = {};
+        classifiedUserHashmap = classifiedUsersObj;
 
-        });
-      }
-      else {
+        console.log(chalkInfo("NNT | LOADED " + Object.keys(classifiedUserHashmap).length + " TOTAL CLASSIFIED USERS"));
 
-        createTrainingSetBusy = true;
-        trainingSetReady = false;
+        if (cnf.loadTrainingSetFromFile) {
 
-        updateClassifiedUsers(cnf, function(err){
+          let folder;
 
-          if (err) {
-            console.error("NNT | *** UPDATE CLASSIFIED USER ERROR ***\n" + jsonPrint(err));
-            initMainReady = true;
-            return(callback(err, null));
+          if (cnf.useLocalTrainingSets) {
+            console.log(chalkInfo("NNT | ... LOADING LOCAL TRAINING SETS FROM FOLDER " + localTrainingSetFolder));
+            folder = localTrainingSetFolder;
+          }
+          else {
+            console.log(chalkInfo("NNT | ... LOADING DEFAULT TRAINING SETS FROM FOLDER " + defaultTrainingSetFolder));
+            folder = defaultTrainingSetFolder;
           }
 
-          console.log(chalkAlert("NNT | ... START CREATE TRAINING SET"));
-
-          generateGlobalTrainingTestSet(trainingSetUsersHashMap, userMaxInputHashMap, function(err){
+          loadTrainingSetsDropboxFolder(folder, function(err){
 
             if (err) {
+              console.log(chalkError("*** LOAD TRAINING SETS FOLDER\n" + jsonPrint(err)));
               initMainReady = true;
-              trainingSetReady = true;
               createTrainingSetBusy = false;
+              trainingSetReady = false;
               return(callback(err, null));
             }
 
-            statsObj.classifiedUserHistogram = {};
-            statsObj.classifiedUserHistogram = classifiedUserHistogram;
-
-            classifiedUserHistogram.left = 0;
-            classifiedUserHistogram.right = 0;
-            classifiedUserHistogram.neutral = 0;
-            classifiedUserHistogram.positive = 0;
-            classifiedUserHistogram.negative = 0;
-            classifiedUserHistogram.none = 0;
-
-            trainingSetReady = true;
-            createTrainingSetBusy = false;
             initMainReady = true;
+            createTrainingSetBusy = false;
+            trainingSetReady = true;
 
             callback(null, null);
+
           });
-        });
-      }
+        }
+        else {
+
+          createTrainingSetBusy = true;
+          trainingSetReady = false;
+
+          updateClassifiedUsers(cnf, function(err){
+
+            if (err) {
+              console.error("NNT | *** UPDATE CLASSIFIED USER ERROR ***\n" + jsonPrint(err));
+              initMainReady = true;
+              return(callback(err, null));
+            }
+
+            console.log(chalkAlert("NNT | ... START CREATE TRAINING SET"));
+
+            generateGlobalTrainingTestSet(trainingSetUsersHashMap, userMaxInputHashMap, function(err){
+
+              if (err) {
+                initMainReady = true;
+                trainingSetReady = true;
+                createTrainingSetBusy = false;
+                return(callback(err, null));
+              }
+
+              statsObj.classifiedUserHistogram = {};
+              statsObj.classifiedUserHistogram = classifiedUserHistogram;
+
+              classifiedUserHistogram.left = 0;
+              classifiedUserHistogram.right = 0;
+              classifiedUserHistogram.neutral = 0;
+              classifiedUserHistogram.positive = 0;
+              classifiedUserHistogram.negative = 0;
+              classifiedUserHistogram.none = 0;
+
+              trainingSetReady = true;
+              createTrainingSetBusy = false;
+              initMainReady = true;
+
+              callback(null, null);
+            });
+          });
+        }
+      });
     });
+
   });
 }
 
