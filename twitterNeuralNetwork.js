@@ -2,6 +2,7 @@
 "use strict";
 
 const DEFAULT_QUIT_ON_COMPLETE = false;
+const DROPBOX_LIST_FOLDER_LIMIT = 50;
 
 const NN_CHILD_PREFIX = "node_NNC_";
 let nnChildIndex = 0;
@@ -1090,7 +1091,7 @@ function saveFile (params, callback){
 
     if (options.mode === "add") {
 
-      dropboxClient.filesListFolder({path: params.folder, limit: 10})
+      dropboxClient.filesListFolder({path: params.folder, limit: DROPBOX_LIST_FOLDER_LIMIT})
       .then(function(response){
 
         console.log(chalkLog("DROPBOX LIST FOLDER"
@@ -1431,7 +1432,7 @@ function loadInputsDropboxFolder(folder, callback){
 
   let options = {
     path: folder,
-    limit: 10
+    limit: DROPBOX_LIST_FOLDER_LIMIT
   };
   let skippedInputsFiles = 0;
 
@@ -1593,7 +1594,7 @@ function loadTrainingSetsDropboxFolder(folder, callback){
 
   let options = {
     path: folder,
-    limit: 10
+    limit: DROPBOX_LIST_FOLDER_LIMIT
   };
 
   dropboxClient.filesListFolder(options)
@@ -1743,7 +1744,7 @@ function loadBestNetworkDropboxFolders (folders, callback){
 
     let options = {
       path: folder,
-      limit: 10
+      limit: DROPBOX_LIST_FOLDER_LIMIT
     };
 
     loadDropboxFolder(options, function(err, response){
