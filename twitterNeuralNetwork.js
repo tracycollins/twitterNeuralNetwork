@@ -1094,12 +1094,11 @@ function saveFile (params, callback){
       dropboxClient.filesListFolder({path: params.folder, limit: DROPBOX_LIST_FOLDER_LIMIT})
       .then(function(response){
 
-        console.log(chalkLog("DROPBOX LIST FOLDER"
+        debug(chalkLog("DROPBOX LIST FOLDER"
           + " | ENTRIES: " + response.entries.length
           + " | CURSOR (trunc): " + response.cursor.substr(-10)
           + " | MORE: " + response.has_more
           + " | PATH:" + options.path
-          // + " | " + jsonPrint(response)
         ));
 
         let fileExits = false;
@@ -1110,8 +1109,6 @@ function saveFile (params, callback){
             + " | " + params.folder
             + " | LAST MOD: " + moment(new Date(entry.client_modified)).format(compactDateTimeFormat)
             + " | " + entry.name
-            // + " | " + entry.content_hash
-            // + "\n" + jsonPrint(entry)
           ));
 
           if (entry.name === params.file) {
@@ -1352,7 +1349,7 @@ function initStatsUpdate(cnf, callback){
 
 function loadDropboxFolder(options, callback){
 
-  console.log(chalkNetwork("NNT | ... LOADING DROPBOX FOLDER | " + options.path));
+  debug(chalkNetwork("NNT | ... LOADING DROPBOX FOLDER | " + options.path));
 
   let results = {};
   results.entries = [];
@@ -1600,7 +1597,7 @@ function loadTrainingSetsDropboxFolder(folder, callback){
   dropboxClient.filesListFolder(options)
   .then(function(response){
 
-    console.log(chalkLog("DROPBOX LIST FOLDER"
+    debug(chalkLog("DROPBOX LIST FOLDER"
       + " | ENTRIES: " + response.entries.length
       + " | CURSOR (trunc): " + response.cursor.substr(-10)
       + " | MORE: " + response.has_more
@@ -1753,7 +1750,7 @@ function loadBestNetworkDropboxFolders (folders, callback){
         return(cb0(err));
       }
 
-      console.log(chalkLog("DROPBOX LIST FOLDER"
+      debug(chalkLog("DROPBOX LIST FOLDER"
         + " | ENTRIES: " + response.entries.length
         + " | PATH:" + options.path
       ));
