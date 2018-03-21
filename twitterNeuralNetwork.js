@@ -2015,10 +2015,20 @@ function loadBestNetworkDropboxFolders (folders, callback){
                   cb1();
                 })
                 .catch(function(err){
-                  console.log(chalkError("NNT | *** ERROR: XXX NN"
-                    + " | " + folder + "/" + entry.name
-                    + " | " + jsonPrint(err)
-                  ));
+                  if (err.status === 429) {
+                    console.log(chalkError("NNT | *** ERROR: XXX NN"
+                      + " | STATUS: " + err.status
+                      + " | PATH: " + folder + "/" + entry.name
+                      + " | TOO MANY REQUESTS"
+                    ));
+                  }
+                  else {
+                    console.log(chalkError("NNT | *** ERROR: XXX NN"
+                      + " | STATUS: " + err.status
+                      + " | PATH: " + folder + "/" + entry.name
+                      + " | SUMMARY: " + err.response.statusText
+                    ));
+                  }
                   cb1(err);
                 });
 
@@ -2492,11 +2502,20 @@ function loadSeedNeuralNetwork(options, callback){
   loadBestNetworkDropboxFolders(options.folders, function loadBestCallback (err, numNetworksLoaded){
 
     if (err) {
-      console.log(chalkError("NNT | LOAD DROPBOX BEST NETWORK ERR"
-        + " | FOLDERS: " + options.folders
-        + "\nNNT | " + err
-      ));
-      // quit("LOAD DROPBOX BEST NETWORK ERR");
+      if (err.status === 429) {
+        console.log(chalkError("NNT | LOAD DROPBOX BEST NETWORK ERR"
+          + " | FOLDERS: " + options.folders
+          + " | STATUS: " + err.status
+          + " | TOO MANY REQUESTS"
+        ));
+      }
+      else {
+        console.log(chalkError("NNT | LOAD DROPBOX BEST NETWORK ERR"
+          + " | FOLDERS: " + options.folders
+          + " | STATUS: " + err.status
+          + " | SUMMARY: " + err.error.error_summary
+        ));
+      }
       if (callback !== undefined) { callback(err, null); }
     }
     else if (numNetworksLoaded === 0){
