@@ -1367,7 +1367,7 @@ function loadDropboxFolder(options, callback){
     more = response.has_more;
     results.entries = response.entries;
 
-    console.log(chalkLog("DROPBOX LIST FOLDER"
+    debug(chalkLog("DROPBOX LIST FOLDER"
       + " | PATH:" + options.path
       + " | ENTRIES: " + response.entries.length
       + " | CURSOR (trunc): " + cursor.substr(-10)
@@ -1390,7 +1390,7 @@ function loadDropboxFolder(options, callback){
           more = responseCont.has_more;
           results.entries = results.entries.concat(responseCont.entries);
 
-          console.log(chalkLog("DROPBOX LIST FOLDER CONT"
+          debug(chalkLog("DROPBOX LIST FOLDER CONT"
             + " | PATH:" + options.path
             + " | ENTRIES: " + responseCont.entries.length + "/" + results.entries.length
             + " | CURSOR (trunc): " + responseCont.cursor.substr(-10)
@@ -1911,8 +1911,8 @@ function loadBestNetworkDropboxFolders (folders, callback){
               if (networkObj.matchRate === undefined) { networkObj.matchRate = 0; }
 
               if (!configuration.inputsIdArray.includes(networkObj.inputsId)) {
-                console.log(chalkInfo("NNT | NN INPUTS NOT IN INPUTS ID ARRAY ... SKIPPING LOAD OF " + entry.name));
                 skipLoadNetworkSet.add(networkObj.networkId);
+                console.log(chalkInfo("NNT | NN INPUTS NOT IN INPUTS ID ARRAY ... SKIPPING LOAD OF " + entry.name));
                 cb1();
               }
               else if ((options.networkId !== undefined) 
@@ -1983,7 +1983,7 @@ function loadBestNetworkDropboxFolders (folders, callback){
               else if (((hostname === "google") && (folder === globalBestNetworkFolder))
                 || ((hostname !== "google") && (folder === localBestNetworkFolder)) ) {
 
-               debug(chalkAlert("NNT | DELETING NN"
+                debug(chalkAlert("NNT | DELETING NN"
                   + " | MIN SUCCESS RATE: GLOBAL: " + configuration.globalMinSuccessRate + " LOCAL: " + configuration.localMinSuccessRate
                   + " | " + networkObj.successRate.toFixed(2) + "%"
                   + " | " + getTimeStamp(networkObj.createdAt)
@@ -2021,6 +2021,7 @@ function loadBestNetworkDropboxFolders (folders, callback){
                   ));
                   cb1(err);
                 });
+
               }
               else {
                 cb1();
@@ -3931,18 +3932,12 @@ function generateGlobalTrainingTestSet (userHashMap, maxInputHashMap, callback){
 
     console.log(chalkInfo("NNT | +++ TRAINING SET"
       + " | ID: " + trainingSetId
-      // + " | IN: " + trainingSet.meta.numInputs
       + " | OUT: " + trainingSet.meta.numOutputs
       + " | SIZE: " + trainingSet.meta.setSize
-      // + " | NUM INPUTS: " + testSet.meta.numInputs
-      // + " | NUM OUTPUTS: " + testSet.meta.numOutputs
       + " | TEST SET SIZE: " + testSet.meta.setSize
-      // + "\n trainingSet.meta\n" + jsonPrint(trainingSet.meta) 
-      // + "\n testSet.meta\n" + jsonPrint(testSet.meta)
     ));
 
     let trainingSetObj = {};
-    // trainingSetObj.trainingSetId = trainingSetId;
     trainingSetObj.trainingSetId = "globalTrainingSet";
     trainingSetObj.globalTrainingSetFlag = true;
     trainingSetObj.normalization = {};
@@ -3961,15 +3956,11 @@ function generateGlobalTrainingTestSet (userHashMap, maxInputHashMap, callback){
 
     trainingSetHashMap.set(trainingSetObj.trainingSetId, {entry: trainingSetEntry, trainingSetObj: trainingSetObj} );
 
-    // const hostLocalTrainingSetFolder = __dirname;
-    // const googleLocalTrainingSetFolder = "/home/tc/wordAssociation/config/trainingSets";
-
     let file = "globalTrainingSet.json";
 
 
     let dropboxFolder = (hostname === "google") ? "/home/tc/Dropbox/Apps/wordAssociation/config/utility/default/trainingSets" 
     : "/Users/tc/Dropbox/Apps/wordAssociation/config/utility/" + hostname + "/trainingSets";
-    // let localFlag = (hostname === "google") ? true : false ;
 
     if (configuration.testMode) {
       dropboxFolder = (hostname === "google") ? "/home/tc/Dropbox/Apps/wordAssociation/config/utility/default/trainingSets_test" 
@@ -3977,7 +3968,6 @@ function generateGlobalTrainingTestSet (userHashMap, maxInputHashMap, callback){
     }
 
     let folder = dropboxFolder;
-
     let fullPath = folder + "/" + file;
 
     console.log(chalkAlert("NNT | SAVING TRAINING SET: " + fullPath));
@@ -3992,7 +3982,6 @@ function generateGlobalTrainingTestSet (userHashMap, maxInputHashMap, callback){
         + " | !!! ERROR DROBOX JSON WRITE | FILE: " + fullPath 
         + " | ERROR: " + error
         + " | ERROR\n" + jsonPrint(error)
-        // + " ERROR\n" + jsonPrint(params)
       ));
       if (callback !== undefined) { return callback(error); }
     });
