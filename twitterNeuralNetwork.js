@@ -3803,7 +3803,6 @@ function initClassifiedUserHashmap(folder, file, callback){
         + " | PREV: " + prevClassifiedUsersFileModifiedMoment.format(compactDateTimeFormat)
         + " | " + fileModifiedMoment.format(compactDateTimeFormat)
       ));
-      // callback(null, null);
 
       userServer.findClassifiedUsersCursor(params, function(err, results){
         if (err) {
