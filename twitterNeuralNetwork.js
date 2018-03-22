@@ -596,7 +596,7 @@ debug("NNT | DROPBOX_WORD_ASSO_APP_SECRET :" + configuration.DROPBOX.DROPBOX_WOR
 let dropboxClient = new Dropbox({ accessToken: configuration.DROPBOX.DROPBOX_WORD_ASSO_ACCESS_TOKEN });
 
 let classifiedUsersFolder = dropboxConfigHostFolder + "/classifiedUsers";
-let classifiedUsersFile = "classifiedUsers.json";
+let classifiedUsersFile = "classifiedUsers_manual.json";
 
 function getTimeStamp(inputTime) {
   let currentTimeStamp ;
