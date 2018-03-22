@@ -3185,9 +3185,7 @@ function updateClassifiedUsers(cnf, callback){
 
       sentimentText = "M: " + sentimentObj.magnitude.toFixed(2) + " S: " + sentimentObj.score.toFixed(2);
 
-      const keywordArray = Object.keys(user.keywords);
-
-      const classification = (keywordArray[0] !== undefined) ? keywordArray[0] : false;
+      const classification = user.category || false;
 
       if (classification) {
 
@@ -3383,7 +3381,7 @@ function updateClassifiedUsers(cnf, callback){
               )) 
             {
 
-              twitterImageParser.parseImage(user.bannerImageUrl, { screenName: user.screenName, keywords: user.keywords, updateGlobalHistograms: true}, function(err, results){
+              twitterImageParser.parseImage(user.bannerImageUrl, { screenName: user.screenName, category: user.category, updateGlobalHistograms: true}, function(err, results){
                 if (err) {
                   console.log(chalkError("*** PARSE BANNER IMAGE ERROR"
                     + " | REQ: " + results.text
@@ -3458,14 +3456,14 @@ function updateClassifiedUsers(cnf, callback){
                 return(cb0(err));
               }
 
-              const subUser = pick(updatedUser, ["userId", "screenName", "name", "languageAnalysis", "keywords", "keywordsAuto", "histograms"]);
+              const subUser = pick(updatedUser, ["userId", "screenName", "name", "languageAnalysis", "category", "categoryAuto", "histograms"]);
 
               trainingSetUsersHashMap.set(subUser.userId, subUser);
 
               debug("CL USR >DB"
                 + " | " + subUser.userId
                 + " | @" + subUser.screenName
-                + " | KW: " + Object.keys(subUser.keywords)[0]
+                + " | C: " + subUser.category
               );
 
               cb0();
@@ -3485,7 +3483,7 @@ function updateClassifiedUsers(cnf, callback){
         }
 
         console.log(chalkBlue("NNT *** USR DB NOT CL"
-          + " | KW: " + keywordArray
+          + " | C: " + user.category
           + " | CLHashMap: " + Object.keys(classifiedUserHashmap[userId])
           + " | " + user.userId
           + " | " + user.screenName
@@ -3525,7 +3523,7 @@ function updateClassifiedUsers(cnf, callback){
 
         }
 
-        user.keywords = classifiedUserHashmap[userId];
+        user.category = classifiedUserHashmap[userId];
 
         userServer.findOneUser(user, {noInc: true}, function(err, updatedUser){
           if (err) {
@@ -3907,9 +3905,7 @@ function generateGlobalTrainingTestSet (userHashMap, maxInputHashMap, callback){
 
     }
 
-    const keywordArray = Object.keys(user.keywords);
-
-    user.classification = (keywordArray[0] !== undefined) ? keywordArray[0] : false;
+    user.classification = user.category || false;
 
     if (configuration.generateTrainingSetOnly) {
       trainingSet.data.push(user);

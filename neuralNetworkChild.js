@@ -62,9 +62,9 @@ configuration.testMode = false; //
 configuration.keepaliveInterval = 30*ONE_SECOND;
 configuration.rxQueueInterval = 1*ONE_SECOND;
 
-require("isomorphic-fetch");
+// require("isomorphic-fetch");
 // const Dropbox = require('dropbox').Dropbox;
-const Dropbox = require("./js/dropbox").Dropbox;
+// const Dropbox = require("./js/dropbox").Dropbox;
 
 const chalk = require("chalk");
 const chalkAlert = chalk.red;
@@ -148,31 +148,31 @@ statsObj.training.endTime = 0;
 // ==================================================================
 // DROPBOX
 // ==================================================================
-const DROPBOX_WORD_ASSO_ACCESS_TOKEN = process.env.DROPBOX_WORD_ASSO_ACCESS_TOKEN ;
-const DROPBOX_WORD_ASSO_APP_KEY = process.env.DROPBOX_WORD_ASSO_APP_KEY ;
-const DROPBOX_WORD_ASSO_APP_SECRET = process.env.DROPBOX_WORD_ASSO_APP_SECRET;
-const DROPBOX_TNN_CONFIG_FILE = process.env.DROPBOX_TNN_CONFIG_FILE || "neuralNetworkConfig.json";
-const DROPBOX_TNN_STATS_FILE = process.env.DROPBOX_NNC_STATS_FILE;
+// const DROPBOX_WORD_ASSO_ACCESS_TOKEN = process.env.DROPBOX_WORD_ASSO_ACCESS_TOKEN ;
+// const DROPBOX_WORD_ASSO_APP_KEY = process.env.DROPBOX_WORD_ASSO_APP_KEY ;
+// const DROPBOX_WORD_ASSO_APP_SECRET = process.env.DROPBOX_WORD_ASSO_APP_SECRET;
+// const DROPBOX_TNN_CONFIG_FILE = process.env.DROPBOX_TNN_CONFIG_FILE || "neuralNetworkConfig.json";
+// const DROPBOX_TNN_STATS_FILE = process.env.DROPBOX_NNC_STATS_FILE;
 
-let dropboxConfigFolder = "/config/utility/" + hostname;
-let dropboxConfigFile = hostname + "_" + DROPBOX_TNN_CONFIG_FILE;
-let statsFolder = "/stats/" + hostname + "/neuralNetwork";
-let statsFile = DROPBOX_TNN_STATS_FILE;
+// let dropboxConfigFolder = "/config/utility/" + hostname;
+// let dropboxConfigFile = hostname + "_" + DROPBOX_TNN_CONFIG_FILE;
+// let statsFolder = "/stats/" + hostname + "/neuralNetwork";
+// let statsFile = DROPBOX_TNN_STATS_FILE;
 
-console.log("NNC | DROPBOX_TNN_CONFIG_FILE: " + DROPBOX_TNN_CONFIG_FILE);
-console.log("NNC | DROPBOX_TNN_STATS_FILE : " + DROPBOX_TNN_STATS_FILE);
+// console.log("NNC | DROPBOX_TNN_CONFIG_FILE: " + DROPBOX_TNN_CONFIG_FILE);
+// console.log("NNC | DROPBOX_TNN_STATS_FILE : " + DROPBOX_TNN_STATS_FILE);
 
-debug("dropboxConfigFolder : " + dropboxConfigFolder);
-debug("dropboxConfigFile : " + dropboxConfigFile);
+// debug("dropboxConfigFolder : " + dropboxConfigFolder);
+// debug("dropboxConfigFile : " + dropboxConfigFile);
 
-debug("statsFolder : " + statsFolder);
-debug("statsFile : " + statsFile);
+// debug("statsFolder : " + statsFolder);
+// debug("statsFile : " + statsFile);
 
-console.log("NNC | DROPBOX_WORD_ASSO_ACCESS_TOKEN :" + DROPBOX_WORD_ASSO_ACCESS_TOKEN);
-console.log("NNC | DROPBOX_WORD_ASSO_APP_KEY :" + DROPBOX_WORD_ASSO_APP_KEY);
-console.log("NNC | DROPBOX_WORD_ASSO_APP_SECRET :" + DROPBOX_WORD_ASSO_APP_SECRET);
+// console.log("NNC | DROPBOX_WORD_ASSO_ACCESS_TOKEN :" + DROPBOX_WORD_ASSO_ACCESS_TOKEN);
+// console.log("NNC | DROPBOX_WORD_ASSO_APP_KEY :" + DROPBOX_WORD_ASSO_APP_KEY);
+// console.log("NNC | DROPBOX_WORD_ASSO_APP_SECRET :" + DROPBOX_WORD_ASSO_APP_SECRET);
 
-const dropboxClient = new Dropbox({ accessToken: DROPBOX_WORD_ASSO_ACCESS_TOKEN });
+// const dropboxClient = new Dropbox({ accessToken: DROPBOX_WORD_ASSO_ACCESS_TOKEN });
 
 function getTimeStamp(inputTime) {
   let currentTimeStamp ;
@@ -699,10 +699,6 @@ function initStatsUpdate(cnf, callback){
     statsObj.elapsed = msToTime(moment().valueOf() - statsObj.startTime);
     statsObj.timeStamp = moment().format(defaultDateTimeFormat);
 
-    // saveFile(statsFolder, statsFile, statsObj, function(){
-    //   // process.send({op:"STATS", statsObj: statsObj});
-    // });
-
   }, cnf.statsUpdateIntervalTime);
 
   callback(null, cnf);
@@ -723,7 +719,7 @@ process.on("message", function(m) {
 
     case "INIT":
       statsObj.testRunId = m.testRunId;
-      console.log(chalkInfo("NNC | STATS FILE: " + statsFolder + "/" + statsFile));
+      // console.log(chalkInfo("NNC | STATS FILE: " + statsFolder + "/" + statsFile));
       console.log(chalkInfo("NNC | NEURAL NET INIT"
         + " | PROCESS NAME: " + configuration.processName
         + " | TEST RUN ID: " + statsObj.testRunId
@@ -1023,8 +1019,8 @@ function initialize(cnf, callback){
 
   debug("NNC | CONFIG\n" + jsonPrint(cnf));
 
-  debug(chalkWarn("dropboxConfigFolder: " + dropboxConfigFolder));
-  debug(chalkWarn("dropboxConfigFile  : " + dropboxConfigFile));
+  // debug(chalkWarn("dropboxConfigFolder: " + dropboxConfigFolder));
+  // debug(chalkWarn("dropboxConfigFile  : " + dropboxConfigFile));
 
   callback(null, cnf);
 }
