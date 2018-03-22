@@ -3484,7 +3484,7 @@ function updateClassifiedUsers(cnf, callback){
 
         console.log(chalkBlue("NNT *** USR DB NOT CL"
           + " | C: " + user.category
-          + " | CLHashMap: " + Object.keys(classifiedUserHashmap[userId])
+          + " | CLHashMap: " + classifiedUserHashmap[userId]
           + " | " + user.userId
           + " | " + user.screenName
           + " | " + user.name
