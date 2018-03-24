@@ -3965,10 +3965,12 @@ function generateGlobalTrainingTestSet (userHashMap, maxInputHashMap, callback){
     trainingSetEntry.content_hash = false;
     trainingSetEntry.client_modified = moment();
 
-    trainingSetHashMap.set(trainingSetObj.trainingSetId, {entry: trainingSetEntry, trainingSetObj: trainingSetObj} );
+    trainingSetHashMap.set(
+      trainingSetObj.trainingSetId, 
+      {entry: trainingSetEntry, trainingSetObj: trainingSetObj}
+    );
 
     let file = "globalTrainingSet.json";
-
 
     let dropboxFolder = (hostname === "google") ? "/home/tc/Dropbox/Apps/wordAssociation/config/utility/default/trainingSets" 
     : "/Users/tc/Dropbox/Apps/wordAssociation/config/utility/" + hostname + "/trainingSets";
@@ -3985,8 +3987,31 @@ function generateGlobalTrainingTestSet (userHashMap, maxInputHashMap, callback){
 
     writeJsonFile(fullPath, trainingSetObj)
     .then(function() {
-      console.log(chalkAlert("NNT | ======================= END GENERATE GLOBAL TRAINING SET ======================="));
-      callback(null);
+      console.log(chalkAlert("NNT | SAVED GLOBAL TRAINING SET | " + fullPath));
+
+      const maxInputHashMapPath = folder + "/maxInputHashMap.json";
+
+      let mihmObj = {};
+      mihmObj.maxInputHashMap = {};
+      mihmObj.maxInputHashMap = trainingSetObj.maxInputHashMap;
+      mihmObj.normalization = {};
+      mihmObj.normalization = trainingSetObj.normalization;
+
+      writeJsonFile(maxInputHashMapPath, mihmObj)
+      .then(function() {
+        console.log(chalkAlert("NNT | SAVED MAX INPUT HASHMAP | " + maxInputHashMapPath));
+        console.log(chalkAlert("NNT | ======================= END GENERATE GLOBAL TRAINING SET ======================="));
+        callback(null);
+      })
+      .catch(function(error){
+        console.trace(chalkError("NNT | " + moment().format(compactDateTimeFormat) 
+          + " | !!! ERROR DROBOX JSON WRITE | FILE: " + fullPath 
+          + " | ERROR: " + error
+          + " | ERROR\n" + jsonPrint(error)
+        ));
+        if (callback !== undefined) { return callback(error); }
+      });
+
     })
     .catch(function(error){
       console.trace(chalkError("NNT | " + moment().format(compactDateTimeFormat) 
