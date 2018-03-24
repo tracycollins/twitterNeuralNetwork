@@ -595,6 +595,7 @@ debug("NNT | DROPBOX_WORD_ASSO_APP_SECRET :" + configuration.DROPBOX.DROPBOX_WOR
 
 let dropboxClient = new Dropbox({ accessToken: configuration.DROPBOX.DROPBOX_WORD_ASSO_ACCESS_TOKEN });
 
+let globalClassifiedUsersFolder = dropboxConfigDefaultFolder + "/classifiedUsers";
 let classifiedUsersFolder = dropboxConfigHostFolder + "/classifiedUsers";
 let classifiedUsersFile = "classifiedUsers_manual.json";
 
@@ -2662,7 +2663,7 @@ function initialize(cnf, callback){
   cnf.train.batchSize = process.env.TNN_TRAIN_BATCH_SIZE || DEFAULT_TRAIN_BATCH_SIZE ;
 
   cnf.classifiedUsersFile = process.env.TNN_CLASSIFIED_USERS_FILE || classifiedUsersFile;
-  cnf.classifiedUsersFolder = classifiedUsersFolder;
+  cnf.classifiedUsersFolder = globalClassifiedUsersFolder;
   cnf.statsUpdateIntervalTime = process.env.TNN_STATS_UPDATE_INTERVAL || 300000;
 
   debug(chalkWarn("dropboxConfigFolder: " + dropboxConfigFolder));
@@ -3790,7 +3791,7 @@ function initClassifiedUserHashmap(folder, file, callback){
 
   getFileMetadata(folder, file, function(err, response){
     if (err) {
-      console.log(chalkError("NNT | INIT CLASSIFIED USERS HASHMAP METADATA FROM DB ERROR\n" + err));
+      console.log(chalkError("NNT | INIT CLASSIFIED USERS HASHMAP METADATA FROM DB ERROR\n" + jsonPrint(err)));
       return(callback(err, null));
     }
 
