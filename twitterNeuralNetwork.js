@@ -1613,6 +1613,11 @@ function loadTrainingSetsDropboxFolder(folder, callback){
         + " | " + entry.name
       ));
 
+      if (!entry.name.beginsWith("globalTrainingSet")){
+        console.log("NNT | ... IGNORE DROPBOX TRAINING SETS FOLDER FILE: " + entry.name);
+        return(cb());
+      }
+
       if (!entry.name.endsWith(".json")){
         console.log("NNT | ... IGNORE DROPBOX TRAINING SETS FOLDER FILE: " + entry.name);
         return(cb());
