@@ -5,7 +5,7 @@
   "main": "twitterNeuralNetwork.js",
   "dependencies": {
     "@davvo/drbx": "^2.1.0",
-    "@google-cloud/vision": "^0.17.0",
+    "@google-cloud/vision": "^0.18.0",
     "@threeceelabs/histogram-parser": "^1.0.14",
     "@threeceelabs/mongoose-twitter": "^1.0.93",
     "@threeceelabs/twitter-image-parser": "^1.0.40",
@@ -36,7 +36,7 @@
     "lodash": "^4.17.5",
     "mentions-regex": "^2.0.3",
     "moment": "^2.21.0",
-    "mongoose": "^5.0.11",
+    "mongoose": "^5.0.12",
     "mongoose-paginate": "^5.0.3",
     "neataptic": "^1.4.7",
     "node-emoji": "^1.8.1",
