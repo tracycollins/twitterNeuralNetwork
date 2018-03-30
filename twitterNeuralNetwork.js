@@ -3100,10 +3100,10 @@ function updateClassifiedUsers(cnf, callback){
 
   userServer.resetMaxInputsHashMap();
 
-  let classifiedUserIds = Object.keys(classifiedUserHashmap);
+  let classifiedNodeIds = Object.keys(classifiedUserHashmap);
 
   if (cnf.testMode) {
-    classifiedUserIds.length = TEST_MODE_LENGTH;
+    classifiedNodeIds.length = TEST_MODE_LENGTH;
     console.log(chalkAlert("NNT | *** TEST MODE *** | CLASSIFY MAX " + TEST_MODE_LENGTH + " USERS"));
   }
 
@@ -3111,7 +3111,7 @@ function updateClassifiedUsers(cnf, callback){
   let minScore = Infinity;
   let maxScore = -Infinity;
 
-  console.log(chalkBlue("NNT | UPDATE CLASSIFIED USERS: " + classifiedUserIds.length));
+  console.log(chalkBlue("NNT | UPDATE CLASSIFIED USERS: " + classifiedNodeIds.length));
 
   if (cnf.normalization) {
     maxMagnitude = cnf.normalization.magnitude.max;
@@ -3131,10 +3131,10 @@ function updateClassifiedUsers(cnf, callback){
   let classifiedUsersRemain = 0;
   let classifiedUsersRate = 0;
 
-  async.eachSeries(classifiedUserIds, function(userId, cb0){
+  async.eachSeries(classifiedNodeIds, function(nodeId, cb0){
 
-    // User.findOne({userId: userId.toString()}, function(err, user){
-    User.findOne( { "$or":[ {userId: userId.toString()}, {screenName: userId.toLowerCase()} ]}, function(err, user){
+    // User.findOne({nodeId: nodeId.toString()}, function(err, user){
+    User.findOne( { "$or":[ {nodeId: nodeId.toString()}, {screenName: nodeId.toLowerCase()} ]}, function(err, user){
 
       userIndex += 1;
 
@@ -3145,7 +3145,7 @@ function updateClassifiedUsers(cnf, callback){
       }
 
       if (!user){
-        console.log(chalkLog("NNT | *** UPDATE CLASSIFIED USERS: USER NOT FOUND: UID: " + userId));
+        console.log(chalkLog("NNT | *** UPDATE CLASSIFIED USERS: USER NOT FOUND: UID: " + nodeId));
         statsObj.users.notFound += 1;
         statsObj.users.notClassified += 1;
         return(cb0());
@@ -3159,8 +3159,8 @@ function updateClassifiedUsers(cnf, callback){
       }
 
       debug(chalkInfo("NNT | UPDATE CL USR <DB"
-        + " [" + userIndex + "/" + classifiedUserIds.length + "]"
-        + " | " + user.userId
+        + " [" + userIndex + "/" + classifiedNodeIds.length + "]"
+        + " | " + user.nodeId
         + " | @" + user.screenName
       ));
 
@@ -3235,7 +3235,7 @@ function updateClassifiedUsers(cnf, callback){
           + " | SEN: " + sentimentText
           + " | " + classText
           + " | " + user.screenName
-          + " | " + user.userId
+          + " | " + user.nodeId
           + " | " + user.name
           + " | 3C FOLLOW: " + user.threeceeFollowing
           + " | FLLWs: " + user.followersCount
@@ -3244,10 +3244,10 @@ function updateClassifiedUsers(cnf, callback){
 
         statsObj.users.updatedClassified += 1;
 
-        classifiedUsersPercent = 100 * (statsObj.users.notClassified + statsObj.users.updatedClassified)/classifiedUserIds.length;
+        classifiedUsersPercent = 100 * (statsObj.users.notClassified + statsObj.users.updatedClassified)/classifiedNodeIds.length;
         classifiedUsersElapsed = (moment().valueOf() - classifiedUsersStartMoment.valueOf()); // mseconds
         classifiedUsersRate = classifiedUsersElapsed/statsObj.users.updatedClassified; // msecs/userClassified
-        classifiedUsersRemain = (classifiedUserIds.length - (statsObj.users.notClassified + statsObj.users.updatedClassified)) * classifiedUsersRate; // mseconds
+        classifiedUsersRemain = (classifiedNodeIds.length - (statsObj.users.notClassified + statsObj.users.updatedClassified)) * classifiedUsersRate; // mseconds
         classifiedUsersEndMoment = moment();
         classifiedUsersEndMoment.add(classifiedUsersRemain, "ms");
 
@@ -3257,7 +3257,7 @@ function updateClassifiedUsers(cnf, callback){
             + " | ELAPSED: " + msToTime(classifiedUsersElapsed)
             + " | REMAIN: " + msToTime(classifiedUsersRemain)
             + " | ETC: " + classifiedUsersEndMoment.format(compactDateTimeFormat)
-            + " | " + (statsObj.users.notClassified + statsObj.users.updatedClassified) + "/" + classifiedUserIds.length
+            + " | " + (statsObj.users.notClassified + statsObj.users.updatedClassified) + "/" + classifiedNodeIds.length
             + " (" + classifiedUsersPercent.toFixed(1) + "%)"
             + " USERS CLASSIFIED"
           ));
@@ -3306,7 +3306,7 @@ function updateClassifiedUsers(cnf, callback){
             if ((user.status !== undefined) && user.status && user.status.text) {
 
               debug(chalkBlue("T"
-                + " | " + user.userId
+                + " | " + user.nodeId
                 + " | " + jsonPrint(user.status.text)
               ));
 
@@ -3331,7 +3331,7 @@ function updateClassifiedUsers(cnf, callback){
               if ((user.status.retweeted_status !== undefined) && user.status.retweeted_status) {
 
                 debug(chalkBlue("R"
-                  + " | " + user.userId
+                  + " | " + user.nodeId
                   + " | " + jsonPrint(user.status.retweeted_status.text)
                 ));
 
@@ -3462,12 +3462,12 @@ function updateClassifiedUsers(cnf, callback){
                 return(cb0(err));
               }
 
-              const subUser = pick(updatedUser, ["userId", "screenName", "name", "languageAnalysis", "category", "categoryAuto", "histograms"]);
+              const subUser = pick(updatedUser, ["nodeId", "screenName", "name", "languageAnalysis", "category", "categoryAuto", "histograms"]);
 
-              trainingSetUsersHashMap.set(subUser.userId, subUser);
+              trainingSetUsersHashMap.set(subUser.nodeId, subUser);
 
               debug("CL USR >DB"
-                + " | " + subUser.userId
+                + " | " + subUser.nodeId
                 + " | @" + subUser.screenName
                 + " | C: " + subUser.category
               );
@@ -3490,8 +3490,8 @@ function updateClassifiedUsers(cnf, callback){
 
         console.log(chalkBlue("NNT *** USR DB NOT CL"
           + " | C: " + user.category
-          + " | CLHashMap: " + classifiedUserHashmap[userId]
-          + " | " + user.userId
+          + " | CLHashMap: " + classifiedUserHashmap[nodeId]
+          + " | " + user.nodeId
           + " | " + user.screenName
           + " | " + user.name
           + " | 3CF: " + user.threeceeFollowing
@@ -3500,10 +3500,10 @@ function updateClassifiedUsers(cnf, callback){
           + " | SEN: " + sentimentText
         ));
 
-        classifiedUsersPercent = 100 * (statsObj.users.notClassified + statsObj.users.updatedClassified)/classifiedUserIds.length;
+        classifiedUsersPercent = 100 * (statsObj.users.notClassified + statsObj.users.updatedClassified)/classifiedNodeIds.length;
         classifiedUsersElapsed = (moment().valueOf() - classifiedUsersStartMoment.valueOf()); // mseconds
         classifiedUsersRate = classifiedUsersElapsed/statsObj.users.updatedClassified; // msecs/userClassified
-        classifiedUsersRemain = (classifiedUserIds.length - (statsObj.users.notClassified + statsObj.users.updatedClassified)) * classifiedUsersRate; // mseconds
+        classifiedUsersRemain = (classifiedNodeIds.length - (statsObj.users.notClassified + statsObj.users.updatedClassified)) * classifiedUsersRate; // mseconds
         classifiedUsersEndMoment = moment();
         classifiedUsersEndMoment.add(classifiedUsersRemain, "ms");
 
@@ -3513,7 +3513,7 @@ function updateClassifiedUsers(cnf, callback){
             + " | ELAPSED: " + msToTime(classifiedUsersElapsed)
             + " | REMAIN: " + msToTime(classifiedUsersRemain)
             + " | ETC: " + classifiedUsersEndMoment.format(compactDateTimeFormat)
-            + " | " + (statsObj.users.notClassified + statsObj.users.updatedClassified) + "/" + classifiedUserIds.length
+            + " | " + (statsObj.users.notClassified + statsObj.users.updatedClassified) + "/" + classifiedNodeIds.length
             + " (" + classifiedUsersPercent.toFixed(1) + "%)"
             + " USERS CLASSIFIED"
           ));
@@ -3529,7 +3529,7 @@ function updateClassifiedUsers(cnf, callback){
 
         }
 
-        user.category = classifiedUserHashmap[userId];
+        user.category = classifiedUserHashmap[nodeId];
 
         userServer.findOneUser(user, {noInc: true}, function(err, updatedUser){
           if (err) {
@@ -3555,10 +3555,10 @@ function updateClassifiedUsers(cnf, callback){
     userMaxInputHashMap = userServer.getMaxInputsHashMap();
     debug("MAX INPUT HASHMAP\n" + jsonPrint(userMaxInputHashMap));
 
-    classifiedUsersPercent = 100 * (statsObj.users.notClassified + statsObj.users.updatedClassified)/classifiedUserIds.length;
+    classifiedUsersPercent = 100 * (statsObj.users.notClassified + statsObj.users.updatedClassified)/classifiedNodeIds.length;
     classifiedUsersElapsed = (moment().valueOf() - classifiedUsersStartMoment.valueOf()); // mseconds
     classifiedUsersRate = classifiedUsersElapsed/statsObj.users.updatedClassified; // msecs/userClassified
-    classifiedUsersRemain = (classifiedUserIds.length - (statsObj.users.notClassified + statsObj.users.updatedClassified)) * classifiedUsersRate; // mseconds
+    classifiedUsersRemain = (classifiedNodeIds.length - (statsObj.users.notClassified + statsObj.users.updatedClassified)) * classifiedUsersRate; // mseconds
     classifiedUsersEndMoment = moment();
     classifiedUsersEndMoment.add(classifiedUsersRemain, "ms");
 
@@ -3567,7 +3567,7 @@ function updateClassifiedUsers(cnf, callback){
       + "\nNNT | ==== ELAPSED: " + msToTime(classifiedUsersElapsed)
       + "\nNNT | ==== REMAIN:  " + msToTime(classifiedUsersRemain)
       + "\nNNT | ==== ETC:     " + classifiedUsersEndMoment.format(compactDateTimeFormat)
-      + "\nNNT | ====          " + (statsObj.users.notClassified + statsObj.users.updatedClassified) + "/" + classifiedUserIds.length
+      + "\nNNT | ====          " + (statsObj.users.notClassified + statsObj.users.updatedClassified) + "/" + classifiedNodeIds.length
       + " (" + classifiedUsersPercent.toFixed(1) + "%)" + " USERS CLASSIFIED"
     ));
 
@@ -3879,11 +3879,11 @@ function initClassifiedUserHashmap(folder, file, callback){
 
 function generateGlobalTrainingTestSet (userHashMap, maxInputHashMap, callback){
 
-  const uIds = userHashMap.keys();
-  const userIds = _.shuffle(uIds);
+  const nIds = userHashMap.keys();
+  const nodeIds = _.shuffle(nIds);
 
   console.log(chalkAlert("NNT | ==================================================================="));
-  console.log(chalkAlert("NNT | GENERATE TRAINING SET | " + userIds.length + " USERS | " + getTimeStamp()));
+  console.log(chalkAlert("NNT | GENERATE TRAINING SET | " + nodeIds.length + " USERS | " + getTimeStamp()));
   console.log(chalkAlert("NNT | ==================================================================="));
 
   let trainingSet = {};
@@ -3894,9 +3894,9 @@ function generateGlobalTrainingTestSet (userHashMap, maxInputHashMap, callback){
   testSet.meta = {};
   testSet.data = [];
 
-  async.eachSeries(userIds, function(userId, cb){ 
+  async.eachSeries(nodeIds, function(nodeId, cb){ 
 
-    const user = userHashMap.get(userId);
+    const user = userHashMap.get(nodeId);
 
     let sentimentObj = {};
     sentimentObj.magnitude = 0;
@@ -3918,7 +3918,7 @@ function generateGlobalTrainingTestSet (userHashMap, maxInputHashMap, callback){
         cb(); 
       });
     }
-    else if ((testSet.data.length < (configuration.testSetRatio * userIds.length)) && (Math.random() >= configuration.testSetRatio)) {
+    else if ((testSet.data.length < (configuration.testSetRatio * nodeIds.length)) && (Math.random() >= configuration.testSetRatio)) {
       trainingSet.data.push(user);
       async.setImmediate(function() { 
         cb(); 
@@ -4854,8 +4854,8 @@ function initTimeout(callback){
       + "\n" + jsonPrint(configuration)
     ));
 
-    requiredTrainingSet.forEach(function(userId) {
-      console.log(chalkLog("NNT | ... REQ TRAINING SET | @" + userId));
+    requiredTrainingSet.forEach(function(nodeId) {
+      console.log(chalkLog("NNT | ... REQ TRAINING SET | @" + nodeId));
     });
 
     let seedOpt = {};
