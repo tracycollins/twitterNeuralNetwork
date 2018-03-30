@@ -3145,7 +3145,7 @@ function updateClassifiedUsers(cnf, callback){
       }
 
       if (!user){
-        console.log(chalkLog("NNT | *** UPDATE CLASSIFIED USERS: USER NOT FOUND: UID: " + nodeId));
+        console.log(chalkLog("NNT | *** UPDATE CLASSIFIED USERS: USER NOT FOUND: NID: " + nodeId));
         statsObj.users.notFound += 1;
         statsObj.users.notClassified += 1;
         return(cb0());
