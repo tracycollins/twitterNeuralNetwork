@@ -1455,7 +1455,7 @@ function loadInputsDropboxFolder(folder, callback){
       ));
 
       if (!configuration.inputsIdArray.includes(entryInputsId)){
-        debug(chalkInfo("NNT | DROPBOX INPUTS NOT IN INPUTS ID ARRAY ... SKIPPING"
+        debug(chalkInfo("NNT | DROPBOX INPUTS NOT IN INPUTS ID ARRAY ... DELETING"
           + " | " + entryInputsId
           + " | " + configuration.inputsIdArray
         ));
@@ -1914,9 +1914,49 @@ function loadBestNetworkDropboxFolders (folders, callback){
               if (networkObj.matchRate === undefined) { networkObj.matchRate = 0; }
 
               if (!configuration.inputsIdArray.includes(networkObj.inputsId)) {
-                skipLoadNetworkSet.add(networkObj.networkId);
-                console.log(chalkInfo("NNT | NN INPUTS NOT IN INPUTS ID ARRAY ... SKIPPING LOAD OF " + entry.name));
-                cb1();
+
+                // skipLoadNetworkSet.add(networkObj.networkId);
+
+                console.log(chalkInfo("NNT | NN INPUTS NOT IN INPUTS ID ARRAY ... DELETING: " + entry.name));
+
+                // bestNetworkHashMap.delete(networkObj.networkId);
+                // inputsNetworksHashMap[networkObj.inputsId].delete(networkObj.networkId);
+                // inputsIdSet.delete(networkObj.inputsId);
+
+                dropboxClient.filesDelete({path: folder + "/" + entry.name})
+                .then(function(response){
+
+                  debug("dropboxClient filesDelete response\n" + jsonPrint(response));
+
+                  console.log(chalkAlert("NNT | XXX NN"
+                    + " | NN INPUTS NOT IN INPUTS ID ARRAY: " + networkObj.inputsId
+                    + " | " + networkObj.successRate.toFixed(2) + "%"
+                    + " | " + getTimeStamp(networkObj.createdAt)
+                    + " | IN: " + networkObj.numInputs
+                    + " | OUT: " + networkObj.numOutputs
+                    + " | " + networkObj.networkCreateMode
+                    + " | " + networkObj.networkId
+                  ));
+
+                  cb1();
+                })
+                .catch(function(err){
+                  if (err.status === 429) {
+                    console.log(chalkError("NNT | *** ERROR: XXX NN"
+                      + " | STATUS: " + err.status
+                      + " | PATH: " + folder + "/" + entry.name
+                      + " | TOO MANY REQUESTS"
+                    ));
+                  }
+                  else {
+                    console.log(chalkError("NNT | *** ERROR: XXX NN"
+                      + " | STATUS: " + err.status
+                      + " | PATH: " + folder + "/" + entry.name
+                      + " | SUMMARY: " + err.response.statusText
+                    ));
+                  }
+                  cb1(err);
+                });
               }
               else if ((options.networkId !== undefined) 
                 || ((folder === "/config/utility/best/neuralNetworks") && (networkObj.successRate > configuration.globalMinSuccessRate))
@@ -2039,7 +2079,6 @@ function loadBestNetworkDropboxFolders (folders, callback){
               else {
                 cb1();
               }
-
             }
 
           });
