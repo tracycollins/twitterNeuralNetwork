@@ -21,7 +21,7 @@ const DEFAULT_HISTOGRAM_PARSE_DOMINANT_MIN = 0.4;
 
 const bestRuntimeNetworkFileName = "bestRuntimeNetwork.json";
 
-const TEST_MODE_LENGTH = 1000;
+const TEST_MODE_LENGTH = 100;
 const TEST_DROPBOX_NN_LOAD = 5;
 const DEFAULT_USE_LOCAL_TRAINING_SETS = false;
 const DEFAULT_MAX_NEURAL_NETWORK_CHILDREN = 2;
@@ -97,7 +97,7 @@ const table = require("text-table");
 const fs = require("fs");
 
 let prevConfigFileModifiedMoment = moment("2010-01-01");
-let prevClassifiedUsersFileModifiedMoment = moment("2010-01-01");
+let prevCategorizedUsersFileModifiedMoment = moment("2010-01-01");
 
 let networkIndex = 0;
 
@@ -364,8 +364,8 @@ statsObj.users.imageParse = {};
 statsObj.users.imageParse.parsed = 0;
 statsObj.users.imageParse.skipped = 0;
 
-statsObj.users.notClassified = 0;
-statsObj.users.updatedClassified = 0;
+statsObj.users.notCategorized = 0;
+statsObj.users.updatedCategorized = 0;
 statsObj.users.notFound = 0;
 statsObj.users.screenNameUndefined = 0;
 statsObj.errors = {};
@@ -398,15 +398,15 @@ globalhistograms.hashtags = {};
 globalhistograms.mentions = {};
 globalhistograms.emoji = {};
 
-let classifiedUserHashmap = {};
+let categorizedUserHashmap = new HashMap();
 
-let classifiedUserHistogram = {};
-classifiedUserHistogram.left = 0;
-classifiedUserHistogram.right = 0;
-classifiedUserHistogram.neutral = 0;
-classifiedUserHistogram.positive = 0;
-classifiedUserHistogram.negative = 0;
-classifiedUserHistogram.none = 0;
+let categorizedUserHistogram = {};
+categorizedUserHistogram.left = 0;
+categorizedUserHistogram.right = 0;
+categorizedUserHistogram.neutral = 0;
+categorizedUserHistogram.positive = 0;
+categorizedUserHistogram.negative = 0;
+categorizedUserHistogram.none = 0;
 
 let bestNetworkHashMap = new HashMap();
 let histogramsHashMap = new HashMap();
@@ -595,9 +595,9 @@ debug("NNT | DROPBOX_WORD_ASSO_APP_SECRET :" + configuration.DROPBOX.DROPBOX_WOR
 
 let dropboxClient = new Dropbox({ accessToken: configuration.DROPBOX.DROPBOX_WORD_ASSO_ACCESS_TOKEN });
 
-let globalClassifiedUsersFolder = dropboxConfigDefaultFolder + "/classifiedUsers";
-let classifiedUsersFolder = dropboxConfigHostFolder + "/classifiedUsers";
-let classifiedUsersFile = "classifiedUsers_manual.json";
+let globalCategorizedUsersFolder = dropboxConfigDefaultFolder + "/categorizedUsers";
+let categorizedUsersFolder = dropboxConfigHostFolder + "/categorizedUsers";
+let categorizedUsersFile = "categorizedUsers_manual.json";
 
 function getTimeStamp(inputTime) {
   let currentTimeStamp ;
@@ -785,12 +785,12 @@ function showStats(options){
     ));
 
     console.log(chalkLog("NNT | CL U HIST"
-      + " | L: " + classifiedUserHistogram.left
-      + " | R: " + classifiedUserHistogram.right
-      + " | N: " + classifiedUserHistogram.neutral
-      + " | +: " + classifiedUserHistogram.positive
-      + " | -: " + classifiedUserHistogram.negative
-      + " | 0: " + classifiedUserHistogram.none
+      + " | L: " + categorizedUserHistogram.left
+      + " | R: " + categorizedUserHistogram.right
+      + " | N: " + categorizedUserHistogram.neutral
+      + " | +: " + categorizedUserHistogram.positive
+      + " | -: " + categorizedUserHistogram.negative
+      + " | 0: " + categorizedUserHistogram.none
     ));
 
     if (!configuration.createTrainingSetOnly) {
@@ -2667,8 +2667,8 @@ function initialize(cnf, callback){
   cnf.train.ratePolicy = process.env.TNN_TRAIN_RATE_POLICY || DEFAULT_TRAIN_RATE_POLICY ;
   cnf.train.batchSize = process.env.TNN_TRAIN_BATCH_SIZE || DEFAULT_TRAIN_BATCH_SIZE ;
 
-  cnf.classifiedUsersFile = process.env.TNN_CLASSIFIED_USERS_FILE || classifiedUsersFile;
-  cnf.classifiedUsersFolder = globalClassifiedUsersFolder;
+  cnf.categorizedUsersFile = process.env.TNN_CATEGORIZED_USERS_FILE || categorizedUsersFile;
+  cnf.categorizedUsersFolder = globalCategorizedUsersFolder;
   cnf.statsUpdateIntervalTime = process.env.TNN_STATS_UPDATE_INTERVAL || 300000;
 
   debug(chalkWarn("dropboxConfigFolder: " + dropboxConfigFolder));
@@ -3095,23 +3095,23 @@ configEvents.once("INIT_MONGODB", function(){
 
 let userMaxInputHashMap = {};
 
-// FUTURE: break up into updateClassifiedUsers and createTrainingSet
-function updateClassifiedUsers(cnf, callback){
+// FUTURE: break up into updateCategorizedUsers and createTrainingSet
+function updateCategorizedUsers(cnf, callback){
 
   userServer.resetMaxInputsHashMap();
 
-  let classifiedNodeIds = Object.keys(classifiedUserHashmap);
+  let categorizedNodeIds = categorizedUserHashmap.keys();
 
   if (cnf.testMode) {
-    classifiedNodeIds.length = TEST_MODE_LENGTH;
-    console.log(chalkAlert("NNT | *** TEST MODE *** | CLASSIFY MAX " + TEST_MODE_LENGTH + " USERS"));
+    categorizedNodeIds.length = TEST_MODE_LENGTH;
+    console.log(chalkAlert("NNT | *** TEST MODE *** | CATEGORIZE MAX " + TEST_MODE_LENGTH + " USERS"));
   }
 
   let maxMagnitude = -Infinity;
   let minScore = Infinity;
   let maxScore = -Infinity;
 
-  console.log(chalkBlue("NNT | UPDATE CLASSIFIED USERS: " + classifiedNodeIds.length));
+  console.log(chalkBlue("NNT | UPDATE CATEGORIZED USERS: " + categorizedNodeIds.length));
 
   if (cnf.normalization) {
     maxMagnitude = cnf.normalization.magnitude.max;
@@ -3120,46 +3120,45 @@ function updateClassifiedUsers(cnf, callback){
     console.log(chalkAlert("NNT | SET NORMALIZATION\n" + jsonPrint(cnf.normalization)));
   }
 
-  statsObj.users.updatedClassified = 0;
-  statsObj.users.notClassified = 0;
+  statsObj.users.updatedCategorized = 0;
+  statsObj.users.notCategorized = 0;
 
   let userIndex = 0;
-  let classifiedUsersPercent = 0;
-  let classifiedUsersStartMoment = moment();
-  let classifiedUsersEndMoment = moment();
-  let classifiedUsersElapsed = 0;
-  let classifiedUsersRemain = 0;
-  let classifiedUsersRate = 0;
+  let categorizedUsersPercent = 0;
+  let categorizedUsersStartMoment = moment();
+  let categorizedUsersEndMoment = moment();
+  let categorizedUsersElapsed = 0;
+  let categorizedUsersRemain = 0;
+  let categorizedUsersRate = 0;
 
-  async.eachSeries(classifiedNodeIds, function(nodeId, cb0){
+  async.eachSeries(categorizedNodeIds, function(nodeId, cb0){
 
-    // User.findOne({nodeId: nodeId.toString()}, function(err, user){
     User.findOne( { "$or":[ {nodeId: nodeId.toString()}, {screenName: nodeId.toLowerCase()} ]}, function(err, user){
 
       userIndex += 1;
 
       if (err){
-        console.error(chalkError("NNT | *** UPDATE CLASSIFIED USERS: USER FIND ONE ERROR: " + err));
+        console.error(chalkError("NNT | *** UPDATE CATEGORIZED USERS: USER FIND ONE ERROR: " + err));
         statsObj.errors.users.findOne += 1;
         return(cb0(err));
       }
 
       if (!user){
-        console.log(chalkLog("NNT | *** UPDATE CLASSIFIED USERS: USER NOT FOUND: NID: " + nodeId));
+        console.log(chalkLog("NNT | *** UPDATE CATEGORIZED USERS: USER NOT FOUND: NID: " + nodeId));
         statsObj.users.notFound += 1;
-        statsObj.users.notClassified += 1;
+        statsObj.users.notCategorized += 1;
         return(cb0());
       }
 
       if (user.screenName === undefined) {
-        console.log(chalkError("NNT | *** UPDATE CLASSIFIED USERS: USER SCREENNAME UNDEFINED\n" + jsonPrint(user)));
+        console.log(chalkError("NNT | *** UPDATE CATEGORIZED USERS: USER SCREENNAME UNDEFINED\n" + jsonPrint(user)));
         statsObj.users.screenNameUndefined += 1;
-        statsObj.users.notClassified += 1;
+        statsObj.users.notCategorized += 1;
         return(cb0("USER SCREENNAME UNDEFINED", null));
       }
 
       debug(chalkInfo("NNT | UPDATE CL USR <DB"
-        + " [" + userIndex + "/" + classifiedNodeIds.length + "]"
+        + " [" + userIndex + "/" + categorizedNodeIds.length + "]"
         + " | " + user.nodeId
         + " | @" + user.screenName
       ));
@@ -3191,41 +3190,41 @@ function updateClassifiedUsers(cnf, callback){
 
       sentimentText = "M: " + sentimentObj.magnitude.toFixed(2) + " S: " + sentimentObj.score.toFixed(2);
 
-      const classification = user.category || false;
+      const category = user.category || false;
 
-      if (classification) {
+      if (category) {
 
         let classText = "";
         let currentChalk = chalkLog;
 
-        switch (classification) {
+        switch (category) {
           case "left":
-            classifiedUserHistogram.left += 1;
+            categorizedUserHistogram.left += 1;
             classText = "L";
             currentChalk = chalk.blue;
           break;
           case "right":
-            classifiedUserHistogram.right += 1;
+            categorizedUserHistogram.right += 1;
             classText = "R";
             currentChalk = chalk.yellow;
           break;
           case "neutral":
-            classifiedUserHistogram.neutral += 1;
+            categorizedUserHistogram.neutral += 1;
             classText = "N";
             currentChalk = chalk.black;
           break;
           case "positive":
-            classifiedUserHistogram.positive += 1;
+            categorizedUserHistogram.positive += 1;
             classText = "+";
             currentChalk = chalk.green;
           break;
           case "negative":
-            classifiedUserHistogram.negative += 1;
+            categorizedUserHistogram.negative += 1;
             classText = "-";
             currentChalk = chalk.red;
           break;
           default:
-            classifiedUserHistogram.none += 1;
+            categorizedUserHistogram.none += 1;
             classText = "O";
             currentChalk = chalk.bold.gray;
         }
@@ -3242,37 +3241,35 @@ function updateClassifiedUsers(cnf, callback){
           + " | FRNDs: " + user.friendsCount
         ));
 
-        statsObj.users.updatedClassified += 1;
+        statsObj.users.updatedCategorized += 1;
 
-        classifiedUsersPercent = 100 * (statsObj.users.notClassified + statsObj.users.updatedClassified)/classifiedNodeIds.length;
-        classifiedUsersElapsed = (moment().valueOf() - classifiedUsersStartMoment.valueOf()); // mseconds
-        classifiedUsersRate = classifiedUsersElapsed/statsObj.users.updatedClassified; // msecs/userClassified
-        classifiedUsersRemain = (classifiedNodeIds.length - (statsObj.users.notClassified + statsObj.users.updatedClassified)) * classifiedUsersRate; // mseconds
-        classifiedUsersEndMoment = moment();
-        classifiedUsersEndMoment.add(classifiedUsersRemain, "ms");
+        categorizedUsersPercent = 100 * (statsObj.users.notCategorized + statsObj.users.updatedCategorized)/categorizedNodeIds.length;
+        categorizedUsersElapsed = (moment().valueOf() - categorizedUsersStartMoment.valueOf()); // mseconds
+        categorizedUsersRate = categorizedUsersElapsed/statsObj.users.updatedCategorized; // msecs/userCategorized
+        categorizedUsersRemain = (categorizedNodeIds.length - (statsObj.users.notCategorized + statsObj.users.updatedCategorized)) * categorizedUsersRate; // mseconds
+        categorizedUsersEndMoment = moment();
+        categorizedUsersEndMoment.add(categorizedUsersRemain, "ms");
 
-        if ((statsObj.users.notClassified + statsObj.users.updatedClassified) % 20 === 0){
+        if ((statsObj.users.notCategorized + statsObj.users.updatedCategorized) % 20 === 0){
           console.log(chalkInfo("NNT"
-            + " | START: " + classifiedUsersStartMoment.format(compactDateTimeFormat)
-            + " | ELAPSED: " + msToTime(classifiedUsersElapsed)
-            + " | REMAIN: " + msToTime(classifiedUsersRemain)
-            + " | ETC: " + classifiedUsersEndMoment.format(compactDateTimeFormat)
-            + " | " + (statsObj.users.notClassified + statsObj.users.updatedClassified) + "/" + classifiedNodeIds.length
-            + " (" + classifiedUsersPercent.toFixed(1) + "%)"
-            + " USERS CLASSIFIED"
+            + " | START: " + categorizedUsersStartMoment.format(compactDateTimeFormat)
+            + " | ELAPSED: " + msToTime(categorizedUsersElapsed)
+            + " | REMAIN: " + msToTime(categorizedUsersRemain)
+            + " | ETC: " + categorizedUsersEndMoment.format(compactDateTimeFormat)
+            + " | " + (statsObj.users.notCategorized + statsObj.users.updatedCategorized) + "/" + categorizedNodeIds.length
+            + " (" + categorizedUsersPercent.toFixed(1) + "%)"
+            + " USERS CATEGORIZED"
           ));
 
           console.log(chalkLog("NNT | CL U HIST"
-            + " | L: " + classifiedUserHistogram.left
-            + " | R: " + classifiedUserHistogram.right
-            + " | N: " + classifiedUserHistogram.neutral
-            + " | +: " + classifiedUserHistogram.positive
-            + " | -: " + classifiedUserHistogram.negative
-            + " | 0: " + classifiedUserHistogram.none
+            + " | L: " + categorizedUserHistogram.left
+            + " | R: " + categorizedUserHistogram.right
+            + " | N: " + categorizedUserHistogram.neutral
+            + " | +: " + categorizedUserHistogram.positive
+            + " | -: " + categorizedUserHistogram.negative
+            + " | 0: " + categorizedUserHistogram.none
           ));
-
         }
-        // create text input from user text in screenName, name, statusText, retweetText and description
 
         async.waterfall([
           function userScreenName(cb) {
@@ -3482,15 +3479,15 @@ function updateClassifiedUsers(cnf, callback){
       }
       else {
 
-        statsObj.users.notClassified += 1;
+        statsObj.users.notCategorized += 1;
 
-        if (statsObj.users.notClassified % 10 === 0){
-          console.log(chalkLog("NNT | " + statsObj.users.notClassified + " USERS NOT CLASSIFIED"));
+        if (statsObj.users.notCategorized % 10 === 0){
+          console.log(chalkLog("NNT | " + statsObj.users.notCategorized + " USERS NOT CATEGORIZED"));
         }
 
         console.log(chalkBlue("NNT *** USR DB NOT CL"
-          + " | C: " + user.category
-          + " | CLHashMap: " + classifiedUserHashmap[nodeId]
+          + " | CM: " + user.category
+          + " | CM HM: " + categorizedUserHashmap.get(nodeId).manual
           + " | " + user.nodeId
           + " | " + user.screenName
           + " | " + user.name
@@ -3500,36 +3497,36 @@ function updateClassifiedUsers(cnf, callback){
           + " | SEN: " + sentimentText
         ));
 
-        classifiedUsersPercent = 100 * (statsObj.users.notClassified + statsObj.users.updatedClassified)/classifiedNodeIds.length;
-        classifiedUsersElapsed = (moment().valueOf() - classifiedUsersStartMoment.valueOf()); // mseconds
-        classifiedUsersRate = classifiedUsersElapsed/statsObj.users.updatedClassified; // msecs/userClassified
-        classifiedUsersRemain = (classifiedNodeIds.length - (statsObj.users.notClassified + statsObj.users.updatedClassified)) * classifiedUsersRate; // mseconds
-        classifiedUsersEndMoment = moment();
-        classifiedUsersEndMoment.add(classifiedUsersRemain, "ms");
+        categorizedUsersPercent = 100 * (statsObj.users.notCategorized + statsObj.users.updatedCategorized)/categorizedNodeIds.length;
+        categorizedUsersElapsed = (moment().valueOf() - categorizedUsersStartMoment.valueOf()); // mseconds
+        categorizedUsersRate = categorizedUsersElapsed/statsObj.users.updatedCategorized; // msecs/userCategorized
+        categorizedUsersRemain = (categorizedNodeIds.length - (statsObj.users.notCategorized + statsObj.users.updatedCategorized)) * categorizedUsersRate; // mseconds
+        categorizedUsersEndMoment = moment();
+        categorizedUsersEndMoment.add(categorizedUsersRemain, "ms");
 
-        if ((statsObj.users.notClassified + statsObj.users.updatedClassified) % 20 === 0){
+        if ((statsObj.users.notCategorized + statsObj.users.updatedCategorized) % 20 === 0){
           console.log(chalkInfo("NNT"
-            + " | START: " + classifiedUsersStartMoment.format(compactDateTimeFormat)
-            + " | ELAPSED: " + msToTime(classifiedUsersElapsed)
-            + " | REMAIN: " + msToTime(classifiedUsersRemain)
-            + " | ETC: " + classifiedUsersEndMoment.format(compactDateTimeFormat)
-            + " | " + (statsObj.users.notClassified + statsObj.users.updatedClassified) + "/" + classifiedNodeIds.length
-            + " (" + classifiedUsersPercent.toFixed(1) + "%)"
-            + " USERS CLASSIFIED"
+            + " | START: " + categorizedUsersStartMoment.format(compactDateTimeFormat)
+            + " | ELAPSED: " + msToTime(categorizedUsersElapsed)
+            + " | REMAIN: " + msToTime(categorizedUsersRemain)
+            + " | ETC: " + categorizedUsersEndMoment.format(compactDateTimeFormat)
+            + " | " + (statsObj.users.notCategorized + statsObj.users.updatedCategorized) + "/" + categorizedNodeIds.length
+            + " (" + categorizedUsersPercent.toFixed(1) + "%)"
+            + " USERS CATEGORIZED"
           ));
 
           console.log(chalkLog("NNT | CL U HIST"
-            + " | L: " + classifiedUserHistogram.left
-            + " | R: " + classifiedUserHistogram.right
-            + " | N: " + classifiedUserHistogram.neutral
-            + " | +: " + classifiedUserHistogram.positive
-            + " | -: " + classifiedUserHistogram.negative
-            + " | 0: " + classifiedUserHistogram.none
+            + " | L: " + categorizedUserHistogram.left
+            + " | R: " + categorizedUserHistogram.right
+            + " | N: " + categorizedUserHistogram.neutral
+            + " | +: " + categorizedUserHistogram.positive
+            + " | -: " + categorizedUserHistogram.negative
+            + " | 0: " + categorizedUserHistogram.none
           ));
 
         }
 
-        user.category = classifiedUserHashmap[nodeId];
+        user.category = categorizedUserHashmap.get(nodeId).manual;
 
         userServer.findOneUser(user, {noInc: true}, function(err, updatedUser){
           if (err) {
@@ -3548,36 +3545,36 @@ function updateClassifiedUsers(cnf, callback){
         console.log(chalkAlert("NNT | INTERRUPT"));
       }
       else {
-        console.log(chalkError("NNT | UPDATE CLASSIFIED USERS ERROR: " + err));
+        console.log(chalkError("NNT | UPDATE CATEGORIZED USERS ERROR: " + err));
       }
     }
 
     userMaxInputHashMap = userServer.getMaxInputsHashMap();
     debug("MAX INPUT HASHMAP\n" + jsonPrint(userMaxInputHashMap));
 
-    classifiedUsersPercent = 100 * (statsObj.users.notClassified + statsObj.users.updatedClassified)/classifiedNodeIds.length;
-    classifiedUsersElapsed = (moment().valueOf() - classifiedUsersStartMoment.valueOf()); // mseconds
-    classifiedUsersRate = classifiedUsersElapsed/statsObj.users.updatedClassified; // msecs/userClassified
-    classifiedUsersRemain = (classifiedNodeIds.length - (statsObj.users.notClassified + statsObj.users.updatedClassified)) * classifiedUsersRate; // mseconds
-    classifiedUsersEndMoment = moment();
-    classifiedUsersEndMoment.add(classifiedUsersRemain, "ms");
+    categorizedUsersPercent = 100 * (statsObj.users.notCategorized + statsObj.users.updatedCategorized)/categorizedNodeIds.length;
+    categorizedUsersElapsed = (moment().valueOf() - categorizedUsersStartMoment.valueOf()); // mseconds
+    categorizedUsersRate = categorizedUsersElapsed/statsObj.users.updatedCategorized; // msecs/userCategorized
+    categorizedUsersRemain = (categorizedNodeIds.length - (statsObj.users.notCategorized + statsObj.users.updatedCategorized)) * categorizedUsersRate; // mseconds
+    categorizedUsersEndMoment = moment();
+    categorizedUsersEndMoment.add(categorizedUsersRemain, "ms");
 
-    console.log(chalkAlert("\nNNT | ======================= END CLASSIFY USERS ======================="
-      + "\nNNT | ==== START:   " + classifiedUsersStartMoment.format(compactDateTimeFormat)
-      + "\nNNT | ==== ELAPSED: " + msToTime(classifiedUsersElapsed)
-      + "\nNNT | ==== REMAIN:  " + msToTime(classifiedUsersRemain)
-      + "\nNNT | ==== ETC:     " + classifiedUsersEndMoment.format(compactDateTimeFormat)
-      + "\nNNT | ====          " + (statsObj.users.notClassified + statsObj.users.updatedClassified) + "/" + classifiedNodeIds.length
-      + " (" + classifiedUsersPercent.toFixed(1) + "%)" + " USERS CLASSIFIED"
+    console.log(chalkAlert("\nNNT | ======================= END CATEGORIZE USERS ======================="
+      + "\nNNT | ==== START:   " + categorizedUsersStartMoment.format(compactDateTimeFormat)
+      + "\nNNT | ==== ELAPSED: " + msToTime(categorizedUsersElapsed)
+      + "\nNNT | ==== REMAIN:  " + msToTime(categorizedUsersRemain)
+      + "\nNNT | ==== ETC:     " + categorizedUsersEndMoment.format(compactDateTimeFormat)
+      + "\nNNT | ====          " + (statsObj.users.notCategorized + statsObj.users.updatedCategorized) + "/" + categorizedNodeIds.length
+      + " (" + categorizedUsersPercent.toFixed(1) + "%)" + " USERS CATEGORIZED"
     ));
 
     console.log(chalkAlert("NNT | CL U HIST"
-      + " | L: " + classifiedUserHistogram.left
-      + " | R: " + classifiedUserHistogram.right
-      + " | N: " + classifiedUserHistogram.neutral
-      + " | +: " + classifiedUserHistogram.positive
-      + " | -: " + classifiedUserHistogram.negative
-      + " | 0: " + classifiedUserHistogram.none
+      + " | L: " + categorizedUserHistogram.left
+      + " | R: " + categorizedUserHistogram.right
+      + " | N: " + categorizedUserHistogram.neutral
+      + " | +: " + categorizedUserHistogram.positive
+      + " | -: " + categorizedUserHistogram.negative
+      + " | 0: " + categorizedUserHistogram.none
     ));
 
 
@@ -3613,7 +3610,7 @@ function convertDatum(params, inputs, datum, callback){
   convertedDatum.input = [];
   convertedDatum.output = [];
 
-  switch (datum.classification) {
+  switch (datum.category) {
     case "left":
     convertedDatum.output = [1, 0, 0];
     break;
@@ -3785,96 +3782,31 @@ function testNetwork(nwObj, testObj, callback){
   });
 }
 
-let previousClassifiedUsersObj = {};
-function initClassifiedUserHashmap(folder, file, callback){
+function initCategorizedUserHashmap(callback){
 
-  const fullPath = folder + "/" + file;
-  let classifiedUsersObj = {};
-  const params = { auto: false };
-
-  console.log(chalkInfo("NNT | INIT CLASSIFIED USERS HASHMAP FROM DB | " + fullPath));
-
-  getFileMetadata(folder, file, function(err, response){
+  userServer.findCategorizedUsersCursor({ auto: false }, function(err, results){
     if (err) {
-      console.log(chalkError("NNT | INIT CLASSIFIED USERS HASHMAP METADATA FROM DB ERROR\n" + jsonPrint(err)));
-      return(callback(err, null));
-    }
-
-    const fileModifiedMoment = moment(new Date(response.client_modified));
-  
-    if (fileModifiedMoment.isSameOrBefore(prevClassifiedUsersFileModifiedMoment)){
-
-      console.log(chalkInfo("NNT | CLASSIFIED USERS FILE BEFORE OR EQUAL | NO DOWNLOAD"
-        + " | " + fullPath
-        + " | PREV: " + prevClassifiedUsersFileModifiedMoment.format(compactDateTimeFormat)
-        + " | " + fileModifiedMoment.format(compactDateTimeFormat)
-      ));
-
-      userServer.findClassifiedUsersCursor(params, function(err, results){
-        if (err) {
-          console.error(chalkError("NNT | ERROR: initClassifiedUserHashmap: "));
-          callback(err, null);
-        }
-        else {
-          console.log(chalkInfo("NNT | LOADED CLASSIFIED USERS FROM DB"
-            + " | " + results.count + " CLASSIFIED"
-            + " | " + results.manual + " MAN"
-            + " | " + results.auto + " AUTO"
-            + " | " + results.matchRate.toFixed(1) + "% MATCH"
-          ));
-
-          classifiedUsersObj = defaults(previousClassifiedUsersObj, results.obj);
-          previousClassifiedUsersObj = classifiedUsersObj;
-
-          callback(null, classifiedUsersObj);
-        }
-      });
-
+      console.error(chalkError("NNT | ERROR: initCategorizedUserHashmap: "));
+      callback(err);
     }
     else {
-      console.log(chalkAlert("NNT | ... CLASSIFIED USERS FILE AFTER ... LOADING ..."
-        + " | " + fullPath
-        + " | PREV: " + prevClassifiedUsersFileModifiedMoment.format(compactDateTimeFormat)
-        + " | " + fileModifiedMoment.format(compactDateTimeFormat)
+      console.log(chalkInfo("NNT | LOADED CATEGORIZED USERS FROM DB"
+        + " | " + results.count + " CATEGORIZED"
+        + " | " + results.manual + " MAN"
+        + " | " + results.auto + " AUTO"
+        + " | " + results.matchRate.toFixed(1) + "% MATCH"
       ));
 
-      prevClassifiedUsersFileModifiedMoment = moment(fileModifiedMoment);
+      // results.obj[nodeId] = { manual: user.category, auto: user.categoryAuto };
 
-      loadFile(folder, file, function(err, dropboxClassifiedUsersObj){
-        if (err || dropboxClassifiedUsersObj === undefined) {
-          console.error(chalkError("NNT | ERROR: loadFile: " + folder + "/" + file));
-          console.log(chalkError("NNT | ERROR: loadFile: " + folder + "/" + file));
-          callback(err, file);
-        }
-        else {
-          console.log(chalkInfo("NNT | LOADED CLASSIFIED USERS FILE: " + folder + "/" + file));
-          console.log(chalkInfo("NNT | DROPBOX DEFAULT | " + Object.keys(dropboxClassifiedUsersObj).length + " CLASSIFIED USERS"));
-
-          userServer.findClassifiedUsersCursor(params, function(err, results){
-            if (err) {
-              console.error(chalkError("NNT | ERROR: initClassifiedUserHashmap: "));
-              callback(err, null);
-            }
-            else {
-              console.log(chalkInfo("NNT | LOADED CLASSIFIED USERS FROM DB"
-                + " | " + results.count + " CLASSIFIED"
-                + " | " + results.manual + " MAN"
-                + " | " + results.auto + " AUTO"
-                + " | " + results.matchRate.toFixed(1) + "% MATCH"
-              ));
-
-              classifiedUsersObj = defaults(dropboxClassifiedUsersObj, results.obj);
-              previousClassifiedUsersObj = classifiedUsersObj;
-
-              callback(null, classifiedUsersObj);
-            }
-          });
-
-        }
+      Object.keys(results.obj).forEach(function(nodeId){
+        categorizedUserHashmap.set(nodeId, results.obj[nodeId]);
       });
 
+      callback();
     }
   });
+
 }
 
 function generateGlobalTrainingTestSet (userHashMap, maxInputHashMap, callback){
@@ -3910,7 +3842,7 @@ function generateGlobalTrainingTestSet (userHashMap, maxInputHashMap, callback){
 
     }
 
-    user.classification = user.category || false;
+    user.category = user.category || false;
 
     if (configuration.generateTrainingSetOnly) {
       trainingSet.data.push(user);
@@ -4365,18 +4297,15 @@ function initMain(cnf, callback){
         return (callback(err0, null));
       }
 
-      initClassifiedUserHashmap(cnf.classifiedUsersFolder, cnf.classifiedUsersFile, function(err, classifiedUsersObj){
+      initCategorizedUserHashmap(function(err){
 
         if (err) {
-          console.error(chalkError("NNT | *** ERROR: CLASSIFIED USER HASHMAP NOT INITIALIED: ", err));
+          console.error(chalkError("NNT | *** ERROR: CATEGORIZED USER HASHMAP NOT INITIALIED: ", err));
           initMainReady = true;
           return (callback(err, null));
         }
 
-        classifiedUserHashmap = {};
-        classifiedUserHashmap = classifiedUsersObj;
-
-        console.log(chalkInfo("NNT | LOADED " + Object.keys(classifiedUserHashmap).length + " TOTAL CLASSIFIED USERS"));
+        console.log(chalkInfo("NNT | LOADED " + categorizedUserHashmap.size + " TOTAL CATEGORIZED USERS"));
 
         if (cnf.loadTrainingSetFromFile) {
 
@@ -4414,10 +4343,10 @@ function initMain(cnf, callback){
           createTrainingSetBusy = true;
           trainingSetReady = false;
 
-          updateClassifiedUsers(cnf, function(err){
+          updateCategorizedUsers(cnf, function(err){
 
             if (err) {
-              console.error("NNT | *** UPDATE CLASSIFIED USER ERROR ***\n" + jsonPrint(err));
+              console.error("NNT | *** UPDATE CATEGORIZED USER ERROR ***\n" + jsonPrint(err));
               initMainReady = true;
               return(callback(err, null));
             }
@@ -4433,15 +4362,15 @@ function initMain(cnf, callback){
                 return(callback(err, null));
               }
 
-              statsObj.classifiedUserHistogram = {};
-              statsObj.classifiedUserHistogram = classifiedUserHistogram;
+              statsObj.categorizedUserHistogram = {};
+              statsObj.categorizedUserHistogram = categorizedUserHistogram;
 
-              classifiedUserHistogram.left = 0;
-              classifiedUserHistogram.right = 0;
-              classifiedUserHistogram.neutral = 0;
-              classifiedUserHistogram.positive = 0;
-              classifiedUserHistogram.negative = 0;
-              classifiedUserHistogram.none = 0;
+              categorizedUserHistogram.left = 0;
+              categorizedUserHistogram.right = 0;
+              categorizedUserHistogram.neutral = 0;
+              categorizedUserHistogram.positive = 0;
+              categorizedUserHistogram.negative = 0;
+              categorizedUserHistogram.none = 0;
 
               trainingSetReady = true;
               createTrainingSetBusy = false;
