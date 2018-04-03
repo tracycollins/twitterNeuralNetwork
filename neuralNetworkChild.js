@@ -363,7 +363,7 @@ function convertDatum(params, datum, generateInputRaw, callback){
   convertedDatum.output = [];
   convertedDatum.inputRaw = [];
 
-  switch (datum.classification) {
+  switch (datum.category) {
     case "left":
     convertedDatum.output = [1, 0, 0];
     break;
