@@ -3518,7 +3518,7 @@ function updateCategorizedUsers(cnf, callback){
           console.log(chalkLog("NNT | " + statsObj.users.notCategorized + " USERS NOT CATEGORIZED"));
         }
 
-        console.log(chalkBlue("NNT *** USR DB NOT CL"
+        debug(chalkBlue("NNT *** USR DB NOT CL"
           + " | CM: " + user.category
           + " | CM HM: " + categorizedUserHashmap.get(nodeId).manual
           + " | " + user.nodeId
