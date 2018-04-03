@@ -380,7 +380,6 @@ function convertDatum(params, datum, generateInputRaw, callback){
 
   async.eachSeries(inputTypes, function(inputType, cb0){
 
-
     const inNames = params.inputsObj.inputs[inputType].sort();
 
     async.eachSeries(inNames, function(inName, cb1){
@@ -392,10 +391,11 @@ function convertDatum(params, datum, generateInputRaw, callback){
       }
 
       if (inputType === "sentiment") {
-        // console.log("SENTIMENT | " + inNames + "\ndatum\n" + jsonPrint(datum));
-        if (datum.languageAnalysis[inputName] === undefined) {
+        if (datum.languageAnalysis === undefined) {
           convertedDatum.input.push(0);
-          // console.log("INPUT | " + inputType + " | " + inputName + ": " + 0);
+        }
+        else if (datum.languageAnalysis[inputName] === undefined) {
+          convertedDatum.input.push(0);
         }
         else {
           convertedDatum.input.push(datum.languageAnalysis[inputName]);

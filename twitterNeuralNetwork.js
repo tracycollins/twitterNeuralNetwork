@@ -1915,13 +1915,7 @@ function loadBestNetworkDropboxFolders (folders, callback){
 
               if (!configuration.inputsIdArray.includes(networkObj.inputsId)) {
 
-                // skipLoadNetworkSet.add(networkObj.networkId);
-
                 console.log(chalkInfo("NNT | NN INPUTS NOT IN INPUTS ID ARRAY ... DELETING: " + entry.name));
-
-                // bestNetworkHashMap.delete(networkObj.networkId);
-                // inputsNetworksHashMap[networkObj.inputsId].delete(networkObj.networkId);
-                // inputsIdSet.delete(networkObj.inputsId);
 
                 dropboxClient.filesDelete({path: folder + "/" + entry.name})
                 .then(function(response){
