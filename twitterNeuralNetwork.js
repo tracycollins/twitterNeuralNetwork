@@ -4274,7 +4274,8 @@ function initNetworkCreate(nnChildId, nnId, cnf, callback){
 function allComplete(){
 
   if (Object.keys(neuralNetworkChildHashMap).length === 0 ) { 
-    allCompleteFlag = false;
+    // allCompleteFlag = false;
+    allCompleteFlag = true;
     return;
   }
 
