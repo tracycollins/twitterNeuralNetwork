@@ -1,13 +1,13 @@
 {
   "name": "twitterneuralnetwork",
-  "version": "1.0.21",
+  "version": "1.0.22",
   "description": "twitter neural network",
   "main": "twitterNeuralNetwork.js",
   "dependencies": {
     "@davvo/drbx": "^2.1.0",
     "@google-cloud/vision": "^0.18.0",
     "@threeceelabs/histogram-parser": "^1.0.14",
-    "@threeceelabs/mongoose-twitter": "^1.0.99",
+    "@threeceelabs/mongoose-twitter": "^1.0.102",
     "@threeceelabs/twitter-image-parser": "^1.0.40",
     "@threeceelabs/twitter-text-parser": "^1.0.40",
     "@threeceelabs/user-server-controller": "^1.0.244",

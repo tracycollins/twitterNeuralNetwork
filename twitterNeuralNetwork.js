@@ -57,15 +57,17 @@ const writeJsonFile = require("write-json-file");
 const sizeof = require("object-sizeof");
 const ora = require("ora");
 
-const mongoose = require("mongoose");
-const wordAssoDb = require("@threeceelabs/mongoose-twitter");
+// const mongoose = require("mongoose");
 
-const userServer = require("@threeceelabs/user-server-controller");
-const User = mongoose.model("User", wordAssoDb.UserSchema);
+// const User = mongoose.model("User", wordAssoDb.UserSchema);
+// const NeuralNetwork = mongoose.model("NeuralNetwork", wordAssoDb.NeuralNetworkSchema);
+
+// const wordAssoDb = require("@threeceelabs/mongoose-twitter");
+
+
 
 require("isomorphic-fetch");
 const Dropbox = require("dropbox").Dropbox;
-// const Dropbox = require("./js/dropbox").Dropbox;
 
 const pick = require("object.pick");
 const omit = require("object.omit");
@@ -209,6 +211,34 @@ let inputsIdSet = new Set();
 let slackChannel = "#nn";
 
 let initMainInterval;
+
+
+
+let statsObj = {};
+
+
+const mongoose = require("mongoose");
+mongoose.Promise = global.Promise;
+
+const userModel = require("@threeceelabs/mongoose-twitter/models/user.server.model");
+const neuralNetworkModel = require("@threeceelabs/mongoose-twitter/models/neuralNetwork.server.model");
+
+let User;
+let NeuralNetwork;
+let userServer;
+
+const wordAssoDb = require("@threeceelabs/mongoose-twitter");
+const dbConnection = wordAssoDb();
+
+dbConnection.on("error", console.error.bind(console, "connection error:"));
+
+dbConnection.once("open", function() {
+  console.log(chalkAlert("NNT | CONNECT: MONGOOSE DEFAULT CONNECTION OPEN"));
+  User = mongoose.model("User", userModel.UserSchema);
+  NeuralNetwork = mongoose.model("NeuralNetwork", neuralNetworkModel.NeuralNetworkSchema);
+  userServer = require("@threeceelabs/user-server-controller");
+});
+
 
 let configuration = {};
 
@@ -354,7 +384,6 @@ function msToTime(d) {
   return days + ":" + hours + ":" + minutes + ":" + seconds;
 }
 
-let statsObj = {};
 
 statsObj.hostname = hostname;
 statsObj.pid = process.pid;
@@ -1889,7 +1918,7 @@ function loadBestNetworkDropboxFolders (folders, callback){
 
             });
           }
-          else{
+          else {
             debug(chalkLog("NNT | DROPBOX BEST NETWORK CONTENT SAME  "
               + " | " + entry.name
               + " | LAST MOD: " + moment(new Date(entry.client_modified)).format(compactDateTimeFormat)
@@ -1984,6 +2013,12 @@ function loadBestNetworkDropboxFolders (folders, callback){
                   inputsNetworksHashMap[networkObj.inputsId] = new Set();
                 }
                 inputsNetworksHashMap[networkObj.inputsId].add(networkObj.networkId);
+
+                let nn = new NeuralNetwork(networkObj)
+                  .save()
+                  .catch((err)=>{
+                    console.log(err.message);
+                  });
 
                 numNetworksLoaded += 1;
 
@@ -3839,7 +3874,6 @@ function initCategorizedUserHashmap(callback){
       callback();
     }
   });
-
 }
 
 function generateGlobalTrainingTestSet (userHashMap, maxInputHashMap, callback){
@@ -4586,6 +4620,12 @@ function initNeuralNetworkChild(cnf, callback){
 
           networkCreateResultsHashmap[networkObj.networkId] = {};
           networkCreateResultsHashmap[networkObj.networkId] = omit(networkObj, ["network", "inputs", "outputs"]);
+
+          let nn = new NeuralNetwork(networkObj)
+            .save()
+            .catch((err)=>{
+              console.log(err.message);
+            });
 
           printNetworkCreateResultsHashmap();
 
