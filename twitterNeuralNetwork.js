@@ -3854,7 +3854,14 @@ function testNetwork(nwObj, testObj, callback){
 
 function initCategorizedUserHashmap(callback){
 
-  userServer.findCategorizedUsersCursor({ auto: false }, function(err, results){
+  // const query = (params.query) ? params.query : { $or: [ { "category": { $nin: [ false, null ] } } , { "categoryAuto": { $nin: [ false, null ] } } ] };
+
+  let p = {};
+  p.query = { 
+    "category": { $nin: [ false, null ] } 
+  };
+
+  userServer.findCategorizedUsersCursor(p, function(err, results){
     if (err) {
       console.error(chalkError("NNT | ERROR: initCategorizedUserHashmap: "));
       callback(err);
