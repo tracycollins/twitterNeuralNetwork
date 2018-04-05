@@ -3321,12 +3321,23 @@ function updateCategorizedUsers(cnf, callback){
           ));
 
           console.log(chalkLog("NNT | CL U HIST"
-            + " | L: " + categorizedUserHistogram.left
+            + " | L: " + categorizedUserHistogram.left 
+            + " (" + (100*(categorizedUserHistogram.left/categorizedNodeIds.length)).toFixed(2) + ")"
+
             + " | R: " + categorizedUserHistogram.right
+            + " (" + (100*(categorizedUserHistogram.right/categorizedNodeIds.length)).toFixed(2) + ")"
+
             + " | N: " + categorizedUserHistogram.neutral
+            + " (" + (100*(categorizedUserHistogram.neutral/categorizedNodeIds.length)).toFixed(2) + ")"
+
             + " | +: " + categorizedUserHistogram.positive
+            + " (" + (100*(categorizedUserHistogram.positive/categorizedNodeIds.length)).toFixed(2) + ")"
+
             + " | -: " + categorizedUserHistogram.negative
+            + " (" + (100*(categorizedUserHistogram.negative/categorizedNodeIds.length)).toFixed(2) + ")"
+
             + " | 0: " + categorizedUserHistogram.none
+            + " (" + (100*(categorizedUserHistogram.none/categorizedNodeIds.length)).toFixed(2) + ")"
           ));
         }
 
