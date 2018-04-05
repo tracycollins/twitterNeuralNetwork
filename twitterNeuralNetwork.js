@@ -57,15 +57,6 @@ const writeJsonFile = require("write-json-file");
 const sizeof = require("object-sizeof");
 const ora = require("ora");
 
-// const mongoose = require("mongoose");
-
-// const User = mongoose.model("User", wordAssoDb.UserSchema);
-// const NeuralNetwork = mongoose.model("NeuralNetwork", wordAssoDb.NeuralNetworkSchema);
-
-// const wordAssoDb = require("@threeceelabs/mongoose-twitter");
-
-
-
 require("isomorphic-fetch");
 const Dropbox = require("dropbox").Dropbox;
 
