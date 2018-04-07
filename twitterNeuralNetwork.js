@@ -585,7 +585,7 @@ const dropboxConfigFile = hostname + "_" + configuration.DROPBOX.DROPBOX_TNN_CON
 const defaultHistogramsFolder = dropboxConfigDefaultFolder + "/histograms";
 const localInputsFolder = dropboxConfigHostFolder + "/inputs";
 const defaultInputsFolder = dropboxConfigDefaultFolder + "/inputs";
-// const defaultInputsFolder = localInputsFolder;
+const defaultInputsArchiveFolder = dropboxConfigDefaultFolder + "/inputsArchive";
 
 const defaultTrainingSetFolder = dropboxConfigDefaultFolder + "/trainingSets";
 const localTrainingSetFolder = dropboxConfigHostFolder + "/trainingSets";
@@ -1475,12 +1475,27 @@ function loadInputsDropboxFolder(folder, callback){
       ));
 
       if (!configuration.inputsIdArray.includes(entryInputsId)){
-        debug(chalkInfo("NNT | DROPBOX INPUTS NOT IN INPUTS ID ARRAY ... DELETING"
+
+        console.log(chalkInfo("NNT | DROPBOX INPUTS NOT IN INPUTS ID ARRAY ... ARCHIVING"
           + " | " + entryInputsId
-          + " | " + configuration.inputsIdArray
+          // + " | " + configuration.inputsIdArray
+          + " | " + defaultInputsArchiveFolder + "/" + entry.name
         ));
-        skippedInputsFiles += 1;
-        cb();
+
+        let optionsMove = {};
+        optionsMove.from_path = folder + "/" + entry.name
+        optionsMove.to_path = defaultInputsArchiveFolder + "/" + entry.name
+
+        dropboxClient.filesMoveV2(optionsMove)
+        .then(function(response){
+          skippedInputsFiles += 1;
+          cb();
+        })
+        .catch(function(err){
+          console.log(chalkError("NNT | *** DROPBOX FILE MOVE ERROR\n" + jsonPrint(err)));
+          cb();
+        });
+
       }
       else if (inputsHashMap.has(entryInputsId)){
 
@@ -2135,7 +2150,7 @@ function loadConfigFile(folder, file, callback) {
   
     if (fileModifiedMoment.isSameOrBefore(prevConfigFileModifiedMoment)){
 
-      console.log(chalkInfo("NNT | CONFIG FILE BEFORE OR EQUAL"
+      debug(chalkInfo("NNT | CONFIG FILE BEFORE OR EQUAL"
         + " | " + fullPath
         + " | PREV: " + prevConfigFileModifiedMoment.format(compactDateTimeFormat)
         + " | " + fileModifiedMoment.format(compactDateTimeFormat)
@@ -2143,7 +2158,7 @@ function loadConfigFile(folder, file, callback) {
       callback(null, null);
     }
     else {
-      console.log(chalkAlert("NNT | ... CONFIG FILE AFTER ... LOADING ..."
+      console.log(chalkAlert("NNT | +++ CONFIG FILE AFTER ... LOADING"
         + " | " + fullPath
         + " | PREV: " + prevConfigFileModifiedMoment.format(compactDateTimeFormat)
         + " | " + fileModifiedMoment.format(compactDateTimeFormat)
