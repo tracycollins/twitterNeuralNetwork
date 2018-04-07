@@ -2135,7 +2135,7 @@ function loadConfigFile(folder, file, callback) {
   
     if (fileModifiedMoment.isSameOrBefore(prevConfigFileModifiedMoment)){
 
-      debug(chalkInfo("NNT | CONFIG FILE BEFORE OR EQUAL"
+      console.log(chalkInfo("NNT | CONFIG FILE BEFORE OR EQUAL"
         + " | " + fullPath
         + " | PREV: " + prevConfigFileModifiedMoment.format(compactDateTimeFormat)
         + " | " + fileModifiedMoment.format(compactDateTimeFormat)
