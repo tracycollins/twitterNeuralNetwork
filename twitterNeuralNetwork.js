@@ -4033,7 +4033,7 @@ function generateGlobalTrainingTestSet (userHashMap, maxInputHashMap, callback){
         callback(null);
       })
       .catch(function(error){
-        console.trace(chalkError("NNT | " + moment().format(compactDateTimeFormat) 
+        console.log(chalkError("NNT | " + moment().format(compactDateTimeFormat) 
           + " | !!! ERROR DROBOX JSON WRITE | FILE: " + fullPath 
           + " | ERROR: " + error
           + " | ERROR\n" + jsonPrint(error)
@@ -4043,7 +4043,7 @@ function generateGlobalTrainingTestSet (userHashMap, maxInputHashMap, callback){
 
     })
     .catch(function(error){
-      console.trace(chalkError("NNT | " + moment().format(compactDateTimeFormat) 
+      console.log(chalkError("NNT | " + moment().format(compactDateTimeFormat) 
         + " | !!! ERROR DROBOX JSON WRITE | FILE: " + fullPath 
         + " | ERROR: " + error
         + " | ERROR\n" + jsonPrint(error)
@@ -4173,7 +4173,7 @@ function generateRandomEvolveConfig (cnf, callback){
 
     callback(null, config);
   }
-  else {
+  else { // create training set
 
     console.log(chalkAlert("NNT | ... START CREATE TRAINING SET"));
 
