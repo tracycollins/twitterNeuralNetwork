@@ -674,9 +674,7 @@ function indexOfMax (arr, callback) {
       if (val < 1) {
         arr[index] = 0;
       }
-      // async.setImmediate(function() { 
-        cb0(); 
-      // });
+      cb0(); 
     }, function(){
       callback(3, arr); 
     });
@@ -692,18 +690,14 @@ function indexOfMax (arr, callback) {
         maxIndex = index;
         max = val;
       }
-      // async.setImmediate(function() { 
-        cb1(); 
-      // });
+      cb1(); 
     }, function(){
 
       async.eachOf(arr, function(val, index, cb2){
         if (val < 1) {
           arr[index] = 0;
         }
-        // async.setImmediate(function() { 
-          cb2(); 
-        // });
+        cb2(); 
       }, function(){
         callback(maxIndex, arr); 
       });
@@ -718,13 +712,10 @@ function printNetworkCreateResultsHashmap(){
   let tableArray = [];
 
   tableArray.push([
-    "NNT | STATUS",
-    "NNID",
+    "NNT | NNID",
     "SEED",
     "RES %",
     "INPTS",
-    // "MUT",
-    // "ACTV",
     "CLEAR",
     "COST",
     "GRWTH",
@@ -753,8 +744,6 @@ function printNetworkCreateResultsHashmap(){
 
     const successRate = (networkObj.successRate !== undefined) ? networkObj.successRate.toFixed(2) : "---";
     const elapsed = (networkObj.evolve.elapsed !== undefined) ? networkObj.evolve.elapsed : (moment().valueOf() - networkObj.evolve.start);
-
-    // const nnChildStatus = neuralNetworkChildHashMap[networkObj.nnChildId].status || "---";
 
     tableArray.push([
       "NNT | " + nnId,
@@ -1081,7 +1070,6 @@ function saveFile (params, callback){
           console.error(chalkError("NNT | " + moment().format(compactDateTimeFormat) 
             + " | !!! ERROR DROBOX JSON WRITE | FILE: " + fullPath 
             + " | ERROR: 413"
-            // + " ERROR\n" + jsonPrint(error.error)
           ));
           if (callback !== undefined) { return callback(error.error_summary); }
         }
@@ -1089,7 +1077,6 @@ function saveFile (params, callback){
           console.error(chalkError("NNT | " + moment().format(compactDateTimeFormat) 
             + " | !!! ERROR DROBOX JSON WRITE | FILE: " + fullPath 
             + " | ERROR: TOO MANY WRITES"
-            // + " ERROR\n" + "jsonPrint"(error.error)
           ));
           if (callback !== undefined) { return callback(error.error_summary); }
         }
@@ -1097,7 +1084,6 @@ function saveFile (params, callback){
           console.error(chalkError("NNT | " + moment().format(compactDateTimeFormat) 
             + " | !!! ERROR DROBOX JSON WRITE | FILE: " + fullPath 
             + " | ERROR: DROPBOX SERVER ERROR"
-            // + " ERROR\n" + jsonPrint(error.error)
           ));
           if (callback !== undefined) { return callback(error.error_summary); }
         }
@@ -1106,7 +1092,6 @@ function saveFile (params, callback){
             + " | !!! ERROR DROBOX JSON WRITE | FILE: " + fullPath 
             + " | ERROR: " + error
             + " | ERROR\n" + jsonPrint(error)
-            // + " ERROR\n" + jsonPrint(params)
           ));
           if (callback !== undefined) { return callback(error); }
         }
@@ -3151,11 +3136,9 @@ function initialize(cnf, callback){
           }
           debug("initStatsUpdate cnf2\n" + jsonPrint(cnf2));
 
-          // loadHistogramsDropboxFolder(defaultHistogramsFolder, function(err){
-            loadInputsDropboxFolder(defaultInputsFolder, function(err){
-              return(callback(err, cnf2));
-            });
-          // });
+          loadInputsDropboxFolder(defaultInputsFolder, function(err){
+            return(callback(err, cnf2));
+          });
 
         });
       }
