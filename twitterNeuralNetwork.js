@@ -718,7 +718,8 @@ function printNetworkCreateResultsHashmap(){
   let tableArray = [];
 
   tableArray.push([
-    "NNT | NNID",
+    "NNT | STATUS",
+    "NNID",
     "SEED",
     "RES %",
     "INPTS",
@@ -752,6 +753,8 @@ function printNetworkCreateResultsHashmap(){
 
     const successRate = (networkObj.successRate !== undefined) ? networkObj.successRate.toFixed(2) : "---";
     const elapsed = (networkObj.evolve.elapsed !== undefined) ? networkObj.evolve.elapsed : (moment().valueOf() - networkObj.evolve.start);
+
+    // const nnChildStatus = neuralNetworkChildHashMap[networkObj.nnChildId].status || "---";
 
     tableArray.push([
       "NNT | " + nnId,
@@ -1201,11 +1204,11 @@ function loadFile(path, file, callback) {
       if (file.match(/\.json$/gi)) {
         try {
           let fileObj = JSON.parse(data);
-          callback(null, fileObj);
+          return(callback(null, fileObj));
         }
         catch(e){
           console.trace(chalkError("NNT | JSON PARSE ERROR: " + e));
-          callback(e, null);
+          return(callback(e, null));
         }
       }
       else if (file.match(/\.txt$/gi)) {
@@ -1873,6 +1876,11 @@ function loadBestNetworkDropboxFolders (folders, callback){
                 if (networkObj.networkId !== networkId) {
                   console.log(chalkError("*** NETWORK OBJ NETWORK ID MISMATCH | " + networkObj.networkId + " | " + networkId));
                   return cb1("NETWORK OBJ NETWORK ID MISMATCH");
+                }
+
+                if (networkObj.numInputs === undefined) {
+                  console.log(chalkError("*** NETWORK NETWORK numInputs UNDEFINED | " + networkObj.networkId));
+                  return cb1("NETWORK OBJ NETWORK numInputs UNDEFINED");
                 }
 
                 console.log(chalkNetwork("NNT | DROPBOX BEST NETWORK"
@@ -4302,6 +4310,7 @@ function initNetworkCreate(nnChildId, nnId, cnf, callback){
           networkCreateResultsHashmap[messageObj.testRunId] = {};
 
           let networkCreateObj = {};
+          networkCreateObj.nnChildId = nnChildId;
           networkCreateObj.networkId = messageObj.testRunId;
           networkCreateObj.seedNetworkId = messageObj.seedNetworkId;
           networkCreateObj.seedNetworkRes = messageObj.seedNetworkRes;
@@ -4344,7 +4353,7 @@ function allComplete(){
     index += 1;
     console.log(chalkAlert("allComplete | NNC " + nnChildId + " STATUS: " + neuralNetworkChildHashMap[nnChildId].status));
 
-    if (neuralNetworkChildHashMap[nnChildId].status !== "COMPLETE"){
+    if (neuralNetworkChildHashMap[nnChildId].status === "RUNNING"){
       allCompleteFlag = false;
       return;
     }
@@ -4499,6 +4508,10 @@ function initNeuralNetworkChild(cnf, callback){
 
   const neuralNetworkChild = cp.fork("neuralNetworkChild.js", childEnv );
 
+  neuralNetworkChildHashMap[nnChildId] = {};
+  neuralNetworkChildHashMap[nnChildId].child = {};
+  neuralNetworkChildHashMap[nnChildId].status = "IDLE";
+
   neuralNetworkChild.on("message", function(m){
 
     debug(chalkAlert("neuralNetworkChild RX"
@@ -4615,6 +4628,7 @@ function initNeuralNetworkChild(cnf, callback){
 
           let networkObj = {};
 
+          networkObj.nnChildId = m.processName;
           networkObj.networkId = m.networkObj.networkId;
           networkObj.seedNetworkId = m.networkObj.seedNetworkId;
           networkObj.seedNetworkRes = m.networkObj.seedNetworkRes;
@@ -4759,10 +4773,28 @@ function initNeuralNetworkChild(cnf, callback){
     }
   });
 
-  neuralNetworkChildHashMap[nnChildId] = {};
-  neuralNetworkChildHashMap[nnChildId].child = {};
+  neuralNetworkChild.on("error", function(err){
+    if (neuralNetworkChildHashMap[nnChildId]) {
+      neuralNetworkChildHashMap[nnChildId].status = "ERROR";
+    }
+    console.log(chalkError("*** neuralNetworkChildHashMap " + nnChildId + " ERROR *** : " + err));
+  });
+
+  neuralNetworkChild.on("exit", function(err){
+    if (neuralNetworkChildHashMap[nnChildId]) {
+      neuralNetworkChildHashMap[nnChildId].status = "EXIT";
+    }
+    console.log(chalkError("*** neuralNetworkChildHashMap " + nnChildId + " EXIT *** : " + err));
+  });
+
+  neuralNetworkChild.on("close", function(code){
+    if (neuralNetworkChildHashMap[nnChildId]) {
+      neuralNetworkChildHashMap[nnChildId].status = "CLOSE";
+    }
+    console.log(chalkError("*** neuralNetworkChildHashMap " + nnChildId + " CLOSE *** : " + code));
+  });
+
   neuralNetworkChildHashMap[nnChildId].child = neuralNetworkChild;
-  neuralNetworkChildHashMap[nnChildId].status = "IDLE";
 
   nnChildIndex += 1;
 
@@ -4829,26 +4861,47 @@ function initNetworkCreateInterval(){
           else {
             Object.keys(neuralNetworkChildHashMap).forEach(function(nnChildId){
 
-              if (neuralNetworkChildHashMap[nnChildId].status === "IDLE") {
+              switch (neuralNetworkChildHashMap[nnChildId].status) {
+                case "IDLE":
+                  neuralNetworkChildHashMap[nnChildId].status = "RUNNING" ;
 
-                neuralNetworkChildHashMap[nnChildId].status = "RUNNING" ;
+                  const nnId = testObj.testRunId + "_" + nnChildId + "_" + networkIndex;
+                  networkIndex += 1;
 
-                const nnId = testObj.testRunId + "_" + nnChildId + "_" + networkIndex;
-                networkIndex += 1;
+                  initNetworkCreate(nnChildId, nnId, configuration, function(err, results){
 
-                initNetworkCreate(nnChildId, nnId, configuration, function(err, results){
+                    debug("initNetworkCreate results\n" + jsonPrint(results));
 
-                  debug("initNetworkCreate results\n" + jsonPrint(results));
-
-                  if (err) {
-                    console.log("NNT | *** INIT NETWORK CREATE ERROR ***\n" + jsonPrint(err));
-                    neuralNetworkChildHashMap[nnChildId].status = "IDLE" ;
-                  }
-                  else {
-                    console.log(chalkInfo("NNT | NETWORK CREATED | " + nnId));
-                  }
-                });
+                    if (err) {
+                      console.log("NNT | *** INIT NETWORK CREATE ERROR ***\n" + jsonPrint(err));
+                      neuralNetworkChildHashMap[nnChildId].status = "IDLE" ;
+                    }
+                    else {
+                      console.log(chalkInfo("NNT | NETWORK CREATED | " + nnId));
+                    }
+                  });
+                break;
+                case "COMPLETE":
+                break;
+                case "RUNNING":
+                break;
+                case "EXIT":
+                case "CLOSE":
+                case "ERROR":
+                  console.log(chalkAlert("NNT | *** CREATING NNC ON ERROR"
+                    + " | CURRENT NUM NNC: " + Object.keys(neuralNetworkChildHashMap).length
+                    + " | MAX NUM NNC: " + configuration.maxNeuralNetworkChildern
+                  ));
+                  initNeuralNetworkChild(configuration, function(err, nnChildId) {
+                  });
+                break;
+                default:
+                  console.log(chalkAlert("NNT | ??? UNKNOWN NNC STATUS"
+                    + " | " + nnChildId
+                    + " | STATUS: " + neuralNetworkChildHashMap[nnChildId].status
+                  ));
               }
+
             });
           }
         });

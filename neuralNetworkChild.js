@@ -728,7 +728,6 @@ process.on("message", function(m) {
       initStatsUpdate(configuration, function(){
         process.send({op: "INIT_COMPLETE", processName: configuration.processName});
       });
-
     break;
 
     case "TEST_EVOLVE":
@@ -987,7 +986,6 @@ process.on("message", function(m) {
 
         }
       });
-
     break;
 
     default:
