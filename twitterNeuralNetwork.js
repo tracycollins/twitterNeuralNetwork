@@ -1625,7 +1625,7 @@ function updateUsersFromTrainingSet(trainingSetData, callback){
 
   async.eachSeries(trainingSetData, function(user, cb) {
 
-    debug(chalkLog("... UPDATING USER FROM TRAINING SET"
+    debug(chalkLog("... UPDATING USER FROM TRAINING + TEST SET DATA"
       + " | CM: " + printCat(user.category)
       + " | CA: " + printCat(user.categoryAuto)
       + " | @" + user.screenName
@@ -1653,7 +1653,7 @@ function updateUsersFromTrainingSet(trainingSetData, callback){
           + " | UID: " + updatedUser.userId
           + " | @" + updatedUser.screenName
           + " | 3CF: " + updatedUser.threeceeFollowing
-          + " | Ts: " + updatedUser.statusCount
+          + " | Ts: " + updatedUser.statusesCount
           + " | FLWRs: " + updatedUser.followersCount
           + " | FRNDS: " + updatedUser.friendsCount
         ));
@@ -1750,7 +1750,7 @@ function loadTrainingSetsDropboxFolder(folder, callback){
                 cb();
               }
               else {
-                updateUsersFromTrainingSet(trainingSetObj.trainingSet.data, function(err){
+                updateUsersFromTrainingSet(trainingSetObj.trainingSet.data.concat(trainingSetObj.testSet.data), function(err){
                   cb();
                 });
               }
@@ -1794,7 +1794,7 @@ function loadTrainingSetsDropboxFolder(folder, callback){
               cb();
             }
             else {
-              updateUsersFromTrainingSet(trainingSetObj.trainingSet.data, function(err){
+              updateUsersFromTrainingSet(trainingSetObj.trainingSet.data.concat(trainingSetObj.testSet.data), function(err){
                 cb();
               });
             }
@@ -3615,7 +3615,7 @@ function updateCategorizedUsers(cnf, callback){
                   "screenName", 
                   "nodeId", 
                   "name",
-                  "statusCount",
+                  "statusesCount",
                   "followersCount",
                   "friendsCount",
                   "languageAnalysis", 
