@@ -1618,6 +1618,53 @@ function loadInputsDropboxFolder(folder, callback){
   });
 }
 
+function updateUsersFromTrainingSet(trainingSetData, callback){
+
+  let updatedUserCount = 0;
+  const numberUsers = trainingSetData.length;
+
+  async.eachSeries(trainingSetData, function(user, cb) {
+
+    debug(chalkLog("... UPDATING USER FROM TRAINING SET"
+      + " | CM: " + printCat(user.category)
+      + " | CA: " + printCat(user.categoryAuto)
+      + " | @" + user.screenName
+    ));
+
+    if (user.userId === undefined) { user.userId = user.nodeId; }
+
+    userServer.findOneUser(user, {noInc: true}, function(err, updatedUser){
+      updatedUserCount += 1;
+      if (err) {
+        console.log(chalkError("*** ERROR FIND ONE USER trainingSet: "
+          + " | CM: " + printCat(user.category)
+          + " | CA: " + printCat(user.categoryAuto)
+          + " | UID: " + user.userId
+          + " | @" + user.screenName
+          + " | ERROR: " + err
+        ));
+        cb();
+      }
+      else {
+        console.log(chalkLog("+++ UPDATED USER FROM TRAINING SET"
+          + " [" + updatedUserCount + "/" + numberUsers + "]"
+          + " | CM: " + printCat(updatedUser.category)
+          + " | CA: " + printCat(updatedUser.categoryAuto)
+          + " | UID: " + updatedUser.userId
+          + " | @" + updatedUser.screenName
+          + " | 3CF: " + updatedUser.threeceeFollowing
+          + " | Ts: " + updatedUser.statusCount
+          + " | FLWRs: " + updatedUser.followersCount
+          + " | FRNDS: " + updatedUser.friendsCount
+        ));
+        cb();
+      }
+    });
+  }, function(){
+    callback();
+  });
+}
+
 function loadTrainingSetsDropboxFolder(folder, callback){
 
   console.log(chalkNetwork("NNT | ... LOADING DROPBOX TRAINING SETS FOLDER | " + folder));
@@ -1699,7 +1746,14 @@ function loadTrainingSetsDropboxFolder(folder, callback){
                 // + "\n" + jsonPrint(trainingSetObj.entry)
               ));
 
-              cb();
+              if (hostname === "google") {
+                cb();
+              }
+              else {
+                updateUsersFromTrainingSet(trainingSetObj.trainingSet.data, function(err){
+                  cb();
+                });
+              }
             }
 
           });
@@ -1740,45 +1794,7 @@ function loadTrainingSetsDropboxFolder(folder, callback){
               cb();
             }
             else {
-
-              let updatedUserCount = 0;
-              const numberUsers = trainingSetObj.trainingSet.data.length;
-
-              async.eachSeries(trainingSetObj.trainingSet.data, function(user, cb1) {
-                debug(chalkLog("... UPDATING USER FROM TRAINING SET"
-                  + " | CM: " + printCat(user.category)
-                  + " | CA: " + printCat(user.categoryAuto)
-                  + " | @" + user.screenName
-                ));
-                if (user.userId === undefined) { user.userId = user.nodeId; }
-                userServer.findOneUser(user, {noInc: true}, function(err, updatedUser){
-                  updatedUserCount += 1;
-                  if (err) {
-                    console.log(chalkError("*** ERROR FIND ONE USER trainingSet: "
-                      + " | CM: " + printCat(user.category)
-                      + " | CA: " + printCat(user.categoryAuto)
-                      + " | UID: " + user.userId
-                      + " | @" + user.screenName
-                      + " | ERROR: " + err
-                    ));
-                    cb1();
-                  }
-                  else {
-                    console.log(chalkLog("+++ UPDATED USER FROM TRAINING SET"
-                      + " [" + updatedUserCount + "/" + numberUsers + "]"
-                      + " | CM: " + printCat(updatedUser.category)
-                      + " | CA: " + printCat(updatedUser.categoryAuto)
-                      + " | UID: " + updatedUser.userId
-                      + " | @" + updatedUser.screenName
-                      + " | 3CF: " + updatedUser.threeceeFollowing
-                      + " | Ts: " + updatedUser.statusCount
-                      + " | FLWRs: " + updatedUser.followersCount
-                      + " | FRNDS: " + updatedUser.friendsCount
-                    ));
-                    cb1();
-                  }
-                });
-              }, function(){
+              updateUsersFromTrainingSet(trainingSetObj.trainingSet.data, function(err){
                 cb();
               });
             }
