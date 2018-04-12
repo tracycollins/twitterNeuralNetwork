@@ -375,6 +375,15 @@ function msToTime(d) {
   return days + ":" + hours + ":" + minutes + ":" + seconds;
 }
 
+function printCat(c){
+  if (c === "left") { return "L"; }
+  if (c === "neutral") { return "N"; }
+  if (c === "right") { return "R"; }
+  if (c === "positive") { return "+"; }
+  if (c === "negative") { return "-"; }
+  if (c === "none") { return "0"; }
+  return ".";
+}
 
 statsObj.hostname = hostname;
 statsObj.pid = process.pid;
@@ -1727,7 +1736,52 @@ function loadTrainingSetsDropboxFolder(folder, callback){
               // + " | META\n" + jsonPrint(trainingSetObj.trainingSet.meta)
             ));
 
-            cb();
+            if (hostname === "google") {
+              cb();
+            }
+            else {
+
+              let updatedUserCount = 0;
+              const numberUsers = trainingSetObj.trainingSet.data.length;
+
+              async.eachSeries(trainingSetObj.trainingSet.data, function(user, cb1) {
+                debug(chalkLog("... UPDATING USER FROM TRAINING SET"
+                  + " | CM: " + printCat(user.category)
+                  + " | CA: " + printCat(user.categoryAuto)
+                  + " | @" + user.screenName
+                ));
+                userServer.findOneUser(user, {noInc: true}, function(err, updatedUser){
+                  updatedUserCount += 1;
+                  if (err) {
+                    console.log(chalkError("*** ERROR FIND ONE USER trainingSet: "
+                      + " | CM: " + printCat(user.category)
+                      + " | CA: " + printCat(user.categoryAuto)
+                      + " | UID: " + user.userId
+                      + " | @" + user.screenName
+                      + " | ERROR: " + err
+                    ));
+                    cb1();
+                  }
+                  else {
+                    console.log(chalkLog("+++ UPDATED USER FROM TRAINING SET"
+                      + " [" + updatedUserCount + "/" + numberUsers + "]"
+                      + " | CM: " + printCat(updatedUser.category)
+                      + " | CA: " + printCat(updatedUser.categoryAuto)
+                      + " | UID: " + updatedUser.userId
+                      + " | @" + updatedUser.screenName
+                      + " | 3CF: " + updatedUser.threeceeFollowing
+                      + " | Ts: " + updatedUser.statusCount
+                      + " | FLWRs: " + updatedUser.followersCount
+                      + " | FRNDS: " + updatedUser.friendsCount
+                    ));
+                    cb1();
+                  }
+                });
+              }, function(){
+                cb();
+              });
+            }
+
           }
 
         });
@@ -1738,7 +1792,9 @@ function loadTrainingSetsDropboxFolder(folder, callback){
       console.log(chalkNetwork("NNT | =*=*= END LOAD DROPBOX TRAINING SETS"
         + " | " + trainingSetHashMap.count() + " TRAINING SETS IN HASHMAP"
       ));
+
       if (callback !== undefined) { callback(null); }
+
     });
 
   })
@@ -4485,7 +4541,7 @@ function initNeuralNetworkChild(cnf, callback){
 
   childEnv.env = configuration.DROPBOX;
   childEnv.env.DROPBOX_NNC_STATS_FILE = statsObj.runId + "_" + nnChildId + ".json";
-  childEnv.env.NNC_PROCESS_NAME = nnChildId;
+  childEnv.env.NNC_CHILD_ID = nnChildId;
   childEnv.env.NODE_ENV = "production";
   childEnv.env.TNN_CROSS_ENTROPY_WORKAROUND_ENABLED = cnf.crossEntropyWorkAroundEnabled;
 
@@ -4515,19 +4571,19 @@ function initNeuralNetworkChild(cnf, callback){
 
       case "INIT_COMPLETE":
         statsObj.neuralNetworkReady = true;
-        console.log(chalkInfo("NNT | TEST NEURAL NETWORK | " + m.processName));
+        console.log(chalkInfo("NNT | TEST NEURAL NETWORK | " + m.nnChildId));
         neuralNetworkChild.send({op: "TEST_EVOLVE"});
       break;
 
       case "READY":
         statsObj.neuralNetworkReady = true;
-        console.log(chalkLog("NNT | INIT NEURAL NETWORK | " + m.processName));
+        console.log(chalkLog("NNT | INIT NEURAL NETWORK | " + m.nnChildId));
         neuralNetworkChild.send({op: "INIT", testRunId: testObj.testRunId});
       break;
 
       case "STATS":
         console.log("NNC | STATS | " 
-          + " | " + m.processName
+          + " | " + m.nnChildId
           + getTimeStamp() + " ___________________________\n" 
           + jsonPrint(statsObj, "NNC | STATS "
         ));
@@ -4537,12 +4593,12 @@ function initNeuralNetworkChild(cnf, callback){
       case "TEST_EVOLVE_COMPLETE":
         if (m.results) {
           console.log(chalkLog("NNT"
-            + " | " + m.processName
+            + " | " + m.nnChildId
             + " | TEST EVOLVE XOR PASS"
           ));
 
-          if (neuralNetworkChildHashMap[m.processName] !== undefined) { 
-            neuralNetworkChildHashMap[m.processName].status = "IDLE"; 
+          if (neuralNetworkChildHashMap[m.nnChildId] !== undefined) { 
+            neuralNetworkChildHashMap[m.nnChildId].status = "IDLE"; 
           }
 
           if (!cnf.createTrainingSetOnly) { 
@@ -4551,8 +4607,8 @@ function initNeuralNetworkChild(cnf, callback){
 
         }
         else {
-          console.error(chalkError("NNT | *** TEST EVOLVE XOR FAILED *** | " + m.processName));
-          console.log(chalkInfo("NNT | *** RETRY *** TEST NEURAL NETWORK | " + m.processName));
+          console.error(chalkError("NNT | *** TEST EVOLVE XOR FAILED *** | " + m.nnChildId));
+          console.log(chalkInfo("NNT | *** RETRY *** TEST NEURAL NETWORK | " + m.nnChildId));
           neuralNetworkChild.send({op: "TEST_EVOLVE"});
         }
       break;
@@ -4564,7 +4620,7 @@ function initNeuralNetworkChild(cnf, callback){
         console.log(chalkBlue(
             "\nNNT ========================================================\n"
           +   "NNT | NETWORK EVOLVE COMPLETE"
-          + "\nNNT |             " + m.processName
+          + "\nNNT |             " + m.nnChildId
           + "\nNNT | NID:        " + m.networkObj.networkId
           + "\nNNT | SEED:       " + m.networkObj.seedNetworkId
           + "\nNNT | SEED RES%:  " + snIdRes
@@ -4585,12 +4641,12 @@ function initNeuralNetworkChild(cnf, callback){
             console.error("NNT | *** TEST NETWORK ERROR ***\n" + jsonPrint(err));
           }
 
-          testObj.results[m.processName] = {};
-          testObj.results[m.processName] = results;
+          testObj.results[m.nnChildId] = {};
+          testObj.results[m.nnChildId] = results;
 
           statsObj.tests[testObj.testRunId][m.networkObj.networkId].results = {};
           statsObj.tests[testObj.testRunId][m.networkObj.networkId].results = pick(
-            testObj.results[m.processName], 
+            testObj.results[m.nnChildId], 
             ["successRate", "numPassed", "numSkipped", "numTests", "testRunId"]
           );
 
@@ -4602,7 +4658,7 @@ function initNeuralNetworkChild(cnf, callback){
           debug(chalkAlert(columns));
 
           console.log(chalkAlert("NNT | TEST COMPLETE"
-            + " | " + m.processName
+            + " | " + m.nnChildId
             + " | TESTS:   " + results.numTests
             + " | PASSED:  " + results.numPassed
             + " | SKIPPED: " + results.numSkipped
@@ -4611,7 +4667,7 @@ function initNeuralNetworkChild(cnf, callback){
 
           let networkObj = {};
 
-          networkObj.nnChildId = m.processName;
+          networkObj.nnChildId = m.nnChildId;
           networkObj.networkId = m.networkObj.networkId;
           networkObj.seedNetworkId = m.networkObj.seedNetworkId;
           networkObj.seedNetworkRes = m.networkObj.seedNetworkRes;
@@ -4637,7 +4693,7 @@ function initNeuralNetworkChild(cnf, callback){
           networkObj.evolve.elapsed = m.networkObj.evolve.elapsed;
 
           networkObj.test = {};
-          networkObj.test = statsObj.tests[testObj.testRunId][m.processName];
+          networkObj.test = statsObj.tests[testObj.testRunId][m.nnChildId];
 
           networkCreateResultsHashmap[networkObj.networkId] = {};
           networkCreateResultsHashmap[networkObj.networkId] = omit(networkObj, ["network", "inputs", "outputs"]);
@@ -4650,12 +4706,17 @@ function initNeuralNetworkChild(cnf, callback){
 
           printNetworkCreateResultsHashmap();
 
-          if (neuralNetworkChildHashMap[m.processName] !== undefined) {
+          if (neuralNetworkChildHashMap[m.nnChildId] === undefined) {
+            console.log(chalkError("??? CHILD NOT IN neuralNetworkChildHashMap ??? | CHILD ID: "+ m.nnChildId));
+            neuralNetworkChildHashMap[m.nnChildId] = {};
+            neuralNetworkChildHashMap[m.nnChildId].status = "IDLE";
+          }
+          else {
             if (configuration.quitOnComplete) {
-              neuralNetworkChildHashMap[m.processName].status = "COMPLETE";
+              neuralNetworkChildHashMap[m.nnChildId].status = "COMPLETE";
             }
             else {
-              neuralNetworkChildHashMap[m.processName].status = "IDLE";
+              neuralNetworkChildHashMap[m.nnChildId].status = "IDLE";
             }
           }
 
@@ -4694,6 +4755,7 @@ function initNeuralNetworkChild(cnf, callback){
             if (inputsNetworksHashMap[networkObj.inputsId] === undefined) {
               inputsNetworksHashMap[networkObj.inputsId] = new Set();
             }
+
             inputsNetworksHashMap[networkObj.inputsId].add(networkObj.networkId);
 
             console.log(chalkInfo("NNT | INPUTS ID"
