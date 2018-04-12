@@ -3591,7 +3591,7 @@ function updateCategorizedUsers(cnf, callback){
                 return(cb0(err));
               }
 
-              const subUser = pick(updatedUser, ["nodeId", "screenName", "name", "languageAnalysis", "category", "categoryAuto", "histograms"]);
+              const subUser = pick(updatedUser, ["nodeId", "userId", "screenName", "name", "languageAnalysis", "category", "categoryAuto", "histograms"]);
 
               trainingSetUsersHashMap.set(subUser.nodeId, subUser);
 
