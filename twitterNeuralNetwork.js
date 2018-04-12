@@ -1750,6 +1750,7 @@ function loadTrainingSetsDropboxFolder(folder, callback){
                   + " | CA: " + printCat(user.categoryAuto)
                   + " | @" + user.screenName
                 ));
+                if (user.userId === undefined) { user.userId = user.nodeId; }
                 userServer.findOneUser(user, {noInc: true}, function(err, updatedUser){
                   updatedUserCount += 1;
                   if (err) {
