@@ -6,7 +6,7 @@ const DROPBOX_LIST_FOLDER_LIMIT = 50;
 
 const NN_CHILD_PREFIX = "node_NNC_";
 let nnChildIndex = 0;
-let nnChildId = NN_CHILD_PREFIX + nnChildIndex;
+// let nnChildId = NN_CHILD_PREFIX + nnChildIndex;
 let allCompleteFlag = false;
 
 const ONE_KILOBYTE = 1024;
@@ -1618,10 +1618,24 @@ function loadInputsDropboxFolder(folder, callback){
   });
 }
 
+function userChanged(uOld, uNew){
+  ["category", "categoryAuto"].forEach(function(prop){
+    if (uOld[prop] !== uNew[prop]){
+      return true;
+    }
+    return false;
+  })
+}
+
 function updateUsersFromTrainingSet(trainingSetData, callback){
 
   let updatedUserCount = 0;
+  let userIndex = 0;
   const numberUsers = trainingSetData.length;
+
+  const spinnerUpdateUsers = ora().start("... UPDATING USERS FROM TRAINING + TEST SET DATA"
+    + " | " + numberUsers + " USERS ...");
+
 
   async.eachSeries(trainingSetData, function(user, cb) {
 
@@ -1634,9 +1648,10 @@ function updateUsersFromTrainingSet(trainingSetData, callback){
     if (user.userId === undefined) { user.userId = user.nodeId; }
 
     userServer.findOneUser(user, {noInc: true}, function(err, updatedUser){
-      updatedUserCount += 1;
+      userIndex += 1;
       if (err) {
         console.log(chalkError("*** ERROR FIND ONE USER trainingSet: "
+          + " [" + updatedUserCount + "/" + userIndex + "/" + numberUsers + "]"
           + " | CM: " + printCat(user.category)
           + " | CA: " + printCat(user.categoryAuto)
           + " | UID: " + user.userId
@@ -1645,9 +1660,10 @@ function updateUsersFromTrainingSet(trainingSetData, callback){
         ));
         cb();
       }
-      else {
-        console.log(chalkLog("+++ UPDATED USER FROM TRAINING SET"
-          + " [" + updatedUserCount + "/" + numberUsers + "]"
+      else if (userChanged(user, updatedUser)) {
+        updatedUserCount += 1;
+        console.log(chalkLog("+++ UPDATED USER FROM TRAINING SET  "
+          + " [" + updatedUserCount + "/" + userIndex + "/" + numberUsers + "]"
           + " | CM: " + printCat(updatedUser.category)
           + " | CA: " + printCat(updatedUser.categoryAuto)
           + " | UID: " + updatedUser.userId
@@ -1659,8 +1675,25 @@ function updateUsersFromTrainingSet(trainingSetData, callback){
         ));
         cb();
       }
+      else {
+        if ((userIndex % 100) === 0) {
+          console.log(chalkLog("--- NO UPDATE USER FROM TRAINING SET"
+            + " [" + updatedUserCount + "/" + userIndex + "/" + numberUsers + "]"
+            + " | CM: " + printCat(updatedUser.category)
+            + " | CA: " + printCat(updatedUser.categoryAuto)
+            + " | UID: " + updatedUser.userId
+            + " | @" + updatedUser.screenName
+            + " | 3CF: " + updatedUser.threeceeFollowing
+            + " | Ts: " + updatedUser.statusesCount
+            + " | FLWRs: " + updatedUser.followersCount
+            + " | FRNDS: " + updatedUser.friendsCount
+          ));
+        }
+        cb();
+      }
     });
   }, function(){
+    spinnerUpdateUsers.succeed("NNT | UPDATED USERS: " + updatedUserCount + "/" + userIndex + "/" + numberUsers );
     callback();
   });
 }
@@ -4560,9 +4593,9 @@ function initMain(cnf, callback){
 
 let networkCreateInterval;
 
-function initNeuralNetworkChild(cnf, callback){
+function initNeuralNetworkChild(nnChildIndex, cnf, callback){
 
-  nnChildId = NN_CHILD_PREFIX + nnChildIndex;
+  let nnChildId = NN_CHILD_PREFIX + nnChildIndex;
 
   console.log(chalkAlert("+++ NEW NEURAL NETWORK CHILD | NNC ID: " + nnChildId));
 
@@ -4873,9 +4906,8 @@ function initNeuralNetworkChild(cnf, callback){
 
   neuralNetworkChildHashMap[nnChildId].child = neuralNetworkChild;
 
-  nnChildIndex += 1;
 
-  if (callback !== undefined) { callback(null, nnChildIndex); }
+  if (callback !== undefined) { callback(null, nnChildId); }
 }
 
 function initNetworkCreateInterval(){
@@ -4913,7 +4945,8 @@ function initNetworkCreateInterval(){
               + " | CURRENT NUM NNC: " + Object.keys(neuralNetworkChildHashMap).length
               + " | MAX NUM NNC: " + configuration.maxNeuralNetworkChildern
             ));
-            initNeuralNetworkChild(configuration, function(err, nnChildIndex) {
+            initNeuralNetworkChild(nnChildIndex, configuration, function(err, nnChildId) {
+              nnChildIndex += 1;
             });
           }
           else if (Object.keys(neuralNetworkChildHashMap).length > configuration.maxNeuralNetworkChildern) {
@@ -4969,7 +5002,8 @@ function initNetworkCreateInterval(){
                     + " | CURRENT NUM NNC: " + Object.keys(neuralNetworkChildHashMap).length
                     + " | MAX NUM NNC: " + configuration.maxNeuralNetworkChildern
                   ));
-                  initNeuralNetworkChild(configuration, function(err, nnChildId) {
+                  initNeuralNetworkChild(nnChildIndex, configuration, function(err, nnChildId) {
+                    nnChildIndex += 1;
                   });
                 break;
                 default:
@@ -5042,7 +5076,8 @@ function initTimeout(callback){
 
           debug("INIT NN CHILD NUMBER " + n);
 
-          initNeuralNetworkChild(cnf, function(err, nnChildIndex) {
+          initNeuralNetworkChild(nnChildIndex, cnf, function(err, nnChild) {
+            nnChildIndex += 1;
             next(err, nnChildIndex);
           });
         }, function(err, children) {
