@@ -1237,7 +1237,7 @@ function loadFile(path, file, callback) {
         catch(e){
           spinnerLoadFile.fail("NNT | *** FAIL LOAD DROPBOX " + fullPath);
           console.trace(chalkError("NNT | JSON PARSE ERROR: " + fullPath  + " | ERROR: " + e + "\n" + jsonPrint(e)));
-          callback(e, null);
+          return(callback(e, null));
         }
       }
       else if (file.match(/\.txt$/gi)) {
@@ -1635,6 +1635,10 @@ function updateUsersFromTrainingSet(trainingSetData, callback){
 
   const spinnerUpdateUsers = ora().start("... UPDATING USERS FROM TRAINING + TEST SET DATA"
     + " | " + numberUsers + " USERS ...");
+
+  if (configuration.testMode) {
+    trainingSetData.length = 100;
+  }
 
 
   async.eachSeries(trainingSetData, function(user, cb) {
@@ -4242,16 +4246,17 @@ function generateRandomEvolveConfig (cnf, callback){
     config.elitism = randomItem([config.elitism, networkObj.evolve.options.elitism]);
   }
   else {
-    console.log("NNT | RANDOM ARCH | seedInputsId: " + config.seedInputsId);
-    config.architecture = "random";
-    config.inputsId = config.seedInputsId;
-    config.inputsObj = {};
 
     if (inputsHashMap.has(config.seedInputsId)) {
+      config.inputsObj = {};
       config.inputsObj = inputsHashMap.get(config.seedInputsId).inputsObj;
+      config.architecture = "random";
+      config.inputsId = config.seedInputsId;
+      console.log("NNT | RANDOM ARCH | seedInputsId: " + config.seedInputsId);
     }
     else {
       console.log("NNT *** ERROR *** | RANDOM ARCH | seedInputsId " + config.seedInputsId + " NOT IN inputsHashMap");
+      return(callback(config.seedInputsId + " NOT IN inputsHashMap", null));
     }
   }
 
@@ -4973,7 +4978,7 @@ function initNetworkCreateInterval(){
 
               switch (neuralNetworkChildHashMap[nnChildId].status) {
                 case "IDLE":
-                  neuralNetworkChildHashMap[nnChildId].status = "RUNNING" ;
+                  // neuralNetworkChildHashMap[nnChildId].status = "RUNNING" ;
 
                   const nnId = testObj.testRunId + "_" + nnChildId + "_" + networkIndex;
                   networkIndex += 1;
@@ -4987,6 +4992,7 @@ function initNetworkCreateInterval(){
                       neuralNetworkChildHashMap[nnChildId].status = "IDLE" ;
                     }
                     else {
+                      neuralNetworkChildHashMap[nnChildId].status = "RUNNING" ;
                       console.log(chalkInfo("NNT | NETWORK CREATED | " + nnId));
                     }
                   });
@@ -4996,7 +5002,23 @@ function initNetworkCreateInterval(){
                 case "RUNNING":
                 break;
                 case "EXIT":
+                  console.log(chalkAlert("NNT | *** CREATING NNC ON EXIT"
+                    + " | CURRENT NUM NNC: " + Object.keys(neuralNetworkChildHashMap).length
+                    + " | MAX NUM NNC: " + configuration.maxNeuralNetworkChildern
+                  ));
+                  initNeuralNetworkChild(nnChildIndex, configuration, function(err, nnChildId) {
+                    nnChildIndex += 1;
+                  });
+                break;
                 case "CLOSE":
+                  console.log(chalkAlert("NNT | *** CREATING NNC ON CLOSE"
+                    + " | CURRENT NUM NNC: " + Object.keys(neuralNetworkChildHashMap).length
+                    + " | MAX NUM NNC: " + configuration.maxNeuralNetworkChildern
+                  ));
+                  initNeuralNetworkChild(nnChildIndex, configuration, function(err, nnChildId) {
+                    nnChildIndex += 1;
+                  });
+                break;
                 case "ERROR":
                   console.log(chalkAlert("NNT | *** CREATING NNC ON ERROR"
                     + " | CURRENT NUM NNC: " + Object.keys(neuralNetworkChildHashMap).length
@@ -5110,6 +5132,8 @@ initTimeout(function(){
   initMainInterval = setInterval(function(){
 
     console.log(chalkAlert("NNT | +++ INIT MAIN INTERVAL"
+      + " | INTERVAL: " + msToTime(configuration.initMainIntervalTime)
+      + " | ALL COMPLETE: " + allCompleteFlag
       + " | initMainReady: " + initMainReady
       + " | trainingSetReady: " + trainingSetReady
       + " | createTrainingSetBusy: " + createTrainingSetBusy
