@@ -5094,8 +5094,13 @@ function initTimeout(callback){
         debug("loadSeedNeuralNetwork results\n" + jsonPrint(results));
 
         if (err){
-          console.log(chalkError("loadSeedNeuralNetwork ERROR\n" + jsonPrint(err)));
-          return(callback(err));
+          if (err.status === 429) {
+            console.log(chalkError("loadSeedNeuralNetwork ERROR | TOO MANY WRITES"));
+          }
+          else {
+            console.log(chalkError("loadSeedNeuralNetwork ERROR" + jsonPrint(err)));
+          }
+          // return(callback(err));
         }
 
         console.log(chalkLog("NNT | INIT NN CHILD"));
