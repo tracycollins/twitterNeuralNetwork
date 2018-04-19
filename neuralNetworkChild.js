@@ -503,7 +503,7 @@ function trainingSetPrepAndEvolve(params, options, callback){
       statsObj.evolve.endTime = moment().valueOf();
       statsObj.evolve.elapsed = moment().valueOf() - statsObj.evolve.startTime;
 
-      console.error(chalkError("NNC | " + configuration.nnChildId + " | NETWORK EVOLVE ERROR: " + err));
+      console.error(chalkError("NNC | " + configuration.nnChildId + " | NETWORK EVOLVE ERROR: " + err + "\n" + jsonPrint(err)));
 
       process.send({op: "ERROR", nnChildId: configuration.nnChildId, error: err}, function(){
 
@@ -834,8 +834,9 @@ process.on("message", function(m) {
           console.error(chalkError("NNC | EVOLVE ERROR: " + err));
           console.trace("NNC | EVOLVE ERROR");
           process.send({op: "ERROR", nnChildId: configuration.nnChildId, error: err}, function(){
-            quit(jsonPrint(err));
+            // quit(jsonPrint(err));
           });
+          showStats();
         }
         else {
 
@@ -1035,7 +1036,7 @@ setTimeout(function(){
       console.error(chalkError("NNC | ***** INIT ERROR *****\n" + jsonPrint(err)));
       console.trace("NNC INIT ERROR");
       process.send({op:"ERROR", error: err, nnChildId: configuration.nnChildId, statsObj: statsObj}, function(){
-        quit();
+        // quit();
       });
     }
     else {

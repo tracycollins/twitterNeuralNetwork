@@ -4629,6 +4629,9 @@ function initNeuralNetworkChild(nnChildIndex, cnf, callback){
 
     if (m.error) {
       console.error(chalkError("NNT | neuralNetworkChild RX ERROR\n" + jsonPrint(m)));
+      neuralNetworkChildHashMap[m.nnChildId].status = "ERROR";
+      neuralNetworkChildHashMap[m.nnChildId].error = {};
+      neuralNetworkChildHashMap[m.nnChildId].error = m.error;
       if (callback !== undefined) { 
         return(callback(m.error, null));
       }
@@ -4951,6 +4954,9 @@ function initNetworkCreateInterval(){
               + " | MAX NUM NNC: " + configuration.maxNeuralNetworkChildern
             ));
             initNeuralNetworkChild(nnChildIndex, configuration, function(err, nnChildId) {
+              if (err) {
+
+              }
               nnChildIndex += 1;
             });
           }
