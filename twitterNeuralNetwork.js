@@ -2007,7 +2007,7 @@ function loadBestNetworkDropboxFolders (folders, callback){
               + "\nCUR HASH: " + entry.content_hash
               + "\n" + jsonPrint(entry)
               + "\nOLD HASH: " + oldContentHash
-              + "\n" + jsonPrint(curNetworkObj.entry)
+              // + "\n" + jsonPrint(curNetworkObj.entry)
             ));
 
             loadFile(folder, entry.name, function(err, networkObj){
