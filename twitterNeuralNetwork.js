@@ -4376,7 +4376,8 @@ function generateRandomEvolveConfig (cnf, callback){
   let config = {};
 
   config.networkCreateMode = "evolve";
-  config.seedNetworkId = false;
+  config.seedNetworkId = (Math.random() <= cnf.seedNetworkProbability) ? randomItem(bestNetworkHashMap.keys()) : false;
+  config.seedInputsId = randomItem(inputsHashMap.keys());
 
   console.log(chalkLog("NNT | NETWORK CREATE MODE: " + config.networkCreateMode));
     
@@ -4388,22 +4389,22 @@ function generateRandomEvolveConfig (cnf, callback){
 
   console.log(chalkLog("NNT | --------------------------------------------------------"));
 
-  if (Object.keys(inputsNetworksHashMap).length > 0) {
-    console.log("inputsNetworksHashMap KEYS\n" + jsonPrint(Object.keys(inputsNetworksHashMap)));
-    config.seedNetworkId = (Math.random() <= cnf.seedNetworkProbability) ? randomItem(Object.keys(inputsNetworksHashMap)) : false;
-    if (!config.seedNetworkId) {
-      config.seedNetworkId = (Math.random() <= cnf.seedNetworkProbability) ? randomItem(bestNetworkHashMap.keys()) : false;
-    }
-    console.log(chalkAlert("NNT | SEED NETWORK | INPUTS NETWORK HM"
-      + " | NN: " + config.seedNetworkId
-      + " | PROB: " + cnf.seedNetworkProbability.toFixed(3)
-    ));
-  }
-  else {
-    config.seedInputsId = randomItem(inputsHashMap.keys());
-    config.seedNetworkId = (Math.random() <= cnf.seedNetworkProbability) ? randomItem(bestNetworkHashMap.keys()) : false;
-    console.log(chalkAlert("NNT | SEED NETWORK | BEST NETWORK HM | NN: " + config.seedNetworkId));
-  }
+  // if (Object.keys(inputsNetworksHashMap).length > 0) {
+  //   console.log("inputsNetworksHashMap KEYS\n" + jsonPrint(Object.keys(inputsNetworksHashMap)));
+  //   config.seedNetworkId = (Math.random() <= cnf.seedNetworkProbability) ? randomItem(Object.keys(inputsNetworksHashMap)) : false;
+  //   if (!config.seedNetworkId) {
+  //     config.seedNetworkId = (Math.random() <= cnf.seedNetworkProbability) ? randomItem(bestNetworkHashMap.keys()) : false;
+  //   }
+  //   console.log(chalkAlert("NNT | SEED NETWORK | INPUTS NETWORK HM"
+  //     + " | NN: " + config.seedNetworkId
+  //     + " | PROB: " + cnf.seedNetworkProbability.toFixed(3)
+  //   ));
+  // }
+  // else {
+  //   config.seedNetworkId = (Math.random() <= cnf.seedNetworkProbability) ? randomItem(bestNetworkHashMap.keys()) : false;
+  //   console.log(chalkAlert("NNT | SEED NETWORK | BEST NETWORK HM | NN: " + config.seedNetworkId));
+  // }
+
 
   // if (cnf.inputsId) {
   //   console.log(chalkAlert("NNT | LOADING INPUTS USING INPUTS ID: " + cnf.inputsId));
@@ -4931,6 +4932,7 @@ function initNetworkCreateInterval(){
                   + " | CURRENT NUM NNC: " + Object.keys(neuralNetworkChildHashMap).length
                   + " | MAX NUM NNC: " + configuration.maxNeuralNetworkChildern
                 ));
+                currentChild.child.send({op: "QUIT"});
                 initNeuralNetworkChild(nnChildIndex, configuration, function(err, nnChildId) {
                   nnChildIndex += 1;
                 });

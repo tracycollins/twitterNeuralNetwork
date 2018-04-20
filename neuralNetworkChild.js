@@ -985,6 +985,10 @@ process.on("message", function(m) {
       });
     break;
 
+    case "QUIT":
+      quit("PARENT QUIT");
+    break;
+
     default:
       console.log(chalkError("NNC | NEURAL NETIZE UNKNOWN OP ERROR"
         + " | " + m.op
