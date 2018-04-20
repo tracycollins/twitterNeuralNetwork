@@ -451,6 +451,8 @@ let inputsNetworksHashMap = {};
 let currentBestNetwork;
 let networkCreateResultsHashmap = {};
 
+let betterChildSeedNetworkIdArray = [];
+
 const configEvents = new EventEmitter2({
   wildcard: true,
   newListener: true,
@@ -4374,66 +4376,33 @@ function generateGlobalTrainingTestSet (userHashMap, maxInputHashMap, callback){
 function generateRandomEvolveConfig (cnf, callback){
 
   let config = {};
-
   config.networkCreateMode = "evolve";
-  config.seedNetworkId = (Math.random() <= cnf.seedNetworkProbability) ? randomItem(bestNetworkHashMap.keys()) : false;
-  config.seedInputsId = randomItem(inputsHashMap.keys());
 
   console.log(chalkLog("NNT | NETWORK CREATE MODE: " + config.networkCreateMode));
-    
   console.log(chalkLog("\nNNT | BEST NETWORKS\nNNT | --------------------------------------------------------"));
-
   bestNetworkHashMap.forEach(function(entry, nnId){
     console.log(chalkLog("NNT | " + entry.networkObj.successRate.toFixed(2) + " | " + nnId));
   });
-
   console.log(chalkLog("NNT | --------------------------------------------------------"));
 
-  // if (Object.keys(inputsNetworksHashMap).length > 0) {
-  //   console.log("inputsNetworksHashMap KEYS\n" + jsonPrint(Object.keys(inputsNetworksHashMap)));
-  //   config.seedNetworkId = (Math.random() <= cnf.seedNetworkProbability) ? randomItem(Object.keys(inputsNetworksHashMap)) : false;
-  //   if (!config.seedNetworkId) {
-  //     config.seedNetworkId = (Math.random() <= cnf.seedNetworkProbability) ? randomItem(bestNetworkHashMap.keys()) : false;
-  //   }
-  //   console.log(chalkAlert("NNT | SEED NETWORK | INPUTS NETWORK HM"
-  //     + " | NN: " + config.seedNetworkId
-  //     + " | PROB: " + cnf.seedNetworkProbability.toFixed(3)
-  //   ));
-  // }
-  // else {
-  //   config.seedNetworkId = (Math.random() <= cnf.seedNetworkProbability) ? randomItem(bestNetworkHashMap.keys()) : false;
-  //   console.log(chalkAlert("NNT | SEED NETWORK | BEST NETWORK HM | NN: " + config.seedNetworkId));
-  // }
+  //
+  // if available use better child as seed nn
+  //
+  if (betterChildSeedNetworkIdArray.length > 0) {
 
+    config.seedNetworkId = betterChildSeedNetworkIdArray.shift();
 
-  // if (cnf.inputsId) {
-  //   console.log(chalkAlert("NNT | LOADING INPUTS USING INPUTS ID: " + cnf.inputsId));
-  //   config.seedInputsId = cnf.inputsId;
-  //   if (inputsNetworksHashMap[cnf.inputsId] !== undefined){
-  //     if (inputsNetworksHashMap[cnf.inputsId].size > 0) {
-  //       config.seedNetworkId = (Math.random() <= cnf.seedNetworkProbability) ? randomItem([...inputsNetworksHashMap[cnf.inputsId]]) : false;
-  //       console.log("inputsNetworksHashMap KEYS\n" + jsonPrint(Object.keys(inputsNetworksHashMap)));
-  //       console.log(chalkAlert("NNT | SEED NETWORK | CNF INPUTS ID: " + cnf.inputsId + " | NN: " + config.seedNetworkId));
-  //     }
-  //   }
-  // }
-  // else if (inputsHashMap.size > 0) {
+    console.log(chalkAlert("NNT | USING BETTER CHILD SEED"
+      + " [" + betterChildSeedNetworkIdArray.length + "] SEED: " + config.seedNetworkId
+    ));
+  }
+  else {
+    config.seedNetworkId = (Math.random() <= cnf.seedNetworkProbability) ? randomItem(bestNetworkHashMap.keys()) : false;
+  }
+  
+  // seedInputsId only used if seedNetworkId == false
 
-  //   console.log(chalkAlert("NNT | LOADING INPUTS USING INPUTS ID HM: " + inputsHashMap.size + " INPUT OBJS"));
-  //   config.seedInputsId = randomItem(inputsHashMap.keys());
-  //   console.log(chalkAlert("NNT | config.seedInputsId: " + config.seedInputsId));
-
-  //   if ((inputsNetworksHashMap[config.seedInputsId] === undefined) || (inputsNetworksHashMap[config.seedInputsId].size === 0)) {
-  //     // config.seedNetworkId = false;
-  //     console.log("inputsNetworksHashMap KEYS\n" + jsonPrint(Object.keys(inputsNetworksHashMap)));
-  //     console.log(chalkAlert("NNT | REMOVE SEED NETWORK | SEED INPUTS ID: " + config.seedInputsId + " | NN: " + config.seedNetworkId));
-  //   }
-  // }
-  // else {
-  //   config.seedInputsId = randomItem(inputsHashMap.keys());
-  //   config.seedNetworkId = (Math.random() <= cnf.seedNetworkProbability) ? randomItem(bestNetworkHashMap.keys()) : false;
-  //   console.log(chalkAlert("NNT | SEED NETWORK | BEST NETWORK HM | NN: " + config.seedNetworkId));
-  // }
+  config.seedInputsId = randomItem(inputsHashMap.keys());
 
   config.iterations = cnf.evolve.iterations;
   config.threads = cnf.evolve.threads;
@@ -5189,6 +5158,21 @@ function initNeuralNetworkChild(nnChildIndex, cnf, callback){
             };
 
             bestNetworkHashMap.set(networkObj.networkId, { entry: entry, networkObj: networkObj});
+
+            // Add to nn child better than parent array
+            if (m.networkObj.seedNetworkId && (results.successRate > m.networkObj.seedNetworkRes)) {
+
+              betterChildSeedNetworkIdArray.push(networkObj.networkId);
+
+              console.log(chalkAlert("NNT | +++ BETTER CHILD"
+                + " [" + betterChildSeedNetworkIdArray.length + "] " + networkObj.networkId
+                + " | SR: " + results.successRate.toFixed(3) + "%"
+                + " | SEED: " + m.networkObj.networkId
+                + " | SR: " + m.networkObj.seedNetworkRes.toFixed(3) + "%"
+                + "\n" + jsonPrint(betterChildSeedNetworkIdArray)
+              ));
+
+            }
 
             inputsIdSet.add(networkObj.inputsId);
 
