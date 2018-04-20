@@ -4450,14 +4450,14 @@ function generateRandomEvolveConfig (cnf, callback){
   config.elitism = randomInt(EVOLVE_ELITISM_RANGE.min, EVOLVE_ELITISM_RANGE.max);
 
   if (cnf.enableSeedNetwork && config.seedNetworkId && bestNetworkHashMap.has(config.seedNetworkId)) {
-    console.log("NNT | SEED NETWORK | seedNetworkId: " + config.seedNetworkId);
+    console.log("NNT | SEED NETWORK | " + config.seedNetworkId);
     const networkObj = bestNetworkHashMap.get(config.seedNetworkId).networkObj;
     config.networkObj = deepcopy(networkObj);
     config.architecture = "loadedNetwork";
     config.inputsId = networkObj.inputsId;
     config.inputsObj = {};
     config.inputsObj = inputsHashMap.get(networkObj.inputsId).inputsObj;
-    console.log("NNT | networkObj.inputsId: " + networkObj.inputsId);
+    console.log("NNT | SEED INPUTS | " + networkObj.inputsId);
 
     config.cost = randomItem([config.cost, networkObj.evolve.options.cost]);
     config.equal = randomItem([config.equal, networkObj.evolve.options.equal]);
@@ -4474,7 +4474,7 @@ function generateRandomEvolveConfig (cnf, callback){
       config.inputsObj = inputsHashMap.get(config.seedInputsId).inputsObj;
       config.architecture = "random";
       config.inputsId = config.seedInputsId;
-      console.log("NNT | RANDOM ARCH | seedInputsId: " + config.seedInputsId);
+      console.log("NNT | RANDOM ARCH | SEED INPUTS: " + config.seedInputsId);
     }
     else {
       console.log("NNT *** ERROR *** | RANDOM ARCH | seedInputsId " + config.seedInputsId + " NOT IN inputsHashMap");
