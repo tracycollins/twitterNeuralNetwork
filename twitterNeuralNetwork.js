@@ -4388,32 +4388,51 @@ function generateRandomEvolveConfig (cnf, callback){
 
   console.log(chalkLog("NNT | --------------------------------------------------------"));
 
-  if (cnf.inputsId) {
-    console.log(chalkAlert("NNT | LOADING INPUTS USING INPUTS ID: " + cnf.inputsId));
-    config.seedInputsId = cnf.inputsId;
-    if (inputsNetworksHashMap[cnf.inputsId] !== undefined){
-      if (inputsNetworksHashMap[cnf.inputsId].size > 0) {
-        config.seedNetworkId = (Math.random() <= cnf.seedNetworkProbability) ? randomItem([...inputsNetworksHashMap[cnf.inputsId]]) : false;
-      }
+  if (Object.keys(inputsNetworksHashMap).length > 0) {
+    console.log("inputsNetworksHashMap KEYS\n" + jsonPrint(Object.keys(inputsNetworksHashMap)));
+    config.seedNetworkId = (Math.random() <= cnf.seedNetworkProbability) ? randomItem(Object.keys(inputsNetworksHashMap)) : false;
+    if (!config.seedNetworkId) {
+      config.seedNetworkId = (Math.random() <= cnf.seedNetworkProbability) ? randomItem(bestNetworkHashMap.keys()) : false;
     }
-  }
-  // else if (inputsIdSet.size > 0) {
-  else if (inputsHashMap.size > 0) {
-    // console.log(chalkAlert("NNT | LOADING INPUTS USING INPUTS ID HM: " + inputsHashMap))));
-    console.log(chalkAlert("NNT | LOADING INPUTS USING INPUTS ID HM: " + inputsHashMap.size + " INPUT OBJS"));
-    config.seedInputsId = randomItem(inputsHashMap.keys());  // will be ignored if config.seednetworkId gets set below
-    console.log(chalkAlert("NNT | config.seedInputsId: " + config.seedInputsId));
-    if ((inputsNetworksHashMap[config.seedInputsId] === undefined) || (inputsNetworksHashMap[config.seedInputsId].size === 0)) {
-      config.seedNetworkId = false;
-    }
-    else {
-      config.seedNetworkId = (Math.random() <= cnf.seedNetworkProbability) ? randomItem(Object.keys(inputsNetworksHashMap)) : false;
-    }
+    console.log(chalkAlert("NNT | SEED NETWORK | INPUTS NETWORK HM"
+      + " | NN: " + config.seedNetworkId
+      + " | PROB: " + cnf.seedNetworkProbability.toFixed(3)
+    ));
   }
   else {
     config.seedInputsId = randomItem(inputsHashMap.keys());
     config.seedNetworkId = (Math.random() <= cnf.seedNetworkProbability) ? randomItem(bestNetworkHashMap.keys()) : false;
+    console.log(chalkAlert("NNT | SEED NETWORK | BEST NETWORK HM | NN: " + config.seedNetworkId));
   }
+
+  // if (cnf.inputsId) {
+  //   console.log(chalkAlert("NNT | LOADING INPUTS USING INPUTS ID: " + cnf.inputsId));
+  //   config.seedInputsId = cnf.inputsId;
+  //   if (inputsNetworksHashMap[cnf.inputsId] !== undefined){
+  //     if (inputsNetworksHashMap[cnf.inputsId].size > 0) {
+  //       config.seedNetworkId = (Math.random() <= cnf.seedNetworkProbability) ? randomItem([...inputsNetworksHashMap[cnf.inputsId]]) : false;
+  //       console.log("inputsNetworksHashMap KEYS\n" + jsonPrint(Object.keys(inputsNetworksHashMap)));
+  //       console.log(chalkAlert("NNT | SEED NETWORK | CNF INPUTS ID: " + cnf.inputsId + " | NN: " + config.seedNetworkId));
+  //     }
+  //   }
+  // }
+  // else if (inputsHashMap.size > 0) {
+
+  //   console.log(chalkAlert("NNT | LOADING INPUTS USING INPUTS ID HM: " + inputsHashMap.size + " INPUT OBJS"));
+  //   config.seedInputsId = randomItem(inputsHashMap.keys());
+  //   console.log(chalkAlert("NNT | config.seedInputsId: " + config.seedInputsId));
+
+  //   if ((inputsNetworksHashMap[config.seedInputsId] === undefined) || (inputsNetworksHashMap[config.seedInputsId].size === 0)) {
+  //     // config.seedNetworkId = false;
+  //     console.log("inputsNetworksHashMap KEYS\n" + jsonPrint(Object.keys(inputsNetworksHashMap)));
+  //     console.log(chalkAlert("NNT | REMOVE SEED NETWORK | SEED INPUTS ID: " + config.seedInputsId + " | NN: " + config.seedNetworkId));
+  //   }
+  // }
+  // else {
+  //   config.seedInputsId = randomItem(inputsHashMap.keys());
+  //   config.seedNetworkId = (Math.random() <= cnf.seedNetworkProbability) ? randomItem(bestNetworkHashMap.keys()) : false;
+  //   console.log(chalkAlert("NNT | SEED NETWORK | BEST NETWORK HM | NN: " + config.seedNetworkId));
+  // }
 
   config.iterations = cnf.evolve.iterations;
   config.threads = cnf.evolve.threads;
