@@ -55,6 +55,7 @@ const os = require("os");
 const util = require("util");
 const moment = require("moment");
 const _ = require("lodash");
+const dot = require("dot-object");
 const writeJsonFile = require("write-json-file");
 const sizeof = require("object-sizeof");
 
@@ -680,6 +681,72 @@ function indexOfMax (arr, callback) {
 
   }
 }
+
+const sortedObjectValues = function(params) {
+
+  return new Promise(function(resolve, reject) {
+
+    const keys = Object.keys(params.obj);
+
+    const sortedKeys = keys.sort(function(a,b){
+      const objA = params.obj[a];
+      const objB = params.obj[b];
+      return objB[params.sortKey] - objA[params.sortKey];
+    });
+
+    if (keys.length !== undefined) {
+      if (sortedKeys !== undefined) { 
+        resolve({sortKey: params.sortKey, sortedKeys: sortedKeys.slice(0,params.max)});
+      }
+      else {
+        resolve({sortKey: params.sortKey, sortedKeys: []});
+      }
+
+    }
+    else {
+      console.error("sortedObjectValues ERROR | params\n" + jsonPrint(params));
+      reject(new Error("ERROR"));
+    }
+
+  });
+};
+
+const sortedHashmap = function(params) {
+
+  return new Promise(function(resolve, reject) {
+
+    const keys = params.hashmap.keys();
+
+    // console.log("keys\n" + jsonPrint(keys));
+
+    const sortedKeys = keys.sort(function(a,b){
+      const objA = params.hashmap.get(a);
+      const objB = params.hashmap.get(b);
+      // console.log("objA: " + objA + " | objB: " + objB);
+      const objAvalue = dot.pick(params.sortKey, params.hashmap.get(a));
+      const objBvalue = dot.pick(params.sortKey, params.hashmap.get(b));
+      // console.log("objAvalue: " + objAvalue + " | objBvalue: " + objBvalue);
+      return objBvalue - objAvalue;
+    });
+
+    if (keys.length !== undefined) {
+      if (sortedKeys !== undefined) { 
+        resolve({sortKey: params.sortKey, sortedKeys: sortedKeys.slice(0,params.max)});
+      }
+      else {
+        resolve({sortKey: params.sortKey, sortedKeys: []});
+      }
+
+    }
+    else {
+      console.error("sortedHashmap ERROR | params\n" + jsonPrint(params));
+      reject(new Error("ERROR"));
+    }
+
+  });
+};
+
+
 
 function printNetworkCreateResultsHashmap(){
 
@@ -2151,11 +2218,10 @@ function loadBestNetworkDropboxFolders (folders, callback){
                       + " | STATUS: " + err.status
                       + " | PATH: " + localBestNetworkFolder + "/" + entry.name
                       + " | SUMMARY: " + err.response.statusText
+                      + "\n" + jsonPrint(err)
                     ));
                   }
                 });
-
-                // saveFileQueue.push({localFlag: false, folder: localBestNetworkFolder, file: entry.name, obj: networkObj});
 
                 let inputsEntry = {};
 
@@ -2878,6 +2944,17 @@ function loadSeedNeuralNetwork(options, callback){
       if (callback !== undefined) { callback(err, null); }
     }
     else {
+
+      sortedHashmap({ sortKey: "networkObj.successRate", hashmap: bestNetworkHashMap, max: 500})
+      .then(function(sortedBestNetworks){
+
+        sortedBestNetworks.sortedKeys.forEach(function(nnId){
+          console.log(chalkLog("NNT | " + bestNetworkHashMap.get(nnId).networkObj.successRate.toFixed(2) + " | " + nnId));
+        });
+      })
+      .catch(function(err){
+        console.trace(chalkError("generateRandomEvolveConfig SORTER ERROR: " + err));
+      });
 
       if (callback !== undefined) { 
         callback(null, null);
@@ -4352,9 +4429,20 @@ function generateRandomEvolveConfig (cnf, callback){
 
   console.log(chalkLog("NNT | NETWORK CREATE MODE: " + config.networkCreateMode));
   console.log(chalkLog("\nNNT | BEST NETWORKS\nNNT | --------------------------------------------------------"));
-  bestNetworkHashMap.forEach(function(entry, nnId){
-    console.log(chalkLog("NNT | " + entry.networkObj.successRate.toFixed(2) + " | " + nnId));
+
+  // bestNetworkHashMap.set(networkObj.networkId, { entry: entry, networkObj: networkObj});
+
+  sortedHashmap({ sortKey: "networkObj.successRate", hashmap: bestNetworkHashMap, max: 500})
+  .then(function(sortedBestNetworks){
+
+    sortedBestNetworks.forEach(function(nnObj){
+      console.log(chalkLog("NNT | " + nnObj.networkObj.successRate.toFixed(2) + " | " + nnObj.networkObj.networkId));
+    });
+  })
+  .catch(function(err){
+    console.trace(chalkError("generateRandomEvolveConfig SORTER ERROR: " + err));
   });
+
   console.log(chalkLog("NNT | --------------------------------------------------------"));
 
   //
