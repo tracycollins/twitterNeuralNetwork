@@ -4450,7 +4450,10 @@ function generateRandomEvolveConfig (cnf, callback){
   //
   if (betterChildSeedNetworkIdSet.size > 0) {
 
-    config.seedNetworkId = betterChildSeedNetworkIdSet.keys()[0];
+    const tempNnIdArray = betterChildSeedNetworkIdSet.keys();
+
+    config.seedNetworkId = tempNnIdArray[0];
+
     betterChildSeedNetworkIdSet.delete(config.seedNetworkId);
 
     console.log(chalkAlert("NNT | USING BETTER CHILD SEED"
