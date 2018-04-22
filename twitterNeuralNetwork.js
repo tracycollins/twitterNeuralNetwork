@@ -4451,9 +4451,11 @@ function generateRandomEvolveConfig (cnf, callback){
   //
   if (betterChildSeedNetworkIdSet.size > 0) {
 
-    const tempNnIdArray = betterChildSeedNetworkIdSet.keys();
+    // const tempNnIdIterator = betterChildSeedNetworkIdSet.keys();
 
-    config.seedNetworkId = tempNnIdArray[0];
+    // console.log("tempNnIdIterator\n" + jsonPrint(tempNnIdIterator));
+
+    config.seedNetworkId = betterChildSeedNetworkIdSet.keys().next().value;
 
     betterChildSeedNetworkIdSet.delete(config.seedNetworkId);
 
@@ -5089,7 +5091,7 @@ function initNeuralNetworkChild(nnChildIndex, cnf, callback){
                 + " | SR: " + results.successRate.toFixed(3) + "%"
                 + " | SEED: " + m.networkObj.networkId
                 + " | SR: " + m.networkObj.seedNetworkRes.toFixed(3) + "%"
-                + " | " + betterChildSeedNetworkIdSet.keys()
+                // + " | " + betterChildSeedNetworkIdSet.keys()
               ));
 
             }
@@ -5145,7 +5147,7 @@ function initNeuralNetworkChild(nnChildIndex, cnf, callback){
             printNetworkObj("NNT | " + networkObj.networkId, networkObj);
           }
           else {
-            console.log(chalkInfo("NNT | XXX | NOT SAVING NN GLOBAL DROPBOX ... LESS THAN GLOBAL MIN SUCCESS"
+            console.log(chalkInfo("NNT | XXX | NOT SAVING NN GLOBAL DROPBOX ... LESS THAN GLOBAL MIN SUCCESS *OR* NOT BETTER THAN SEED"
               + " | " + networkObj.networkId
               + " | " + networkObj.successRate.toFixed(2) + "%"
               + " | " + cnf.globalMinSuccessRate.toFixed(2) + "%"
