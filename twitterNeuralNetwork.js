@@ -4435,9 +4435,10 @@ function generateRandomEvolveConfig (cnf, callback){
   sortedHashmap({ sortKey: "networkObj.successRate", hashmap: bestNetworkHashMap, max: 500})
   .then(function(sortedBestNetworks){
 
-    sortedBestNetworks.forEach(function(nnObj){
+    sortedBestNetworks.sortedKeys.forEach(function(nnObj){
       console.log(chalkLog("NNT | " + nnObj.networkObj.successRate.toFixed(2) + " | " + nnObj.networkObj.networkId));
     });
+
   })
   .catch(function(err){
     console.trace(chalkError("generateRandomEvolveConfig SORTER ERROR: " + err));
