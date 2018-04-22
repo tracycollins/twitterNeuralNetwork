@@ -2051,9 +2051,7 @@ function loadBestNetworkDropboxFolders (folders, callback){
               + " | LAST MOD: " + moment(new Date(entry.client_modified)).format(compactDateTimeFormat)
               + " | " + entry.path_display
               + "\nCUR HASH: " + entry.content_hash
-              + "\n" + jsonPrint(entry)
               + "\nOLD HASH: " + oldContentHash
-              // + "\n" + jsonPrint(curNetworkObj.entry)
             ));
 
             loadFile(folder, entry.name, function(err, networkObj){
@@ -4451,10 +4449,6 @@ function generateRandomEvolveConfig (cnf, callback){
   //
   if (betterChildSeedNetworkIdSet.size > 0) {
 
-    // const tempNnIdIterator = betterChildSeedNetworkIdSet.keys();
-
-    // console.log("tempNnIdIterator\n" + jsonPrint(tempNnIdIterator));
-
     config.seedNetworkId = betterChildSeedNetworkIdSet.keys().next().value;
 
     betterChildSeedNetworkIdSet.delete(config.seedNetworkId);
@@ -5091,7 +5085,6 @@ function initNeuralNetworkChild(nnChildIndex, cnf, callback){
                 + " | SR: " + results.successRate.toFixed(3) + "%"
                 + " | SEED: " + m.networkObj.networkId
                 + " | SR: " + m.networkObj.seedNetworkRes.toFixed(3) + "%"
-                // + " | " + betterChildSeedNetworkIdSet.keys()
               ));
 
             }
