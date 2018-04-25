@@ -23,7 +23,7 @@ const DEFAULT_HISTOGRAM_PARSE_DOMINANT_MIN = 0.4;
 
 const bestRuntimeNetworkFileName = "bestRuntimeNetwork.json";
 
-const TEST_MODE_LENGTH = 1000;
+const TEST_MODE_LENGTH = 100;
 const TEST_DROPBOX_NN_LOAD = 10;
 const DEFAULT_USE_LOCAL_TRAINING_SETS = false;
 const DEFAULT_MAX_NEURAL_NETWORK_CHILDREN = 2;
@@ -457,6 +457,7 @@ function slackPostMessage(channel, text, callback){
   });
 }
 
+const help = { name: "help", alias: "h", type: Boolean};
 
 const enableStdin = { name: "enableStdin", alias: "S", type: Boolean, defaultValue: true };
 const quitOnComplete = { name: "quitOnComplete", alias: "q", type: Boolean };
@@ -471,7 +472,7 @@ const loadTrainingSetFromFile = { name: "loadTrainingSetFromFile", alias: "t", t
 const inputsId = { name: "inputsId", alias: "i", type: String};
 const trainingSetFile = { name: "trainingSetFile", alias: "T", type: String};
 const networkCreateMode = { name: "networkCreateMode", alias: "n", type: String, defaultValue: "evolve" };
-const hiddenLayerSize = { name: "hiddenLayerSize", alias: "h", type: Number};
+const hiddenLayerSize = { name: "hiddenLayerSize", alias: "H", type: Number};
 const seedNetworkId = { name: "seedNetworkId", alias: "s", type: String };
 const useBestNetwork = { name: "useBestNetwork", alias: "b", type: Boolean };
 const testMode = { name: "testMode", alias: "X", type: Boolean, defaultValue: false };
@@ -494,12 +495,18 @@ const optionDefinitions = [
   quitOnError, 
   verbose, 
   evolveIterations, 
-  testMode
+  testMode,
+  help
 ];
 
 const commandLineConfig = commandLineArgs(optionDefinitions);
 console.log(chalkInfo("NNT | COMMAND LINE CONFIG\nNNT | " + jsonPrint(commandLineConfig)));
 console.log("NNT | COMMAND LINE OPTIONS\nNNT | " + jsonPrint(commandLineConfig));
+
+if (Object.keys(commandLineConfig).includes("help")) {
+  console.log("optionDefinitions\n" + jsonPrint(optionDefinitions));
+  quit("help");
+}
 
 process.on("message", function(msg) {
   if (msg === "shutdown") {
@@ -870,6 +877,10 @@ function quit(options){
   let slackText = "";
 
   if (options !== undefined) {
+
+    if (options === "help") {
+      process.exit();
+    }
 
     if (options.networkObj !== undefined) {
       const snid = (options.networkObj.evolve && (options.networkObj.evolve.options.network !== undefined)) 
@@ -2204,7 +2215,14 @@ function loadBestNetworkDropboxFolders (folders, callback){
                   ));
                 })
                 .catch(function(err){
-                  if (err.status === 429) {
+                  if (err.status === 409) {
+                    console.log(chalkError("NNT | *** ERROR: XXX NN"
+                      + " | STATUS: " + err.status
+                      + " | PATH: " + localBestNetworkFolder + "/" + entry.name
+                      + " | CONFLICT | DOES NOT EXIST"
+                    ));
+                  }
+                  else if (err.status === 429) {
                     console.log(chalkError("NNT | *** ERROR: XXX NN"
                       + " | STATUS: " + err.status
                       + " | PATH: " + localBestNetworkFolder + "/" + entry.name
