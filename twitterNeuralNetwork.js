@@ -3870,7 +3870,7 @@ function updateCategorizedUsers(cnf, callback){
             else if (user.bannerImageUrl && user.bannerImageAnalyzed && (user.bannerImageUrl === user.bannerImageAnalyzed)) {
               statsObj.users.imageParse.skipped += 1;
               const imageHits = (user.histograms.images === undefined) ? 0 : Object.keys(user.histograms.images);
-              debug(chalkAlert("BANNER ANALYZED: @" + user.screenName + " | HITS: " + imageHits));
+              console.log(chalkAlert("BANNER ANALYZED: @" + user.screenName + " | HITS: " + imageHits));
               // async.setImmediate(function() {
                 cb(null, text, null);
               // });
