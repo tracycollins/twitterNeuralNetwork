@@ -1782,8 +1782,9 @@ function updateUsersFromTrainingSet(trainingSetData, callback){
 
         const newUser = new User(user);
 
-        newUser.save(function(updatedUser){
-          
+        newUser.save()
+        .then(function(updatedUser){
+
           updatedUserCount += 1;
 
           console.log(chalkLog("+++ ADD NET USER FROM TRAINING SET  "
@@ -1810,7 +1811,8 @@ function updateUsersFromTrainingSet(trainingSetData, callback){
         userDb.category = user.category;
         userDb.categoryAuto = user.categoryAuto;
 
-        userDb.save(function(updatedUser){
+        userDb.save()
+        .then(function(updatedUser){
           updatedUserCount += 1;
 
           console.log(chalkLog("+++ UPDATED USER FROM TRAINING SET  "
