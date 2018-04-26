@@ -1733,7 +1733,7 @@ function loadInputsDropboxFolder(folder, callback){
 }
 
 function userChanged(uOld, uNew){
-  ["category", "categoryAuto"].forEach(function(prop){
+  ["category"].forEach(function(prop){
     if (uOld[prop] !== uNew[prop]){
       return true;
     }
@@ -1765,7 +1765,7 @@ function updateUsersFromTrainingSet(trainingSetData, callback){
 
     if (user.userId === undefined) { user.userId = user.nodeId; }
 
-    userServer.findOneUser(user, {noInc: true}, function(err, updatedUser){
+    User.findOne({ nodeId: user.nodeId }).exec(function(err, userDb) {
       userIndex += 1;
       if (err) {
         console.log(chalkError("*** ERROR FIND ONE USER trainingSet: "
@@ -1778,24 +1778,15 @@ function updateUsersFromTrainingSet(trainingSetData, callback){
         ));
         cb();
       }
-      else if (userChanged(user, updatedUser)) {
-        updatedUserCount += 1;
-        console.log(chalkLog("+++ UPDATED USER FROM TRAINING SET  "
-          + " [" + updatedUserCount + "/" + userIndex + "/" + numberUsers + "]"
-          + " | CM: " + printCat(updatedUser.category)
-          + " | CA: " + printCat(updatedUser.categoryAuto)
-          + " | UID: " + updatedUser.userId
-          + " | @" + updatedUser.screenName
-          + " | 3CF: " + updatedUser.threeceeFollowing
-          + " | Ts: " + updatedUser.statusesCount
-          + " | FLWRs: " + updatedUser.followersCount
-          + " | FRNDS: " + updatedUser.friendsCount
-        ));
-        cb();
-      }
-      else {
-        if ((userIndex % 100) === 0) {
-          console.log(chalkLog("--- NO UPDATE USER FROM TRAINING SET"
+      else if (!userDb){
+
+        const newUser = new User(user);
+
+        newUser.save(function(updatedUser){
+          
+          updatedUserCount += 1;
+
+          console.log(chalkLog("+++ ADD NET USER FROM TRAINING SET  "
             + " [" + updatedUserCount + "/" + userIndex + "/" + numberUsers + "]"
             + " | CM: " + printCat(updatedUser.category)
             + " | CA: " + printCat(updatedUser.categoryAuto)
@@ -1805,6 +1796,54 @@ function updateUsersFromTrainingSet(trainingSetData, callback){
             + " | Ts: " + updatedUser.statusesCount
             + " | FLWRs: " + updatedUser.followersCount
             + " | FRNDS: " + updatedUser.friendsCount
+          ));
+
+        })
+        .catch(function(err){
+          console.log("ERROR: updateUsersFromTrainingSet newUser: " + err.message);
+        });
+
+
+      }
+      else if (userChanged(user, userDb)) {
+
+        userDb.category = user.category;
+        userDb.categoryAuto = user.categoryAuto;
+
+        userDb.save(function(updatedUser){
+          updatedUserCount += 1;
+
+          console.log(chalkLog("+++ UPDATED USER FROM TRAINING SET  "
+            + " [" + updatedUserCount + "/" + userIndex + "/" + numberUsers + "]"
+            + " | CM: " + printCat(updatedUser.category)
+            + " | CA: " + printCat(updatedUser.categoryAuto)
+            + " | UID: " + updatedUser.userId
+            + " | @" + updatedUser.screenName
+            + " | 3CF: " + updatedUser.threeceeFollowing
+            + " | Ts: " + updatedUser.statusesCount
+            + " | FLWRs: " + updatedUser.followersCount
+            + " | FRNDS: " + updatedUser.friendsCount
+          ));
+
+        })
+        .catch(function(err){
+          console.log("ERROR: updateUsersFromTrainingSet: " + err.message);
+        });
+
+        cb();
+      }
+      else {
+        if ((userIndex % 100) === 0) {
+          console.log(chalkLog("--- NO UPDATE USER FROM TRAINING SET"
+            + " [" + updatedUserCount + "/" + userIndex + "/" + numberUsers + "]"
+            + " | CM: " + printCat(userDb.category)
+            + " | CA: " + printCat(userDb.categoryAuto)
+            + " | UID: " + userDb.userId
+            + " | @" + userDb.screenName
+            + " | 3CF: " + userDb.threeceeFollowing
+            + " | Ts: " + userDb.statusesCount
+            + " | FLWRs: " + userDb.followersCount
+            + " | FRNDS: " + userDb.friendsCount
           ));
         }
         cb();
@@ -2385,6 +2424,14 @@ function loadBestNetworkDropboxFolders (folders, callback){
                       + " | SEED: " + nnDb.seedNetworkId + " IN"
                       + " | CR: " + nnDb.createdAt
                     ));
+
+                    nnDb.matchRate = networkObj.matchRate;
+                    nnDb.successRate = networkObj.successRate;
+                    nnDb.save()
+                      .catch(function(err){
+                        console.log(err.message);
+                      });
+
                   }
                   else {
                     let nn = new NeuralNetwork(networkObj)
