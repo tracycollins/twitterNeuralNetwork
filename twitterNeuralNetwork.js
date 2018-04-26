@@ -199,6 +199,7 @@ dbConnection.once("open", function() {
   User = mongoose.model("User", userModel.UserSchema);
   NeuralNetwork = mongoose.model("NeuralNetwork", neuralNetworkModel.NeuralNetworkSchema);
   userServer = require("@threeceelabs/user-server-controller");
+  // userServer = require("../userServerController");
 });
 
 let networkCreateInterval;
@@ -3860,25 +3861,30 @@ function updateCategorizedUsers(cnf, callback){
                     + " | RESULTS\n" + jsonPrint(results)
                   ));
                   if (results.text !== undefined) {
-                    debug(chalkInfo("@" + user.screenName + " | " + classText + " | " + results.text));
+                    console.log(chalkAlert("+++ BANNER ANALYZED: @" + user.screenName + " | " + classText + " | " + results.text));
                     text = text + "\n" + results.text;
                   }
+
                   cb(null, text, results);
                 }
               });
             }
             else if (user.bannerImageUrl && user.bannerImageAnalyzed && (user.bannerImageUrl === user.bannerImageAnalyzed)) {
+
               statsObj.users.imageParse.skipped += 1;
+
               const imageHits = (user.histograms.images === undefined) ? 0 : Object.keys(user.histograms.images);
-              console.log(chalkAlert("BANNER ANALYZED: @" + user.screenName + " | HITS: " + imageHits));
-              // async.setImmediate(function() {
+              debug(chalkAlert("--- BANNER HIST HIT: @" + user.screenName + " | HITS: " + imageHits));
+
+              async.setImmediate(function() {
                 cb(null, text, null);
-              // });
+              });
+
             }
             else {
-              // async.setImmediate(function() {
+              async.setImmediate(function() {
                 cb(null, text, null);
-              // });
+              });
             }
           }
         ], function (err, text, bannerResults) {
@@ -3903,7 +3909,7 @@ function updateCategorizedUsers(cnf, callback){
               hist.images = bannerResults.label.images;
             }
 
-            debug(chalkInfo("hist\n" + jsonPrint(hist)));
+            // console.log(chalkInfo("hist keys: " + Object.keys(hist)));
             // update user histogram in db
 
             userServer.updateHistograms({user: user, histograms: hist, accumulateFlag: false}, function(err, updatedUser){
@@ -3912,6 +3918,8 @@ function updateCategorizedUsers(cnf, callback){
                 console.error("*** UPDATE USER HISTOGRAMS ERROR\n" + err);
                 return(cb0(err));
               }
+
+              // console.log(chalkInfo("hist keys: " + Object.keys(updatedUser.histograms)));
 
               const subUser = pick(
                 updatedUser,
@@ -4019,7 +4027,8 @@ function updateCategorizedUsers(cnf, callback){
     }
 
     userMaxInputHashMap = userServer.getMaxInputsHashMap();
-    debug("MAX INPUT HASHMAP\n" + jsonPrint(userMaxInputHashMap));
+
+    // console.log("MAX INPUT HASHMAP keys\n" + Object.keys(userMaxInputHashMap.images));
 
     categorizedUsersPercent = 100 * (statsObj.users.notCategorized + statsObj.users.updatedCategorized)/categorizedNodeIds.length;
     categorizedUsersElapsed = (moment().valueOf() - categorizedUsersStartMoment.valueOf()); // mseconds
