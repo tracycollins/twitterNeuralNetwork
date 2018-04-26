@@ -163,8 +163,6 @@ let initMainReady = false;
 let trainingSetReady = false;
 let createTrainingSetBusy = false;
 
-// let inputArrays = {};
-
 let skipLoadNetworkSet = new Set();
 let requiredTrainingSet = new Set();
 
@@ -173,8 +171,6 @@ let inputsIdSet = new Set();
 let slackChannel = "#nn";
 
 let initMainInterval;
-
-
 
 let statsObj = {};
 
