@@ -1804,6 +1804,7 @@ function updateUsersFromTrainingSet(trainingSetData, callback){
           console.log("ERROR: updateUsersFromTrainingSet newUser: " + err.message);
         });
 
+        cb();
 
       }
       else if (userChanged(user, userDb)) {
