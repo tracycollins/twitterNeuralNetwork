@@ -1495,7 +1495,7 @@ function loadInputsDropboxFolder(folder, callback){
 
   if (configuration.createTrainingSetOnly) {
     if (callback !== undefined) { 
-      return callback(null); 
+      return callback(null, null); 
     }
   }
 
@@ -1508,6 +1508,11 @@ function loadInputsDropboxFolder(folder, callback){
   let skippedInputsFiles = 0;
 
   loadDropboxFolder(options, function(err, results){
+
+    if (err) {
+      console.log(chalkError("NNT | ERROR LOADING DROPBOX INPUTS FOLDER | " + folder + " | " + err));
+      return(callback(err, null));
+    }
 
     console.log(chalkLog("DROPBOX LIST INPUTS FOLDER"
       + " | ENTRIES: " + results.entries.length
@@ -1727,7 +1732,7 @@ function loadInputsDropboxFolder(folder, callback){
       if (skippedInputsFiles > 0) {
         console.log(chalkAlert("NNT | SKIPPED LOAD OF " + skippedInputsFiles + " INPUTS FILES | " + folder));
       }
-      if (callback !== undefined) { callback(null); }
+      if (callback !== undefined) { callback(null, null); }
     });
   });
 }
@@ -3462,7 +3467,7 @@ function initialize(cnf, callback){
         debug("initStatsUpdate cnf2\n" + jsonPrint(cnf2));
 
         // loadHistogramsDropboxFolder(defaultHistogramsFolder, function(err){
-          loadInputsDropboxFolder(defaultInputsFolder, function(err){
+          loadInputsDropboxFolder(defaultInputsFolder, function(err, results){
             return(callback(err, cnf2));
           });
         // });
@@ -3561,7 +3566,7 @@ function initialize(cnf, callback){
           }
           debug("initStatsUpdate cnf2\n" + jsonPrint(cnf2));
 
-          loadInputsDropboxFolder(defaultInputsFolder, function(err){
+          loadInputsDropboxFolder(defaultInputsFolder, function(err, results){
             return(callback(err, cnf2));
           });
 
@@ -4387,7 +4392,7 @@ function generateGlobalTrainingTestSet (userHashMap, maxInputHashMap, callback){
 
     if (err) {
       console.log(chalkError("GENERATE TRAINING SET ERROR\n" + jsonPrint(err)));
-      return callback(err);
+      return callback(err, null);
     }
 
     const trainingSetId = GLOBAL_TRAINING_SET_ID + "_" + statsObj.runId;
@@ -4458,7 +4463,7 @@ function generateGlobalTrainingTestSet (userHashMap, maxInputHashMap, callback){
       .then(function() {
         console.log(chalkAlert("NNT | SAVED MAX INPUT HASHMAP | " + maxInputHashMapPath));
         console.log(chalkAlert("NNT | ======================= END GENERATE GLOBAL TRAINING SET ======================="));
-        callback(null);
+        callback(null, null);
       })
       .catch(function(error){
         console.log(chalkError("NNT | " + moment().format(compactDateTimeFormat) 
@@ -4466,7 +4471,7 @@ function generateGlobalTrainingTestSet (userHashMap, maxInputHashMap, callback){
           + " | ERROR: " + error
           + " | ERROR\n" + jsonPrint(error)
         ));
-        if (callback !== undefined) { return callback(error); }
+        if (callback !== undefined) { return callback(error, null); }
       });
 
     })
@@ -4476,7 +4481,7 @@ function generateGlobalTrainingTestSet (userHashMap, maxInputHashMap, callback){
         + " | ERROR: " + error
         + " | ERROR\n" + jsonPrint(error)
       ));
-      if (callback !== undefined) { return callback(error); }
+      if (callback !== undefined) { return callback(error, null); }
     });
 
   });
@@ -4792,6 +4797,7 @@ function initMain(cnf, callback){
   initMainReady = false;
 
   showStats();
+
   console.log(chalkAlert("NNT | ***===*** INIT MAIN ***===***"
     + " | " + getTimeStamp()
     + " | ALL COMPLETE: " + allCompleteFlag
@@ -4804,7 +4810,12 @@ function initMain(cnf, callback){
     return callback(null, null);
   }
 
-  loadInputsDropboxFolder(defaultInputsFolder, function(){
+  loadInputsDropboxFolder(defaultInputsFolder, function(err1, results){
+
+    if (err1) {
+      console.log(chalkError("NNT | ERROR LOADING DROPBOX INPUTS FOLDER | " + folder + " | " + err1));
+      return(callback(err1, null));
+    }
 
     let seedOpt = {};
     seedOpt.folders = [globalBestNetworkFolder, localBestNetworkFolder];
