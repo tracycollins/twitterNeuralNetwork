@@ -1256,8 +1256,6 @@ function loadFile(path, file, callback) {
    }
   else {
 
-    // const spinnerLoadFile = ora().start("NNT | LOADING DROPBOX " + fullPath + " ...");
-
     dropboxClient.filesDownload({path: fullPath})
     .then(function(data) {
 
@@ -1272,21 +1270,17 @@ function loadFile(path, file, callback) {
       if (file.match(/\.json$/gi)) {
         try {
           let fileObj = JSON.parse(payload);
-          // spinnerLoadFile.succeed("NNT | LOADED DROPBOX " + fullPath);
           callback(null, fileObj);
         }
         catch(e){
-          // spinnerLoadFile.fail("NNT | *** FAIL LOAD DROPBOX " + fullPath);
           console.trace(chalkError("NNT | JSON PARSE ERROR: " + fullPath  + " | ERROR: " + e + "\n" + jsonPrint(e)));
           return(callback(e, null));
         }
       }
       else if (file.match(/\.txt$/gi)) {
-        // spinnerLoadFile.succeed("NNT | LOADED DROPBOX " + fullPath);
         callback(null, data);
       }
       else {
-        // spinnerLoadFile.fail("NNT | *** FAIL LOAD DROPBOX " + fullPath);
         console.log(chalkLog("NNT"
           + " | " + getTimeStamp()
           + " | ??? LOADING FILE FROM DROPBOX FILE | NOT .json OR .txt: " + fullPath
@@ -1295,22 +1289,24 @@ function loadFile(path, file, callback) {
       }
     })
     .catch(function(error) {
-      // spinnerLoadFile.fail("NNT | *** FAIL LOAD DROPBOX " + fullPath);
-      console.log(chalkError("NNT | DROPBOX loadFile ERROR: " + fullPath + "\n" + jsonPrint(error)));
+      console.log(chalkError("NNT | DROPBOX loadFile ERROR: " + fullPath
+        + " | " + error.error.error_summary
+      ));
+      // console.log(chalkError("NNT | DROPBOX loadFile ERROR: " + fullPath + "\n" + jsonPrint(error)));
       // console.log(chalkError("NNT | !!! DROPBOX READ " + fullPath + " ERROR"));
       // console.log(chalkError("NNT | " + jsonPrint(error.error)));
 
-      if (error.status === 404) {
+      if (error.error.status === 404) {
         console.error(chalkError("NNT | !!! DROPBOX READ FILE " + fullPath + " NOT FOUND"
           + " ... SKIPPING ...")
         );
         return(callback(null, null));
       }
-      if (error.status === 409) {
+      if (error.error.status === 409) {
         console.error(chalkError("NNT | !!! DROPBOX READ FILE " + fullPath + " NOT FOUND"));
         return(callback(error, null));
       }
-      if (error.status === 0) {
+      if (error.error.status === 0) {
         console.error(chalkError("NNT | !!! DROPBOX NO RESPONSE"
           + " ... NO INTERNET CONNECTION? ... SKIPPING ..."));
         return(callback(null, null));
