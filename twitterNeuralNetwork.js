@@ -1296,17 +1296,17 @@ function loadFile(path, file, callback) {
       // console.log(chalkError("NNT | !!! DROPBOX READ " + fullPath + " ERROR"));
       // console.log(chalkError("NNT | " + jsonPrint(error.error)));
 
-      if (error.error.status === 404) {
+      if (error.status === 404) {
         console.error(chalkError("NNT | !!! DROPBOX READ FILE " + fullPath + " NOT FOUND"
           + " ... SKIPPING ...")
         );
         return(callback(null, null));
       }
-      if (error.error.status === 409) {
+      if (error.status === 409) {
         console.error(chalkError("NNT | !!! DROPBOX READ FILE " + fullPath + " NOT FOUND"));
         return(callback(error, null));
       }
-      if (error.error.status === 0) {
+      if (error.status === 0) {
         console.error(chalkError("NNT | !!! DROPBOX NO RESPONSE"
           + " ... NO INTERNET CONNECTION? ... SKIPPING ..."));
         return(callback(null, null));
