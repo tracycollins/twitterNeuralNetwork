@@ -1290,7 +1290,7 @@ function loadFile(path, file, callback) {
     })
     .catch(function(error) {
       console.log(chalkError("NNT | DROPBOX loadFile ERROR: " + fullPath
-        + " | " + error.error.error_summary
+        + " | " + error.error_summary
       ));
       // console.log(chalkError("NNT | DROPBOX loadFile ERROR: " + fullPath + "\n" + jsonPrint(error)));
       // console.log(chalkError("NNT | !!! DROPBOX READ " + fullPath + " ERROR"));
