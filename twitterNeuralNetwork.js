@@ -91,8 +91,8 @@ const debugCache = require("debug")("cache");
 const debugQ = require("debug")("queue");
 const commandLineArgs = require("command-line-args");
 
-// const neataptic = require("neataptic");
-const neataptic = require("./js/neataptic");
+const neataptic = require("neataptic");
+// const neataptic = require("./js/neataptic");
 
 const twitterTextParser = require("@threeceelabs/twitter-text-parser");
 const twitterImageParser = require("@threeceelabs/twitter-image-parser");
@@ -186,16 +186,20 @@ let NeuralNetwork;
 let userServer;
 
 const wordAssoDb = require("@threeceelabs/mongoose-twitter");
-const dbConnection = wordAssoDb();
 
-dbConnection.on("error", console.error.bind(console, "connection error:"));
+wordAssoDb.connect(function(err, dbConnection){
+  if (err) {
+    console.log(chalkError("*** TNN | MONGO DB CONNECTION ERROR: " + err));
+    quit("MONGO DB CONNECTION ERROR");
+  }
+  else {
+    dbConnection.on("error", console.error.bind(console, "*** TNN | MONGO DB CONNECTION ERROR ***\n"));
+    console.log(chalkAlert("TNN | MONGOOSE DEFAULT CONNECTION OPEN"));
+    User = mongoose.model("User", userModel.UserSchema);
+    NeuralNetwork = mongoose.model("NeuralNetwork", neuralNetworkModel.NeuralNetworkSchema);
+    userServer = require("@threeceelabs/user-server-controller");
+  }
 
-dbConnection.once("open", function() {
-  console.log(chalkAlert("NNT | CONNECT: MONGOOSE DEFAULT CONNECTION OPEN"));
-  User = mongoose.model("User", userModel.UserSchema);
-  NeuralNetwork = mongoose.model("NeuralNetwork", neuralNetworkModel.NeuralNetworkSchema);
-  userServer = require("@threeceelabs/user-server-controller");
-  // userServer = require("../userServerController");
 });
 
 let networkCreateInterval;

@@ -22,24 +22,30 @@ hostname = hostname.replace(/word0-instance-1/g, "google");
 const defaultDateTimeFormat = "YYYY-MM-DD HH:mm:ss ZZ";
 const compactDateTimeFormat = "YYYYMMDD HHmmss";
 
-// const neataptic = require("neataptic");
-const neataptic = require("./js/neataptic");
+const neataptic = require("neataptic");
+// const neataptic = require("./js/neataptic");
 let network;
 
 const mongoose = require("mongoose");
 mongoose.Promise = global.Promise;
 
-const neutralNetworkModel = require("@threeceelabs/mongoose-twitter/models/neuralNetwork.server.model");
+const neuralNetworkModel = require("@threeceelabs/mongoose-twitter/models/neuralNetwork.server.model");
 
 let NeuralNetwork;
 
 const wordAssoDb = require("@threeceelabs/mongoose-twitter");
-const dbConnection = wordAssoDb();
 
-dbConnection.on("error", console.error.bind(console, "connection error:"));
-dbConnection.once("open", function() {
-  console.log("NNC | CONNECT: TWEET SERVER MONGOOSE DEFAULT CONNECTION OPEN");
-  NeuralNetwork = mongoose.model("NeuralNetwork", neutralNetworkModel.NeuralNetworkSchema);
+wordAssoDb.connect(function(err, dbConnection){
+  if (err) {
+    console.log(chalkError("*** TNC | MONGO DB CONNECTION ERROR: " + err));
+    quit("MONGO DB CONNECTION ERROR");
+  }
+  else {
+    dbConnection.on("error", console.error.bind(console, "*** TNC | MONGO DB CONNECTION ERROR ***\n"));
+    console.log(chalkAlert("TNC | MONGOOSE DEFAULT CONNECTION OPEN"));
+    NeuralNetwork = mongoose.model("NeuralNetwork", neuralNetworkModel.NeuralNetworkSchema);
+  }
+
 });
 
 const EventEmitter2 = require("eventemitter2").EventEmitter2;
