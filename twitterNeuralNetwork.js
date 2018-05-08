@@ -1,53 +1,48 @@
 /*jslint node: true */
 "use strict";
 
-let initNetworkCreateInterval;
-
-const DEFAULT_QUIT_ON_COMPLETE = false;
-const DROPBOX_LIST_FOLDER_LIMIT = 50;
+const ENABLE_INIT_PURGE_LOCAL = true;
 
 const NN_CHILD_PREFIX = "node_NNC_";
-let nnChildIndex = 0;
-// let nnChildId = NN_CHILD_PREFIX + nnChildIndex;
-let allCompleteFlag = false;
-
-const ONE_KILOBYTE = 1024;
-const ONE_MEGABYTE = 1024 * ONE_KILOBYTE;
-
-const DROPBOX_MAX_FILE_UPLOAD = 140 * ONE_MEGABYTE; // bytes
 const GLOBAL_TRAINING_SET_ID = "globalTrainingSet";
 
-const DEFAULT_GENERATE_TRAINING_SET_ONLY = false;
-const DEFAULT_HISTOGRAM_PARSE_TOTAL_MIN = 4;
-const DEFAULT_HISTOGRAM_PARSE_DOMINANT_MIN = 0.4;
-
-const bestRuntimeNetworkFileName = "bestRuntimeNetwork.json";
-
-const TEST_MODE_LENGTH = 100;
-const TEST_DROPBOX_NN_LOAD = 10;
-const DEFAULT_USE_LOCAL_TRAINING_SETS = false;
-const DEFAULT_MAX_NEURAL_NETWORK_CHILDREN = 2;
-const DEFAULT_TEST_RATIO = 0.20;
-
-const DEFAULT_NETWORK_CREATE_MODE = "evolve";
-const DEFAULT_ITERATIONS = 10;
-const DEFAULT_SEED_NETWORK_ID = false;
-const DEFAULT_SEED_NETWORK_PROBABILITY = 0.5;
-
-const MIN_INPUT_HITS = 10;
-
-const OFFLINE_MODE = process.env.OFFLINE_MODE === "true" || false;
-
-console.log("OFFLINE_MODE: " + OFFLINE_MODE);
 
 const ONE_SECOND = 1000;
 const ONE_MINUTE = 60 * ONE_SECOND;
 const ONE_HOUR = 60 * ONE_MINUTE;
 
-const DEFAULT_GLOBAL_MIN_SUCCESS_RATE = 92; // percent
-const DEFAULT_LOCAL_MIN_SUCCESS_RATE = 50; // percent
+const ONE_KILOBYTE = 1024;
+const ONE_MEGABYTE = 1024 * ONE_KILOBYTE;
 
+
+const OFFLINE_MODE = process.env.OFFLINE_MODE === "true" || false;
+
+const TEST_MODE_LENGTH = 100;
+const TEST_DROPBOX_NN_LOAD = 10;
+
+const DEFAULT_QUIT_ON_COMPLETE = false;
+const DEFAULT_USE_LOCAL_TRAINING_SETS = false;
+const DEFAULT_MAX_NEURAL_NETWORK_CHILDREN = 2;
+const DEFAULT_TEST_RATIO = 0.20;
+const DEFAULT_NETWORK_CREATE_MODE = "evolve";
+const DEFAULT_ITERATIONS = 10;
+const DEFAULT_SEED_NETWORK_ID = false;
+const DEFAULT_SEED_NETWORK_PROBABILITY = 0.5;
+const DEFAULT_GLOBAL_MIN_SUCCESS_RATE = 80; // percent
+const DEFAULT_LOCAL_MIN_SUCCESS_RATE = 50; // percent
+const DEFAULT_LOCAL_PURGE_MIN_SUCCESS_RATE = 70; // percent
+const DEFAULT_GENERATE_TRAINING_SET_ONLY = false;
 const DEFAULT_INIT_MAIN_INTERVAL = process.env.TNN_INIT_MAIN_INTERVAL || 10*ONE_MINUTE;
+
+const DROPBOX_LIST_FOLDER_LIMIT = 50;
+const DROPBOX_MAX_FILE_UPLOAD = 140 * ONE_MEGABYTE; // bytes
+
+
+let nnChildIndex = 0;
+let allCompleteFlag = false;
+
+const bestRuntimeNetworkFileName = "bestRuntimeNetwork.json";
+
 
 let saveFileQueue = [];
 
@@ -92,7 +87,6 @@ const debugQ = require("debug")("queue");
 const commandLineArgs = require("command-line-args");
 
 const neataptic = require("neataptic");
-// const neataptic = require("./js/neataptic");
 
 const twitterTextParser = require("@threeceelabs/twitter-text-parser");
 const twitterImageParser = require("@threeceelabs/twitter-image-parser");
@@ -101,11 +95,8 @@ const table = require("text-table");
 const fs = require("fs");
 
 let prevConfigFileModifiedMoment = moment("2010-01-01");
-// let prevCategorizedUsersFileModifiedMoment = moment("2010-01-01");
 
 let networkIndex = 0;
-
-// const DEFAULT_BEST_NETWORK_NUMBER = 5;
 
 const DEFAULT_EVOLVE_THREADS = 1;
 const DEFAULT_EVOLVE_ARCHITECTURE = "random";
@@ -124,15 +115,7 @@ const DEFAULT_EVOLVE_GROWTH = 0.0001;
 const DEFAULT_EVOLVE_COST = "MSE";
 const DEFAULT_EVOLVE_COST_ARRAY = [
   "CROSS_ENTROPY",
-  "CROSS_ENTROPY",
-  "MSE",
-  "MSE",
   "MSE"
-  // "BINARY"
-  // "MAE",
-  // "MAPE",
-  // "MSLE",
-  // "HINGE"
 ];
 
 const EVOLVE_MUTATION_RATE_RANGE = { min: 0.35, max: 0.75 } ;
@@ -202,6 +185,7 @@ wordAssoDb.connect(function(err, dbConnection){
 
 });
 
+let initNetworkCreateInterval;
 let networkCreateInterval;
 let saveFileQueueInterval;
 let saveFileBusy = false;
@@ -215,9 +199,6 @@ configuration.dropboxMaxFileUpload = DROPBOX_MAX_FILE_UPLOAD;
 
 configuration.inputsIdArray = [];
 configuration.saveFileQueueInterval = 1000;
-
-configuration.histogramParseTotalMin = DEFAULT_HISTOGRAM_PARSE_TOTAL_MIN;
-configuration.histogramParseDominantMin = DEFAULT_HISTOGRAM_PARSE_DOMINANT_MIN;
 
 configuration.useLocalTrainingSets = DEFAULT_USE_LOCAL_TRAINING_SETS;
 
@@ -255,9 +236,15 @@ configuration.costArray = (process.env.TNN_EVOLVE_COST_ARRAY !== undefined)
 configuration.globalMinSuccessRate = (process.env.TNN_GLOBAL_MIN_SUCCESS_RATE !== undefined) 
   ? process.env.TNN_GLOBAL_MIN_SUCCESS_RATE 
   : DEFAULT_GLOBAL_MIN_SUCCESS_RATE;
+
 configuration.localMinSuccessRate = (process.env.TNN_LOCAL_MIN_SUCCESS_RATE !== undefined) 
   ? process.env.TNN_LOCAL_MIN_SUCCESS_RATE 
   : DEFAULT_LOCAL_MIN_SUCCESS_RATE;
+
+// delete local nn's at start that are below  
+configuration.localPurgeMinSuccessRate = (process.env.TNN_LOCAL_PURGE_MIN_SUCCESS_RATE !== undefined) 
+  ? process.env.TNN_LOCAL_PURGE_MIN_SUCCESS_RATE 
+  : DEFAULT_LOCAL_PURGE_MIN_SUCCESS_RATE;
 
 configuration.loadTrainingSetFromFile = false;
 configuration.createTrainingSet = false;
@@ -1510,7 +1497,7 @@ function loadInputsDropboxFolder(folder, callback){
   loadDropboxFolder(options, function(err, results){
 
     if (err) {
-      console.log(chalkError("NNT | ERROR LOADING DROPBOX INPUTS FOLDER | " + folder + " | " + err));
+      console.log(chalkError("NNT | ERROR LOADING DROPBOX INPUTS FOLDER | " + options.path + " | " + err));
       return(callback(err, null));
     }
 
@@ -2020,7 +2007,7 @@ function loadTrainingSetsDropboxFolder(folder, callback){
   });
 }
 
-function loadBestNetworkDropboxFolders (folders, callback){
+function loadBestNetworkDropboxFolders (params, callback){
 
   if (configuration.createTrainingSetOnly) {
     if (callback !== undefined) { 
@@ -2031,11 +2018,11 @@ function loadBestNetworkDropboxFolders (folders, callback){
   let numNetworksLoaded = 0;
 
   debug(chalkNetwork("NNT | ... LOADING DROPBOX BEST NN FOLDERS"
-    + " | " + folders.length + " FOLDERS"
-    + "\n" + jsonPrint(folders)
+    + " | " + params.folders.length + " FOLDERS"
+    + "\n" + jsonPrint(params.folders)
   ));
 
-  async.eachSeries(folders, function(folder, cb0){
+  async.eachSeries(params.folders, function(folder, cb0){
 
     debug(chalkNetwork("NNT | ... LOADING DROPBOX BEST NN FOLDER | " + folder));
 
@@ -2191,7 +2178,7 @@ function loadBestNetworkDropboxFolders (folders, callback){
           }
           else if ((oldContentHash !== entry.content_hash) && (curNetworkObj.entry.path_display !== entry.path_display)) {
 
-            console.log(chalkNetwork("NNT | DROPBOX BEST NETWORK CONTENT DIFF IN DIFF FOLDERS"
+            console.log(chalkNetwork("NNT | DROPBOX BEST NETWORK CONTENT DIFF IN DIFF params.folders"
               + " | LAST MOD: " + moment(new Date(entry.client_modified)).format(compactDateTimeFormat)
               + "\nCUR: " + entry.path_display
               + " | " + entry.content_hash
@@ -2349,7 +2336,7 @@ function loadBestNetworkDropboxFolders (folders, callback){
 
               if (!configuration.inputsIdArray.includes(networkObj.inputsId)) {
 
-                console.log(chalkInfo("NNT | NN INPUTS NOT IN INPUTS ID ARRAY ... DELETING: " + entry.name));
+                console.log(chalkInfo("NNT | NN INPUTS NOT IN INPUTS ID ARRAY ... DELETING: " + folder + "/" + entry.name));
 
                 dropboxClient.filesDelete({path: folder + "/" + entry.name})
                 .then(function(response){
@@ -2389,8 +2376,10 @@ function loadBestNetworkDropboxFolders (folders, callback){
               else if ((options.networkId !== undefined) 
                 || ((folder === "/config/utility/best/neuralNetworks") && (networkObj.successRate > configuration.globalMinSuccessRate))
                 || ((folder === "/config/utility/best/neuralNetworks") && (networkObj.matchRate > configuration.globalMinSuccessRate))
-                || ((folder !== "/config/utility/best/neuralNetworks") && (networkObj.successRate > configuration.localMinSuccessRate))
-                || ((folder !== "/config/utility/best/neuralNetworks") && (networkObj.matchRate > configuration.localMinSuccessRate))) {
+                || (params.purgeMin && (folder !== "/config/utility/best/neuralNetworks") && (networkObj.successRate > configuration.localPurgeMinSuccessRate))
+                || (params.purgeMin && (folder !== "/config/utility/best/neuralNetworks") && (networkObj.matchRate > configuration.localPurgeMinSuccessRate))
+                || (!params.purgeMin && (folder !== "/config/utility/best/neuralNetworks") && (networkObj.successRate > configuration.localMinSuccessRate))
+                || (!params.purgeMin && (folder !== "/config/utility/best/neuralNetworks") && (networkObj.matchRate > configuration.localMinSuccessRate))) {
 
                 bestNetworkHashMap.set(networkObj.networkId, { entry: entry, networkObj: networkObj});
 
@@ -2499,18 +2488,17 @@ function loadBestNetworkDropboxFolders (folders, callback){
                 purgeNetwork(networkObj.networkId);
                 purgeInputs(networkObj.inputsId);
 
-                // bestNetworkHashMap.delete(networkObj.networkId);
-                // inputsNetworksHashMap[networkObj.inputsId].delete(networkObj.networkId);
-                // inputsIdSet.delete(networkObj.inputsId);
-
                 dropboxClient.filesDelete({path: folder + "/" + entry.name})
                 .then(function(response){
 
                   debug("dropboxClient filesDelete response\n" + jsonPrint(response));
 
                   console.log(chalkAlert("NNT | XXX NN"
-                    + " | MIN SUCCESS RATE: GLOBAL: " + configuration.globalMinSuccessRate + " LOCAL: " + configuration.localMinSuccessRate
-                    + " | " + networkObj.successRate.toFixed(2) + "%"
+                    + " | MIN SUCCESS RATE: GLOBAL: " + configuration.globalMinSuccessRate
+                    + " | MIN SUCCESS RATE: LOCAL: " + configuration.localMinSuccessRate
+                    + " | MIN SUCCESS RATE: LOCAL PURGE: " + configuration.localPurgeMinSuccessRate
+                    + " | SR: " + networkObj.successRate.toFixed(2) + "%"
+                    + " | MR: " + networkObj.matchRate.toFixed(2) + "%"
                     + " | " + getTimeStamp(networkObj.createdAt)
                     + " | IN: " + networkObj.numInputs
                     + " | OUT: " + networkObj.numOutputs
@@ -2709,16 +2697,6 @@ function loadConfigFile(folder, file, callback) {
             }
           }
 
-          if (loadedConfigObj.TNN_HISTOGRAM_PARSE_TOTAL_MIN !== undefined){
-            console.log("NNT | LOADED TNN_HISTOGRAM_PARSE_TOTAL_MIN: " + loadedConfigObj.TNN_HISTOGRAM_PARSE_TOTAL_MIN);
-            configuration.histogramParseTotalMin = loadedConfigObj.TNN_HISTOGRAM_PARSE_TOTAL_MIN;
-          }
-
-          if (loadedConfigObj.TNN_HISTOGRAM_PARSE_DOMINANT_MIN !== undefined){
-            console.log("NNT | LOADED TNN_HISTOGRAM_PARSE_DOMINANT_MIN: " + loadedConfigObj.TNN_HISTOGRAM_PARSE_DOMINANT_MIN);
-            configuration.histogramParseDominantMin = loadedConfigObj.TNN_HISTOGRAM_PARSE_DOMINANT_MIN;
-          }
-
           if (loadedConfigObj.TNN_CROSS_ENTROPY_WORKAROUND_ENABLED  !== undefined){
             console.log("NNT | TNN_CROSS_ENTROPY_WORKAROUND_ENABLED: " + loadedConfigObj.TNN_CROSS_ENTROPY_WORKAROUND_ENABLED);
 
@@ -2817,6 +2795,11 @@ function loadConfigFile(folder, file, callback) {
           if (loadedConfigObj.TNN_LOCAL_MIN_SUCCESS_RATE !== undefined){
             console.log("NNT | LOADED TNN_LOCAL_MIN_SUCCESS_RATE: " + loadedConfigObj.TNN_LOCAL_MIN_SUCCESS_RATE);
             configuration.localMinSuccessRate = loadedConfigObj.TNN_LOCAL_MIN_SUCCESS_RATE;
+          }
+
+          if (loadedConfigObj.TNN_LOCAL_PURGE_MIN_SUCCESS_RATE !== undefined){
+            console.log("NNT | LOADED TNN_LOCAL_PURGE_MIN_SUCCESS_RATE: " + loadedConfigObj.TNN_LOCAL_PURGE_MIN_SUCCESS_RATE);
+            configuration.localPurgeMinSuccessRate = loadedConfigObj.TNN_LOCAL_PURGE_MIN_SUCCESS_RATE;
           }
 
           if (loadedConfigObj.TNN_EVOLVE_THREADS !== undefined){
@@ -2984,23 +2967,23 @@ function loadConfigFile(folder, file, callback) {
   });
 }
 
-function loadSeedNeuralNetwork(options, callback){
+function loadSeedNeuralNetwork(params, callback){
 
-  debug(chalkNetwork("NNT | ... LOADING SEED NETWORK FROM DB\nOPTIONS: " + jsonPrint(options)));
+  debug(chalkNetwork("NNT | ... LOADING SEED NETWORK FROM DB\nPARAMS: " + jsonPrint(params)));
 
-  loadBestNetworkDropboxFolders(options.folders, function loadBestCallback (err, numNetworksLoaded){
+  loadBestNetworkDropboxFolders(params, function loadBestCallback (err, numNetworksLoaded){
 
     if (err) {
       if (err.status === 429) {
         console.log(chalkError("NNT | LOAD DROPBOX BEST NETWORK ERR"
-          + " | FOLDERS: " + options.folders
+          + " | FOLDERS: " + params.folders
           + " | STATUS: " + err.status
           + " | TOO MANY REQUESTS"
         ));
       }
       else {
         console.log(chalkError("NNT | LOAD DROPBOX BEST NETWORK ERR"
-          + " | FOLDERS: " + options.folders
+          + " | FOLDERS: " + params.folders
           + " | STATUS: " + err.status
           + " | SUMMARY: " + err.error.error_summary
         ));
@@ -3017,7 +3000,12 @@ function loadSeedNeuralNetwork(options, callback){
       .then(function(sortedBestNetworks){
 
         sortedBestNetworks.sortedKeys.forEach(function(nnId){
-          console.log(chalkLog("NNT | " + bestNetworkHashMap.get(nnId).networkObj.successRate.toFixed(2) + " | " + nnId));
+          console.log(chalkLog("NNT"
+            + " | MR: " + bestNetworkHashMap.get(nnId).networkObj.matchRate.toFixed(2)
+            + " | SR: " + bestNetworkHashMap.get(nnId).networkObj.successRate.toFixed(2)
+            + " | " + bestNetworkHashMap.get(nnId).networkObj.numInputs
+            + " | " + nnId
+          ));
         });
       })
       .catch(function(err){
@@ -3054,9 +3042,6 @@ function initialize(cnf, callback){
     inputsIdSet.add(inputsId);
   });
   cnf.seedNetworkProbability = process.env.TNN_SEED_NETWORK_PROBABILITY || DEFAULT_SEED_NETWORK_PROBABILITY ;
-
-  cnf.histogramParseTotalMin = process.env.TNN_HISTOGRAM_PARSE_TOTAL_MIN || DEFAULT_HISTOGRAM_PARSE_TOTAL_MIN ;
-  cnf.histogramParseDominantMin = process.env.TNN_HISTOGRAM_PARSE_DOMINANT_MIN || DEFAULT_HISTOGRAM_PARSE_DOMINANT_MIN ;
 
   cnf.crossEntropyWorkAroundEnabled = false ;
 
@@ -3181,16 +3166,6 @@ function initialize(cnf, callback){
 
       prevConfigFileModifiedMoment = moment();
 
-      if (loadedConfigObj.TNN_HISTOGRAM_PARSE_TOTAL_MIN !== undefined){
-        console.log("NNT | LOADED TNN_HISTOGRAM_PARSE_TOTAL_MIN: " + loadedConfigObj.TNN_HISTOGRAM_PARSE_TOTAL_MIN);
-        cnf.histogramParseTotalMin = loadedConfigObj.TNN_HISTOGRAM_PARSE_TOTAL_MIN;
-      }
-
-      if (loadedConfigObj.TNN_HISTOGRAM_PARSE_DOMINANT_MIN !== undefined){
-        console.log("NNT | LOADED TNN_HISTOGRAM_PARSE_DOMINANT_MIN: " + loadedConfigObj.TNN_HISTOGRAM_PARSE_DOMINANT_MIN);
-        cnf.histogramParseDominantMin = loadedConfigObj.TNN_HISTOGRAM_PARSE_DOMINANT_MIN;
-      }
-
       if (loadedConfigObj.TNN_QUIT_ON_COMPLETE  !== undefined){
         console.log("NNT | TNN_QUIT_ON_COMPLETE: " + loadedConfigObj.TNN_QUIT_ON_COMPLETE);
 
@@ -3300,6 +3275,11 @@ function initialize(cnf, callback){
       if (loadedConfigObj.TNN_LOCAL_MIN_SUCCESS_RATE !== undefined){
         console.log("NNT | LOADED TNN_LOCAL_MIN_SUCCESS_RATE: " + loadedConfigObj.TNN_LOCAL_MIN_SUCCESS_RATE);
         cnf.localMinSuccessRate = loadedConfigObj.TNN_LOCAL_MIN_SUCCESS_RATE;
+      }
+
+      if (loadedConfigObj.TNN_LOCAL_PURGE_MIN_SUCCESS_RATE !== undefined){
+        console.log("NNT | LOADED TNN_LOCAL_PURGE_MIN_SUCCESS_RATE: " + loadedConfigObj.TNN_LOCAL_PURGE_MIN_SUCCESS_RATE);
+        configuration.localPurgeMinSuccessRate = loadedConfigObj.TNN_LOCAL_PURGE_MIN_SUCCESS_RATE;
       }
 
       if (loadedConfigObj.TNN_EVOLVE_THREADS !== undefined){
@@ -4813,21 +4793,22 @@ function initMain(cnf, callback){
   loadInputsDropboxFolder(defaultInputsFolder, function(err1, results){
 
     if (err1) {
-      console.log(chalkError("NNT | ERROR LOADING DROPBOX INPUTS FOLDER | " + folder + " | " + err1));
+      console.log(chalkError("NNT | ERROR LOADING DROPBOX INPUTS FOLDER | " + defaultInputsFolder + " | " + err1));
       initMainReady = true;
       return(callback(err1, null));
     }
 
-    let seedOpt = {};
-    seedOpt.folders = [globalBestNetworkFolder, localBestNetworkFolder];
+    let seedParams = {};
+    seedParams.purgeMin = false ;  // use localPurgeMinSuccessRate to delete nn's
+    seedParams.folders = [globalBestNetworkFolder, localBestNetworkFolder];
 
     if (cnf.seedNetworkId) {
-      seedOpt.networkId = cnf.seedNetworkId;
+      seedParams.networkId = cnf.seedNetworkId;
     }
 
-    loadSeedNeuralNetwork(seedOpt, function(err0, results){
+    loadSeedNeuralNetwork(seedParams, function(err0, results){
       if (err0) {
-        console.log(chalkError("*** ERROR loadSeedNeuralNetwork\n" + jsonPrint(err0)));
+        console.log(chalkError("*** ERROR loadSeedNeuralNetwork"));
         initMainReady = true;
         return (callback(err0, null));
       }
@@ -5411,10 +5392,10 @@ function initTimeout(callback){
 
   configEvents.emit("INIT_MONGODB");
 
-  initialize(configuration, function(err, cnf){
+  initialize(configuration, function(err0, cnf){
 
-    if (err && (err.status !== 404)) {
-      console.error(chalkError("NNT | ***** INIT ERROR *****\n" + jsonPrint(err)));
+    if (err0 && (err0.status !== 404)) {
+      console.error(chalkError("NNT | ***** INIT ERROR *****\n" + jsonPrint(err0)));
       quit("INIT ERROR");
     }
 
@@ -5430,11 +5411,12 @@ function initTimeout(callback){
       console.log(chalkLog("NNT | ... REQ TRAINING SET | @" + nodeId));
     });
 
-    let seedOpt = {};
-    seedOpt.folders = [globalBestNetworkFolder, localBestNetworkFolder];
+    let seedParams = {};
+    seedParams.purgeMin = ENABLE_INIT_PURGE_LOCAL ;  // use localPurgeMinSuccessRate to delete nn's
+    seedParams.folders = [globalBestNetworkFolder, localBestNetworkFolder];
 
     if (cnf.seedNetworkId) {
-      seedOpt.networkId = cnf.seedNetworkId;
+      seedParams.networkId = cnf.seedNetworkId;
     }
 
     if (cnf.createTrainingSetOnly) {
@@ -5442,16 +5424,16 @@ function initTimeout(callback){
       callback();
     }
     else {
-      loadSeedNeuralNetwork(seedOpt, function(err, results){
+      loadSeedNeuralNetwork(seedParams, function(err1, results){
 
         debug("loadSeedNeuralNetwork results\n" + jsonPrint(results));
 
-        if (err){
-          if (err.status === 429) {
+        if (err1){
+          if (err1.status === 429) {
             console.log(chalkError("loadSeedNeuralNetwork ERROR | TOO MANY WRITES"));
           }
           else {
-            console.log(chalkError("loadSeedNeuralNetwork ERROR" + jsonPrint(err)));
+            console.log(chalkError("loadSeedNeuralNetwork ERROR" + jsonPrint(err1)));
           }
           // return(callback(err));
         }
@@ -5466,11 +5448,11 @@ function initTimeout(callback){
             nnChildIndex += 1;
             next(err, nnChildIndex);
           });
-        }, function(err, children) {
+        }, function(err2, children) {
 
-          if (err){
-            console.log(chalkError("INIT NEURAL NETWORK CHILDREN ERROR\n" + jsonPrint(err)));
-            return(callback(err));
+          if (err2){
+            console.log(chalkError("INIT NEURAL NETWORK CHILDREN ERROR\n" + jsonPrint(err2)));
+            return(callback(err2));
           }
 
           console.log(chalkLog("END INIT NEURAL NETWORK CHILDREN: " + children.length));
