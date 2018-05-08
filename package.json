@@ -8,7 +8,7 @@
     "@google-cloud/vision": "^0.19.0",
     "@threeceelabs/histogram-parser": "^1.0.14",
     "@threeceelabs/mongoose-twitter": "^1.0.113",
-    "@threeceelabs/twitter-image-parser": "^1.0.40",
+    "@threeceelabs/twitter-image-parser": "^1.0.41",
     "@threeceelabs/twitter-text-parser": "^1.0.40",
     "@threeceelabs/user-server-controller": "^1.0.276",
     "array-normalize": "^1.1.3",

@@ -1280,29 +1280,23 @@ function loadFile(path, file, callback) {
       }
     })
     .catch(function(error) {
-      console.log(chalkError("NNT | DROPBOX loadFile ERROR: " + fullPath
-        + " | " + error.error_summary
-      ));
-      // console.log(chalkError("NNT | DROPBOX loadFile ERROR: " + fullPath + "\n" + jsonPrint(error)));
-      // console.log(chalkError("NNT | !!! DROPBOX READ " + fullPath + " ERROR"));
-      // console.log(chalkError("NNT | " + jsonPrint(error.error)));
-
-      if (error.status === 404) {
+      if ((error.status === 404) || (error.status === 409)) {
         console.error(chalkError("NNT | !!! DROPBOX READ FILE " + fullPath + " NOT FOUND"
           + " ... SKIPPING ...")
         );
-        return(callback(null, null));
+        callback({status: error.status}, null);
       }
-      if (error.status === 409) {
-        console.error(chalkError("NNT | !!! DROPBOX READ FILE " + fullPath + " NOT FOUND"));
-        return(callback(error, null));
-      }
-      if (error.status === 0) {
+      else if (error.status === 0) {
         console.error(chalkError("NNT | !!! DROPBOX NO RESPONSE"
           + " ... NO INTERNET CONNECTION? ... SKIPPING ..."));
-        return(callback(null, null));
+        callback({status: error.status}, null);
       }
-      callback(error, null);
+      else {
+        console.log(chalkError("NNT | DROPBOX loadFile ERROR: " + fullPath
+          + " | " + error.error_summary
+        ));
+        callback(error, null);
+      }
     });
   }
 }
@@ -1324,13 +1318,11 @@ function getFileMetadata(path, file, callback) {
       console.log(chalkError("NNT | !!! DROPBOX READ " + fullPath + " ERROR"));
       console.log(chalkError("NNT | " + jsonPrint(error.error)));
 
-      if (error.status === 404) {
-        console.error(chalkError("NNT | !!! DROPBOX READ FILE " + fullPath + " NOT FOUND"));
-        return(callback(error, null));
-      }
-      if (error.status === 409) {
-        console.error(chalkError("NNT | !!! DROPBOX READ FILE " + fullPath + " NOT FOUND"));
-        return(callback(error, null));
+      if ((error.status === 404) || (error.status === 409)) {
+        console.error(chalkError("NNT | !!! DROPBOX READ FILE " + fullPath + " NOT FOUND"
+          + " ... SKIPPING ...")
+        );
+        return(callback(null, null));
       }
       if (error.status === 0) {
         console.error(chalkError("NNT | !!! DROPBOX NO RESPONSE"
@@ -2336,6 +2328,11 @@ function loadBestNetworkDropboxFolders (params, callback){
 
               if (!configuration.inputsIdArray.includes(networkObj.inputsId)) {
 
+                if ((hostname !== "google") && (folder === globalBestNetworkFolder)){
+                  console.log(chalkInfo("NNT | NN INPUTS NOT IN INPUTS ID ARRAY ... SKIPPING (HOST NOT GOOGLE): " + folder + "/" + entry.name));
+                  return(cb1());
+                }
+
                 console.log(chalkInfo("NNT | NN INPUTS NOT IN INPUTS ID ARRAY ... DELETING: " + folder + "/" + entry.name));
 
                 dropboxClient.filesDelete({path: folder + "/" + entry.name})
@@ -2413,7 +2410,7 @@ function loadBestNetworkDropboxFolders (params, callback){
                     console.log(chalkError("*** ERROR: DB NN FIND ONE ERROR | "+ networkObj.networkId + " | " + err));
                   }
                   else if (nnDb) {
-                    console.log(chalkAlert("NNT | . NN DB HIT"
+                    console.log(chalkLog("NNT | . NN DB HIT"
                       + " | " + nnDb.networkId
                       + " | MR: " + nnDb.matchRate.toFixed(2) + "%"
                       + " | SR: " + nnDb.successRate.toFixed(2) + "%"
@@ -2991,30 +2988,87 @@ function loadSeedNeuralNetwork(params, callback){
       if (callback !== undefined) { callback(err, null); }
     }
     else if (numNetworksLoaded === 0){
-      console.log(chalkInfo("NNT | ... NO BEST NETWORKS CHANGED / LOADED"));
-      if (callback !== undefined) { callback(err, null); }
-    }
-    else {
 
-      sortedHashmap({ sortKey: "networkObj.successRate", hashmap: bestNetworkHashMap, max: 500})
+      sortedHashmap({ sortKey: "networkObj.matchRate", hashmap: bestNetworkHashMap, max: 500})
       .then(function(sortedBestNetworks){
 
+        let tableArray = [];
+
+        tableArray.push([
+          "MR %",
+          "SR %",
+          "INPUTS",
+          "INPUTS ID",
+          "NNID",
+        ]);
+
         sortedBestNetworks.sortedKeys.forEach(function(nnId){
-          console.log(chalkLog("NNT"
-            + " | MR: " + bestNetworkHashMap.get(nnId).networkObj.matchRate.toFixed(2)
-            + " | SR: " + bestNetworkHashMap.get(nnId).networkObj.successRate.toFixed(2)
-            + " | " + bestNetworkHashMap.get(nnId).networkObj.numInputs
-            + " | " + nnId
-          ));
+
+          tableArray.push([
+            bestNetworkHashMap.get(nnId).networkObj.matchRate.toFixed(2),
+            bestNetworkHashMap.get(nnId).networkObj.successRate.toFixed(2),
+            bestNetworkHashMap.get(nnId).networkObj.numInputs,
+            bestNetworkHashMap.get(nnId).networkObj.inputsId,
+            nnId
+          ]);
+
         });
+
+        const t = table(tableArray, { align: ["r", "r", "r", "l", "l"] });
+
+        console.log("NNT | ============================================================================================================================================");
+        console.log(chalkLog("NNT | ... NO BEST NETWORKS CHANGED / LOADED | NNs IN HM: " + sortedBestNetworks.sortedKeys.length));
+        console.log(t);
+        console.log("NNT | ============================================================================================================================================");
+
       })
       .catch(function(err){
         console.trace(chalkError("generateRandomEvolveConfig SORTER ERROR: " + err));
       });
 
-      if (callback !== undefined) { 
-        callback(null, null);
-      }
+      if (callback !== undefined) { callback(err, null); }
+    }
+    else {
+
+      sortedHashmap({ sortKey: "networkObj.matchRate", hashmap: bestNetworkHashMap, max: 500})
+      .then(function(sortedBestNetworks){
+
+
+        let tableArray = [];
+
+        tableArray.push([
+          "MR %",
+          "SR %",
+          "INPUTS",
+          "INPUTS ID",
+          "NNID",
+        ]);
+
+        sortedBestNetworks.sortedKeys.forEach(function(nnId){
+
+          tableArray.push([
+            bestNetworkHashMap.get(nnId).networkObj.matchRate.toFixed(2),
+            bestNetworkHashMap.get(nnId).networkObj.successRate.toFixed(2),
+            bestNetworkHashMap.get(nnId).networkObj.numInputs,
+            bestNetworkHashMap.get(nnId).networkObj.inputsId,
+            nnId
+          ]);
+
+        });
+
+        const t = table(tableArray, { align: ["r", "r", "r", "l", "l"] });
+
+        console.log("NNT | ============================================================================================================================================");
+        console.log(chalkInfo("NNT | +++ BEST NETWORKS CHANGED / LOADED | NNs IN HM: " + sortedBestNetworks.sortedKeys.length));
+        console.log(t);
+        console.log("NNT | ============================================================================================================================================");
+
+      })
+      .catch(function(err){
+        console.trace(chalkError("generateRandomEvolveConfig SORTER ERROR: " + err));
+      });
+
+      if (callback !== undefined) { callback(null, null); }
 
     }
   });
@@ -4475,13 +4529,19 @@ function generateRandomEvolveConfig (cnf, callback){
   console.log(chalkLog("NNT | NETWORK CREATE MODE: " + config.networkCreateMode));
   console.log(chalkLog("\nNNT | BEST NETWORKS\nNNT | --------------------------------------------------------"));
 
-  // bestNetworkHashMap.set(networkObj.networkId, { entry: entry, networkObj: networkObj});
-
-  sortedHashmap({ sortKey: "networkObj.successRate", hashmap: bestNetworkHashMap, max: 500})
+  sortedHashmap({ sortKey: "networkObj.matchRate", hashmap: bestNetworkHashMap, max: 500})
   .then(function(sortedBestNetworks){
 
+    console.log(chalkInfo("NNT | NNs IN HM: " + sortedBestNetworks.sortedKeys.length));
+
     sortedBestNetworks.sortedKeys.forEach(function(nnId){
-      console.log(chalkLog("NNT | " + bestNetworkHashMap.get(nnId).networkObj.successRate.toFixed(2) + " | " + nnId));
+      console.log(chalkLog("NNT"
+        + " | MR: " + bestNetworkHashMap.get(nnId).networkObj.matchRate.toFixed(2)
+        + " | SR: " + bestNetworkHashMap.get(nnId).networkObj.successRate.toFixed(2)
+        + " | " + bestNetworkHashMap.get(nnId).networkObj.numInputs
+        + " | " + bestNetworkHashMap.get(nnId).networkObj.inputsId
+        + " | " + nnId
+      ));
     });
 
   })
