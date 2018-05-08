@@ -4814,6 +4814,7 @@ function initMain(cnf, callback){
 
     if (err1) {
       console.log(chalkError("NNT | ERROR LOADING DROPBOX INPUTS FOLDER | " + folder + " | " + err1));
+      initMainReady = true;
       return(callback(err1, null));
     }
 
