@@ -17,6 +17,7 @@ const ONE_HOUR = 60 * ONE_MINUTE;
 const ONE_KILOBYTE = 1024;
 const ONE_MEGABYTE = 1024 * ONE_KILOBYTE;
 
+const NO_SERVER_MODE = process.env.NO_SERVER_MODE === "true" || false;
 const OFFLINE_MODE = process.env.OFFLINE_MODE === "true" || false;
 
 const TEST_MODE_LENGTH = 100;
@@ -208,6 +209,7 @@ let saveFileBusy = false;
 
 let configuration = {};
 
+configuration.noServerMode = NO_SERVER_MODE;
 configuration.processName = process.env.TNN_PROCESS_NAME || "node_twitterNeuralNetwork";
 
 configuration.generateTrainingSetOnly = DEFAULT_GENERATE_TRAINING_SET_ONLY;
@@ -3158,6 +3160,15 @@ function sendKeepAlive(userObj, callback){
     socket.emit("SESSION_KEEPALIVE", userObj);
     callback(null);
   }
+  else if (configuration.noServerMode) {
+    debug(chalkError("... OFFLINE | NO TX KEEPALIVE"
+      + " | " + userObj.userId
+      + " | CONNECTED: " + serverConnected
+      + " | READY ACK: " + userReadyAck
+      + " | " + moment().format(defaultDateTimeFormat)
+    ));
+    callback(null);
+  }
   else {
     console.log(chalkError("!!!! CANNOT TX KEEPALIVE"
       + " | " + userObj.userId
@@ -3231,6 +3242,12 @@ function initUserReadyInterval(interval){
 
 
 function initSocket(cnf, callback){
+
+  if (cnf.noServerMode) {
+    console.log(chalkAlert("NO SERVER MODE | SKIP INIT SOCKET"
+    ));
+    return(callback(null, null));
+  }
 
   console.log(chalkLog("INIT SOCKET"
     + " | " + cnf.targetServer
