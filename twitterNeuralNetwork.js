@@ -3179,6 +3179,15 @@ function initKeepalive(userObj, interval){
     + " | INTERVAL: " + interval + " ms"
   ));
 
+  sendKeepAlive(userObj, function(err){
+    if (err) {
+      console.log(chalkError("KEEPALIVE ERROR: " + err));
+    }
+    debug(chalkRed("KEEPALIVE"
+      + " | " + moment().format(defaultDateTimeFormat)
+    ));
+  });
+
   socketKeepaliveInterval = setInterval(function(){ // TX KEEPALIVE
 
     userObj.stats = statsObj;
