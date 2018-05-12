@@ -54,6 +54,8 @@
     "regex": "^0.1.1",
     "slack": "^11.0.0",
     "slack-node": "^0.1.8",
+    "socket.io": "^2.1.0",
+    "socket.io-client": "^2.1.0",
     "string": "^3.3.3",
     "text-table": "^0.2.0",
     "util": "^0.10.3",
