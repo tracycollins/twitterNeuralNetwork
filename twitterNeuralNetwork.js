@@ -3055,7 +3055,7 @@ function loadSeedNeuralNetwork(params, callback){
         console.log(chalkError("NNT | LOAD DROPBOX BEST NETWORK ERR"
           + " | FOLDERS: " + params.folders
           + " | STATUS: " + err.status
-          + " | SUMMARY: " + err.error.error_summary
+          + " | ERROR: " + jsonPrint(err)
         ));
       }
       if (callback !== undefined) { callback(err, null); }
