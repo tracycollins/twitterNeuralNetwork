@@ -3271,7 +3271,6 @@ function initSocket(cnf, callback){
       console.log("AUTHENTICATED | " + socket.id);
 
       serverConnected = true ;
-      userReadyTransmitted = false;
       userReadyAck = false ;
 
       statsObj.socketId = socket.id;
@@ -3346,32 +3345,32 @@ function initSocket(cnf, callback){
     reset("reconnect_error");
   });
 
-  socket.on("SESSION_ABORT", function(sessionId){
-    if (sessionId === statsObj.socketId){
-      socket.disconnect();
-      userReadyTransmitted = false;
-      userReadyAck = false ;
-      serverConnected = false ;
-      console.log(chalkDisconnect(moment().format(compactDateTimeFormat)
-        + " | ***** RX SESSION_ABORT HIT | " + sessionId
-      ));
-      reset("SESSION_ABORT");
-    }
-  });
+  // socket.on("SESSION_ABORT", function(sessionId){
+  //   if (sessionId === statsObj.socketId){
+  //     socket.disconnect();
+  //     userReadyTransmitted = false;
+  //     userReadyAck = false ;
+  //     serverConnected = false ;
+  //     console.log(chalkDisconnect(moment().format(compactDateTimeFormat)
+  //       + " | ***** RX SESSION_ABORT HIT | " + sessionId
+  //     ));
+  //     reset("SESSION_ABORT");
+  //   }
+  // });
 
-  socket.on("SESSION_EXPIRED", function(sessionId){
-    console.log(chalkDisconnect("RX SESSION_EXPIRED | " + sessionId));
-    if (sessionId === statsObj.socketId){
-      socket.disconnect();
-      userReadyTransmitted = false;
-      userReadyAck = false ;
-      serverConnected = false;
-      console.log(chalkDisconnect(moment().format(compactDateTimeFormat)
-        + " | ***** RX SESSION_EXPIRED HIT | " + sessionId
-      ));
-      reset("SESSION_EXPIRED");
-    }
-  });
+  // socket.on("SESSION_EXPIRED", function(sessionId){
+  //   console.log(chalkDisconnect("RX SESSION_EXPIRED | " + sessionId));
+  //   if (sessionId === statsObj.socketId){
+  //     socket.disconnect();
+  //     userReadyTransmitted = false;
+  //     userReadyAck = false ;
+  //     serverConnected = false;
+  //     console.log(chalkDisconnect(moment().format(compactDateTimeFormat)
+  //       + " | ***** RX SESSION_EXPIRED HIT | " + sessionId
+  //     ));
+  //     reset("SESSION_EXPIRED");
+  //   }
+  // });
 
   socket.on("disconnect", function(){
     userReadyTransmitted = false;
