@@ -4917,16 +4917,23 @@ function generateRandomEvolveConfig (cnf, callback){
     config.inputsObj = inputsHashMap.get(networkObj.inputsId).inputsObj;
     console.log("NNT | SEED INPUTS | " + networkObj.inputsId);
 
-    config.cost = randomItem([config.cost, networkObj.evolve.options.cost]);
-    config.equal = randomItem([config.equal, networkObj.evolve.options.equal]);
-    config.error = randomItem([config.error, networkObj.evolve.options.error]);
-    config.mutationRate = randomItem([config.mutationRate, networkObj.evolve.options.mutationRate]);
-    config.popsize = randomItem([config.popsize, networkObj.evolve.options.popsize]);
-    config.growth = randomItem([config.growth, networkObj.evolve.options.growth]);
-    config.elitism = randomItem([config.elitism, networkObj.evolve.options.elitism]);
+    // config.cost = randomItem([config.cost, networkObj.evolve.options.cost]);
+    // config.equal = randomItem([config.equal, networkObj.evolve.options.equal]);
+    // config.error = randomItem([config.error, networkObj.evolve.options.error]);
+    // config.mutationRate = randomItem([config.mutationRate, networkObj.evolve.options.mutationRate]);
+    // config.popsize = randomItem([config.popsize, networkObj.evolve.options.popsize]);
+    // config.growth = randomItem([config.growth, networkObj.evolve.options.growth]);
+    // config.elitism = randomItem([config.elitism, networkObj.evolve.options.elitism]);
+
+    config.cost = networkObj.evolve.options.cost;
+    config.equal = networkObj.evolve.options.equal;
+    config.error = networkObj.evolve.options.error;
+    config.mutationRate = networkObj.evolve.options.mutationRate;
+    config.popsize = networkObj.evolve.options.popsize;
+    config.growth = networkObj.evolve.options.growth;
+    config.elitism = networkObj.evolve.options.elitism;
   }
   else {
-
     if (inputsHashMap.has(config.seedInputsId)) {
       config.inputsObj = {};
       config.inputsObj = inputsHashMap.get(config.seedInputsId).inputsObj;
