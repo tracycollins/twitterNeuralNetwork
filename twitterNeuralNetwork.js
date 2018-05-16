@@ -5150,19 +5150,24 @@ function allComplete(){
 
   let index = 0;
 
-  Object.keys(neuralNetworkChildHashMap).forEach(function(nnChildId){
+  // Object.keys(neuralNetworkChildHashMap).forEach(function(nnChildId){
+  async.each(Object.keys(neuralNetworkChildHashMap), function(nnChildId, cb){
 
-    index += 1;
-    console.log(chalkAlert("allComplete | NNC " + nnChildId + " STATUS: " + neuralNetworkChildHashMap[nnChildId].status));
+    // index += 1;
+    console.log(chalkAlert("allComplete"
+      + " | NNC " + nnChildId 
+      + " STATUS: " + neuralNetworkChildHashMap[nnChildId].status
+    ));
 
     if (neuralNetworkChildHashMap[nnChildId].status === "RUNNING"){
       allCompleteFlag = false;
-      return;
+      return cb("RUNNING");
     }
-    if (index === Object.keys(neuralNetworkChildHashMap).length) { 
-      allCompleteFlag = true;
-      return;
-    }
+    cb();
+
+  }, function(running){
+    if (!running) { allCompleteFlag = true; }
+    return;
   });
 }
 
