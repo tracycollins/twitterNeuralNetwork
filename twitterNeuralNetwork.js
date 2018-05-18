@@ -2075,11 +2075,11 @@ function loadTrainingSetsDropboxFolder(folder, callback){
 
 function loadBestNetworkDropboxFolders (params, callback){
 
-  if (configuration.createTrainingSetOnly) {
-    if (callback !== undefined) { 
-      return callback(null, 0); 
-    }
-  }
+  // if (configuration.createTrainingSetOnly) {
+  //   if (callback !== undefined) { 
+  //     return callback(null, 0); 
+  //   }
+  // }
 
   let numNetworksLoaded = 0;
 
@@ -3108,7 +3108,6 @@ function loadSeedNeuralNetwork(params, callback){
 
       sortedHashmap({ sortKey: "networkObj.matchRate", hashmap: bestNetworkHashMap, max: 500})
       .then(function(sortedBestNetworks){
-
 
         let tableArray = [];
 
