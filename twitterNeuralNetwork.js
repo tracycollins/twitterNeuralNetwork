@@ -165,7 +165,7 @@ let createTrainingSetBusy = false;
 let skipLoadNetworkSet = new Set();
 let requiredTrainingSet = new Set();
 
-let inputsIdSet = new Set();
+// let inputsIdSet = new Set();
 
 let slackChannel = "#nn";
 let slackText = "";
@@ -1410,7 +1410,8 @@ function purgeNetwork(nnId, callback){
 function purgeInputs(inputsId, callback){
 
   console.log(chalkAlert("XXX PURGE INPUTS: " + inputsId));
-  inputsIdSet.delete(inputsId);
+  // inputsIdSet.delete(inputsId);
+  inputsHashMap.delete(inputsId);
 
   if (callback !== undefined) { callback(); }
 }
@@ -1637,7 +1638,7 @@ function loadInputsDropboxFolder(folder, callback){
 
               inputsHashMap.set(inputsObj.inputsId, {entry: entry, inputsObj: inputsObj} );
 
-              inputsIdSet.add(inputsObj.inputsId);
+              // inputsIdSet.add(inputsObj.inputsId);
 
               if (inputsNetworksHashMap[inputsObj.inputsId] === undefined) {
                 inputsNetworksHashMap[inputsObj.inputsId] = new Set();
@@ -1682,7 +1683,7 @@ function loadInputsDropboxFolder(folder, callback){
 
               inputsHashMap.set(inputsObj.inputsId, {entry: entry, inputsObj: inputsObj} );
 
-              inputsIdSet.add(inputsObj.inputsId);
+              // inputsIdSet.add(inputsObj.inputsId);
 
               if (inputsNetworksHashMap[inputsObj.inputsId] === undefined) {
                 inputsNetworksHashMap[inputsObj.inputsId] = new Set();
@@ -1744,7 +1745,7 @@ function loadInputsDropboxFolder(folder, callback){
 
             inputsHashMap.set(inputsObj.inputsId, {entry: entry, inputsObj: inputsObj} );
 
-            inputsIdSet.add(inputsObj.inputsId);
+            // inputsIdSet.add(inputsObj.inputsId);
 
             if (inputsNetworksHashMap[inputsObj.inputsId] === undefined) {
               inputsNetworksHashMap[inputsObj.inputsId] = new Set();
@@ -2212,7 +2213,7 @@ function loadBestNetworkDropboxFolders (params, callback){
                 inputsEntry.client_modified = moment();
 
                 inputsHashMap.set(networkObj.inputsId, {entry: inputsEntry, inputsObj: networkObj.inputsObj});
-                inputsIdSet.add(networkObj.inputsId);
+                // inputsIdSet.add(networkObj.inputsId);
 
                 if (inputsNetworksHashMap[networkObj.inputsId] === undefined) {
                   inputsNetworksHashMap[networkObj.inputsId] = new Set();
@@ -2342,7 +2343,7 @@ function loadBestNetworkDropboxFolders (params, callback){
                 inputsEntry.client_modified = moment();
 
                 inputsHashMap.set(networkObj.inputsId, {entry: inputsEntry, inputsObj: networkObj.inputsObj});
-                inputsIdSet.add(networkObj.inputsId);
+                // inputsIdSet.add(networkObj.inputsId);
 
                 if (inputsNetworksHashMap[networkObj.inputsId] === undefined) {
                   inputsNetworksHashMap[networkObj.inputsId] = new Set();
@@ -2471,7 +2472,7 @@ function loadBestNetworkDropboxFolders (params, callback){
                 }
 
                 inputsHashMap.set(networkObj.inputsId, inObj);
-                inputsIdSet.add(networkObj.inputsId);
+                // inputsIdSet.add(networkObj.inputsId);
 
                 if (inputsNetworksHashMap[networkObj.inputsId] === undefined) {
                   inputsNetworksHashMap[networkObj.inputsId] = new Set();
@@ -2826,10 +2827,10 @@ function loadConfigFile(folder, file, callback) {
           if (loadedConfigObj.TNN_INPUTS_IDS !== undefined){
             console.log("NNT | LOADED TNN_INPUTS_IDS: " + loadedConfigObj.TNN_INPUTS_IDS);
             configuration.inputsIdArray = loadedConfigObj.TNN_INPUTS_IDS;
-            inputsIdSet.clear();
-            configuration.inputsIdArray.forEach(function(inputsId){
-              inputsIdSet.add(inputsId);
-            });
+            // inputsIdSet.clear();
+            // configuration.inputsIdArray.forEach(function(inputsId){
+            //   inputsIdSet.add(inputsId);
+            // });
           }
 
           if (loadedConfigObj.TNN_INPUTS_ID !== undefined){
@@ -3409,9 +3410,9 @@ function initialize(cnf, callback){
   cnf.initMainIntervalTime = process.env.TNN_INIT_MAIN_INTERVAL || DEFAULT_INIT_MAIN_INTERVAL ;
   cnf.inputsId = process.env.TNN_INPUTS_ID || false ;
   cnf.inputsIdArray = process.env.TNN_INPUTS_IDS || [] ;
-  cnf.inputsIdArray.forEach(function(inputsId){
-    inputsIdSet.add(inputsId);
-  });
+  // cnf.inputsIdArray.forEach(function(inputsId){
+  //   inputsIdSet.add(inputsId);
+  // });
   cnf.seedNetworkProbability = process.env.TNN_SEED_NETWORK_PROBABILITY || DEFAULT_SEED_NETWORK_PROBABILITY ;
 
   cnf.crossEntropyWorkAroundEnabled = false ;
@@ -3606,11 +3607,11 @@ function initialize(cnf, callback){
 
       if (loadedConfigObj.TNN_INPUTS_IDS !== undefined){
         console.log("NNT | LOADED TNN_INPUTS_IDS: " + loadedConfigObj.TNN_INPUTS_IDS);
-        inputsIdSet.clear();
+        // inputsIdSet.clear();
         cnf.inputsIdArray = loadedConfigObj.TNN_INPUTS_IDS;
-        cnf.inputsIdArray.forEach(function(inputsId){
-          inputsIdSet.add(inputsId);
-        });
+        // cnf.inputsIdArray.forEach(function(inputsId){
+        //   inputsIdSet.add(inputsId);
+        // });
       }
 
       if (loadedConfigObj.TNN_INPUTS_ID !== undefined){
@@ -5492,7 +5493,7 @@ function initNeuralNetworkChild(nnChildIndex, cnf, callback){
 
           }
 
-          inputsIdSet.add(m.networkObj.inputsId);
+          // inputsIdSet.add(m.networkObj.inputsId);
 
           if (inputsNetworksHashMap[m.networkObj.inputsId] === undefined) {
             inputsNetworksHashMap[m.networkObj.inputsId] = new Set();
