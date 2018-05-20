@@ -2483,6 +2483,9 @@ function loadBestNetworkDropboxFolders (params, callback){
                 || (!params.purgeMin && (folder !== "/config/utility/best/neuralNetworks") && (networkObj.successRate > configuration.localMinSuccessRate))
                 || (!params.purgeMin && (folder !== "/config/utility/best/neuralNetworks") && (networkObj.matchRate > configuration.localMinSuccessRate))) {
 
+
+                if (networkObj.overallMatchRate === undefined) { networkObj.overallMatchRate = 0; }
+
                 bestNetworkHashMap.set(networkObj.networkId, { entry: entry, networkObj: networkObj});
 
                 let inObj = {};
@@ -2523,12 +2526,24 @@ function loadBestNetworkDropboxFolders (params, callback){
                       + " | CR: " + nnDb.createdAt
                     ));
 
+                    if (
+                      (networkObj.overallMatchRate !== undefined) 
+                      && (networkObj.overallMatchRate > 0)
+                      && (networkObj.overallMatchRate < 100)
+                    ) {
+                      nnDb.overallMatchRate = networkObj.overallMatchRate;
+                    }
+                    else if (nnDb.overallMatchRate === undefined){
+                      nnDb.overallMatchRate = 0;
+                    }
+                                        
                     nnDb.matchRate = networkObj.matchRate;
                     nnDb.successRate = networkObj.successRate;
+
                     nnDb.save()
-                      .catch(function(err){
-                        console.log(err.message);
-                      });
+                    .catch(function(err){
+                      console.log(err.message);
+                    });
 
                   }
                   else {
@@ -4207,7 +4222,6 @@ function updateCategorizedUsers(cnf, callback){
                   + " | " + user.nodeId
                   + " | " + jsonPrint(user.status.retweeted_status.text)
                 ));
-
 
                 if (text) {
                   cb(null, text + "\n" + user.status.retweeted_status.text);
