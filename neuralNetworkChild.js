@@ -48,12 +48,12 @@ const wordAssoDb = require("@threeceelabs/mongoose-twitter");
 
 wordAssoDb.connect(function(err, dbConnection){
   if (err) {
-    console.log(chalkError("*** TNC | MONGO DB CONNECTION ERROR: " + err));
+    console.log(chalkError("*** NNC | MONGO DB CONNECTION ERROR: " + err));
     // quit("MONGO DB CONNECTION ERROR");
   }
   else {
-    dbConnection.on("error", console.error.bind(console, "*** TNC | MONGO DB CONNECTION ERROR ***\n"));
-    console.log(chalkAlert("TNC | MONGOOSE DEFAULT CONNECTION OPEN"));
+    dbConnection.on("error", console.error.bind(console, "*** NNC | MONGO DB CONNECTION ERROR ***\n"));
+    console.log(chalkAlert("NNC | MONGOOSE DEFAULT CONNECTION OPEN"));
     NeuralNetwork = mongoose.model("NeuralNetwork", neuralNetworkModel.NeuralNetworkSchema);
   }
 
@@ -124,7 +124,7 @@ function msToTime(duration) {
 function indexOfMax (arr, callback) {
 
   if (arr.length === 0) {
-    console.log(chalkAlert("NNT | indexOfMax: 0 LENG ARRAY: -1"));
+    console.log(chalkAlert("NNC | indexOfMax: 0 LENG ARRAY: -1"));
     return(callback(-2, arr)) ; 
   }
 
@@ -371,9 +371,6 @@ function testEvolve(params, callback){
 
 function printDatum(title, input){
 
-  // console.log("\nNNT | ------------- " + title + " -------------");
-  // console.log("printDatum\n" + jsonPrint(input));
-
   let row = "";
   let col = 0;
   let rowNum = 0;
@@ -383,13 +380,11 @@ function printDatum(title, input){
 
   input.forEach(function(value, i){
     if (col < COLS){
-      // row = row + (bit ? "X" : ".");
       row = row + " " + value.toFixed(2);
       col += 1;
     }
     else {
       console.log("NNT | ROW " + rowNum + " | " + row);
-      // row = bit ? "X" : ".";
       row = value.toFixed(2);
       col = 1;
       rowNum += 1;
@@ -400,8 +395,6 @@ function printDatum(title, input){
 function convertTrainingDatum(params, datum, generateInputRaw, callback){
 
   const inputTypes = Object.keys(params.inputsObj.inputs).sort();
-
-  // console.log("convertedDatum params\n" + jsonPrint(params));
 
   let convertedDatum = {};
   convertedDatum.user = {};
@@ -446,7 +439,7 @@ function convertTrainingDatum(params, datum, generateInputRaw, callback){
         }
         else {
           convertedDatum.input.push(datum.languageAnalysis[inputName]);
-          console.log("INPUT | " + inputType + " | " + inputName + ": " + datum.languageAnalysis[inputName]);
+          console.log("NNC | convertTrainingDatum INPUT | " + inputType + " | " + inputName + ": " + datum.languageAnalysis[inputName]);
         }
         async.setImmediate(function() {
           cb1();
@@ -541,7 +534,7 @@ function convertTestDatum(params, inputs, datum, callback){
         }
         else {
           convertedDatum.input.push(datum.languageAnalysis[inputName]);
-          console.log("INPUT | " + inputType + " | " + inputName + ": " + datum.languageAnalysis[inputName]);
+          console.log("NNC | convertTestDatum | INPUT | " + inputType + " | " + inputName + ": " + datum.languageAnalysis[inputName]);
         }
         async.setImmediate(function() { cb1(); });
       }
@@ -549,7 +542,7 @@ function convertTestDatum(params, inputs, datum, callback){
 
         if ((params.maxInputHashMap === undefined) 
           || (params.maxInputHashMap[inputType] === undefined)) {
-          debug(chalkAlert("UNDEFINED??? params.maxInputHashMap." + inputType + " | " + inputName));
+          debug(chalkAlert("NNC | convertTestDatum | UNDEFINED??? params.maxInputHashMap." + inputType + " | " + inputName));
           convertedDatum.input.push(1);
         }
         else {
@@ -578,7 +571,7 @@ function convertTestDatum(params, inputs, datum, callback){
 
 function testNetwork(nwObj, testSet, maxInputHashMap, callback){
 
-  console.log(chalkBlue("NNT | TEST NETWORK"
+  console.log(chalkBlue("NNC | TEST NETWORK"
     + " | TEST SET ID: " + testSet.meta.testSetId
     + " | NETWORK ID: " + nwObj.networkId
     + " | " + testSet.meta.setSize + " TEST DATA POINTS"
@@ -684,7 +677,7 @@ function trainingSetPrepAndEvolve(params, options, callback){
 
   const shuffledTrainingData = _.shuffle(params.trainingSet.data);
 
-  async.eachSeries(shuffledTrainingData, function(datum, cb){
+  async.each(shuffledTrainingData, function(datum, cb){
 
     convertTrainingDatum(params, datum, generateInputRaw, function(err, datumObj){
 
@@ -745,7 +738,7 @@ function trainingSetPrepAndEvolve(params, options, callback){
           debug("IN [" + nodeIndex + "]: " + inputName);
 
           if (exportedNetwork.nodes[nodeIndex].type !== "input") {
-            console.log(chalkError("NOT INPUT ERROR " + nodeIndex + " | " + inputName));
+            console.log(chalkError("NNC | NOT INPUT ERROR " + nodeIndex + " | " + inputName));
             return cb1("NN NOT INPUT NODE ERROR");
           }
 
@@ -776,7 +769,7 @@ function trainingSetPrepAndEvolve(params, options, callback){
         debug("OUTPUT INDEX START " + nodeIndex);
 
         if (exportedNetwork.nodes[nodeIndex].type !== "output") {
-          console.log(chalkError("NOT OUTPUT ERROR " 
+          console.log(chalkError("NNC | NOT OUTPUT ERROR " 
             + nodeIndex 
             + "\n" + jsonPrint(exportedNetwork.nodes[nodeIndex])
           ));
@@ -853,15 +846,6 @@ function trainingSetPrepAndEvolve(params, options, callback){
           ));
 
           callback(null, networkObj);
-          // testNetwork(networkObj, params.testSet, function(err, testResults){
-
-          //   networkObj.successRate = testResults.successRate;
-          //   networkObj.test = {};
-          //   networkObj.test.results = {};
-          //   networkObj.test.results = testResults;
-
-          //   if (callback !== undefined) { callback(null, networkObj); }
-          // });
 
         }
       });
@@ -1266,9 +1250,6 @@ function initialize(cnf, callback){
   cnf.statsUpdateIntervalTime = process.env.TNN_STATS_UPDATE_INTERVAL || 60000;
 
   debug("NNC | CONFIG\n" + jsonPrint(cnf));
-
-  // debug(chalkWarn("dropboxConfigFolder: " + dropboxConfigFolder));
-  // debug(chalkWarn("dropboxConfigFile  : " + dropboxConfigFile));
 
   callback(null, cnf);
 }

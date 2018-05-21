@@ -195,7 +195,7 @@ wordAssoDb.connect(function(err, dbConnection){
   }
   else {
     dbConnection.on("error", console.error.bind(console, "*** TNN | MONGO DB CONNECTION ERROR ***\n"));
-    console.log(chalkAlert("TNN | MONGOOSE DEFAULT CONNECTION OPEN"));
+    console.log(chalkAlert("NNT | MONGOOSE DEFAULT CONNECTION OPEN"));
     User = mongoose.model("User", userModel.UserSchema);
     NeuralNetwork = mongoose.model("NeuralNetwork", neuralNetworkModel.NeuralNetworkSchema);
     userServer = require("@threeceelabs/user-server-controller");
@@ -556,7 +556,7 @@ if (commandLineConfig.targetServer === "REMOTE"){
 }
 
 if (Object.keys(commandLineConfig).includes("help")) {
-  console.log("optionDefinitions\n" + jsonPrint(optionDefinitions));
+  console.log("NNT |optionDefinitions\n" + jsonPrint(optionDefinitions));
   quit("help");
 }
 
@@ -1018,7 +1018,7 @@ function quit(options){
       const neuralNetworkChild = neuralNetworkChildHashMap[nnChildId].child;
 
       if (neuralNetworkChild !== undefined) {
-        console.log(chalkAlert("*** KILL CHILD ON QUIT | " + nnChildId));
+        console.log(chalkAlert("NNT | *** KILL CHILD ON QUIT | " + nnChildId));
         neuralNetworkChild.kill("SIGKILL");
       }
 
@@ -1039,7 +1039,7 @@ process.on( "SIGINT", function() {
     const neuralNetworkChild = neuralNetworkChildHashMap[nnChildId].child;
 
     if (neuralNetworkChild !== undefined) {
-      console.log(chalkAlert("*** KILL CHILD ON SIGINT | " + nnChildId));
+      console.log(chalkAlert("NNT | *** KILL CHILD ON SIGINT | " + nnChildId));
       neuralNetworkChild.kill("SIGKILL");
     }
 
@@ -1056,7 +1056,7 @@ process.on("exit", function() {
     const neuralNetworkChild = neuralNetworkChildHashMap[nnChildId].child;
 
     if (neuralNetworkChild !== undefined) {
-      console.log(chalkAlert("*** KILL CHILD ON EXIT | " + nnChildId));
+      console.log(chalkAlert("NNT | *** KILL CHILD ON EXIT | " + nnChildId));
       neuralNetworkChild.kill("SIGKILL");
     }
 
@@ -1432,7 +1432,7 @@ function getFileMetadata(path, file, callback) {
 
 function purgeNetwork(nnId, callback){
 
-  console.log(chalkAlert("XXX PURGE NETWORK: " + nnId));
+  console.log(chalkAlert("NNT | XXX PURGE NETWORK: " + nnId));
   bestNetworkHashMap.delete(nnId);
   betterChildSeedNetworkIdSet.delete(nnId);
   delete networkCreateResultsHashmap[nnId];
@@ -1442,7 +1442,7 @@ function purgeNetwork(nnId, callback){
 
 function purgeInputs(inputsId, callback){
 
-  console.log(chalkAlert("XXX PURGE INPUTS: " + inputsId));
+  console.log(chalkAlert("NNT | XXX PURGE INPUTS: " + inputsId));
   // inputsIdSet.delete(inputsId);
   inputsHashMap.delete(inputsId);
 
@@ -1868,7 +1868,7 @@ function updateUsersFromTrainingSet(trainingSetData, callback){
 
           updatedUserCount += 1;
 
-          console.log(chalkLog("+++ ADD NET USER FROM TRAINING SET  "
+          console.log(chalkLog("NNT | +++ ADD NET USER FROM TRAINING SET  "
             + " [" + updatedUserCount + "/" + userIndex + "/" + numberUsers + "]"
             + " | CM: " + printCat(updatedUser.category)
             + " | CA: " + printCat(updatedUser.categoryAuto)
@@ -1882,7 +1882,7 @@ function updateUsersFromTrainingSet(trainingSetData, callback){
 
         })
         .catch(function(err){
-          console.log("ERROR: updateUsersFromTrainingSet newUser: " + err.message);
+          console.log("NNT |ERROR: updateUsersFromTrainingSet newUser: " + err.message);
         });
 
         cb();
@@ -1911,7 +1911,7 @@ function updateUsersFromTrainingSet(trainingSetData, callback){
 
         })
         .catch(function(err){
-          console.log("ERROR: updateUsersFromTrainingSet: " + err.message);
+          console.log("NNT | ERROR: updateUsersFromTrainingSet: " + err.message);
         });
 
         cb();
@@ -3289,7 +3289,7 @@ function initUserReadyInterval(interval){
 function initSocket(cnf, callback){
 
   if (cnf.noServerMode) {
-    console.log(chalkAlert("NO SERVER MODE | SKIP INIT SOCKET"
+    console.log(chalkAlert("NNT | NO SERVER MODE | SKIP INIT SOCKET"
     ));
     return(callback(null, null));
   }
@@ -3303,10 +3303,10 @@ function initSocket(cnf, callback){
 
   socket.on("connect", function(){
 
-    console.log(chalkAlert("SOCKET CONNECT | " + socket.id + " ... AUTHENTICATE ..."));
+    console.log(chalkAlert("NNT | SOCKET CONNECT | " + socket.id + " ... AUTHENTICATE ..."));
 
     socket.on("unauthorized", function(err){
-      console.log("There was an error with the authentication:", err.message);
+      console.log("NNT | There was an error with the authentication:", err.message);
     });
 
     socket.emit("authentication", { namespace: "util", userId: userObj.userId, password: "0123456789" });
@@ -3981,7 +3981,7 @@ console.log(chalkInfo("NNT | " + getTimeStamp()
 
 configEvents.once("INIT_MONGODB", function(){
 
-  console.log(chalkAlert("INIT_MONGODB"));
+  console.log(chalkAlert("NNT | INIT_MONGODB"));
 
 });
 
@@ -4297,7 +4297,7 @@ function updateCategorizedUsers(cnf, callback){
                     + " | RESULTS\n" + jsonPrint(results)
                   ));
                   if (results.text !== undefined) {
-                    console.log(chalkAlert("+++ BANNER ANALYZED: @" + user.screenName + " | " + classText + " | " + results.text));
+                    console.log(chalkAlert("NNT | +++ BANNER ANALYZED: @" + user.screenName + " | " + classText + " | " + results.text));
                     text = text + "\n" + results.text;
                   }
 
@@ -4936,7 +4936,7 @@ function generateRandomEvolveConfig (cnf, callback){
 
   const inputsHashMapKeys = inputsHashMap.keys();
 
-  console.log(chalkAlert("inputsHashMapKeys: " + inputsHashMapKeys));
+  console.log(chalkAlert("NNT | inputsHashMapKeys: " + inputsHashMapKeys));
 
   config.seedInputsId = randomItem(inputsHashMapKeys);
 
@@ -4998,7 +4998,7 @@ function generateRandomEvolveConfig (cnf, callback){
 
   if (!cnf.createTrainingSet && !cnf.createTrainingSetOnly && cnf.loadTrainingSetFromFile && trainingSetReady) {
 
-    console.log(chalkAlert("LOAD GLOBAL TRAINING SET FROM HASHMAP: " + GLOBAL_TRAINING_SET_ID));
+    console.log(chalkAlert("NNT | LOAD GLOBAL TRAINING SET FROM HASHMAP: " + GLOBAL_TRAINING_SET_ID));
 
     if (!trainingSetHashMap.has(GLOBAL_TRAINING_SET_ID)) {
       console.log(chalkError("NNT | *** TRAINING SET NOT IN HASHMAP: " + GLOBAL_TRAINING_SET_ID));
@@ -5364,11 +5364,12 @@ function initNeuralNetworkChild(nnChildIndex, cnf, callback){
     return(callback("NN CHILD EXISTS", nnChildId));
   }
 
-  console.log(chalkAlert("+++ NEW NEURAL NETWORK CHILD | NNC ID: " + nnChildId));
+  console.log(chalkAlert("NNT | +++ NEW NEURAL NETWORK CHILD | NNC ID: " + nnChildId));
 
   statsObj.neuralNetworkReady = false;
 
   let childEnv = {};
+
   childEnv.env = {};
 
   childEnv.env = configuration.DROPBOX;
@@ -5382,6 +5383,10 @@ function initNeuralNetworkChild(nnChildIndex, cnf, callback){
   neuralNetworkChildHashMap[nnChildId].status = "INIT";
 
   neuralNetworkChildHashMap[nnChildId].child = cp.fork("neuralNetworkChild.js", childEnv );
+
+  // neuralNetworkChildHashMap[nnChildId].child.stdout.on("data", function(data){
+  //   console.log(chalkLog(nnChildId + " | " + data));
+  // });
 
   neuralNetworkChildHashMap[nnChildId].child.on("message", function(m){
 
@@ -5416,12 +5421,12 @@ function initNeuralNetworkChild(nnChildIndex, cnf, callback){
       break;
 
       case "STATS":
-        console.log("NNC | STATS | " 
+        console.log("NNT | STATS | " 
           + " | " + m.nnChildId
           + getTimeStamp() + " ___________________________\n" 
           + jsonPrint(statsObj, "NNC | STATS "
         ));
-        console.log("NNC | STATS___________________________\n");
+        console.log("NNT | STATS___________________________\n");
       break;
 
       case "TEST_EVOLVE_COMPLETE":
@@ -5619,9 +5624,7 @@ function initNeuralNetworkChild(nnChildIndex, cnf, callback){
   });
 
   neuralNetworkChildHashMap[nnChildId].child.on("close", function(code){
-    if (neuralNetworkChildHashMap[nnChildId] !== undefined) {
-      neuralNetworkChildHashMap[nnChildId].status = "CLOSE";
-    }
+    // stdio of child closed. why???  
     console.log(chalkError("*** neuralNetworkChildHashMap " + nnChildId + " CLOSE *** : " + code));
   });
 
@@ -5643,7 +5646,7 @@ initNetworkCreateInterval = function(){
       loadConfigFile(dropboxConfigHostFolder, dropboxConfigFile, function(err, configLoadedFlag){
 
         if (configLoadedFlag) {
-          console.log(chalkAlert("+++ RELOADED CONFIG " + dropboxConfigHostFolder + "/" + dropboxConfigFile));
+          console.log(chalkAlert("NNT | +++ RELOADED CONFIG " + dropboxConfigHostFolder + "/" + dropboxConfigFile));
         }
         else {
           debug(chalkAlert("... NO RELOAD CONFIG FILE" + dropboxConfigHostFolder + "/" + dropboxConfigFile));
@@ -5727,6 +5730,9 @@ initNetworkCreateInterval = function(){
                   + " | CURRENT NUM NNC: " + Object.keys(neuralNetworkChildHashMap).length
                   + " | MAX NUM NNC: " + configuration.maxNeuralNetworkChildern
                 ));
+
+                currentChild.child.send({op: "QUIT"});
+
                 initNeuralNetworkChild(nnChildIndex, configuration, function(err, nnChildId) {
                   nnChildIndex += 1;
                 });
@@ -5737,6 +5743,9 @@ initNetworkCreateInterval = function(){
                   + " | CURRENT NUM NNC: " + Object.keys(neuralNetworkChildHashMap).length
                   + " | MAX NUM NNC: " + configuration.maxNeuralNetworkChildern
                 ));
+
+                currentChild.child.send({op: "QUIT"});
+
                 initNeuralNetworkChild(nnChildIndex, configuration, function(err, nnChildId) {
                   nnChildIndex += 1;
                 });
@@ -5747,7 +5756,9 @@ initNetworkCreateInterval = function(){
                   + " | CURRENT NUM NNC: " + Object.keys(neuralNetworkChildHashMap).length
                   + " | MAX NUM NNC: " + configuration.maxNeuralNetworkChildern
                 ));
+
                 currentChild.child.send({op: "QUIT"});
+
                 initNeuralNetworkChild(nnChildIndex, configuration, function(err, nnChildId) {
                   nnChildIndex += 1;
                 });
@@ -5888,7 +5899,7 @@ setTimeout(function(){
       if (initMainReady) {
         loadConfigFile(dropboxConfigHostFolder, dropboxConfigFile, function(err, configLoadedFlag){
           if (configLoadedFlag) {
-            console.log(chalkAlert("+++ RELOADED CONFIG " + dropboxConfigHostFolder + "/" + dropboxConfigFile));
+            console.log(chalkAlert("NNT | +++ RELOADED CONFIG " + dropboxConfigHostFolder + "/" + dropboxConfigFile));
           }
           else {
             debug(chalkAlert("... NO RELOAD CONFIG FILE" + dropboxConfigHostFolder + "/" + dropboxConfigFile));
