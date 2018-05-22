@@ -71,7 +71,7 @@ process.title = process.env.NNC_CHILD_ID;
 
 let configuration = {};
 configuration.nnChildId = process.env.NNC_CHILD_ID;
-configuration.crossEntropyWorkAroundEnabled = false;
+// configuration.crossEntropyWorkAroundEnabled = false;
 configuration.verbose = false;
 configuration.globalTestMode = false;
 configuration.defaultPopulationSize = 100;
@@ -1238,14 +1238,14 @@ function initialize(cnf, callback){
   cnf.testMode = process.env.TNN_TEST_MODE || false ;
   cnf.quitOnError = process.env.TNN_QUIT_ON_ERROR || false ;
 
-  if (process.env.TNN_CROSS_ENTROPY_WORKAROUND_ENABLED !== undefined){
-    if (process.env.TNN_CROSS_ENTROPY_WORKAROUND_ENABLED === "false" || !process.env.TNN_CROSS_ENTROPY_WORKAROUND_ENABLED){
-      cnf.crossEntropyWorkAroundEnabled = false;
-    }
-    else {
-      cnf.crossEntropyWorkAroundEnabled = true;
-    }
-  }
+  // if (process.env.TNN_CROSS_ENTROPY_WORKAROUND_ENABLED !== undefined){
+  //   if (process.env.TNN_CROSS_ENTROPY_WORKAROUND_ENABLED === "false" || !process.env.TNN_CROSS_ENTROPY_WORKAROUND_ENABLED){
+  //     cnf.crossEntropyWorkAroundEnabled = false;
+  //   }
+  //   else {
+  //     cnf.crossEntropyWorkAroundEnabled = true;
+  //   }
+  // }
 
   cnf.statsUpdateIntervalTime = process.env.TNN_STATS_UPDATE_INTERVAL || 60000;
 
