@@ -128,7 +128,7 @@ const DEFAULT_EVOLVE_MUTATION_RATE = 0.5;
 const DEFAULT_EVOLVE_POPSIZE = 100;
 const DEFAULT_EVOLVE_GROWTH = 0.0001;
 
-const DEFAULT_EVOLVE_COST = "MSE";
+const DEFAULT_EVOLVE_COST = "CROSS_ENTROPY";
 const DEFAULT_EVOLVE_COST_ARRAY = [
   "CROSS_ENTROPY",
   "CROSS_ENTROPY",
@@ -2245,7 +2245,6 @@ function loadBestNetworkDropboxFolders (params, callback){
                 inputsEntry.client_modified = moment();
 
                 inputsHashMap.set(networkObj.inputsId, {entry: inputsEntry, inputsObj: networkObj.inputsObj});
-                // inputsIdSet.add(networkObj.inputsId);
 
                 if (inputsNetworksHashMap[networkObj.inputsId] === undefined) {
                   inputsNetworksHashMap[networkObj.inputsId] = new Set();
@@ -3390,33 +3389,6 @@ function initSocket(cnf, callback){
     reset("reconnect_error");
   });
 
-  // socket.on("SESSION_ABORT", function(sessionId){
-  //   if (sessionId === statsObj.socketId){
-  //     socket.disconnect();
-  //     userReadyTransmitted = false;
-  //     userReadyAck = false ;
-  //     serverConnected = false ;
-  //     console.log(chalkDisconnect(moment().format(compactDateTimeFormat)
-  //       + " | ***** RX SESSION_ABORT HIT | " + sessionId
-  //     ));
-  //     reset("SESSION_ABORT");
-  //   }
-  // });
-
-  // socket.on("SESSION_EXPIRED", function(sessionId){
-  //   console.log(chalkDisconnect("RX SESSION_EXPIRED | " + sessionId));
-  //   if (sessionId === statsObj.socketId){
-  //     socket.disconnect();
-  //     userReadyTransmitted = false;
-  //     userReadyAck = false ;
-  //     serverConnected = false;
-  //     console.log(chalkDisconnect(moment().format(compactDateTimeFormat)
-  //       + " | ***** RX SESSION_EXPIRED HIT | " + sessionId
-  //     ));
-  //     reset("SESSION_EXPIRED");
-  //   }
-  // });
-
   socket.on("disconnect", function(){
     userReadyTransmitted = false;
     userReadyAck = false ;
@@ -3454,9 +3426,6 @@ function initialize(cnf, callback){
   cnf.initMainIntervalTime = process.env.TNN_INIT_MAIN_INTERVAL || DEFAULT_INIT_MAIN_INTERVAL ;
   cnf.inputsId = process.env.TNN_INPUTS_ID || false ;
   cnf.inputsIdArray = process.env.TNN_INPUTS_IDS || [] ;
-  // cnf.inputsIdArray.forEach(function(inputsId){
-  //   inputsIdSet.add(inputsId);
-  // });
   cnf.seedNetworkProbability = process.env.TNN_SEED_NETWORK_PROBABILITY || DEFAULT_SEED_NETWORK_PROBABILITY ;
 
   cnf.crossEntropyWorkAroundEnabled = false ;
@@ -4898,15 +4867,17 @@ function generateRandomEvolveConfig (cnf, callback){
     console.log(chalkLog("\nNNT | BEST NETWORKS\nNNT | --------------------------------------------------------"));
     console.log(chalkInfo("NNT | NNs IN HM: " + sortedBestNetworks.sortedKeys.length));
 
-    sortedBestNetworks.sortedKeys.forEach(function(nnId){
-      console.log(chalkLog("NNT"
-        + " | MR: " + bestNetworkHashMap.get(nnId).networkObj.matchRate.toFixed(2)
-        + " | SR: " + bestNetworkHashMap.get(nnId).networkObj.successRate.toFixed(2)
-        + " | " + bestNetworkHashMap.get(nnId).networkObj.numInputs
-        + " | " + bestNetworkHashMap.get(nnId).networkObj.inputsId
-        + " | " + nnId
-      ));
-    });
+    if (configuration.verbose) {
+      sortedBestNetworks.sortedKeys.forEach(function(nnId){
+        console.log(chalkLog("NNT"
+          + " | MR: " + bestNetworkHashMap.get(nnId).networkObj.matchRate.toFixed(2)
+          + " | SR: " + bestNetworkHashMap.get(nnId).networkObj.successRate.toFixed(2)
+          + " | " + bestNetworkHashMap.get(nnId).networkObj.numInputs
+          + " | " + bestNetworkHashMap.get(nnId).networkObj.inputsId
+          + " | " + nnId
+        ));
+      });
+    }
 
     console.log(chalkLog("NNT | --------------------------------------------------------"));
 
@@ -4921,6 +4892,7 @@ function generateRandomEvolveConfig (cnf, callback){
   if (betterChildSeedNetworkIdSet.size > 0) {
 
     config.seedNetworkId = betterChildSeedNetworkIdSet.keys().next().value;
+    config.isBetterChildSeed = true;
 
     betterChildSeedNetworkIdSet.delete(config.seedNetworkId);
 
@@ -4930,6 +4902,7 @@ function generateRandomEvolveConfig (cnf, callback){
   }
   else {
     config.seedNetworkId = (Math.random() <= cnf.seedNetworkProbability) ? randomItem(bestNetworkHashMap.keys()) : false;
+    config.isBetterChildSeed = false;
   }
   
   // seedInputsId only used if seedNetworkId == false
@@ -5062,7 +5035,7 @@ function generateRandomEvolveConfig (cnf, callback){
   }
 }
 
-function initNetworkCreate(nnChildId, nnId, cnf, callback){
+function initNetworkCreate(nnChildId, nnId, callback){
 
   console.log(chalkLog("NNT | INIT NETWORK CREATE | NNC ID: " + nnId));
 
@@ -5087,14 +5060,14 @@ function initNetworkCreate(nnChildId, nnId, cnf, callback){
   statsObj.tests[testObj.testRunId][nnId].results.successRate = 0.0;
   statsObj.tests[testObj.testRunId][nnId].elapsed = 0;
 
-  generateRandomEvolveConfig(cnf, function(err, childConf){
+  generateRandomEvolveConfig(configuration, function(err, childConf){
 
     if (err) {
       console.log(chalkError("generateRandomEvolveConfig ERROR\n" + jsonPrint(err)));
       return(callback(err, childConf));
     }
 
-    switch (cnf.networkCreateMode) {
+    switch (configuration.networkCreateMode) {
 
       case "evolve":
 
@@ -5114,6 +5087,7 @@ function initNetworkCreate(nnChildId, nnId, cnf, callback){
         messageObj.normalization = statsObj.normalization;
 
         messageObj.architecture = childConf.architecture;
+        messageObj.isBetterChildSeed = childConf.isBetterChildSeed;
         messageObj.threads = childConf.threads;
         messageObj.networkObj = {};
         messageObj.networkObj = childConf.networkObj;
@@ -5128,8 +5102,6 @@ function initNetworkCreate(nnChildId, nnId, cnf, callback){
         messageObj.mutation = childConf.mutation;
         messageObj.mutationRate = childConf.mutationRate;
         messageObj.clear = childConf.clear;
-
-        // statsObj.tests[testObj.testRunId][nnId].testSet = childConf.testSet;
 
         statsObj.evolve[nnId].options = omit(messageObj, ["network", "trainingSet", "testSet", "inputs", "outputs"]);
 
@@ -5152,6 +5124,14 @@ function initNetworkCreate(nnChildId, nnId, cnf, callback){
           + "\nNNT | OUTPUTS:             " + messageObj.trainingSet.meta.numOutputs
           + "\nNNT | ITERATIONS:          " + messageObj.iterations
         ));
+
+        if (messageObj.seedNetworkId !== undefined) {
+          console.log(chalkBlue("NNT | SEED:                " + messageObj.seedNetworkId + " | " + messageObj.seedNetworkRes + "%"));
+          console.log(chalkBlue("NNT | BETTER CHILD SEED:   " + messageObj.isBetterChildSeed));
+        }
+        else {
+          console.log(chalkBlue("NNT | SEED:                ----"));
+        }
 
         neuralNetworkChildHashMap[nnChildId].child.send(messageObj, function(err){
           if (err) {
@@ -5184,8 +5164,8 @@ function initNetworkCreate(nnChildId, nnId, cnf, callback){
       break;
 
       default:
-        console.log(chalkError("NNT | UNKNOWN NETWORK CREATE MODE: " + cnf.networkCreateMode));
-        callback("NNT | UNKNOWN NETWORK CREATE MODE: " + cnf.networkCreateMode, null);
+        console.log(chalkError("NNT | UNKNOWN NETWORK CREATE MODE: " + configuration.networkCreateMode));
+        callback("NNT | UNKNOWN NETWORK CREATE MODE: " + configuration.networkCreateMode, null);
     }
 
   });
@@ -5195,7 +5175,7 @@ function allComplete(){
 
   if (Object.keys(neuralNetworkChildHashMap).length === 0 ) { 
     allCompleteFlag = true;
-    console.log(chalkAlert("NNT | allComplete | NO NN CHILDREN"));
+    console.log(chalkBlue("NNT | allComplete | NO NN CHILDREN"));
     return;
   }
 
@@ -5205,7 +5185,7 @@ function allComplete(){
   async.each(Object.keys(neuralNetworkChildHashMap), function(nnChildId, cb){
 
     // index += 1;
-    console.log(chalkAlert("NNT | allComplete"
+    console.log(chalkLog("NNT | allComplete"
       + " | NNC " + nnChildId 
       + " STATUS: " + neuralNetworkChildHashMap[nnChildId].status
     ));
@@ -5229,7 +5209,7 @@ function initMain(cnf, callback){
 
   showStats();
 
-  console.log(chalkAlert("NNT | ***===*** INIT MAIN ***===***"
+  console.log(chalkBlue("NNT | ***===*** INIT MAIN ***===***"
     + " | " + getTimeStamp()
     + " | ALL COMPLETE: " + allCompleteFlag
     + " | INTERVAL: " + msToTime(cnf.initMainIntervalTime)
@@ -5699,7 +5679,7 @@ initNetworkCreateInterval = function(){
 
                 currentChild.status = "RUNNING" ;
 
-                initNetworkCreate(nnChildId, nnId, configuration, function(err, results){
+                initNetworkCreate(nnChildId, nnId, function(err, results){
 
                   debug("initNetworkCreate results\n" + jsonPrint(results));
 
@@ -5888,7 +5868,7 @@ setTimeout(function(){
 
     initMainInterval = setInterval(function(){
 
-      console.log(chalkAlert("NNT | +++ INIT MAIN INTERVAL"
+      console.log(chalkBlue("NNT | +++ INIT MAIN INTERVAL"
         + " | INTERVAL: " + msToTime(configuration.initMainIntervalTime)
         + " | ALL COMPLETE: " + allCompleteFlag
         + " | initMainReady: " + initMainReady
