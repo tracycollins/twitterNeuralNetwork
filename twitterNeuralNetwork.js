@@ -23,6 +23,7 @@ const OFFLINE_MODE = process.env.OFFLINE_MODE === "true" || false;
 const TEST_MODE_LENGTH = 100;
 const TEST_DROPBOX_NN_LOAD = 5;
 
+const DEFAULT_SEED_RANDOMIZE_OPTIONS = true;
 const DEFAULT_QUIT_ON_COMPLETE = false;
 const DEFAULT_USE_LOCAL_TRAINING_SETS = false;
 const DEFAULT_MAX_NEURAL_NETWORK_CHILDREN = 2;
@@ -226,6 +227,11 @@ configuration.interruptFlag = false;
 configuration.useLocalNetworksOnly = false;
 configuration.networkCreateIntervalTime = 15000;
 configuration.enableSeedNetwork = true;
+
+configuration.randomizeSeedOptions = (process.env.TNN_SEED_RANDOMIZE_OPTIONS !== undefined) 
+  ? process.env.TNN_SEED_RANDOMIZE_OPTIONS 
+  : DEFAULT_SEED_RANDOMIZE_OPTIONS;
+
 configuration.seedNetworkProbability = DEFAULT_SEED_NETWORK_PROBABILITY;
 
 configuration.initMainIntervalTime = DEFAULT_INIT_MAIN_INTERVAL;
@@ -2898,6 +2904,11 @@ function loadConfigFile(folder, file, callback) {
             configuration.maxNeuralNetworkChildern = loadedConfigObj.TNN_MAX_NEURAL_NETWORK_CHILDREN;
           }
 
+          if (loadedConfigObj.TNN_SEED_RANDOMIZE_OPTIONS !== undefined){
+            console.log("NNT | LOADED TNN_SEED_RANDOMIZE_OPTIONS: " + loadedConfigObj.TNN_SEED_RANDOMIZE_OPTIONS);
+            configuration.randomizeSeedOptions = loadedConfigObj.TNN_SEED_RANDOMIZE_OPTIONS;
+          }
+
           if (loadedConfigObj.TNN_EVOLVE_COST_ARRAY !== undefined){
             console.log("NNT | LOADED TNN_EVOLVE_COST_ARRAY: " + loadedConfigObj.TNN_EVOLVE_COST_ARRAY);
             configuration.costArray = loadedConfigObj.TNN_EVOLVE_COST_ARRAY;
@@ -3645,6 +3656,11 @@ function initialize(cnf, callback){
       if (loadedConfigObj.TNN_MAX_NEURAL_NETWORK_CHILDREN !== undefined){
         console.log("NNT | LOADED TNN_MAX_NEURAL_NETWORK_CHILDREN: " + loadedConfigObj.TNN_MAX_NEURAL_NETWORK_CHILDREN);
         cnf.maxNeuralNetworkChildern = loadedConfigObj.TNN_MAX_NEURAL_NETWORK_CHILDREN;
+      }
+
+      if (loadedConfigObj.TNN_SEED_RANDOMIZE_OPTIONS !== undefined){
+        console.log("NNT | LOADED TNN_SEED_RANDOMIZE_OPTIONS: " + loadedConfigObj.TNN_SEED_RANDOMIZE_OPTIONS);
+        configuration.randomizeSeedOptions = loadedConfigObj.TNN_SEED_RANDOMIZE_OPTIONS;
       }
 
       if (loadedConfigObj.TNN_EVOLVE_COST_ARRAY !== undefined){
@@ -4937,21 +4953,27 @@ function generateRandomEvolveConfig (cnf, callback){
     config.inputsObj = inputsHashMap.get(networkObj.inputsId).inputsObj;
     console.log("NNT | SEED INPUTS | " + networkObj.inputsId);
 
-    // config.cost = randomItem([config.cost, networkObj.evolve.options.cost]);
-    // config.equal = randomItem([config.equal, networkObj.evolve.options.equal]);
-    // config.error = randomItem([config.error, networkObj.evolve.options.error]);
-    // config.mutationRate = randomItem([config.mutationRate, networkObj.evolve.options.mutationRate]);
-    // config.popsize = randomItem([config.popsize, networkObj.evolve.options.popsize]);
-    // config.growth = randomItem([config.growth, networkObj.evolve.options.growth]);
-    // config.elitism = randomItem([config.elitism, networkObj.evolve.options.elitism]);
+    if (cnf.randomizeSeedOptions) {
+      console.log(chalkAlert("NNT | RANDOMIZE SEED NETWORK OPTIONS | " + config.seedNetworkId));
+      config.cost = randomItem([config.cost, networkObj.evolve.options.cost]);
+      config.equal = randomItem([config.equal, networkObj.evolve.options.equal]);
+      config.error = randomItem([config.error, networkObj.evolve.options.error]);
+      config.mutationRate = randomItem([config.mutationRate, networkObj.evolve.options.mutationRate]);
+      config.popsize = randomItem([config.popsize, networkObj.evolve.options.popsize]);
+      config.growth = randomItem([config.growth, networkObj.evolve.options.growth]);
+      config.elitism = randomItem([config.elitism, networkObj.evolve.options.elitism]);
+    }
+    else {
+      console.log(chalkLog("NNT | USE SEED NETWORK OPTIONS | " + config.seedNetworkId));
+      config.cost = networkObj.evolve.options.cost;
+      config.equal = networkObj.evolve.options.equal;
+      config.error = networkObj.evolve.options.error;
+      config.mutationRate = networkObj.evolve.options.mutationRate;
+      config.popsize = networkObj.evolve.options.popsize;
+      config.growth = networkObj.evolve.options.growth;
+      config.elitism = networkObj.evolve.options.elitism;
+    }
 
-    config.cost = networkObj.evolve.options.cost;
-    config.equal = networkObj.evolve.options.equal;
-    config.error = networkObj.evolve.options.error;
-    config.mutationRate = networkObj.evolve.options.mutationRate;
-    config.popsize = networkObj.evolve.options.popsize;
-    config.growth = networkObj.evolve.options.growth;
-    config.elitism = networkObj.evolve.options.elitism;
   }
   else {
     if (inputsHashMap.has(config.seedInputsId)) {
