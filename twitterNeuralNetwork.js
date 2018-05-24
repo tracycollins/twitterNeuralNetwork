@@ -61,6 +61,7 @@ const bestRuntimeNetworkFileName = "bestRuntimeNetwork.json";
 let saveFileQueue = [];
 
 const os = require("os");
+const shell = require("shelljs");
 const util = require("util");
 const moment = require("moment");
 const _ = require("lodash");
@@ -872,9 +873,7 @@ function printNetworkCreateResultsHashmap(){
       successRate
     ]);
 
-    // console.log(chalkAlert("TABLE\n" + jsonPrint(tableArray)));
-
-    cb();
+    async.setImmediate(function() { cb(); });
 
   }, function(){
 
@@ -905,7 +904,7 @@ function printInputsHashMap(){
       inputsObj.meta.numInputs
     ]);
 
-    cb();
+    async.setImmediate(function() { cb(); });
 
   }, function(){
 
@@ -1270,7 +1269,7 @@ function saveFile (params, callback){
             fileExits = true;
           }
 
-          cb();
+          async.setImmediate(function() { cb(); });
 
         }, function(err){
           if (err) {
@@ -1560,7 +1559,7 @@ function loadDropboxFolder(options, callback){
             + " | MORE: " + more
           ));
 
-          cb();
+          async.setImmediate(function() { cb(); });
 
         })
         .catch(function(err){
@@ -1623,24 +1622,28 @@ function loadInputsDropboxFolder(folder, callback){
 
       if (!configuration.inputsIdArray.includes(entryInputsId)){
 
-        console.log(chalkInfo("NNT | DROPBOX INPUTS NOT IN INPUTS ID ARRAY ... ARCHIVING"
+        console.log(chalkInfo("NNT | DROPBOX INPUTS NOT IN INPUTS ID ARRAY ... SKIPPING"
           + " | " + entryInputsId
           + " | " + defaultInputsArchiveFolder + "/" + entry.name
         ));
 
-        let optionsMove = {};
-        optionsMove.from_path = folder + "/" + entry.name;
-        optionsMove.to_path = defaultInputsArchiveFolder + "/" + entry.name;
+        skippedInputsFiles += 1;
+        
+        cb();
 
-        dropboxClient.filesMoveV2(optionsMove)
-        .then(function(response){
-          skippedInputsFiles += 1;
-          cb();
-        })
-        .catch(function(err){
-          console.log(chalkError("NNT | *** DROPBOX FILE MOVE ERROR\n" + jsonPrint(err)));
-          cb();
-        });
+        // let optionsMove = {};
+        // optionsMove.from_path = folder + "/" + entry.name;
+        // optionsMove.to_path = defaultInputsArchiveFolder + "/" + entry.name;
+
+        // dropboxClient.filesMoveV2(optionsMove)
+        // .then(function(response){
+        //   skippedInputsFiles += 1;
+        //   async.setImmediate(function() { cb(); });
+        // })
+        // .catch(function(err){
+        //   console.log(chalkError("NNT | *** DROPBOX FILE MOVE ERROR\n" + jsonPrint(err)));
+        //   cb();
+        // });
 
       }
       else if (inputsHashMap.has(entryInputsId)){
@@ -2193,11 +2196,11 @@ function loadBestNetworkDropboxFolders (params, callback){
           let curNetworkObj = bestNetworkHashMap.get(networkId);
           let oldContentHash = false;
 
-          if ((curNetworkObj.entry !== undefined) && (curNetworkObj.entry.content_hash !== undefined)){
+          if ((curNetworkObj.entry.path_display === entry.path_display) && (curNetworkObj.entry !== undefined) && (curNetworkObj.entry.content_hash !== undefined)){
             oldContentHash = curNetworkObj.entry.content_hash;
           }
 
-          if ((oldContentHash !== entry.content_hash) && (curNetworkObj.entry.path_display === entry.path_display)) {
+          if (oldContentHash && (oldContentHash !== entry.content_hash) && (curNetworkObj.entry.path_display === entry.path_display)) {
 
             console.log(chalkNetwork("NNT | DROPBOX BEST NETWORK CONTENT CHANGE"
               + " | LAST MOD: " + moment(new Date(entry.client_modified)).format(compactDateTimeFormat)
@@ -2285,7 +2288,7 @@ function loadBestNetworkDropboxFolders (params, callback){
               }
             });
           }
-          else if ((oldContentHash !== entry.content_hash) && (curNetworkObj.entry.path_display !== entry.path_display)) {
+          else if (oldContentHash && (oldContentHash !== entry.content_hash) && (curNetworkObj.entry.path_display !== entry.path_display)) {
 
             console.log(chalkNetwork("NNT | DROPBOX BEST NETWORK CONTENT DIFF IN DIFF params.folders"
               + " | LAST MOD: " + moment(new Date(entry.client_modified)).format(compactDateTimeFormat)
@@ -4833,7 +4836,6 @@ function generateGlobalTrainingTestSet (userHashMap, maxInputHashMap, callback){
         ));
         if (callback !== undefined) { return callback(error, null); }
       });
-
     })
     .catch(function(error){
       console.log(chalkError("NNT | " + moment().format(compactDateTimeFormat) 
@@ -5804,6 +5806,7 @@ function initTimeout(callback){
         callback();
       }
       else {
+
         loadSeedNeuralNetwork(seedParams, function(err1, results){
 
           debug("loadSeedNeuralNetwork results\n" + jsonPrint(results));
@@ -5818,6 +5821,8 @@ function initTimeout(callback){
             // return(callback(err));
           }
 
+
+          shell.echo("SHELL :: NNT | INIT NN CHILD");
           enableCreateChildren = true;
 
           console.log(chalkLog("NNT | INIT NN CHILD"));
@@ -5830,6 +5835,7 @@ function initTimeout(callback){
               nnChildIndex += 1;
               next(err, nnChildIndex);
             });
+
           }, function(err2, children) {
 
             if (err2){

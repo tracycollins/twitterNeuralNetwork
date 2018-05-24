@@ -835,7 +835,8 @@ function trainingSetPrepAndEvolve(params, options, callback){
 
         }
         else {
-          console.log(chalkAlert("NNC | EVOLVE COMPLETE"
+          console.log(chalkAlert("=======================================================\n"
+            + "NNC | EVOLVE COMPLETE"
             + " | " + configuration.nnChildId
             + " | " + getTimeStamp()
             + " | " + "TIME: " + results.time
@@ -843,6 +844,7 @@ function trainingSetPrepAndEvolve(params, options, callback){
             + " | " + "ITERATIONS: " + results.iterations
             + " | " + "ERROR: " + results.error
             + " | " + "ELAPSED: " + msToTime(statsObj.evolve.elapsed)
+            + "\n======================================================="
           ));
 
           callback(null, networkObj);

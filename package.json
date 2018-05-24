@@ -52,6 +52,7 @@
     "random-item": "^1.0.0",
     "readable-stream": "^2.3.6",
     "regex": "^0.1.1",
+    "shelljs": "^0.8.2",
     "slack": "^11.0.0",
     "slack-node": "^0.1.8",
     "socket.io": "^2.1.1",
