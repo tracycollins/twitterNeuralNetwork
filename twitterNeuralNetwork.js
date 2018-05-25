@@ -3748,7 +3748,7 @@ function initialize(cnf, callback){
   }
 
   if (process.env.TNN_LOAD_ALL_INPUTS  !== undefined){
-    console.log("NNT | LOADED TNN_LOAD_ALL_INPUTS: " + TNN_LOAD_ALL_INPUTS);
+    console.log("NNT | LOADED TNN_LOAD_ALL_INPUTS: " + process.env.TNN_LOAD_ALL_INPUTS);
 
     if (!process.env.TNN_LOAD_ALL_INPUTS || (process.env.TNN_LOAD_ALL_INPUTS === "false")) {
       cnf.loadAllInputs = false;
@@ -3866,7 +3866,7 @@ function initialize(cnf, callback){
       }
 
       if (loadedConfigObj.TNN_LOAD_ALL_INPUTS  !== undefined){
-        console.log("NNT | LOADED TNN_LOAD_ALL_INPUTS: " + TNN_LOAD_ALL_INPUTS);
+        console.log("NNT | LOADED TNN_LOAD_ALL_INPUTS: " + loadedConfigObj.TNN_LOAD_ALL_INPUTS);
 
         if (!loadedConfigObj.TNN_LOAD_ALL_INPUTS || (loadedConfigObj.TNN_LOAD_ALL_INPUTS === "false")) {
           cnf.loadAllInputs = false;
