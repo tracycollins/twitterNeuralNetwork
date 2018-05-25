@@ -5075,10 +5075,10 @@ function generateGlobalTrainingTestSet (userHashMap, maxInputHashMap, callback){
     trainingSetSmallObj.trainingSet = {};
     trainingSetSmallObj.trainingSet.meta = {};
     trainingSetSmallObj.trainingSet.meta.numOutputs = trainingSet.meta.numOutputs;
-    trainingSetSmallObj.trainingSet.meta.setSize = SMALL_SET_SIZEh;
+    trainingSetSmallObj.trainingSet.meta.setSize = SMALL_SET_SIZE;
     trainingSetSmallObj.trainingSet.data = [];
     trainingSetSmallObj.trainingSet.data = arraySlice(trainingSet.data, 0, SMALL_SET_SIZE);
-    
+
     trainingSetSmallObj.testSet = {};
     trainingSetSmallObj.testSet.meta = {};
     trainingSetSmallObj.testSet.meta.setSize = SMALL_TEST_SET_SIZE;
