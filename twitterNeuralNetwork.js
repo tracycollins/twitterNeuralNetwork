@@ -5116,16 +5116,20 @@ function generateGlobalTrainingTestSet (userHashMap, maxInputHashMap, callback){
       writeJsonFile(maxInputHashMapPath, mihmObj)
       .then(function() {
  
+        console.log(chalkAlert("NNT | SAVED MAX INPUT HASHMAP | " + maxInputHashMapPath));
+
         fullPath = folder + "/" + fileSmall;
 
+        console.log(chalkAlert("NNT | SAVING SMALL TRAINING SET: " + fullPath));
+        
         writeJsonFile(fullPath, trainingSetSmallObj)
         .then(function() {
+          console.log(chalkAlert("NNT | SAVED SMALL TRAINING SET | " + fullPath));
+          console.log(chalkAlert("NNT | ======================= END GENERATE GLOBAL TRAINING SET ======================="));
+          callback(null, null);
         });
 
-        console.log(chalkAlert("NNT | SAVED MAX INPUT HASHMAP | " + maxInputHashMapPath));
-        console.log(chalkAlert("NNT | ======================= END GENERATE GLOBAL TRAINING SET ======================="));
-        callback(null, null);
-      })
+        })
       .catch(function(error){
         console.log(chalkError("NNT | " + moment().format(compactDateTimeFormat) 
           + " | !!! ERROR DROBOX JSON WRITE | FILE: " + fullPath 
@@ -6251,6 +6255,10 @@ setTimeout(function(){
     initMain(configuration, function(){
 
       initMainReady = true;
+
+        if (!configuration.createTrainingSetOnly) { 
+          initNetworkCreateInterval(configuration.networkCreateIntervalTime);
+        }
 
       debug(chalkLog("FIRST INIT MAIN CALLBACK"
         + " | configuration.initMainIntervalTime: " + configuration.initMainIntervalTime
