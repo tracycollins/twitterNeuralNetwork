@@ -5148,7 +5148,6 @@ function generateGlobalTrainingTestSet (userHashMap, maxInputHashMap, callback){
         writeJsonFile(fullPathSmall, trainingSetSmallObj)
         .then(function() {
           console.log(chalkAlert("NNT | SAVED SMALL TRAINING SET | " + fullPathSmall));
-          console.log(chalkAlert("NNT | SAVED SMALL TRAINING SET \n" + jsonPrint(trainingSetSmallObj) ));
           console.log(chalkAlert("NNT | ======================= END GENERATE GLOBAL TRAINING SET ======================="));
           callback(null, null);
         });
