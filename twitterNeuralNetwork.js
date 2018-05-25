@@ -5129,7 +5129,7 @@ function generateGlobalTrainingTestSet (userHashMap, maxInputHashMap, callback){
           callback(null, null);
         });
 
-        })
+      })
       .catch(function(error){
         console.log(chalkError("NNT | " + moment().format(compactDateTimeFormat) 
           + " | !!! ERROR DROBOX JSON WRITE | FILE: " + fullPath 
