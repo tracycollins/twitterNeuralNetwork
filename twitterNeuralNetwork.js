@@ -5073,7 +5073,7 @@ function generateGlobalTrainingTestSet (userHashMap, maxInputHashMap, callback){
     trainingSetSmallObj.testSet = {};
     trainingSetSmallObj.testSet = testSet;
     trainingSetSmallObj.testSet.data.length = Math.min(testSet.data.length, 20);
-    trainingSetSmallObj.trainingSet.meta.setSize = Math.min(testSet.data.length, 02);
+    trainingSetSmallObj.trainingSet.meta.setSize = Math.min(testSet.data.length, 20);
 
     let trainingSetSmallEntry = {};
     trainingSetSmallEntry.name = trainingSetSmallObj.trainingSetId + ".json";
