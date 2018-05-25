@@ -66,6 +66,7 @@ let saveFileQueue = [];
 
 const os = require("os");
 const shell = require("shelljs");
+const arraySlice = require("array-slice");
 const util = require("util");
 const moment = require("moment");
 const _ = require("lodash");
@@ -5073,12 +5074,12 @@ function generateGlobalTrainingTestSet (userHashMap, maxInputHashMap, callback){
     trainingSetSmallObj.trainingSet = {};
     trainingSetSmallObj.trainingSet = trainingSet;
     trainingSetSmallObj.trainingSet.data = [];
-    trainingSetSmallObj.trainingSet.data = trainingSet.data.slice(0, SMALL_SET_SIZE);
+    trainingSetSmallObj.testSet.data = arraySlice(trainingSet.data, 0, SMALL_SET_SIZE);
     trainingSetSmallObj.trainingSet.meta.setSize = trainingSetSmallObj.trainingSet.data.length;
     trainingSetSmallObj.testSet = {};
     trainingSetSmallObj.testSet = testSet;
     trainingSetSmallObj.testSet.data = [];
-    trainingSetSmallObj.testSet.data = testSet.data.slice(0, SMALL_TEST_SET_SIZE);
+    trainingSetSmallObj.testSet.data = arraySlice(testSet.data, 0, SMALL_TEST_SET_SIZE);
     trainingSetSmallObj.testSet.meta.setSize = trainingSetSmallObj.testSet.data.length;
 
     let trainingSetSmallEntry = {};
