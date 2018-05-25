@@ -291,7 +291,7 @@ function killChild(params, callback){
 
   if (params.nnChildId !== undefined) {
     if (neuralNetworkChildHashMap[params.nnChild] === undefined) {
-      return callback("ERROR: CHILD NOT IN HM: " + params.nnChildId, null);
+      if (callback !== undefined) { return callback("ERROR: CHILD NOT IN HM: " + params.nnChildId, null); }
     }
     else {
       pid = neuralNetworkChildHashMap[params.nnChild].pid;
