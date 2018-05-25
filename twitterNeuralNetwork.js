@@ -11,6 +11,7 @@ hostname = hostname.replace(/.fios-router/g, "");
 hostname = hostname.replace(/.fios-router.home/g, "");
 hostname = hostname.replace(/word0-instance-1/g, "google");
 
+const DEFAULT_DELETE_NOT_IN_INPUTS_ID_ARRAY = false;
 
 let runOnceFlag = false;
 let enableCreateChildren = false;
@@ -186,7 +187,7 @@ function getChildProcesses(callback){
 
       statsObj.numChildren = stdoutArray.length;
 
-      console.log(chalkInfo("NNT | FOUND CHILD PROCESSSES"
+      debug(chalkInfo("NNT | FOUND CHILD PROCESSSES"
         + " | NUM CH: " + statsObj.numChildren
       ));
 
@@ -483,6 +484,7 @@ let saveFileBusy = false;
 
 let configuration = {};
 configuration.globalTrainingSetId = GLOBAL_TRAINING_SET_ID;
+configuration.deleteNotInInputsIdArray = DEFAULT_DELETE_NOT_IN_INPUTS_ID_ARRAY;
 
 configuration.noServerMode = NO_SERVER_MODE;
 configuration.processName = process.env.TNN_PROCESS_NAME || "node_twitterNeuralNetwork";
@@ -2220,18 +2222,18 @@ function loadTrainingSetsDropboxFolder(folder, callback){
 
     async.eachSeries(response.entries, function(entry, cb){
 
-      console.log(chalkLog("NNT | DROPBOX TRAINING SET FOUND"
+      debug(chalkLog("NNT | DROPBOX TRAINING SET FOUND"
         + " | LAST MOD: " + moment(new Date(entry.client_modified)).format(compactDateTimeFormat)
         + " | " + entry.name
       ));
 
       if (!entry.name.startsWith(configuration.globalTrainingSetId)){
-        console.log("NNT | ... IGNORE DROPBOX TRAINING SETS FOLDER FILE: " + entry.name);
+        debug("NNT | ... IGNORE DROPBOX TRAINING SETS FOLDER FILE: " + entry.name);
         return(cb());
       }
 
       if (!entry.name.endsWith(".json")){
-        console.log("NNT | ... IGNORE DROPBOX TRAINING SETS FOLDER FILE: " + entry.name);
+        debug("NNT | ... IGNORE DROPBOX TRAINING SETS FOLDER FILE: " + entry.name);
         return(cb());
       }
 
@@ -2698,8 +2700,17 @@ function loadBestNetworkDropboxFolders (params, callback){
 
               if (!configuration.inputsIdArray.includes(networkObj.inputsId)) {
 
-                if ((hostname !== "google") && (folder === globalBestNetworkFolder)){
-                  console.log(chalkInfo("NNT | NN INPUTS NOT IN INPUTS ID ARRAY ... SKIPPING (HOST NOT GOOGLE): " + folder + "/" + entry.name));
+                // if ((hostname !== "google") && (folder === globalBestNetworkFolder)){
+                //   console.log(chalkInfo("NNT | NN INPUTS NOT IN INPUTS ID ARRAY ... SKIPPING (HOST NOT GOOGLE): " + folder + "/" + entry.name));
+                //   return(cb1());
+                // }
+
+                if (!configuration.deleteNotInInputsIdArray){
+                  console.log(chalkInfo("NNT | NN INPUTS NOT IN INPUTS ID ARRAY ... SKIPPING"
+                    + " | NUM INPUTS: " + networkObj.numInputs
+                    + " | INPUTS ID: " + networkObj.inputsId
+                    + " | " + folder + "/" + entry.name
+                  ));
                   return(cb1());
                 }
 
@@ -2741,6 +2752,7 @@ function loadBestNetworkDropboxFolders (params, callback){
                   }
                   cb1(err);
                 });
+
               }
               else if ((options.networkId !== undefined) 
                 || ((folder === "/config/utility/best/neuralNetworks") && (networkObj.successRate > configuration.globalMinSuccessRate))
@@ -6088,7 +6100,7 @@ function initNetworkCreateInterval(interval) {
             console.log(chalkError("NNT | *** getChildProcesses ERROR: " + err));
           }
 
-          console.log(chalkLog("NNT | INIT MAIN INTERVAL | FOUND " + statsObj.numChildren + " CHILDREN PROCESSES"));
+          // console.log(chalkLog("NNT | INIT MAIN INTERVAL | FOUND " + statsObj.numChildren + " CHILDREN PROCESSES"));
 
           if (enableCreateChildren && (statsObj.numChildren < configuration.maxNeuralNetworkChildern)) {
 
