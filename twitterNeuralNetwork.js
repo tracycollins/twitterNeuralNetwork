@@ -5083,6 +5083,13 @@ function generateGlobalTrainingTestSet (userHashMap, maxInputHashMap, callback){
     trainingSetSmallEntry.content_hash = false;
     trainingSetSmallEntry.client_modified = moment();
 
+    console.log(chalkInfo("NNT | +++ SMALL TRAINING SET"
+      + " | ID: " + trainingSetSmallObj.trainingSetId
+      + " | OUT: " + trainingSetSmallObj.trainingSet.meta.numOutputs
+      + " | SIZE: " + trainingSetSmallObj.trainingSet.meta.setSize
+      + " | TEST SET SIZE: " + trainingSetSmallObj.testSet.meta.setSize
+    ));
+
     trainingSetHashMap.set(
       trainingSetObj.trainingSetId, 
       {entry: trainingSetEntry, trainingSetObj: trainingSetObj}
