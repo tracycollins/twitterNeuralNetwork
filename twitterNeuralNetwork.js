@@ -5071,12 +5071,14 @@ function generateGlobalTrainingTestSet (userHashMap, maxInputHashMap, callback){
     trainingSetSmallObj.maxInputHashMap = maxInputHashMap;
     trainingSetSmallObj.trainingSet = {};
     trainingSetSmallObj.trainingSet = trainingSet;
+    trainingSetSmallObj.trainingSet.data = [];
     trainingSetSmallObj.trainingSet.data = trainingSet.data.slice(0, Math.min(trainingSet.data.length, 100));
     trainingSetSmallObj.trainingSet.meta.setSize = trainingSetSmallObj.trainingSet.data.length;
     trainingSetSmallObj.testSet = {};
     trainingSetSmallObj.testSet = testSet;
+    trainingSetSmallObj.testSet.data = [];
     trainingSetSmallObj.testSet.data = testSet.data.slice(0, Math.min(testSet.data.length, 20));
-    trainingSetSmallObj.trainingSet.meta.setSize = trainingSetSmallObj.testSet.data.length;
+    trainingSetSmallObj.testSet.meta.setSize = trainingSetSmallObj.testSet.data.length;
 
     let trainingSetSmallEntry = {};
     trainingSetSmallEntry.name = trainingSetSmallObj.trainingSetId + ".json";
