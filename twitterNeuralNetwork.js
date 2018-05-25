@@ -5071,16 +5071,20 @@ function generateGlobalTrainingTestSet (userHashMap, maxInputHashMap, callback){
     trainingSetSmallObj.normalization = statsObj.normalization;
     trainingSetSmallObj.maxInputHashMap = {};
     trainingSetSmallObj.maxInputHashMap = maxInputHashMap;
+
     trainingSetSmallObj.trainingSet = {};
-    trainingSetSmallObj.trainingSet = trainingSet;
+    trainingSetSmallObj.trainingSet.meta = {};
+    trainingSetSmallObj.trainingSet.meta.numOutputs = trainingSet.meta.numOutputs;
+    trainingSetSmallObj.trainingSet.meta.setSize = SMALL_SET_SIZEh;
     trainingSetSmallObj.trainingSet.data = [];
     trainingSetSmallObj.trainingSet.data = arraySlice(trainingSet.data, 0, SMALL_SET_SIZE);
-    trainingSetSmallObj.trainingSet.meta.setSize = trainingSetSmallObj.trainingSet.data.length;
+    
     trainingSetSmallObj.testSet = {};
-    trainingSetSmallObj.testSet = testSet;
+    trainingSetSmallObj.testSet.meta = {};
+    trainingSetSmallObj.testSet.meta.setSize = SMALL_TEST_SET_SIZE;
+    trainingSetSmallObj.testSet.meta.numOutputs = trainingSet.meta.numOutputs;
     trainingSetSmallObj.testSet.data = [];
     trainingSetSmallObj.testSet.data = arraySlice(testSet.data, 0, SMALL_TEST_SET_SIZE);
-    trainingSetSmallObj.testSet.meta.setSize = trainingSetSmallObj.testSet.data.length;
 
     let trainingSetSmallEntry = {};
     trainingSetSmallEntry.name = trainingSetSmallObj.trainingSetId + ".json";
@@ -5097,6 +5101,11 @@ function generateGlobalTrainingTestSet (userHashMap, maxInputHashMap, callback){
     trainingSetHashMap.set(
       trainingSetObj.trainingSetId, 
       {entry: trainingSetEntry, trainingSetObj: trainingSetObj}
+    );
+
+    trainingSetHashMap.set(
+      trainingSetSmallObj.trainingSetId, 
+      {entry: trainingSetEntry, trainingSetObj: trainingSetSmallObj}
     );
 
     let file = trainingSetEntry.name;
@@ -5132,13 +5141,14 @@ function generateGlobalTrainingTestSet (userHashMap, maxInputHashMap, callback){
  
         console.log(chalkAlert("NNT | SAVED MAX INPUT HASHMAP | " + maxInputHashMapPath));
 
-        fullPath = folder + "/" + fileSmall;
+        const fullPathSmall = folder + "/" + fileSmall;
 
-        console.log(chalkAlert("NNT | SAVING SMALL TRAINING SET: " + fullPath));
+        console.log(chalkAlert("NNT | SAVING SMALL TRAINING SET: " + fullPathSmall));
         
-        writeJsonFile(fullPath, trainingSetSmallObj)
+        writeJsonFile(fullPathSmall, trainingSetSmallObj)
         .then(function() {
-          console.log(chalkAlert("NNT | SAVED SMALL TRAINING SET | " + fullPath));
+          console.log(chalkAlert("NNT | SAVED SMALL TRAINING SET | " + fullPathSmall));
+          console.log(chalkAlert("NNT | SAVED SMALL TRAINING SET \n" + jsonPrint(trainingSetSmallObj) ));
           console.log(chalkAlert("NNT | ======================= END GENERATE GLOBAL TRAINING SET ======================="));
           callback(null, null);
         });
@@ -6149,6 +6159,7 @@ function initNetworkCreateInterval(interval) {
 
                 case "CLOSE":
                   console.log(chalkAlert("NNT | *** NNC CLOSE | " + nnChildId));
+                  killChild({nnChildId: nnChildId});
                 break;
 
                 case "ERROR":
