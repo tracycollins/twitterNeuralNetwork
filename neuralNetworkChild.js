@@ -267,6 +267,7 @@ function showStats(options){
   }
 
   console.log(chalk.green("NNC | S"
+    + " | CHILD " + configuration.nnChildId
     + " | START: " + moment(parseInt(statsObj.startTime)).format(compactDateTimeFormat)
     + " | ELAPSED: " + msToTime(statsObj.elapsed)
     + " | TRAINING START: " + moment(parseInt(statsObj.evolve.startTime)).format(compactDateTimeFormat)
@@ -277,6 +278,16 @@ function showStats(options){
 process.on("SIGHUP", function() {
   console.log(chalkAlert("NNC | " + configuration.nnChildId + " | *** SIGHUP ***"));
   quit("SIGHUP");
+});
+
+process.on("exit", function() {
+  console.log(chalkAlert("NNC | " + configuration.nnChildId + " | *** EXIT ***"));
+  quit("EXIT");
+});
+
+process.on("disconnect", function() {
+  console.log(chalkAlert("NNC | " + configuration.nnChildId + " | *** DISCONNECT ***"));
+  quit("DISCONNECT");
 });
 
 process.on("SIGINT", function() {
@@ -1083,7 +1094,6 @@ process.on("message", function(m) {
 
   debug(chalkAlert("NEURAL NET RX MESSAGE"
     + " | OP: " + m.op
-    // + "\n" + jsonPrint(m)
   ));
 
   let evolveOptions = {};
@@ -1240,15 +1250,6 @@ function initialize(cnf, callback){
   cnf.testMode = process.env.TNN_TEST_MODE || false ;
   cnf.quitOnError = process.env.TNN_QUIT_ON_ERROR || false ;
 
-  // if (process.env.TNN_CROSS_ENTROPY_WORKAROUND_ENABLED !== undefined){
-  //   if (process.env.TNN_CROSS_ENTROPY_WORKAROUND_ENABLED === "false" || !process.env.TNN_CROSS_ENTROPY_WORKAROUND_ENABLED){
-  //     cnf.crossEntropyWorkAroundEnabled = false;
-  //   }
-  //   else {
-  //     cnf.crossEntropyWorkAroundEnabled = true;
-  //   }
-  // }
-
   cnf.statsUpdateIntervalTime = process.env.TNN_STATS_UPDATE_INTERVAL || 60000;
 
   debug("NNC | CONFIG\n" + jsonPrint(cnf));
@@ -1272,7 +1273,6 @@ setTimeout(function(){
       console.error(chalkError("NNC | ***** INIT ERROR *****\n" + jsonPrint(err)));
       console.trace("NNC INIT ERROR");
       process.send({op:"ERROR", error: err, nnChildId: configuration.nnChildId, statsObj: statsObj}, function(){
-        // quit();
       });
     }
     else {
