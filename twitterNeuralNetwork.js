@@ -9,6 +9,8 @@ const ENABLE_INIT_PURGE_LOCAL = true;
 const NN_CHILD_PREFIX = "node_NNC_";
 const GLOBAL_TRAINING_SET_ID = "globalTrainingSet";
 
+const SMALL_SET_SIZE = 100;
+const SMALL_TEST_SET_SIZE = 20;
 
 const ONE_SECOND = 1000;
 const ONE_MINUTE = 60 * ONE_SECOND;
@@ -64,7 +66,6 @@ let saveFileQueue = [];
 
 const os = require("os");
 const shell = require("shelljs");
-
 const util = require("util");
 const moment = require("moment");
 const _ = require("lodash");
@@ -5072,12 +5073,12 @@ function generateGlobalTrainingTestSet (userHashMap, maxInputHashMap, callback){
     trainingSetSmallObj.trainingSet = {};
     trainingSetSmallObj.trainingSet = trainingSet;
     trainingSetSmallObj.trainingSet.data = [];
-    trainingSetSmallObj.trainingSet.data = trainingSet.data.slice(0, Math.min(trainingSet.data.length, 100));
+    trainingSetSmallObj.trainingSet.data = trainingSet.data.slice(0, SMALL_SET_SIZE);
     trainingSetSmallObj.trainingSet.meta.setSize = trainingSetSmallObj.trainingSet.data.length;
     trainingSetSmallObj.testSet = {};
     trainingSetSmallObj.testSet = testSet;
     trainingSetSmallObj.testSet.data = [];
-    trainingSetSmallObj.testSet.data = testSet.data.slice(0, Math.min(testSet.data.length, 20));
+    trainingSetSmallObj.testSet.data = testSet.data.slice(0, SMALL_TEST_SET_SIZE);
     trainingSetSmallObj.testSet.meta.setSize = trainingSetSmallObj.testSet.data.length;
 
     let trainingSetSmallEntry = {};
