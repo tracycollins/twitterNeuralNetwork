@@ -439,6 +439,7 @@ let saveFileQueueInterval;
 let saveFileBusy = false;
 
 let configuration = {};
+configuration.globalTrainingSetId = GLOBAL_TRAINING_SET_ID;
 
 configuration.noServerMode = NO_SERVER_MODE;
 configuration.processName = process.env.TNN_PROCESS_NAME || "node_twitterNeuralNetwork";
@@ -514,7 +515,7 @@ configuration.DROPBOX.DROPBOX_TNN_STATS_FILE = process.env.DROPBOX_TNN_STATS_FIL
 
 configuration.normalization = null;
 configuration.verbose = false;
-configuration.testMode = true; // per tweet test mode
+configuration.testMode = false; // per tweet test mode
 configuration.testSetRatio = DEFAULT_TEST_RATIO;
 
 configuration.evolve = {};
@@ -2366,12 +2367,6 @@ function loadTrainingSetsDropboxFolder(folder, callback){
 }
 
 function loadBestNetworkDropboxFolders (params, callback){
-
-  // if (configuration.createTrainingSetOnly) {
-  //   if (callback !== undefined) { 
-  //     return callback(null, 0); 
-  //   }
-  // }
 
   let numNetworksLoaded = 0;
 
@@ -4961,7 +4956,7 @@ function generateGlobalTrainingTestSet (userHashMap, maxInputHashMap, callback){
 
   const nIds = userHashMap.keys();
   const nodeIds = _.shuffle(nIds);
-  const trainingSetId = GLOBAL_TRAINING_SET_ID + "_" + statsObj.runId;
+  const trainingSetId = configuration.globalTrainingSetId + "_" + statsObj.runId;
 
   console.log(chalkAlert("NNT | ==================================================================="));
   console.log(chalkAlert("NNT | GENERATE TRAINING SET | " + nodeIds.length + " USERS | " + getTimeStamp()));
@@ -5272,14 +5267,14 @@ function generateRandomEvolveConfig (cnf, callback){
 
   if (!cnf.createTrainingSet && !cnf.createTrainingSetOnly && cnf.loadTrainingSetFromFile && trainingSetReady) {
 
-    console.log(chalkLog("NNT | LOAD GLOBAL TRAINING SET FROM HASHMAP: " + GLOBAL_TRAINING_SET_ID));
+    console.log(chalkLog("NNT | LOAD GLOBAL TRAINING SET FROM HASHMAP: " + cnf.globalTrainingSetId));
 
-    if (!trainingSetHashMap.has(GLOBAL_TRAINING_SET_ID)) {
-      console.log(chalkError("NNT | *** TRAINING SET NOT IN HASHMAP: " + GLOBAL_TRAINING_SET_ID));
-      return callback("TRAINING SET NOT IN HASHMAP: " + GLOBAL_TRAINING_SET_ID, null);
+    if (!trainingSetHashMap.has(cnf.globalTrainingSetId)) {
+      console.log(chalkError("NNT | *** TRAINING SET NOT IN HASHMAP: " + cnf.globalTrainingSetId));
+      return callback("TRAINING SET NOT IN HASHMAP: " + cnf.globalTrainingSetId, null);
     }
 
-    tObj = trainingSetHashMap.get(GLOBAL_TRAINING_SET_ID);
+    tObj = trainingSetHashMap.get(cnf.globalTrainingSetId);
 
     console.log(chalkBlue("NNT | USING TRAINING SET: " + tObj.trainingSetObj.trainingSetId));
 
@@ -5310,9 +5305,9 @@ function generateRandomEvolveConfig (cnf, callback){
         return(callback(err, null));
       }
 
-      tObj = trainingSetHashMap.get(GLOBAL_TRAINING_SET_ID);
+      tObj = trainingSetHashMap.get(cnf.globalTrainingSetId);
 
-      console.log(chalkAlert("NNT | USING TRAINING SET " + GLOBAL_TRAINING_SET_ID));
+      console.log(chalkAlert("NNT | USING TRAINING SET " + cnf.globalTrainingSetId));
 
       config.trainingSetId = tObj.trainingSetObj.trainingSetId;
       config.trainingSet = {};
@@ -5790,8 +5785,8 @@ function initNeuralNetworkChild(nnChildIndex, cnf, callback){
 
 
         networkCreateResultsHashmap[m.networkObj.networkId] = {};
-        networkCreateResultsHashmap[m.networkObj.networkId].status = "COMPLETE";
         networkCreateResultsHashmap[m.networkObj.networkId] = omit(m.networkObj, ["network", "inputs", "outputs"]);
+        networkCreateResultsHashmap[m.networkObj.networkId].status = "COMPLETE";
 
         newNeuralNetwork = new NeuralNetwork(m.networkObj)
           .save()
@@ -6003,13 +5998,14 @@ function initNetworkCreateInterval(interval) {
           console.log(chalkAlert("NNT | INIT MAIN INTERVAL | FOUND " + statsObj.numChildren + " CHILDREN PROCESSES"));
 
           if (enableCreateChildren && (statsObj.numChildren < configuration.maxNeuralNetworkChildern)) {
+
             console.log(chalkAlert("NNT | +++ CREATING NNC"
               + " | CURRENT NUM NNC: " + Object.keys(neuralNetworkChildHashMap).length
               + " | MAX NUM NNC: " + configuration.maxNeuralNetworkChildern
             ));
+
             initNeuralNetworkChild(nnChildIndex, configuration, function(err, nnChildId) {
               if (err) {
-
               }
               nnChildIndex += 1;
             });
@@ -6032,7 +6028,7 @@ function initNetworkCreateInterval(interval) {
                     + " | NNCID: " + childObj.nnChildId 
                   ));
 
-                  delete networkCreateResultsHashmap[childObj.nnChildId];
+                  networkCreateResultsHashmap[childObj.nnChildId].status = "DEAD CHILD";
 
                   cb();
                 });
@@ -6088,6 +6084,7 @@ function initNetworkCreateInterval(interval) {
                   networkIndex += 1;
 
                   currentChild.status = "RUNNING" ;
+                  neuralNetworkChildHashMap[nnChildId] = currentChild;
 
                   initNetworkCreate(nnChildId, nnId, function(err, results){
 
@@ -6096,13 +6093,17 @@ function initNetworkCreateInterval(interval) {
                     if (err) {
                       console.log("NNT | *** INIT NETWORK CREATE ERROR ***\n" + jsonPrint(err));
                       currentChild.status = "ERROR" ;
+                      neuralNetworkChildHashMap[nnChildId] = currentChild;
                     }
                     else if (currentChild !== undefined) {
                       currentChild.status = "RUNNING" ;
+                      neuralNetworkChildHashMap[nnChildId] = currentChild;
                       console.log(chalkInfo("NNT | NETWORK CREATED | " + nnId));
                     }
                     else {
                       console.log(chalkAlert("NNT | ??? NETWORK NOT CREATED ??? | NN CHID: " + nnChildId + " | NNID: " + nnId));
+                      currentChild.status = "UNKNOWN" ;
+                      neuralNetworkChildHashMap[nnChildId] = currentChild;
                     }
 
                   });
@@ -6114,6 +6115,12 @@ function initNetworkCreateInterval(interval) {
                   if (!configuration.quitOnComplete) {
                     currentChild.status = "IDLE" ;
                   }
+                break;
+
+                case "TEST PASS":
+                  console.log(chalkAlert("NNT | +++ NNC XOR TEST PASS | " + nnChildId));
+                  currentChild.status = "IDLE" ;
+                  neuralNetworkChildHashMap[nnChildId] = currentChild;
                 break;
 
                 case "EXIT":
@@ -6134,6 +6141,11 @@ function initNetworkCreateInterval(interval) {
                     + " | CURRENT NUM NNC: " + Object.keys(neuralNetworkChildHashMap).length
                     + " | MAX NUM NNC: " + configuration.maxNeuralNetworkChildern
                   ));
+                break;
+
+                case "UNKNOWN":
+                  console.log(chalkAlert("NNT | *** NNC UNKNOWN STATE | " + nnChildId));
+                  killChild({nnChildId: nnChildId});
                 break;
 
                 default:
@@ -6255,6 +6267,7 @@ setTimeout(function(){
     initMain(configuration, function(){
 
       initMainReady = true;
+      enableCreateChildren = true;
 
         if (!configuration.createTrainingSetOnly) { 
           initNetworkCreateInterval(configuration.networkCreateIntervalTime);
