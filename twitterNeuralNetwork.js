@@ -2227,7 +2227,7 @@ function loadTrainingSetsDropboxFolder(folder, callback){
         + " | " + entry.name
       ));
 
-      if (!entry.name.startsWith("globalTrainingSet")){
+      if (!entry.name.startsWith(configuration.globalTrainingSetId)){
         console.log("NNT | ... IGNORE DROPBOX TRAINING SETS FOLDER FILE: " + entry.name);
         return(cb());
       }
@@ -4956,7 +4956,15 @@ function generateGlobalTrainingTestSet (userHashMap, maxInputHashMap, callback){
 
   const nIds = userHashMap.keys();
   const nodeIds = _.shuffle(nIds);
-  const trainingSetId = configuration.globalTrainingSetId + "_" + statsObj.runId;
+
+  let trainingSetId;
+
+  if (configuration.testMode) { 
+    trainingSetId = "test_" + configuration.globalTrainingSetId + "_" + statsObj.runId; 
+  }
+  else {
+    trainingSetId = configuration.globalTrainingSetId + "_" + statsObj.runId; 
+  }
 
   console.log(chalkAlert("NNT | ==================================================================="));
   console.log(chalkAlert("NNT | GENERATE TRAINING SET | " + nodeIds.length + " USERS | " + getTimeStamp()));
@@ -5071,7 +5079,7 @@ function generateGlobalTrainingTestSet (userHashMap, maxInputHashMap, callback){
     trainingSetSmallObj.trainingSet.meta.setSize = Math.min(testSet.data.length, 20);
 
     let trainingSetSmallEntry = {};
-    trainingSetSmallEntry.name = trainingSetSmallObj.trainingSetId + ".json";
+    trainingSetSmallEntry.name = "small_" + trainingSetSmallObj.trainingSetId + ".json";
     trainingSetSmallEntry.content_hash = false;
     trainingSetSmallEntry.client_modified = moment();
 
@@ -5081,7 +5089,7 @@ function generateGlobalTrainingTestSet (userHashMap, maxInputHashMap, callback){
     );
 
     let file = "globalTrainingSet.json";
-    let fileSmall = "globalTrainingSet_small.json";
+    let fileSmall = "smallGlobalTrainingSet.json";
 
     let dropboxFolder = (hostname === "google") ? "/home/tc/Dropbox/Apps/wordAssociation/config/utility/default/trainingSets" 
     : "/Users/tc/Dropbox/Apps/wordAssociation/config/utility/" + hostname + "/trainingSets";
