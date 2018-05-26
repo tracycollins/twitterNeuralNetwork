@@ -198,7 +198,7 @@ function getChildProcesses(callback){
 
         if (parseInt(pid) > 0) {
 
-          const c = "ps -o comm= -p " + pid;
+          const c = "ps -o command= -p " + pid;
 
           shell.exec(c, {silent: true}, function(code, stdout, stderr){
 
@@ -1030,15 +1030,11 @@ const sortedHashmap = function(params) {
 
     const keys = params.hashmap.keys();
 
-    // console.log("keys\n" + jsonPrint(keys));
-
     const sortedKeys = keys.sort(function(a,b){
       const objA = params.hashmap.get(a);
       const objB = params.hashmap.get(b);
-      // console.log("objA: " + objA + " | objB: " + objB);
       const objAvalue = dot.pick(params.sortKey, params.hashmap.get(a));
       const objBvalue = dot.pick(params.sortKey, params.hashmap.get(b));
-      // console.log("objAvalue: " + objAvalue + " | objBvalue: " + objBvalue);
       return objBvalue - objAvalue;
     });
 
@@ -3386,7 +3382,7 @@ function loadSeedNeuralNetwork(params, callback){
 
       if (configuration.verbose){
 
-        sortedHashmap({ sortKey: "networkObj.matchRate", hashmap: bestNetworkHashMap, max: 500})
+        sortedHashmap({ sortKey: "networkObj.overallMatchRate", hashmap: bestNetworkHashMap, max: 500})
         .then(function(sortedBestNetworks){
 
         let tableArray = [];
@@ -3432,7 +3428,7 @@ function loadSeedNeuralNetwork(params, callback){
     }
     else {
 
-      sortedHashmap({ sortKey: "networkObj.matchRate", hashmap: bestNetworkHashMap, max: 500})
+      sortedHashmap({ sortKey: "networkObj.overallMatchRate", hashmap: bestNetworkHashMap, max: 500})
       .then(function(sortedBestNetworks){
 
         let tableArray = [];
@@ -5206,7 +5202,7 @@ function generateRandomEvolveConfig (cnf, callback){
 
   debug(chalkLog("NNT | NETWORK CREATE MODE: " + config.networkCreateMode));
 
-  sortedHashmap({ sortKey: "networkObj.matchRate", hashmap: bestNetworkHashMap, max: 500})
+  sortedHashmap({ sortKey: "networkObj.overallMatchRate", hashmap: bestNetworkHashMap, max: 500})
   .then(function(sortedBestNetworks){
 
     if (configuration.verbose) {
