@@ -2459,16 +2459,6 @@ function loadBestNetworkDropboxFolders (params, callback){
               }
               else {
 
-                if (networkObj.overallMatchRate === undefined) { networkObj.overallMatchRate = 0; }
-                if (networkObj.matchRate === undefined) { networkObj.matchRate = 0; }
-                if (networkObj.successRate === undefined) { networkObj.successRate = 0; }
-
-                if (networkObj.inputsId === undefined) {
-                  console.log(chalkError("*** NETWORK OBJ INPUTS ID UNDEFINED | entry.name: " + entry.name + " | networkObj.networkId: " + networkObj.networkId));
-                  console.log(chalkError("*** NETWORK OBJ INPUTS ID UNDEFINED | networkObj:" + jsonPrint(networkObj)));
-                  return cb1("NETWORK OBJ INPUTS ID UNDEFINED");
-                }
-
                 if (networkObj.networkId !== networkId) {
                   console.log(chalkError("*** NETWORK OBJ NETWORK ID MISMATCH | " + networkObj.networkId + " | " + networkId));
                   return cb1("NETWORK OBJ NETWORK ID MISMATCH");
@@ -2478,6 +2468,16 @@ function loadBestNetworkDropboxFolders (params, callback){
                   console.log(chalkError("*** NETWORK NETWORK numInputs UNDEFINED | " + networkObj.networkId));
                   return cb1("NETWORK OBJ NETWORK numInputs UNDEFINED");
                 }
+
+                if (networkObj.inputsId === undefined) {
+                  console.log(chalkError("*** NETWORK OBJ INPUTS ID UNDEFINED | entry.name: " + entry.name + " | networkObj.networkId: " + networkObj.networkId));
+                  console.log(chalkError("*** NETWORK OBJ INPUTS ID UNDEFINED | networkObj:" + jsonPrint(networkObj)));
+                  return cb1("NETWORK OBJ INPUTS ID UNDEFINED");
+                }
+
+                if (networkObj.overallMatchRate === undefined) { networkObj.overallMatchRate = 0; }
+                if (networkObj.matchRate === undefined) { networkObj.matchRate = 0; }
+                if (networkObj.successRate === undefined) { networkObj.successRate = 0; }
 
                 console.log(chalkNetwork("NNT | DROPBOX BEST NETWORK"
                   + " | SR: " + networkObj.successRate.toFixed(2) + "%"
@@ -2553,10 +2553,6 @@ function loadBestNetworkDropboxFolders (params, callback){
               }
               else {
 
-                if (networkObj.overallMatchRate === undefined) { networkObj.overallMatchRate = 0; }
-                if (networkObj.matchRate === undefined) { networkObj.matchRate = 0; }
-                if (networkObj.successRate === undefined) { networkObj.successRate = 0; }
-
                 if (networkObj.inputsId === undefined) {
                   console.log(chalkError("*** NETWORK OBJ INPUTS ID UNDEFINED | entry.name: " + entry.name + " | networkObj.networkId: " + networkObj.networkId));
                   console.log(chalkError("*** NETWORK OBJ INPUTS ID UNDEFINED | networkObj:" + jsonPrint(networkObj)));
@@ -2572,6 +2568,10 @@ function loadBestNetworkDropboxFolders (params, callback){
                   console.log(chalkError("*** NETWORK NETWORK numInputs UNDEFINED | " + networkObj.networkId));
                   return cb1("NETWORK OBJ NETWORK numInputs UNDEFINED");
                 }
+
+                if (networkObj.overallMatchRate === undefined) { networkObj.overallMatchRate = 0; }
+                if (networkObj.matchRate === undefined) { networkObj.matchRate = 0; }
+                if (networkObj.successRate === undefined) { networkObj.successRate = 0; }
 
                 console.log(chalkNetwork("NNT | DROPBOX GLOBAL BEST NETWORK"
                   + " | SR: " + networkObj.successRate.toFixed(2) + "%"
@@ -5907,6 +5907,10 @@ function initNeuralNetworkChild(nnChildIndex, cnf, callback){
           // It's a Keeper!!
 
           bestNetworkFile = m.networkObj.networkId + ".json";
+
+          if (m.networkObj.successRate === undefined) { m.networkObj.successRate = m.networkObj.test.results.successRate; }
+          if (m.networkObj.matchRate === undefined) { m.networkObj.matchRate = 0; }
+          if (m.networkObj.overallMatchRate === undefined) { m.networkObj.overallMatchRate = 0; }
 
           bestNetworkHashMap.set(
             m.networkObj.networkId, 
