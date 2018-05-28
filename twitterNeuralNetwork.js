@@ -2,6 +2,7 @@
 "use strict";
 
 const os = require("os");
+const moment = require("moment");
 
 let hostname = os.hostname();
 hostname = hostname.replace(/.local/g, "");
@@ -10,6 +11,23 @@ hostname = hostname.replace(/.at.net/g, "");
 hostname = hostname.replace(/.fios-router/g, "");
 hostname = hostname.replace(/.fios-router.home/g, "");
 hostname = hostname.replace(/word0-instance-1/g, "google");
+
+const USER_ID = "tnn_" + hostname;
+const SCREEN_NAME = "tnn_" + hostname;
+
+let userObj = { 
+  name: USER_ID, 
+  nodeId: USER_ID, 
+  userId: USER_ID, 
+  utilId: USER_ID, 
+  screenName: SCREEN_NAME, 
+  namespace: "util", 
+  timeStamp: moment().valueOf(),
+  type: "TNN", 
+  tags: {},
+  stats: {}
+} ;
+
 
 const DEFAULT_DELETE_NOT_IN_INPUTS_ID_ARRAY = false;
 
@@ -79,7 +97,6 @@ let saveFileQueue = [];
 const shell = require("shelljs");
 const arraySlice = require("array-slice");
 const util = require("util");
-const moment = require("moment");
 const _ = require("lodash");
 const dot = require("dot-object");
 const writeJsonFile = require("write-json-file");
@@ -604,21 +621,6 @@ const slackOAuthAccessToken = "xoxp-3708084981-3708084993-206468961315-ec62db579
 const defaultDateTimeFormat = "YYYY-MM-DD HH:mm:ss ZZ";
 const compactDateTimeFormat = "YYYYMMDD_HHmmss";
 
-
-const USER_ID = "tnn_" + hostname;
-const SCREEN_NAME = "tnn_" + hostname;
-
-let userObj = { 
-  name: USER_ID, 
-  nodeId: USER_ID, 
-  userId: USER_ID, 
-  utilId: USER_ID, 
-  screenName: SCREEN_NAME, 
-  namespace: "util", 
-  type: "util", 
-  tags: {},
-  stats: {}
-} ;
 
 function toMegabytes(sizeInBytes) {
   return sizeInBytes/ONE_MEGABYTE;
