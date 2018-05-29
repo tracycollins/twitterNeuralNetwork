@@ -1066,6 +1066,7 @@ function printNetworkCreateResultsHashmap(){
   tableArray.push([
     "NNT | NNID",
     "STATUS",
+    "BETTER CH",
     "SEED",
     "RES %",
     "INPTS",
@@ -1101,6 +1102,7 @@ function printNetworkCreateResultsHashmap(){
     }
 
     let status = "";
+    let betterChild = "";
     let snId = "";
     let snIdRes = "";
     let iterations = "";
@@ -1109,6 +1111,7 @@ function printNetworkCreateResultsHashmap(){
     let elapsed = "";
 
     status = (networkObj.status !== undefined) ? networkObj.status : "UNKNOWN";
+    betterChild = (networkObj.betterChild !== undefined) ? networkObj.betterChild : "---";
     snId = (networkObj.seedNetworkId !== undefined) ? networkObj.seedNetworkId : "---";
     snIdRes = (networkObj.seedNetworkId !== undefined) ? networkObj.seedNetworkRes.toFixed(2) : "---";
 
@@ -1123,6 +1126,7 @@ function printNetworkCreateResultsHashmap(){
     tableArray.push([
       "NNT | " + nnId,
       status,
+      betterChild,
       snId,
       snIdRes,
       networkObj.numInputs,
@@ -1146,7 +1150,7 @@ function printNetworkCreateResultsHashmap(){
 
     if (err) { return; }
 
-    const t = table(tableArray, { align: ["l", "l", "l", "l", "r", "l", "l", "l", "l", "r", "r", "r", "l", "l", "r", "r", "r"] });
+    const t = table(tableArray, { align: ["l", "l", "l", "l", "l", "r", "l", "l", "l", "l", "r", "r", "r", "l", "l", "r", "r", "r"] });
 
     console.log("NNT | ============================================================================================================================================");
     console.log(t);
@@ -5769,7 +5773,6 @@ function initNeuralNetworkChild(nnChildIndex, cnf, callback){
   neuralNetworkChildHashMap[nnChildId] = {};
   neuralNetworkChildHashMap[nnChildId].status = "NEW";
 
-  // neuralNetworkChildHashMap[nnChildId].child = {};
   neuralNetworkChildHashMap[nnChildId].child = cp.fork("neuralNetworkChild.js", childEnv );
   neuralNetworkChildHashMap[nnChildId].pid = neuralNetworkChildHashMap[nnChildId].child.pid;
 
@@ -5932,6 +5935,7 @@ function initNeuralNetworkChild(nnChildIndex, cnf, callback){
             betterChildSeedNetworkIdSet.add(m.networkObj.networkId);
 
             m.networkObj.betterChild = true;
+            neuralNetworkChildHashMap[m.networkObj.networkId].betterChild = true;
 
             console.log(chalkAlert("NNT | +++ BETTER CHILD"
               + " [" + betterChildSeedNetworkIdSet.size + "] " + m.networkObj.networkId
@@ -5940,6 +5944,9 @@ function initNeuralNetworkChild(nnChildIndex, cnf, callback){
               + " | SR: " + m.networkObj.seedNetworkRes.toFixed(3) + "%"
             ));
 
+          }
+          else {
+            neuralNetworkChildHashMap[m.networkObj.networkId].betterChild = false;
           }
 
           if (inputsNetworksHashMap[m.networkObj.inputsId] === undefined) {
