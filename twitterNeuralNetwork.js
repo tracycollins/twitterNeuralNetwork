@@ -5943,10 +5943,9 @@ function initNeuralNetworkChild(nnChildIndex, cnf, callback){
               + " | SEED: " + m.networkObj.networkId
               + " | SR: " + m.networkObj.seedNetworkRes.toFixed(3) + "%"
             ));
-
           }
           else {
-            neuralNetworkChildHashMap[m.networkObj.networkId].betterChild = false;
+            neuralNetworkChildHashMap[m.nnChildId].betterChild = false;
           }
 
           if (inputsNetworksHashMap[m.networkObj.inputsId] === undefined) {
