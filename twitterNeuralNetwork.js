@@ -5935,7 +5935,7 @@ function initNeuralNetworkChild(nnChildIndex, cnf, callback){
             betterChildSeedNetworkIdSet.add(m.networkObj.networkId);
 
             m.networkObj.betterChild = true;
-            neuralNetworkChildHashMap[m.networkObj.networkId].betterChild = true;
+            neuralNetworkChildHashMap[m.nnChildId].betterChild = true;
 
             console.log(chalkAlert("NNT | +++ BETTER CHILD"
               + " [" + betterChildSeedNetworkIdSet.size + "] " + m.networkObj.networkId
