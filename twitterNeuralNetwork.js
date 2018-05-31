@@ -4901,7 +4901,7 @@ function initCategorizedUserHashmap(callback){
 
   userServer.findCategorizedUsersCursor(p, function(err, results){
     if (err) {
-      console.error(chalkError("NNT | ERROR: initCategorizedUserHashmap: "));
+      console.error(chalkError("NNT | ERROR: initCategorizedUserHashmap: " + err));
       callback(err);
     }
     else {
@@ -5553,7 +5553,7 @@ function initMain(cnf, callback){
       initCategorizedUserHashmap(function(err){
 
         if (err) {
-          console.error(chalkError("NNT | *** ERROR: CATEGORIZED USER HASHMAP NOT INITIALIED: ", err));
+          console.error(chalkError("NNT | *** ERROR: CATEGORIZED USER HASHMAP NOT INITIALIZED: ", err));
           // initMainReady = true;
           return (callback(err, null));
         }
