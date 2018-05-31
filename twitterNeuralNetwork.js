@@ -5218,9 +5218,14 @@ function generateRandomEvolveConfig (cnf, callback){
   config.elitism = randomInt(EVOLVE_ELITISM_RANGE.min, EVOLVE_ELITISM_RANGE.max);
 
   if (cnf.enableSeedNetwork && config.seedNetworkId && bestNetworkHashMap.has(config.seedNetworkId)) {
+
     console.log("NNT | SEED NETWORK | " + config.seedNetworkId);
-    const networkObj = bestNetworkHashMap.get(config.seedNetworkId).networkObj.network;
+
+    // bestNetworkHashMap entry --> bnhmObj = { entry: entry, networkObj: networkObj }
+    const networkObj = bestNetworkHashMap.get(config.seedNetworkId).networkObj;
+
     config.networkObj = deepcopy(networkObj);
+
     config.architecture = "loadedNetwork";
     config.inputsId = networkObj.inputsId;
     config.inputsObj = {};
