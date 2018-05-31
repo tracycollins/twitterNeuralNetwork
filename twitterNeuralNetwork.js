@@ -770,7 +770,7 @@ let slack = new Slack(slackOAuthAccessToken);
 
 function slackPostMessage(channel, text, callback){
 
-  if (configuration.offlineMode || !statsObj.serverConnected) {
+  if (configuration.offlineMode) {
     console.log(chalkAlert("TNN | SLACK DISABLED"
       + " | OFFLINE_MODE: " + configuration.offlineMode
       + " | SERVER CONNECTED: " + statsObj.serverConnected
