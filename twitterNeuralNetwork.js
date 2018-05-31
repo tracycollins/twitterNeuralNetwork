@@ -1,8 +1,8 @@
 /*jslint node: true */
 "use strict";
 
-const DEFAULT_OFFLINE_MODE = true;
-const DEFAULT_NO_SERVER_MODE = true;
+const DEFAULT_OFFLINE_MODE = false;
+const DEFAULT_NO_SERVER_MODE = false;
 
 const os = require("os");
 const moment = require("moment");
