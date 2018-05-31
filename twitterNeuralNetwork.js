@@ -2627,69 +2627,69 @@ function loadBestNetworkDropboxFolders (params, callback){
               }
               else {
 
-                if (networkObj.network.networkId !== networkId) {
-                  console.log(chalkError("*** NETWORK OBJ NETWORK ID MISMATCH | " + networkObj.network.networkId + " | " + networkId));
+                if (networkObj.networkId !== networkId) {
+                  console.log(chalkError("*** NETWORK OBJ NETWORK ID MISMATCH | " + networkObj.networkId + " | " + networkId));
                   return cb1("NETWORK OBJ NETWORK ID MISMATCH");
                 }
 
-                if (networkObj.network.numInputs === undefined) {
-                  console.log(chalkError("*** NETWORK NETWORK numInputs UNDEFINED | " + networkObj.network.networkId));
+                if (networkObj.numInputs === undefined) {
+                  console.log(chalkError("*** NETWORK NETWORK numInputs UNDEFINED | " + networkObj.networkId));
                   return cb1("NETWORK OBJ NETWORK numInputs UNDEFINED");
                 }
 
-                if (networkObj.network.inputsId === undefined) {
+                if (networkObj.inputsId === undefined) {
                   console.log(chalkError("*** NETWORK OBJ INPUTS ID UNDEFINED | entry.name: " + entry.name 
-                    + " | networkObj.network.networkId: " + networkObj.network.networkId));
+                    + " | networkObj.networkId: " + networkObj.networkId));
                   console.log(chalkError("*** NETWORK OBJ INPUTS ID UNDEFINED | networkObj:" + jsonPrint(networkObj)));
                   return cb1("NETWORK OBJ INPUTS ID UNDEFINED");
                 }
 
-                if (networkObj.network.overallMatchRate === undefined) { networkObj.network.overallMatchRate = 0; }
-                if (networkObj.network.matchRate === undefined) { networkObj.network.matchRate = 0; }
-                if (networkObj.network.successRate === undefined) { networkObj.network.successRate = 0; }
+                if (networkObj.overallMatchRate === undefined) { networkObj.overallMatchRate = 0; }
+                if (networkObj.matchRate === undefined) { networkObj.matchRate = 0; }
+                if (networkObj.successRate === undefined) { networkObj.successRate = 0; }
 
                 console.log(chalkNetwork("NNT | DROPBOX BEST NETWORK"
-                  + " | SR: " + networkObj.network.successRate.toFixed(2) + "%"
-                  + " | MR: " + networkObj.network.matchRate.toFixed(2) + "%"
-                  + " | OAMR: " + networkObj.network.overallMatchRate.toFixed(2) + "%"
-                  + " | " + getTimeStamp(networkObj.network.createdAt)
-                  + " | " + networkObj.network.networkId
-                  + " | " + networkObj.network.networkCreateMode
-                  + " | IN: " + networkObj.network.numInputs
-                  + " | OUT: " + networkObj.network.numOutputs
+                  + " | SR: " + networkObj.successRate.toFixed(2) + "%"
+                  + " | MR: " + networkObj.matchRate.toFixed(2) + "%"
+                  + " | OAMR: " + networkObj.overallMatchRate.toFixed(2) + "%"
+                  + " | " + getTimeStamp(networkObj.createdAt)
+                  + " | " + networkObj.networkId
+                  + " | " + networkObj.networkCreateMode
+                  + " | IN: " + networkObj.numInputs
+                  + " | OUT: " + networkObj.numOutputs
                 ));
 
-                bestNetworkHashMap.set(networkObj.network.networkId, { entry: entry, networkObj: networkObj});
+                bestNetworkHashMap.set(networkObj.networkId, { entry: entry, networkObj: networkObj});
 
                 let inputsEntry = {};
 
-                inputsEntry.name = networkObj.network.inputsId + ".json";
+                inputsEntry.name = networkObj.inputsId + ".json";
                 inputsEntry.content_hash = false;
                 inputsEntry.client_modified = moment();
 
-                inputsHashMap.set(networkObj.network.inputsId, {entry: inputsEntry, inputsObj: networkObj.network.inputsObj});
+                inputsHashMap.set(networkObj.inputsId, {entry: inputsEntry, inputsObj: networkObj.inputsObj});
 
-                if (inputsNetworksHashMap[networkObj.network.inputsId] === undefined) {
-                  inputsNetworksHashMap[networkObj.network.inputsId] = new Set();
+                if (inputsNetworksHashMap[networkObj.inputsId] === undefined) {
+                  inputsNetworksHashMap[networkObj.inputsId] = new Set();
                 }
 
-                inputsNetworksHashMap[networkObj.network.inputsId].add(networkObj.network.networkId);
+                inputsNetworksHashMap[networkObj.inputsId].add(networkObj.networkId);
 
                 numNetworksLoaded += 1;
 
-                if (!currentBestNetwork || (networkObj.network.successRate > currentBestNetwork.successRate)) {
+                if (!currentBestNetwork || (networkObj.successRate > currentBestNetwork.successRate)) {
 
                   currentBestNetwork = networkObj.network;
 
                   console.log(chalkBlueBold("NNT | * NEW BEST NN"
-                  + " | SR: " + networkObj.network.successRate.toFixed(2) + "%"
-                  + " | MR: " + networkObj.network.matchRate.toFixed(2) + "%"
-                  + " | OAMR: " + networkObj.network.overallMatchRate.toFixed(2) + "%"
-                  + " | " + getTimeStamp(networkObj.network.createdAt)
-                  + " | " + networkObj.network.networkId
-                  + " | " + networkObj.network.networkCreateMode
-                  + " | IN: " + networkObj.network.numInputs
-                  + " | OUT: " + networkObj.network.numOutputs
+                  + " | SR: " + networkObj.successRate.toFixed(2) + "%"
+                  + " | MR: " + networkObj.matchRate.toFixed(2) + "%"
+                  + " | OAMR: " + networkObj.overallMatchRate.toFixed(2) + "%"
+                  + " | " + getTimeStamp(networkObj.createdAt)
+                  + " | " + networkObj.networkId
+                  + " | " + networkObj.networkCreateMode
+                  + " | IN: " + networkObj.numInputs
+                  + " | OUT: " + networkObj.numOutputs
                   ));
                 }
 
@@ -2722,40 +2722,40 @@ function loadBestNetworkDropboxFolders (params, callback){
               }
               else {
 
-                if (networkObj.network.inputsId === undefined) {
+                if (networkObj.inputsId === undefined) {
                   console.log(chalkError("*** NETWORK OBJ INPUTS ID UNDEFINED | entry.name: " + entry.name 
-                    + " | networkObj.network.networkId: " + networkObj.network.networkId));
+                    + " | networkObj.networkId: " + networkObj.networkId));
                   console.log(chalkError("*** NETWORK OBJ INPUTS ID UNDEFINED | networkObj:" + jsonPrint(networkObj)));
                   return cb1("NETWORK OBJ INPUTS ID UNDEFINED");
                 }
 
-                if (networkObj.network.networkId !== networkId) {
+                if (networkObj.networkId !== networkId) {
                   console.log(chalkError("*** NETWORK OBJ NETWORK ID MISMATCH | " 
-                    + networkObj.network.networkId + " | " + networkId));
+                    + networkObj.networkId + " | " + networkId));
                   return cb1("NETWORK OBJ NETWORK ID MISMATCH");
                 }
 
-                if (networkObj.network.numInputs === undefined) {
-                  console.log(chalkError("*** NETWORK NETWORK numInputs UNDEFINED | " + networkObj.network.networkId));
+                if (networkObj.numInputs === undefined) {
+                  console.log(chalkError("*** NETWORK NETWORK numInputs UNDEFINED | " + networkObj.networkId));
                   return cb1("NETWORK OBJ NETWORK numInputs UNDEFINED");
                 }
 
-                if (networkObj.network.overallMatchRate === undefined) { networkObj.network.overallMatchRate = 0; }
-                if (networkObj.network.matchRate === undefined) { networkObj.network.matchRate = 0; }
-                if (networkObj.network.successRate === undefined) { networkObj.network.successRate = 0; }
+                if (networkObj.overallMatchRate === undefined) { networkObj.overallMatchRate = 0; }
+                if (networkObj.matchRate === undefined) { networkObj.matchRate = 0; }
+                if (networkObj.successRate === undefined) { networkObj.successRate = 0; }
 
                 console.log(chalkNetwork("NNT | DROPBOX GLOBAL BEST NETWORK"
-                  + " | SR: " + networkObj.network.successRate.toFixed(2) + "%"
-                  + " | MR: " + networkObj.network.matchRate.toFixed(2) + "%"
-                  + " | OAMR: " + networkObj.network.overallMatchRate.toFixed(2) + "%"
-                  + " | " + getTimeStamp(networkObj.network.createdAt)
-                  + " | " + networkObj.network.networkId
-                  + " | " + networkObj.network.networkCreateMode
-                  + " | IN: " + networkObj.network.numInputs
-                  + " | OUT: " + networkObj.network.numOutputs
+                  + " | SR: " + networkObj.successRate.toFixed(2) + "%"
+                  + " | MR: " + networkObj.matchRate.toFixed(2) + "%"
+                  + " | OAMR: " + networkObj.overallMatchRate.toFixed(2) + "%"
+                  + " | " + getTimeStamp(networkObj.createdAt)
+                  + " | " + networkObj.networkId
+                  + " | " + networkObj.networkCreateMode
+                  + " | IN: " + networkObj.numInputs
+                  + " | OUT: " + networkObj.numOutputs
                 ));
 
-                bestNetworkHashMap.set(networkObj.network.networkId, { entry: entry, networkObj: networkObj.network});
+                bestNetworkHashMap.set(networkObj.networkId, { entry: entry, networkObj: networkObj.network});
 
 
                 dropboxClient.filesDelete({path: localBestNetworkFolder + "/" + entry.name})
@@ -2764,14 +2764,14 @@ function loadBestNetworkDropboxFolders (params, callback){
                   debug("dropboxClient filesDelete response\n" + jsonPrint(response));
 
                   console.log(chalkAlert("NNT | XXX LOCAL NN (GLOBAL EXISTS)"
-                  + " | SR: " + networkObj.network.successRate.toFixed(2) + "%"
-                  + " | MR: " + networkObj.network.matchRate.toFixed(2) + "%"
-                  + " | OAMR: " + networkObj.network.overallMatchRate.toFixed(2) + "%"
-                  + " | " + getTimeStamp(networkObj.network.createdAt)
-                  + " | " + networkObj.network.networkId
-                  + " | " + networkObj.network.networkCreateMode
-                  + " | IN: " + networkObj.network.numInputs
-                  + " | OUT: " + networkObj.network.numOutputs
+                  + " | SR: " + networkObj.successRate.toFixed(2) + "%"
+                  + " | MR: " + networkObj.matchRate.toFixed(2) + "%"
+                  + " | OAMR: " + networkObj.overallMatchRate.toFixed(2) + "%"
+                  + " | " + getTimeStamp(networkObj.createdAt)
+                  + " | " + networkObj.networkId
+                  + " | " + networkObj.networkCreateMode
+                  + " | IN: " + networkObj.numInputs
+                  + " | OUT: " + networkObj.numOutputs
                   ));
                 })
                 .catch(function(err){
@@ -2801,33 +2801,33 @@ function loadBestNetworkDropboxFolders (params, callback){
 
                 let inputsEntry = {};
 
-                inputsEntry.name = networkObj.network.inputsId + ".json";
+                inputsEntry.name = networkObj.inputsId + ".json";
                 inputsEntry.content_hash = false;
                 inputsEntry.client_modified = moment();
 
-                inputsHashMap.set(networkObj.network.inputsId, {entry: inputsEntry, inputsObj: networkObj.network.inputsObj});
+                inputsHashMap.set(networkObj.inputsId, {entry: inputsEntry, inputsObj: networkObj.inputsObj});
                 // inputsIdSet.add(networkObj.inputsId);
 
-                if (inputsNetworksHashMap[networkObj.network.inputsId] === undefined) {
-                  inputsNetworksHashMap[networkObj.network.inputsId] = new Set();
+                if (inputsNetworksHashMap[networkObj.inputsId] === undefined) {
+                  inputsNetworksHashMap[networkObj.inputsId] = new Set();
                 }
-                inputsNetworksHashMap[networkObj.network.inputsId].add(networkObj.network.networkId);
+                inputsNetworksHashMap[networkObj.inputsId].add(networkObj.networkId);
 
                 numNetworksLoaded += 1;
 
-                if (!currentBestNetwork || (networkObj.network.successRate > currentBestNetwork.successRate)) {
+                if (!currentBestNetwork || (networkObj.successRate > currentBestNetwork.successRate)) {
 
                   currentBestNetwork = networkObj.network;
 
                   console.log(chalkBlueBold("NNT | * NEW BEST NN"
-                  + " | SR: " + networkObj.network.successRate.toFixed(2) + "%"
-                  + " | MR: " + networkObj.network.matchRate.toFixed(2) + "%"
-                  + " | OAMR: " + networkObj.network.overallMatchRate.toFixed(2) + "%"
-                  + " | " + getTimeStamp(networkObj.network.createdAt)
-                  + " | " + networkObj.network.networkId
-                  + " | " + networkObj.network.networkCreateMode
-                  + " | IN: " + networkObj.network.numInputs
-                  + " | OUT: " + networkObj.network.numOutputs
+                  + " | SR: " + networkObj.successRate.toFixed(2) + "%"
+                  + " | MR: " + networkObj.matchRate.toFixed(2) + "%"
+                  + " | OAMR: " + networkObj.overallMatchRate.toFixed(2) + "%"
+                  + " | " + getTimeStamp(networkObj.createdAt)
+                  + " | " + networkObj.networkId
+                  + " | " + networkObj.networkCreateMode
+                  + " | IN: " + networkObj.numInputs
+                  + " | OUT: " + networkObj.numOutputs
                   ));
 
                 }
@@ -2862,16 +2862,16 @@ function loadBestNetworkDropboxFolders (params, callback){
             }
             else {
 
-              if (networkObj.network.overallMatchRate === undefined) { networkObj.network.overallMatchRate = 0; }
-              if (networkObj.network.matchRate === undefined) { networkObj.network.matchRate = 0; }
-              if (networkObj.network.successRate === undefined) { networkObj.network.successRate = 0; }
+              if (networkObj.overallMatchRate === undefined) { networkObj.overallMatchRate = 0; }
+              if (networkObj.matchRate === undefined) { networkObj.matchRate = 0; }
+              if (networkObj.successRate === undefined) { networkObj.successRate = 0; }
 
-              if (!configuration.inputsIdArray.includes(networkObj.network.inputsId)) {
+              if (!configuration.inputsIdArray.includes(networkObj.inputsId)) {
 
                 if (!configuration.deleteNotInInputsIdArray){
                   console.log(chalkInfo("NNT | NN INPUTS NOT IN INPUTS ID ARRAY ... SKIPPING"
-                    + " | NUM INPUTS: " + networkObj.network.numInputs
-                    + " | INPUTS ID: " + networkObj.network.inputsId
+                    + " | NUM INPUTS: " + networkObj.numInputs
+                    + " | INPUTS ID: " + networkObj.inputsId
                     + " | " + folder + "/" + entry.name
                   ));
                   return(cb1());
@@ -2886,15 +2886,15 @@ function loadBestNetworkDropboxFolders (params, callback){
                   debug("dropboxClient filesDelete response\n" + jsonPrint(response));
 
                   console.log(chalkAlert("NNT | XXX NN"
-                    + " | NN INPUTS NOT IN INPUTS ID ARRAY: " + networkObj.network.inputsId
-                    + " | SR: " + networkObj.network.successRate.toFixed(2) + "%"
-                    + " | MR: " + networkObj.network.matchRate.toFixed(2) + "%"
-                    + " | OAMR: " + networkObj.network.overallMatchRate.toFixed(2) + "%"
-                    + " | " + getTimeStamp(networkObj.network.createdAt)
-                    + " | " + networkObj.network.networkId
-                    + " | " + networkObj.network.networkCreateMode
-                    + " | IN: " + networkObj.network.numInputs
-                    + " | OUT: " + networkObj.network.numOutputs
+                    + " | NN INPUTS NOT IN INPUTS ID ARRAY: " + networkObj.inputsId
+                    + " | SR: " + networkObj.successRate.toFixed(2) + "%"
+                    + " | MR: " + networkObj.matchRate.toFixed(2) + "%"
+                    + " | OAMR: " + networkObj.overallMatchRate.toFixed(2) + "%"
+                    + " | " + getTimeStamp(networkObj.createdAt)
+                    + " | " + networkObj.networkId
+                    + " | " + networkObj.networkCreateMode
+                    + " | IN: " + networkObj.numInputs
+                    + " | OUT: " + networkObj.numOutputs
                   ));
 
                   cb1();
@@ -2919,47 +2919,47 @@ function loadBestNetworkDropboxFolders (params, callback){
 
               }
               else if ((options.networkId !== undefined) 
-                || ((folder === "/config/utility/best/neuralNetworks") && (networkObj.network.successRate > configuration.globalMinSuccessRate))
-                || ((folder === "/config/utility/best/neuralNetworks") && (networkObj.network.matchRate > configuration.globalMinSuccessRate))
-                || (params.purgeMin && (folder !== "/config/utility/best/neuralNetworks") && (networkObj.network.successRate > configuration.localPurgeMinSuccessRate))
-                || (params.purgeMin && (folder !== "/config/utility/best/neuralNetworks") && (networkObj.network.matchRate > configuration.localPurgeMinSuccessRate))
-                || (!params.purgeMin && (folder !== "/config/utility/best/neuralNetworks") && (networkObj.network.successRate > configuration.localMinSuccessRate))
-                || (!params.purgeMin && (folder !== "/config/utility/best/neuralNetworks") && (networkObj.network.matchRate > configuration.localMinSuccessRate))) {
+                || ((folder === "/config/utility/best/neuralNetworks") && (networkObj.successRate > configuration.globalMinSuccessRate))
+                || ((folder === "/config/utility/best/neuralNetworks") && (networkObj.matchRate > configuration.globalMinSuccessRate))
+                || (params.purgeMin && (folder !== "/config/utility/best/neuralNetworks") && (networkObj.successRate > configuration.localPurgeMinSuccessRate))
+                || (params.purgeMin && (folder !== "/config/utility/best/neuralNetworks") && (networkObj.matchRate > configuration.localPurgeMinSuccessRate))
+                || (!params.purgeMin && (folder !== "/config/utility/best/neuralNetworks") && (networkObj.successRate > configuration.localMinSuccessRate))
+                || (!params.purgeMin && (folder !== "/config/utility/best/neuralNetworks") && (networkObj.matchRate > configuration.localMinSuccessRate))) {
 
 
-                if (networkObj.network.overallMatchRate === undefined) { networkObj.network.overallMatchRate = 0; }
-                if (networkObj.network.matchRate === undefined) { networkObj.network.matchRate = 0; }
-                if (networkObj.network.successRate === undefined) { networkObj.network.successRate = 0; }
+                if (networkObj.overallMatchRate === undefined) { networkObj.overallMatchRate = 0; }
+                if (networkObj.matchRate === undefined) { networkObj.matchRate = 0; }
+                if (networkObj.successRate === undefined) { networkObj.successRate = 0; }
 
-                bestNetworkHashMap.set(networkObj.network.networkId, { entry: entry, networkObj: networkObj});
+                bestNetworkHashMap.set(networkObj.networkId, { entry: entry, networkObj: networkObj});
 
                 let inObj = {};
 
-                if (inputsHashMap.has(networkObj.network.inputsId)) {
-                  inObj = inputsHashMap.get(networkObj.network.inputsId);
-                  inObj.inputsObj = networkObj.network.inputsObj;
+                if (inputsHashMap.has(networkObj.inputsId)) {
+                  inObj = inputsHashMap.get(networkObj.inputsId);
+                  inObj.inputsObj = networkObj.inputsObj;
                   inObj.entry.content_hash = false;
                   inObj.entry.client_modified = moment();
                 }
                 else {
                   inObj.inputsObj = {};
-                  inObj.inputsObj = networkObj.network.inputsObj;
+                  inObj.inputsObj = networkObj.inputsObj;
                   inObj.entry = {};
-                  inObj.entry.name = networkObj.network.inputsId + ".json";
+                  inObj.entry.name = networkObj.inputsId + ".json";
                   inObj.entry.content_hash = false;
                   inObj.entry.client_modified = moment();
                 }
 
-                inputsHashMap.set(networkObj.network.inputsId, inObj);
+                inputsHashMap.set(networkObj.inputsId, inObj);
 
-                if (inputsNetworksHashMap[networkObj.network.inputsId] === undefined) {
-                  inputsNetworksHashMap[networkObj.network.inputsId] = new Set();
+                if (inputsNetworksHashMap[networkObj.inputsId] === undefined) {
+                  inputsNetworksHashMap[networkObj.inputsId] = new Set();
                 }
-                inputsNetworksHashMap[networkObj.network.inputsId].add(networkObj.network.networkId);
+                inputsNetworksHashMap[networkObj.inputsId].add(networkObj.networkId);
 
-                 NeuralNetwork.findOne({ networkId: networkObj.network.networkId }, function(err, nnDb){
+                 NeuralNetwork.findOne({ networkId: networkObj.networkId }, function(err, nnDb){
                   if (err) {
-                    console.log(chalkError("*** ERROR: DB NN FIND ONE ERROR | "+ networkObj.network.networkId + " | " + err));
+                    console.log(chalkError("*** ERROR: DB NN FIND ONE ERROR | "+ networkObj.networkId + " | " + err));
                   }
                   else if (nnDb) {
                     console.log(chalkLog("NNT | . NN DB HIT"
@@ -2972,18 +2972,18 @@ function loadBestNetworkDropboxFolders (params, callback){
                     ));
 
                     if (
-                      (networkObj.network.overallMatchRate !== undefined) 
-                      && (networkObj.network.overallMatchRate > 0)
-                      && (networkObj.network.overallMatchRate < 100)
+                      (networkObj.overallMatchRate !== undefined) 
+                      && (networkObj.overallMatchRate > 0)
+                      && (networkObj.overallMatchRate < 100)
                     ) {
-                      nnDb.overallMatchRate = networkObj.network.overallMatchRate;
+                      nnDb.overallMatchRate = networkObj.overallMatchRate;
                     }
                     else if (nnDb.overallMatchRate === undefined){
                       nnDb.overallMatchRate = 0;
                     }
                                         
-                    nnDb.matchRate = networkObj.network.matchRate || 0;
-                    nnDb.successRate = networkObj.network.successRate || 0;
+                    nnDb.matchRate = networkObj.matchRate || 0;
+                    nnDb.successRate = networkObj.successRate || 0;
 
                     nnDb.save()
                     .catch(function(err){
@@ -3005,29 +3005,29 @@ function loadBestNetworkDropboxFolders (params, callback){
 
                 console.log(chalkLog("NNT | + NN HASH MAP"
                   + " | " + bestNetworkHashMap.count() + " NNs IN HM"
-                  + " | SR: " + networkObj.network.successRate.toFixed(2) + "%"
-                  + " | MR: " + networkObj.network.matchRate.toFixed(2) + "%"
-                  + " | " + getTimeStamp(networkObj.network.createdAt)
-                  + " | IN: " + networkObj.network.numInputs
-                  + " | OUT: " + networkObj.network.numOutputs
-                  + " | " + networkObj.network.networkCreateMode
+                  + " | SR: " + networkObj.successRate.toFixed(2) + "%"
+                  + " | MR: " + networkObj.matchRate.toFixed(2) + "%"
+                  + " | " + getTimeStamp(networkObj.createdAt)
+                  + " | IN: " + networkObj.numInputs
+                  + " | OUT: " + networkObj.numOutputs
+                  + " | " + networkObj.networkCreateMode
                   // + " | " + networkId
-                  + " | " + networkObj.network.networkId
+                  + " | " + networkObj.networkId
                 ));
 
-                if (!currentBestNetwork || (networkObj.network.matchRate > currentBestNetwork.matchRate)) {
+                if (!currentBestNetwork || (networkObj.matchRate > currentBestNetwork.matchRate)) {
 
                   currentBestNetwork = networkObj.network;
 
                   console.log(chalkAlert("NNT | * NEW BEST NN"
                     + " | " + bestNetworkHashMap.count() + " NNs IN HM"
-                  + " | SR: " + networkObj.network.successRate.toFixed(2) + "%"
-                  + " | MR: " + networkObj.network.matchRate.toFixed(2) + "%"
-                    + " | " + getTimeStamp(networkObj.network.createdAt)
-                    + " | IN: " + networkObj.network.numInputs
-                    + " | OUT: " + networkObj.network.numOutputs
-                    + " | " + networkObj.network.networkCreateMode
-                    + " | " + networkObj.network.networkId
+                  + " | SR: " + networkObj.successRate.toFixed(2) + "%"
+                  + " | MR: " + networkObj.matchRate.toFixed(2) + "%"
+                    + " | " + getTimeStamp(networkObj.createdAt)
+                    + " | IN: " + networkObj.numInputs
+                    + " | OUT: " + networkObj.numOutputs
+                    + " | " + networkObj.networkCreateMode
+                    + " | " + networkObj.networkId
                   ));
                 }
 
@@ -3038,16 +3038,16 @@ function loadBestNetworkDropboxFolders (params, callback){
 
                 debug(chalkAlert("NNT | DELETING NN"
                   + " | MIN SUCCESS RATE: GLOBAL: " + configuration.globalMinSuccessRate + " LOCAL: " + configuration.localMinSuccessRate
-                  + " | " + networkObj.network.successRate.toFixed(2) + "%"
-                  + " | " + getTimeStamp(networkObj.network.createdAt)
-                  + " | IN: " + networkObj.network.numInputs
-                  + " | OUT: " + networkObj.network.numOutputs
-                  + " | " + networkObj.network.networkCreateMode
-                  + " | " + networkObj.network.networkId
+                  + " | " + networkObj.successRate.toFixed(2) + "%"
+                  + " | " + getTimeStamp(networkObj.createdAt)
+                  + " | IN: " + networkObj.numInputs
+                  + " | OUT: " + networkObj.numOutputs
+                  + " | " + networkObj.networkCreateMode
+                  + " | " + networkObj.networkId
                 ));
 
-                purgeNetwork(networkObj.network.networkId);
-                purgeInputs(networkObj.network.inputsId);
+                purgeNetwork(networkObj.networkId);
+                purgeInputs(networkObj.inputsId);
 
                 dropboxClient.filesDelete({path: folder + "/" + entry.name})
                 .then(function(response){
@@ -3058,14 +3058,14 @@ function loadBestNetworkDropboxFolders (params, callback){
                     + " | MIN SR: GLOBAL: " + configuration.globalMinSuccessRate
                     + " | MIN SR: LOCAL: " + configuration.localMinSuccessRate
                     + " | MIN SR: LOCAL PURGE: " + configuration.localPurgeMinSuccessRate
-                    + " | SR: " + networkObj.network.successRate.toFixed(2) + "%"
-                    + " | OAMR: " + networkObj.network.overallMatchRate.toFixed(2) + "%"
-                    + " | MR: " + networkObj.network.matchRate.toFixed(2) + "%"
-                    + " | " + getTimeStamp(networkObj.network.createdAt)
-                    + " | IN: " + networkObj.network.numInputs
-                    + " | OUT: " + networkObj.network.numOutputs
-                    + " | " + networkObj.network.networkCreateMode
-                    + " | " + networkObj.network.networkId
+                    + " | SR: " + networkObj.successRate.toFixed(2) + "%"
+                    + " | OAMR: " + networkObj.overallMatchRate.toFixed(2) + "%"
+                    + " | MR: " + networkObj.matchRate.toFixed(2) + "%"
+                    + " | " + getTimeStamp(networkObj.createdAt)
+                    + " | IN: " + networkObj.numInputs
+                    + " | OUT: " + networkObj.numOutputs
+                    + " | " + networkObj.networkCreateMode
+                    + " | " + networkObj.networkId
                   ));
 
                   cb1();
@@ -3517,10 +3517,10 @@ function loadSeedNeuralNetwork(params, callback){
 
           tableArray.push([
             "NNT | ",
-            bestNetworkHashMap.get(nnId).networkObj.network.matchRate.toFixed(2),
-            bestNetworkHashMap.get(nnId).networkObj.network.successRate.toFixed(2),
-            bestNetworkHashMap.get(nnId).networkObj.network.numInputs,
-            bestNetworkHashMap.get(nnId).networkObj.network.inputsId,
+            bestNetworkHashMap.get(nnId).networkObj.matchRate.toFixed(2),
+            bestNetworkHashMap.get(nnId).networkObj.successRate.toFixed(2),
+            bestNetworkHashMap.get(nnId).networkObj.numInputs,
+            bestNetworkHashMap.get(nnId).networkObj.inputsId,
             nnId
           ]);
         });
@@ -3545,7 +3545,7 @@ function loadSeedNeuralNetwork(params, callback){
     }
     else {
 
-      sortedHashmap({ sortKey: "networkObj.network.overallMatchRate", hashmap: bestNetworkHashMap, max: 500})
+      sortedHashmap({ sortKey: "networkObj.overallMatchRate", hashmap: bestNetworkHashMap, max: 500})
       .then(function(sortedBestNetworks){
 
         let tableArray = [];
@@ -3564,11 +3564,11 @@ function loadSeedNeuralNetwork(params, callback){
 
           tableArray.push([
             "NNT | ",
-            bestNetworkHashMap.get(nnId).networkObj.network.overallMatchRate.toFixed(2),
-            bestNetworkHashMap.get(nnId).networkObj.network.matchRate.toFixed(2),
-            bestNetworkHashMap.get(nnId).networkObj.network.successRate.toFixed(2),
-            bestNetworkHashMap.get(nnId).networkObj.network.numInputs,
-            bestNetworkHashMap.get(nnId).networkObj.network.inputsId,
+            bestNetworkHashMap.get(nnId).networkObj.overallMatchRate.toFixed(2),
+            bestNetworkHashMap.get(nnId).networkObj.matchRate.toFixed(2),
+            bestNetworkHashMap.get(nnId).networkObj.successRate.toFixed(2),
+            bestNetworkHashMap.get(nnId).networkObj.numInputs,
+            bestNetworkHashMap.get(nnId).networkObj.inputsId,
             nnId
           ]);
 
@@ -5144,7 +5144,7 @@ function generateRandomEvolveConfig (cnf, callback){
 
   debug(chalkLog("NNT | NETWORK CREATE MODE: " + config.networkCreateMode));
 
-  sortedHashmap({ sortKey: "networkObj.network.overallMatchRate", hashmap: bestNetworkHashMap, max: 500})
+  sortedHashmap({ sortKey: "networkObj.overallMatchRate", hashmap: bestNetworkHashMap, max: 500})
   .then(function(sortedBestNetworks){
 
     if (configuration.verbose) {
@@ -5153,10 +5153,10 @@ function generateRandomEvolveConfig (cnf, callback){
 
       sortedBestNetworks.sortedKeys.forEach(function(nnId){
         console.log(chalkLog("NNT"
-          + " | MR: " + bestNetworkHashMap.get(nnId).networkObj.network.matchRate.toFixed(2)
-          + " | SR: " + bestNetworkHashMap.get(nnId).networkObj.network.successRate.toFixed(2)
-          + " | " + bestNetworkHashMap.get(nnId).networkObj.network.numInputs
-          + " | " + bestNetworkHashMap.get(nnId).networkObj.network.inputsId
+          + " | MR: " + bestNetworkHashMap.get(nnId).networkObj.matchRate.toFixed(2)
+          + " | SR: " + bestNetworkHashMap.get(nnId).networkObj.successRate.toFixed(2)
+          + " | " + bestNetworkHashMap.get(nnId).networkObj.numInputs
+          + " | " + bestNetworkHashMap.get(nnId).networkObj.inputsId
           + " | " + nnId
         ));
       });
