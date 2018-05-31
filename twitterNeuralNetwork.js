@@ -519,16 +519,18 @@ else {
   configuration.offlineMode = false;
 }
 
-if (DEFAULT_NO_SERVER_MODE) {
-  configuration.noServerMode = true;
-  console.log(chalkAlert("NNT | DEFAULT_NO_SERVER_MODE: " + configuration.noServerMode));
-}
-else if (
+if (
   (process.env.TNN_NO_SERVER_MODE !== undefined)
-  && ((process.env.TNN_NO_SERVER_MODE === "true") || (process.env.TNN_NO_SERVER_MODE && (process.env.TNN_NO_SERVER_MODE !== "false")))
+  && ((process.env.TNN_NO_SERVER_MODE === "true") 
+    || (process.env.TNN_NO_SERVER_MODE && (process.env.TNN_NO_SERVER_MODE !== "false") && (process.env.TNN_NO_SERVER_MODE !== false))
+    )
   )
 {
   configuration.noServerMode = true;
+}
+else if (DEFAULT_NO_SERVER_MODE) {
+  configuration.noServerMode = true;
+  console.log(chalkAlert("NNT | DEFAULT_NO_SERVER_MODE: " + configuration.noServerMode));
 }
 else {
   configuration.noServerMode = false;
@@ -3286,7 +3288,7 @@ function loadConfigFile(folder, file, callback) {
             if (loadedConfigObj.TNN_NO_SERVER_MODE  !== undefined){
               console.log("NNT | LOADED TNN_NO_SERVER_MODE: " + loadedConfigObj.TNN_NO_SERVER_MODE);
 
-              if ((loadedConfigObj.TNN_NO_SERVER_MODE === false) || (loadedConfigObj.TNN_NO_SERVER_MODE === "false")) {
+              if (!loadedConfigObj.TNN_NO_SERVER_MODE || (loadedConfigObj.TNN_NO_SERVER_MODE === false) || (loadedConfigObj.TNN_NO_SERVER_MODE === "false")) {
                 configuration.noServerMode = false;
               }
               else if ((loadedConfigObj.TNN_NO_SERVER_MODE === true) || (loadedConfigObj.TNN_NO_SERVER_MODE === "true")) {
