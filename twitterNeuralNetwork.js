@@ -2857,16 +2857,16 @@ function loadBestNetworkDropboxFolders (params, callback){
             }
             else {
 
-              if (networkObj.overallMatchRate === undefined) { networkObj.overallMatchRate = 0; }
-              if (networkObj.matchRate === undefined) { networkObj.matchRate = 0; }
-              if (networkObj.successRate === undefined) { networkObj.successRate = 0; }
+              if (networkObj.network.overallMatchRate === undefined) { networkObj.network.overallMatchRate = 0; }
+              if (networkObj.network.matchRate === undefined) { networkObj.network.matchRate = 0; }
+              if (networkObj.network.successRate === undefined) { networkObj.network.successRate = 0; }
 
-              if (!configuration.inputsIdArray.includes(networkObj.inputsId)) {
+              if (!configuration.inputsIdArray.includes(networkObj.network.inputsId)) {
 
                 if (!configuration.deleteNotInInputsIdArray){
                   console.log(chalkInfo("NNT | NN INPUTS NOT IN INPUTS ID ARRAY ... SKIPPING"
-                    + " | NUM INPUTS: " + networkObj.numInputs
-                    + " | INPUTS ID: " + networkObj.inputsId
+                    + " | NUM INPUTS: " + networkObj.network.numInputs
+                    + " | INPUTS ID: " + networkObj.network.inputsId
                     + " | " + folder + "/" + entry.name
                   ));
                   return(cb1());
@@ -2880,15 +2880,15 @@ function loadBestNetworkDropboxFolders (params, callback){
                   debug("dropboxClient filesDelete response\n" + jsonPrint(response));
 
                   console.log(chalkAlert("NNT | XXX NN"
-                    + " | NN INPUTS NOT IN INPUTS ID ARRAY: " + networkObj.inputsId
-                    + " | SR: " + networkObj.successRate.toFixed(2) + "%"
-                    + " | MR: " + networkObj.matchRate.toFixed(2) + "%"
-                    + " | OAMR: " + networkObj.overallMatchRate.toFixed(2) + "%"
-                    + " | " + getTimeStamp(networkObj.createdAt)
-                    + " | " + networkObj.networkId
-                    + " | " + networkObj.networkCreateMode
-                    + " | IN: " + networkObj.numInputs
-                    + " | OUT: " + networkObj.numOutputs
+                    + " | NN INPUTS NOT IN INPUTS ID ARRAY: " + networkObj.network.inputsId
+                    + " | SR: " + networkObj.network.successRate.toFixed(2) + "%"
+                    + " | MR: " + networkObj.network.matchRate.toFixed(2) + "%"
+                    + " | OAMR: " + networkObj.network.overallMatchRate.toFixed(2) + "%"
+                    + " | " + getTimeStamp(networkObj.network.createdAt)
+                    + " | " + networkObj.network.networkId
+                    + " | " + networkObj.network.networkCreateMode
+                    + " | IN: " + networkObj.network.numInputs
+                    + " | OUT: " + networkObj.network.numOutputs
                   ));
 
                   cb1();
