@@ -3674,7 +3674,7 @@ function initUserReadyInterval(interval){
 
     else if (statsObj.userReadyTransmitted && !statsObj.userReadyAck) {
 
-      statsObj.statsObj.userReadyAckWait += 1;
+      statsObj.userReadyAckWait += 1;
       console.log(chalkDisconnect("... WAITING FOR USER_READY_ACK ..."));
 
     }
