@@ -1,6 +1,9 @@
 /*jslint node: true */
 "use strict";
 
+const DEFAULT_OFFLINE_MODE = true;
+const DEFAULT_NO_SERVER_MODE = true;
+
 const os = require("os");
 const moment = require("moment");
 
@@ -49,9 +52,6 @@ const ONE_HOUR = 60 * ONE_MINUTE;
 const ONE_KILOBYTE = 1024;
 const ONE_MEGABYTE = 1024 * ONE_KILOBYTE;
 
-const NO_SERVER_MODE = process.env.NO_SERVER_MODE === "true" || false;
-const OFFLINE_MODE = process.env.OFFLINE_MODE === "true" || false;
-
 const TEST_MODE_LENGTH = 100;
 const TEST_DROPBOX_NN_LOAD = 5;
 
@@ -80,9 +80,6 @@ const DROPBOX_MAX_FILE_UPLOAD = 140 * ONE_MEGABYTE; // bytes
 let socket;
 let socketKeepaliveInterval;
 
-let userReadyTransmitted = false;
-let userReadyAck = false;
-let serverConnected = false;
 let userReadyInterval;
 
 let localNetworkFile;
@@ -155,6 +152,12 @@ let statsObj = {};
 statsObj.hostname = hostname;
 statsObj.pid = process.pid;
 statsObj.cpus = os.cpus().length;
+statsObj.commandLineArgsLoaded = false;
+
+statsObj.serverConnected = false;
+statsObj.userReadyAck = false;
+statsObj.userReadyAckWait = 0;
+statsObj.userReadyTransmitted = false;
 
 statsObj.startTimeMoment = moment();
 statsObj.startTime = moment().valueOf();
@@ -500,10 +503,42 @@ let saveFileQueueInterval;
 let saveFileBusy = false;
 
 let configuration = {};
+
+if (DEFAULT_OFFLINE_MODE) {
+  configuration.offlineMode = true;
+  console.log(chalkAlert("NNT | DEFAULT_OFFLINE_MODE: " + configuration.offlineMode));
+}
+else if (
+  (process.env.TNN_OFFLINE_MODE !== undefined)
+  && (process.env.TNN_OFFLINE_MODE === "true") || (process.env.TNN_OFFLINE_MODE === true)
+  )
+{
+  configuration.offlineMode = true;
+}
+else {
+  configuration.offlineMode = false;
+}
+
+if (DEFAULT_NO_SERVER_MODE) {
+  configuration.noServerMode = true;
+  console.log(chalkAlert("NNT | DEFAULT_NO_SERVER_MODE: " + configuration.noServerMode));
+}
+else if (
+  (process.env.TNN_NO_SERVER_MODE !== undefined)
+  && (process.env.TNN_NO_SERVER_MODE === "true") || (process.env.TNN_NO_SERVER_MODE === true)
+  )
+{
+  configuration.noServerMode = true;
+}
+else {
+  configuration.noServerMode = false;
+}
+
+configuration.networkCreateMode = "evole";
+
 configuration.globalTrainingSetId = GLOBAL_TRAINING_SET_ID;
 configuration.deleteNotInInputsIdArray = DEFAULT_DELETE_NOT_IN_INPUTS_ID_ARRAY;
 
-configuration.noServerMode = NO_SERVER_MODE;
 configuration.processName = process.env.TNN_PROCESS_NAME || "node_twitterNeuralNetwork";
 
 configuration.generateTrainingSetOnly = DEFAULT_GENERATE_TRAINING_SET_ONLY;
@@ -735,6 +770,19 @@ let slack = new Slack(slackOAuthAccessToken);
 
 function slackPostMessage(channel, text, callback){
 
+  if (configuration.offlineMode || !statsObj.serverConnected) {
+    console.log(chalkAlert("TNN | SLACK DISABLED"
+      + " | OFFLINE_MODE: " + configuration.offlineMode
+      + " | SERVER CONNECTED: " + statsObj.serverConnected
+    ));
+    if (callback !== undefined) { 
+      return callback(null, null);
+    }
+    else{
+      return;
+    }
+  }
+
   slack.api("chat.postMessage", {
     text: text,
     channel: channel
@@ -903,10 +951,91 @@ debug("NNT | DROPBOX_WORD_ASSO_ACCESS_TOKEN :" + configuration.DROPBOX.DROPBOX_W
 debug("NNT | DROPBOX_WORD_ASSO_APP_KEY :" + configuration.DROPBOX.DROPBOX_WORD_ASSO_APP_KEY);
 debug("NNT | DROPBOX_WORD_ASSO_APP_SECRET :" + configuration.DROPBOX.DROPBOX_WORD_ASSO_APP_SECRET);
 
-let dropboxClient = new Dropbox({ accessToken: configuration.DROPBOX.DROPBOX_WORD_ASSO_ACCESS_TOKEN });
+// dropboxClient
+let dropboxRemoteClient = new Dropbox({ accessToken: configuration.DROPBOX.DROPBOX_WORD_ASSO_ACCESS_TOKEN });
+let dropboxLocalClient = {  // offline mode
+  filesListFolder: filesListFolderLocal,
+  filesUpload: function(){},
+  filesDownload: function(){},
+  filesGetMetadata: filesGetMetadataLocal,
+  filesDelete: function(){}
+};
+
+function filesGetMetadataLocal(options){
+
+  return new Promise(function(resolve, reject) {
+
+    console.log("filesGetMetadataLocal options\n" + jsonPrint(options));
+
+    const fullPath = "/Users/tc/Dropbox/Apps/wordAssociation" + options.path;
+
+    fs.stat(fullPath, function(err, stats){
+      if (err) {
+        reject(err);
+      }
+      else {
+        const response = {
+          client_modified: stats.mtimeMs
+        };
+        
+        resolve(response);
+      }
+    });
+  });
+};
+
+function filesListFolderLocal(options){
+  return new Promise(function(resolve, reject) {
+
+    debug("filesListFolderLocal options\n" + jsonPrint(options));
+
+    const fullPath = "/Users/tc/Dropbox/Apps/wordAssociation" + options.path;
+
+    fs.readdir(fullPath, function(err, items){
+      if (err) {
+        reject(err);
+      }
+      else {
+
+        let itemArray = [];
+
+        async.each(items, function(item, cb){
+
+          itemArray.push(
+            {
+              name: item, 
+              client_modified: false,
+              content_hash: false,
+              path_display: fullPath + "/" + item
+            }
+          );
+          cb();
+
+        }, function(err){
+
+          const response = {
+            cursor: false,
+            has_more: false,
+            entries: itemArray
+          };
+
+          resolve(response);
+        });
+        }
+    });
+  });
+};
+
+let dropboxClient;
+
+if (configuration.offlineMode) {
+  dropboxClient = dropboxLocalClient;
+}
+else {
+  dropboxClient = dropboxRemoteClient;
+}
 
 let globalCategorizedUsersFolder = dropboxConfigDefaultFolder + "/categorizedUsers";
-// let categorizedUsersFolder = dropboxConfigHostFolder + "/categorizedUsers";
 let categorizedUsersFile = "categorizedUsers_manual.json";
 
 function getTimeStamp(inputTime) {
@@ -1501,7 +1630,7 @@ function saveFile (params, callback){
 
         debug(chalkLog("DROPBOX LIST FOLDER"
           + " | ENTRIES: " + response.entries.length
-          + " | CURSOR (trunc): " + response.cursor.substr(-10)
+          + " | CURSOR (trunc): " + response.cursor
           + " | MORE: " + response.has_more
           + " | PATH:" + options.path
         ));
@@ -1560,10 +1689,15 @@ function loadFile(path, file, callback) {
 
   let fullPath = path + "/" + file;
 
-  if (OFFLINE_MODE) {
-    if (hostname === "mbp2") {
+  debug(chalkAlert("TNN | DROPBOX LOADFILE OFFLINE MODE: " + configuration.offlineMode));
+
+  if (configuration.offlineMode) {
+
+    console.log(chalkAlert("TNN | DROPBOX LOADFILE OFFLINE MODE"));
+
+    if (hostname !== "google") {
       fullPath = "/Users/tc/Dropbox/Apps/wordAssociation" + path + "/" + file;
-      debug(chalkInfo("OFFLINE_MODE: FULL PATH " + fullPath));
+      debug(chalkInfo("OFFLINE MODE: FULL PATH " + fullPath));
     }
     fs.readFile(fullPath, "utf8", function(err, data) {
 
@@ -1661,6 +1795,13 @@ function getFileMetadata(path, file, callback) {
   debug(chalkInfo("FOLDER " + path));
   debug(chalkInfo("FILE " + file));
   debug(chalkInfo("getFileMetadata FULL PATH: " + fullPath));
+
+  if (configuration.offlineMode) {
+    dropboxClient = dropboxLocalClient;
+  }
+  else {
+    dropboxClient = dropboxRemoteClient;
+  }
 
   dropboxClient.filesGetMetadata({path: fullPath})
     .then(function(response) {
@@ -1772,6 +1913,13 @@ function loadDropboxFolder(options, callback){
   let cursor;
   let more = false;
 
+  if (configuration.offlineMode) {
+    dropboxClient = dropboxLocalClient;
+  }
+  else {
+    dropboxClient = dropboxRemoteClient;
+  }
+
   dropboxClient.filesListFolder(options)
   .then(function(response){
 
@@ -1779,10 +1927,10 @@ function loadDropboxFolder(options, callback){
     more = response.has_more;
     results.entries = response.entries;
 
-    debug(chalkLog("DROPBOX LIST FOLDER"
+    console.log(chalkLog("DROPBOX LIST FOLDER"
       + " | PATH:" + options.path
       + " | ENTRIES: " + response.entries.length
-      + " | CURSOR (trunc): " + cursor.substr(-10)
+      + " | CURSOR (trunc): " + cursor
       + " | LIMIT: " + options.limit
       + " | MORE: " + more
     ));
@@ -1805,7 +1953,7 @@ function loadDropboxFolder(options, callback){
           debug(chalkLog("DROPBOX LIST FOLDER CONT"
             + " | PATH:" + options.path
             + " | ENTRIES: " + responseCont.entries.length + "/" + results.entries.length
-            + " | CURSOR (trunc): " + responseCont.cursor.substr(-10)
+            + " | CURSOR (trunc): " + responseCont.cursor
             + " | LIMIT: " + options.limit
             + " | MORE: " + more
           ));
@@ -1862,6 +2010,8 @@ function loadInputsDropboxFolder(folder, callback){
 
     async.eachSeries(results.entries, function(entry, cb){
 
+      debug(chalkAlert("entry: " + entry));
+
       const entryNameArray = entry.name.split(".");
       const entryInputsId = entryNameArray[0];
 
@@ -1881,20 +2031,6 @@ function loadInputsDropboxFolder(folder, callback){
         skippedInputsFiles += 1;
 
         cb();
-
-        // let optionsMove = {};
-        // optionsMove.from_path = folder + "/" + entry.name;
-        // optionsMove.to_path = defaultInputsArchiveFolder + "/" + entry.name;
-
-        // dropboxClient.filesMoveV2(optionsMove)
-        // .then(function(response){
-        //   skippedInputsFiles += 1;
-        //   async.setImmediate(function() { cb(); });
-        // })
-        // .catch(function(err){
-        //   console.log(chalkError("NNT | *** DROPBOX FILE MOVE ERROR\n" + jsonPrint(err)));
-        //   cb();
-        // });
 
       }
       else if (inputsHashMap.has(entryInputsId)){
@@ -2211,18 +2347,28 @@ function loadTrainingSetsDropboxFolder(folder, callback){
     limit: DROPBOX_LIST_FOLDER_LIMIT
   };
 
+  if (configuration.offlineMode) {
+    dropboxClient = dropboxLocalClient;
+  }
+  else {
+    dropboxClient = dropboxRemoteClient;
+  }
+
+
   dropboxClient.filesListFolder(options)
   .then(function(response){
 
     debug(chalkLog("DROPBOX LIST FOLDER"
       + " | ENTRIES: " + response.entries.length
-      + " | CURSOR (trunc): " + response.cursor.substr(-10)
+      + " | CURSOR (trunc): " + response.cursor
       + " | MORE: " + response.has_more
       + " | PATH:" + options.path
       // + " | " + jsonPrint(response)
     ));
 
     async.eachSeries(response.entries, function(entry, cb){
+
+      debug(chalkAlert("entry\n" + jsonPrint(entry)));
 
       debug(chalkLog("NNT | DROPBOX TRAINING SET FOUND"
         + " | LAST MOD: " + moment(new Date(entry.client_modified)).format(compactDateTimeFormat)
@@ -2370,6 +2516,13 @@ function loadTrainingSetsDropboxFolder(folder, callback){
 
 function loadBestNetworkDropboxFolders (params, callback){
 
+  if (configuration.offlineMode) {
+    dropboxClient = dropboxLocalClient;
+  }
+  else {
+    dropboxClient = dropboxRemoteClient;
+  }
+
   let numNetworksLoaded = 0;
 
   debug(chalkNetwork("NNT | ... LOADING DROPBOX BEST NN FOLDERS"
@@ -2415,7 +2568,14 @@ function loadBestNetworkDropboxFolders (params, callback){
 
       async.eachSeries(response.entries, function(entry, cb1){
 
+        debug("entry\n" + jsonPrint(entry));
+
         if (entry.name === bestRuntimeNetworkFileName) {
+          debug(chalkInfo("... SKIPPING LOAD OF " + entry.name));
+          return(cb1());
+        }
+
+        if (!entry.name.endsWith(".json")) {
           debug(chalkInfo("... SKIPPING LOAD OF " + entry.name));
           return(cb1());
         }
@@ -2592,6 +2752,7 @@ function loadBestNetworkDropboxFolders (params, callback){
 
                 bestNetworkHashMap.set(networkObj.networkId, { entry: entry, networkObj: networkObj});
 
+
                 dropboxClient.filesDelete({path: localBestNetworkFolder + "/" + entry.name})
                 .then(function(response){
 
@@ -2701,11 +2862,6 @@ function loadBestNetworkDropboxFolders (params, callback){
               if (networkObj.successRate === undefined) { networkObj.successRate = 0; }
 
               if (!configuration.inputsIdArray.includes(networkObj.inputsId)) {
-
-                // if ((hostname !== "google") && (folder === globalBestNetworkFolder)){
-                //   console.log(chalkInfo("NNT | NN INPUTS NOT IN INPUTS ID ARRAY ... SKIPPING (HOST NOT GOOGLE): " + folder + "/" + entry.name));
-                //   return(cb1());
-                // }
 
                 if (!configuration.deleteNotInInputsIdArray){
                   console.log(chalkInfo("NNT | NN INPUTS NOT IN INPUTS ID ARRAY ... SKIPPING"
@@ -2950,415 +3106,364 @@ function printNetworkObj(title, nnObj){
   ));
 }
 
-function loadConfigFile(folder, file, callback) {
+function initStdIn(callback){
+  console.log("NNT | STDIN ENABLED");
 
-  const fullPath = folder + "/" + file;
+  stdin = process.stdin;
+  if(stdin.setRawMode  !== undefined) {
+    stdin.setRawMode( true );
+  }
+  stdin.resume();
+  stdin.setEncoding( "utf8" );
+  stdin.on( "data", function( key ){
 
-  getFileMetadata(folder, file, function(err, response){
-
-    if (err) {
-      return(callback(err, null));
+    switch (key) {
+      case "\u0003":
+        process.exit();
+      break;
+      case "v":
+        configuration.verbose = !configuration.verbose;
+        console.log(chalkRedBold("NNT | VERBOSE: " + configuration.verbose));
+      break;
+      case "q":
+        quit();
+      break;
+      case "Q":
+        quit();
+      break;
+      case "s":
+        showStats();
+      break;
+      case "S":
+        showStats(true);
+      break;
+      default:
+        console.log(
+          "\n" + "q/Q: quit"
+          + "\n" + "s: showStats"
+          + "\n" + "S: showStats verbose"
+        );
     }
+  });
 
-    const fileModifiedMoment = moment(new Date(response.client_modified));
-  
-    if (fileModifiedMoment.isSameOrBefore(prevConfigFileModifiedMoment)){
+  if (callback !== undefined) { callback(err, stdin); }
+}
 
-      debug(chalkInfo("NNT | CONFIG FILE BEFORE OR EQUAL"
-        + " | " + fullPath
-        + " | PREV: " + prevConfigFileModifiedMoment.format(compactDateTimeFormat)
-        + " | " + fileModifiedMoment.format(compactDateTimeFormat)
-      ));
-      callback(null, null);
+function loadCommandLineArgs(callback){
+
+  if (statsObj.commandLineArgsLoaded) {
+    if (callback !== undefined) { 
+      return callback(null, false);
+    }
+    return;
+  }
+
+  const commandLineConfigKeys = Object.keys(commandLineConfig);
+
+  commandLineConfigKeys.forEach(function(arg){
+    if ((arg === "createTrainingSet") || (arg === "createTrainingSetOnly")) {
+      configuration.loadTrainingSetFromFile = false;
+      configuration[arg] = commandLineConfig[arg];
+      console.log("NNT | --> COMMAND LINE CONFIG | " + arg + ": " + configuration[arg]);
+    }
+    else if (arg === "hiddenLayerSize") {
+      configuration.train.hiddenLayerSize = commandLineConfig[arg];
+      console.log("NNT | --> COMMAND LINE CONFIG | train.hiddenLayerSize: " + configuration.train.hiddenLayerSize);
+    }
+    else if (arg === "seedNetworkId") {
+      configuration.train.networkId = commandLineConfig[arg];
+      configuration.evolve.networkId = commandLineConfig[arg];
+      console.log("NNT | --> COMMAND LINE CONFIG | train.networkObj.networkId: " + configuration.train.networkId);
+      console.log("NNT | --> COMMAND LINE CONFIG | evolve.networkObj.networkId: " + configuration.evolve.networkId);
+    }
+    else if (arg === "evolveIterations") {
+      configuration.train.iterations = commandLineConfig[arg];
+      configuration.evolve.iterations = commandLineConfig[arg];
+      console.log("NNT | --> COMMAND LINE CONFIG | train.iterations: " + configuration.train.iterations);
+      console.log("NNT | --> COMMAND LINE CONFIG | evolve.iterations: " + configuration.evolve.iterations);
     }
     else {
-      console.log(chalkAlert("NNT | +++ CONFIG FILE AFTER ... LOADING"
-        + " | " + fullPath
-        + " | PREV: " + prevConfigFileModifiedMoment.format(compactDateTimeFormat)
-        + " | " + fileModifiedMoment.format(compactDateTimeFormat)
-      ));
+      configuration[arg] = commandLineConfig[arg];
+      console.log("NNT | --> COMMAND LINE CONFIG | " + arg + ": " + configuration[arg]);
+    }
+  });
 
-      prevConfigFileModifiedMoment = moment(fileModifiedMoment);
+  const configArgs = Object.keys(configuration);
 
-      loadFile(folder, file, function(err, loadedConfigObj){
+  configArgs.forEach(function(arg){
+    console.log("NNT | _FINAL CONFIG | " + arg + ": " + configuration[arg]);
+  });
 
-        let commandLineConfigKeys;
-        let configArgs;
+  statsObj.commandLineArgsLoaded = true;
 
-        if (err) {
-          console.error(chalkError("NNT | ERROR LOAD DROPBOX CONFIG: " + dropboxConfigFile
-            + "\n" + jsonPrint(err)
-          ));
+  if (callback !== undefined) { callback(null, false); }
 
-          if (err.status === 404){
+}
+
+function loadConfigFile(folder, file, callback) {
+
+  if (configuration.offlineMode) {
+    loadCommandLineArgs(function(err, loadedConfigObj){
+      return callback(null, null);
+    });
+  }
+  else {
+
+    const fullPath = folder + "/" + file;
+
+    getFileMetadata(folder, file, function(err, response){
+
+      if (err) {
+        return(callback(err, null));
+      }
+
+      const fileModifiedMoment = moment(new Date(response.client_modified));
+    
+      if (fileModifiedMoment.isSameOrBefore(prevConfigFileModifiedMoment)){
+
+        console.log(chalkInfo("NNT | CONFIG FILE BEFORE OR EQUAL"
+          + " | " + fullPath
+          + " | PREV: " + prevConfigFileModifiedMoment.format(compactDateTimeFormat)
+          + " | " + fileModifiedMoment.format(compactDateTimeFormat)
+        ));
+        callback(null, null);
+      }
+      else {
+        console.log(chalkAlert("NNT | +++ CONFIG FILE AFTER ... LOADING"
+          + " | " + fullPath
+          + " | PREV: " + prevConfigFileModifiedMoment.format(compactDateTimeFormat)
+          + " | " + fileModifiedMoment.format(compactDateTimeFormat)
+        ));
+
+        prevConfigFileModifiedMoment = moment(fileModifiedMoment);
+
+        loadFile(folder, file, function(err, loadedConfigObj){
+
+          if (err) {
+            console.error(chalkError("NNT | ERROR LOAD DROPBOX CONFIG: " + dropboxConfigFile
+              + "\n" + jsonPrint(err)
+            ));
+
+            if (err.status === 404){
+              loadCommandLineArgs(function(err, results){
+                callback(null, false);
+              });
+
+            }
+            else {
+              callback(err, false);
+            }
+          }
+          else if ((loadedConfigObj === undefined) || !loadedConfigObj) {
+            console.log(chalkError("NNT | DROPBOX CONFIG LOAD FILE ERROR | JSON UNDEFINED ??? "));
+            callback("JSON UNDEFINED", null);
+          }
+
+          else {
+
+            console.log(chalkInfo("NNT | LOADED CONFIG FILE: " + dropboxConfigFile + "\n" + jsonPrint(loadedConfigObj)));
+
+            if (loadedConfigObj.TNN_OFFLINE_MODE  !== undefined){
+              console.log("NNT | TNN_OFFLINE_MODE: " + loadedConfigObj.TNN_OFFLINE_MODE);
+
+              if ((loadedConfigObj.TNN_OFFLINE_MODE === true) || (loadedConfigObj.TNN_OFFLINE_MODE === "true")) {
+                configuration.offlineMode = true;
+              }
+              else {
+                configuration.offlineMode = false;
+              }
+            }
+
+            if (loadedConfigObj.TNN_NO_SERVER_MODE  !== undefined){
+              console.log("NNT | TNN_NO_SERVER_MODE: " + loadedConfigObj.TNN_NO_SERVER_MODE);
+
+              if ((loadedConfigObj.TNN_NO_SERVER_MODE === true) || (loadedConfigObj.TNN_NO_SERVER_MODE === "true")) {
+                configuration.noServerMode = true;
+              }
+              else {
+                configuration.noServerMode = false;
+              }
+            }
+
+
+            if (loadedConfigObj.TNN_QUIT_ON_COMPLETE !== undefined) {
+              console.log("NNT | LOADED TNN_QUIT_ON_COMPLETE: " + loadedConfigObj.TNN_QUIT_ON_COMPLETE);
+              if (!loadedConfigObj.TNN_QUIT_ON_COMPLETE || (loadedConfigObj.TNN_QUIT_ON_COMPLETE === "false")) {
+                configuration.quitOnComplete = false ;
+              }
+              else {
+                configuration.quitOnComplete = true ;
+              }
+            }
+
+            if (loadedConfigObj.TNN_CREATE_TRAINING_SET  !== undefined){
+              console.log("NNT | CREATE TRAINING SET");
+
+              if (!loadedConfigObj.TNN_CREATE_TRAINING_SET || (loadedConfigObj.TNN_CREATE_TRAINING_SET === "false")) {
+                configuration.createTrainingSet = false;
+              }
+              else {
+                configuration.createTrainingSet = true;
+              }
+            }
+
+            if (loadedConfigObj.TNN_CREATE_TRAINING_SET_ONLY  !== undefined){
+              console.log("NNT | CREATE TRAINING SET ONLY");
+
+              if (!loadedConfigObj.TNN_CREATE_TRAINING_SET_ONLY || (loadedConfigObj.TNN_CREATE_TRAINING_SET_ONLY === "false")) {
+                configuration.createTrainingSetOnly = false;
+              }
+              else {
+                configuration.createTrainingSet = true;
+                configuration.createTrainingSetOnly = true;
+              }
+            }
+
+            if (loadedConfigObj.TNN_LOAD_TRAINING_SET_FROM_FILE  !== undefined){
+              console.log("NNT | LOADED TNN_LOAD_TRAINING_SET_FROM_FILE: " + loadedConfigObj.TNN_LOAD_TRAINING_SET_FROM_FILE);
+
+              if (!loadedConfigObj.TNN_LOAD_TRAINING_SET_FROM_FILE || (loadedConfigObj.TNN_LOAD_TRAINING_SET_FROM_FILE === "false")) {
+                configuration.loadTrainingSetFromFile = false;
+              }
+              else if (!configuration.createTrainingSet && !configuration.createTrainingSetOnly) {
+                configuration.loadTrainingSetFromFile = true;
+              }
+            }
+
+            if (loadedConfigObj.TNN_USE_LOCAL_TRAINING_SETS  !== undefined){
+              console.log("NNT | LOADED TNN_USE_LOCAL_TRAINING_SETS: " + loadedConfigObj.TNN_USE_LOCAL_TRAINING_SETS);
+
+              if (!loadedConfigObj.TNN_USE_LOCAL_TRAINING_SETS || (loadedConfigObj.TNN_USE_LOCAL_TRAINING_SETS === "false")) {
+                configuration.useLocalTrainingSets = false;
+              }
+              else {
+                configuration.useLocalTrainingSets = true;
+              }
+            }
+
+            if (loadedConfigObj.TNN_INPUTS_IDS !== undefined){
+              console.log("NNT | LOADED TNN_INPUTS_IDS: " + loadedConfigObj.TNN_INPUTS_IDS);
+              configuration.inputsIdArray = loadedConfigObj.TNN_INPUTS_IDS;
+              // inputsIdSet.clear();
+              // configuration.inputsIdArray.forEach(function(inputsId){
+              //   inputsIdSet.add(inputsId);
+              // });
+            }
+
+            if (loadedConfigObj.TNN_INPUTS_ID !== undefined){
+              console.log("NNT | LOADED TNN_INPUTS_ID: " + loadedConfigObj.TNN_INPUTS_ID);
+              configuration.inputsId = loadedConfigObj.TNN_INPUTS_ID;
+            }
+
+            if (loadedConfigObj.TNN_SEED_NETWORK_PROBABILITY !== undefined){
+              console.log("NNT | LOADED TNN_SEED_NETWORK_PROBABILITY: " + loadedConfigObj.TNN_SEED_NETWORK_PROBABILITY);
+              configuration.seedNetworkProbability = loadedConfigObj.TNN_SEED_NETWORK_PROBABILITY;
+            }
+
+            if (loadedConfigObj.TNN_INIT_MAIN_INTERVAL !== undefined){
+              console.log("NNT | LOADED TNN_INIT_MAIN_INTERVAL: " + loadedConfigObj.TNN_INIT_MAIN_INTERVAL);
+              configuration.initMainIntervalTime = loadedConfigObj.TNN_INIT_MAIN_INTERVAL;
+            }
+
+            if (loadedConfigObj.TNN_MAX_NEURAL_NETWORK_CHILDREN !== undefined){
+              console.log("NNT | LOADED TNN_MAX_NEURAL_NETWORK_CHILDREN: " + loadedConfigObj.TNN_MAX_NEURAL_NETWORK_CHILDREN);
+              configuration.maxNeuralNetworkChildern = loadedConfigObj.TNN_MAX_NEURAL_NETWORK_CHILDREN;
+            }
+
+            if (loadedConfigObj.TNN_SEED_RANDOMIZE_OPTIONS !== undefined){
+              console.log("NNT | LOADED TNN_SEED_RANDOMIZE_OPTIONS: " + loadedConfigObj.TNN_SEED_RANDOMIZE_OPTIONS);
+              configuration.randomizeSeedOptions = loadedConfigObj.TNN_SEED_RANDOMIZE_OPTIONS;
+            }
+
+            if (loadedConfigObj.TNN_EVOLVE_COST_ARRAY !== undefined){
+              console.log("NNT | LOADED TNN_EVOLVE_COST_ARRAY: " + loadedConfigObj.TNN_EVOLVE_COST_ARRAY);
+              configuration.costArray = loadedConfigObj.TNN_EVOLVE_COST_ARRAY;
+            }
+
+            if (loadedConfigObj.TNN_GLOBAL_MIN_SUCCESS_RATE !== undefined){
+              console.log("NNT | LOADED TNN_GLOBAL_MIN_SUCCESS_RATE: " + loadedConfigObj.TNN_GLOBAL_MIN_SUCCESS_RATE);
+              configuration.globalMinSuccessRate = loadedConfigObj.TNN_GLOBAL_MIN_SUCCESS_RATE;
+            }
+
+            if (loadedConfigObj.TNN_LOCAL_MIN_SUCCESS_RATE !== undefined){
+              console.log("NNT | LOADED TNN_LOCAL_MIN_SUCCESS_RATE: " + loadedConfigObj.TNN_LOCAL_MIN_SUCCESS_RATE);
+              configuration.localMinSuccessRate = loadedConfigObj.TNN_LOCAL_MIN_SUCCESS_RATE;
+            }
+
+            if (loadedConfigObj.TNN_LOCAL_PURGE_MIN_SUCCESS_RATE !== undefined){
+              console.log("NNT | LOADED TNN_LOCAL_PURGE_MIN_SUCCESS_RATE: " + loadedConfigObj.TNN_LOCAL_PURGE_MIN_SUCCESS_RATE);
+              configuration.localPurgeMinSuccessRate = loadedConfigObj.TNN_LOCAL_PURGE_MIN_SUCCESS_RATE;
+            }
+
+            if (loadedConfigObj.TNN_EVOLVE_THREADS !== undefined){
+              console.log("NNT | LOADED TNN_EVOLVE_THREADS: " + loadedConfigObj.TNN_EVOLVE_THREADS);
+              configuration.evolve.threads = loadedConfigObj.TNN_EVOLVE_THREADS;
+            }
+
+            if (loadedConfigObj.TNN_SEED_NETWORK_ID  !== undefined){
+              console.log("NNT | LOADED TNN_SEED_NETWORK_ID: " + loadedConfigObj.TNN_SEED_NETWORK_ID);
+              configuration.evolve.networkId = loadedConfigObj.TNN_SEED_NETWORK_ID;
+              configuration.train.networkId = loadedConfigObj.TNN_SEED_NETWORK_ID;
+            }
+
+            if (loadedConfigObj.TNN_TRAIN_BEST_NETWORK  !== undefined){
+              console.log("NNT | LOADED TNN_TRAIN_BEST_NETWORK: " + loadedConfigObj.TNN_TRAIN_BEST_NETWORK);
+              configuration.train.useBestNetwork = loadedConfigObj.TNN_TRAIN_BEST_NETWORK;
+            }
+
+            if (loadedConfigObj.TNN_EVOLVE_BEST_NETWORK  !== undefined){
+              console.log("NNT | LOADED TNN_EVOLVE_BEST_NETWORK: " + loadedConfigObj.TNN_EVOLVE_BEST_NETWORK);
+              configuration.evolve.useBestNetwork = loadedConfigObj.TNN_EVOLVE_BEST_NETWORK;
+            }
+
+            if (loadedConfigObj.TNN_EVOLVE_ITERATIONS  !== undefined){
+              console.log("NNT | LOADED TNN_EVOLVE_ITERATIONS: " + loadedConfigObj.TNN_EVOLVE_ITERATIONS);
+              configuration.evolve.iterations = loadedConfigObj.TNN_EVOLVE_ITERATIONS;
+            }
+
+            if (loadedConfigObj.TNN_TRAIN_ITERATIONS  !== undefined){
+              console.log("NNT | LOADED TNN_TRAIN_ITERATIONS: " + loadedConfigObj.TNN_TRAIN_ITERATIONS);
+              configuration.train.iterations = loadedConfigObj.TNN_TRAIN_ITERATIONS;
+            }
+
+            if (loadedConfigObj.TNN_VERBOSE_MODE  !== undefined){
+              console.log("NNT | LOADED TNN_VERBOSE_MODE: " + loadedConfigObj.TNN_VERBOSE_MODE);
+              configuration.verbose = loadedConfigObj.TNN_VERBOSE_MODE;
+            }
+
+            if (loadedConfigObj.TNN_TEST_MODE  !== undefined){
+              console.log("NNT | LOADED TNN_TEST_MODE: " + loadedConfigObj.TNN_TEST_MODE);
+              configuration.testMode = loadedConfigObj.TNN_TEST_MODE;
+            }
+
+            if (loadedConfigObj.TNN_ENABLE_STDIN  !== undefined){
+              console.log("NNT | LOADED TNN_ENABLE_STDIN: " + loadedConfigObj.TNN_ENABLE_STDIN);
+              configuration.enableStdin = loadedConfigObj.TNN_ENABLE_STDIN;
+            }
+
+            if (loadedConfigObj.TNN_STATS_UPDATE_INTERVAL  !== undefined) {
+              console.log("NNT | LOADED TNN_STATS_UPDATE_INTERVAL: " + loadedConfigObj.TNN_STATS_UPDATE_INTERVAL);
+              configuration.statsUpdateIntervalTime = loadedConfigObj.TNN_STATS_UPDATE_INTERVAL;
+            }
+
+            if (loadedConfigObj.TNN_KEEPALIVE_INTERVAL  !== undefined) {
+              console.log("NNT | LOADED TNN_KEEPALIVE_INTERVAL: " + loadedConfigObj.TNN_KEEPALIVE_INTERVAL);
+              configuration.keepaliveInterval = loadedConfigObj.TNN_KEEPALIVE_INTERVAL;
+            }
+
             // OVERIDE CONFIG WITH COMMAND LINE ARGS
 
-            commandLineConfigKeys = Object.keys(commandLineConfig);
-
-            commandLineConfigKeys.forEach(function(arg){
-              if ((arg === "createTrainingSet") || (arg === "createTrainingSetOnly")) {
-                configuration.loadTrainingSetFromFile = false;
-                configuration[arg] = commandLineConfig[arg];
-                console.log("NNT | --> COMMAND LINE CONFIG | " + arg + ": " + configuration[arg]);
-              }
-              else if (arg === "hiddenLayerSize") {
-                configuration.train.hiddenLayerSize = commandLineConfig[arg];
-                console.log("NNT | --> COMMAND LINE CONFIG | train.hiddenLayerSize: " + configuration.train.hiddenLayerSize);
-              }
-              else if (arg === "seedNetworkId") {
-                configuration.train.networkId = commandLineConfig[arg];
-                configuration.evolve.networkId = commandLineConfig[arg];
-                console.log("NNT | --> COMMAND LINE CONFIG | train.networkObj.networkId: " + configuration.train.networkId);
-                console.log("NNT | --> COMMAND LINE CONFIG | evolve.networkObj.networkId: " + configuration.evolve.networkId);
-              }
-              else if (arg === "evolveIterations") {
-                configuration.train.iterations = commandLineConfig[arg];
-                configuration.evolve.iterations = commandLineConfig[arg];
-                console.log("NNT | --> COMMAND LINE CONFIG | train.iterations: " + configuration.train.iterations);
-                console.log("NNT | --> COMMAND LINE CONFIG | evolve.iterations: " + configuration.evolve.iterations);
-              }
-              else {
-                configuration[arg] = commandLineConfig[arg];
-                console.log("NNT | --> COMMAND LINE CONFIG | " + arg + ": " + configuration[arg]);
-              }
+            loadCommandLineArgs(function(err, results){
+              callback(err, true);
             });
 
-            configArgs = Object.keys(configuration);
-
-            configArgs.forEach(function(arg){
-              console.log("NNT | _FINAL CONFIG | " + arg + ": " + configuration[arg]);
-            });
-
-            if (configuration.enableStdin){
-
-              console.log("NNT | STDIN ENABLED");
-
-              stdin = process.stdin;
-              if(stdin.setRawMode  !== undefined) {
-                stdin.setRawMode( true );
-              }
-              stdin.resume();
-              stdin.setEncoding( "utf8" );
-              stdin.on( "data", function( key ){
-
-                switch (key) {
-                  case "\u0003":
-                    process.exit();
-                  break;
-                  case "v":
-                    configuration.verbose = !configuration.verbose;
-                    console.log(chalkRedBold("NNT | VERBOSE: " + configuration.verbose));
-                  break;
-                  case "q":
-                    quit();
-                  break;
-                  case "Q":
-                    quit();
-                  break;
-                  case "s":
-                    showStats();
-                  break;
-                  case "S":
-                    showStats(true);
-                  break;
-                  default:
-                    console.log(
-                      "\n" + "q/Q: quit"
-                      + "\n" + "s: showStats"
-                      + "\n" + "S: showStats verbose"
-                    );
-                }
-              });
-            }
-
-            callback(null, false);
-
           }
-          else {
-            callback(err, false);
-          }
-        }
-        else if ((loadedConfigObj === undefined) || !loadedConfigObj) {
-          console.log(chalkError("NNT | DROPBOX CONFIG LOAD FILE ERROR | JSON UNDEFINED ??? "));
-          callback("JSON UNDEFINED", null);
-        }
+        });
 
-        else {
+      }
+    });
+  }
 
-          console.log(chalkInfo("NNT | LOADED CONFIG FILE: " + dropboxConfigFile + "\n" + jsonPrint(loadedConfigObj)));
-
-          if (loadedConfigObj.TNN_QUIT_ON_COMPLETE !== undefined) {
-            console.log("NNT | LOADED TNN_QUIT_ON_COMPLETE: " + loadedConfigObj.TNN_QUIT_ON_COMPLETE);
-            if (!loadedConfigObj.TNN_QUIT_ON_COMPLETE || (loadedConfigObj.TNN_QUIT_ON_COMPLETE === "false")) {
-              configuration.quitOnComplete = false ;
-            }
-            else {
-              configuration.quitOnComplete = true ;
-            }
-          }
-
-          if (loadedConfigObj.TNN_CREATE_TRAINING_SET  !== undefined){
-            console.log("NNT | CREATE TRAINING SET");
-
-            if (!loadedConfigObj.TNN_CREATE_TRAINING_SET || (loadedConfigObj.TNN_CREATE_TRAINING_SET === "false")) {
-              configuration.createTrainingSet = false;
-            }
-            else {
-              configuration.createTrainingSet = true;
-            }
-          }
-
-          if (loadedConfigObj.TNN_CREATE_TRAINING_SET_ONLY  !== undefined){
-            console.log("NNT | CREATE TRAINING SET ONLY");
-
-            if (!loadedConfigObj.TNN_CREATE_TRAINING_SET_ONLY || (loadedConfigObj.TNN_CREATE_TRAINING_SET_ONLY === "false")) {
-              configuration.createTrainingSetOnly = false;
-            }
-            else {
-              configuration.createTrainingSet = true;
-              configuration.createTrainingSetOnly = true;
-            }
-          }
-
-          if (loadedConfigObj.TNN_LOAD_TRAINING_SET_FROM_FILE  !== undefined){
-            console.log("NNT | LOADED TNN_LOAD_TRAINING_SET_FROM_FILE: " + loadedConfigObj.TNN_LOAD_TRAINING_SET_FROM_FILE);
-
-            if (!loadedConfigObj.TNN_LOAD_TRAINING_SET_FROM_FILE || (loadedConfigObj.TNN_LOAD_TRAINING_SET_FROM_FILE === "false")) {
-              configuration.loadTrainingSetFromFile = false;
-            }
-            else if (!configuration.createTrainingSet && !configuration.createTrainingSetOnly) {
-              configuration.loadTrainingSetFromFile = true;
-            }
-          }
-
-          if (loadedConfigObj.TNN_USE_LOCAL_TRAINING_SETS  !== undefined){
-            console.log("NNT | LOADED TNN_USE_LOCAL_TRAINING_SETS: " + loadedConfigObj.TNN_USE_LOCAL_TRAINING_SETS);
-
-            if (!loadedConfigObj.TNN_USE_LOCAL_TRAINING_SETS || (loadedConfigObj.TNN_USE_LOCAL_TRAINING_SETS === "false")) {
-              configuration.useLocalTrainingSets = false;
-            }
-            else {
-              configuration.useLocalTrainingSets = true;
-            }
-          }
-
-          if (loadedConfigObj.TNN_INPUTS_IDS !== undefined){
-            console.log("NNT | LOADED TNN_INPUTS_IDS: " + loadedConfigObj.TNN_INPUTS_IDS);
-            configuration.inputsIdArray = loadedConfigObj.TNN_INPUTS_IDS;
-            // inputsIdSet.clear();
-            // configuration.inputsIdArray.forEach(function(inputsId){
-            //   inputsIdSet.add(inputsId);
-            // });
-          }
-
-          if (loadedConfigObj.TNN_INPUTS_ID !== undefined){
-            console.log("NNT | LOADED TNN_INPUTS_ID: " + loadedConfigObj.TNN_INPUTS_ID);
-            configuration.inputsId = loadedConfigObj.TNN_INPUTS_ID;
-          }
-
-          if (loadedConfigObj.TNN_SEED_NETWORK_PROBABILITY !== undefined){
-            console.log("NNT | LOADED TNN_SEED_NETWORK_PROBABILITY: " + loadedConfigObj.TNN_SEED_NETWORK_PROBABILITY);
-            configuration.seedNetworkProbability = loadedConfigObj.TNN_SEED_NETWORK_PROBABILITY;
-          }
-
-          if (loadedConfigObj.TNN_INIT_MAIN_INTERVAL !== undefined){
-            console.log("NNT | LOADED TNN_INIT_MAIN_INTERVAL: " + loadedConfigObj.TNN_INIT_MAIN_INTERVAL);
-            configuration.initMainIntervalTime = loadedConfigObj.TNN_INIT_MAIN_INTERVAL;
-          }
-
-          if (loadedConfigObj.TNN_MAX_NEURAL_NETWORK_CHILDREN !== undefined){
-            console.log("NNT | LOADED TNN_MAX_NEURAL_NETWORK_CHILDREN: " + loadedConfigObj.TNN_MAX_NEURAL_NETWORK_CHILDREN);
-            configuration.maxNeuralNetworkChildern = loadedConfigObj.TNN_MAX_NEURAL_NETWORK_CHILDREN;
-          }
-
-          if (loadedConfigObj.TNN_SEED_RANDOMIZE_OPTIONS !== undefined){
-            console.log("NNT | LOADED TNN_SEED_RANDOMIZE_OPTIONS: " + loadedConfigObj.TNN_SEED_RANDOMIZE_OPTIONS);
-            configuration.randomizeSeedOptions = loadedConfigObj.TNN_SEED_RANDOMIZE_OPTIONS;
-          }
-
-          if (loadedConfigObj.TNN_EVOLVE_COST_ARRAY !== undefined){
-            console.log("NNT | LOADED TNN_EVOLVE_COST_ARRAY: " + loadedConfigObj.TNN_EVOLVE_COST_ARRAY);
-            configuration.costArray = loadedConfigObj.TNN_EVOLVE_COST_ARRAY;
-          }
-
-          if (loadedConfigObj.TNN_GLOBAL_MIN_SUCCESS_RATE !== undefined){
-            console.log("NNT | LOADED TNN_GLOBAL_MIN_SUCCESS_RATE: " + loadedConfigObj.TNN_GLOBAL_MIN_SUCCESS_RATE);
-            configuration.globalMinSuccessRate = loadedConfigObj.TNN_GLOBAL_MIN_SUCCESS_RATE;
-          }
-
-          if (loadedConfigObj.TNN_LOCAL_MIN_SUCCESS_RATE !== undefined){
-            console.log("NNT | LOADED TNN_LOCAL_MIN_SUCCESS_RATE: " + loadedConfigObj.TNN_LOCAL_MIN_SUCCESS_RATE);
-            configuration.localMinSuccessRate = loadedConfigObj.TNN_LOCAL_MIN_SUCCESS_RATE;
-          }
-
-          if (loadedConfigObj.TNN_LOCAL_PURGE_MIN_SUCCESS_RATE !== undefined){
-            console.log("NNT | LOADED TNN_LOCAL_PURGE_MIN_SUCCESS_RATE: " + loadedConfigObj.TNN_LOCAL_PURGE_MIN_SUCCESS_RATE);
-            configuration.localPurgeMinSuccessRate = loadedConfigObj.TNN_LOCAL_PURGE_MIN_SUCCESS_RATE;
-          }
-
-          if (loadedConfigObj.TNN_EVOLVE_THREADS !== undefined){
-            console.log("NNT | LOADED TNN_EVOLVE_THREADS: " + loadedConfigObj.TNN_EVOLVE_THREADS);
-            configuration.evolve.threads = loadedConfigObj.TNN_EVOLVE_THREADS;
-          }
-
-          if (loadedConfigObj.TNN_SEED_NETWORK_ID  !== undefined){
-            console.log("NNT | LOADED TNN_SEED_NETWORK_ID: " + loadedConfigObj.TNN_SEED_NETWORK_ID);
-            configuration.evolve.networkId = loadedConfigObj.TNN_SEED_NETWORK_ID;
-            configuration.train.networkId = loadedConfigObj.TNN_SEED_NETWORK_ID;
-          }
-
-          if (loadedConfigObj.TNN_TRAIN_BEST_NETWORK  !== undefined){
-            console.log("NNT | LOADED TNN_TRAIN_BEST_NETWORK: " + loadedConfigObj.TNN_TRAIN_BEST_NETWORK);
-            configuration.train.useBestNetwork = loadedConfigObj.TNN_TRAIN_BEST_NETWORK;
-          }
-
-          if (loadedConfigObj.TNN_EVOLVE_BEST_NETWORK  !== undefined){
-            console.log("NNT | LOADED TNN_EVOLVE_BEST_NETWORK: " + loadedConfigObj.TNN_EVOLVE_BEST_NETWORK);
-            configuration.evolve.useBestNetwork = loadedConfigObj.TNN_EVOLVE_BEST_NETWORK;
-          }
-
-          if (loadedConfigObj.TNN_EVOLVE_ITERATIONS  !== undefined){
-            console.log("NNT | LOADED TNN_EVOLVE_ITERATIONS: " + loadedConfigObj.TNN_EVOLVE_ITERATIONS);
-            configuration.evolve.iterations = loadedConfigObj.TNN_EVOLVE_ITERATIONS;
-          }
-
-          if (loadedConfigObj.TNN_TRAIN_ITERATIONS  !== undefined){
-            console.log("NNT | LOADED TNN_TRAIN_ITERATIONS: " + loadedConfigObj.TNN_TRAIN_ITERATIONS);
-            configuration.train.iterations = loadedConfigObj.TNN_TRAIN_ITERATIONS;
-          }
-
-          if (loadedConfigObj.TNN_VERBOSE_MODE  !== undefined){
-            console.log("NNT | LOADED TNN_VERBOSE_MODE: " + loadedConfigObj.TNN_VERBOSE_MODE);
-            configuration.verbose = loadedConfigObj.TNN_VERBOSE_MODE;
-          }
-
-          if (loadedConfigObj.TNN_TEST_MODE  !== undefined){
-            console.log("NNT | LOADED TNN_TEST_MODE: " + loadedConfigObj.TNN_TEST_MODE);
-            configuration.testMode = loadedConfigObj.TNN_TEST_MODE;
-          }
-
-          if (loadedConfigObj.TNN_ENABLE_STDIN  !== undefined){
-            console.log("NNT | LOADED TNN_ENABLE_STDIN: " + loadedConfigObj.TNN_ENABLE_STDIN);
-            configuration.enableStdin = loadedConfigObj.TNN_ENABLE_STDIN;
-          }
-
-          if (loadedConfigObj.TNN_STATS_UPDATE_INTERVAL  !== undefined) {
-            console.log("NNT | LOADED TNN_STATS_UPDATE_INTERVAL: " + loadedConfigObj.TNN_STATS_UPDATE_INTERVAL);
-            configuration.statsUpdateIntervalTime = loadedConfigObj.TNN_STATS_UPDATE_INTERVAL;
-          }
-
-          if (loadedConfigObj.TNN_KEEPALIVE_INTERVAL  !== undefined) {
-            console.log("NNT | LOADED TNN_KEEPALIVE_INTERVAL: " + loadedConfigObj.TNN_KEEPALIVE_INTERVAL);
-            configuration.keepaliveInterval = loadedConfigObj.TNN_KEEPALIVE_INTERVAL;
-          }
-
-          // OVERIDE CONFIG WITH COMMAND LINE ARGS
-
-          commandLineConfigKeys = Object.keys(commandLineConfig);
-
-          commandLineConfigKeys.forEach(function(arg){
-            if ((arg === "createTrainingSet") || (arg === "createTrainingSetOnly")) {
-              configuration.loadTrainingSetFromFile = false;
-              configuration[arg] = commandLineConfig[arg];
-              console.log("NNT | --> COMMAND LINE CONFIG | " + arg + ": " + configuration[arg]);
-            }
-            else if (arg === "hiddenLayerSize") {
-              configuration.train.hiddenLayerSize = commandLineConfig[arg];
-              console.log("NNT | --> COMMAND LINE CONFIG | train.hiddenLayerSize: " + configuration.train.hiddenLayerSize);
-            }
-            else if (arg === "seedNetworkId") {
-              if (commandLineConfig[arg] === "none") {
-                console.log("NNT | --> COMMAND LINE CONFIG | train.networkObj.networkId: NONE");
-                console.log("NNT | --> COMMAND LINE CONFIG | evolve.networkObj.networkId: NONE");
-                configuration.enableSeedNetwork = false;
-              }
-              else {
-                configuration.enableSeedNetwork = true;
-                configuration.train.networkId = commandLineConfig[arg];
-                configuration.evolve.networkId = commandLineConfig[arg];
-                console.log("NNT | --> COMMAND LINE CONFIG | train.networkObj.networkId: " + configuration.train.networkId);
-                console.log("NNT | --> COMMAND LINE CONFIG | evolve.networkObj.networkId: " + configuration.evolve.networkId);
-              }
-            }
-            else if (arg === "evolveIterations") {
-              configuration.train.iterations = commandLineConfig[arg];
-              configuration.evolve.iterations = commandLineConfig[arg];
-              console.log("NNT | --> COMMAND LINE CONFIG | train.iterations: " + configuration.train.iterations);
-              console.log("NNT | --> COMMAND LINE CONFIG | evolve.iterations: " + configuration.evolve.iterations);
-            }
-            else {
-              configuration[arg] = commandLineConfig[arg];
-              console.log("NNT | --> COMMAND LINE CONFIG | " + arg + ": " + configuration[arg]);
-            }
-          });
-
-          configArgs = Object.keys(configuration);
-
-          configArgs.forEach(function(arg){
-            if (arg === "evolve") {
-              console.log("NNT | FINAL CONFIG | " + arg + ": " + jsonPrint(configuration[arg]));
-            }
-            else {
-              console.log("NNT | FINAL CONFIG | " + arg + ": " + configuration[arg]);
-            }
-          });
-
-          if (configuration.enableStdin){
-
-            console.log("NNT | STDIN ENABLED");
-
-            stdin = process.stdin;
-            if(stdin.setRawMode  !== undefined) {
-              stdin.setRawMode( true );
-            }
-            stdin.resume();
-            stdin.setEncoding( "utf8" );
-            stdin.on( "data", function( key ){
-
-              switch (key) {
-                case "\u0003":
-                  process.exit();
-                break;
-
-                case "v":
-                  configuration.verbose = !configuration.verbose;
-                  console.log(chalkRedBold("NNT | VERBOSE: " + configuration.verbose));
-                break;
-                case "n":
-                  configuration.interruptFlag = true;
-                  console.log(chalkRedBold("NNT | *** INTERRUPT ***"));
-                break;
-                case "q":
-                  quit();
-                break;
-                case "Q":
-                  quit();
-                break;
-                case "s":
-                  showStats();
-                break;
-                case "S":
-                  showStats(true);
-                break;
-                default:
-                  console.log(
-                    "\n" + "q/Q: quit"
-                    + "\n" + "s: showStats"
-                    + "\n" + "S: showStats verbose"
-                  );
-              }
-
-            });
-          }
-
-          callback(null, true);
-
-        }
-      });
-
-    }
-
-  });
 }
 
 function loadSeedNeuralNetwork(params, callback){
@@ -3482,7 +3587,7 @@ function loadSeedNeuralNetwork(params, callback){
 }
 
 function sendKeepAlive(userObj, callback){
-  if (userReadyAck && serverConnected){
+  if (!configuration.offlineMode && statsObj.userReadyAck && statsObj.serverConnected){
     debug(chalkInfo("TX KEEPALIVE"
       + " | " + userObj.userId
       + " | " + moment().format(defaultDateTimeFormat)
@@ -3493,8 +3598,8 @@ function sendKeepAlive(userObj, callback){
   else if (configuration.noServerMode) {
     debug(chalkError("... OFFLINE | NO TX KEEPALIVE"
       + " | " + userObj.userId
-      + " | CONNECTED: " + serverConnected
-      + " | READY ACK: " + userReadyAck
+      + " | CONNECTED: " + statsObj.serverConnected
+      + " | READY ACK: " + statsObj.userReadyAck
       + " | " + moment().format(defaultDateTimeFormat)
     ));
     callback(null);
@@ -3502,8 +3607,8 @@ function sendKeepAlive(userObj, callback){
   else {
     console.log(chalkError("!!!! CANNOT TX KEEPALIVE"
       + " | " + userObj.userId
-      + " | CONNECTED: " + serverConnected
-      + " | READY ACK: " + userReadyAck
+      + " | CONNECTED: " + statsObj.serverConnected
+      + " | READY ACK: " + statsObj.userReadyAck
       + " | " + moment().format(defaultDateTimeFormat)
     ));
     callback("ERROR");
@@ -3515,8 +3620,8 @@ function initKeepalive(userObj, interval){
   clearInterval(socketKeepaliveInterval);
 
   console.log(chalkConnect("START PRIMARY KEEPALIVE"
-    + " | READY ACK: " + userReadyAck
-    + " | SERVER CONNECTED: " + serverConnected
+    + " | READY ACK: " + statsObj.userReadyAck
+    + " | SERVER CONNECTED: " + statsObj.serverConnected
     + " | INTERVAL: " + interval + " ms"
   ));
 
@@ -3553,39 +3658,41 @@ function initUserReadyInterval(interval){
 
   userReadyInterval = setInterval(function(){
 
-    if (serverConnected && !userReadyTransmitted && !userReadyAck){
+    if (statsObj.serverConnected && !statsObj.userReadyTransmitted && !statsObj.userReadyAck){
 
-      userReadyTransmitted = true; 
+      statsObj.userReadyTransmitted = true; 
       userObj.timeStamp = moment().valueOf();
       socket.emit("USER_READY", {userId: userObj.userId, timeStamp: moment().valueOf()}); 
 
     }
 
-    else if (userReadyTransmitted && !userReadyAck) {
+    else if (statsObj.userReadyTransmitted && !statsObj.userReadyAck) {
 
-      statsObj.userReadyAckWait += 1;
+      statsObj.statsObj.userReadyAckWait += 1;
       console.log(chalkDisconnect("... WAITING FOR USER_READY_ACK ..."));
 
     }
   }, interval);
 }
 
-function initSocket(cnf, callback){
+function initSocket(callback){
 
-  if (cnf.noServerMode) {
+  if (configuration.noServerMode) {
     console.log(chalkAlert("NNT | NO SERVER MODE | SKIP INIT SOCKET"
     ));
     return(callback(null, null));
   }
 
   console.log(chalkLog("INIT SOCKET"
-    + " | " + cnf.targetServer
+    + " | " + configuration.targetServer
     + " | " + jsonPrint(userObj)
   ));
 
-  socket = require("socket.io-client")(cnf.targetServer);
+  socket = require("socket.io-client")(configuration.targetServer);
 
   socket.on("connect", function(){
+
+    statsObj.online = true;
 
     console.log(chalkInfo("NNT | SOCKET CONNECT | " + socket.id + " ... AUTHENTICATE ..."));
 
@@ -3599,13 +3706,13 @@ function initSocket(cnf, callback){
 
       console.log("AUTHENTICATED | " + socket.id);
 
-      serverConnected = true ;
-      userReadyAck = false ;
+      statsObj.serverConnected = true ;
+      statsObj.userReadyAck = false ;
 
       statsObj.socketId = socket.id;
 
       console.log(chalkConnect( "CONNECTED TO HOST" 
-        + " | SERVER: " + cnf.targetServer 
+        + " | SERVER: " + configuration.targetServer 
         + " | ID: " + socket.id 
       ));
 
@@ -3616,8 +3723,9 @@ function initSocket(cnf, callback){
   });
 
   socket.on("reconnect", function(){
-    serverConnected = true ;
-    userReadyAck = false ;
+    statsObj.serverConnected = true ;
+    statsObj.userReadyAck = false ;
+    statsObj.online = true;
     console.log(chalkConnect(moment().format(defaultDateTimeFormat) 
       + " | SOCKET RECONNECT: " + socket.id));
   });
@@ -3626,8 +3734,8 @@ function initSocket(cnf, callback){
 
     clearInterval(userReadyInterval);
 
-    serverConnected = true ;
-    userReadyAck = true ;
+    statsObj.serverConnected = true ;
+    statsObj.userReadyAck = true ;
 
     console.log(chalkConnect("RX USER_READY_ACK"
       + " | " + moment().format(defaultDateTimeFormat)
@@ -3636,13 +3744,13 @@ function initSocket(cnf, callback){
       + " | ACK TIMESTAMP: " + moment(parseInt(ackObj.timeStamp)).format(compactDateTimeFormat)
     ));
 
-    initKeepalive(userObj, cnf.keepaliveInterval);
+    initKeepalive(userObj, configuration.keepaliveInterval);
   });
 
   socket.on("error", function(err){
-    userReadyTransmitted = false;
-    userReadyAck = false ;
-    serverConnected = false ;
+    statsObj.userReadyTransmitted = false;
+    statsObj.userReadyAck = false ;
+    statsObj.serverConnected = false ;
     console.log(chalkDisconnect(moment().format(compactDateTimeFormat)
       + " | ***** SOCKET ERROR"
       + " | " + err.type
@@ -3652,9 +3760,9 @@ function initSocket(cnf, callback){
   });
 
   socket.on("connect_error", function(err){
-    userReadyTransmitted = false;
-    userReadyAck = false ;
-    serverConnected = false ;
+    statsObj.userReadyTransmitted = false;
+    statsObj.userReadyAck = false ;
+    statsObj.serverConnected = false ;
     console.log(chalkDisconnect(moment().format(compactDateTimeFormat)
       + " | ***** SOCKET CONNECT ERROR"
       + " | " + err.type
@@ -3665,9 +3773,9 @@ function initSocket(cnf, callback){
   });
 
   socket.on("reconnect_error", function(){
-    userReadyTransmitted = false;
-    userReadyAck = false ;
-    serverConnected = false ;
+    statsObj.userReadyTransmitted = false;
+    statsObj.userReadyAck = false ;
+    statsObj.serverConnected = false ;
     console.log(chalkDisconnect(moment().format(compactDateTimeFormat)
       + " | ***** SOCKET RECONNECT ERROR"
     ));
@@ -3675,9 +3783,9 @@ function initSocket(cnf, callback){
   });
 
   socket.on("disconnect", function(){
-    userReadyTransmitted = false;
-    userReadyAck = false ;
-    serverConnected = false;
+    statsObj.userReadyTransmitted = false;
+    statsObj.userReadyAck = false ;
+    statsObj.serverConnected = false;
     console.log(chalkDisconnect(moment().format(compactDateTimeFormat)
       + " | ***** SOCKET DISCONNECT"
     ));
@@ -3824,9 +3932,6 @@ function initialize(cnf, callback){
   debug(chalkWarn("dropboxConfigFile  : " + dropboxConfigFile));
 
   loadFile(dropboxConfigHostFolder, dropboxConfigFile, function(err, loadedConfigObj){
-
-    let commandLineConfigKeys;
-    let configArgs;
 
     if (!err && loadedConfigObj !== undefined) {
       console.log("NNT | " + dropboxConfigFile + "\n" + jsonPrint(loadedConfigObj));
@@ -4006,104 +4111,9 @@ function initialize(cnf, callback){
         cnf.keepaliveInterval = loadedConfigObj.TNN_KEEPALIVE_INTERVAL;
       }
 
-      // OVERIDE CONFIG WITH COMMAND LINE ARGS
-
-      commandLineConfigKeys = Object.keys(commandLineConfig);
-
-      commandLineConfigKeys.forEach(function(arg){
-        if ((arg === "createTrainingSet") || (arg === "createTrainingSetOnly")) {
-          cnf.loadTrainingSetFromFile = false;
-          cnf[arg] = commandLineConfig[arg];
-          console.log("NNT | --> COMMAND LINE CONFIG | " + arg + ": " + cnf[arg]);
-        }
-        else if (arg === "hiddenLayerSize") {
-          cnf.train.hiddenLayerSize = commandLineConfig[arg];
-          console.log("NNT | --> COMMAND LINE CONFIG | train.hiddenLayerSize: " + cnf.train.hiddenLayerSize);
-        }
-        else if (arg === "seedNetworkId") {
-          if (commandLineConfig[arg] === "none") {
-            console.log("NNT | --> COMMAND LINE CONFIG | train.networkObj.networkId: NONE");
-            console.log("NNT | --> COMMAND LINE CONFIG | evolve.networkObj.networkId: NONE");
-            cnf.enableSeedNetwork = false;
-          }
-          else {
-            cnf.enableSeedNetwork = true;
-            cnf.train.networkId = commandLineConfig[arg];
-            cnf.evolve.networkId = commandLineConfig[arg];
-            console.log("NNT | --> COMMAND LINE CONFIG | train.networkObj.networkId: " + cnf.train.networkId);
-            console.log("NNT | --> COMMAND LINE CONFIG | evolve.networkObj.networkId: " + cnf.evolve.networkId);
-          }
-        }
-        else if (arg === "evolveIterations") {
-          cnf.train.iterations = commandLineConfig[arg];
-          cnf.evolve.iterations = commandLineConfig[arg];
-          console.log("NNT | --> COMMAND LINE CONFIG | train.iterations: " + cnf.train.iterations);
-          console.log("NNT | --> COMMAND LINE CONFIG | evolve.iterations: " + cnf.evolve.iterations);
-        }
-        else {
-          cnf[arg] = commandLineConfig[arg];
-          console.log("NNT | --> COMMAND LINE CONFIG | " + arg + ": " + cnf[arg]);
-        }
-      });
-
-      configArgs = Object.keys(cnf);
-
-      configArgs.forEach(function(arg){
-        if (arg === "evolve") {
-          console.log("NNT | FINAL CONFIG | " + arg + ": " + jsonPrint(cnf[arg]));
-        }
-        else {
-          console.log("NNT | FINAL CONFIG | " + arg + ": " + cnf[arg]);
-        }
-      });
-
-      if (cnf.enableStdin){
-
-        console.log("NNT | STDIN ENABLED");
-
-        stdin = process.stdin;
-        if(stdin.setRawMode  !== undefined) {
-          stdin.setRawMode( true );
-        }
-        stdin.resume();
-        stdin.setEncoding( "utf8" );
-        stdin.on( "data", function( key ){
-
-          switch (key) {
-            case "\u0003":
-              process.exit();
-            break;
-
-            case "v":
-              configuration.verbose = !configuration.verbose;
-              console.log(chalkRedBold("NNT | VERBOSE: " + configuration.verbose));
-            break;
-            case "n":
-              configuration.interruptFlag = true;
-              console.log(chalkRedBold("NNT | *** INTERRUPT ***"));
-            break;
-            case "q":
-              quit();
-            break;
-            case "Q":
-              quit();
-            break;
-            case "s":
-              showStats();
-            break;
-            case "S":
-              showStats(true);
-            break;
-            default:
-              console.log(
-                "\n" + "q/Q: quit"
-                + "\n" + "s: showStats"
-                + "\n" + "S: showStats verbose"
-              );
-          }
-
-        });
-      }
+      loadCommandLineArgs();
+      
+      statsObj.commandLineArgsLoaded = true;
 
       initStatsUpdate(cnf, function(err, cnf2){
 
@@ -4114,13 +4124,11 @@ function initialize(cnf, callback){
 
         debug("initStatsUpdate cnf2\n" + jsonPrint(cnf2));
 
-        // loadHistogramsDropboxFolder(defaultHistogramsFolder, function(err){
-          loadInputsDropboxFolder(defaultInputsFolder, function(err, results){
-            return(callback(err, cnf2));
-          });
-        // });
-
+        loadInputsDropboxFolder(defaultInputsFolder, function(err, results){
+          return(callback(err, cnf2));
+        });
       });
+
     }
     else {
       console.error(chalkError("NNT | ERROR LOAD DROPBOX CONFIG: " + dropboxConfigFile
@@ -4128,85 +4136,8 @@ function initialize(cnf, callback){
       ));
 
       if (err.status === 404){
-        // OVERIDE CONFIG WITH COMMAND LINE ARGS
 
-        commandLineConfigKeys = Object.keys(commandLineConfig);
-
-        commandLineConfigKeys.forEach(function(arg){
-          if ((arg === "createTrainingSet") || (arg === "createTrainingSetOnly")) {
-            cnf.loadTrainingSetFromFile = false;
-            cnf[arg] = commandLineConfig[arg];
-            console.log("NNT | --> COMMAND LINE CONFIG | " + arg + ": " + cnf[arg]);
-          }
-          else if (arg === "hiddenLayerSize") {
-            cnf.train.hiddenLayerSize = commandLineConfig[arg];
-            console.log("NNT | --> COMMAND LINE CONFIG | train.hiddenLayerSize: " + cnf.train.hiddenLayerSize);
-          }
-          else if (arg === "seedNetworkId") {
-            cnf.train.networkId = commandLineConfig[arg];
-            cnf.evolve.networkId = commandLineConfig[arg];
-            console.log("NNT | --> COMMAND LINE CONFIG | train.networkObj.networkId: " + cnf.train.networkId);
-            console.log("NNT | --> COMMAND LINE CONFIG | evolve.networkObj.networkId: " + cnf.evolve.networkId);
-          }
-          else if (arg === "evolveIterations") {
-            cnf.train.iterations = commandLineConfig[arg];
-            cnf.evolve.iterations = commandLineConfig[arg];
-            console.log("NNT | --> COMMAND LINE CONFIG | train.iterations: " + cnf.train.iterations);
-            console.log("NNT | --> COMMAND LINE CONFIG | evolve.iterations: " + cnf.evolve.iterations);
-          }
-          else {
-            cnf[arg] = commandLineConfig[arg];
-            console.log("NNT | --> COMMAND LINE CONFIG | " + arg + ": " + cnf[arg]);
-          }
-        });
-
-        configArgs = Object.keys(cnf);
-
-        configArgs.forEach(function(arg){
-          console.log("NNT | _FINAL CONFIG | " + arg + ": " + cnf[arg]);
-        });
-
-        if (cnf.enableStdin){
-
-          console.log("NNT | STDIN ENABLED");
-
-          stdin = process.stdin;
-          if(stdin.setRawMode  !== undefined) {
-            stdin.setRawMode( true );
-          }
-          stdin.resume();
-          stdin.setEncoding( "utf8" );
-          stdin.on( "data", function( key ){
-
-            switch (key) {
-              case "\u0003":
-                process.exit();
-              break;
-              case "v":
-                configuration.verbose = !configuration.verbose;
-                console.log(chalkRedBold("NNT | VERBOSE: " + configuration.verbose));
-              break;
-              case "q":
-                quit();
-              break;
-              case "Q":
-                quit();
-              break;
-              case "s":
-                showStats();
-              break;
-              case "S":
-                showStats(true);
-              break;
-              default:
-                console.log(
-                  "\n" + "q/Q: quit"
-                  + "\n" + "s: showStats"
-                  + "\n" + "S: showStats verbose"
-                );
-            }
-          });
-        }
+        loadCommandLineArgs();
 
         initStatsUpdate(cnf, function(err, cnf2){
           if (err) {
@@ -4217,7 +4148,6 @@ function initialize(cnf, callback){
           loadInputsDropboxFolder(defaultInputsFolder, function(err, results){
             return(callback(err, cnf2));
           });
-
         });
       }
       else {
@@ -6272,6 +6202,10 @@ function initNetworkCreateInterval(interval) {
                   console.log(chalkAlert("NNT | *** NNC ERROR | " + nnChildId));
                 break;
 
+                case "ZOMBIE":
+                  console.log(chalkAlert("NNT | *** NNC ZOMBIE | " + nnChildId));
+                break;
+
                 case "RUNNING":
                   debug(chalkAlert("NNT | ... NNC RUNNING ..."
                     + " | CURRENT NUM NNC: " + Object.keys(neuralNetworkChildHashMap).length
@@ -6320,13 +6254,17 @@ function initTimeout(callback){
 
     configuration = deepcopy(cnf);
 
+    if (configuration.enableStdin) {
+      initStdIn();
+    }
+
     console.log(chalkBlue("\n\nNNT"
       + " | " + cnf.processName 
       + " STARTED " + getTimeStamp() 
       + "\n" + jsonPrint(configuration)
     ));
 
-    initSocket(cnf, function(){
+    initSocket(function(){
 
       requiredTrainingSet.forEach(function(nodeId) {
         console.log(chalkLog("NNT | ... REQ TRAINING SET | @" + nodeId));
