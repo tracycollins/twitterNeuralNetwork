@@ -2598,11 +2598,13 @@ function loadBestNetworkDropboxFolders (params, callback){
           let curNetworkObj = bestNetworkHashMap.get(networkId);
           let oldContentHash = false;
 
-          if ((curNetworkObj.entry.path_display === entry.path_display) && (curNetworkObj.entry !== undefined) && (curNetworkObj.entry.content_hash !== undefined)){
+          if ((curNetworkObj.entry.path_display === entry.path_display) 
+            && (curNetworkObj.entry !== undefined) && (curNetworkObj.entry.content_hash !== undefined)){
             oldContentHash = curNetworkObj.entry.content_hash;
           }
 
-          if (oldContentHash && (oldContentHash !== entry.content_hash) && (curNetworkObj.entry.path_display === entry.path_display)) {
+          if (oldContentHash && (oldContentHash !== entry.content_hash) 
+            && (curNetworkObj.entry.path_display === entry.path_display)) {
 
             console.log(chalkNetwork("NNT | DROPBOX BEST NETWORK CONTENT CHANGE"
               + " | LAST MOD: " + moment(new Date(entry.client_modified)).format(compactDateTimeFormat)
@@ -2625,68 +2627,69 @@ function loadBestNetworkDropboxFolders (params, callback){
               }
               else {
 
-                if (networkObj.networkId !== networkId) {
-                  console.log(chalkError("*** NETWORK OBJ NETWORK ID MISMATCH | " + networkObj.networkId + " | " + networkId));
+                if (networkObj.network.networkId !== networkId) {
+                  console.log(chalkError("*** NETWORK OBJ NETWORK ID MISMATCH | " + networkObj.network.networkId + " | " + networkId));
                   return cb1("NETWORK OBJ NETWORK ID MISMATCH");
                 }
 
-                if (networkObj.numInputs === undefined) {
-                  console.log(chalkError("*** NETWORK NETWORK numInputs UNDEFINED | " + networkObj.networkId));
+                if (networkObj.network.numInputs === undefined) {
+                  console.log(chalkError("*** NETWORK NETWORK numInputs UNDEFINED | " + networkObj.network.networkId));
                   return cb1("NETWORK OBJ NETWORK numInputs UNDEFINED");
                 }
 
-                if (networkObj.inputsId === undefined) {
-                  console.log(chalkError("*** NETWORK OBJ INPUTS ID UNDEFINED | entry.name: " + entry.name + " | networkObj.networkId: " + networkObj.networkId));
+                if (networkObj.network.inputsId === undefined) {
+                  console.log(chalkError("*** NETWORK OBJ INPUTS ID UNDEFINED | entry.name: " + entry.name 
+                    + " | networkObj.network.networkId: " + networkObj.network.networkId));
                   console.log(chalkError("*** NETWORK OBJ INPUTS ID UNDEFINED | networkObj:" + jsonPrint(networkObj)));
                   return cb1("NETWORK OBJ INPUTS ID UNDEFINED");
                 }
 
-                if (networkObj.overallMatchRate === undefined) { networkObj.overallMatchRate = 0; }
-                if (networkObj.matchRate === undefined) { networkObj.matchRate = 0; }
-                if (networkObj.successRate === undefined) { networkObj.successRate = 0; }
+                if (networkObj.network.overallMatchRate === undefined) { networkObj.network.overallMatchRate = 0; }
+                if (networkObj.network.matchRate === undefined) { networkObj.network.matchRate = 0; }
+                if (networkObj.network.successRate === undefined) { networkObj.network.successRate = 0; }
 
                 console.log(chalkNetwork("NNT | DROPBOX BEST NETWORK"
-                  + " | SR: " + networkObj.successRate.toFixed(2) + "%"
-                  + " | MR: " + networkObj.matchRate.toFixed(2) + "%"
-                  + " | OAMR: " + networkObj.overallMatchRate.toFixed(2) + "%"
-                  + " | " + getTimeStamp(networkObj.createdAt)
-                  + " | " + networkObj.networkId
-                  + " | " + networkObj.networkCreateMode
-                  + " | IN: " + networkObj.numInputs
-                  + " | OUT: " + networkObj.numOutputs
+                  + " | SR: " + networkObj.network.successRate.toFixed(2) + "%"
+                  + " | MR: " + networkObj.network.matchRate.toFixed(2) + "%"
+                  + " | OAMR: " + networkObj.network.overallMatchRate.toFixed(2) + "%"
+                  + " | " + getTimeStamp(networkObj.network.createdAt)
+                  + " | " + networkObj.network.networkId
+                  + " | " + networkObj.network.networkCreateMode
+                  + " | IN: " + networkObj.network.numInputs
+                  + " | OUT: " + networkObj.network.numOutputs
                 ));
 
-                bestNetworkHashMap.set(networkObj.networkId, { entry: entry, networkObj: networkObj});
+                bestNetworkHashMap.set(networkObj.network.networkId, { entry: entry, networkObj: networkObj});
 
                 let inputsEntry = {};
 
-                inputsEntry.name = networkObj.inputsId + ".json";
+                inputsEntry.name = networkObj.network.inputsId + ".json";
                 inputsEntry.content_hash = false;
                 inputsEntry.client_modified = moment();
 
-                inputsHashMap.set(networkObj.inputsId, {entry: inputsEntry, inputsObj: networkObj.inputsObj});
+                inputsHashMap.set(networkObj.network.inputsId, {entry: inputsEntry, inputsObj: networkObj.network.inputsObj});
 
-                if (inputsNetworksHashMap[networkObj.inputsId] === undefined) {
-                  inputsNetworksHashMap[networkObj.inputsId] = new Set();
+                if (inputsNetworksHashMap[networkObj.network.inputsId] === undefined) {
+                  inputsNetworksHashMap[networkObj.network.inputsId] = new Set();
                 }
 
-                inputsNetworksHashMap[networkObj.inputsId].add(networkObj.networkId);
+                inputsNetworksHashMap[networkObj.network.inputsId].add(networkObj.network.networkId);
 
                 numNetworksLoaded += 1;
 
-                if (!currentBestNetwork || (networkObj.successRate > currentBestNetwork.successRate)) {
+                if (!currentBestNetwork || (networkObj.network.successRate > currentBestNetwork.successRate)) {
 
-                  currentBestNetwork = networkObj;
+                  currentBestNetwork = networkObj.network;
 
                   console.log(chalkBlueBold("NNT | * NEW BEST NN"
-                  + " | SR: " + networkObj.successRate.toFixed(2) + "%"
-                  + " | MR: " + networkObj.matchRate.toFixed(2) + "%"
-                  + " | OAMR: " + networkObj.overallMatchRate.toFixed(2) + "%"
-                  + " | " + getTimeStamp(networkObj.createdAt)
-                  + " | " + networkObj.networkId
-                  + " | " + networkObj.networkCreateMode
-                  + " | IN: " + networkObj.numInputs
-                  + " | OUT: " + networkObj.numOutputs
+                  + " | SR: " + networkObj.network.successRate.toFixed(2) + "%"
+                  + " | MR: " + networkObj.network.matchRate.toFixed(2) + "%"
+                  + " | OAMR: " + networkObj.network.overallMatchRate.toFixed(2) + "%"
+                  + " | " + getTimeStamp(networkObj.network.createdAt)
+                  + " | " + networkObj.network.networkId
+                  + " | " + networkObj.network.networkCreateMode
+                  + " | IN: " + networkObj.network.numInputs
+                  + " | OUT: " + networkObj.network.numOutputs
                   ));
                 }
 
@@ -2719,38 +2722,40 @@ function loadBestNetworkDropboxFolders (params, callback){
               }
               else {
 
-                if (networkObj.inputsId === undefined) {
-                  console.log(chalkError("*** NETWORK OBJ INPUTS ID UNDEFINED | entry.name: " + entry.name + " | networkObj.networkId: " + networkObj.networkId));
+                if (networkObj.network.inputsId === undefined) {
+                  console.log(chalkError("*** NETWORK OBJ INPUTS ID UNDEFINED | entry.name: " + entry.name 
+                    + " | networkObj.network.networkId: " + networkObj.network.networkId));
                   console.log(chalkError("*** NETWORK OBJ INPUTS ID UNDEFINED | networkObj:" + jsonPrint(networkObj)));
                   return cb1("NETWORK OBJ INPUTS ID UNDEFINED");
                 }
 
-                if (networkObj.networkId !== networkId) {
-                  console.log(chalkError("*** NETWORK OBJ NETWORK ID MISMATCH | " + networkObj.networkId + " | " + networkId));
+                if (networkObj.network.networkId !== networkId) {
+                  console.log(chalkError("*** NETWORK OBJ NETWORK ID MISMATCH | " 
+                    + networkObj.network.networkId + " | " + networkId));
                   return cb1("NETWORK OBJ NETWORK ID MISMATCH");
                 }
 
-                if (networkObj.numInputs === undefined) {
-                  console.log(chalkError("*** NETWORK NETWORK numInputs UNDEFINED | " + networkObj.networkId));
+                if (networkObj.network.numInputs === undefined) {
+                  console.log(chalkError("*** NETWORK NETWORK numInputs UNDEFINED | " + networkObj.network.networkId));
                   return cb1("NETWORK OBJ NETWORK numInputs UNDEFINED");
                 }
 
-                if (networkObj.overallMatchRate === undefined) { networkObj.overallMatchRate = 0; }
-                if (networkObj.matchRate === undefined) { networkObj.matchRate = 0; }
-                if (networkObj.successRate === undefined) { networkObj.successRate = 0; }
+                if (networkObj.network.overallMatchRate === undefined) { networkObj.network.overallMatchRate = 0; }
+                if (networkObj.network.matchRate === undefined) { networkObj.network.matchRate = 0; }
+                if (networkObj.network.successRate === undefined) { networkObj.network.successRate = 0; }
 
                 console.log(chalkNetwork("NNT | DROPBOX GLOBAL BEST NETWORK"
-                  + " | SR: " + networkObj.successRate.toFixed(2) + "%"
-                  + " | MR: " + networkObj.matchRate.toFixed(2) + "%"
-                  + " | OAMR: " + networkObj.overallMatchRate.toFixed(2) + "%"
-                  + " | " + getTimeStamp(networkObj.createdAt)
-                  + " | " + networkObj.networkId
-                  + " | " + networkObj.networkCreateMode
-                  + " | IN: " + networkObj.numInputs
-                  + " | OUT: " + networkObj.numOutputs
+                  + " | SR: " + networkObj.network.successRate.toFixed(2) + "%"
+                  + " | MR: " + networkObj.network.matchRate.toFixed(2) + "%"
+                  + " | OAMR: " + networkObj.network.overallMatchRate.toFixed(2) + "%"
+                  + " | " + getTimeStamp(networkObj.network.createdAt)
+                  + " | " + networkObj.network.networkId
+                  + " | " + networkObj.network.networkCreateMode
+                  + " | IN: " + networkObj.network.numInputs
+                  + " | OUT: " + networkObj.network.numOutputs
                 ));
 
-                bestNetworkHashMap.set(networkObj.networkId, { entry: entry, networkObj: networkObj});
+                bestNetworkHashMap.set(networkObj.network.networkId, { entry: entry, networkObj: networkObj.network});
 
 
                 dropboxClient.filesDelete({path: localBestNetworkFolder + "/" + entry.name})
@@ -2759,14 +2764,14 @@ function loadBestNetworkDropboxFolders (params, callback){
                   debug("dropboxClient filesDelete response\n" + jsonPrint(response));
 
                   console.log(chalkAlert("NNT | XXX LOCAL NN (GLOBAL EXISTS)"
-                  + " | SR: " + networkObj.successRate.toFixed(2) + "%"
-                  + " | MR: " + networkObj.matchRate.toFixed(2) + "%"
-                  + " | OAMR: " + networkObj.overallMatchRate.toFixed(2) + "%"
-                  + " | " + getTimeStamp(networkObj.createdAt)
-                  + " | " + networkObj.networkId
-                  + " | " + networkObj.networkCreateMode
-                  + " | IN: " + networkObj.numInputs
-                  + " | OUT: " + networkObj.numOutputs
+                  + " | SR: " + networkObj.network.successRate.toFixed(2) + "%"
+                  + " | MR: " + networkObj.network.matchRate.toFixed(2) + "%"
+                  + " | OAMR: " + networkObj.network.overallMatchRate.toFixed(2) + "%"
+                  + " | " + getTimeStamp(networkObj.network.createdAt)
+                  + " | " + networkObj.network.networkId
+                  + " | " + networkObj.network.networkCreateMode
+                  + " | IN: " + networkObj.network.numInputs
+                  + " | OUT: " + networkObj.network.numOutputs
                   ));
                 })
                 .catch(function(err){
@@ -2796,33 +2801,33 @@ function loadBestNetworkDropboxFolders (params, callback){
 
                 let inputsEntry = {};
 
-                inputsEntry.name = networkObj.inputsId + ".json";
+                inputsEntry.name = networkObj.network.inputsId + ".json";
                 inputsEntry.content_hash = false;
                 inputsEntry.client_modified = moment();
 
-                inputsHashMap.set(networkObj.inputsId, {entry: inputsEntry, inputsObj: networkObj.inputsObj});
+                inputsHashMap.set(networkObj.network.inputsId, {entry: inputsEntry, inputsObj: networkObj.network.inputsObj});
                 // inputsIdSet.add(networkObj.inputsId);
 
-                if (inputsNetworksHashMap[networkObj.inputsId] === undefined) {
-                  inputsNetworksHashMap[networkObj.inputsId] = new Set();
+                if (inputsNetworksHashMap[networkObj.network.inputsId] === undefined) {
+                  inputsNetworksHashMap[networkObj.network.inputsId] = new Set();
                 }
-                inputsNetworksHashMap[networkObj.inputsId].add(networkObj.networkId);
+                inputsNetworksHashMap[networkObj.network.inputsId].add(networkObj.network.networkId);
 
                 numNetworksLoaded += 1;
 
-                if (!currentBestNetwork || (networkObj.successRate > currentBestNetwork.successRate)) {
+                if (!currentBestNetwork || (networkObj.network.successRate > currentBestNetwork.successRate)) {
 
-                  currentBestNetwork = networkObj;
+                  currentBestNetwork = networkObj.network;
 
                   console.log(chalkBlueBold("NNT | * NEW BEST NN"
-                  + " | SR: " + networkObj.successRate.toFixed(2) + "%"
-                  + " | MR: " + networkObj.matchRate.toFixed(2) + "%"
-                  + " | OAMR: " + networkObj.overallMatchRate.toFixed(2) + "%"
-                  + " | " + getTimeStamp(networkObj.createdAt)
-                  + " | " + networkObj.networkId
-                  + " | " + networkObj.networkCreateMode
-                  + " | IN: " + networkObj.numInputs
-                  + " | OUT: " + networkObj.numOutputs
+                  + " | SR: " + networkObj.network.successRate.toFixed(2) + "%"
+                  + " | MR: " + networkObj.network.matchRate.toFixed(2) + "%"
+                  + " | OAMR: " + networkObj.network.overallMatchRate.toFixed(2) + "%"
+                  + " | " + getTimeStamp(networkObj.network.createdAt)
+                  + " | " + networkObj.network.networkId
+                  + " | " + networkObj.network.networkCreateMode
+                  + " | IN: " + networkObj.network.numInputs
+                  + " | OUT: " + networkObj.network.numOutputs
                   ));
 
                 }
@@ -6021,53 +6026,83 @@ function initNetworkCreateInterval(interval) {
   networkCreateInterval = setInterval(function(){
 
     if (initMainReady) {
+      getChildProcesses(function(err, childArray){
 
-      // RELOAD CONFIG FILE
-
-      loadConfigFile(dropboxConfigHostFolder, dropboxConfigFile, function(err, configLoadedFlag){
-
-        if (configLoadedFlag) {
-          console.log(chalkAlert("NNT | +++ RELOADED CONFIG " + dropboxConfigHostFolder + "/" + dropboxConfigFile));
-        }
-        else {
-          debug(chalkLog("... NO RELOAD CONFIG FILE" + dropboxConfigHostFolder + "/" + dropboxConfigFile));
+        if (err) {
+          console.log(chalkError("NNT | *** getChildProcesses ERROR: " + err));
         }
 
-        getChildProcesses(function(err, childArray){
+        // console.log(chalkLog("NNT | INIT MAIN INTERVAL | FOUND " + statsObj.numChildren + " CHILDREN PROCESSES"));
 
-          if (err) {
-            console.log(chalkError("NNT | *** getChildProcesses ERROR: " + err));
-          }
+        if (enableCreateChildren && (statsObj.numChildren < configuration.maxNeuralNetworkChildern)) {
 
-          // console.log(chalkLog("NNT | INIT MAIN INTERVAL | FOUND " + statsObj.numChildren + " CHILDREN PROCESSES"));
+          console.log(chalkAlert("NNT | +++ CREATING NNC"
+            + " | CURRENT NUM NNC: " + Object.keys(neuralNetworkChildHashMap).length
+            + " | MAX NUM NNC: " + configuration.maxNeuralNetworkChildern
+          ));
 
-          if (enableCreateChildren && (statsObj.numChildren < configuration.maxNeuralNetworkChildern)) {
+          initNeuralNetworkChild(nnChildIndex, configuration, function(err, nnChildId) {
+            if (err) {
+            }
+            nnChildIndex += 1;
+          });
+        }
+        else if (statsObj.numChildren > configuration.maxNeuralNetworkChildern) {
 
-            console.log(chalkAlert("NNT | +++ CREATING NNC"
-              + " | CURRENT NUM NNC: " + Object.keys(neuralNetworkChildHashMap).length
-              + " | MAX NUM NNC: " + configuration.maxNeuralNetworkChildern
-            ));
+          console.log(chalkAlert("NNT | XXX DELETING NNC"
+            + " | CURRENT NUM NNC: " + childArray.length
+            + " | MAX NUM NNC: " + configuration.maxNeuralNetworkChildern
+          ));
 
-            initNeuralNetworkChild(nnChildIndex, configuration, function(err, nnChildId) {
-              if (err) {
-              }
-              nnChildIndex += 1;
-            });
-          }
-          else if (statsObj.numChildren > configuration.maxNeuralNetworkChildern) {
+          async.forEach(childArray, function(childObj, cb){
 
-            console.log(chalkAlert("NNT | XXX DELETING NNC"
-              + " | CURRENT NUM NNC: " + childArray.length
-              + " | MAX NUM NNC: " + configuration.maxNeuralNetworkChildern
-            ));
+            if (neuralNetworkChildHashMap[childObj.nnChildId] === undefined) {
 
-            async.forEach(childArray, function(childObj, cb){
+              neuralNetworkChildHashMap[childObj.nnChildId] = {};
 
-              if (neuralNetworkChildHashMap[childObj.nnChildId] === undefined) {
+              killChild({childPid: childObj.pid}, function(err, numKilled){
 
-                neuralNetworkChildHashMap[childObj.nnChildId] = {};
+                if (err) {
+                  return cb(err);
+                }
 
-                killChild({childPid: childObj.pid}, function(err, numKilled){
+                neuralNetworkChildHashMap[childObj.nnChildId].status = "DEAD";
+
+                console.log(chalkAlert("KILLED"
+                  + " | PID: " + childObj.pid 
+                  + " | NNCID: " + childObj.nnChildId 
+                ));
+
+                networkCreateResultsHashmap[childObj.nnChildId].status = "DEAD CHILD";
+
+                slackText = "\n*NNT | DEAD CHILD*";
+                slackText = slackText + "\n" + hostname;
+                slackText = slackText + "\n" + childObj.nnChildId;
+                slackText = slackText + "\nCH IN HM: " + statsObj.numChildren;
+
+                slackPostMessage(slackChannel, slackText);
+
+                cb();
+              });
+            }
+            else {
+
+              if (
+                     (neuralNetworkChildHashMap[childObj.nnChildId].status === "ERROR")
+                  || (neuralNetworkChildHashMap[childObj.nnChildId].status === "CLOSE")
+                  || (neuralNetworkChildHashMap[childObj.nnChildId].status === "TEST COMPLETE")
+                  || (neuralNetworkChildHashMap[childObj.nnChildId].status === "IDLE")
+                  || (neuralNetworkChildHashMap[childObj.nnChildId].status === "ZOMBIE")
+              ) {
+
+                console.log(chalkAlert("NNT | XXX DELETING NNC"
+                  + " | " + childObj.nnChildId
+                  + " | CHILD STATUS: " + neuralNetworkChildHashMap[childObj.nnChildId].status
+                  + " | CURRENT NUM NNC: " + childArray.length
+                  + " | MAX NUM NNC: " + configuration.maxNeuralNetworkChildern
+                ));
+
+                killChild({nnChildId: childObj.nnChildId}, function(err, numKilled){
 
                   if (err) {
                     return cb(err);
@@ -6075,161 +6110,116 @@ function initNetworkCreateInterval(interval) {
 
                   neuralNetworkChildHashMap[childObj.nnChildId].status = "DEAD";
 
-                  console.log(chalkAlert("KILLED"
+                  console.log(chalkAlert("NNT | XXX KILLED"
                     + " | PID: " + childObj.pid 
                     + " | NNCID: " + childObj.nnChildId 
+                    + " | CHILD STATUS: " + neuralNetworkChildHashMap[childObj.nnChildId].status
                   ));
-
-                  networkCreateResultsHashmap[childObj.nnChildId].status = "DEAD CHILD";
-
-                  slackText = "\n*NNT | DEAD CHILD*";
-                  slackText = slackText + "\n" + hostname;
-                  slackText = slackText + "\n" + childObj.nnChildId;
-                  slackText = slackText + "\nCH IN HM: " + statsObj.numChildren;
-
-                  slackPostMessage(slackChannel, slackText);
 
                   cb();
+
                 });
               }
-              else {
+            }
 
-                if (
-                       (neuralNetworkChildHashMap[childObj.nnChildId].status === "ERROR")
-                    || (neuralNetworkChildHashMap[childObj.nnChildId].status === "CLOSE")
-                    || (neuralNetworkChildHashMap[childObj.nnChildId].status === "TEST COMPLETE")
-                    || (neuralNetworkChildHashMap[childObj.nnChildId].status === "IDLE")
-                    || (neuralNetworkChildHashMap[childObj.nnChildId].status === "ZOMBIE")
-                ) {
+          }, function(err){
 
-                  console.log(chalkAlert("NNT | XXX DELETING NNC"
-                    + " | " + childObj.nnChildId
-                    + " | CHILD STATUS: " + neuralNetworkChildHashMap[childObj.nnChildId].status
-                    + " | CURRENT NUM NNC: " + childArray.length
-                    + " | MAX NUM NNC: " + configuration.maxNeuralNetworkChildern
-                  ));
+          });
 
-                  killChild({nnChildId: childObj.nnChildId}, function(err, numKilled){
+        }
+        else {
+          Object.keys(neuralNetworkChildHashMap).forEach(function(nnChildId){
 
-                    if (err) {
-                      return cb(err);
-                    }
+            const currentChild = neuralNetworkChildHashMap[nnChildId];
 
-                    neuralNetworkChildHashMap[childObj.nnChildId].status = "DEAD";
+            let nnId = "";
 
-                    console.log(chalkAlert("NNT | XXX KILLED"
-                      + " | PID: " + childObj.pid 
-                      + " | NNCID: " + childObj.nnChildId 
-                      + " | CHILD STATUS: " + neuralNetworkChildHashMap[childObj.nnChildId].status
-                    ));
+            switch (currentChild.status) {
 
-                    cb();
+              case "IDLE":
 
-                  });
-                }
-              }
+                nnId = testObj.testRunId + "_" + nnChildId + "_" + networkIndex;
+                networkIndex += 1;
 
-            }, function(err){
+                currentChild.status = "RUNNING" ;
+                neuralNetworkChildHashMap[nnChildId] = currentChild;
 
-            });
+                initNetworkCreate(nnChildId, nnId, function(err, results){
 
-          }
-          else {
-            Object.keys(neuralNetworkChildHashMap).forEach(function(nnChildId){
+                  debug("initNetworkCreate results\n" + jsonPrint(results));
 
-              const currentChild = neuralNetworkChildHashMap[nnChildId];
-
-              let nnId = "";
-
-              switch (currentChild.status) {
-
-                case "IDLE":
-
-                  nnId = testObj.testRunId + "_" + nnChildId + "_" + networkIndex;
-                  networkIndex += 1;
-
-                  currentChild.status = "RUNNING" ;
-                  neuralNetworkChildHashMap[nnChildId] = currentChild;
-
-                  initNetworkCreate(nnChildId, nnId, function(err, results){
-
-                    debug("initNetworkCreate results\n" + jsonPrint(results));
-
-                    if (err) {
-                      console.log("NNT | *** INIT NETWORK CREATE ERROR ***\n" + jsonPrint(err));
-                      currentChild.status = "ERROR" ;
-                      neuralNetworkChildHashMap[nnChildId] = currentChild;
-                    }
-                    else if (currentChild !== undefined) {
-                      currentChild.status = "RUNNING" ;
-                      neuralNetworkChildHashMap[nnChildId] = currentChild;
-                      console.log(chalkInfo("NNT | NETWORK CREATED | " + nnId));
-                    }
-                    else {
-                      console.log(chalkAlert("NNT | ??? NETWORK NOT CREATED ??? | NN CHID: " + nnChildId + " | NNID: " + nnId));
-                      currentChild.status = "UNKNOWN" ;
-                      neuralNetworkChildHashMap[nnChildId] = currentChild;
-                    }
-
-                  });
-
-                break;
-
-                case "TEST COMPLETE":
-                case "COMPLETE":
-                  if (!configuration.quitOnComplete) {
-                    currentChild.status = "IDLE" ;
+                  if (err) {
+                    console.log("NNT | *** INIT NETWORK CREATE ERROR ***\n" + jsonPrint(err));
+                    currentChild.status = "ERROR" ;
+                    neuralNetworkChildHashMap[nnChildId] = currentChild;
                   }
-                break;
+                  else if (currentChild !== undefined) {
+                    currentChild.status = "RUNNING" ;
+                    neuralNetworkChildHashMap[nnChildId] = currentChild;
+                    console.log(chalkInfo("NNT | NETWORK CREATED | " + nnId));
+                  }
+                  else {
+                    console.log(chalkAlert("NNT | ??? NETWORK NOT CREATED ??? | NN CHID: " + nnChildId + " | NNID: " + nnId));
+                    currentChild.status = "UNKNOWN" ;
+                    neuralNetworkChildHashMap[nnChildId] = currentChild;
+                  }
 
-                case "TEST PASS":
-                  console.log(chalkGreen("NNT | +++ NNC XOR TEST PASS | " + nnChildId));
+                });
+
+              break;
+
+              case "TEST COMPLETE":
+              case "COMPLETE":
+                if (!configuration.quitOnComplete) {
                   currentChild.status = "IDLE" ;
-                  neuralNetworkChildHashMap[nnChildId] = currentChild;
-                break;
+                }
+              break;
 
-                case "EXIT":
-                  console.log(chalkAlert("NNT | *** NNC EXIT | " + nnChildId));
-                  killChild({nnChildId: nnChildId});
-                break;
+              case "TEST PASS":
+                console.log(chalkGreen("NNT | +++ NNC XOR TEST PASS | " + nnChildId));
+                currentChild.status = "IDLE" ;
+                neuralNetworkChildHashMap[nnChildId] = currentChild;
+              break;
 
-                case "CLOSE":
-                  console.log(chalkAlert("NNT | *** NNC CLOSE | " + nnChildId));
-                  killChild({nnChildId: nnChildId});
-                break;
+              case "EXIT":
+                console.log(chalkAlert("NNT | *** NNC EXIT | " + nnChildId));
+                killChild({nnChildId: nnChildId});
+              break;
 
-                case "ERROR":
-                  console.log(chalkAlert("NNT | *** NNC ERROR | " + nnChildId));
-                break;
+              case "CLOSE":
+                console.log(chalkAlert("NNT | *** NNC CLOSE | " + nnChildId));
+                killChild({nnChildId: nnChildId});
+              break;
 
-                case "ZOMBIE":
-                  console.log(chalkAlert("NNT | *** NNC ZOMBIE | " + nnChildId));
-                break;
+              case "ERROR":
+                console.log(chalkAlert("NNT | *** NNC ERROR | " + nnChildId));
+              break;
 
-                case "RUNNING":
-                  debug(chalkAlert("NNT | ... NNC RUNNING ..."
-                    + " | CURRENT NUM NNC: " + Object.keys(neuralNetworkChildHashMap).length
-                    + " | MAX NUM NNC: " + configuration.maxNeuralNetworkChildern
-                  ));
-                break;
+              case "ZOMBIE":
+                console.log(chalkAlert("NNT | *** NNC ZOMBIE | " + nnChildId));
+              break;
 
-                case "UNKNOWN":
-                  console.log(chalkAlert("NNT | *** NNC UNKNOWN STATE | " + nnChildId));
-                  killChild({nnChildId: nnChildId});
-                break;
+              case "RUNNING":
+                debug(chalkAlert("NNT | ... NNC RUNNING ..."
+                  + " | CURRENT NUM NNC: " + Object.keys(neuralNetworkChildHashMap).length
+                  + " | MAX NUM NNC: " + configuration.maxNeuralNetworkChildern
+                ));
+              break;
 
-                default:
-                  console.log(chalkAlert("NNT | ??? UNKNOWN NNC STATUS"
-                    + " | " + nnChildId
-                    + " | STATUS: " + currentChild.status
-                  ));
-              }
+              case "UNKNOWN":
+                console.log(chalkAlert("NNT | *** NNC UNKNOWN STATE | " + nnChildId));
+                killChild({nnChildId: nnChildId});
+              break;
 
-            });
-          }
+              default:
+                console.log(chalkAlert("NNT | ??? UNKNOWN NNC STATUS"
+                  + " | " + nnChildId
+                  + " | STATUS: " + currentChild.status
+                ));
+            }
 
-        });
-
+          });
+        }
       });
     }
     else {
