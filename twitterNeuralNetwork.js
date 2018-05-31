@@ -2,7 +2,7 @@
 "use strict";
 
 const DEFAULT_OFFLINE_MODE = false;
-const DEFAULT_NO_SERVER_MODE = false;
+const DEFAULT_NO_SERVER_MODE = true;
 
 const os = require("os");
 const moment = require("moment");
@@ -525,7 +525,7 @@ if (DEFAULT_NO_SERVER_MODE) {
 }
 else if (
   (process.env.TNN_NO_SERVER_MODE !== undefined)
-  && (process.env.TNN_NO_SERVER_MODE === "true") || (process.env.TNN_NO_SERVER_MODE === true)
+  && ((process.env.TNN_NO_SERVER_MODE === "true") || (process.env.TNN_NO_SERVER_MODE && (process.env.TNN_NO_SERVER_MODE !== "false")))
   )
 {
   configuration.noServerMode = true;
@@ -3270,9 +3270,12 @@ function loadConfigFile(folder, file, callback) {
             console.log(chalkInfo("NNT | LOADED CONFIG FILE: " + dropboxConfigFile + "\n" + jsonPrint(loadedConfigObj)));
 
             if (loadedConfigObj.TNN_OFFLINE_MODE  !== undefined){
-              console.log("NNT | TNN_OFFLINE_MODE: " + loadedConfigObj.TNN_OFFLINE_MODE);
+              console.log("NNT | LOADED TNN_OFFLINE_MODE: " + loadedConfigObj.TNN_OFFLINE_MODE);
 
-              if ((loadedConfigObj.TNN_OFFLINE_MODE === true) || (loadedConfigObj.TNN_OFFLINE_MODE === "true")) {
+              if ((loadedConfigObj.TNN_OFFLINE_MODE === false) || (loadedConfigObj.TNN_OFFLINE_MODE === "false")) {
+                configuration.offlineMode = false;
+              }
+              else if ((loadedConfigObj.TNN_OFFLINE_MODE === true) || (loadedConfigObj.TNN_OFFLINE_MODE === "true")) {
                 configuration.offlineMode = true;
               }
               else {
@@ -3281,9 +3284,12 @@ function loadConfigFile(folder, file, callback) {
             }
 
             if (loadedConfigObj.TNN_NO_SERVER_MODE  !== undefined){
-              console.log("NNT | TNN_NO_SERVER_MODE: " + loadedConfigObj.TNN_NO_SERVER_MODE);
+              console.log("NNT | LOADED TNN_NO_SERVER_MODE: " + loadedConfigObj.TNN_NO_SERVER_MODE);
 
-              if ((loadedConfigObj.TNN_NO_SERVER_MODE === true) || (loadedConfigObj.TNN_NO_SERVER_MODE === "true")) {
+              if ((loadedConfigObj.TNN_NO_SERVER_MODE === false) || (loadedConfigObj.TNN_NO_SERVER_MODE === "false")) {
+                configuration.noServerMode = false;
+              }
+              else if ((loadedConfigObj.TNN_NO_SERVER_MODE === true) || (loadedConfigObj.TNN_NO_SERVER_MODE === "true")) {
                 configuration.noServerMode = true;
               }
               else {
@@ -3684,14 +3690,14 @@ function initUserReadyInterval(interval){
 function initSocket(callback){
 
   if (configuration.noServerMode) {
-    console.log(chalkAlert("NNT | NO SERVER MODE | SKIP INIT SOCKET"
-    ));
+    console.log(chalkAlert("NNT | NO SERVER MODE | SKIP INIT SOCKET"));
     return(callback(null, null));
   }
 
   console.log(chalkLog("INIT SOCKET"
-    + " | " + configuration.targetServer
-    + " | " + jsonPrint(userObj)
+    + " | noServerMode: " + configuration.noServerMode
+    + " | TARGET SERVER: " + configuration.targetServer
+    + "\n" + jsonPrint(userObj)
   ));
 
   socket = require("socket.io-client")(configuration.targetServer);

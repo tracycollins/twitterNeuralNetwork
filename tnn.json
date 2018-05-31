@@ -11,7 +11,7 @@
       "FORCE_COLOR": 1,
       "NODE_ENV": "production",
       "TNN_OFFLINE_MODE": false,
-      "TNN_NO_SERVER_MODE": false,
+      "TNN_NO_SERVER_MODE": true,
       "TNN_UTIL_TARGET_SERVER": "http://localhost:9997/util",
       "GCLOUD_PROJECT": "graphic-tangent-627",
       "GOOGLE_PROJECT": "graphic-tangent-627",
