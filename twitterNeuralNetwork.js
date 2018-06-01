@@ -2,7 +2,7 @@
 "use strict";
 
 const DEFAULT_OFFLINE_MODE = false;
-const DEFAULT_NO_SERVER_MODE = false;
+const DEFAULT_SERVER_MODE = false;
 
 const os = require("os");
 const moment = require("moment");
@@ -519,22 +519,17 @@ else {
   configuration.offlineMode = false;
 }
 
-if (
-  (process.env.TNN_NO_SERVER_MODE !== undefined)
-  && ((process.env.TNN_NO_SERVER_MODE === "true") 
-    || (process.env.TNN_NO_SERVER_MODE && (process.env.TNN_NO_SERVER_MODE !== "false") && (process.env.TNN_NO_SERVER_MODE !== false))
-    )
-  )
+if ( (process.env.TNN_SERVER_MODE !== undefined) 
+  && (process.env.TNN_SERVER_MODE === "true" || process.env.TNN_SERVER_MODE === true))
 {
-  configuration.noServerMode = true;
-}
-else if (DEFAULT_NO_SERVER_MODE) {
-  configuration.noServerMode = true;
-  console.log(chalkAlert("NNT | DEFAULT_NO_SERVER_MODE: " + configuration.noServerMode));
+  configuration.serverMode = true;
 }
 else {
-  configuration.noServerMode = false;
+  configuration.serverMode = DEFAULT_SERVER_MODE;
+  console.log(chalkAlert("NNT | DEFAULT_SERVER_MODE: " + configuration.serverMode));
 }
+
+console.log(chalkAlert("NNT | SERVER MODE: " + configuration.serverMode));
 
 configuration.networkCreateMode = "evole";
 
@@ -3285,17 +3280,14 @@ function loadConfigFile(folder, file, callback) {
               }
             }
 
-            if (loadedConfigObj.TNN_NO_SERVER_MODE  !== undefined){
-              console.log("NNT | LOADED TNN_NO_SERVER_MODE: " + loadedConfigObj.TNN_NO_SERVER_MODE);
+            if (loadedConfigObj.TNN_SERVER_MODE  !== undefined){
+              console.log("NNT | LOADED TNN_SERVER_MODE: " + loadedConfigObj.TNN_SERVER_MODE);
 
-              if (!loadedConfigObj.TNN_NO_SERVER_MODE || (loadedConfigObj.TNN_NO_SERVER_MODE === false) || (loadedConfigObj.TNN_NO_SERVER_MODE === "false")) {
-                configuration.noServerMode = false;
-              }
-              else if ((loadedConfigObj.TNN_NO_SERVER_MODE === true) || (loadedConfigObj.TNN_NO_SERVER_MODE === "true")) {
-                configuration.noServerMode = true;
+              if ((loadedConfigObj.TNN_SERVER_MODE === true) || (loadedConfigObj.TNN_SERVER_MODE === "true")) {
+                configuration.serverMode = true;
               }
               else {
-                configuration.noServerMode = false;
+                configuration.serverMode = false;
               }
             }
 
@@ -3609,7 +3601,7 @@ function sendKeepAlive(userObj, callback){
     socket.emit("SESSION_KEEPALIVE", userObj);
     callback(null);
   }
-  else if (configuration.noServerMode) {
+  else if (!configuration.serverMode) {
     debug(chalkError("... OFFLINE | NO TX KEEPALIVE"
       + " | " + userObj.userId
       + " | CONNECTED: " + statsObj.serverConnected
@@ -3691,13 +3683,13 @@ function initUserReadyInterval(interval){
 
 function initSocket(callback){
 
-  if (configuration.noServerMode) {
+  if (!configuration.serverMode) {
     console.log(chalkAlert("NNT | NO SERVER MODE | SKIP INIT SOCKET"));
     return(callback(null, null));
   }
 
   console.log(chalkLog("INIT SOCKET"
-    + " | noServerMode: " + configuration.noServerMode
+    + " | serverMode: " + configuration.serverMode
     + " | TARGET SERVER: " + configuration.targetServer
     + "\n" + jsonPrint(userObj)
   ));
@@ -3708,7 +3700,7 @@ function initSocket(callback){
 
     statsObj.online = true;
 
-    console.log(chalkInfo("NNT | SOCKET CONNECT | " + socket.id + " ... AUTHENTICATE ..."));
+    console.log(chalkInfo("NNT | SERVER CONNECT | " + socket.id + " ... AUTHENTICATE ..."));
 
     socket.on("unauthorized", function(err){
       console.log("NNT | There was an error with the authentication:", err.message);
@@ -3741,7 +3733,7 @@ function initSocket(callback){
     statsObj.userReadyAck = false ;
     statsObj.online = true;
     console.log(chalkConnect(moment().format(defaultDateTimeFormat) 
-      + " | SOCKET RECONNECT: " + socket.id));
+      + " | SERVER RECONNECT: " + socket.id));
   });
 
   socket.on("USER_READY_ACK", function(ackObj) {
@@ -3766,11 +3758,10 @@ function initSocket(callback){
     statsObj.userReadyAck = false ;
     statsObj.serverConnected = false ;
     console.log(chalkDisconnect(moment().format(compactDateTimeFormat)
-      + " | ***** SOCKET ERROR"
+      + " | ***** SERVER SOCKET ERROR"
       + " | " + err.type
       + " | " + err.description
     ));
-    // reset("socket error");
   });
 
   socket.on("connect_error", function(err){
@@ -3778,12 +3769,11 @@ function initSocket(callback){
     statsObj.userReadyAck = false ;
     statsObj.serverConnected = false ;
     console.log(chalkDisconnect(moment().format(compactDateTimeFormat)
-      + " | ***** SOCKET CONNECT ERROR"
+      + " | ***** SERVER CONNECT ERROR"
       + " | " + err.type
       + " | " + err.description
     ));
 
-    // reset("connect_error");
   });
 
   socket.on("reconnect_error", function(){
@@ -3791,9 +3781,8 @@ function initSocket(callback){
     statsObj.userReadyAck = false ;
     statsObj.serverConnected = false ;
     console.log(chalkDisconnect(moment().format(compactDateTimeFormat)
-      + " | ***** SOCKET RECONNECT ERROR"
+      + " | ***** SERVER RECONNECT ERROR"
     ));
-    // reset("reconnect_error");
   });
 
   socket.on("disconnect", function(){
@@ -3801,7 +3790,7 @@ function initSocket(callback){
     statsObj.userReadyAck = false ;
     statsObj.serverConnected = false;
     console.log(chalkDisconnect(moment().format(compactDateTimeFormat)
-      + " | ***** SOCKET DISCONNECT"
+      + " | ***** SERVER DISCONNECT"
     ));
 
    // reset("disconnect");
@@ -4734,41 +4723,6 @@ function convertDatum(params, inputs, datum, callback){
     convertedDatum.output = [0, 0, 0];
   }
 
-  // convertedDatum.input.push(datum.inputHits.sentiment[0].magnitude);
-  // convertedDatum.input.push(datum.inputHits.sentiment[1].score);
-
-  // let magnitudeNormalized = 0;
-  // let scoreNormalized = 0.5;
-
-  // if (params.normalization.magnitude.max !== undefined) {
-  //   magnitudeNormalized = datum.inputHits.sentiment[0].magnitude/params.normalization.magnitude.max;
-  //   convertedDatum.input.push(magnitudeNormalized);
-  //   debug("NNC | MAG  "
-  //     + " | MIN:  " + params.normalization.magnitude.min.toFixed(2)
-  //     + " | MAX: " + params.normalization.magnitude.max.toFixed(2)
-  //     + " | ORG: " + datum.inputHits.sentiment[0].magnitude.toFixed(2)
-  //     + " | NORM: " + magnitudeNormalized.toFixed(2)
-  //   );
-  // }
-  // else {
-  //   convertedDatum.input.push(datum.inputHits.sentiment[0].magnitude);
-  // }
-
-  // if ((params.normalization.score.min !== undefined) && (params.normalization.score.max !== undefined)) {
-  //   scoreNormalized = (datum.inputHits.sentiment[1].score + Math.abs(params.normalization.score.min))/(Math.abs(params.normalization.score.min) + Math.abs(params.normalization.score.max));
-  //   convertedDatum.input.push(scoreNormalized);
-  //   debug("NNC | SCORE"
-  //     + " | MIN: " + params.normalization.score.min.toFixed(2)
-  //     + " | MAX: " + params.normalization.score.max.toFixed(2)
-  //     + " | ORG: " + datum.inputHits.sentiment[1].score.toFixed(2)
-  //     + " | NORM: " + scoreNormalized.toFixed(2)
-  //   );
-  // }
-  // else {
-  //   convertedDatum.input.push(datum.inputHits.sentiment[1].score);
-  // }
-
-
   async.eachSeries(inputTypes, function(inputType, cb0){
 
     async.eachSeries(inputs[inputType], function(inName, cb1){
@@ -4788,9 +4742,7 @@ function convertDatum(params, inputs, datum, callback){
         });
       }
     }, function(){
-      // async.setImmediate(function() {
-        cb0();
-      // });
+      cb0();
     });
 
   }, function(){
@@ -4801,9 +4753,6 @@ function convertDatum(params, inputs, datum, callback){
 function testNetwork(nwObj, testObj, callback){
 
   const nw = neataptic.Network.fromJSON(nwObj.network);
-
-  // console.log(chalkBlue("NNT | TEST NETWORK nwObj.inputs\n" + jsonPrint(nwObj.inputs)));
-  // console.log(chalkBlue("NNT | TEST NETWORK testObj\n" + jsonPrint(testObj)));
 
   console.log(chalkBlue("NNT | TEST NETWORK"
     + " | TEST RUN ID: " + testObj.testRunId
@@ -6208,10 +6157,12 @@ function initNetworkCreateInterval(interval) {
 
               case "ERROR":
                 console.log(chalkAlert("NNT | *** NNC ERROR | " + nnChildId));
+                killChild({nnChildId: nnChildId});
               break;
 
               case "ZOMBIE":
                 console.log(chalkAlert("NNT | *** NNC ZOMBIE | " + nnChildId));
+                killChild({nnChildId: nnChildId});
               break;
 
               case "RUNNING":
@@ -6231,6 +6182,7 @@ function initNetworkCreateInterval(interval) {
                   + " | " + nnChildId
                   + " | STATUS: " + currentChild.status
                 ));
+                killChild({nnChildId: nnChildId});
             }
 
           });
