@@ -5229,7 +5229,8 @@ function generateRandomEvolveConfig (cnf, callback){
     config.architecture = "loadedNetwork";
     config.inputsId = networkObj.inputsId;
     config.inputsObj = {};
-    config.inputsObj = inputsHashMap.get(networkObj.inputsId).inputsObj;
+    // config.inputsObj = inputsHashMap.get(networkObj.inputsId).inputsObj;
+    config.inputsObj = networkObj.inputsObj;
     console.log("NNT | SEED INPUTS | " + networkObj.inputsId);
 
     if (cnf.randomizeSeedOptions) {
