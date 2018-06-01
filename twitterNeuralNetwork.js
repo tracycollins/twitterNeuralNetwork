@@ -161,7 +161,7 @@ statsObj.userReadyTransmitted = false;
 
 statsObj.startTimeMoment = moment();
 statsObj.startTime = moment().valueOf();
-statsObj.elapsed = msToTime(moment().valueOf() - statsObj.startTime);
+statsObj.elapsed = moment().valueOf() - statsObj.startTime;
 
 statsObj.numChildren = 0;
 
@@ -1323,7 +1323,7 @@ function showStats(options){
 
   getChildProcesses();
 
-  statsObj.elapsed = msToTime(moment().valueOf() - statsObj.startTime);
+  statsObj.elapsed = moment().valueOf() - statsObj.startTime;
 
   statsObjSmall = omit(statsObj, ["network", "trainingSet", "testSet", "inputs", "outputs"]);
 
@@ -1369,7 +1369,7 @@ function quit(options){
   clearInterval(networkCreateInterval);
   clearInterval(saveFileQueueInterval);
 
-  statsObj.elapsed = msToTime(moment().valueOf() - statsObj.startTime);
+  statsObj.elapsed = moment().valueOf() - statsObj.startTime;
 
   if (process.env.TNN_BATCH_MODE){
     slackChannel = "#nn_batch";
@@ -1394,7 +1394,7 @@ function quit(options){
         if (statsObj.tests[testObj.testRunId][nnChildId].results) {
           slackText = slackText + "\n*RES: " + statsObj.tests[testObj.testRunId][nnChildId].results.successRate.toFixed(2) + " %*";
         }
-        slackText = slackText + " | RUN " + statsObj.elapsed;
+        slackText = slackText + " | RUN " + msToTime(statsObj.elapsed);
         slackText = slackText + "\nTESTS: " + statsObj.tests[testObj.testRunId][nnChildId].results.numTests;
         slackText = slackText + " | PASS: " + statsObj.tests[testObj.testRunId][nnChildId].results.numPassed;
         slackText = slackText + " | SKIP: " + statsObj.tests[testObj.testRunId][nnChildId].results.numSkipped;
@@ -1413,7 +1413,7 @@ function quit(options){
     else {
 
       slackText = "\n*" + statsObj.runId + "*";
-      slackText = slackText + " | RUN " + statsObj.elapsed;
+      slackText = slackText + " | RUN " + msToTime(statsObj.elapsed);
       slackText = slackText + " | QUIT CAUSE: " + options;
 
       console.log("NNT | SLACK TEXT: " + slackText);
@@ -1890,7 +1890,7 @@ function initStatsUpdate(cnf, callback){
 
   statsUpdateInterval = setInterval(function () {
 
-    statsObj.elapsed = msToTime(moment().valueOf() - statsObj.startTime);
+    statsObj.elapsed = moment().valueOf() - statsObj.startTime;
     statsObj.timeStamp = moment().format(defaultDateTimeFormat);
  
     showStats();
@@ -3594,6 +3594,10 @@ function loadSeedNeuralNetwork(params, callback){
 
 function sendKeepAlive(userObj, callback){
   if (!configuration.offlineMode && statsObj.userReadyAck && statsObj.serverConnected){
+
+    statsObj.elapsed = moment().valueOf() - statsObj.startTime;
+    userObj.stats = statsObj;
+
     debug(chalkInfo("TX KEEPALIVE"
       + " | " + userObj.userId
       + " | " + moment().format(defaultDateTimeFormat)
