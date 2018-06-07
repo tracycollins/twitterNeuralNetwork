@@ -332,7 +332,7 @@ function findChildByPid(pid, callback){
 
     if (pid && (neuralNetworkChildHashMap[nnChildId].pid === pid)){
 
-      foundChildId = nnChild;
+      foundChildId = nnChildId;
 
       cb(foundChildId);
 
@@ -915,7 +915,8 @@ const dropboxConfigFolder = "/config/utility";
 const dropboxConfigDefaultFolder = "/config/utility/default";
 const dropboxConfigHostFolder = "/config/utility/" + hostname;
 
-const dropboxConfigFile = hostname + "_" + configuration.DROPBOX.DROPBOX_TNN_CONFIG_FILE;
+const dropboxConfigDefaultFile = "default_" + configuration.DROPBOX.DROPBOX_TNN_CONFIG_FILE;
+const dropboxConfigHostFile = hostname + "_" + configuration.DROPBOX.DROPBOX_TNN_CONFIG_FILE;
 
 // const defaultHistogramsFolder = dropboxConfigDefaultFolder + "/histograms";
 // const localInputsFolder = dropboxConfigHostFolder + "/inputs";
@@ -942,7 +943,8 @@ console.log("NNT | DROPBOX_TNN_STATS_FILE : " + configuration.DROPBOX.DROPBOX_TN
 
 debug("dropboxConfigFolder : " + dropboxConfigFolder);
 debug("dropboxConfigHostFolder : " + dropboxConfigHostFolder);
-debug("dropboxConfigFile : " + dropboxConfigFile);
+debug("dropboxConfigDefaultFile : " + dropboxConfigDefaultFile);
+debug("dropboxConfigHostFile : " + dropboxConfigHostFile);
 
 debug("NNT | DROPBOX_WORD_ASSO_ACCESS_TOKEN :" + configuration.DROPBOX.DROPBOX_WORD_ASSO_ACCESS_TOKEN);
 debug("NNT | DROPBOX_WORD_ASSO_APP_KEY :" + configuration.DROPBOX.DROPBOX_WORD_ASSO_APP_KEY);
@@ -979,7 +981,7 @@ function filesGetMetadataLocal(options){
       }
     });
   });
-};
+}
 
 function filesListFolderLocal(options){
   return new Promise(function(resolve, reject) {
@@ -1021,7 +1023,7 @@ function filesListFolderLocal(options){
         }
     });
   });
-};
+}
 
 let dropboxClient;
 
@@ -1665,6 +1667,7 @@ function saveFile (params, callback){
             dbFileUpload();
           }
         });
+
       })
       .catch(function(err){
         console.log(chalkError("NNT | *** DROPBOX FILES LIST FOLDER ERROR: " + err));
@@ -1882,7 +1885,7 @@ function initSaveFileQueue(cnf){
 
 let statsUpdateInterval;
 
-function initStatsUpdate(cnf, callback){
+function initStatsUpdate(cnf){
 
   console.log(chalkBlue("NNT | INIT STATS UPDATE INTERVAL | " + cnf.statsUpdateIntervalTime + " MS"));
 
@@ -1897,7 +1900,6 @@ function initStatsUpdate(cnf, callback){
 
   }, cnf.statsUpdateIntervalTime);
 
-  callback(null, cnf);
 }
 
 function loadDropboxFolder(options, callback){
@@ -2989,11 +2991,16 @@ function loadBestNetworkDropboxFolders (params, callback){
 
                   }
                   else {
-                    let nn = new NeuralNetwork(networkObj.network)
-                      .save()
-                      .catch(function(err){
-                        console.log(err.message);
-                      });
+                    let nn = new NeuralNetwork(networkObj)
+
+                    if ((nn.networkId === undefined) || (!nn.networkId) || (nn.networkId === null)) {
+                      console.log(chalkError("NNT | ERROR: NN NETWORK ID UNDEFINED ???\n" + jsonPrint(nn)));
+                    }
+                    
+                    nn.save()
+                    .catch(function(err){
+                      console.log(err.message);
+                    });
                   }
                 });
 
@@ -3149,7 +3156,7 @@ function initStdIn(callback){
     }
   });
 
-  if (callback !== undefined) { callback(err, stdin); }
+  if (callback !== undefined) { callback(null, stdin); }
 }
 
 function loadCommandLineArgs(callback){
@@ -3243,7 +3250,7 @@ function loadConfigFile(folder, file, callback) {
         loadFile(folder, file, function(err, loadedConfigObj){
 
           if (err) {
-            console.error(chalkError("NNT | ERROR LOAD DROPBOX CONFIG: " + dropboxConfigFile
+            console.error(chalkError("NNT | ERROR LOAD DROPBOX CONFIG: " + file
               + "\n" + jsonPrint(err)
             ));
 
@@ -3264,7 +3271,7 @@ function loadConfigFile(folder, file, callback) {
 
           else {
 
-            console.log(chalkInfo("NNT | LOADED CONFIG FILE: " + dropboxConfigFile + "\n" + jsonPrint(loadedConfigObj)));
+            console.log(chalkInfo("NNT | LOADED CONFIG FILE: " + file + "\n" + jsonPrint(loadedConfigObj)));
 
             if (loadedConfigObj.TNN_OFFLINE_MODE  !== undefined){
               console.log("NNT | LOADED TNN_OFFLINE_MODE: " + loadedConfigObj.TNN_OFFLINE_MODE);
@@ -3807,6 +3814,35 @@ function initSocket(callback){
   callback(null, null);
 }
 
+function loadAllConfigFiles(callback){
+  async.series({
+      defaultConfig: function(cb) {
+        loadConfigFile(dropboxConfigDefaultFolder, dropboxConfigDefaultFile, function(err, defaultConfigLoadedFlag){
+          cb(err, defaultConfigLoadedFlag);
+        });
+      },
+      hostConfig: function(cb){
+        loadConfigFile(dropboxConfigHostFolder, dropboxConfigHostFile, function(err, hostConfigLoadedFlag){
+          cb(err, hostConfigLoadedFlag);
+        });
+      }
+  }, function(err, results) {
+    if (results.defaultConfig || results.hostConfig) {
+      if (results.defaultConfig) {
+        console.log(chalkAlert("NNT | +++ RELOADED DEFAULT CONFIG " + dropboxConfigDefaultFolder + "/" + dropboxConfigDefaultFile));
+      }
+      if (results.hostConfig) {
+        console.log(chalkAlert("NNT | +++ RELOADED HOST CONFIG " + dropboxConfigHostFolder + "/" + dropboxConfigHostFile));
+      }
+    }
+    else {
+      debug(chalkLog("... NO RELOAD CONFIG FILE" + dropboxConfigDefaultFolder + "/" + dropboxConfigDefaultFile));
+      debug(chalkLog("... NO RELOAD CONFIG FILE" + dropboxConfigHostFolder + "/" + dropboxConfigHostFile));
+    }
+    callback(err, results);
+  });
+}
+
 function initialize(cnf, callback){
 
   debug(chalkBlue("INITIALIZE cnf\n" + jsonPrint(cnf)));
@@ -3935,233 +3971,249 @@ function initialize(cnf, callback){
   cnf.categorizedUsersFolder = globalCategorizedUsersFolder;
   cnf.statsUpdateIntervalTime = process.env.TNN_STATS_UPDATE_INTERVAL || 300000;
 
-  debug(chalkWarn("dropboxConfigFolder: " + dropboxConfigFolder));
-  debug(chalkWarn("dropboxConfigFile  : " + dropboxConfigFile));
+  debug(chalkWarn("dropboxConfigDefaultFolder: " + dropboxConfigDefaultFolder));
+  debug(chalkWarn("dropboxConfigDefaultFile  : " + dropboxConfigDefaultFile));
 
-  loadFile(dropboxConfigHostFolder, dropboxConfigFile, function(err, loadedConfigObj){
 
-    if (!err && loadedConfigObj !== undefined) {
-      console.log("NNT | " + dropboxConfigFile + "\n" + jsonPrint(loadedConfigObj));
+  loadAllConfigFiles(function(err, results){
 
-      prevConfigFileModifiedMoment = moment();
+    loadCommandLineArgs();
+    
+    statsObj.commandLineArgsLoaded = true;
 
-      if (loadedConfigObj.TNN_QUIT_ON_COMPLETE  !== undefined){
-        console.log("NNT | TNN_QUIT_ON_COMPLETE: " + loadedConfigObj.TNN_QUIT_ON_COMPLETE);
+    initStatsUpdate(configuration);
 
-        if (!loadedConfigObj.TNN_QUIT_ON_COMPLETE || (loadedConfigObj.TNN_QUIT_ON_COMPLETE === "false")) {
-          cnf.quitOnComplete = false;
-        }
-        else {
-          cnf.quitOnComplete = true;
-        }
-      }
+    loadInputsDropboxFolder(defaultInputsFolder, function(err, results){
+      return(callback(err, configuration));
+    });
 
-      if (loadedConfigObj.TNN_CREATE_TRAINING_SET  !== undefined){
-        console.log("NNT | CREATE TRAINING SET");
-
-        if (!loadedConfigObj.TNN_CREATE_TRAINING_SET || (loadedConfigObj.TNN_CREATE_TRAINING_SET === "false")) {
-          cnf.createTrainingSet = false;
-        }
-        else {
-          cnf.createTrainingSet = true;
-        }
-      }
-
-      if (loadedConfigObj.TNN_CREATE_TRAINING_SET_ONLY  !== undefined){
-        console.log("NNT | CREATE TRAINING SET ONLY");
-
-        if (!loadedConfigObj.TNN_CREATE_TRAINING_SET_ONLY || (loadedConfigObj.TNN_CREATE_TRAINING_SET_ONLY === "false")) {
-          cnf.createTrainingSetOnly = false;
-        }
-        else {
-          cnf.createTrainingSet = true;
-          cnf.createTrainingSetOnly = true;
-        }
-      }
-
-      if (loadedConfigObj.TNN_LOAD_TRAINING_SET_FROM_FILE  !== undefined){
-        console.log("NNT | LOADED TNN_LOAD_TRAINING_SET_FROM_FILE: " + loadedConfigObj.TNN_LOAD_TRAINING_SET_FROM_FILE);
-
-        if (!loadedConfigObj.TNN_LOAD_TRAINING_SET_FROM_FILE || (loadedConfigObj.TNN_LOAD_TRAINING_SET_FROM_FILE === "false")) {
-          cnf.loadTrainingSetFromFile = false;
-        }
-        else if (!cnf.createTrainingSet && !cnf.createTrainingSetOnly) {
-          cnf.loadTrainingSetFromFile = true;
-        }
-      }
-
-      if (loadedConfigObj.TNN_USE_LOCAL_TRAINING_SETS  !== undefined){
-        console.log("NNT | LOADED TNN_USE_LOCAL_TRAINING_SETS: " + loadedConfigObj.TNN_USE_LOCAL_TRAINING_SETS);
-
-        if (!loadedConfigObj.TNN_USE_LOCAL_TRAINING_SETS || (loadedConfigObj.TNN_USE_LOCAL_TRAINING_SETS === "false")) {
-          cnf.useLocalTrainingSets = false;
-        }
-        else {
-          cnf.useLocalTrainingSets = true;
-        }
-      }
-
-      if (loadedConfigObj.TNN_LOAD_ALL_INPUTS  !== undefined){
-        console.log("NNT | LOADED TNN_LOAD_ALL_INPUTS: " + loadedConfigObj.TNN_LOAD_ALL_INPUTS);
-
-        if (!loadedConfigObj.TNN_LOAD_ALL_INPUTS || (loadedConfigObj.TNN_LOAD_ALL_INPUTS === "false")) {
-          cnf.loadAllInputs = false;
-        }
-        else {
-          cnf.loadAllInputs = true;
-        }
-      }
-
-      if (loadedConfigObj.TNN_INPUTS_IDS !== undefined){
-        console.log("NNT | LOADED TNN_INPUTS_IDS: " + loadedConfigObj.TNN_INPUTS_IDS);
-        cnf.inputsIdArray = loadedConfigObj.TNN_INPUTS_IDS;
-      }
-
-      if (loadedConfigObj.TNN_INPUTS_ID !== undefined){
-        console.log("NNT | LOADED TNN_INPUTS_ID: " + loadedConfigObj.TNN_INPUTS_ID);
-        cnf.inputsId = loadedConfigObj.TNN_INPUTS_ID;
-      }
-
-      if (loadedConfigObj.TNN_SEED_NETWORK_PROBABILITY !== undefined){
-        console.log("NNT | LOADED TNN_SEED_NETWORK_PROBABILITY: " + loadedConfigObj.TNN_SEED_NETWORK_PROBABILITY);
-        cnf.seedNetworkProbability = loadedConfigObj.TNN_SEED_NETWORK_PROBABILITY;
-      }
-
-      if (loadedConfigObj.TNN_INIT_MAIN_INTERVAL !== undefined){
-        console.log("NNT | LOADED TNN_INIT_MAIN_INTERVAL: " + loadedConfigObj.TNN_INIT_MAIN_INTERVAL);
-        cnf.initMainIntervalTime = loadedConfigObj.TNN_INIT_MAIN_INTERVAL;
-      }
-
-      if (loadedConfigObj.TNN_MAX_NEURAL_NETWORK_CHILDREN !== undefined){
-        console.log("NNT | LOADED TNN_MAX_NEURAL_NETWORK_CHILDREN: " + loadedConfigObj.TNN_MAX_NEURAL_NETWORK_CHILDREN);
-        cnf.maxNeuralNetworkChildern = loadedConfigObj.TNN_MAX_NEURAL_NETWORK_CHILDREN;
-      }
-
-      if (loadedConfigObj.TNN_SEED_RANDOMIZE_OPTIONS !== undefined){
-        console.log("NNT | LOADED TNN_SEED_RANDOMIZE_OPTIONS: " + loadedConfigObj.TNN_SEED_RANDOMIZE_OPTIONS);
-        configuration.randomizeSeedOptions = loadedConfigObj.TNN_SEED_RANDOMIZE_OPTIONS;
-      }
-
-      if (loadedConfigObj.TNN_EVOLVE_COST_ARRAY !== undefined){
-        console.log("NNT | LOADED TNN_EVOLVE_COST_ARRAY: " + loadedConfigObj.TNN_EVOLVE_COST_ARRAY);
-        configuration.costArray = loadedConfigObj.TNN_EVOLVE_COST_ARRAY;
-      }
-
-      if (loadedConfigObj.TNN_GLOBAL_MIN_SUCCESS_RATE !== undefined){
-        console.log("NNT | LOADED TNN_GLOBAL_MIN_SUCCESS_RATE: " + loadedConfigObj.TNN_GLOBAL_MIN_SUCCESS_RATE);
-        cnf.globalMinSuccessRate = loadedConfigObj.TNN_GLOBAL_MIN_SUCCESS_RATE;
-      }
-
-      if (loadedConfigObj.TNN_LOCAL_MIN_SUCCESS_RATE !== undefined){
-        console.log("NNT | LOADED TNN_LOCAL_MIN_SUCCESS_RATE: " + loadedConfigObj.TNN_LOCAL_MIN_SUCCESS_RATE);
-        cnf.localMinSuccessRate = loadedConfigObj.TNN_LOCAL_MIN_SUCCESS_RATE;
-      }
-
-      if (loadedConfigObj.TNN_LOCAL_PURGE_MIN_SUCCESS_RATE !== undefined){
-        console.log("NNT | LOADED TNN_LOCAL_PURGE_MIN_SUCCESS_RATE: " + loadedConfigObj.TNN_LOCAL_PURGE_MIN_SUCCESS_RATE);
-        configuration.localPurgeMinSuccessRate = loadedConfigObj.TNN_LOCAL_PURGE_MIN_SUCCESS_RATE;
-      }
-
-      if (loadedConfigObj.TNN_EVOLVE_THREADS !== undefined){
-        console.log("NNT | LOADED TNN_EVOLVE_THREADS: " + loadedConfigObj.TNN_EVOLVE_THREADS);
-        cnf.evolve.threads = loadedConfigObj.TNN_EVOLVE_THREADS;
-      }
-
-      if (loadedConfigObj.TNN_SEED_NETWORK_ID  !== undefined){
-        console.log("NNT | LOADED TNN_SEED_NETWORK_ID: " + loadedConfigObj.TNN_SEED_NETWORK_ID);
-        cnf.evolve.networkId = loadedConfigObj.TNN_SEED_NETWORK_ID;
-        cnf.train.networkId = loadedConfigObj.TNN_SEED_NETWORK_ID;
-      }
-
-      if (loadedConfigObj.TNN_TRAIN_BEST_NETWORK  !== undefined){
-        console.log("NNT | LOADED TNN_TRAIN_BEST_NETWORK: " + loadedConfigObj.TNN_TRAIN_BEST_NETWORK);
-        cnf.train.useBestNetwork = loadedConfigObj.TNN_TRAIN_BEST_NETWORK;
-      }
-
-      if (loadedConfigObj.TNN_EVOLVE_BEST_NETWORK  !== undefined){
-        console.log("NNT | LOADED TNN_EVOLVE_BEST_NETWORK: " + loadedConfigObj.TNN_EVOLVE_BEST_NETWORK);
-        cnf.evolve.useBestNetwork = loadedConfigObj.TNN_EVOLVE_BEST_NETWORK;
-      }
-
-      if (loadedConfigObj.TNN_EVOLVE_ITERATIONS  !== undefined){
-        console.log("NNT | LOADED TNN_EVOLVE_ITERATIONS: " + loadedConfigObj.TNN_EVOLVE_ITERATIONS);
-        cnf.evolve.iterations = loadedConfigObj.TNN_EVOLVE_ITERATIONS;
-      }
-
-      if (loadedConfigObj.TNN_TRAIN_ITERATIONS  !== undefined){
-        console.log("NNT | LOADED TNN_TRAIN_ITERATIONS: " + loadedConfigObj.TNN_TRAIN_ITERATIONS);
-        cnf.train.iterations = loadedConfigObj.TNN_TRAIN_ITERATIONS;
-      }
-
-      if (loadedConfigObj.TNN_VERBOSE_MODE  !== undefined){
-        console.log("NNT | LOADED TNN_VERBOSE_MODE: " + loadedConfigObj.TNN_VERBOSE_MODE);
-        cnf.verbose = loadedConfigObj.TNN_VERBOSE_MODE;
-      }
-
-      if (loadedConfigObj.TNN_TEST_MODE  !== undefined){
-        console.log("NNT | LOADED TNN_TEST_MODE: " + loadedConfigObj.TNN_TEST_MODE);
-        cnf.testMode = loadedConfigObj.TNN_TEST_MODE;
-      }
-
-      if (loadedConfigObj.TNN_ENABLE_STDIN  !== undefined){
-        console.log("NNT | LOADED TNN_ENABLE_STDIN: " + loadedConfigObj.TNN_ENABLE_STDIN);
-        cnf.enableStdin = loadedConfigObj.TNN_ENABLE_STDIN;
-      }
-
-      if (loadedConfigObj.TNN_STATS_UPDATE_INTERVAL  !== undefined) {
-        console.log("NNT | LOADED TNN_STATS_UPDATE_INTERVAL: " + loadedConfigObj.TNN_STATS_UPDATE_INTERVAL);
-        cnf.statsUpdateIntervalTime = loadedConfigObj.TNN_STATS_UPDATE_INTERVAL;
-      }
-
-      if (loadedConfigObj.TNN_KEEPALIVE_INTERVAL  !== undefined) {
-        console.log("NNT | LOADED TNN_KEEPALIVE_INTERVAL: " + loadedConfigObj.TNN_KEEPALIVE_INTERVAL);
-        cnf.keepaliveInterval = loadedConfigObj.TNN_KEEPALIVE_INTERVAL;
-      }
-
-      loadCommandLineArgs();
-      
-      statsObj.commandLineArgsLoaded = true;
-
-      initStatsUpdate(cnf, function(err, cnf2){
-
-        if (err) {
-          console.log(chalkError("NNT | ERROR initStatsUpdate\n" + err));
-          return(callback(err, cnf2));
-        }
-
-        debug("initStatsUpdate cnf2\n" + jsonPrint(cnf2));
-
-        loadInputsDropboxFolder(defaultInputsFolder, function(err, results){
-          return(callback(err, cnf2));
-        });
-      });
-
-    }
-    else {
-      console.error(chalkError("NNT | ERROR LOAD DROPBOX CONFIG: " + dropboxConfigFile
-        + "\n" + jsonPrint(err)
-      ));
-
-      if (err.status === 404){
-
-        loadCommandLineArgs();
-
-        initStatsUpdate(cnf, function(err, cnf2){
-          if (err) {
-            console.log(chalkError("NNT | ERROR initStatsUpdate\n" + jsonPrint(err)));
-          }
-          debug("initStatsUpdate cnf2\n" + jsonPrint(cnf2));
-
-          loadInputsDropboxFolder(defaultInputsFolder, function(err, results){
-            return(callback(err, cnf2));
-          });
-        });
-      }
-      else {
-        callback(err, null);
-      }
-     }
   });
+
+
+  // loadFile(dropboxConfigHostFolder, dropboxConfigFile, function(err, loadedConfigObj){
+
+  //   if (!err && loadedConfigObj !== undefined) {
+  //     console.log("NNT | " + dropboxConfigFile + "\n" + jsonPrint(loadedConfigObj));
+
+  //     prevConfigFileModifiedMoment = moment();
+
+  //     if (loadedConfigObj.TNN_QUIT_ON_COMPLETE  !== undefined){
+  //       console.log("NNT | TNN_QUIT_ON_COMPLETE: " + loadedConfigObj.TNN_QUIT_ON_COMPLETE);
+
+  //       if (!loadedConfigObj.TNN_QUIT_ON_COMPLETE || (loadedConfigObj.TNN_QUIT_ON_COMPLETE === "false")) {
+  //         cnf.quitOnComplete = false;
+  //       }
+  //       else {
+  //         cnf.quitOnComplete = true;
+  //       }
+  //     }
+
+  //     if (loadedConfigObj.TNN_CREATE_TRAINING_SET  !== undefined){
+  //       console.log("NNT | CREATE TRAINING SET");
+
+  //       if (!loadedConfigObj.TNN_CREATE_TRAINING_SET || (loadedConfigObj.TNN_CREATE_TRAINING_SET === "false")) {
+  //         cnf.createTrainingSet = false;
+  //       }
+  //       else {
+  //         cnf.createTrainingSet = true;
+  //       }
+  //     }
+
+  //     if (loadedConfigObj.TNN_CREATE_TRAINING_SET_ONLY  !== undefined){
+  //       console.log("NNT | CREATE TRAINING SET ONLY");
+
+  //       if (!loadedConfigObj.TNN_CREATE_TRAINING_SET_ONLY || (loadedConfigObj.TNN_CREATE_TRAINING_SET_ONLY === "false")) {
+  //         cnf.createTrainingSetOnly = false;
+  //       }
+  //       else {
+  //         cnf.createTrainingSet = true;
+  //         cnf.createTrainingSetOnly = true;
+  //       }
+  //     }
+
+  //     if (loadedConfigObj.TNN_LOAD_TRAINING_SET_FROM_FILE  !== undefined){
+  //       console.log("NNT | LOADED TNN_LOAD_TRAINING_SET_FROM_FILE: " + loadedConfigObj.TNN_LOAD_TRAINING_SET_FROM_FILE);
+
+  //       if (!loadedConfigObj.TNN_LOAD_TRAINING_SET_FROM_FILE || (loadedConfigObj.TNN_LOAD_TRAINING_SET_FROM_FILE === "false")) {
+  //         cnf.loadTrainingSetFromFile = false;
+  //       }
+  //       else if (!cnf.createTrainingSet && !cnf.createTrainingSetOnly) {
+  //         cnf.loadTrainingSetFromFile = true;
+  //       }
+  //     }
+
+  //     if (loadedConfigObj.TNN_USE_LOCAL_TRAINING_SETS  !== undefined){
+  //       console.log("NNT | LOADED TNN_USE_LOCAL_TRAINING_SETS: " + loadedConfigObj.TNN_USE_LOCAL_TRAINING_SETS);
+
+  //       if (!loadedConfigObj.TNN_USE_LOCAL_TRAINING_SETS || (loadedConfigObj.TNN_USE_LOCAL_TRAINING_SETS === "false")) {
+  //         cnf.useLocalTrainingSets = false;
+  //       }
+  //       else {
+  //         cnf.useLocalTrainingSets = true;
+  //       }
+  //     }
+
+  //     if (loadedConfigObj.TNN_LOAD_ALL_INPUTS  !== undefined){
+  //       console.log("NNT | LOADED TNN_LOAD_ALL_INPUTS: " + loadedConfigObj.TNN_LOAD_ALL_INPUTS);
+
+  //       if (!loadedConfigObj.TNN_LOAD_ALL_INPUTS || (loadedConfigObj.TNN_LOAD_ALL_INPUTS === "false")) {
+  //         cnf.loadAllInputs = false;
+  //       }
+  //       else {
+  //         cnf.loadAllInputs = true;
+  //       }
+  //     }
+
+  //     if (loadedConfigObj.TNN_INPUTS_IDS !== undefined){
+  //       console.log("NNT | LOADED TNN_INPUTS_IDS: " + loadedConfigObj.TNN_INPUTS_IDS);
+  //       cnf.inputsIdArray = loadedConfigObj.TNN_INPUTS_IDS;
+  //     }
+
+  //     if (loadedConfigObj.TNN_INPUTS_ID !== undefined){
+  //       console.log("NNT | LOADED TNN_INPUTS_ID: " + loadedConfigObj.TNN_INPUTS_ID);
+  //       cnf.inputsId = loadedConfigObj.TNN_INPUTS_ID;
+  //     }
+
+  //     if (loadedConfigObj.TNN_SEED_NETWORK_PROBABILITY !== undefined){
+  //       console.log("NNT | LOADED TNN_SEED_NETWORK_PROBABILITY: " + loadedConfigObj.TNN_SEED_NETWORK_PROBABILITY);
+  //       cnf.seedNetworkProbability = loadedConfigObj.TNN_SEED_NETWORK_PROBABILITY;
+  //     }
+
+  //     if (loadedConfigObj.TNN_INIT_MAIN_INTERVAL !== undefined){
+  //       console.log("NNT | LOADED TNN_INIT_MAIN_INTERVAL: " + loadedConfigObj.TNN_INIT_MAIN_INTERVAL);
+  //       cnf.initMainIntervalTime = loadedConfigObj.TNN_INIT_MAIN_INTERVAL;
+  //     }
+
+  //     if (loadedConfigObj.TNN_MAX_NEURAL_NETWORK_CHILDREN !== undefined){
+  //       console.log("NNT | LOADED TNN_MAX_NEURAL_NETWORK_CHILDREN: " + loadedConfigObj.TNN_MAX_NEURAL_NETWORK_CHILDREN);
+  //       cnf.maxNeuralNetworkChildern = loadedConfigObj.TNN_MAX_NEURAL_NETWORK_CHILDREN;
+  //     }
+
+  //     if (loadedConfigObj.TNN_SEED_RANDOMIZE_OPTIONS !== undefined){
+  //       console.log("NNT | LOADED TNN_SEED_RANDOMIZE_OPTIONS: " + loadedConfigObj.TNN_SEED_RANDOMIZE_OPTIONS);
+  //       configuration.randomizeSeedOptions = loadedConfigObj.TNN_SEED_RANDOMIZE_OPTIONS;
+  //     }
+
+  //     if (loadedConfigObj.TNN_EVOLVE_COST_ARRAY !== undefined){
+  //       console.log("NNT | LOADED TNN_EVOLVE_COST_ARRAY: " + loadedConfigObj.TNN_EVOLVE_COST_ARRAY);
+  //       configuration.costArray = loadedConfigObj.TNN_EVOLVE_COST_ARRAY;
+  //     }
+
+  //     if (loadedConfigObj.TNN_GLOBAL_MIN_SUCCESS_RATE !== undefined){
+  //       console.log("NNT | LOADED TNN_GLOBAL_MIN_SUCCESS_RATE: " + loadedConfigObj.TNN_GLOBAL_MIN_SUCCESS_RATE);
+  //       cnf.globalMinSuccessRate = loadedConfigObj.TNN_GLOBAL_MIN_SUCCESS_RATE;
+  //     }
+
+  //     if (loadedConfigObj.TNN_LOCAL_MIN_SUCCESS_RATE !== undefined){
+  //       console.log("NNT | LOADED TNN_LOCAL_MIN_SUCCESS_RATE: " + loadedConfigObj.TNN_LOCAL_MIN_SUCCESS_RATE);
+  //       cnf.localMinSuccessRate = loadedConfigObj.TNN_LOCAL_MIN_SUCCESS_RATE;
+  //     }
+
+  //     if (loadedConfigObj.TNN_LOCAL_PURGE_MIN_SUCCESS_RATE !== undefined){
+  //       console.log("NNT | LOADED TNN_LOCAL_PURGE_MIN_SUCCESS_RATE: " + loadedConfigObj.TNN_LOCAL_PURGE_MIN_SUCCESS_RATE);
+  //       configuration.localPurgeMinSuccessRate = loadedConfigObj.TNN_LOCAL_PURGE_MIN_SUCCESS_RATE;
+  //     }
+
+  //     if (loadedConfigObj.TNN_EVOLVE_THREADS !== undefined){
+  //       console.log("NNT | LOADED TNN_EVOLVE_THREADS: " + loadedConfigObj.TNN_EVOLVE_THREADS);
+  //       cnf.evolve.threads = loadedConfigObj.TNN_EVOLVE_THREADS;
+  //     }
+
+  //     if (loadedConfigObj.TNN_SEED_NETWORK_ID  !== undefined){
+  //       console.log("NNT | LOADED TNN_SEED_NETWORK_ID: " + loadedConfigObj.TNN_SEED_NETWORK_ID);
+  //       cnf.evolve.networkId = loadedConfigObj.TNN_SEED_NETWORK_ID;
+  //       cnf.train.networkId = loadedConfigObj.TNN_SEED_NETWORK_ID;
+  //     }
+
+  //     if (loadedConfigObj.TNN_TRAIN_BEST_NETWORK  !== undefined){
+  //       console.log("NNT | LOADED TNN_TRAIN_BEST_NETWORK: " + loadedConfigObj.TNN_TRAIN_BEST_NETWORK);
+  //       cnf.train.useBestNetwork = loadedConfigObj.TNN_TRAIN_BEST_NETWORK;
+  //     }
+
+  //     if (loadedConfigObj.TNN_EVOLVE_BEST_NETWORK  !== undefined){
+  //       console.log("NNT | LOADED TNN_EVOLVE_BEST_NETWORK: " + loadedConfigObj.TNN_EVOLVE_BEST_NETWORK);
+  //       cnf.evolve.useBestNetwork = loadedConfigObj.TNN_EVOLVE_BEST_NETWORK;
+  //     }
+
+  //     if (loadedConfigObj.TNN_EVOLVE_ITERATIONS  !== undefined){
+  //       console.log("NNT | LOADED TNN_EVOLVE_ITERATIONS: " + loadedConfigObj.TNN_EVOLVE_ITERATIONS);
+  //       cnf.evolve.iterations = loadedConfigObj.TNN_EVOLVE_ITERATIONS;
+  //     }
+
+  //     if (loadedConfigObj.TNN_TRAIN_ITERATIONS  !== undefined){
+  //       console.log("NNT | LOADED TNN_TRAIN_ITERATIONS: " + loadedConfigObj.TNN_TRAIN_ITERATIONS);
+  //       cnf.train.iterations = loadedConfigObj.TNN_TRAIN_ITERATIONS;
+  //     }
+
+  //     if (loadedConfigObj.TNN_VERBOSE_MODE  !== undefined){
+  //       console.log("NNT | LOADED TNN_VERBOSE_MODE: " + loadedConfigObj.TNN_VERBOSE_MODE);
+  //       cnf.verbose = loadedConfigObj.TNN_VERBOSE_MODE;
+  //     }
+
+  //     if (loadedConfigObj.TNN_TEST_MODE  !== undefined){
+  //       console.log("NNT | LOADED TNN_TEST_MODE: " + loadedConfigObj.TNN_TEST_MODE);
+  //       cnf.testMode = loadedConfigObj.TNN_TEST_MODE;
+  //     }
+
+  //     if (loadedConfigObj.TNN_ENABLE_STDIN  !== undefined){
+  //       console.log("NNT | LOADED TNN_ENABLE_STDIN: " + loadedConfigObj.TNN_ENABLE_STDIN);
+  //       cnf.enableStdin = loadedConfigObj.TNN_ENABLE_STDIN;
+  //     }
+
+  //     if (loadedConfigObj.TNN_STATS_UPDATE_INTERVAL  !== undefined) {
+  //       console.log("NNT | LOADED TNN_STATS_UPDATE_INTERVAL: " + loadedConfigObj.TNN_STATS_UPDATE_INTERVAL);
+  //       cnf.statsUpdateIntervalTime = loadedConfigObj.TNN_STATS_UPDATE_INTERVAL;
+  //     }
+
+  //     if (loadedConfigObj.TNN_KEEPALIVE_INTERVAL  !== undefined) {
+  //       console.log("NNT | LOADED TNN_KEEPALIVE_INTERVAL: " + loadedConfigObj.TNN_KEEPALIVE_INTERVAL);
+  //       cnf.keepaliveInterval = loadedConfigObj.TNN_KEEPALIVE_INTERVAL;
+  //     }
+
+  //     loadCommandLineArgs();
+      
+  //     statsObj.commandLineArgsLoaded = true;
+
+  //     initStatsUpdate(cnf, function(err, cnf2){
+
+  //       if (err) {
+  //         console.log(chalkError("NNT | ERROR initStatsUpdate\n" + err));
+  //         return(callback(err, cnf2));
+  //       }
+
+  //       debug("initStatsUpdate cnf2\n" + jsonPrint(cnf2));
+
+  //       loadInputsDropboxFolder(defaultInputsFolder, function(err, results){
+  //         return(callback(err, cnf2));
+  //       });
+  //     });
+
+  //   }
+  //   else {
+  //     console.error(chalkError("NNT | ERROR LOAD DROPBOX CONFIG: " + dropboxConfigFile
+  //       + "\n" + jsonPrint(err)
+  //     ));
+
+  //     if (err.status === 404){
+
+  //       loadCommandLineArgs();
+
+  //       initStatsUpdate(cnf, function(err, cnf2){
+  //         if (err) {
+  //           console.log(chalkError("NNT | ERROR initStatsUpdate\n" + jsonPrint(err)));
+  //         }
+  //         debug("initStatsUpdate cnf2\n" + jsonPrint(cnf2));
+
+  //         loadInputsDropboxFolder(defaultInputsFolder, function(err, results){
+  //           return(callback(err, cnf2));
+  //         });
+  //       });
+  //     }
+  //     else {
+  //       callback(err, null);
+  //     }
+  //    }
+  // });
 }
 
 console.log(chalkInfo("NNT | " + getTimeStamp() 
@@ -5869,7 +5921,7 @@ function initNeuralNetworkChild(nnChildIndex, cnf, callback){
               + " | " + globalBestNetworkFolder + "/" + bestNetworkFile
             ));
 
-            networkCreateResultsHashmap[m.networkObj.networkId].status = "PASS GLOBAL"
+            networkCreateResultsHashmap[m.networkObj.networkId].status = "PASS GLOBAL";
 
             statsObj.evolveStats.passGlobal += 1;
 
@@ -5890,7 +5942,7 @@ function initNeuralNetworkChild(nnChildIndex, cnf, callback){
               + " | " + localBestNetworkFolder + "/" + localNetworkFile
             ));
 
-            networkCreateResultsHashmap[m.networkObj.networkId].status = "PASS LOCAL"
+            networkCreateResultsHashmap[m.networkObj.networkId].status = "PASS LOCAL";
 
             statsObj.evolveStats.passLocal += 1;
 
@@ -5913,7 +5965,7 @@ function initNeuralNetworkChild(nnChildIndex, cnf, callback){
             + " | " + cnf.globalMinSuccessRate.toFixed(2) + "%"
           ));
 
-          networkCreateResultsHashmap[m.networkObj.networkId].status = "FAIL"
+          networkCreateResultsHashmap[m.networkObj.networkId].status = "FAIL";
 
           slackText = "\n*-FAIL-: " + m.networkObj.test.results.successRate.toFixed(2) + "*";
           slackText = slackText + "\n" + m.networkObj.networkId;
@@ -5982,7 +6034,6 @@ function initNeuralNetworkChild(nnChildIndex, cnf, callback){
 
     if (callback !== undefined) { callback(null, nnChildId); }
   });
-
 }
 
 function initNetworkCreateInterval(interval) {
@@ -6213,7 +6264,7 @@ function initTimeout(callback){
       quit("INIT ERROR");
     }
 
-    configuration = deepcopy(cnf);
+    // configuration = deepcopy(cnf);
 
     if (configuration.enableStdin) {
       initStdIn();
@@ -6332,20 +6383,13 @@ setTimeout(function(){
 
         initMainReady = false;
 
-        loadConfigFile(dropboxConfigHostFolder, dropboxConfigFile, function(err, configLoadedFlag){
-          if (configLoadedFlag) {
-            console.log(chalkAlert("NNT | +++ RELOADED CONFIG " + dropboxConfigHostFolder + "/" + dropboxConfigFile));
-            initMainReady = true;
-          }
-          else {
-            debug(chalkLog("... NO RELOAD CONFIG FILE" + dropboxConfigHostFolder + "/" + dropboxConfigFile));
-            initMainReady = true;
-          }
+        loadAllConfigFiles(function(){
           initMain(configuration, function(){
             debug(chalkLog("INIT MAIN CALLBACK"));
             initMainReady = true;
           });
         });
+
       }
       else {
         console.log(chalkLog("NNT | ... INIT MAIN INTERVAL | NOT READY"
