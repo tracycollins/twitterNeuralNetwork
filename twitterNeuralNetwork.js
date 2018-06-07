@@ -144,8 +144,9 @@ const deepcopy = require("deep-copy");
 const table = require("text-table");
 const fs = require("fs");
 
+let prevHostConfigFileModifiedMoment = moment("2010-01-01");
+let prevDefaultConfigFileModifiedMoment = moment("2010-01-01");
 let prevConfigFileModifiedMoment = moment("2010-01-01");
-
 
 let statsObj = {};
 
@@ -3212,6 +3213,13 @@ function loadCommandLineArgs(callback){
 
 function loadConfigFile(folder, file, callback) {
 
+  if (file === dropboxConfigDefaultFile) {
+    prevConfigFileModifiedMoment = moment(prevDefaultConfigFileModifiedMoment);
+  }
+  else {
+    prevConfigFileModifiedMoment = moment(prevHostConfigFileModifiedMoment);
+  }
+
   if (configuration.offlineMode) {
     loadCommandLineArgs(function(err, loadedConfigObj){
       return callback(null, null);
@@ -3246,6 +3254,13 @@ function loadConfigFile(folder, file, callback) {
         ));
 
         prevConfigFileModifiedMoment = moment(fileModifiedMoment);
+
+        if (file === dropboxConfigDefaultFile) {
+          prevDefaultConfigFileModifiedMoment = moment(fileModifiedMoment);
+        }
+        else {
+          prevHostConfigFileModifiedMoment = moment(fileModifiedMoment);
+        }
 
         loadFile(folder, file, function(err, loadedConfigObj){
 
