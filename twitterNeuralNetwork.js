@@ -2874,6 +2874,7 @@ function loadBestNetworkDropboxFolders (params, callback){
                     + " | INPUTS ID: " + networkObj.inputsId
                     + " | " + folder + "/" + entry.name
                   ));
+                  skipLoadNetworkSet.add(networkObj.networkId);
                   return(cb1());
                 }
 
