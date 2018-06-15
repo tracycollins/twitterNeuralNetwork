@@ -2965,6 +2965,7 @@ function loadBestNetworkDropboxFolders (params, callback){
                   else if (nnDb) {
                     console.log(chalkLog("NNT | . NN DB HIT"
                       + " | " + nnDb.networkId
+                      + " | OAMR: " + nnDb.overallMatchRate.toFixed(2) + "%"
                       + " | MR: " + nnDb.matchRate.toFixed(2) + "%"
                       + " | SR: " + nnDb.successRate.toFixed(2) + "%"
                       + " | " + nnDb.numInputs + " IN"
@@ -2993,7 +2994,7 @@ function loadBestNetworkDropboxFolders (params, callback){
 
                   }
                   else {
-                    let nn = new NeuralNetwork(networkObj)
+                    let nn = new NeuralNetwork(networkObj);
 
                     if ((nn.networkId === undefined) || (!nn.networkId) || (nn.networkId === null)) {
                       console.log(chalkError("NNT | ERROR: NN NETWORK ID UNDEFINED ???\n" + jsonPrint(nn)));
@@ -3011,8 +3012,9 @@ function loadBestNetworkDropboxFolders (params, callback){
 
                 console.log(chalkLog("NNT | + NN HASH MAP"
                   + " | " + bestNetworkHashMap.count() + " NNs IN HM"
-                  + " | SR: " + networkObj.successRate.toFixed(2) + "%"
+                  + " | OAMR: " + networkObj.overallMatchRate.toFixed(2) + "%"
                   + " | MR: " + networkObj.matchRate.toFixed(2) + "%"
+                  + " | SR: " + networkObj.successRate.toFixed(2) + "%"
                   + " | " + getTimeStamp(networkObj.createdAt)
                   + " | IN: " + networkObj.numInputs
                   + " | OUT: " + networkObj.numOutputs
@@ -3027,8 +3029,9 @@ function loadBestNetworkDropboxFolders (params, callback){
 
                   console.log(chalkAlert("NNT | * NEW BEST NN"
                     + " | " + bestNetworkHashMap.count() + " NNs IN HM"
-                  + " | SR: " + networkObj.successRate.toFixed(2) + "%"
-                  + " | MR: " + networkObj.matchRate.toFixed(2) + "%"
+                    + " | OAMR: " + networkObj.overallMatchRate.toFixed(2) + "%"
+                    + " | MR: " + networkObj.matchRate.toFixed(2) + "%"
+                    + " | SR: " + networkObj.successRate.toFixed(2) + "%"
                     + " | " + getTimeStamp(networkObj.createdAt)
                     + " | IN: " + networkObj.numInputs
                     + " | OUT: " + networkObj.numOutputs
@@ -3044,7 +3047,9 @@ function loadBestNetworkDropboxFolders (params, callback){
 
                 debug(chalkAlert("NNT | DELETING NN"
                   + " | MIN SUCCESS RATE: GLOBAL: " + configuration.globalMinSuccessRate + " LOCAL: " + configuration.localMinSuccessRate
-                  + " | " + networkObj.successRate.toFixed(2) + "%"
+                  + " | OAMR: " + networkObj.overallMatchRate.toFixed(2) + "%"
+                  + " | MR: " + networkObj.matchRate.toFixed(2) + "%"
+                  + " | SR: " + networkObj.successRate.toFixed(2) + "%"
                   + " | " + getTimeStamp(networkObj.createdAt)
                   + " | IN: " + networkObj.numInputs
                   + " | OUT: " + networkObj.numOutputs
