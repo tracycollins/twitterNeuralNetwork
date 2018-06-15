@@ -2963,16 +2963,6 @@ function loadBestNetworkDropboxFolders (params, callback){
                     console.log(chalkError("*** ERROR: DB NN FIND ONE ERROR | "+ networkObj.networkId + " | " + err));
                   }
                   else if (nnDb) {
-                    console.log(chalkLog("NNT | . NN DB HIT"
-                      + " | " + nnDb.networkId
-                      + " | OAMR: " + nnDb.overallMatchRate.toFixed(2) + "%"
-                      + " | MR: " + nnDb.matchRate.toFixed(2) + "%"
-                      + " | SR: " + nnDb.successRate.toFixed(2) + "%"
-                      + " | " + nnDb.numInputs + " IN"
-                      + " | SEED: " + nnDb.seedNetworkId + " IN"
-                      + " | CR: " + nnDb.createdAt
-                    ));
-
                     if (
                       (networkObj.overallMatchRate !== undefined) 
                       && (networkObj.overallMatchRate > 0)
@@ -2986,6 +2976,17 @@ function loadBestNetworkDropboxFolders (params, callback){
                                         
                     nnDb.matchRate = networkObj.matchRate || 0;
                     nnDb.successRate = networkObj.successRate || 0;
+
+                    console.log(chalkLog("NNT | . NN DB HIT"
+                      + " | " + nnDb.networkId
+                      + " | OAMR: " + nnDb.overallMatchRate.toFixed(2) + "%"
+                      + " | MR: " + nnDb.matchRate.toFixed(2) + "%"
+                      + " | SR: " + nnDb.successRate.toFixed(2) + "%"
+                      + " | " + nnDb.numInputs + " IN"
+                      + " | SEED: " + nnDb.seedNetworkId + " IN"
+                      + " | CR: " + nnDb.createdAt
+                    ));
+
 
                     nnDb.save()
                     .catch(function(err){
