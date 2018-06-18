@@ -457,8 +457,6 @@ const HashMap = require("hashmap").HashMap;
 
 let trainingSetHashMap = new HashMap();
 
-let activeNeuralNetworkChildren = new Set();
-
 let initMainReady = false;
 let trainingSetReady = false;
 let createTrainingSetBusy = false;
