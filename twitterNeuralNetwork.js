@@ -4621,7 +4621,14 @@ function updateCategorizedUsers(cnf, callback){
             // console.log(chalkInfo("hist keys: " + Object.keys(hist)));
             // update user histogram in db
 
-            userServer.updateHistograms({user: user, histograms: hist, accumulateFlag: false}, function(err, updatedUser){
+            const updateHistogramsParams = { 
+              user: user, 
+              histograms: hist, 
+              computeMaxInputsFlag: true,
+              accumulateFlag: true
+            };
+
+            userServer.updateHistograms(updateHistogramsParams, function(err, updatedUser){
 
               if (err) {
                 console.error("*** UPDATE USER HISTOGRAMS ERROR\n" + err);
