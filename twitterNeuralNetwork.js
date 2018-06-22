@@ -3370,10 +3370,10 @@ function loadConfigFile(folder, file, callback) {
               console.log("NNT | LOADED TNN_LOAD_ALL_INPUTS: " + loadedConfigObj.TNN_LOAD_ALL_INPUTS);
 
               if ((loadedConfigObj.TNN_LOAD_ALL_INPUTS === true) || (loadedConfigObj.TNN_LOAD_ALL_INPUTS === "true")) {
-                cnf.loadAllInputs = true;
+                configuration.loadAllInputs = true;
               }
               else {
-                cnf.loadAllInputs = false;
+                configuration.loadAllInputs = false;
               }
             }
 
