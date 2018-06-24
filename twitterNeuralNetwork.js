@@ -208,9 +208,7 @@ function getChildProcesses(callback){
 
       statsObj.numChildren = stdoutArray.length;
 
-      debug(chalkInfo("NNT | FOUND CHILD PROCESSSES"
-        + " | NUM CH: " + statsObj.numChildren
-      ));
+      debug(chalkInfo("NNT | FOUND CHILD PROCESSSES | NUM CH: " + statsObj.numChildren));
 
 
       async.eachSeries(stdoutArray, function(pidRaw, cb){
@@ -462,6 +460,7 @@ let trainingSetReady = false;
 let createTrainingSetBusy = false;
 
 let skipLoadNetworkSet = new Set();
+let skipLoadInputsSet = new Set();
 let requiredTrainingSet = new Set();
 
 let slackChannel = "#nn";
@@ -473,6 +472,8 @@ let initMainInterval;
 const mongoose = require("mongoose");
 mongoose.Promise = global.Promise;
 
+let dbConnection;
+
 const userModel = require("@threeceelabs/mongoose-twitter/models/user.server.model");
 const neuralNetworkModel = require("@threeceelabs/mongoose-twitter/models/neuralNetwork.server.model");
 
@@ -482,14 +483,30 @@ let userServer;
 
 const wordAssoDb = require("@threeceelabs/mongoose-twitter");
 
-wordAssoDb.connect(function(err, dbConnection){
+wordAssoDb.connect(function(err, dbCon){
   if (err) {
     console.log(chalkError("*** TNN | MONGO DB CONNECTION ERROR: " + err));
     quit("MONGO DB CONNECTION ERROR");
   }
   else {
-    dbConnection.on("error", console.error.bind(console, "*** TNN | MONGO DB CONNECTION ERROR ***\n"));
+
+    dbConnection = dbCon;
+
+    dbConnection.on("error", function(){
+      console.error.bind(console, "*** TFE | MONGO DB CONNECTION ERROR ***\n");
+      console.log(chalkError("*** TFE | MONGO DB CONNECTION ERROR ***\n"));
+      dbConnectionReady = false;
+    });
+
+    dbConnection.on("disconnected", function(){
+      console.error.bind(console, "*** TFE | MONGO DB CONNECTION DISCONNECTED ***\n");
+      console.log(chalkAlert("*** TFE | MONGO DB CONNECTION DISCONNECTED ***\n"));
+      dbConnectionReady = false;
+    });
+
+
     console.log(chalkGreen("NNT | MONGOOSE DEFAULT CONNECTION OPEN"));
+
     User = mongoose.model("User", userModel.UserSchema);
     NeuralNetwork = mongoose.model("NeuralNetwork", neuralNetworkModel.NeuralNetworkSchema);
     userServer = require("@threeceelabs/user-server-controller");
@@ -1430,9 +1447,14 @@ function quit(options){
 
     killAll();
 
-    setTimeout(function(){
-      process.exit();
-    }, 3000);
+    setTimeout(function() {
+
+      dbConnection.close(function () {
+        console.log(chalkAlert("\n==========================\nMONGO DB CONNECTION CLOSED\n==========================\n"));
+        process.exit();
+      });
+
+    }, 5000);
 
   }, 1000);
 }
@@ -1832,6 +1854,7 @@ function purgeNetwork(nnId, callback){
   console.log(chalkAlert("NNT | XXX PURGE NETWORK: " + nnId));
   bestNetworkHashMap.delete(nnId);
   betterChildSeedNetworkIdSet.delete(nnId);
+  skipLoadNetworkSet.add(nnId);
   if (networkCreateResultsHashmap[nnId] !== undefined) { networkCreateResultsHashmap[nnId].status = "PURGED"; }
 
   if (callback !== undefined) { callback(); }
@@ -1842,6 +1865,7 @@ function purgeInputs(inputsId, callback){
   if (!configuration.inputsIdArray.includes(inputsId)){
     console.log(chalkAlert("NNT | XXX PURGE INPUTS: " + inputsId));
     inputsHashMap.delete(inputsId);
+    skipLoadInputsSet.add(inputsId);
   }
   else {
     console.log(chalkAlert("NNT | ** NO XXX PURGE INPUTS ... IN CONFIGURATION INPUTS ID ARRAY" 
@@ -1928,7 +1952,7 @@ function loadDropboxFolder(options, callback){
     console.log(chalkLog("DROPBOX LIST FOLDER"
       + " | PATH:" + options.path
       + " | ENTRIES: " + response.entries.length
-      + " | CURSOR (trunc): " + cursor
+      // + " | CURSOR (trunc): " + cursor
       + " | LIMIT: " + options.limit
       + " | MORE: " + more
     ));
@@ -2019,13 +2043,19 @@ function loadInputsDropboxFolder(folder, callback){
         + " | " + entry.name
       ));
 
-      if (!configuration.loadAllInputs && !configuration.inputsIdArray.includes(entryInputsId)){
+      if (skipLoadInputsSet.has(entryInputsId)){
+        console.log(chalkInfo("NNT | INPUTS IN SKIP LOAD INPUTS SET ... SKIPPING LOAD OF " + entryInputsId));
+      }
+      else if (!configuration.loadAllInputs && !configuration.inputsIdArray.includes(entryInputsId)){
 
-        console.log(chalkInfo("NNT | DROPBOX INPUTS NOT IN INPUTS ID ARRAY ... SKIPPING"
-          + " | " + entryInputsId
-          + " | " + defaultInputsArchiveFolder + "/" + entry.name
-        ));
+        if (configuration.verbose){
+          console.log(chalkInfo("NNT | DROPBOX INPUTS NOT IN INPUTS ID ARRAY ... SKIPPING"
+            + " | " + entryInputsId
+            + " | " + defaultInputsArchiveFolder + "/" + entry.name
+          ));
+        }
 
+        skipLoadInputsSet.add(entryInputsId);
         skippedInputsFiles += 1;
 
         cb();
@@ -3375,6 +3405,18 @@ function loadConfigFile(folder, file, callback) {
               else {
                 configuration.loadAllInputs = false;
               }
+            }
+
+            if (loadedConfigObj.TNN_DELETE_NOT_IN_INPUTS_ID_ARRAY !== undefined){
+              console.log("NNT | LOADED TNN_DELETE_NOT_IN_INPUTS_ID_ARRAY: " + loadedConfigObj.TNN_DELETE_NOT_IN_INPUTS_ID_ARRAY);
+
+              if ((loadedConfigObj.TNN_DELETE_NOT_IN_INPUTS_ID_ARRAY === true) || (loadedConfigObj.TNN_DELETE_NOT_IN_INPUTS_ID_ARRAY === "true")) {
+                configuration.deleteNotInInputsIdArray = true;
+              }
+              else {
+                configuration.deleteNotInInputsIdArray = false;
+              }
+
             }
 
             if (loadedConfigObj.TNN_INPUTS_IDS !== undefined){
