@@ -485,7 +485,7 @@ const wordAssoDb = require("@threeceelabs/mongoose-twitter");
 
 let dbConnectionReady = false;
 
-wordAssoDb.connect(function(err, dbCon){
+wordAssoDb.connect("node_twitterNeuralNetwork", function(err, dbCon){
   if (err) {
     console.log(chalkError("*** TNN | MONGO DB CONNECTION ERROR: " + err));
     quit("MONGO DB CONNECTION ERROR");
@@ -495,19 +495,19 @@ wordAssoDb.connect(function(err, dbCon){
     dbConnection = dbCon;
 
     dbConnection.on("error", function(){
-      console.error.bind(console, "*** TFE | MONGO DB CONNECTION ERROR ***\n");
-      console.log(chalkError("*** TFE | MONGO DB CONNECTION ERROR ***\n"));
+      console.error.bind(console, "*** TNN | MONGO DB CONNECTION ERROR ***\n");
+      console.log(chalkError("*** TNN | MONGO DB CONNECTION ERROR ***\n"));
       dbConnectionReady = false;
     });
 
     dbConnection.on("disconnected", function(){
-      console.error.bind(console, "*** TFE | MONGO DB CONNECTION DISCONNECTED ***\n");
+      console.error.bind(console, "*** TNN | MONGO DB CONNECTION DISCONNECTED ***\n");
       console.log(chalkAlert("*** TFE | MONGO DB CONNECTION DISCONNECTED ***\n"));
       dbConnectionReady = false;
     });
 
 
-    console.log(chalkGreen("NNT | MONGOOSE DEFAULT CONNECTION OPEN"));
+    console.log(chalkGreen("TNN | MONGOOSE DEFAULT CONNECTION OPEN"));
 
     dbConnectionReady = true;
 
