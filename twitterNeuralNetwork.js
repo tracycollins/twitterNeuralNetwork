@@ -483,6 +483,8 @@ let userServer;
 
 const wordAssoDb = require("@threeceelabs/mongoose-twitter");
 
+let dbConnectionReady = false;
+
 wordAssoDb.connect(function(err, dbCon){
   if (err) {
     console.log(chalkError("*** TNN | MONGO DB CONNECTION ERROR: " + err));
@@ -506,6 +508,8 @@ wordAssoDb.connect(function(err, dbCon){
 
 
     console.log(chalkGreen("NNT | MONGOOSE DEFAULT CONNECTION OPEN"));
+
+    dbConnectionReady = true;
 
     User = mongoose.model("User", userModel.UserSchema);
     NeuralNetwork = mongoose.model("NeuralNetwork", neuralNetworkModel.NeuralNetworkSchema);
