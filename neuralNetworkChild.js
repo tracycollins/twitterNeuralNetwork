@@ -46,17 +46,27 @@ let NeuralNetwork;
 
 const wordAssoDb = require("@threeceelabs/mongoose-twitter");
 
-wordAssoDb.connect(function(err, dbConnection){
+wordAssoDb.connect(process.title, function(err, dbConnection) {
   if (err) {
     console.log(chalkError("*** NNC | MONGO DB CONNECTION ERROR: " + err));
-    // quit("MONGO DB CONNECTION ERROR");
+    quit("MONGO DB CONNECTION ERROR");
   }
   else {
-    dbConnection.on("error", console.error.bind(console, "*** NNC | MONGO DB CONNECTION ERROR ***\n"));
-    console.log(chalkAlert("NNC | MONGOOSE DEFAULT CONNECTION OPEN"));
+
+    dbConnection.on("error", function(){
+      console.error.bind(console, "*** NNC | MONGO DB CONNECTION ERROR ***\n");
+      console.log(chalkError("*** NNC | MONGO DB CONNECTION ERROR ***\n"));
+    });
+
+    dbConnection.on("disconnected", function(){
+      console.error.bind(console, "*** NNC | MONGO DB CONNECTION DISCONNECTED ***\n");
+      console.log(chalkAlert("*** NNC | MONGO DB CONNECTION DISCONNECTED ***\n"));
+    });
+
+    console.log(chalkLog("NNC | MONGOOSE DEFAULT CONNECTION OPEN"));
+
     NeuralNetwork = mongoose.model("NeuralNetwork", neuralNetworkModel.NeuralNetworkSchema);
   }
-
 });
 
 const EventEmitter2 = require("eventemitter2").EventEmitter2;
