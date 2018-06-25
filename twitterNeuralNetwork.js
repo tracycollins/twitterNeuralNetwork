@@ -2049,6 +2049,7 @@ function loadInputsDropboxFolder(folder, callback){
 
       if (skipLoadInputsSet.has(entryInputsId)){
         console.log(chalkInfo("NNT | INPUTS IN SKIP LOAD INPUTS SET ... SKIPPING LOAD OF " + entryInputsId));
+        cb();
       }
       else if (!configuration.loadAllInputs && !configuration.inputsIdArray.includes(entryInputsId)){
 
