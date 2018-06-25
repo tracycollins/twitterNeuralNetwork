@@ -46,7 +46,7 @@ let NeuralNetwork;
 
 const wordAssoDb = require("@threeceelabs/mongoose-twitter");
 
-wordAssoDb.connect(process.title, function(err, dbConnection) {
+wordAssoDb.connect(process.env.NNC_CHILD_ID + process.pid, function(err, dbConnection) {
   if (err) {
     console.log(chalkError("*** NNC | MONGO DB CONNECTION ERROR: " + err));
     quit("MONGO DB CONNECTION ERROR");

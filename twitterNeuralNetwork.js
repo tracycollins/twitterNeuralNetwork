@@ -485,7 +485,7 @@ const wordAssoDb = require("@threeceelabs/mongoose-twitter");
 
 let dbConnectionReady = false;
 
-wordAssoDb.connect("node_twitterNeuralNetwork", function(err, dbCon){
+wordAssoDb.connect("TNN_" + process.pid, function(err, dbCon){
   if (err) {
     console.log(chalkError("*** TNN | MONGO DB CONNECTION ERROR: " + err));
     quit("MONGO DB CONNECTION ERROR");
