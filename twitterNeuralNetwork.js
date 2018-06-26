@@ -4969,7 +4969,12 @@ function generateGlobalTrainingTestSet (userHashMap, maxInputHashMap, callback){
     let folder = dropboxFolder;
     let fullPath = folder + "/" + file;
 
-    console.log(chalkInfo("NNT | SAVING TRAINING SET: " + fullPath));
+    const trainingSetObjSizeMbytes = sizeof(trainingSetObj)/ONE_MEGABYTE;
+
+    console.log(chalkInfo("NNT | SAVING TRAINING SET"
+      + " | " + trainingSetObjSizeMbytes.toFixed(3) + " MB"
+      + " | " + fullPath
+    ));
 
     writeJsonFile(fullPath, trainingSetObj)
     .then(function() {
