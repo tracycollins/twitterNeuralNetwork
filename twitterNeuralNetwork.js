@@ -3768,7 +3768,7 @@ function initSocket(callback){
     + "\n" + jsonPrint(userObj)
   ));
 
-  socket = require("socket.io-client")(configuration.targetServer);
+  socket = require("socket.io-client")(configuration.targetServer, { rejectUnauthorized: false });
 
   socket.on("connect", function(){
 
