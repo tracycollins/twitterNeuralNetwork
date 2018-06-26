@@ -3020,7 +3020,7 @@ function loadBestNetworkDropboxFolders (params, callback){
                       + " | SR: " + nnDb.successRate.toFixed(2) + "%"
                       + " | " + nnDb.numInputs + " IN"
                       + " | SEED: " + nnDb.seedNetworkId + " IN"
-                      + " | CR: " + nnDb.createdAt
+                      + " | CR: " + moment(nnDb.createdAt).format(compactDateTimeFormat)
                     ));
 
 
