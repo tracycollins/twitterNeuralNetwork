@@ -476,6 +476,7 @@ const mongoose = require("mongoose");
 mongoose.Promise = global.Promise;
 
 let dbConnection;
+let dbConnectionReady = false;
 
 const userModel = require("@threeceelabs/mongoose-twitter/models/user.server.model");
 const neuralNetworkModel = require("@threeceelabs/mongoose-twitter/models/neuralNetwork.server.model");
@@ -486,40 +487,7 @@ let userServer;
 
 const wordAssoDb = require("@threeceelabs/mongoose-twitter");
 
-let dbConnectionReady = false;
 
-wordAssoDb.connect("TNN_" + process.pid, function(err, dbCon){
-  if (err) {
-    console.log(chalkError("*** TNN | MONGO DB CONNECTION ERROR: " + err));
-    quit("MONGO DB CONNECTION ERROR");
-  }
-  else {
-
-    dbConnection = dbCon;
-
-    dbConnection.on("error", function(){
-      console.error.bind(console, "*** TNN | MONGO DB CONNECTION ERROR ***\n");
-      console.log(chalkError("*** TNN | MONGO DB CONNECTION ERROR ***\n"));
-      dbConnectionReady = false;
-    });
-
-    dbConnection.on("disconnected", function(){
-      console.error.bind(console, "*** TNN | MONGO DB CONNECTION DISCONNECTED ***\n");
-      console.log(chalkAlert("*** TFE | MONGO DB CONNECTION DISCONNECTED ***\n"));
-      dbConnectionReady = false;
-    });
-
-
-    console.log(chalkGreen("TNN | MONGOOSE DEFAULT CONNECTION OPEN"));
-
-    dbConnectionReady = true;
-
-    User = mongoose.model("User", userModel.UserSchema);
-    NeuralNetwork = mongoose.model("NeuralNetwork", neuralNetworkModel.NeuralNetworkSchema);
-    userServer = require("@threeceelabs/user-server-controller");
-  }
-
-});
 
 let networkCreateInterval;
 let saveFileQueueInterval;
@@ -703,27 +671,6 @@ function printCat(c){
   if (c === "none") { return "0"; }
   return ".";
 }
-
-// function reset(cause, callback){
-
-//   console.log(moment().format(compactDateTimeFormat) + " | *** RESET *** | " + cause);
-
-//   if (!resetInProgressFlag) {
-
-//     const c = cause;
-//     resetInProgressFlag = true;
-
-//     setTimeout(function(){
-//       resetInProgressFlag = false;
-//       console.log(chalkError(moment().format(compactDateTimeFormat) + " | RESET: " + c));
-      
-//       if (callback) { callback(); }
-//     }, 1*ONE_SECOND);
-
-//   }
-// }
-
-
 
 const DEFAULT_RUN_ID = hostname + "_" + process.pid + "_" + statsObj.startTimeMoment.format(compactDateTimeFormat);
 
@@ -1208,8 +1155,6 @@ const sortedHashmap = function(params) {
   });
 };
 
-
-
 function printNetworkCreateResultsHashmap(){
 
   let tableArray = [];
@@ -1476,6 +1421,43 @@ process.on("exit", function() {
     quit("SIGINT");
   });
 });
+
+function connectDb(callback){
+
+  wordAssoDb.connect("TNN_" + process.pid, function(err, db){
+    if (err) {
+      console.log(chalkError("*** TNN | MONGO DB CONNECTION ERROR: " + err));
+      callback(err, null);
+      dbConnectionReady = false;
+    }
+    else {
+
+      db.on("error", function(){
+        console.error.bind(console, "*** TNN | MONGO DB CONNECTION ERROR ***\n");
+        console.log(chalkError("*** TNN | MONGO DB CONNECTION ERROR ***\n"));
+        db.close();
+        dbConnectionReady = false;
+      });
+
+      db.on("disconnected", function(){
+        console.error.bind(console, "*** TNN | MONGO DB DISCONNECTED ***\n");
+        console.log(chalkAlert("*** TNN | MONGO DB DISCONNECTED ***\n"));
+        dbConnectionReady = false;
+      });
+
+
+      console.log(chalkGreen("TNN | MONGOOSE DEFAULT CONNECTION OPEN"));
+
+      dbConnectionReady = true;
+
+      User = mongoose.model("User", userModel.UserSchema);
+      NeuralNetwork = mongoose.model("NeuralNetwork", neuralNetworkModel.NeuralNetworkSchema);
+      userServer = require("@threeceelabs/user-server-controller");
+
+      callback(null, db);
+    }
+  });
+}
 
 
 function saveFile (params, callback){
@@ -1928,7 +1910,6 @@ function initStatsUpdate(cnf){
     showStats();
 
   }, cnf.statsUpdateIntervalTime);
-
 }
 
 function loadDropboxFolder(options, callback){
@@ -2413,7 +2394,12 @@ function loadTrainingSetsDropboxFolder(folder, callback){
         + " | " + entry.name
       ));
 
-      if (!entry.name.startsWith(configuration.globalTrainingSetId)){
+      if (!configuration.testMode && !entry.name.startsWith(configuration.globalTrainingSetId)){
+        debug("NNT | ... IGNORE DROPBOX TRAINING SETS FOLDER FILE: " + entry.name);
+        return(cb());
+      }
+
+      if (configuration.testMode && !entry.name.startsWith("smallGlobalTrainingSet")){
         debug("NNT | ... IGNORE DROPBOX TRAINING SETS FOLDER FILE: " + entry.name);
         return(cb());
       }
@@ -3254,8 +3240,6 @@ function loadCommandLineArgs(callback){
   // configArgs.forEach(function(arg){
   //   console.log("NNT | _FINAL CONFIG | " + arg + ": " + configuration[arg]);
   // });
-
-
 }
 
 function loadConfigFile(folder, file, callback) {
@@ -4072,16 +4056,25 @@ function initialize(cnf, callback){
       
       statsObj.commandLineArgsLoaded = true;
 
-      initStatsUpdate(configuration);
 
-      loadInputsDropboxFolder(defaultInputsFolder, function(err, results){
-        return(callback(err, configuration));
+      connectDb(function(err, db){
+        if (err) {
+          return(callback(err, configuration));
+          dbConnectionReady = false;
+        }
+
+        dbConnection = db;
+
+        initStatsUpdate(configuration);
+
+        loadInputsDropboxFolder(defaultInputsFolder, function(err, results){
+          callback(err, configuration);
+        });
       });
 
     });
 
   });
-
 }
 
 console.log(chalkInfo("NNT | " + getTimeStamp() 
