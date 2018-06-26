@@ -1840,9 +1840,13 @@ function getFileMetadata(path, file, callback) {
 function purgeNetwork(nnId, callback){
 
   console.log(chalkAlert("NNT | XXX PURGE NETWORK: " + nnId));
+
   bestNetworkHashMap.delete(nnId);
+
   betterChildSeedNetworkIdSet.delete(nnId);
+
   skipLoadNetworkSet.add(nnId);
+
   if (networkCreateResultsHashmap[nnId] !== undefined) { networkCreateResultsHashmap[nnId].status = "PURGED"; }
 
   if (callback !== undefined) { callback(); }
@@ -1858,8 +1862,11 @@ function purgeInputs(inputsId, callback){
   else {
     console.log(chalkAlert("NNT | ** NO XXX PURGE INPUTS ... IN CONFIGURATION INPUTS ID ARRAY" 
       + " | INPUTS ID: " + inputsId
-      + " | CONFIGURATION INPUTS ID ARRAY\n" + jsonPrint(configuration.inputsIdArray)
     ));
+
+    if (configuration.verbose) {
+      console.log(chalkAlert("NNT | CONFIGURATION INPUTS ID ARRAY\n" + jsonPrint(configuration.inputsIdArray) ));
+    }
   }
 
   if (callback !== undefined) { callback(); }
@@ -2980,6 +2987,7 @@ function loadBestNetworkDropboxFolders (params, callback){
                 if (inputsNetworksHashMap[networkObj.inputsId] === undefined) {
                   inputsNetworksHashMap[networkObj.inputsId] = new Set();
                 }
+
                 inputsNetworksHashMap[networkObj.inputsId].add(networkObj.networkId);
 
                  NeuralNetwork.findOne({ networkId: networkObj.networkId }, function(err, nnDb){
@@ -4059,8 +4067,8 @@ function initialize(cnf, callback){
 
       connectDb(function(err, db){
         if (err) {
-          return(callback(err, configuration));
           dbConnectionReady = false;
+          return(callback(err, configuration));
         }
 
         dbConnection = db;
