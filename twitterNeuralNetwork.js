@@ -3807,7 +3807,9 @@ function initSocket(callback){
     statsObj.userReadyAck = false ;
     statsObj.online = true;
     console.log(chalkConnect(moment().format(defaultDateTimeFormat) 
-      + " | SERVER RECONNECT: " + socket.id));
+      + " | SERVER RECONNECT: " + socket.id
+      + " | SERVER: " + configuration.targetServer
+    ));
   });
 
   socket.on("USER_READY_ACK", function(ackObj) {
@@ -3821,6 +3823,7 @@ function initSocket(callback){
       + " | " + moment().format(defaultDateTimeFormat)
       + " | " + socket.id
       + " | USER ID: " + ackObj.userId
+      + " | SERVER: " + configuration.targetServer
       + " | ACK TIMESTAMP: " + moment(parseInt(ackObj.timeStamp)).format(compactDateTimeFormat)
     ));
 
@@ -3833,6 +3836,7 @@ function initSocket(callback){
     statsObj.serverConnected = false ;
     console.log(chalkDisconnect(moment().format(compactDateTimeFormat)
       + " | ***** SERVER SOCKET ERROR"
+      + " | SERVER: " + configuration.targetServer
       + " | " + err.type
       + " | " + err.description
     ));
@@ -3844,18 +3848,20 @@ function initSocket(callback){
     statsObj.serverConnected = false ;
     console.log(chalkDisconnect(moment().format(compactDateTimeFormat)
       + " | ***** SERVER CONNECT ERROR"
+      + " | SERVER: " + configuration.targetServer
       + " | " + err.type
       + " | " + err.description
     ));
 
   });
 
-  socket.on("reconnect_error", function(){
+  socket.on("reconnect_error", function(err){
     statsObj.userReadyTransmitted = false;
     statsObj.userReadyAck = false ;
     statsObj.serverConnected = false ;
     console.log(chalkDisconnect(moment().format(compactDateTimeFormat)
       + " | ***** SERVER RECONNECT ERROR"
+      + " | SERVER: " + configuration.targetServer
     ));
   });
 
@@ -3865,6 +3871,7 @@ function initSocket(callback){
     statsObj.serverConnected = false;
     console.log(chalkDisconnect(moment().format(compactDateTimeFormat)
       + " | ***** SERVER DISCONNECT"
+      + " | SERVER: " + configuration.targetServer
     ));
 
    // reset("disconnect");
