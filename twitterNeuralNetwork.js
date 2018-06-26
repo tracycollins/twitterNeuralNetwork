@@ -149,6 +149,7 @@ let prevDefaultConfigFileModifiedMoment = moment("2010-01-01");
 let prevConfigFileModifiedMoment = moment("2010-01-01");
 
 let statsObj = {};
+let statsObjSmall = {};
 
 statsObj.hostname = hostname;
 statsObj.pid = process.pid;
@@ -185,6 +186,8 @@ statsObj.errors = {};
 statsObj.errors.imageParse = {};
 statsObj.errors.users = {};
 statsObj.errors.users.findOne = 0;
+
+statsObjSmall = omit(statsObj, ["network", "trainingSet", "testSet", "inputs", "outputs"]);
 
 let neuralNetworkChildHashMap = {};
 
@@ -1339,7 +1342,6 @@ function printInputsHashMap(){
   });
 }
 
-let statsObjSmall = {};
 
 function showStats(options){
 
@@ -3880,7 +3882,12 @@ function initSocket(callback){
       + " | SERVER: " + configuration.targetServer
     ));
 
-   // reset("disconnect");
+  });
+
+  socket.on("GET_STATS", function() {
+    chalkLog(chalkLog("RX STATS REQ"));
+    statsObjSmall = omit(statsObj, ["network", "trainingSet", "testSet", "inputs", "outputs"]);
+    socket.emit("STATS", statsObj);
   });
 
   socket.on("KEEPALIVE_ACK", function(userId) {
@@ -4873,8 +4880,6 @@ function generateGlobalTrainingTestSet (userHashMap, maxInputHashMap, callback){
       console.log(chalkError("GENERATE TRAINING SET ERROR\n" + jsonPrint(err)));
       return callback(err, null);
     }
-
-    // const trainingSetId = GLOBAL_TRAINING_SET_ID + "_" + statsObj.runId;
 
     trainingSet.meta.numOutputs = 3;
     trainingSet.meta.setSize = trainingSet.data.length;
