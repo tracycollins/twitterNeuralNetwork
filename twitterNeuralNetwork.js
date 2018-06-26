@@ -3347,6 +3347,12 @@ function loadConfigFile(folder, file, callback) {
               }
             }
 
+            if (loadedConfigObj.TNN_UTIL_TARGET_SERVER !== undefined){
+              console.log("NNT | LOADED TNN_UTIL_TARGET_SERVER: " + loadedConfigObj.TNN_UTIL_TARGET_SERVER);
+              configuration.targetServer = loadedConfigObj.TNN_UTIL_TARGET_SERVER;
+            }
+
+
             if (loadedConfigObj.TNN_QUIT_ON_COMPLETE !== undefined) {
               console.log("NNT | LOADED TNN_QUIT_ON_COMPLETE: " + loadedConfigObj.TNN_QUIT_ON_COMPLETE);
               if (!loadedConfigObj.TNN_QUIT_ON_COMPLETE || (loadedConfigObj.TNN_QUIT_ON_COMPLETE === "false")) {
