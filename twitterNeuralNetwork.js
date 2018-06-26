@@ -2049,6 +2049,7 @@ function loadInputsDropboxFolder(folder, callback){
 
       if (skipLoadInputsSet.has(entryInputsId)){
         console.log(chalkInfo("NNT | INPUTS IN SKIP LOAD INPUTS SET ... SKIPPING LOAD OF " + entryInputsId));
+        skippedInputsFiles += 1;
         cb();
       }
       else if (!configuration.loadAllInputs && !configuration.inputsIdArray.includes(entryInputsId)){
@@ -2075,8 +2076,8 @@ function loadInputsDropboxFolder(folder, callback){
           console.log(chalkInfo("NNT | DROPBOX INPUTS CONTENT CHANGE"
             + " | LAST MOD: " + moment(new Date(entry.client_modified)).format(compactDateTimeFormat)
             + " | " + entry.name
-            + "\nCUR HASH: " + entry.content_hash
-            + "\nOLD HASH: " + curInputsObj.entry.content_hash
+            // + "\nCUR HASH: " + entry.content_hash
+            // + "\nOLD HASH: " + curInputsObj.entry.content_hash
           ));
 
           loadFile(folder, entry.name, function(err, inputsObj){
@@ -2118,9 +2119,9 @@ function loadInputsDropboxFolder(folder, callback){
           console.log(chalkNetwork("NNT | DROPBOX INPUTS CONTENT DIFF IN DIFF FOLDERS"
             + " | LAST MOD: " + moment(new Date(entry.client_modified)).format(compactDateTimeFormat)
             + "\nCUR: " + entry.path_display
-            + " | " + entry.content_hash
+            // + " | " + entry.content_hash
             + "\nOLD: " + curInputsObj.entry.path_display
-            + " | " + curInputsObj.entry.content_hash
+            // + " | " + curInputsObj.entry.content_hash
           ));
 
           // LOAD FROM BEST FOLDER AND SAVE LOCALLY
@@ -2642,8 +2643,8 @@ function loadBestNetworkDropboxFolders (params, callback){
             console.log(chalkNetwork("NNT | DROPBOX BEST NETWORK CONTENT CHANGE"
               + " | LAST MOD: " + moment(new Date(entry.client_modified)).format(compactDateTimeFormat)
               + " | " + entry.path_display
-              + "\nCUR HASH: " + entry.content_hash
-              + "\nOLD HASH: " + oldContentHash
+              // + "\nCUR HASH: " + entry.content_hash
+              // + "\nOLD HASH: " + oldContentHash
             ));
 
             loadFile(folder, entry.name, function(err, networkObj){
