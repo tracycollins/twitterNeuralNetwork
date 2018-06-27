@@ -1,4 +1,5 @@
 /*jslint node: true */
+/*jshint sub:true*/
 "use strict";
 
 const DEFAULT_OFFLINE_MODE = false;
