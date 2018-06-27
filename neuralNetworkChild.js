@@ -589,7 +589,6 @@ function convertTestDatum(params, inputs, datum, callback){
   });
 }
 
-
 function testNetwork(nwObj, testSet, maxInputHashMap, callback){
 
   console.log(chalkBlue("NNC | TEST NETWORK"
@@ -684,7 +683,6 @@ function testNetwork(nwObj, testSet, maxInputHashMap, callback){
 
   });
 }
-
 
 function trainingSetPrepAndEvolve(params, options, callback){
 
@@ -919,6 +917,7 @@ function evolve(params, callback){
 
   statsObj.evolve.startTime = moment().valueOf();
   statsObj.evolve.elapsed = 0;
+  statsObj.evolve.stats = {};
 
   options.schedule = {
     function: function(schedParams){
@@ -927,6 +926,22 @@ function evolve(params, callback){
       let iterationRate = elapsedInt/schedParams.iteration;
       let iterationRateSec = iterationRate/1000.0;
       let timeToComplete = iterationRate*(params.iterations - schedParams.iteration);
+
+      statsObj.evolve.stats = schedParams;
+
+      const sObj = {
+        networkId: params.runId,
+        evolveStart: schedStartTime,
+        evolveElapsed: elapsedInt,
+        totalIterations: params.iterations,
+        iteration: schedParams.iteration,
+        iterationRate: iterationRate,
+        timeToComplete: timeToComplete,
+        error: schedParams.error.toFixed(5) || "---",
+        fitness: schedParams.fitness.toFixed(5) || "---"
+      };
+
+      process.send({op: "EVOLVE_SCHEDULE", nnChildId: configuration.nnChildId, stats: sObj});
 
       function schedMsToTime(duration) {
         let seconds = parseInt((duration / 1000) % 60);
@@ -942,7 +957,7 @@ function evolve(params, callback){
         return days + ":" + hours + ":" + minutes + ":" + seconds;
       }
 
-      console.log("NNC | EVOLVE"
+      debug("NNC | EVOLVE"
         + " | " + configuration.nnChildId
         + " | IN: " + params.inputsObj.meta.numInputs
         + " | S: " + moment(schedStartTime).format(compactDateTimeFormat)
@@ -1098,7 +1113,6 @@ function initStatsUpdate(cnf, callback){
 
   callback(null, cnf);
 }
-
 
 process.on("message", function(m) {
 

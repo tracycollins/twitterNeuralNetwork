@@ -2283,6 +2283,7 @@ function updateUsersFromTrainingSet(trainingSetData, callback){
 
   if (configuration.testMode) {
     trainingSetData.length = 100;
+    configuration.globalTrainingSetId = "smallGlobalTrainingSet";
   }
 
   async.eachSeries(trainingSetData, function(user, cb) {
@@ -5272,6 +5273,7 @@ function initNetworkCreate(nnChildId, nnId, callback){
   statsObj.networks[nnId].results.successRate = 0.0;
   statsObj.networks[nnId].evolve = {};
   statsObj.networks[nnId].evolve.options = {};
+  statsObj.networks[nnId].evolve.stats = {};
   statsObj.networks[nnId].elapsed = 0;
 
   generateRandomEvolveConfig(configuration, function(err, childConf){
@@ -5724,6 +5726,33 @@ function initNeuralNetworkChild(nnChildIndex, cnf, callback){
           console.log(chalkInfo("NNT | *** RETRY *** TEST NEURAL NETWORK | " + m.nnChildId));
           neuralNetworkChildHashMap[m.nnChildId].child.send({op: "TEST_EVOLVE"});
         }
+      break;
+
+        // evolveStart: schedStartTime,
+        // evolveElapsed: elapsedInt,
+        // totalIterations: params.iterations,
+        // iteration: schedParams.iteration,
+        // iterationRate: iterationRate,
+        // timeToComplete: timeToComplete,
+        // error: schedParams.error,
+        // fitness: schedParams.fitness,
+
+      case "EVOLVE_SCHEDULE":
+
+        console.log(chalkLog("NNT | EVOLVE | " + m.nnChildId + " | " + m.stats.networkId
+          + " | F: " + m.stats.fitness
+          + " | E: " + m.stats.error
+          + " | S: " + moment(m.stats.evolveStart).format(compactDateTimeFormat)
+          + " | N: " + moment().format(compactDateTimeFormat)
+          + " | R: " + msToTime(m.stats.evolveElapsed)
+          + " | RATE: " + (m.stats.iterationRate/1000.0).toFixed(1) + " s/I"
+          + " | ETC: " + msToTime(m.stats.timeToComplete)
+          + " | ETC: " + moment().add(m.stats.timeToComplete).format(compactDateTimeFormat)
+          + " | I: " + m.stats.iteration + " / " + m.stats.totalIterations
+        ));
+
+        statsObj.networks[m.stats.networkId].evolve.stats = m.stats;
+
       break;
 
       case "EVOLVE_COMPLETE":
