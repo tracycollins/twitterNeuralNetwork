@@ -573,11 +573,19 @@ configuration.maxNeuralNetworkChildern = (process.env.TNN_MAX_NEURAL_NETWORK_CHI
   ? process.env.TNN_MAX_NEURAL_NETWORK_CHILDREN 
   : DEFAULT_MAX_NEURAL_NETWORK_CHILDREN;
 
-if (process.env.TNN_QUIT_ON_COMPLETE === "false") {
-  configuration.quitOnComplete = false;
-}
-else {
-  configuration.quitOnComplete = DEFAULT_QUIT_ON_COMPLETE;
+
+configuration.quitOnComplete = DEFAULT_QUIT_ON_COMPLETE;
+
+if (process.env.TNN_QUIT_ON_COMPLETE !== undefined) {
+
+  console.log("NNT | ENV TNN_QUIT_ON_COMPLETE: " + process.env.TNN_QUIT_ON_COMPLETE);
+
+  if (!process.env.TNN_QUIT_ON_COMPLETE || (process.env.TNN_QUIT_ON_COMPLETE === false) || (process.env.TNN_QUIT_ON_COMPLETE === "false")) {
+    configuration.quitOnComplete = false ;
+  }
+  else {
+    configuration.quitOnComplete = true ;
+  }
 }
 
 configuration.costArray = (process.env.TNN_EVOLVE_COST_ARRAY !== undefined) 
@@ -3952,7 +3960,7 @@ function initialize(cnf, callback){
 
   if (process.env.TNN_QUIT_ON_COMPLETE !== undefined) {
     console.log("NNT | ENV TNN_QUIT_ON_COMPLETE: " + process.env.TNN_QUIT_ON_COMPLETE);
-    if (!process.env.TNN_QUIT_ON_COMPLETE || (process.env.TNN_QUIT_ON_COMPLETE === "false")) {
+    if (!process.env.TNN_QUIT_ON_COMPLETE || (process.env.TNN_QUIT_ON_COMPLETE === false) || (process.env.TNN_QUIT_ON_COMPLETE === "false")) {
       cnf.quitOnComplete = false ;
     }
     else {
