@@ -484,9 +484,18 @@ const neuralNetworkModel = require("@threeceelabs/mongoose-twitter/models/neural
 
 let User;
 let NeuralNetwork;
-let userServer;
 
 const wordAssoDb = require("@threeceelabs/mongoose-twitter");
+
+const UserServerController = require("@threeceelabs/user-server-controller");
+const userServerController = new UserServerController("TFE_USC");
+
+let userServerControllerReady = false;
+
+userServerController.on("ready", function(appname){
+  userServerControllerReady = true;
+  console.log(chalkAlert("TNN USC READY | " + appname));
+});
 
 
 
@@ -1453,7 +1462,6 @@ function connectDb(callback){
 
       User = mongoose.model("User", userModel.UserSchema);
       NeuralNetwork = mongoose.model("NeuralNetwork", neuralNetworkModel.NeuralNetworkSchema);
-      userServer = require("@threeceelabs/user-server-controller");
 
       callback(null, db);
     }
@@ -4101,7 +4109,7 @@ let userMaxInputHashMap = {};
 // FUTURE: break up into updateCategorizedUsers and createTrainingSet
 function updateCategorizedUsers(cnf, callback){
 
-  userServer.resetMaxInputsHashMap();
+  UserServerController.resetMaxInputsHashMap();
 
   let categorizedNodeIds = categorizedUserHashmap.keys();
 
@@ -4466,7 +4474,7 @@ function updateCategorizedUsers(cnf, callback){
               accumulateFlag: true
             };
 
-            userServer.updateHistograms(updateHistogramsParams, function(err, updatedUser){
+            UserServerController.updateHistograms(updateHistogramsParams, function(err, updatedUser){
 
               if (err) {
                 console.error("*** UPDATE USER HISTOGRAMS ERROR\n" + err);
@@ -4559,7 +4567,7 @@ function updateCategorizedUsers(cnf, callback){
 
         user.category = categorizedUserHashmap.get(nodeId).manual;
 
-        userServer.findOneUser(user, {noInc: true}, function(err, updatedUser){
+        UserServerController.findOneUser(user, {noInc: true}, function(err, updatedUser){
           if (err) {
             return(cb0(err));
           }
@@ -4580,7 +4588,7 @@ function updateCategorizedUsers(cnf, callback){
       }
     }
 
-    userMaxInputHashMap = userServer.getMaxInputsHashMap();
+    userMaxInputHashMap = UserServerController.getMaxInputsHashMap();
 
     // console.log("MAX INPUT HASHMAP keys\n" + Object.keys(userMaxInputHashMap.images));
 
@@ -4783,7 +4791,7 @@ function initCategorizedUserHashmap(callback){
     "category": { "$nin": [ false, null ] } 
   };
 
-  userServer.findCategorizedUsersCursor(p, function(err, results){
+  UserServerController.findCategorizedUsersCursor(p, function(err, results){
     if (err) {
       console.error(chalkError("NNT | ERROR: initCategorizedUserHashmap: " + err));
       callback(err);
