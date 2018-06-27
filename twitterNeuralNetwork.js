@@ -1038,7 +1038,7 @@ function indexOfMax (arr, callback) {
 
   if (arr.length === 0) {
     console.log(chalkAlert("NNT | indexOfMax: 0 LENG ARRAY: -1"));
-    return(callback(-2, arr)) ; 
+    return callback(-2, arr) ; 
   }
 
   if ((arr[0] === arr[1]) && (arr[1] === arr[2])){
@@ -1048,8 +1048,8 @@ function indexOfMax (arr, callback) {
       + " - " + arr[1].toFixed(2) 
       + " - " + arr[2].toFixed(2)
     ));
-    if (arr[0] === 0) { return(callback(-4, arr)); }
-    return(callback(4, [1,1,1])) ; 
+    if (arr[0] === 0) { return callback(-4, arr); }
+    return callback(4, [1,1,1]) ; 
   }
 
   debug("NNT | B4 ARR: " + arr[0].toFixed(2) + " - " + arr[1].toFixed(2) + " - " + arr[2].toFixed(2));
@@ -1195,7 +1195,7 @@ function printNetworkCreateResultsHashmap(){
     const networkObj = networkCreateResultsHashmap[nnId];
 
     if (networkObj === undefined) {
-      return(cb("UNDEFINED"));
+      return cb("UNDEFINED");
     }
     else if (networkObj.evolve === undefined) {
       networkObj.evolve.options.clear = "---";
@@ -1672,7 +1672,7 @@ function saveFile (params, callback){
           if (err) {
             console.log(chalkError("NNT | *** ERROR DROPBOX SAVE FILE: " + err));
             if (callback !== undefined) { 
-              return(callback(err, null));
+              return callback(err, null);
             }
             return;
           }
@@ -1725,7 +1725,7 @@ function loadFile(path, file, callback) {
           + " | *** ERROR LOADING FILE FROM DROPBOX FILE"
           + " | " + fullPath
         ));
-        return(callback(err, null));
+        return callback(err, null);
       }
 
       debug("NNT"
@@ -1737,17 +1737,17 @@ function loadFile(path, file, callback) {
       if (file.match(/\.json$/gi)) {
         try {
           let fileObj = JSON.parse(data);
-          return(callback(null, fileObj));
+          return callback(null, fileObj);
         }
         catch(e){
           console.trace(chalkError("NNT | JSON PARSE ERROR: " + e));
-          return(callback(e, null));
+          return callback(e, null);
         }
       }
       if (file.match(/\.txt$/gi)) {
-        return(callback(null, data));
+        return callback(null, data);
       }
-      return(callback(null, null));
+      return callback(null, null);
 
     });
    }
@@ -1771,7 +1771,7 @@ function loadFile(path, file, callback) {
         }
         catch(e){
           console.trace(chalkError("NNT | JSON PARSE ERROR: " + fullPath  + " | ERROR: " + e + "\n" + jsonPrint(e)));
-          return(callback(e, null));
+          return callback(e, null);
         }
       }
       else if (file.match(/\.txt$/gi)) {
@@ -1824,7 +1824,7 @@ function getFileMetadata(path, file, callback) {
   dropboxClient.filesGetMetadata({path: fullPath})
     .then(function(response) {
       debug(chalkInfo("FILE META\n" + jsonPrint(response)));
-      return(callback(null, response));
+      return callback(null, response);
     })
     .catch(function(error) {
       console.log(chalkError("NNT | DROPBOX getFileMetadata ERROR: " + fullPath + "\n" + error));
@@ -1835,14 +1835,14 @@ function getFileMetadata(path, file, callback) {
         console.error(chalkError("NNT | !!! DROPBOX READ FILE " + fullPath + " NOT FOUND"
           + " ... SKIPPING ...")
         );
-        return(callback(null, null));
+        return callback(null, null);
       }
       if (error.status === 0) {
         console.error(chalkError("NNT | !!! DROPBOX NO RESPONSE"
           + " ... NO INTERNET CONNECTION? ... SKIPPING ..."));
-        return(callback(null, null));
+        return callback(null, null);
       }
-      return(callback(error, null));
+      return callback(error, null);
     });
 }
 
@@ -2025,7 +2025,7 @@ function loadInputsDropboxFolder(folder, callback){
 
     if (err) {
       console.log(chalkError("NNT | ERROR LOADING DROPBOX INPUTS FOLDER | " + options.path + " | " + err));
-      return(callback(err, null));
+      return callback(err, null);
     }
 
     console.log(chalkBlue("NNT | DROPBOX LIST INPUTS FOLDER"
@@ -2412,17 +2412,17 @@ function loadTrainingSetsDropboxFolder(folder, callback){
 
       if (!configuration.testMode && !entry.name.startsWith(configuration.globalTrainingSetId)){
         debug("NNT | ... IGNORE DROPBOX TRAINING SETS FOLDER FILE: " + entry.name);
-        return(cb());
+        return cb();
       }
 
       if (configuration.testMode && !entry.name.startsWith("smallGlobalTrainingSet")){
         debug("NNT | ... IGNORE DROPBOX TRAINING SETS FOLDER FILE: " + entry.name);
-        return(cb());
+        return cb();
       }
 
       if (!entry.name.endsWith(".json")){
         debug("NNT | ... IGNORE DROPBOX TRAINING SETS FOLDER FILE: " + entry.name);
-        return(cb());
+        return cb();
       }
 
       const entryNameArray = entry.name.split(".");
@@ -2582,7 +2582,7 @@ function loadBestNetworkDropboxFolders (params, callback){
     loadDropboxFolder(options, function(err, response){
 
       if (err) {
-        return(cb0(err));
+        return cb0(err);
       }
 
       debug(chalkLog("DROPBOX LIST FOLDER"
@@ -2594,7 +2594,7 @@ function loadBestNetworkDropboxFolders (params, callback){
         console.log(chalkAlert("NNT | DROPBOX BEST NETWORKS FOLDER: NO FILES? " + folder
           + " | " + response.entries.length + " FILES FOUND"
         ));
-        return(cb0());
+        return cb0();
       }
 
       if (configuration.testMode) {
@@ -2612,12 +2612,12 @@ function loadBestNetworkDropboxFolders (params, callback){
 
         if (entry.name === bestRuntimeNetworkFileName) {
           debug(chalkInfo("... SKIPPING LOAD OF " + entry.name));
-          return(cb1());
+          return cb1();
         }
 
         if (!entry.name.endsWith(".json")) {
           debug(chalkInfo("... SKIPPING LOAD OF " + entry.name));
-          return(cb1());
+          return cb1();
         }
 
         const entryNameArray = entry.name.split(".");
@@ -2915,7 +2915,7 @@ function loadBestNetworkDropboxFolders (params, callback){
                     + " | " + folder + "/" + entry.name
                   ));
                   skipLoadNetworkSet.add(networkObj.networkId);
-                  return(cb1());
+                  return cb1();
                 }
 
                 console.log(chalkInfo("NNT | NN INPUTS NOT IN INPUTS ID ARRAY ... DELETING: " 
@@ -3280,7 +3280,7 @@ function loadConfigFile(folder, file, callback) {
     getFileMetadata(folder, file, function(err, response){
 
       if (err) {
-        return(callback(err, null));
+        return callback(err, null);
       }
 
       const fileModifiedMoment = moment(new Date(response.client_modified));
@@ -3770,7 +3770,7 @@ function initSocket(callback){
 
   if (!configuration.serverMode) {
     console.log(chalkAlert("NNT | NO SERVER MODE | SKIP INIT SOCKET"));
-    return(callback(null, null));
+    return callback(null, null);
   }
 
   console.log(chalkLog("INIT SOCKET"
@@ -4077,7 +4077,7 @@ function initialize(cnf, callback){
       connectDb(function(err, db){
         if (err) {
           dbConnectionReady = false;
-          return(callback(err, configuration));
+          return callback(err, configuration);
         }
 
         dbConnection = db;
@@ -4151,21 +4151,21 @@ function updateCategorizedUsers(cnf, callback){
       if (err){
         console.error(chalkError("NNT | *** UPDATE CATEGORIZED USERS: USER FIND ONE ERROR: " + err));
         statsObj.errors.users.findOne += 1;
-        return(cb0(err));
+        return cb0(err) ;
       }
 
       if (!user){
         console.log(chalkLog("NNT | *** UPDATE CATEGORIZED USERS: USER NOT FOUND: NID: " + nodeId));
         statsObj.users.notFound += 1;
         statsObj.users.notCategorized += 1;
-        return(cb0());
+        return cb0() ;
       }
 
       if (user.screenName === undefined) {
         console.log(chalkError("NNT | *** UPDATE CATEGORIZED USERS: USER SCREENNAME UNDEFINED\n" + jsonPrint(user)));
         statsObj.users.screenNameUndefined += 1;
         statsObj.users.notCategorized += 1;
-        return(cb0("USER SCREENNAME UNDEFINED", null));
+        return cb0("USER SCREENNAME UNDEFINED", null) ;
       }
 
       debug(chalkInfo("NNT | UPDATE CL USR <DB"
@@ -4446,7 +4446,7 @@ function updateCategorizedUsers(cnf, callback){
 
           if (err) {
             console.error(chalkError("*** ERROR " + err));
-            return(cb0(err));
+            return cb0(err) ;
           }
 
           if (!text || (text === undefined)) { text = " "; }
@@ -4457,7 +4457,7 @@ function updateCategorizedUsers(cnf, callback){
 
             if (err) {
               console.error("*** PARSE TEXT ERROR\n" + err);
-              return(cb0(err));
+              return cb0(err);
             }
 
             if (bannerResults && bannerResults.label && bannerResults.label.images) {
@@ -4478,7 +4478,7 @@ function updateCategorizedUsers(cnf, callback){
 
               if (err) {
                 console.error("*** UPDATE USER HISTOGRAMS ERROR\n" + err);
-                return(cb0(err));
+                return cb0(err);
               }
 
               // console.log(chalkInfo("hist keys: " + Object.keys(updatedUser.histograms)));
@@ -4569,7 +4569,7 @@ function updateCategorizedUsers(cnf, callback){
 
         UserServerController.findOneUser(user, {noInc: true}, function(err, updatedUser){
           if (err) {
-            return(cb0(err));
+            return cb0(err);
           }
           debug("updatedUser\n" + jsonPrint(updatedUser));
           cb0();
@@ -5157,7 +5157,7 @@ function generateRandomEvolveConfig (cnf, callback){
     }
     else {
       console.log("NNT *** ERROR *** | RANDOM ARCH | seedInputsId " + config.seedInputsId + " NOT IN inputsHashMap");
-      return(callback(config.seedInputsId + " NOT IN inputsHashMap", null));
+      return callback(config.seedInputsId + " NOT IN inputsHashMap", null);
     }
   }
 
@@ -5200,7 +5200,7 @@ function generateRandomEvolveConfig (cnf, callback){
     generateGlobalTrainingTestSet(trainingSetUsersHashMap, userMaxInputHashMap, function(err){
 
       if (err) {
-        return(callback(err, null));
+        return callback(err, null);
       }
 
       tObj = trainingSetHashMap.get(cnf.globalTrainingSetId);
@@ -5255,7 +5255,7 @@ function initNetworkCreate(nnChildId, nnId, callback){
 
     if (err) {
       console.log(chalkError("generateRandomEvolveConfig ERROR\n" + jsonPrint(err)));
-      return(callback(err, childConf));
+      return callback(err, childConf);
     }
 
     switch (configuration.networkCreateMode) {
@@ -5433,7 +5433,7 @@ function initMain(cnf, callback){
     if (err1) {
       console.log(chalkError("NNT | ERROR LOADING DROPBOX INPUTS FOLDER | " + defaultInputsFolder + " | " + err1));
       // initMainReady = true;
-      return(callback(err1, null));
+      return callback(err1, null) ;
     }
 
     let seedParams = {};
@@ -5482,7 +5482,7 @@ function initMain(cnf, callback){
               // initMainReady = true;
               createTrainingSetBusy = false;
               trainingSetReady = false;
-              return(callback(err, null));
+              return callback(err, null);
             }
 
             // initMainReady = true;
@@ -5504,7 +5504,7 @@ function initMain(cnf, callback){
             if (err) {
               console.error("NNT | *** UPDATE CATEGORIZED USER ERROR ***\n" + jsonPrint(err));
               // initMainReady = true;
-              return(callback(err, null));
+              return callback(err, null);
             }
 
             console.log(chalkInfo("NNT | ... START CREATE TRAINING SET"));
@@ -5515,7 +5515,7 @@ function initMain(cnf, callback){
                 // initMainReady = true;
                 trainingSetReady = true;
                 createTrainingSetBusy = false;
-                return(callback(err, null));
+                return callback(err, null);
               }
 
               statsObj.categorizedUserHistogram = {};
@@ -5603,7 +5603,7 @@ function initNeuralNetworkChild(nnChildIndex, cnf, callback){
     console.log(chalkError("!!! ERROR initNeuralNetworkChild: NN CHILD EXISTS !!! | NNC ID: " + nnChildId
       + "\n" + jsonPrint(neuralNetworkChildHashMap[nnChildId])
     ));
-    return(callback("NN CHILD EXISTS", nnChildId));
+    return callback("NN CHILD EXISTS", nnChildId);
   }
 
   let childEnv = {};
@@ -6218,7 +6218,7 @@ function initTimeout(callback){
 
             if (err2){
               console.log(chalkError("INIT NEURAL NETWORK CHILDREN ERROR\n" + jsonPrint(err2)));
-              return(callback(err2));
+              return callback(err2);
             }
 
             console.log(chalkLog("END INIT NEURAL NETWORK CHILDREN: " + children.length));
