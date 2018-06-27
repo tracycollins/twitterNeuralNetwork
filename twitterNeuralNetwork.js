@@ -1963,7 +1963,7 @@ function loadDropboxFolder(options, callback){
     async.whilst(
 
       function() {
-        return (more);
+        return more;
       },
 
       function(cb){
@@ -5445,10 +5445,11 @@ function initMain(cnf, callback){
     }
 
     loadSeedNeuralNetwork(seedParams, function(err0, results){
+
       if (err0) {
         console.log(chalkError("*** ERROR loadSeedNeuralNetwork"));
         // initMainReady = true;
-        return (callback(err0, null));
+        return callback(err0, null);
       }
 
       initCategorizedUserHashmap(function(err){
@@ -5456,7 +5457,7 @@ function initMain(cnf, callback){
         if (err) {
           console.error(chalkError("NNT | *** ERROR: CATEGORIZED USER HASHMAP NOT INITIALIZED: ", err));
           // initMainReady = true;
-          return (callback(err, null));
+          return callback(err, null);
         }
 
         console.log(chalkInfo("NNT | LOADED " + categorizedUserHashmap.size + " TOTAL CATEGORIZED USERS"));
