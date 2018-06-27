@@ -1985,12 +1985,12 @@ function loadDropboxFolder(options, callback){
 
           async.setImmediate(function() { cb(); });
 
-        })
-        .catch(function(err){
-          console.log(chalkError("NNT | *** DROPBOX FILES LIST FOLDER ERROR: " + err));
-          console.log(chalkError("NNT | *** DROPBOX FILES LIST FOLDER ERROR\n" + jsonPrint(err)));
-          cb(err);
         });
+        // .catch(function(err){
+        //   console.log(chalkError("NNT | *** DROPBOX filesListFolderContinue ERROR: " + err));
+        //   console.log(chalkError("NNT | *** DROPBOX filesListFolderContinue ERROR\n" + jsonPrint(err)));
+        //   cb(err);
+        // });
       },
 
       function(err){
