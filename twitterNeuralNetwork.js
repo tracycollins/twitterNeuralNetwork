@@ -4109,7 +4109,7 @@ let userMaxInputHashMap = {};
 // FUTURE: break up into updateCategorizedUsers and createTrainingSet
 function updateCategorizedUsers(cnf, callback){
 
-  UserServerController.resetMaxInputsHashMap();
+  userServerController.resetMaxInputsHashMap();
 
   let categorizedNodeIds = categorizedUserHashmap.keys();
 
@@ -4474,7 +4474,7 @@ function updateCategorizedUsers(cnf, callback){
               accumulateFlag: true
             };
 
-            UserServerController.updateHistograms(updateHistogramsParams, function(err, updatedUser){
+            userServerController.updateHistograms(updateHistogramsParams, function(err, updatedUser){
 
               if (err) {
                 console.error("*** UPDATE USER HISTOGRAMS ERROR\n" + err);
@@ -4567,7 +4567,7 @@ function updateCategorizedUsers(cnf, callback){
 
         user.category = categorizedUserHashmap.get(nodeId).manual;
 
-        UserServerController.findOneUser(user, {noInc: true}, function(err, updatedUser){
+        userServerController.findOneUser(user, {noInc: true}, function(err, updatedUser){
           if (err) {
             return cb0(err);
           }
@@ -4588,7 +4588,7 @@ function updateCategorizedUsers(cnf, callback){
       }
     }
 
-    userMaxInputHashMap = UserServerController.getMaxInputsHashMap();
+    userMaxInputHashMap = userServerController.getMaxInputsHashMap();
 
     // console.log("MAX INPUT HASHMAP keys\n" + Object.keys(userMaxInputHashMap.images));
 
@@ -4791,7 +4791,7 @@ function initCategorizedUserHashmap(callback){
     "category": { "$nin": [ false, null ] } 
   };
 
-  UserServerController.findCategorizedUsersCursor(p, function(err, results){
+  userServerController.findCategorizedUsersCursor(p, function(err, results){
     if (err) {
       console.error(chalkError("NNT | ERROR: initCategorizedUserHashmap: " + err));
       callback(err);
