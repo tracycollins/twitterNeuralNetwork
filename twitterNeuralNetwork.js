@@ -360,6 +360,7 @@ function killChild(params, callback){
     }
     else {
       pid = neuralNetworkChildHashMap[params.nnChild].pid;
+      console.log(chalkAlert("KILL CHILD ID FOUND IN HM | " + params.nnChild + " | PID: " + pid));
     }
   }
 
@@ -880,11 +881,13 @@ testObj.testRunId = statsObj.runId;
 testObj.results = {};
 testObj.testSet = [];
 
-statsObj.tests = {};
-statsObj.tests[testObj.testRunId] = {};
+statsObj.networks = {};
 
-statsObj.evolve = {};
-statsObj.train = {};
+statsObj.networks = {};
+statsObj.networks[testObj.testRunId] = {};
+
+// statsObj.evolve = {};
+// statsObj.train = {};
 
 process.title = "node_twitterNeuralNetwork";
 console.log("\n\nNNT | =================================");
@@ -1378,16 +1381,16 @@ function quit(options){
 
       async.eachSeries(Object.keys(neuralNetworkChildHashMap), function(nnChildId, cb){
 
-        if (statsObj.tests[testObj.testRunId][nnChildId].results) {
-          slackText = slackText + "\n*RES: " + statsObj.tests[testObj.testRunId][nnChildId].results.successRate.toFixed(2) + " %*";
+        if (statsObj.networks[testObj.testRunId][nnChildId].results) {
+          slackText = slackText + "\n*RES: " + statsObj.networks[testObj.testRunId][nnChildId].results.successRate.toFixed(2) + " %*";
         }
         slackText = slackText + " | RUN " + msToTime(statsObj.elapsed);
-        slackText = slackText + "\nTESTS: " + statsObj.tests[testObj.testRunId][nnChildId].results.numTests;
-        slackText = slackText + " | PASS: " + statsObj.tests[testObj.testRunId][nnChildId].results.numPassed;
-        slackText = slackText + " | SKIP: " + statsObj.tests[testObj.testRunId][nnChildId].results.numSkipped;
+        slackText = slackText + "\nTESTS: " + statsObj.networks[testObj.testRunId][nnChildId].results.numTests;
+        slackText = slackText + " | PASS: " + statsObj.networks[testObj.testRunId][nnChildId].results.numPassed;
+        slackText = slackText + " | SKIP: " + statsObj.networks[testObj.testRunId][nnChildId].results.numSkipped;
         slackText = slackText + " | SEED NET: " + snid;
-        slackText = slackText + "\nEVOLVE OPTIONS\n" + jsonPrint(statsObj.evolve[nnChildId].options);
-        slackText = slackText + "\nTRAIN OPTIONS\n" + jsonPrint(statsObj.train[nnChildId].options);
+        slackText = slackText + "\nEVOLVE OPTIONS\n" + jsonPrint(statsObj.networks[nnChildId].evolve.options);
+        // slackText = slackText + "\nTRAIN OPTIONS\n" + jsonPrint(statsObj.train[nnChildId].options);
 
         cb();
 
@@ -1926,12 +1929,16 @@ function initStatsUpdate(cnf){
 
   clearInterval(statsUpdateInterval);
 
+  saveFileQueue.push({localFlag: false, folder: statsFolder, file: statsFile, obj: statsObj});
+
   statsUpdateInterval = setInterval(function () {
 
     statsObj.elapsed = moment().valueOf() - statsObj.startTime;
     statsObj.timeStamp = moment().format(defaultDateTimeFormat);
  
     showStats();
+
+    saveFileQueue.push({localFlag: false, folder: statsFolder, file: statsFile, obj: statsObj});
 
   }, cnf.statsUpdateIntervalTime);
 }
@@ -4063,7 +4070,7 @@ function initialize(cnf, callback){
 
   cnf.categorizedUsersFile = process.env.TNN_CATEGORIZED_USERS_FILE || categorizedUsersFile;
   cnf.categorizedUsersFolder = globalCategorizedUsersFolder;
-  cnf.statsUpdateIntervalTime = process.env.TNN_STATS_UPDATE_INTERVAL || 300000;
+  cnf.statsUpdateIntervalTime = process.env.TNN_STATS_UPDATE_INTERVAL || 10000;
 
   debug(chalkWarn("dropboxConfigDefaultFolder: " + dropboxConfigDefaultFolder));
   debug(chalkWarn("dropboxConfigDefaultFile  : " + dropboxConfigDefaultFile));
@@ -5240,24 +5247,32 @@ function initNetworkCreate(nnChildId, nnId, callback){
 
   let messageObj;
 
-  statsObj.evolve[nnId] = {};
-  statsObj.evolve[nnId].options = {};
+  // statsObj.evolve[nnId] = {};
+  // statsObj.evolve[nnId].options = {};
 
-  statsObj.train[nnId] = {};
-  statsObj.train[nnId].options = {};
+  // statsObj.train[nnId] = {};
+  // statsObj.train[nnId].options = {};
 
-  statsObj.tests[testObj.testRunId][nnId] = {};
-  statsObj.tests[testObj.testRunId][nnId].numInputs = 0;
-  statsObj.tests[testObj.testRunId][nnId].numOutputs = 0;
-  statsObj.tests[testObj.testRunId][nnId].network = {};
-  statsObj.tests[testObj.testRunId][nnId].testRunId = nnId;
-  statsObj.tests[testObj.testRunId][nnId].testSet = {};
-  statsObj.tests[testObj.testRunId][nnId].results = {};
-  statsObj.tests[testObj.testRunId][nnId].results.numTests = 0;
-  statsObj.tests[testObj.testRunId][nnId].results.numSkipped = 0;
-  statsObj.tests[testObj.testRunId][nnId].results.numPassed = 0;
-  statsObj.tests[testObj.testRunId][nnId].results.successRate = 0.0;
-  statsObj.tests[testObj.testRunId][nnId].elapsed = 0;
+  statsObj.networks[nnId] = {};
+  statsObj.networks[nnId].networkId = nnId;
+  statsObj.networks[nnId].network = {};
+  statsObj.networks[nnId].seedNetworkId = "";
+  statsObj.networks[nnId].inputsId = "";
+  statsObj.networks[nnId].inputsObj = {};
+  statsObj.networks[nnId].numInputs = 0;
+  statsObj.networks[nnId].numOutputs = 0;
+  statsObj.networks[nnId].testRunId = nnId;
+  statsObj.networks[nnId].testSet = {};
+  statsObj.networks[nnId].trainingSet = {};
+  statsObj.networks[nnId].results = {};
+  statsObj.networks[nnId].results.iterations = 0;
+  statsObj.networks[nnId].results.numTests = 0;
+  statsObj.networks[nnId].results.numSkipped = 0;
+  statsObj.networks[nnId].results.numPassed = 0;
+  statsObj.networks[nnId].results.successRate = 0.0;
+  statsObj.networks[nnId].evolve = {};
+  statsObj.networks[nnId].evolve.options = {};
+  statsObj.networks[nnId].elapsed = 0;
 
   generateRandomEvolveConfig(configuration, function(err, childConf){
 
@@ -5302,18 +5317,37 @@ function initNetworkCreate(nnChildId, nnId, callback){
         messageObj.mutationRate = childConf.mutationRate;
         messageObj.clear = childConf.clear;
 
-        statsObj.evolve[nnId].options = omit(messageObj, ["network", "trainingSet", "testSet", "inputs", "outputs"]);
+        statsObj.networks[nnId].evolve.options = omit(messageObj, ["network", "trainingSet", "testSet", "inputs", "outputs", "inputsObj"]);
+
+        statsObj.networks[nnId].inputsId = childConf.inputsId;
+        statsObj.networks[nnId].inputsObj = pick(childConf.inputsObj, ["inputsId", "meta"]);
+        statsObj.networks[nnId].numInputs = 0;
+        statsObj.networks[nnId].numOutputs = 0;
+        statsObj.networks[nnId].network = {};
+        statsObj.networks[nnId].testRunId = nnId;
+        statsObj.networks[nnId].trainingSet = pick(childConf.trainingSet, "meta");
+        statsObj.networks[nnId].testSet = {};
+        statsObj.networks[nnId].results = {};
+        statsObj.networks[nnId].results.status = "EVOLVE";
+        statsObj.networks[nnId].results.iterations = 0;
+        statsObj.networks[nnId].results.numTests = 0;
+        statsObj.networks[nnId].results.numSkipped = 0;
+        statsObj.networks[nnId].results.numPassed = 0;
+        statsObj.networks[nnId].results.successRate = 0.0;
+        statsObj.networks[nnId].elapsed = 0;
 
         if (messageObj.networkObj && (messageObj.networkObj !== undefined)) {
           messageObj.seedNetworkId = messageObj.networkObj.networkId;
           messageObj.seedNetworkRes = messageObj.networkObj.successRate;
-          statsObj.evolve[nnId].options.networkObj = {};
-          statsObj.evolve[nnId].options.networkObj = pick(messageObj, ["networkId", "successRate", "inputsId"]);
+          // statsObj.evolve[nnId].options.networkObj = {};
+          // statsObj.evolve[nnId].options.networkObj = pick(messageObj, ["networkId", "successRate", "inputsId"]);
+          statsObj.networks[nnId].seedNetworkId = messageObj.networkObj.networkId;
+          statsObj.networks[nnId].evolve.options.networkObj = pick(messageObj, ["networkId", "successRate", "inputsId"]);
         }
 
         console.log(chalkBlue("\nNNT | START NETWORK EVOLVE"));
 
-        console.log(chalkBlue("NNT | TEST RUN ID: " + statsObj.tests[testObj.testRunId][nnId].testRunId
+        console.log(chalkBlue("NNT | TEST RUN ID: " + statsObj.networks[nnId].testRunId
           + "\nNNT | ARCHITECTURE:        " + messageObj.architecture
           + "\nNNT | COST:                " + messageObj.cost
           + "\nNNT | TRAINING SET LENGTH: " + messageObj.trainingSet.meta.setSize
@@ -5361,6 +5395,8 @@ function initNetworkCreate(nnChildId, nnId, callback){
           networkCreateObj.evolve.options = pick(childConf, ["clear", "cost", "growth", "equal", "mutationRate", "popsize", "elitism"]);
 
           networkCreateResultsHashmap[messageObj.testRunId] = networkCreateObj;
+
+          saveFileQueue.push({localFlag: false, folder: statsFolder, file: statsFile, obj: statsObj});
 
           printNetworkCreateResultsHashmap();
 
@@ -5714,6 +5750,16 @@ function initNeuralNetworkChild(nnChildIndex, cnf, callback){
           + "\nNNT | CONNS:      " + m.networkObj.network.connections.length
         ));
 
+        statsObj.networks[m.networkObj.networkId].numInputs = m.networkObj.network.input;
+        statsObj.networks[m.networkObj.networkId].numOutputs = m.networkObj.network.output;
+        statsObj.networks[m.networkObj.networkId].testRunId = m.networkObj.networkId;
+        statsObj.networks[m.networkObj.networkId].network = omit(m.networkObj, ["network", "inputs", "outputs", "inputsObj"]);
+
+        statsObj.networks[m.networkObj.networkId].results.numTests = m.networkObj.test.results.numTests;
+        statsObj.networks[m.networkObj.networkId].results.numSkipped = m.networkObj.test.results.numSkipped;
+        statsObj.networks[m.networkObj.networkId].results.numPassed = m.networkObj.test.results.numPassed;
+        statsObj.networks[m.networkObj.networkId].results.successRate = m.networkObj.test.results.successRate;
+        statsObj.networks[m.networkObj.networkId].results.status = "COMPLETE";
 
         networkCreateResultsHashmap[m.networkObj.networkId] = {};
         networkCreateResultsHashmap[m.networkObj.networkId] = omit(m.networkObj, ["network", "inputs", "outputs"]);
@@ -5756,6 +5802,8 @@ function initNeuralNetworkChild(nnChildIndex, cnf, callback){
             + " | " + m.networkObj.successRate.toFixed(2) + "%"
           ));
 
+          saveFileQueue.push({localFlag: false, folder: statsFolder, file: statsFile, obj: statsObj});
+
           printNetworkObj("NNT | " + m.networkObj.networkId, m.networkObj);
         }
         else if (
@@ -5790,6 +5838,7 @@ function initNeuralNetworkChild(nnChildIndex, cnf, callback){
             betterChildSeedNetworkIdSet.add(m.networkObj.networkId);
 
             m.networkObj.betterChild = true;
+            statsObj.networks[m.networkObj.networkId].betterChild = true;
             neuralNetworkChildHashMap[m.nnChildId].betterChild = true;
 
             console.log(chalkAlert("NNT | +++ BETTER CHILD"
@@ -5800,6 +5849,7 @@ function initNeuralNetworkChild(nnChildIndex, cnf, callback){
             ));
           }
           else {
+            statsObj.networks[m.networkObj.networkId].betterChild = false;
             neuralNetworkChildHashMap[m.nnChildId].betterChild = false;
           }
 
@@ -5822,6 +5872,7 @@ function initNeuralNetworkChild(nnChildIndex, cnf, callback){
             ));
 
             networkCreateResultsHashmap[m.networkObj.networkId].status = "PASS GLOBAL";
+            statsObj.networks[m.networkObj.networkId].results.status = "PASS GLOBAL";
 
             statsObj.evolveStats.passGlobal += 1;
 
@@ -5833,6 +5884,7 @@ function initNeuralNetworkChild(nnChildIndex, cnf, callback){
             slackPostMessage(slackChannel, slackText);
 
             saveFileQueue.push({localFlag: false, folder: globalBestNetworkFolder, file: bestNetworkFile, obj: m.networkObj});
+            saveFileQueue.push({localFlag: false, folder: statsFolder, file: statsFile, obj: statsObj});
           }
           else if (m.networkObj.test.results.successRate >= cnf.localMinSuccessRate) {
 
@@ -5843,6 +5895,7 @@ function initNeuralNetworkChild(nnChildIndex, cnf, callback){
             ));
 
             networkCreateResultsHashmap[m.networkObj.networkId].status = "PASS LOCAL";
+            statsObj.networks[m.networkObj.networkId].results.status = "PASS LOCAL";
 
             statsObj.evolveStats.passLocal += 1;
 
@@ -5854,6 +5907,7 @@ function initNeuralNetworkChild(nnChildIndex, cnf, callback){
             slackPostMessage(slackChannel, slackText);
 
             saveFileQueue.push({localFlag: false, folder: localBestNetworkFolder, file: localNetworkFile, obj: m.networkObj});
+            saveFileQueue.push({localFlag: false, folder: statsFolder, file: statsFile, obj: statsObj});
           }
 
           printNetworkObj("NNT | " + m.networkObj.networkId, m.networkObj);
@@ -5866,6 +5920,8 @@ function initNeuralNetworkChild(nnChildIndex, cnf, callback){
           ));
 
           networkCreateResultsHashmap[m.networkObj.networkId].status = "FAIL";
+          statsObj.networks[m.networkObj.networkId].results.status = "FAIL";
+          saveFileQueue.push({localFlag: false, folder: statsFolder, file: statsFile, obj: statsObj});
 
           slackText = "\n*-FAIL-: " + m.networkObj.test.results.successRate.toFixed(2) + "*";
           slackText = slackText + "\n" + m.networkObj.networkId;
@@ -6176,6 +6232,20 @@ function initTimeout(callback){
       + "\n" + jsonPrint(configuration)
     ));
 
+    const sfObj = {localFlag: false, folder: statsFolder, file: statsFile, obj: statsObj};
+
+    saveFile(sfObj, function(err){
+      if (err) {
+        console.log(chalkError("NNT | *** SAVE FILE ERROR ... RETRY | " + sfObj.folder + "/" + sfObj.file));
+        saveFileQueue.push(sfObj);
+      }
+      else {
+        console.log(chalkBlue("NNT | SAVED FILE | " + sfObj.folder + "/" + sfObj.file));
+      }
+    });
+
+    initSaveFileQueue(configuration);
+
     initSocket(function(){
 
       requiredTrainingSet.forEach(function(nodeId) {
@@ -6253,7 +6323,7 @@ setTimeout(function(){
 
     initMainReady = false;
 
-    initSaveFileQueue(configuration);
+    // initSaveFileQueue(configuration);
 
     initMain(configuration, function(){
 
