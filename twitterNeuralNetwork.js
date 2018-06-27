@@ -488,13 +488,13 @@ let NeuralNetwork;
 const wordAssoDb = require("@threeceelabs/mongoose-twitter");
 
 const UserServerController = require("@threeceelabs/user-server-controller");
-const userServerController = new UserServerController("TFE_USC");
+const userServerController = new UserServerController("TNN_USC");
 
 let userServerControllerReady = false;
 
 userServerController.on("ready", function(appname){
   userServerControllerReady = true;
-  console.log(chalkAlert("TNN USC READY | " + appname));
+  console.log(chalkAlert("USC READY | " + appname));
 });
 
 
