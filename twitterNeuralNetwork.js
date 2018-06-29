@@ -1159,7 +1159,7 @@ const sortedHashmap = function(params) {
       return objBvalue - objAvalue;
     });
 
-    if (keys.length !== undefined) {
+    if (keys !== undefined) {
       if (sortedKeys !== undefined) { 
         resolve({sortKey: params.sortKey, sortedKeys: sortedKeys.slice(0,params.max)});
       }
