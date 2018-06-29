@@ -3610,46 +3610,46 @@ function loadSeedNeuralNetwork(params, callback){
         sortedHashmap({ sortKey: "networkObj.overallMatchRate", hashmap: bestNetworkHashMap, max: 500})
         .then(function(sortedBestNetworks){
 
-        let tableArray = [];
-
-        tableArray.push([
-          "NNT | ",
-          "TCYCs",
-          "OAMR %",
-          "MR %",
-          "SR %",
-          "INPUTS",
-          "INPUTS ID",
-          "NNID"
-        ]);
-
-        sortedBestNetworks.sortedKeys.forEach(function(nnId){
+          let tableArray = [];
 
           tableArray.push([
             "NNT | ",
-            bestNetworkHashMap.get(nnId).networkObj.testCycles,
-            bestNetworkHashMap.get(nnId).networkObj.overallMatchRate.toFixed(2),
-            bestNetworkHashMap.get(nnId).networkObj.matchRate.toFixed(2),
-            bestNetworkHashMap.get(nnId).networkObj.successRate.toFixed(2),
-            bestNetworkHashMap.get(nnId).networkObj.numInputs,
-            bestNetworkHashMap.get(nnId).networkObj.inputsId,
-            nnId
+            "TCYCs",
+            "OAMR %",
+            "MR %",
+            "SR %",
+            "INPUTS",
+            "INPUTS ID",
+            "NNID"
           ]);
-        });
 
-        const t = table(tableArray, { align: ["l", "r", "r", "r", "r", "r", "l", "l"] });
+          sortedBestNetworks.sortedKeys.forEach(function(nnId){
 
-        console.log("NNT | ============================================================================================================================================");
+            tableArray.push([
+              "NNT | ",
+              bestNetworkHashMap.get(nnId).networkObj.testCycles,
+              bestNetworkHashMap.get(nnId).networkObj.overallMatchRate.toFixed(2),
+              bestNetworkHashMap.get(nnId).networkObj.matchRate.toFixed(2),
+              bestNetworkHashMap.get(nnId).networkObj.successRate.toFixed(2),
+              bestNetworkHashMap.get(nnId).networkObj.numInputs,
+              bestNetworkHashMap.get(nnId).networkObj.inputsId,
+              nnId
+            ]);
+          });
 
-        console.log(chalkLog("NNT | ... NO BEST NETWORKS CHANGED / LOADED | NNs IN HM: " + sortedBestNetworks.sortedKeys.length));
+          const t = table(tableArray, { align: ["l", "r", "r", "r", "r", "r", "l", "l"] });
 
-        if (configuration.verbose) { console.log(t); }
+          console.log("NNT | ============================================================================================================================================");
 
-        console.log("NNT | ============================================================================================================================================");
+          console.log(chalkLog("NNT | ... NO BEST NETWORKS CHANGED / LOADED | NNs IN HM: " + sortedBestNetworks.sortedKeys.length));
+
+          if (configuration.verbose) { console.log(t); }
+
+          console.log("NNT | ============================================================================================================================================");
 
         })
         .catch(function(err){
-          console.trace(chalkError("generateRandomEvolveConfig SORTER ERROR: " + err));
+          console.trace(chalkError("generateRandomEvolveConfig sortedHashmap ERROR: " + err + "/" + jsonPrint(err)));
         });
       }
 
@@ -3697,7 +3697,7 @@ function loadSeedNeuralNetwork(params, callback){
 
       })
       .catch(function(err){
-        console.log(chalkError("generateRandomEvolveConfig SORTER ERROR: " + jsonPrint(err)));
+        console.trace(chalkError("generateRandomEvolveConfig sortedHashmap ERROR: " + err + "/" + jsonPrint(err)));
       });
 
       if (callback !== undefined) { callback(null, null); }
