@@ -1658,7 +1658,7 @@ function saveFile (params, callback){
 
         debug(chalkLog("DROPBOX LIST FOLDER"
           + " | ENTRIES: " + response.entries.length
-          + " | CURSOR (trunc): " + response.cursor
+          // + " | CURSOR (trunc): " + response.cursor
           + " | MORE: " + response.has_more
           + " | PATH:" + options.path
         ));
@@ -1983,35 +1983,47 @@ function loadDropboxFolder(options, callback){
 
       function(cb){
 
-        dropboxClient.filesListFolderContinue({cursor: cursor})
-        .then(function(responseCont){
+        setTimeout(function(){
 
-          cursor = responseCont.cursor;
-          more = responseCont.has_more;
-          results.entries = results.entries.concat(responseCont.entries);
+          dropboxClient.filesListFolderContinue({cursor: cursor})
+          .then(function(responseCont){
 
-          debug(chalkLog("DROPBOX LIST FOLDER CONT"
-            + " | PATH:" + options.path
-            + " | ENTRIES: " + responseCont.entries.length + "/" + results.entries.length
-            + " | CURSOR (trunc): " + responseCont.cursor
-            + " | LIMIT: " + options.limit
-            + " | MORE: " + more
-          ));
+            cursor = responseCont.cursor;
+            more = responseCont.has_more;
+            results.entries = results.entries.concat(responseCont.entries);
+
+            console.log(chalkLog("DROPBOX LIST FOLDER CONT"
+              + " | PATH:" + options.path
+              + " | ENTRIES: " + responseCont.entries.length + "/" + results.entries.length
+              // + " | CURSOR (trunc): " + responseCont.cursor
+              + " | LIMIT: " + options.limit
+              + " | MORE: " + more
+            ));
+
+            // async.setImmediate(function() { cb(); });
+          })
+          .catch(function(err){
+            if (err.response.status === 429){
+              console.log(chalkAlert("NNT | DROPBOX LIST FOLDER ERROR | TOO MANY REQUESTS"));
+            }
+            console.trace(chalkError("NNT | *** DROPBOX filesListFolderContinue ERROR: " + err + "\n" + jsonPrint(err)));
+            process.exit();
+            // console.log(chalkError("NNT | *** DROPBOX filesListFolderContinue ERROR\n" + jsonPrint(err)));
+            // return cb(err);
+          });
 
           async.setImmediate(function() { cb(); });
 
-        });
-        // .catch(function(err){
-        //   console.log(chalkError("NNT | *** DROPBOX filesListFolderContinue ERROR: " + err));
-        //   console.log(chalkError("NNT | *** DROPBOX filesListFolderContinue ERROR\n" + jsonPrint(err)));
-        //   cb(err);
-        // });
+        }, 1000);
+
       },
 
       function(err){
+        if (err) {
+          console.log(chalkError("NNT | DROPBOX LIST FOLDERS: " + err + "\n" + jsonPrint(err)));
+        }
         callback(err, results);
       });
-
   })
   .catch(function(err){
     console.log(chalkError("NNT | *** DROPBOX FILES LIST FOLDER ERROR: " + err));
@@ -2411,7 +2423,7 @@ function loadTrainingSetsDropboxFolder(folder, callback){
 
     debug(chalkLog("DROPBOX LIST FOLDER"
       + " | ENTRIES: " + response.entries.length
-      + " | CURSOR (trunc): " + response.cursor
+      // + " | CURSOR (trunc): " + response.cursor
       + " | MORE: " + response.has_more
       + " | PATH:" + options.path
       // + " | " + jsonPrint(response)
@@ -2700,6 +2712,7 @@ function loadBestNetworkDropboxFolders (params, callback){
                   return cb1("NETWORK OBJ INPUTS ID UNDEFINED");
                 }
 
+                if (networkObj.testCycles === undefined) { networkObj.testCycles = 0; }
                 if (networkObj.overallMatchRate === undefined) { networkObj.overallMatchRate = 0; }
                 if (networkObj.matchRate === undefined) { networkObj.matchRate = 0; }
                 if (networkObj.successRate === undefined) { networkObj.successRate = 0; }
@@ -2798,6 +2811,7 @@ function loadBestNetworkDropboxFolders (params, callback){
                   return cb1("NETWORK OBJ NETWORK numInputs UNDEFINED");
                 }
 
+                if (networkObj.testCycles === undefined) { networkObj.testCycles = 0; }
                 if (networkObj.overallMatchRate === undefined) { networkObj.overallMatchRate = 0; }
                 if (networkObj.matchRate === undefined) { networkObj.matchRate = 0; }
                 if (networkObj.successRate === undefined) { networkObj.successRate = 0; }
@@ -2923,6 +2937,7 @@ function loadBestNetworkDropboxFolders (params, callback){
             }
             else {
 
+              if (networkObj.testCycles === undefined) { networkObj.testCycles = 0; }
               if (networkObj.overallMatchRate === undefined) { networkObj.overallMatchRate = 0; }
               if (networkObj.matchRate === undefined) { networkObj.matchRate = 0; }
               if (networkObj.successRate === undefined) { networkObj.successRate = 0; }
@@ -2990,6 +3005,7 @@ function loadBestNetworkDropboxFolders (params, callback){
                 || (!params.purgeMin && (folder !== "/config/utility/best/neuralNetworks") && (networkObj.matchRate > configuration.localMinSuccessRate))) {
 
 
+                if (networkObj.testCycles === undefined) { networkObj.testCycles = 0; }
                 if (networkObj.overallMatchRate === undefined) { networkObj.overallMatchRate = 0; }
                 if (networkObj.matchRate === undefined) { networkObj.matchRate = 0; }
                 if (networkObj.successRate === undefined) { networkObj.successRate = 0; }
