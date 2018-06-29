@@ -3697,7 +3697,7 @@ function loadSeedNeuralNetwork(params, callback){
 
       })
       .catch(function(err){
-        console.trace(chalkError("generateRandomEvolveConfig SORTER ERROR: " + err));
+        console.log(chalkError("generateRandomEvolveConfig SORTER ERROR: " + jsonPrint(err)));
       });
 
       if (callback !== undefined) { callback(null, null); }
