@@ -2708,6 +2708,7 @@ function loadBestNetworkDropboxFolders (params, callback){
                   + " | SR: " + networkObj.successRate.toFixed(2) + "%"
                   + " | MR: " + networkObj.matchRate.toFixed(2) + "%"
                   + " | OAMR: " + networkObj.overallMatchRate.toFixed(2) + "%"
+                  + " | TCYCs: " + networkObj.testCycles
                   + " | " + getTimeStamp(networkObj.createdAt)
                   + " | " + networkObj.networkId
                   + " | " + networkObj.networkCreateMode
@@ -2741,6 +2742,7 @@ function loadBestNetworkDropboxFolders (params, callback){
                   + " | SR: " + networkObj.successRate.toFixed(2) + "%"
                   + " | MR: " + networkObj.matchRate.toFixed(2) + "%"
                   + " | OAMR: " + networkObj.overallMatchRate.toFixed(2) + "%"
+                  + " | TCYCs: " + networkObj.testCycles
                   + " | " + getTimeStamp(networkObj.createdAt)
                   + " | " + networkObj.networkId
                   + " | " + networkObj.networkCreateMode
@@ -2804,6 +2806,7 @@ function loadBestNetworkDropboxFolders (params, callback){
                   + " | SR: " + networkObj.successRate.toFixed(2) + "%"
                   + " | MR: " + networkObj.matchRate.toFixed(2) + "%"
                   + " | OAMR: " + networkObj.overallMatchRate.toFixed(2) + "%"
+                  + " | TCYCs: " + networkObj.testCycles
                   + " | " + getTimeStamp(networkObj.createdAt)
                   + " | " + networkObj.networkId
                   + " | " + networkObj.networkCreateMode
@@ -2823,6 +2826,7 @@ function loadBestNetworkDropboxFolders (params, callback){
                   + " | SR: " + networkObj.successRate.toFixed(2) + "%"
                   + " | MR: " + networkObj.matchRate.toFixed(2) + "%"
                   + " | OAMR: " + networkObj.overallMatchRate.toFixed(2) + "%"
+                  + " | TCYCs: " + networkObj.testCycles
                   + " | " + getTimeStamp(networkObj.createdAt)
                   + " | " + networkObj.networkId
                   + " | " + networkObj.networkCreateMode
@@ -2879,6 +2883,7 @@ function loadBestNetworkDropboxFolders (params, callback){
                   + " | SR: " + networkObj.successRate.toFixed(2) + "%"
                   + " | MR: " + networkObj.matchRate.toFixed(2) + "%"
                   + " | OAMR: " + networkObj.overallMatchRate.toFixed(2) + "%"
+                  + " | TCYCs: " + networkObj.testCycles
                   + " | " + getTimeStamp(networkObj.createdAt)
                   + " | " + networkObj.networkId
                   + " | " + networkObj.networkCreateMode
@@ -2947,6 +2952,7 @@ function loadBestNetworkDropboxFolders (params, callback){
                     + " | SR: " + networkObj.successRate.toFixed(2) + "%"
                     + " | MR: " + networkObj.matchRate.toFixed(2) + "%"
                     + " | OAMR: " + networkObj.overallMatchRate.toFixed(2) + "%"
+                    + " | TCYCs: " + networkObj.testCycles
                     + " | " + getTimeStamp(networkObj.createdAt)
                     + " | " + networkObj.networkId
                     + " | " + networkObj.networkCreateMode
@@ -3036,6 +3042,7 @@ function loadBestNetworkDropboxFolders (params, callback){
 
                     console.log(chalkLog("NNT | . NN DB HIT"
                       + " | " + nnDb.networkId
+                      + " | TCYCs: " + nnDb.testCycles
                       + " | OAMR: " + nnDb.overallMatchRate.toFixed(2) + "%"
                       + " | MR: " + nnDb.matchRate.toFixed(2) + "%"
                       + " | SR: " + nnDb.successRate.toFixed(2) + "%"
@@ -3070,6 +3077,7 @@ function loadBestNetworkDropboxFolders (params, callback){
 
                 console.log(chalkLog("NNT | + NN HASH MAP"
                   + " | " + bestNetworkHashMap.count() + " NNs IN HM"
+                  + " | TCYCs: " + networkObj.testCycles
                   + " | OAMR: " + networkObj.overallMatchRate.toFixed(2) + "%"
                   + " | MR: " + networkObj.matchRate.toFixed(2) + "%"
                   + " | SR: " + networkObj.successRate.toFixed(2) + "%"
@@ -3087,6 +3095,7 @@ function loadBestNetworkDropboxFolders (params, callback){
 
                   console.log(chalkAlert("NNT | * NEW BEST NN"
                     + " | " + bestNetworkHashMap.count() + " NNs IN HM"
+                    + " | TCYCs: " + networkObj.testCycles
                     + " | OAMR: " + networkObj.overallMatchRate.toFixed(2) + "%"
                     + " | MR: " + networkObj.matchRate.toFixed(2) + "%"
                     + " | SR: " + networkObj.successRate.toFixed(2) + "%"
@@ -3105,6 +3114,7 @@ function loadBestNetworkDropboxFolders (params, callback){
 
                 debug(chalkAlert("NNT | DELETING NN"
                   + " | MIN SUCCESS RATE: GLOBAL: " + configuration.globalMinSuccessRate + " LOCAL: " + configuration.localMinSuccessRate
+                  + " | TCYCs: " + networkObj.testCycles
                   + " | OAMR: " + networkObj.overallMatchRate.toFixed(2) + "%"
                   + " | MR: " + networkObj.matchRate.toFixed(2) + "%"
                   + " | SR: " + networkObj.successRate.toFixed(2) + "%"
@@ -3127,8 +3137,9 @@ function loadBestNetworkDropboxFolders (params, callback){
                     + " | MIN SR: GLOBAL: " + configuration.globalMinSuccessRate
                     + " | MIN SR: LOCAL: " + configuration.localMinSuccessRate
                     + " | MIN SR: LOCAL PURGE: " + configuration.localPurgeMinSuccessRate
-                    + " | SR: " + networkObj.successRate.toFixed(2) + "%"
+                    + " | TCYCs: " + networkObj.testCycles
                     + " | OAMR: " + networkObj.overallMatchRate.toFixed(2) + "%"
+                    + " | SR: " + networkObj.successRate.toFixed(2) + "%"
                     + " | MR: " + networkObj.matchRate.toFixed(2) + "%"
                     + " | " + getTimeStamp(networkObj.createdAt)
                     + " | IN: " + networkObj.numInputs
@@ -3603,6 +3614,8 @@ function loadSeedNeuralNetwork(params, callback){
 
         tableArray.push([
           "NNT | ",
+          "TCYCs",
+          "OAMR %",
           "MR %",
           "SR %",
           "INPUTS",
@@ -3614,6 +3627,8 @@ function loadSeedNeuralNetwork(params, callback){
 
           tableArray.push([
             "NNT | ",
+            bestNetworkHashMap.get(nnId).networkObj.testCycles,
+            bestNetworkHashMap.get(nnId).networkObj.overallMatchRate.toFixed(2),
             bestNetworkHashMap.get(nnId).networkObj.matchRate.toFixed(2),
             bestNetworkHashMap.get(nnId).networkObj.successRate.toFixed(2),
             bestNetworkHashMap.get(nnId).networkObj.numInputs,
@@ -3622,7 +3637,7 @@ function loadSeedNeuralNetwork(params, callback){
           ]);
         });
 
-        const t = table(tableArray, { align: ["l", "r", "r", "r", "l", "l"] });
+        const t = table(tableArray, { align: ["l", "r", "r", "r", "r", "r", "l", "l"] });
 
         console.log("NNT | ============================================================================================================================================");
 
@@ -3649,6 +3664,7 @@ function loadSeedNeuralNetwork(params, callback){
 
         tableArray.push([
           "NNT | ",
+          "TCYCs",
           "OAMR %",
           "MR %",
           "SR %",
@@ -3661,6 +3677,7 @@ function loadSeedNeuralNetwork(params, callback){
 
           tableArray.push([
             "NNT | ",
+            bestNetworkHashMap.get(nnId).networkObj.testCycles,
             bestNetworkHashMap.get(nnId).networkObj.overallMatchRate.toFixed(2),
             bestNetworkHashMap.get(nnId).networkObj.matchRate.toFixed(2),
             bestNetworkHashMap.get(nnId).networkObj.successRate.toFixed(2),
@@ -3671,7 +3688,7 @@ function loadSeedNeuralNetwork(params, callback){
 
         });
 
-        const t = table(tableArray, { align: ["l", "r", "r", "r", "r", "l", "l"] });
+        const t = table(tableArray, { align: ["l", "r", "r", "r", "r", "r", "l", "l"] });
 
         console.log("NNT | ============================================================================================================================================");
         console.log(chalkInfo("NNT | +++ BEST NETWORKS CHANGED / LOADED | NNs IN HM: " + sortedBestNetworks.sortedKeys.length));
