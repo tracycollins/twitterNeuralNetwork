@@ -1943,9 +1943,9 @@ function initStatsUpdate(cnf){
   }, cnf.statsUpdateIntervalTime);
 }
 
-function loadDropboxFolder(options, callback){
+function listDropboxFolder(options, callback){
 
-  debug(chalkNetwork("NNT | ... LOADING DROPBOX FOLDER | " + options.path));
+  debug(chalkNetwork("NNT | ... LISTING DROPBOX FOLDER | " + options.path));
 
   let results = {};
   results.entries = [];
@@ -2007,8 +2007,7 @@ function loadDropboxFolder(options, callback){
               console.log(chalkAlert("NNT | DROPBOX LIST FOLDER ERROR | TOO MANY REQUESTS"));
             }
             console.trace(chalkError("NNT | *** DROPBOX filesListFolderContinue ERROR: " + err + "\n" + jsonPrint(err)));
-            process.exit();
-            // console.log(chalkError("NNT | *** DROPBOX filesListFolderContinue ERROR\n" + jsonPrint(err)));
+            // process.exit();
             // return cb(err);
           });
 
@@ -2048,7 +2047,7 @@ function loadInputsDropboxFolder(folder, callback){
   };
   let skippedInputsFiles = 0;
 
-  loadDropboxFolder(options, function(err, results){
+  listDropboxFolder(options, function(err, results){
 
     if (err) {
       console.log(chalkError("NNT | ERROR LOADING DROPBOX INPUTS FOLDER | " + options.path + " | " + err));
@@ -2607,7 +2606,7 @@ function loadBestNetworkDropboxFolders (params, callback){
       limit: DROPBOX_LIST_FOLDER_LIMIT
     };
 
-    loadDropboxFolder(options, function(err, response){
+    listDropboxFolder(options, function(err, response){
 
       if (err) {
         return cb0(err);
