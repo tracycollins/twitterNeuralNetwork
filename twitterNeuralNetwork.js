@@ -1164,6 +1164,7 @@ const sortedHashmap = function(params) {
         resolve({sortKey: params.sortKey, sortedKeys: sortedKeys.slice(0,params.max)});
       }
       else {
+        console.log(chalkAlert("sortedHashmap NO SORTED KEYS? | SORT KEY: " + params.sortKey + " | KEYS: " + keys.length + " | SORTED KEYS: " + sortedKeys.length));
         resolve({sortKey: params.sortKey, sortedKeys: []});
       }
 
@@ -1728,6 +1729,7 @@ function loadFile(path, file, callback) {
       fullPath = "/Users/tc/Dropbox/Apps/wordAssociation" + path + "/" + file;
       debug(chalkInfo("OFFLINE MODE: FULL PATH " + fullPath));
     }
+
     fs.readFile(fullPath, "utf8", function(err, data) {
 
       if (err) {
@@ -1746,19 +1748,26 @@ function loadFile(path, file, callback) {
       ));
 
       if (file.match(/\.json$/gi)) {
+
+        let fileObj;
+
         try {
-          let fileObj = JSON.parse(data);
-          return callback(null, fileObj);
+          fileObj = JSON.parse(data);
         }
         catch(e){
           console.trace(chalkError("NNT | JSON PARSE ERROR: " + e));
-          return callback(e, null);
+          return callback(new Error("NNT | JSON PARSE ERROR"), null);
         }
+
+        callback(null, fileObj);
+
       }
-      if (file.match(/\.txt$/gi)) {
-        return callback(null, data);
+      else if (file.match(/\.txt$/gi)) {
+        callback(null, data);
       }
-      return callback(null, null);
+      else {
+        callback(null, null);
+      }
 
     });
    }
@@ -1773,17 +1782,23 @@ function loadFile(path, file, callback) {
       ));
 
       let payload = data.fileBinary;
+
       debug(payload);
 
       if (file.match(/\.json$/gi)) {
+
+        let fileObj;
+
         try {
-          let fileObj = JSON.parse(payload);
-          callback(null, fileObj);
+          fileObj = JSON.parse(payload);
         }
         catch(e){
           console.trace(chalkError("NNT | JSON PARSE ERROR: " + fullPath  + " | ERROR: " + e + "\n" + jsonPrint(e)));
-          return callback(e, null);
+          return callback(new Error("NNT | JSON PARSE ERROR"), null);
         }
+
+        callback(null, fileObj);
+
       }
       else if (file.match(/\.txt$/gi)) {
         callback(null, data);
@@ -3640,14 +3655,16 @@ function loadSeedNeuralNetwork(params, callback){
 
           sortedBestNetworks.sortedKeys.forEach(function(nnId){
 
+            const nn = bestNetworkHashMap.get(nnId).networkObj;
+
             tableArray.push([
               "NNT | ",
-              bestNetworkHashMap.get(nnId).networkObj.testCycles,
-              bestNetworkHashMap.get(nnId).networkObj.overallMatchRate.toFixed(2),
-              bestNetworkHashMap.get(nnId).networkObj.matchRate.toFixed(2),
-              bestNetworkHashMap.get(nnId).networkObj.successRate.toFixed(2),
-              bestNetworkHashMap.get(nnId).networkObj.numInputs,
-              bestNetworkHashMap.get(nnId).networkObj.inputsId,
+              nn.testCycles,
+              nn.overallMatchRate.toFixed(2),
+              nn.matchRate.toFixed(2),
+              nn.successRate.toFixed(2),
+              nn.numInputs,
+              nn.inputsId,
               nnId
             ]);
           });
@@ -3690,14 +3707,16 @@ function loadSeedNeuralNetwork(params, callback){
 
         sortedBestNetworks.sortedKeys.forEach(function(nnId){
 
+          const nn = bestNetworkHashMap.get(nnId).networkObj;
+
           tableArray.push([
             "NNT | ",
-            bestNetworkHashMap.get(nnId).networkObj.testCycles,
-            bestNetworkHashMap.get(nnId).networkObj.overallMatchRate.toFixed(2),
-            bestNetworkHashMap.get(nnId).networkObj.matchRate.toFixed(2),
-            bestNetworkHashMap.get(nnId).networkObj.successRate.toFixed(2),
-            bestNetworkHashMap.get(nnId).networkObj.numInputs,
-            bestNetworkHashMap.get(nnId).networkObj.inputsId,
+            nn.testCycles,
+            nn.overallMatchRate.toFixed(2),
+            nn.matchRate.toFixed(2),
+            nn.successRate.toFixed(2),
+            nn.numInputs,
+            nn.inputsId,
             nnId
           ]);
 
@@ -5101,11 +5120,14 @@ function generateRandomEvolveConfig (cnf, callback){
       console.log(chalkInfo("NNT | NNs IN HM: " + sortedBestNetworks.sortedKeys.length));
 
       sortedBestNetworks.sortedKeys.forEach(function(nnId){
+
+        const nn = bestNetworkHashMap.get(nnId).networkObj;
+
         console.log(chalkLog("NNT"
-          + " | MR: " + bestNetworkHashMap.get(nnId).networkObj.matchRate.toFixed(2)
-          + " | SR: " + bestNetworkHashMap.get(nnId).networkObj.successRate.toFixed(2)
-          + " | " + bestNetworkHashMap.get(nnId).networkObj.numInputs
-          + " | " + bestNetworkHashMap.get(nnId).networkObj.inputsId
+          + " | MR: " + nn.matchRate.toFixed(2)
+          + " | SR: " + nn.successRate.toFixed(2)
+          + " | " + nn.numInputs
+          + " | " + nn.inputsId
           + " | " + nnId
         ));
       });
