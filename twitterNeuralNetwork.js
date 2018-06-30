@@ -4935,7 +4935,6 @@ function initCategorizedUserHashmap(callback){
         }
 
       });
-
     },
 
     function(err){
@@ -4943,9 +4942,8 @@ function initCategorizedUserHashmap(callback){
         console.log(chalkError("NNT | INIT CATEGORIZED USER HASHMAP ERROR: " + err + "\n" + jsonPrint(err)));
       }
       callback(err);
-    });
-
-
+    }
+  );
 
 }
 
