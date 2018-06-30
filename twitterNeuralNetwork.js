@@ -3164,18 +3164,18 @@ function loadBestNetworkDropboxFolders (params, callback){
                   debug("dropboxClient filesDelete response\n" + jsonPrint(response));
 
                   console.log(chalkAlert("NNT | XXX NN"
-                    + " | MIN SR: GLOBAL: " + configuration.globalMinSuccessRate
-                    + " | MIN SR: LOCAL: " + configuration.localMinSuccessRate
-                    + " | MIN SR: LOCAL PURGE: " + configuration.localPurgeMinSuccessRate
-                    + " | TCYCs: " + networkObj.testCycles
-                    + " | OAMR: " + networkObj.overallMatchRate.toFixed(2) + "%"
-                    + " | SR: " + networkObj.successRate.toFixed(2) + "%"
-                    + " | MR: " + networkObj.matchRate.toFixed(2) + "%"
-                    + " | " + getTimeStamp(networkObj.createdAt)
-                    + " | IN: " + networkObj.numInputs
-                    + " | OUT: " + networkObj.numOutputs
-                    + " | " + networkObj.networkCreateMode
-                    + " | " + networkObj.networkId
+                    + "\n" + networkObj.networkId
+                    + "\nMIN SR: GBL:       " + configuration.globalMinSuccessRate
+                    + "\nMIN SR: LCL:       " + configuration.localMinSuccessRate
+                    + "\nMIN SR: LCL PURGE: " + configuration.localPurgeMinSuccessRate
+                    + "\n"
+                    + "\nOAMR:  " + networkObj.overallMatchRate.toFixed(2) + "%"
+                    + "\nSR:    " + networkObj.successRate.toFixed(2) + "%"
+                    + "\nMR:    " + networkObj.matchRate.toFixed(2) + "%"
+                    + "\nCR:    " + getTimeStamp(networkObj.createdAt)
+                    + "\nIN:    " + networkObj.numInputs
+                    + "\nOUT:   " + networkObj.numOutputs
+                    + "\nTCYCs: " + networkObj.testCycles
                   ));
 
                   cb1();
