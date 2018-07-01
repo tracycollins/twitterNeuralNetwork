@@ -3981,6 +3981,10 @@ function loadAllConfigFiles(callback){
         });
       }
   }, function(err, results) {
+    if (err) {
+      console.log(chalkError("LOAD ALL CONFIG FILES ERROR: " + err));
+      return callback(err, null);
+    }
     if (results.defaultConfig || results.hostConfig) {
       if (results.defaultConfig) {
         console.log(chalkAlert("NNT | +++ RELOADED DEFAULT CONFIG " + dropboxConfigDefaultFolder + "/" + dropboxConfigDefaultFile));
