@@ -1266,9 +1266,9 @@ function printNetworkCreateResultsHashmap(){
 
     async.setImmediate(function() { cb(); });
 
-  }, function(err){
+  }, function(){
 
-    if (err) { return; }
+    // if (err) { return; }
 
     const t = table(tableArray, { align: ["l", "l", "l", "l", "l", "r", "l", "l", "l", "l", "r", "r", "r", "l", "l", "r", "r", "r"] });
 
@@ -3706,9 +3706,12 @@ function loadSeedNeuralNetwork(params, callback){
           "NNID"
         ]);
 
-        sortedBestNetworks.sortedKeys.forEach(function(nnId){
+        let nn;
 
-          const nn = bestNetworkHashMap.get(nnId).networkObj;
+        // sortedBestNetworks.sortedKeys.forEach(function(nnId){
+        async.eachSeries(sortedBestNetworks.sortedKeys, function(nnId, cb){
+
+          nn = bestNetworkHashMap.get(nnId).networkObj;
 
           tableArray.push([
             "NNT | ",
@@ -3721,14 +3724,18 @@ function loadSeedNeuralNetwork(params, callback){
             nnId
           ]);
 
+          async.setImmediate(function() { cb(); });
+
+        }, function(){
+
+          const t = table(tableArray, { align: ["l", "r", "r", "r", "r", "r", "l", "l"] });
+
+          console.log("NNT | ============================================================================================================================================");
+          console.log(chalkInfo("NNT | +++ BEST NETWORKS CHANGED / LOADED | NNs IN HM: " + sortedBestNetworks.sortedKeys.length));
+          console.log(t);
+          console.log("NNT | ============================================================================================================================================");
+
         });
-
-        const t = table(tableArray, { align: ["l", "r", "r", "r", "r", "r", "l", "l"] });
-
-        console.log("NNT | ============================================================================================================================================");
-        console.log(chalkInfo("NNT | +++ BEST NETWORKS CHANGED / LOADED | NNs IN HM: " + sortedBestNetworks.sortedKeys.length));
-        console.log(t);
-        console.log("NNT | ============================================================================================================================================");
 
       })
       .catch(function(err){
