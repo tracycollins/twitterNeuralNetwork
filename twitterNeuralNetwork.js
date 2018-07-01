@@ -5143,20 +5143,24 @@ function generateGlobalTrainingTestSet (userHashMap, maxInputHashMap, callback){
         
         writeJsonFile(fullPathSmall, trainingSetSmallObj)
         .then(function() {
+
           console.log(chalkInfo("NNT | SAVED SMALL TRAINING SET | " + fullPathSmall));
           console.log(chalkInfo("NNT | ======================= END GENERATE GLOBAL TRAINING SET ======================="));
-          callback(null, null);
+
         });
 
-      })
-      .catch(function(error){
-        console.log(chalkError("NNT | " + moment().format(compactDateTimeFormat) 
-          + " | !!! ERROR DROBOX JSON WRITE | FILE: " + fullPath 
-          + " | ERROR: " + error
-          + " | ERROR\n" + jsonPrint(error)
-        ));
-        if (callback !== undefined) { return callback(error, null); }
       });
+      // .catch(function(error){
+      //   console.log(chalkError("NNT | " + moment().format(compactDateTimeFormat) 
+      //     + " | !!! ERROR DROBOX JSON WRITE | FILE: " + fullPath 
+      //     + " | ERROR: " + error
+      //     + " | ERROR\n" + jsonPrint(error)
+      //   ));
+      //   if (callback !== undefined) { return callback(error, null); }
+      // });
+
+      // callback(null, null);
+
     })
     .catch(function(error){
       console.log(chalkError("NNT | " + moment().format(compactDateTimeFormat) 
@@ -5164,8 +5168,10 @@ function generateGlobalTrainingTestSet (userHashMap, maxInputHashMap, callback){
         + " | ERROR: " + error
         + " | ERROR\n" + jsonPrint(error)
       ));
-      if (callback !== undefined) { return callback(error, null); }
+      if (callback !== undefined) { return callback(error); }
     });
+
+    if (callback !== undefined) { return callback(); }
 
   });
 }
@@ -5590,7 +5596,7 @@ function initMain(cnf, callback){
   if (runOnceFlag && configuration.quitOnComplete && allCompleteFlag) {
     // initMainReady = true;
     quit("QUIT ON COMPLETE");
-    return callback(null, null);
+    return callback();
   }
 
   loadInputsDropboxFolder(defaultInputsFolder, function(err1, results){
@@ -5598,7 +5604,7 @@ function initMain(cnf, callback){
     if (err1) {
       console.log(chalkError("NNT | ERROR LOADING DROPBOX INPUTS FOLDER | " + defaultInputsFolder + " | " + err1));
       // initMainReady = true;
-      return callback(err1, null) ;
+      return callback(err1) ;
     }
 
     let seedParams = {};
@@ -5613,16 +5619,14 @@ function initMain(cnf, callback){
 
       if (err0) {
         console.log(chalkError("*** ERROR loadSeedNeuralNetwork"));
-        // initMainReady = true;
-        return callback(err0, null);
+        return callback(err0);
       }
 
       initCategorizedUserHashmap(function(err){
 
         if (err) {
           console.error(chalkError("NNT | *** ERROR: CATEGORIZED USER HASHMAP NOT INITIALIZED: ", err));
-          // initMainReady = true;
-          return callback(err, null);
+          return callback(err);
         }
 
         console.log(chalkInfo("NNT | LOADED " + categorizedUserHashmap.size + " TOTAL CATEGORIZED USERS"));
@@ -5647,7 +5651,7 @@ function initMain(cnf, callback){
               // initMainReady = true;
               createTrainingSetBusy = false;
               trainingSetReady = false;
-              return callback(err, null);
+              return callback(err);
             }
 
             // initMainReady = true;
@@ -5655,7 +5659,7 @@ function initMain(cnf, callback){
             trainingSetReady = true;
             runOnceFlag = true;
 
-            callback(null, null);
+            callback();
 
           });
         }
@@ -5669,7 +5673,7 @@ function initMain(cnf, callback){
             if (err) {
               console.error("NNT | *** UPDATE CATEGORIZED USER ERROR ***\n" + jsonPrint(err));
               // initMainReady = true;
-              return callback(err, null);
+              return callback(err);
             }
 
             console.log(chalkInfo("NNT | ... START CREATE TRAINING SET"));
@@ -5677,10 +5681,9 @@ function initMain(cnf, callback){
             generateGlobalTrainingTestSet(trainingSetUsersHashMap, userMaxInputHashMap, function(err){
 
               if (err) {
-                // initMainReady = true;
-                trainingSetReady = true;
+                trainingSetReady = false;
                 createTrainingSetBusy = false;
-                return callback(err, null);
+                return callback(err);
               }
 
               statsObj.categorizedUserHistogram = {};
@@ -5695,10 +5698,9 @@ function initMain(cnf, callback){
 
               trainingSetReady = true;
               createTrainingSetBusy = false;
-              // initMainReady = true;
               runOnceFlag = true;
 
-              callback(null, null);
+              callback();
             });
           });
         }
@@ -6465,26 +6467,38 @@ slackText = slackText + "\n" + getTimeStamp();
 
 slackPostMessage(slackChannel, slackText);
 
-setTimeout(function(){
+let initMainTimeOut;
+
+function initMainTimeOutFunction(){
+
+  initMainTimeOut = setTimeout(function(){
 
   initTimeout(function(){
 
     initMainReady = false;
 
-    // initSaveFileQueue(configuration);
+    initMain(configuration, function(err){
 
-    initMain(configuration, function(){
+      if (err){
+        console.log(chalkError("INIT MAIN ERROR", err));
+        console.log(chalkAlert("RETRYING INIT MAIN..."));
+        initMainReady = true;
+        clearInterval(initMainInterval);
+        initMainTimeOutFunction();
+        return;
+      }
 
       initMainReady = true;
       enableCreateChildren = true;
 
-        if (!configuration.createTrainingSetOnly) { 
-          initNetworkCreateInterval(configuration.networkCreateIntervalTime);
-        }
+      if (!configuration.createTrainingSetOnly) { 
+        initNetworkCreateInterval(configuration.networkCreateIntervalTime);
+      }
 
       debug(chalkLog("FIRST INIT MAIN CALLBACK"
         + " | configuration.initMainIntervalTime: " + configuration.initMainIntervalTime
       ));
+
     });
 
     initMainInterval = setInterval(function(){
@@ -6517,5 +6531,7 @@ setTimeout(function(){
     }, configuration.initMainIntervalTime);
   });
 
-}, 5*ONE_SECOND);
+  }, 5*ONE_SECOND);
+}
 
+initMainTimeOutFunction();
