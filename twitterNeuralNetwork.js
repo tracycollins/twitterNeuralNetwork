@@ -3752,18 +3752,36 @@ function loadSeedNeuralNetwork(params, callback){
 
           sortedBestNetworks.sortedKeys.forEach(function(nnId){
 
-            const nn = bestNetworkHashMap.get(nnId).networkObj;
+            if (bestNetworkHashMap.has(nnId)) {
 
-            tableArray.push([
-              "NNT | ",
-              nn.testCycles,
-              nn.overallMatchRate.toFixed(2),
-              nn.matchRate.toFixed(2),
-              nn.successRate.toFixed(2),
-              nn.numInputs,
-              nn.inputsId,
-              nnId
-            ]);
+              const nn = bestNetworkHashMap.get(nnId).networkObj;
+
+              if ((nn.overallMatchRate === undefined) || (nn.matchRate === undefined) || (nn.successRate === undefined)) {
+                console.log(chalkAlert("BEST NETWORK UNDEFINED RATE"
+                  + " | " + nnId
+                  + " | OAMR: " + nn.overallMatchRate
+                  + " | MR: " + nn.matchRate
+                  + " | SR: " + nn.successRate
+                ));
+              }
+
+              tableArray.push([
+                "NNT | ",
+                nn.testCycles,
+                nn.overallMatchRate.toFixed(2),
+                nn.matchRate.toFixed(2),
+                nn.successRate.toFixed(2),
+                nn.numInputs,
+                nn.inputsId,
+                nnId
+              ]);
+            }
+            else {
+              console.log(chalkAlert("BEST NETWORK NOT IN HASHMAP??"
+                + " | " + nnId
+              ));
+            }
+
           });
 
           const t = table(tableArray, { align: ["l", "r", "r", "r", "r", "r", "l", "l"] });
@@ -3804,23 +3822,37 @@ function loadSeedNeuralNetwork(params, callback){
 
         let nn;
 
-        // sortedBestNetworks.sortedKeys.forEach(function(nnId){
         async.eachSeries(sortedBestNetworks.sortedKeys, function(nnId, cb){
 
-          nn = bestNetworkHashMap.get(nnId).networkObj;
+          if (bestNetworkHashMap.has(nnId)) {
 
-          tableArray.push([
-            "NNT | ",
-            nn.testCycles,
-            nn.overallMatchRate.toFixed(2),
-            nn.matchRate.toFixed(2),
-            nn.successRate.toFixed(2),
-            nn.numInputs,
-            nn.inputsId,
-            nnId
-          ]);
+            nn = bestNetworkHashMap.get(nnId).networkObj;
 
-          async.setImmediate(function() { cb(); });
+            if ((nn.overallMatchRate === undefined) || (nn.matchRate === undefined) || (nn.successRate === undefined)) {
+              console.log(chalkAlert("BEST NETWORK UNDEFINED RATE"
+                + " | " + nnId
+                + " | OAMR: " + nn.overallMatchRate
+                + " | MR: " + nn.matchRate
+                + " | SR: " + nn.successRate
+              ));
+            }
+
+            tableArray.push([
+              "NNT | ",
+              nn.testCycles,
+              nn.overallMatchRate.toFixed(2),
+              nn.matchRate.toFixed(2),
+              nn.successRate.toFixed(2),
+              nn.numInputs,
+              nn.inputsId,
+              nnId
+            ]);
+
+            async.setImmediate(function() { cb(); });
+          }
+          else {
+            async.setImmediate(function() { cb(); });
+          }
 
         }, function(){
 
@@ -6073,6 +6105,7 @@ function initNeuralNetworkChild(nnChildIndex, cnf, callback){
 
           bestNetworkFile = m.networkObj.networkId + ".json";
 
+          if (m.networkObj.testCycles === undefined) { m.networkObj.testCycles = 0; }
           if (m.networkObj.successRate === undefined) { m.networkObj.successRate = m.networkObj.test.results.successRate; }
           if (m.networkObj.matchRate === undefined) { m.networkObj.matchRate = 0; }
           if (m.networkObj.overallMatchRate === undefined) { m.networkObj.overallMatchRate = 0; }
