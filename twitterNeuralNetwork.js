@@ -5288,19 +5288,11 @@ function generateGlobalTrainingTestSet (userHashMap, maxInputHashMap, callback){
           console.log(chalkInfo("NNT | SAVED SMALL TRAINING SET | " + fullPathSmall));
           console.log(chalkInfo("NNT | ======================= END GENERATE GLOBAL TRAINING SET ======================="));
 
+          if (callback !== undefined) { return callback(); }
+
         });
 
       });
-      // .catch(function(error){
-      //   console.log(chalkError("NNT | " + moment().format(compactDateTimeFormat) 
-      //     + " | !!! ERROR DROBOX JSON WRITE | FILE: " + fullPath 
-      //     + " | ERROR: " + error
-      //     + " | ERROR\n" + jsonPrint(error)
-      //   ));
-      //   if (callback !== undefined) { return callback(error, null); }
-      // });
-
-      // callback(null, null);
 
     })
     .catch(function(error){
@@ -5312,7 +5304,6 @@ function generateGlobalTrainingTestSet (userHashMap, maxInputHashMap, callback){
       if (callback !== undefined) { return callback(error); }
     });
 
-    if (callback !== undefined) { return callback(); }
 
   });
 }
