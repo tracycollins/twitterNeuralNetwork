@@ -2589,11 +2589,11 @@ function loadTrainingSetsDropboxFolder(folder, callback){
           loadFile(folder, entry.name, function(err, trainingSetObj){
             if (err) {
               console.log(chalkError("NNT | DROPBOX TRAINING SET LOAD FILE ERROR: " + err));
-              cb();
+              cb(err);
             }
             else if ((trainingSetObj === undefined) || !trainingSetObj) {
               console.log(chalkError("NNT | DROPBOX TRAINING SET LOAD FILE ERROR | JSON UNDEFINED ??? "));
-              cb();
+              cb(err);
             }
             else {
 
@@ -2642,11 +2642,11 @@ function loadTrainingSetsDropboxFolder(folder, callback){
         loadFile(folder, entry.name, function(err, trainingSetObj){
           if (err) {
             console.log(chalkError("NNT | DROPBOX TRAINING SET LOAD FILE ERROR: " + err));
-            cb();
+            cb(err);
           }
           else if ((trainingSetObj === undefined) || !trainingSetObj) {
             console.log(chalkError("NNT | DROPBOX TRAINING SET LOAD FILE ERROR | JSON UNDEFINED ??? "));
-            cb();
+            cb(err);
           }
           else {
 
@@ -2676,12 +2676,12 @@ function loadTrainingSetsDropboxFolder(folder, callback){
 
       }
 
-    }, function(){
+    }, function(err){
       console.log(chalkNetwork("NNT | =*=*= END LOAD DROPBOX TRAINING SETS"
         + " | " + trainingSetHashMap.count() + " TRAINING SETS IN HASHMAP"
       ));
 
-      if (callback !== undefined) { callback(null); }
+      if (callback !== undefined) { callback(err); }
 
     });
 
