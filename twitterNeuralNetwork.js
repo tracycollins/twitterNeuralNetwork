@@ -1630,28 +1630,28 @@ function saveFile (params, callback){
       })
       .catch(function(error){
         if (error.status === 413){
-          console.error(chalkError("NNT | " + moment().format(compactDateTimeFormat) 
+          console.log(chalkError("NNT | " + moment().format(compactDateTimeFormat) 
             + " | !!! ERROR DROBOX JSON WRITE | FILE: " + fullPath 
             + " | ERROR: 413"
           ));
           if (callback !== undefined) { return callback(error.error_summary); }
         }
         else if (error.status === 429){
-          console.error(chalkError("NNT | " + moment().format(compactDateTimeFormat) 
+          console.log(chalkError("NNT | " + moment().format(compactDateTimeFormat) 
             + " | !!! ERROR DROBOX JSON WRITE | FILE: " + fullPath 
             + " | ERROR: TOO MANY WRITES"
           ));
           if (callback !== undefined) { return callback(error.error_summary); }
         }
         else if (error.status === 500){
-          console.error(chalkError("NNT | " + moment().format(compactDateTimeFormat) 
+          console.log(chalkError("NNT | " + moment().format(compactDateTimeFormat) 
             + " | !!! ERROR DROBOX JSON WRITE | FILE: " + fullPath 
             + " | ERROR: DROPBOX SERVER ERROR"
           ));
           if (callback !== undefined) { return callback(error.error_summary); }
         }
         else {
-          console.trace(chalkError("NNT | " + moment().format(compactDateTimeFormat) 
+          console.log(chalkError("NNT | " + moment().format(compactDateTimeFormat) 
             + " | !!! ERROR DROBOX JSON WRITE | FILE: " + fullPath 
             + " | ERROR: " + error
           ));
