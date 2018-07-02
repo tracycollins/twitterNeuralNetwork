@@ -5,7 +5,8 @@
 const DEFAULT_OFFLINE_MODE = false;
 const DEFAULT_SERVER_MODE = false;
 
-const DEFAULT_FIND_CAT_USER_CURSOR_LIMIT = 1000;
+const DEFAULT_FIND_CAT_USER_CURSOR_LIMIT = 100;
+const DEFAULT_CURSOR_BATCH_SIZE = process.env.DEFAULT_CURSOR_BATCH_SIZE || 100;
 
 const os = require("os");
 const moment = require("moment");
@@ -1653,7 +1654,6 @@ function saveFile (params, callback){
           console.trace(chalkError("NNT | " + moment().format(compactDateTimeFormat) 
             + " | !!! ERROR DROBOX JSON WRITE | FILE: " + fullPath 
             + " | ERROR: " + error
-            // + " | ERROR\n" + jsonPrint(error)
           ));
           if (callback !== undefined) { return callback(error); }
         }
@@ -1667,7 +1667,6 @@ function saveFile (params, callback){
 
         debug(chalkLog("DROPBOX LIST FOLDER"
           + " | ENTRIES: " + response.entries.length
-          // + " | CURSOR (trunc): " + response.cursor
           + " | MORE: " + response.has_more
           + " | PATH:" + options.path
         ));
@@ -2113,20 +2112,16 @@ function listDropboxFolder(options, callback){
             console.log(chalkLog("DROPBOX LIST FOLDER CONT"
               + " | PATH:" + options.path
               + " | ENTRIES: " + responseCont.entries.length + "/" + results.entries.length
-              // + " | CURSOR (trunc): " + responseCont.cursor
               + " | LIMIT: " + options.limit
               + " | MORE: " + more
             ));
 
-            // async.setImmediate(function() { cb(); });
           })
           .catch(function(err){
             if (err.response.status === 429){
               console.log(chalkAlert("NNT | DROPBOX LIST FOLDER ERROR | TOO MANY REQUESTS"));
             }
             console.trace(chalkError("NNT | *** DROPBOX filesListFolderContinue ERROR: " + err + "\n" + jsonPrint(err)));
-            // process.exit();
-            // return cb(err);
           });
 
           async.setImmediate(function() { cb(); });
@@ -5001,6 +4996,7 @@ function initCategorizedUserHashmap(callback){
 
   p.skip = 0;
   p.limit = DEFAULT_FIND_CAT_USER_CURSOR_LIMIT;
+  p.batchSize = DEFAULT_CURSOR_BATCH_SIZE;
   p.query = { 
     "category": { "$nin": [ false, null ] } 
   };
