@@ -78,8 +78,6 @@ const DEFAULT_INIT_MAIN_INTERVAL = process.env.TNN_INIT_MAIN_INTERVAL || 10*ONE_
 const DROPBOX_LIST_FOLDER_LIMIT = 50;
 const DROPBOX_MAX_FILE_UPLOAD = 140 * ONE_MEGABYTE; // bytes
 
-// let resetInProgressFlag = false;
-
 let socket;
 let socketKeepaliveInterval;
 
@@ -194,6 +192,13 @@ statsObj.errors.users.findOne = 0;
 statsObjSmall = omit(statsObj, ["network", "trainingSet", "testSet", "inputs", "outputs"]);
 
 let neuralNetworkChildHashMap = {};
+
+
+process.on("unhandledRejection", function(err, promise) {
+  console.trace("Unhandled rejection (promise: ", promise, ", reason: ", err, ").");
+  process.exit();
+});
+
 
 
 function getChildProcesses(callback){
