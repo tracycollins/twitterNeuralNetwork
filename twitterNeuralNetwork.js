@@ -5722,8 +5722,6 @@ function initMain(cnf, callback){
 
   const acf = allComplete();
 
-  // initMainReady = false;
-
   showStats();
 
   console.log(chalkBlue("NNT | ***===*** INIT MAIN ***===***"
@@ -5733,7 +5731,6 @@ function initMain(cnf, callback){
   ));
 
   if (runOnceFlag && configuration.quitOnComplete && allCompleteFlag) {
-    // initMainReady = true;
     quit("QUIT ON COMPLETE");
     return callback();
   }
@@ -5742,7 +5739,6 @@ function initMain(cnf, callback){
 
     if (err1) {
       console.log(chalkError("NNT | ERROR LOADING DROPBOX INPUTS FOLDER | " + defaultInputsFolder + " | " + err1));
-      // initMainReady = true;
       return callback(err1) ;
     }
 
@@ -5787,13 +5783,11 @@ function initMain(cnf, callback){
 
             if (err) {
               console.log(chalkError("*** LOAD TRAINING SETS FOLDER\n" + jsonPrint(err)));
-              // initMainReady = true;
               createTrainingSetBusy = false;
               trainingSetReady = false;
               return callback(err);
             }
 
-            // initMainReady = true;
             createTrainingSetBusy = false;
             trainingSetReady = true;
             runOnceFlag = true;
@@ -5811,7 +5805,6 @@ function initMain(cnf, callback){
 
             if (err) {
               console.error("NNT | *** UPDATE CATEGORIZED USER ERROR ***\n" + jsonPrint(err));
-              // initMainReady = true;
               return callback(err);
             }
 
@@ -6608,6 +6601,7 @@ slackText = slackText + "\n" + getTimeStamp();
 slackPostMessage(slackChannel, slackText);
 
 let initMainTimeOut;
+let initMainTimeOutComplete = false;
 
 function initMainTimeOutFunction(){
 
@@ -6615,20 +6609,18 @@ function initMainTimeOutFunction(){
 
   initTimeout(function(){
 
-    initMainReady = false;
-
     initMain(configuration, function(err){
 
       if (err){
         console.log(chalkError("INIT MAIN ERROR", err));
         console.log(chalkAlert("RETRYING INIT MAIN..."));
-        initMainReady = true;
+        initMainTimeOutComplete = true;
         clearInterval(initMainInterval);
         initMainTimeOutFunction();
         return;
       }
 
-      initMainReady = true;
+      initMainTimeOutComplete = true;
       enableCreateChildren = true;
 
       if (!configuration.createTrainingSetOnly) { 
@@ -6646,12 +6638,13 @@ function initMainTimeOutFunction(){
       console.log(chalkBlue("NNT | +++ INIT MAIN INTERVAL"
         + " | INTERVAL: " + msToTime(configuration.initMainIntervalTime)
         + " | ALL COMPLETE: " + allCompleteFlag
+        + " | initMainTimeOutComplete: " + initMainTimeOutComplete
         + " | initMainReady: " + initMainReady
         + " | trainingSetReady: " + trainingSetReady
         + " | createTrainingSetBusy: " + createTrainingSetBusy
       ));
 
-      if (initMainReady) {
+      if (initMainTimeOutComplete && initMainReady) {
 
         initMainReady = false;
 
