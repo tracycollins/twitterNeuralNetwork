@@ -6614,6 +6614,7 @@ function initMainTimeOutFunction(){
       }
 
       initMainTimeOutComplete = true;
+      initMainReady = true;
       enableCreateChildren = true;
 
       if (!configuration.createTrainingSetOnly) { 
