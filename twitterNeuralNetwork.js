@@ -74,6 +74,7 @@ const DEFAULT_GLOBAL_MIN_SUCCESS_RATE = 80; // percent
 const DEFAULT_LOCAL_MIN_SUCCESS_RATE = 50; // percent
 const DEFAULT_LOCAL_PURGE_MIN_SUCCESS_RATE = 70; // percent
 const DEFAULT_CREATE_TRAINING_SET_ONLY = false;
+const DEFAULT_DISABLE_CREATE_TEST_SET = false;
 const DEFAULT_INIT_MAIN_INTERVAL = process.env.TNN_INIT_MAIN_INTERVAL || 10*ONE_MINUTE;
 
 const DROPBOX_LIST_FOLDER_LIMIT = 50;
@@ -550,6 +551,7 @@ configuration.deleteNotInInputsIdArray = DEFAULT_DELETE_NOT_IN_INPUTS_ID_ARRAY;
 configuration.processName = process.env.TNN_PROCESS_NAME || "node_twitterNeuralNetwork";
 
 configuration.createTrainingSetOnly = DEFAULT_CREATE_TRAINING_SET_ONLY;
+configuration.disableCreateTestSet = DEFAULT_DISABLE_CREATE_TEST_SET;
 configuration.dropboxMaxFileUpload = DROPBOX_MAX_FILE_UPLOAD;
 
 configuration.inputsIdArray = [];
@@ -2603,7 +2605,6 @@ function loadTrainingSetsDropboxFolder(folder, callback){
               }
 
               trainingSetObj.testSet.meta.testSetId = trainingSetObj.testSet.meta.testSetId || trainingSetObj.trainingSetId;
-
 
               trainingSetHashMap.set(trainingSetObj.trainingSetId, {entry: entry, trainingSetObj: trainingSetObj} );
 
@@ -5130,7 +5131,7 @@ function generateGlobalTrainingTestSet (userHashMap, maxInputHashMap, callback){
 
     user.category = user.category || false;
 
-    if (configuration.createTrainingSetOnly) {
+    if (configuration.disableCreateTestSet) {
 
       trainingSet.data.push(user);
 
