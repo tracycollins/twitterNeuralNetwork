@@ -73,7 +73,7 @@ const DEFAULT_SEED_NETWORK_PROBABILITY = 0.5;
 const DEFAULT_GLOBAL_MIN_SUCCESS_RATE = 80; // percent
 const DEFAULT_LOCAL_MIN_SUCCESS_RATE = 50; // percent
 const DEFAULT_LOCAL_PURGE_MIN_SUCCESS_RATE = 70; // percent
-const DEFAULT_GENERATE_TRAINING_SET_ONLY = false;
+const DEFAULT_CREATE_TRAINING_SET_ONLY = false;
 const DEFAULT_INIT_MAIN_INTERVAL = process.env.TNN_INIT_MAIN_INTERVAL || 10*ONE_MINUTE;
 
 const DROPBOX_LIST_FOLDER_LIMIT = 50;
@@ -549,7 +549,7 @@ configuration.deleteNotInInputsIdArray = DEFAULT_DELETE_NOT_IN_INPUTS_ID_ARRAY;
 
 configuration.processName = process.env.TNN_PROCESS_NAME || "node_twitterNeuralNetwork";
 
-configuration.generateTrainingSetOnly = DEFAULT_GENERATE_TRAINING_SET_ONLY;
+configuration.createTrainingSetOnly = DEFAULT_CREATE_TRAINING_SET_ONLY;
 configuration.dropboxMaxFileUpload = DROPBOX_MAX_FILE_UPLOAD;
 
 configuration.inputsIdArray = [];
@@ -617,7 +617,6 @@ configuration.localPurgeMinSuccessRate = (process.env.TNN_LOCAL_PURGE_MIN_SUCCES
 
 configuration.loadTrainingSetFromFile = false;
 configuration.createTrainingSet = false;
-configuration.createTrainingSetOnly = false;
 
 configuration.DROPBOX = {};
 configuration.DROPBOX.DROPBOX_WORD_ASSO_ACCESS_TOKEN = process.env.DROPBOX_WORD_ASSO_ACCESS_TOKEN ;
@@ -5034,8 +5033,6 @@ function initCategorizedUserHashmap(callback){
 
           totalMatchRate = 100*(totalMatched/totalCount);
 
-          // results.obj[nodeId] = { manual: user.category, auto: user.categoryAuto };
-
           Object.keys(results.obj).forEach(function(nodeId){
             categorizedUserHashmap.set(nodeId, results.obj[nodeId]);
           });
@@ -5133,7 +5130,7 @@ function generateGlobalTrainingTestSet (userHashMap, maxInputHashMap, callback){
 
     user.category = user.category || false;
 
-    if (configuration.generateTrainingSetOnly) {
+    if (configuration.createTrainingSetOnly) {
 
       trainingSet.data.push(user);
 
