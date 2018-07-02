@@ -1147,7 +1147,7 @@ const sortedObjectValues = function(params) {
     }
     else {
       console.error("sortedObjectValues ERROR | params\n" + jsonPrint(params));
-      reject(new Error("ERROR"));
+      reject(new Error("sortedObjectValues ERROR | keys.length UNDEFINED"));
     }
 
   });
@@ -1179,7 +1179,7 @@ const sortedHashmap = function(params) {
     }
     else {
       console.error("sortedHashmap ERROR | params\n" + jsonPrint(params));
-      reject(new Error("ERROR"));
+      reject(new Error("sortedHashmap ERROR | keys UNDEFINED"));
     }
 
   });
@@ -1653,7 +1653,7 @@ function saveFile (params, callback){
           console.trace(chalkError("NNT | " + moment().format(compactDateTimeFormat) 
             + " | !!! ERROR DROBOX JSON WRITE | FILE: " + fullPath 
             + " | ERROR: " + error
-            + " | ERROR\n" + jsonPrint(error)
+            // + " | ERROR\n" + jsonPrint(error)
           ));
           if (callback !== undefined) { return callback(error); }
         }
@@ -3709,7 +3709,6 @@ function loadConfigFile(folder, file, callback) {
       }
     });
   }
-
 }
 
 function loadSeedNeuralNetwork(params, callback){
@@ -6660,7 +6659,7 @@ function initMainTimeOutFunction(){
 
         initMainReady = false;
 
-        loadAllConfigFiles(function(){
+        loadAllConfigFiles(function(err, results){
           initMain(configuration, function(){
             debug(chalkLog("INIT MAIN CALLBACK"));
             initMainReady = true;
