@@ -2085,13 +2085,15 @@ function listDropboxFolder(options, callback){
     more = response.has_more;
     results.entries = response.entries;
 
-    console.log(chalkLog("DROPBOX LIST FOLDER"
-      + " | PATH:" + options.path
-      + " | ENTRIES: " + response.entries.length
-      // + " | CURSOR (trunc): " + cursor
-      + " | LIMIT: " + options.limit
-      + " | MORE: " + more
-    ));
+    if (configuration.verbose) {
+      console.log(chalkLog("DROPBOX LIST FOLDER"
+        + " | PATH:" + options.path
+        + " | ENTRIES: " + response.entries.length
+        // + " | CURSOR (trunc): " + cursor
+        + " | LIMIT: " + options.limit
+        + " | MORE: " + more
+      ));
+    }
 
     async.whilst(
 
@@ -2110,12 +2112,14 @@ function listDropboxFolder(options, callback){
             more = responseCont.has_more;
             results.entries = results.entries.concat(responseCont.entries);
 
-            console.log(chalkLog("DROPBOX LIST FOLDER CONT"
-              + " | PATH:" + options.path
-              + " | ENTRIES: " + responseCont.entries.length + "/" + results.entries.length
-              + " | LIMIT: " + options.limit
-              + " | MORE: " + more
-            ));
+            if (configuration.verbose) {
+              console.log(chalkLog("DROPBOX LIST FOLDER CONT"
+                + " | PATH:" + options.path
+                + " | ENTRIES: " + responseCont.entries.length + "/" + results.entries.length
+                + " | LIMIT: " + options.limit
+                + " | MORE: " + more
+              ));
+            }
 
           })
           .catch(function(err){
@@ -2258,10 +2262,8 @@ function loadInputsDropboxFolder(folder, callback){
 
           console.log(chalkNetwork("NNT | DROPBOX INPUTS CONTENT DIFF IN DIFF FOLDERS"
             + " | LAST MOD: " + moment(new Date(entry.client_modified)).format(compactDateTimeFormat)
-            + "\nCUR: " + entry.path_display
-            // + " | " + entry.content_hash
-            + "\nOLD: " + curInputsObj.entry.path_display
-            // + " | " + curInputsObj.entry.content_hash
+            // + "\nCUR: " + entry.path_display
+            // + "\nOLD: " + curInputsObj.entry.path_display
           ));
 
           // LOAD FROM BEST FOLDER AND SAVE LOCALLY
@@ -2269,12 +2271,10 @@ function loadInputsDropboxFolder(folder, callback){
 
             if (err) {
               console.log(chalkError("NNT | DROPBOX INPUTS LOAD FILE ERROR: " + err));
-              // purgeInputs(entryInputsId);
               cb();
             }
             else if ((inputsObj === undefined) || !inputsObj) {
               console.log(chalkError("NNT | DROPBOX INPUTS LOAD FILE ERROR | JSON UNDEFINED ??? "));
-              // purgeInputs(entryInputsId);
               cb();
             }
             else {
@@ -2288,8 +2288,6 @@ function loadInputsDropboxFolder(folder, callback){
               }
 
               inputsHashMap.set(inputsObj.inputsId, {entry: entry, inputsObj: inputsObj} );
-
-              // inputsIdSet.add(inputsObj.inputsId);
 
               if (inputsNetworksHashMap[inputsObj.inputsId] === undefined) {
                 inputsNetworksHashMap[inputsObj.inputsId] = new Set();
@@ -2383,7 +2381,9 @@ function loadInputsDropboxFolder(folder, callback){
         console.log(chalkInfo("NNT | SKIPPED LOAD OF " + skippedInputsFiles + " INPUTS FILES | " + folder));
       }
 
-      printInputsHashMap();
+      if (configuration.verbose) {
+        printInputsHashMap();
+      }
 
       if (callback !== undefined) { callback(null, null); }
     });
@@ -5170,7 +5170,7 @@ function generateGlobalTrainingTestSet (userHashMap, maxInputHashMap, callback){
     testSet.meta.numOutputs = 3;
     testSet.meta.setSize = testSet.data.length;
 
-    console.log(chalkInfo("NNT | +++ TRAINING SET"
+    console.log(chalkBlue("NNT | +++ TRAINING SET"
       + " | ID: " + trainingSetId
       + " | OUT: " + trainingSet.meta.numOutputs
       + " | SIZE: " + trainingSet.meta.setSize
@@ -5221,7 +5221,7 @@ function generateGlobalTrainingTestSet (userHashMap, maxInputHashMap, callback){
     trainingSetSmallEntry.content_hash = false;
     trainingSetSmallEntry.client_modified = moment();
 
-    console.log(chalkInfo("NNT | +++ SMALL TRAINING SET"
+    console.log(chalkBlue("NNT | +++ SMALL TRAINING SET"
       + " | ID: " + trainingSetSmallObj.trainingSetId
       + " | OUT: " + trainingSetSmallObj.trainingSet.meta.numOutputs
       + " | SIZE: " + trainingSetSmallObj.trainingSet.meta.setSize
@@ -5690,10 +5690,12 @@ function allComplete(){
 
     async.each(Object.keys(neuralNetworkChildHashMap), function(nnChildId, cb){
 
-      console.log(chalkLog("NNT | allComplete"
-        + " | NNC " + nnChildId 
-        + " STATUS: " + neuralNetworkChildHashMap[nnChildId].status
-      ));
+      if (configuration.verbose) {
+        console.log(chalkLog("NNT | allComplete"
+          + " | NNC " + nnChildId 
+          + " STATUS: " + neuralNetworkChildHashMap[nnChildId].status
+        ));
+      }
 
       if (neuralNetworkChildHashMap[nnChildId].status === "RUNNING"){
         allCompleteFlag = false;
@@ -6534,7 +6536,7 @@ function initTimeout(callback){
         seedParams.networkId = cnf.seedNetworkId;
       }
 
-      if (cnf.createTrainingSetOnly) {
+      if (cnf.) {
         console.log(chalkAlert("NNT | *** CREATE TRAINING SET ONLY ... SKIP INIT NN CHILD ***"));
         callback();
       }
