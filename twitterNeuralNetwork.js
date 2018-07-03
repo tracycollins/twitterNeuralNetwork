@@ -5913,6 +5913,7 @@ function initNeuralNetworkChild(nnChildIndex, cnf, callback){
       return;
     }
 
+    let snId = "---";
     let snIdRes = "---";
 
     let newNeuralNetwork;
@@ -5987,6 +5988,7 @@ function initNeuralNetworkChild(nnChildIndex, cnf, callback){
 
         statsObj.evolveStats.total += 1;
 
+        snId = (m.networkObj.seedNetworkId !== undefined) ? m.networkObj.seedNetworkId : "---";
         snIdRes = (m.networkObj.seedNetworkId !== undefined) ? m.networkObj.seedNetworkRes.toFixed(2) : "---";
 
         console.log(chalkBlue(
@@ -5995,8 +5997,8 @@ function initNeuralNetworkChild(nnChildIndex, cnf, callback){
           + "\nNNT |                  " + m.nnChildId
           + "\nNNT | NID:             " + m.networkObj.networkId
           + "\nNNT | SR%:             " + m.networkObj.test.results.successRate.toFixed(2) + "%"
-          + "\nNNT | TEST [PASS/SET]: " + m.networkObj.evolve.results.numPassed + "/" + m.networkObj.evolve.results.numTests
-          + "\nNNT | SEED:            " + m.networkObj.seedNetworkId
+          + "\nNNT | TEST [PASS/SET]: " + m.networkObj.test.results.numPassed + "/" + m.networkObj.test.results.numTests
+          + "\nNNT | SEED:            " + snId
           + "\nNNT | SEED SR%:        " + snIdRes
           + "\nNNT | ELAPSED:         " + msToTime(m.networkObj.evolve.elapsed)
           + "\nNNT | ITERTNS:         " + m.statsObj.evolve.results.iterations
@@ -6024,7 +6026,7 @@ function initNeuralNetworkChild(nnChildIndex, cnf, callback){
         networkCreateResultsHashmap[m.networkObj.networkId] = omit(m.networkObj, ["network", "inputs", "outputs", "inputsObj"]);
         networkCreateResultsHashmap[m.networkObj.networkId].status = "COMPLETE";
         networkCreateResultsHashmap[m.networkObj.networkId].stats = {};
-        networkCreateResultsHashmap[m.networkObj.networkId].stats = m.statsObj;
+        networkCreateResultsHashmap[m.networkObj.networkId].stats = omit(m.statsObj, ["inputsObj", "train", "outputs", "normalization"]);
 
         newNeuralNetwork = new NeuralNetwork(m.networkObj);
         newNeuralNetwork.markModified("overallMatchRate");
