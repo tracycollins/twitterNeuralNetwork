@@ -745,7 +745,6 @@ function trainingSetPrepAndEvolve(params, options, callback){
 
       const nnInputTypes = Object.keys(params.inputsObj.inputs).sort();
 
-      // let nodeIndex = 2; // skip 
       let nodeIndex = 0; // 
 
       async.eachSeries(nnInputTypes, function(inputType, cb0){
