@@ -39,7 +39,7 @@
     "lodash": "^4.17.10",
     "mentions-regex": "^2.0.3",
     "moment": "^2.22.2",
-    "mongoose": "^5.1.7",
+    "mongoose": "^5.2.0",
     "mongoose-paginate": "^5.0.3",
     "neataptic": "^1.4.7",
     "node-emoji": "^1.8.1",
