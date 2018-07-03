@@ -3858,8 +3858,6 @@ function loadSeedNeuralNetwork(params, callback){
   });
 }
 
-let keepaliveObj = {};
-
 function sendKeepAlive(userObj, callback){
 
   if (!configuration.offlineMode && statsObj.userReadyAck && statsObj.serverConnected){
@@ -3873,7 +3871,14 @@ function sendKeepAlive(userObj, callback){
       + " | " + moment().format(defaultDateTimeFormat)
     ));
 
-    socket.emit("SESSION_KEEPALIVE", {userId: userObj.userId, user: userObj, stats: statsObjSmall, results: networkCreateResultsHashmap});
+    socket.emit(
+      "SESSION_KEEPALIVE", 
+      {
+        user: userObj, 
+        stats: statsObjSmall, 
+        results: networkCreateResultsHashmap
+      }
+    );
 
     callback(null);
   }
