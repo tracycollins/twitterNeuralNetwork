@@ -2855,6 +2855,7 @@ function loadBestNetworkDropboxFolders (params, callback){
                     + "\n" + jsonPrint(err)
                   ));
                 }
+                return cb1(err);
               });
 
               let inputsEntry = {};
@@ -2887,7 +2888,6 @@ function loadBestNetworkDropboxFolders (params, callback){
                 + " | IN: " + networkObj.numInputs
                 + " | OUT: " + networkObj.numOutputs
                 ));
-
               }
 
               cb1();
@@ -2956,7 +2956,6 @@ function loadBestNetworkDropboxFolders (params, callback){
                   + " | IN: " + networkObj.numInputs
                   + " | OUT: " + networkObj.numOutputs
                 ));
-
               })
               .catch(function(err){
                 if (err.status === 429) {
@@ -2973,7 +2972,7 @@ function loadBestNetworkDropboxFolders (params, callback){
                     + " | SUMMARY: " + err.response.statusText
                   ));
                 }
-                cb1(err);
+                return cb1(err);
               });
 
               cb1();
@@ -3055,7 +3054,6 @@ function loadBestNetworkDropboxFolders (params, callback){
                   .catch(function(err){
                     console.log(err.message);
                   });
-
                 }
                 else {
                   let nn = new NeuralNetwork(networkObj);
@@ -3162,7 +3160,7 @@ function loadBestNetworkDropboxFolders (params, callback){
                     + " | SUMMARY: " + err.response.statusText
                   ));
                 }
-                cb1(err);
+                return cb1(err);
               });
 
               cb1();
