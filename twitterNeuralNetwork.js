@@ -2105,10 +2105,10 @@ function listDropboxFolder(options, callback){
 
           })
           .catch(function(err){
-            if (err.response.status === 429){
-              console.log(chalkAlert("NNT | DROPBOX LIST FOLDER ERROR | TOO MANY REQUESTS"));
-            }
-            console.trace(chalkError("NNT | *** DROPBOX filesListFolderContinue ERROR: " + err + "\n" + jsonPrint(err)));
+            // if (err.response.status === 429){
+            //   console.log(chalkAlert("NNT | DROPBOX LIST FOLDER ERROR | TOO MANY REQUESTS"));
+            // }
+            console.trace(chalkError("NNT | *** DROPBOX filesListFolderContinue ERROR: ", err));
           });
 
           async.setImmediate(function() { cb(); });
