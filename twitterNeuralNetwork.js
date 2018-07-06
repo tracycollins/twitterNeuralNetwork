@@ -177,10 +177,13 @@ statsObj.pid = process.pid;
 statsObj.cpus = os.cpus().length;
 statsObj.commandLineArgsLoaded = false;
 
+statsObj.socketError = false;
+
 statsObj.serverConnected = false;
 statsObj.userReadyAck = false;
 statsObj.userReadyAckWait = 0;
 statsObj.userReadyTransmitted = false;
+statsObj.authenticated = false;
 
 statsObj.startTimeMoment = moment();
 statsObj.startTime = moment().valueOf();
@@ -3876,7 +3879,11 @@ function initSocket(callback){
 
   socket.on("connect", function(){
 
+    statsObj.serverConnected = true ;
+    statsObj.userReadyTransmitted = false;
+    statsObj.userReadyAck = false ;
     statsObj.online = true;
+    statsObj.authenticated = false ;
 
     console.log(chalkInfo("NNT | SERVER CONNECT | " + socket.id + " ... AUTHENTICATE ..."));
 
@@ -3891,7 +3898,7 @@ function initSocket(callback){
       console.log("AUTHENTICATED | " + socket.id);
 
       statsObj.serverConnected = true ;
-      statsObj.userReadyAck = false ;
+      statsObj.authenticated = true ;
 
       statsObj.socketId = socket.id;
 
@@ -3907,9 +3914,13 @@ function initSocket(callback){
   });
 
   socket.on("reconnect", function(){
+
+    statsObj.userReadyTransmitted = false;
     statsObj.serverConnected = true ;
     statsObj.userReadyAck = false ;
     statsObj.online = true;
+    statsObj.authenticated = false ;
+
     console.log(chalkConnect(moment().format(defaultDateTimeFormat) 
       + " | SERVER RECONNECT: " + socket.id
       + " | SERVER: " + configuration.targetServer
@@ -3920,7 +3931,6 @@ function initSocket(callback){
 
     clearInterval(userReadyInterval);
 
-    statsObj.serverConnected = true ;
     statsObj.userReadyAck = true ;
 
     console.log(chalkConnect("RX USER_READY_ACK"
@@ -3935,9 +3945,10 @@ function initSocket(callback){
   });
 
   socket.on("error", function(err){
-    statsObj.userReadyTransmitted = false;
-    statsObj.userReadyAck = false ;
-    statsObj.serverConnected = false ;
+
+    statsObj.socketError = err ;
+    statsObj.authenticated = false ;
+
     console.log(chalkDisconnect(moment().format(compactDateTimeFormat)
       + " | ***** SERVER SOCKET ERROR"
       + " | SERVER: " + configuration.targetServer
@@ -3947,9 +3958,14 @@ function initSocket(callback){
   });
 
   socket.on("connect_error", function(err){
+
     statsObj.userReadyTransmitted = false;
     statsObj.userReadyAck = false ;
     statsObj.serverConnected = false ;
+    statsObj.socketError = err ;
+    statsObj.online = false;
+    statsObj.authenticated = false ;
+
     console.log(chalkDisconnect(moment().format(compactDateTimeFormat)
       + " | ***** SERVER CONNECT ERROR"
       + " | SERVER: " + configuration.targetServer
@@ -3960,19 +3976,29 @@ function initSocket(callback){
   });
 
   socket.on("reconnect_error", function(err){
+
     statsObj.userReadyTransmitted = false;
     statsObj.userReadyAck = false ;
     statsObj.serverConnected = false ;
+    statsObj.socketError = err ;
+    statsObj.online = false;
+    statsObj.authenticated = false ;
+
     console.log(chalkDisconnect(moment().format(compactDateTimeFormat)
       + " | ***** SERVER RECONNECT ERROR"
       + " | SERVER: " + configuration.targetServer
     ));
+
   });
 
   socket.on("disconnect", function(){
+
     statsObj.userReadyTransmitted = false;
     statsObj.userReadyAck = false ;
     statsObj.serverConnected = false;
+    statsObj.online = false;
+    statsObj.authenticated = false ;
+
     console.log(chalkDisconnect(moment().format(compactDateTimeFormat)
       + " | ***** SERVER DISCONNECT"
       + " | SERVER: " + configuration.targetServer
@@ -3981,6 +4007,7 @@ function initSocket(callback){
   });
 
   socket.on("GET_STATS", function() {
+
     chalkLog(chalkLog("RX STATS REQ"));
     statsObjSmall = omit(statsObj, ["network", "trainingSet", "testSet", "inputs", "outputs"]);
     socket.emit("STATS", statsObj);
