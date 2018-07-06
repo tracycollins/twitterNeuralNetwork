@@ -11,6 +11,7 @@ const DEFAULT_CURSOR_BATCH_SIZE = process.env.DEFAULT_CURSOR_BATCH_SIZE || 100;
 const os = require("os");
 const moment = require("moment");
 const merge = require("deepmerge");
+const treeify = require("treeify");
 
 let hostname = os.hostname();
 hostname = hostname.replace(/.local/g, "");
@@ -222,6 +223,14 @@ process.on("unhandledRejection", function(err, promise) {
   process.exit();
 });
 
+const jsonPrint = function (obj){
+  if (obj) {
+    return treeify.asTree(obj, true);
+  }
+  else {
+    return "UNDEFINED";
+  }
+};
 
 
 function getChildProcesses(callback){
@@ -762,17 +771,6 @@ const configEvents = new EventEmitter2({
 
 let stdin;
 
-const jsonPrint = function (obj, prefix){
-  if (obj) {
-    if (prefix) {
-      return JSON.stringify(obj, null, 2).replace(/^./gm, prefix);
-    }
-    return JSON.stringify(obj, null, 2);
-  }
-  else {
-    return "UNDEFINED";
-  }
-};
 
 
 let slack = new Slack(slackOAuthAccessToken);
@@ -1509,8 +1507,6 @@ function saveFile (params, callback){
 
         console.log(chalkInfo("NNT | ... DROPBOX UPLOADING | " + objSizeMBytes.toFixed(2) + " MB | " + fullPath + " > " + options.destination));
 
-        // const source = fs.createReadStream(fullPath);
-
         const stats = fs.statSync(fullPath);
         const fileSizeInBytes = stats.size;
         const savedSize = fileSizeInBytes/ONE_MEGABYTE;
@@ -1520,8 +1516,6 @@ function saveFile (params, callback){
           + " | " + savedSize.toFixed(2) + " MBYTES"
           + "\n SRC: " + fullPath
           + "\n DST: " + options.destination
-          // + " successMetadata\n" + jsonPrint(successMetadata)
-          // + " successMetadata\n" + jsonPrint(successMetadata)
         ));
 
         const drbx = require("@davvo/drbx")({
@@ -1592,7 +1586,6 @@ function saveFile (params, callback){
         + " | !!! ERROR DROBOX JSON WRITE | FILE: " + fullPath 
         + " | ERROR: " + error
         + " | ERROR\n" + jsonPrint(error)
-        // + " ERROR\n" + jsonPrint(params)
       ));
       if (callback !== undefined) { return callback(error); }
     });
@@ -2411,10 +2404,8 @@ function loadTrainingSetsDropboxFolder(folder, callback){
 
     debug(chalkLog("DROPBOX LIST FOLDER"
       + " | ENTRIES: " + response.entries.length
-      // + " | CURSOR (trunc): " + response.cursor
       + " | MORE: " + response.has_more
       + " | PATH:" + options.path
-      // + " | " + jsonPrint(response)
     ));
 
     async.eachSeries(response.entries, function(entry, cb){
@@ -2487,10 +2478,8 @@ function loadTrainingSetsDropboxFolder(folder, callback){
               console.log(chalkInfo("NNT | DROPBOX TRAINING SET"
                 + " [" + trainingSetHashMap.count() + "]"
                 + " | TRAINING SET SIZE: " + trainingSetObj.trainingSet.meta.setSize
-                // + " | " + trainingSetObj.trainingSet.meta.numInputs + " INPUTS"
                 + " | " + entry.name
                 + " | " + trainingSetObj.trainingSetId
-                // + "\n" + jsonPrint(trainingSetObj.entry)
               ));
 
               if (hostname === "google") {
@@ -2533,8 +2522,6 @@ function loadTrainingSetsDropboxFolder(folder, callback){
               + " | TRAINING SET SIZE: " + trainingSetObj.trainingSet.meta.setSize
               + " | " + folder + "/" + entry.name
               + " | " + trainingSetObj.trainingSetId
-              // + "\n" + jsonPrint(trainingSetObj.entry)
-              // + " | META\n" + jsonPrint(trainingSetObj.trainingSet.meta)
             ));
 
             if (hostname === "google") {
@@ -2564,7 +2551,6 @@ function loadTrainingSetsDropboxFolder(folder, callback){
   })
   .catch(function(err){
     console.log(chalkError("NNT | *** DROPBOX FILES LIST FOLDER ERROR\n" + jsonPrint(err)));
-    // quit("DROPBOX FILES LIST FOLDER ERROR");
     if (callback !== undefined) { callback(err); }
   });
 }
@@ -4479,7 +4465,6 @@ function updateCategorizedUsers(cnf, callback){
             }
           },
           function userStatusText(text, cb) {
-            // console.log("user.status\n" + jsonPrint(user.status));
             if ((user.status !== undefined) && user.status && user.status.text) {
 
               debug(chalkBlue("T"
@@ -5475,28 +5460,6 @@ function initNetworkCreate(nnChildId, nnId, callback){
 
   let messageObj;
 
-  // statsObj.networks[nnId] = {};
-  // statsObj.networks[nnId].networkId = nnId;
-  // statsObj.networks[nnId].network = {};
-  // statsObj.networks[nnId].seedNetworkId = "";
-  // statsObj.networks[nnId].inputsId = "";
-  // statsObj.networks[nnId].inputsObj = {};
-  // statsObj.networks[nnId].numInputs = 0;
-  // statsObj.networks[nnId].numOutputs = 0;
-  // statsObj.networks[nnId].testRunId = nnId;
-  // statsObj.networks[nnId].testSet = {};
-  // statsObj.networks[nnId].trainingSet = {};
-  // statsObj.networks[nnId].results = {};
-  // statsObj.networks[nnId].results.iterations = 0;
-  // statsObj.networks[nnId].results.numTests = 0;
-  // statsObj.networks[nnId].results.numSkipped = 0;
-  // statsObj.networks[nnId].results.numPassed = 0;
-  // statsObj.networks[nnId].results.successRate = 0.0;
-  // statsObj.networks[nnId].evolve = {};
-  // statsObj.networks[nnId].evolve.options = {};
-  // statsObj.networks[nnId].evolve.stats = {};
-  // statsObj.networks[nnId].elapsed = 0;
-
   generateRandomEvolveConfig(configuration, function(err, childConf){
 
     if (err) {
@@ -5540,30 +5503,9 @@ function initNetworkCreate(nnChildId, nnId, callback){
         messageObj.mutationRate = childConf.mutationRate;
         messageObj.clear = childConf.clear;
 
-        // statsObj.networks[nnId].evolve.options = omit(messageObj, ["network", "trainingSet", "testSet", "inputs", "outputs", "inputsObj"]);
-
-        // statsObj.networks[nnId].inputsId = childConf.inputsId;
-        // statsObj.networks[nnId].inputsObj = pick(childConf.inputsObj, ["inputsId", "meta"]);
-        // statsObj.networks[nnId].numInputs = 0;
-        // statsObj.networks[nnId].numOutputs = 0;
-        // statsObj.networks[nnId].network = {};
-        // statsObj.networks[nnId].testRunId = nnId;
-        // statsObj.networks[nnId].trainingSet = pick(childConf.trainingSet, "meta");
-        // statsObj.networks[nnId].testSet = {};
-        // statsObj.networks[nnId].results = {};
-        // statsObj.networks[nnId].results.status = "EVOLVE";
-        // statsObj.networks[nnId].results.iterations = 0;
-        // statsObj.networks[nnId].results.numTests = 0;
-        // statsObj.networks[nnId].results.numSkipped = 0;
-        // statsObj.networks[nnId].results.numPassed = 0;
-        // statsObj.networks[nnId].results.successRate = 0.0;
-        // statsObj.networks[nnId].elapsed = 0;
-
         if (messageObj.networkObj && (messageObj.networkObj !== undefined)) {
           messageObj.seedNetworkId = messageObj.networkObj.networkId;
           messageObj.seedNetworkRes = messageObj.networkObj.successRate;
-          // statsObj.networks[nnId].seedNetworkId = messageObj.networkObj.networkId;
-          // statsObj.networks[nnId].evolve.options.networkObj = pick(messageObj, ["networkId", "successRate", "inputsId"]);
         }
 
         console.log(chalkBlue("\nNNT | START NETWORK EVOLVE"));
@@ -5944,15 +5886,6 @@ function initNeuralNetworkChild(nnChildIndex, cnf, callback){
         }
       break;
 
-        // evolveStart: schedStartTime,
-        // evolveElapsed: elapsedInt,
-        // totalIterations: params.iterations,
-        // iteration: schedParams.iteration,
-        // iterationRate: iterationRate,
-        // timeToComplete: timeToComplete,
-        // error: schedParams.error,
-        // fitness: schedParams.fitness,
-
       case "EVOLVE_SCHEDULE":
 
         console.log(chalkLog("NNT | EVOLVE | " + m.nnChildId + " | " + m.stats.networkId
@@ -5966,8 +5899,6 @@ function initNeuralNetworkChild(nnChildIndex, cnf, callback){
           + " | ETC: " + moment().add(m.stats.timeToComplete).format(compactDateTimeFormat)
           + " | I: " + m.stats.iteration + " / " + m.stats.totalIterations
         ));
-
-        // statsObj.networks[m.stats.networkId].evolve.stats = m.stats;
 
       break;
 
@@ -6483,8 +6414,6 @@ function initTimeout(callback){
       console.error(chalkError("NNT | ***** INIT ERROR *****\n" + jsonPrint(err0)));
       quit("INIT ERROR");
     }
-
-    // configuration = deepcopy(cnf);
 
     if (configuration.enableStdin) {
       initStdIn();
