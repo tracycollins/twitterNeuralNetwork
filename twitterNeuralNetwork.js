@@ -1412,7 +1412,13 @@ function quit(options){
     setTimeout(function() {
 
       dbConnection.close(function () {
-        console.log(chalkAlert("\n==========================\nMONGO DB CONNECTION CLOSED\n==========================\n"));
+        console.log(chalkAlert(
+          "\n==========================\n"
+          + "MONGO DB CONNECTION CLOSED"
+          + "\n==========================\n"
+        ));
+
+        socket.disconnect();
         process.exit();
       });
 
