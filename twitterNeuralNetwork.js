@@ -1,6 +1,8 @@
 /*jslint node: true */
 /*jshint sub:true*/
 "use strict";
+global.dbConnection = false;
+let dbConnectionReady = false;
 
 const DEFAULT_OFFLINE_MODE = false;
 const DEFAULT_SERVER_MODE = false;
@@ -516,9 +518,6 @@ let initMainInterval;
 const mongoose = require("mongoose");
 mongoose.Promise = global.Promise;
 
-let dbConnection;
-let dbConnectionReady = false;
-
 const userModel = require("@threeceelabs/mongoose-twitter/models/user.server.model");
 const neuralNetworkModel = require("@threeceelabs/mongoose-twitter/models/neuralNetwork.server.model");
 
@@ -527,17 +526,10 @@ let NeuralNetwork;
 
 const wordAssoDb = require("@threeceelabs/mongoose-twitter");
 
-const UserServerController = require("@threeceelabs/user-server-controller");
-const userServerController = new UserServerController("TNN_USC");
+let UserServerController;
+let userServerController;
 
 let userServerControllerReady = false;
-
-userServerController.on("ready", function(appname){
-  userServerControllerReady = true;
-  console.log(chalkAlert("USC READY | " + appname));
-});
-
-
 
 let networkCreateInterval;
 let saveFileQueueInterval;
@@ -1411,7 +1403,7 @@ function quit(options){
 
     setTimeout(function() {
 
-      dbConnection.close(function () {
+      global.dbConnection.close(function () {
         console.log(chalkAlert(
           "\n==========================\n"
           + "MONGO DB CONNECTION CLOSED"
@@ -4239,7 +4231,17 @@ function initialize(cnf, callback){
           return callback(err, configuration);
         }
 
-        dbConnection = db;
+        global.dbConnection = db;
+
+        UserServerController = require("@threeceelabs/user-server-controller");
+        userServerController = new UserServerController("TNN_USC");
+
+        userServerControllerReady = false;
+
+        userServerController.on("ready", function(appname){
+          userServerControllerReady = true;
+          console.log(chalkAlert("USC READY | " + appname));
+        });
 
         initStatsUpdate(configuration);
 
