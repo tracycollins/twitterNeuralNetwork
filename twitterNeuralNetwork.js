@@ -509,6 +509,9 @@ let skipLoadNetworkSet = new Set();
 let skipLoadInputsSet = new Set();
 let requiredTrainingSet = new Set();
 
+let slackChannelPassGlobal = "#nn-pass-global";
+let slackChannelPassLocal = "#nn-pass-local";
+let slackChannelFail = "#nn-fail";
 let slackChannel = "#nn";
 let slackText = "";
 
@@ -1374,10 +1377,6 @@ function quit(options){
   clearInterval(saveFileQueueInterval);
 
   statsObj.elapsed = moment().valueOf() - statsObj.startTime;
-
-  if (process.env.TNN_BATCH_MODE){
-    slackChannel = "#nn_batch";
-  }
 
   if (options !== undefined) {
 
@@ -3757,7 +3756,8 @@ function sendKeepAlive(userObj, callback){
       "SESSION_KEEPALIVE", 
       {
         user: userObj, 
-        stats: statsObjSmall, 
+        stats: statsObjSmall,
+        status: statsObj.status,
         results: networkCreateResultsHashmap
       }
     );
@@ -5546,6 +5546,8 @@ function initNetworkCreate(nnChildId, nnId, callback){
             return callback(err, messageObj);
           }
 
+          statsObj.status = "EVOLVE";
+
           networkCreateResultsHashmap[messageObj.testRunId] = {};
 
           let networkCreateObj = {};
@@ -5937,17 +5939,6 @@ function initNeuralNetworkChild(nnChildIndex, cnf, callback){
           + "\nNNT | CONNS:           " + m.networkObj.network.connections.length
         ));
 
-        // statsObj.networks[m.networkObj.networkId].numInputs = m.networkObj.network.input;
-        // statsObj.networks[m.networkObj.networkId].numOutputs = m.networkObj.network.output;
-        // statsObj.networks[m.networkObj.networkId].testRunId = m.networkObj.networkId;
-        // statsObj.networks[m.networkObj.networkId].network = omit(m.networkObj, ["network", "inputs", "outputs", "inputsObj"]);
-
-        // statsObj.networks[m.networkObj.networkId].results.numTests = m.networkObj.test.results.numTests;
-        // statsObj.networks[m.networkObj.networkId].results.numSkipped = m.networkObj.test.results.numSkipped;
-        // statsObj.networks[m.networkObj.networkId].results.numPassed = m.networkObj.test.results.numPassed;
-        // statsObj.networks[m.networkObj.networkId].results.successRate = m.networkObj.test.results.successRate;
-        // statsObj.networks[m.networkObj.networkId].results.status = "COMPLETE";
-
         networkCreateResultsHashmap[m.networkObj.networkId] = {};
         networkCreateResultsHashmap[m.networkObj.networkId] = omit(m.networkObj, ["network", "inputs", "outputs", "inputsObj"]);
         networkCreateResultsHashmap[m.networkObj.networkId].status = "COMPLETE";
@@ -6066,12 +6057,15 @@ function initNeuralNetworkChild(nnChildIndex, cnf, callback){
 
             statsObj.evolveStats.passGlobal += 1;
 
-            slackText = "\n*GLOBAL BEST: " + m.networkObj.test.results.successRate.toFixed(2) + "*";
+            slackText = "\n*GLOBAL BEST*";
+            slackText = slackText + "\n*" + m.networkObj.test.results.successRate.toFixed(2) + "%*";
             slackText = slackText + "\n" + m.networkObj.networkId;
+            slackText = slackText + "\nELAPSED: " + msToTime(m.networkObj.evolve.elapsed);
+            slackText = slackText + "\nBETTER CHILD: " + m.networkObj.betterChild;
             slackText = slackText + "\nIN: " + m.networkObj.inputsId;
             slackText = slackText + "\nINPUTS: " + m.networkObj.network.input;
 
-            slackPostMessage(slackChannel, slackText);
+            slackPostMessage(slackChannelPassGlobal, slackText);
 
             saveFileQueue.push({localFlag: false, folder: globalBestNetworkFolder, file: bestNetworkFile, obj: m.networkObj});
             saveFileQueue.push({localFlag: false, folder: statsFolder, file: statsFile, obj: statsObj});
@@ -6089,12 +6083,15 @@ function initNeuralNetworkChild(nnChildIndex, cnf, callback){
 
             statsObj.evolveStats.passLocal += 1;
 
-            slackText = "\n*LOCAL BEST: " + m.networkObj.test.results.successRate.toFixed(2) + "*";
+            slackText = "\n*LOCAL BEST*";
+            slackText = slackText + "\n*" + m.networkObj.test.results.successRate.toFixed(2) + "%*";
             slackText = slackText + "\n" + m.networkObj.networkId;
+            slackText = slackText + "\nELAPSED: " + msToTime(m.networkObj.evolve.elapsed);
+            slackText = slackText + "\nBETTER CHILD: " + m.networkObj.betterChild;
             slackText = slackText + "\nIN: " + m.networkObj.inputsId;
             slackText = slackText + "\nINPUTS: " + m.networkObj.network.input;
 
-            slackPostMessage(slackChannel, slackText);
+            slackPostMessage(slackChannelPassLocal, slackText);
 
             saveFileQueue.push({localFlag: false, folder: localBestNetworkFolder, file: localNetworkFile, obj: m.networkObj});
             saveFileQueue.push({localFlag: false, folder: statsFolder, file: statsFile, obj: statsObj});
@@ -6113,12 +6110,14 @@ function initNeuralNetworkChild(nnChildIndex, cnf, callback){
           // statsObj.networks[m.networkObj.networkId].results.status = "FAIL";
           saveFileQueue.push({localFlag: false, folder: statsFolder, file: statsFile, obj: statsObj});
 
-          slackText = "\n*-FAIL-: " + m.networkObj.test.results.successRate.toFixed(2) + "*";
+          slackText = "\n*-FAIL-*";
+          slackText = slackText + "\n*" + m.networkObj.test.results.successRate.toFixed(2) + "%*";
           slackText = slackText + "\n" + m.networkObj.networkId;
+          slackText = slackText + "\nELAPSED: " + msToTime(m.networkObj.evolve.elapsed);
           slackText = slackText + "\nIN: " + m.networkObj.inputsId;
           slackText = slackText + "\nINPUTS: " + m.networkObj.network.input;
 
-          slackPostMessage(slackChannel, slackText);
+          slackPostMessage(slackChannelFail, slackText);
 
           statsObj.evolveStats.fail += 1;
 
