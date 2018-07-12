@@ -1403,6 +1403,7 @@ function quit(options){
     setTimeout(function() {
 
       global.dbConnection.close(function () {
+        
         console.log(chalkAlert(
           "\n==========================\n"
           + "MONGO DB CONNECTION CLOSED"
