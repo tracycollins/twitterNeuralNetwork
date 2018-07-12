@@ -4215,7 +4215,7 @@ function initialize(cnf, callback){
 
       configArgs.forEach(function(arg){
         if (_.isObject(configuration[arg])) {
-          console.log("NNT | _FINAL CONFIG | " + arg + ": " + jsonPrint(configuration[arg]));
+          console.log("NNT | _FINAL CONFIG | " + arg + "\n" + jsonPrint(configuration[arg]));
         }
         else {
           console.log("NNT | _FINAL CONFIG | " + arg + ": " + configuration[arg]);
