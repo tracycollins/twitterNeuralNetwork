@@ -3758,8 +3758,8 @@ function sendKeepAlive(userObj, callback){
       {
         user: userObj, 
         stats: statsObjSmall,
-        status: statsObj.status,
-        results: networkCreateResultsHashmap
+        status: statsObj.status
+        // results: networkCreateResultsHashmap
       }
     );
 
