@@ -897,14 +897,6 @@ testObj.testRunId = statsObj.runId;
 testObj.results = {};
 testObj.testSet = [];
 
-// statsObj.networks = {};
-
-// statsObj.networks = {};
-// statsObj.networks[testObj.testRunId] = {};
-
-// statsObj.evolve = {};
-// statsObj.train = {};
-
 process.title = "node_twitterNeuralNetwork";
 console.log("\n\nNNT | =================================");
 console.log("NNT | HOST:          " + hostname);
@@ -6018,7 +6010,6 @@ function initNeuralNetworkChild(nnChildIndex, cnf, callback){
             betterChildSeedNetworkIdSet.add(m.networkObj.networkId);
 
             m.networkObj.betterChild = true;
-            // statsObj.networks[m.networkObj.networkId].betterChild = true;
             neuralNetworkChildHashMap[m.nnChildId].betterChild = true;
 
             console.log(chalkAlert("NNT | +++ BETTER CHILD"
@@ -6029,7 +6020,6 @@ function initNeuralNetworkChild(nnChildIndex, cnf, callback){
             ));
           }
           else {
-            // statsObj.networks[m.networkObj.networkId].betterChild = false;
             neuralNetworkChildHashMap[m.nnChildId].betterChild = false;
           }
 
@@ -6052,7 +6042,6 @@ function initNeuralNetworkChild(nnChildIndex, cnf, callback){
             ));
 
             networkCreateResultsHashmap[m.networkObj.networkId].status = "PASS GLOBAL";
-            // statsObj.networks[m.networkObj.networkId].results.status = "PASS GLOBAL";
 
             statsObj.evolveStats.passGlobal += 1;
 
@@ -6078,7 +6067,6 @@ function initNeuralNetworkChild(nnChildIndex, cnf, callback){
             ));
 
             networkCreateResultsHashmap[m.networkObj.networkId].status = "PASS LOCAL";
-            // statsObj.networks[m.networkObj.networkId].results.status = "PASS LOCAL";
 
             statsObj.evolveStats.passLocal += 1;
 
@@ -6106,7 +6094,6 @@ function initNeuralNetworkChild(nnChildIndex, cnf, callback){
           ));
 
           networkCreateResultsHashmap[m.networkObj.networkId].status = "FAIL";
-          // statsObj.networks[m.networkObj.networkId].results.status = "FAIL";
           saveFileQueue.push({localFlag: false, folder: statsFolder, file: statsFile, obj: statsObj});
 
           slackText = "\n*-FAIL-*";
