@@ -215,7 +215,22 @@ statsObj.errors.imageParse = {};
 statsObj.errors.users = {};
 statsObj.errors.users.findOne = 0;
 
-statsObjSmall = omit(statsObj, ["network", "trainingSet", "testSet", "inputs", "outputs"]);
+
+let statsPickArray = [
+  "pid", 
+  "startTime", 
+  "elapsed", 
+  "serverConnected", 
+  "status", 
+  "authenticated", 
+  "numChildren", 
+  "socketError", 
+  "userReadyAck", 
+  "userReadyAckWait", 
+  "userReadyTransmitted"
+];
+
+statsObjSmall = pick(statsObj, statsPickArray);
 
 let neuralNetworkChildHashMap = {};
 
@@ -1321,7 +1336,7 @@ function showStats(options){
 
   statsObj.elapsed = moment().valueOf() - statsObj.startTime;
 
-  statsObjSmall = omit(statsObj, ["network", "trainingSet", "testSet", "inputs", "outputs"]);
+  statsObjSmall = pick(statsObj, statsPickArray);
 
 
   if (options) {
@@ -3738,7 +3753,7 @@ function sendKeepAlive(userObj, callback){
 
     statsObj.elapsed = moment().valueOf() - statsObj.startTime;
 
-    statsObjSmall = omit(statsObj, ["network", "trainingSet", "testSet", "inputs", "outputs"]);
+    statsObjSmall = pick(statsObj, statsPickArray);
 
     debug(chalkInfo("TX KEEPALIVE"
       + " | " + userObj.userId
@@ -3984,8 +3999,8 @@ function initSocket(callback){
   socket.on("GET_STATS", function() {
 
     chalkLog(chalkLog("RX STATS REQ"));
-    statsObjSmall = omit(statsObj, ["network", "trainingSet", "testSet", "inputs", "outputs"]);
-    socket.emit("STATS", statsObj);
+    statsObjSmall = pick(statsObj, statsPickArray);
+    socket.emit("STATS", statsObjSmall);
   });
 
   socket.on("KEEPALIVE_ACK", function(userId) {
