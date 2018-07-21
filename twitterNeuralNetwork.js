@@ -3806,8 +3806,6 @@ function initKeepalive(userObj, interval){
 
   socketKeepaliveInterval = setInterval(function(){ // TX KEEPALIVE
 
-    userObj.stats = statsObj;
-
     sendKeepAlive(userObj, function(err){
       if (err) {
         console.log(chalkError("KEEPALIVE ERROR: " + err));
