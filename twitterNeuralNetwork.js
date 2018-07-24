@@ -3612,7 +3612,8 @@ function loadSeedNeuralNetwork(params, callback){
 
           tableArray.push([
             "NNT | ",
-            "TCYCs",
+            "TCs",
+            "TCH",
             "OAMR %",
             "MR %",
             "SR %",
@@ -3639,6 +3640,7 @@ function loadSeedNeuralNetwork(params, callback){
               tableArray.push([
                 "NNT | ",
                 nn.testCycles,
+                nn.testCycleHistory.length,
                 nn.overallMatchRate.toFixed(2),
                 nn.matchRate.toFixed(2),
                 nn.successRate.toFixed(2),
@@ -3655,7 +3657,7 @@ function loadSeedNeuralNetwork(params, callback){
 
           });
 
-          const t = table(tableArray, { align: ["l", "r", "r", "r", "r", "r", "l", "l"] });
+          const t = table(tableArray, { align: ["l", "r", "r", "r", "r", "r", "r", "l", "l"] });
 
           console.log("NNT | ============================================================================================================================================");
 
@@ -3682,7 +3684,8 @@ function loadSeedNeuralNetwork(params, callback){
 
         tableArray.push([
           "NNT | ",
-          "TCYCs",
+          "TCs",
+          "TCH",
           "OAMR %",
           "MR %",
           "SR %",
@@ -3711,6 +3714,7 @@ function loadSeedNeuralNetwork(params, callback){
             tableArray.push([
               "NNT | ",
               nn.testCycles,
+              nn.testCycleHistory.length,
               nn.overallMatchRate.toFixed(2),
               nn.matchRate.toFixed(2),
               nn.successRate.toFixed(2),
@@ -3727,7 +3731,7 @@ function loadSeedNeuralNetwork(params, callback){
 
         }, function(){
 
-          const t = table(tableArray, { align: ["l", "r", "r", "r", "r", "r", "l", "l"] });
+          const t = table(tableArray, { align: ["l", "r", "r", "r", "r", "r", "r", "l", "l"] });
 
           console.log("NNT | ============================================================================================================================================");
           console.log(chalkInfo("NNT | +++ BEST NETWORKS CHANGED / LOADED | NNs IN HM: " + sortedBestNetworks.sortedKeys.length));
