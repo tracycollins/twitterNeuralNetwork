@@ -286,6 +286,9 @@ const networkDefaults = function (networkObj){
 };
 
 function printNetworkObj(title, networkObj) {
+
+  networkObj = networkDefaults(networkObj);
+
   console.log(chalkNetwork(title
     + " | OAMR: " + networkObj.overallMatchRate.toFixed(2) + "%"
     + " | MR: " + networkObj.matchRate.toFixed(2) + "%"
@@ -1787,7 +1790,7 @@ function loadFile(path, file, callback) {
         let payload = data.fileBinary;
 
         if (!payload || (payload === undefined)) {
-          return callback(new Error("TFE LOAD FILE PAYLOAD UNDEFINED"), null);
+          return callback(new Error("TNN LOAD FILE PAYLOAD UNDEFINED"), null);
         }
 
         const fileObj = JSONParse(payload);
@@ -1805,17 +1808,17 @@ function loadFile(path, file, callback) {
     })
     .catch(function(error) {
 
-      console.trace(chalkError("TFE | DROPBOX loadFile ERROR: " + fullPath + "\n" + error));
-      console.log(chalkError("TFE | " + jsonPrint(error.error)));
+      console.log(chalkError("TNN | DROPBOX loadFile ERROR: " + fullPath + "\n", error));
+      console.log(chalkError("TNN | " + jsonPrint(error.error)));
       
       if ((error.status === 409) || (error.status === 404)) {
-        console.log(chalkError("TFE | !!! DROPBOX READ FILE " + fullPath + " NOT FOUND"
+        console.log(chalkError("TNN | !!! DROPBOX READ FILE " + fullPath + " NOT FOUND"
           + " ... SKIPPING ...")
         );
         callback(null, null);
       }
       else if (error.status === 0) {
-        console.log(chalkError("TFE | !!! DROPBOX NO RESPONSE"
+        console.log(chalkError("TNN | !!! DROPBOX NO RESPONSE"
           + " ... NO INTERNET CONNECTION? ... SKIPPING ..."));
         callback(null, null);
       }
@@ -5908,7 +5911,6 @@ function initNeuralNetworkChild(nnChildIndex, cnf, callback){
           saveFileQueue.push({localFlag: false, folder: statsFolder, file: statsFile, obj: statsObj});
 
           printNetworkObj("NNT | " + m.networkObj.networkId, m.networkObj);
-
         }
         else if (
           (m.networkObj.seedNetworkId && (m.networkObj.test.results.successRate > m.networkObj.seedNetworkRes)) // better than seed nn
@@ -6037,7 +6039,7 @@ function initNeuralNetworkChild(nnChildIndex, cnf, callback){
 
           statsObj.evolveStats.fail += 1;
 
-          printNetworkObj("NNT" + m.networkObj.networkId, m.networkObj);
+          printNetworkObj("NNT" + newNeuralNetwork.networkId, newNeuralNetwork);
         }
 
         statsObj.evolveStats.results[m.networkObj.networkId] = {};
