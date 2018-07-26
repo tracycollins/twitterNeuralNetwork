@@ -3145,13 +3145,6 @@ function loadCommandLineArgs(callback){
 
   statsObj.status = "LOAD COMMAND LINE ARGS";
 
-  // if (statsObj.commandLineArgsLoaded) {
-  //   if (callback !== undefined) { 
-  //     return callback(null, false);
-  //   }
-  //   return;
-  // }
-
   const commandLineConfigKeys = Object.keys(commandLineConfig);
 
   async.each(commandLineConfigKeys, function(arg, cb){
@@ -3187,11 +3180,6 @@ function loadCommandLineArgs(callback){
     if (callback !== undefined) { callback(null, commandLineConfig); }
   });
 
-  // const configArgs = Object.keys(configuration);
-
-  // configArgs.forEach(function(arg){
-  //   console.log("NNT | _FINAL CONFIG | " + arg + ": " + configuration[arg]);
-  // });
 }
 
 function loadConfigFile(folder, file, callback) {
@@ -5280,7 +5268,6 @@ function generateRandomEvolveConfig (cnf, callback){
     config.architecture = "loadedNetwork";
     config.inputsId = networkObj.inputsId;
     config.inputsObj = {};
-    // config.inputsObj = inputsHashMap.get(networkObj.inputsId).inputsObj;
     config.inputsObj = networkObj.inputsObj;
     console.log("NNT | SEED INPUTS | " + networkObj.inputsId);
 
@@ -5914,7 +5901,7 @@ function initNeuralNetworkChild(nnChildIndex, cnf, callback){
         }
         else if (
           (m.networkObj.seedNetworkId && (m.networkObj.test.results.successRate > m.networkObj.seedNetworkRes)) // better than seed nn
-          || ((m.networkObj.seedNetworkId === undefined) && ((m.networkObj.test.results.successRate >= cnf.localMinSuccessRate) // no seed but better than local min
+          || (!m.networkObj.seedNetworkId && ((m.networkObj.test.results.successRate >= cnf.localMinSuccessRate) // no seed but better than local min
           || (m.networkObj.test.results.successRate >= cnf.globalMinSuccessRate))) // better than global min
           ) { 
 
@@ -5937,10 +5924,7 @@ function initNeuralNetworkChild(nnChildIndex, cnf, callback){
           );
 
           // Add to nn child better than parent array
-          if (
-            ((m.networkObj.seedNetworkId === undefined) && (m.networkObj.test.results.successRate >= cnf.localMinSuccessRate)) // no seed but better than local min
-            || (m.networkObj.seedNetworkId && (m.networkObj.test.results.successRate > m.networkObj.seedNetworkRes))
-          ) {
+          if (m.networkObj.seedNetworkId && (m.networkObj.test.results.successRate > m.networkObj.seedNetworkRes)) {
 
             betterChildSeedNetworkIdSet.add(m.networkObj.networkId);
 
@@ -5954,7 +5938,21 @@ function initNeuralNetworkChild(nnChildIndex, cnf, callback){
               + " | SR: " + m.networkObj.seedNetworkRes.toFixed(3) + "%"
             ));
           }
+          // no seed but better than localMinSuccessRate, so act like better child and start parent/child chain
+          else if (!m.networkObj.seedNetworkId && (m.networkObj.test.results.successRate >= cnf.localMinSuccessRate)) {
+
+            betterChildSeedNetworkIdSet.add(m.networkObj.networkId);
+
+            m.networkObj.betterChild = false;
+            neuralNetworkChildHashMap[m.nnChildId].betterChild = false;
+
+            console.log(chalkAlert("NNT | +++ ADD LOCAL SUCCESS TO BETTER CHILD SET"
+              + " [" + betterChildSeedNetworkIdSet.size + "] " + m.networkObj.networkId
+              + " | SR: " + m.networkObj.test.results.successRate.toFixed(3) + "%"
+            ));
+          }
           else {
+            m.networkObj.betterChild = false;
             neuralNetworkChildHashMap[m.nnChildId].betterChild = false;
           }
 
