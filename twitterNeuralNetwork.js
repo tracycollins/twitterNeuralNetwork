@@ -5937,7 +5937,10 @@ function initNeuralNetworkChild(nnChildIndex, cnf, callback){
           );
 
           // Add to nn child better than parent array
-          if (m.networkObj.seedNetworkId && (m.networkObj.test.results.successRate > m.networkObj.seedNetworkRes)) {
+          if (
+            ((m.networkObj.seedNetworkId === undefined) && (m.networkObj.test.results.successRate >= cnf.localMinSuccessRate)) // no seed but better than local min
+            || (m.networkObj.seedNetworkId && (m.networkObj.test.results.successRate > m.networkObj.seedNetworkRes))
+          ) {
 
             betterChildSeedNetworkIdSet.add(m.networkObj.networkId);
 
