@@ -765,7 +765,7 @@ configuration.train.batchSize = DEFAULT_TRAIN_BATCH_SIZE;
 
 const slackOAuthAccessToken = "xoxp-3708084981-3708084993-206468961315-ec62db5792cd55071a51c544acf0da55";
 
-const defaultDateTimeFormat = "YYYY-MM-DD HH:mm:ss ZZ";
+// const defaultDateTimeFormat = "YYYY-MM-DD HH:mm:ss ZZ";
 const compactDateTimeFormat = "YYYYMMDD_HHmmss";
 
 
@@ -1948,7 +1948,7 @@ function initStatsUpdate(cnf){
 
 
     statsObj.elapsed = moment().valueOf() - statsObj.startTime;
-    statsObj.timeStamp = moment().format(defaultDateTimeFormat);
+    statsObj.timeStamp = moment().format(compactDateTimeFormat);
  
     showStats();
 
@@ -3654,12 +3654,13 @@ function sendKeepAlive(userObj, callback){
   if (!configuration.offlineMode && statsObj.userReadyAck && statsObj.serverConnected){
 
     statsObj.elapsed = moment().valueOf() - statsObj.startTime;
+    statsObj.timeStamp = moment().format(compactDateTimeFormat);
 
     statsObjSmall = pick(statsObj, statsPickArray);
 
     debug(chalkInfo("TX KEEPALIVE"
       + " | " + userObj.userId
-      + " | " + moment().format(defaultDateTimeFormat)
+      + " | " + moment().format(compactDateTimeFormat)
     ));
 
     socket.emit(
@@ -3678,7 +3679,7 @@ function sendKeepAlive(userObj, callback){
       + " | " + userObj.userId
       + " | CONNECTED: " + statsObj.serverConnected
       + " | READY ACK: " + statsObj.userReadyAck
-      + " | " + moment().format(defaultDateTimeFormat)
+      + " | " + moment().format(compactDateTimeFormat)
     ));
     callback(null);
   }
@@ -3687,7 +3688,7 @@ function sendKeepAlive(userObj, callback){
       + " | " + userObj.userId
       + " | CONNECTED: " + statsObj.serverConnected
       + " | READY ACK: " + statsObj.userReadyAck
-      + " | " + moment().format(defaultDateTimeFormat)
+      + " | " + moment().format(compactDateTimeFormat)
     ));
     callback("ERROR");
   }
@@ -3708,7 +3709,7 @@ function initKeepalive(userObj, interval){
       console.log(chalkError("KEEPALIVE ERROR: " + err));
     }
     debug(chalkRed("KEEPALIVE"
-      + " | " + moment().format(defaultDateTimeFormat)
+      + " | " + moment().format(compactDateTimeFormat)
     ));
   });
 
@@ -3719,7 +3720,7 @@ function initKeepalive(userObj, interval){
         console.log(chalkError("KEEPALIVE ERROR: " + err));
       }
       debug(chalkRed("KEEPALIVE"
-        + " | " + moment().format(defaultDateTimeFormat)
+        + " | " + moment().format(compactDateTimeFormat)
       ));
     });
 
@@ -3812,7 +3813,7 @@ function initSocket(callback){
     statsObj.online = true;
     statsObj.authenticated = false ;
 
-    console.log(chalkConnect(moment().format(defaultDateTimeFormat) 
+    console.log(chalkConnect(moment().format(compactDateTimeFormat) 
       + " | SERVER RECONNECT: " + socket.id
       + " | SERVER: " + configuration.targetServer
     ));
@@ -3825,7 +3826,7 @@ function initSocket(callback){
     statsObj.userReadyAck = true ;
 
     console.log(chalkConnect("RX USER_READY_ACK"
-      + " | " + moment().format(defaultDateTimeFormat)
+      + " | " + moment().format(compactDateTimeFormat)
       + " | " + socket.id
       + " | USER ID: " + ackObj.userId
       + " | SERVER: " + configuration.targetServer
