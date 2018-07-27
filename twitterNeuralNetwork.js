@@ -276,6 +276,7 @@ function getTimeStamp(inputTime) {
 
 const networkDefaults = function (networkObj){
 
+  if (networkObj.betterChild === undefined) { networkObj.betterChild = false; }
   if (networkObj.testCycles === undefined) { networkObj.testCycles = 0; }
   if (networkObj.testCycleHistory === undefined) { networkObj.testCycleHistory = []; }
   if (networkObj.overallMatchRate === undefined) { networkObj.overallMatchRate = 0; }
@@ -1278,8 +1279,6 @@ function printNetworkCreateResultsHashmap(){
     }
 
     let status = "";
-    let betterChild = "";
-    let snId = "";
     let snIdRes = "";
     let iterations = "";
     let error = "";
@@ -1287,9 +1286,7 @@ function printNetworkCreateResultsHashmap(){
     let elapsed = "";
 
     status = (networkObj.status !== undefined) ? networkObj.status : "UNKNOWN";
-    betterChild = (networkObj.betterChild !== undefined) ? networkObj.betterChild : "---";
-    snId = (networkObj.seedNetworkId !== undefined) ? networkObj.seedNetworkId : "---";
-    snIdRes = (networkObj.seedNetworkId !== undefined) ? networkObj.seedNetworkRes.toFixed(2) : "---";
+    snIdRes = (networkObj.seedNetworkId) ? networkObj.seedNetworkRes.toFixed(2) : "---";
 
     iterations = (networkObj.evolve.results !== undefined) ? networkObj.evolve.results.iterations : "---";
     error = ((networkObj.evolve.results !== undefined) 
@@ -1302,8 +1299,8 @@ function printNetworkCreateResultsHashmap(){
     tableArray.push([
       "NNT | " + nnId,
       status,
-      betterChild,
-      snId,
+      networkObj.betterChild,
+      networkObj.seedNetworkId,
       snIdRes,
       networkObj.numInputs,
       networkObj.evolve.options.clear,
@@ -5406,6 +5403,7 @@ function initNetworkCreate(nnChildId, nnId, callback){
         messageObj.normalization = statsObj.normalization;
 
         messageObj.architecture = childConf.architecture;
+        messageObj.betterChild = false;
         messageObj.isBetterChildSeed = childConf.isBetterChildSeed;
         messageObj.threads = childConf.threads;
         messageObj.networkObj = {};
@@ -5422,8 +5420,10 @@ function initNetworkCreate(nnChildId, nnId, callback){
         messageObj.mutationRate = childConf.mutationRate;
         messageObj.clear = childConf.clear;
 
-        if (messageObj.networkObj && (messageObj.networkObj !== undefined)) {
-          messageObj.seedNetworkId = messageObj.networkObj.networkId;
+        messageObj.seedNetworkId = childConf.seedNetworkId;
+        messageObj.seedNetworkRes = 0;
+
+        if (childConf.seedNetworkId && (messageObj.networkObj !== undefined)) {
           messageObj.seedNetworkRes = messageObj.networkObj.successRate;
         }
 
@@ -5441,7 +5441,7 @@ function initNetworkCreate(nnChildId, nnId, callback){
           + "\nNNT | ITERATIONS:          " + messageObj.iterations
         ));
 
-        if (messageObj.seedNetworkId !== undefined) {
+        if (messageObj.seedNetworkId) {
           console.log(chalkBlue("NNT | SEED:                " + messageObj.seedNetworkId 
             + " | SR: " + messageObj.seedNetworkRes.toFixed(2) + "%"
           ));
@@ -5468,6 +5468,8 @@ function initNetworkCreate(nnChildId, nnId, callback){
           networkCreateObj.matchRate = 0;
           networkCreateObj.overallMatchRate = 0;
           networkCreateObj.networkId = messageObj.testRunId;
+          networkCreateObj.networkId = messageObj.testRunId;
+          networkCreateObj.betterChild = false;
           networkCreateObj.seedNetworkId = messageObj.seedNetworkId;
           networkCreateObj.seedNetworkRes = messageObj.seedNetworkRes;
           networkCreateObj.numInputs = messageObj.inputsObj.meta.numInputs;
@@ -5825,38 +5827,42 @@ function initNeuralNetworkChild(nnChildIndex, cnf, callback){
 
       case "EVOLVE_COMPLETE":
 
+        const nn = networkDefaults(m.networkObj);
+
         statsObj.evolveStats.total += 1;
 
-        snId = (m.networkObj.seedNetworkId !== undefined) ? m.networkObj.seedNetworkId : "---";
-        snIdRes = (m.networkObj.seedNetworkId !== undefined) ? m.networkObj.seedNetworkRes.toFixed(2) : "---";
+        snId = (nn.seedNetworkId !== undefined) ? nn.seedNetworkId : "---";
+        snIdRes = (nn.seedNetworkId !== undefined) ? nn.seedNetworkRes.toFixed(2) : "---";
 
         console.log(chalkBlue(
             "\nNNT ========================================================\n"
           +   "NNT | NETWORK EVOLVE + TEST COMPLETE"
           + "\nNNT |                  " + m.nnChildId
-          + "\nNNT | NID:             " + m.networkObj.networkId
-          + "\nNNT | SR%:             " + m.networkObj.test.results.successRate.toFixed(2) + "%"
-          + "\nNNT | TEST [PASS/SET]: " + m.networkObj.test.results.numPassed + "/" + m.networkObj.test.results.numTests
+          + "\nNNT | NID:             " + nn.networkId
+          + "\nNNT | SR%:             " + nn.test.results.successRate.toFixed(2) + "%"
+          + "\nNNT | TEST [PASS/SET]: " + nn.test.results.numPassed + "/" + nn.test.results.numTests
           + "\nNNT | SEED:            " + snId
           + "\nNNT | SEED SR%:        " + snIdRes
-          + "\nNNT | ELAPSED:         " + msToTime(m.networkObj.evolve.elapsed)
+          + "\nNNT | ELAPSED:         " + msToTime(nn.evolve.elapsed)
           + "\nNNT | ITERTNS:         " + m.statsObj.evolve.results.iterations
           + "\nNNT | ERROR:           " + m.statsObj.evolve.results.error
-          + "\nNNT | INPUTS ID:       " + m.networkObj.inputsId
-          + "\nNNT | INPUTS:          " + m.networkObj.network.input
-          + "\nNNT | OUTPUTS:         " + m.networkObj.network.output
-          + "\nNNT | DROPOUT:         " + m.networkObj.network.dropout
-          + "\nNNT | NODES:           " + m.networkObj.network.nodes.length
-          + "\nNNT | CONNS:           " + m.networkObj.network.connections.length
+          + "\nNNT | INPUTS ID:       " + nn.inputsId
+          + "\nNNT | INPUTS:          " + nn.network.input
+          + "\nNNT | OUTPUTS:         " + nn.network.output
+          + "\nNNT | DROPOUT:         " + nn.network.dropout
+          + "\nNNT | NODES:           " + nn.network.nodes.length
+          + "\nNNT | CONNS:           " + nn.network.connections.length
         ));
 
-        networkCreateResultsHashmap[m.networkObj.networkId] = {};
-        networkCreateResultsHashmap[m.networkObj.networkId] = omit(m.networkObj, ["network", "inputs", "outputs", "inputsObj"]);
-        networkCreateResultsHashmap[m.networkObj.networkId].status = "COMPLETE";
-        networkCreateResultsHashmap[m.networkObj.networkId].stats = {};
-        networkCreateResultsHashmap[m.networkObj.networkId].stats = omit(m.statsObj, ["inputsObj", "train", "outputs", "normalization"]);
 
-        newNeuralNetwork = new NeuralNetwork(m.networkObj);
+        newNeuralNetwork = new NeuralNetwork(nn);
+
+        networkCreateResultsHashmap[nn.networkId] = {};
+        networkCreateResultsHashmap[nn.networkId] = omit(nn, ["network", "inputs", "outputs", "inputsObj"]);
+        networkCreateResultsHashmap[nn.networkId].status = "COMPLETE";
+        networkCreateResultsHashmap[nn.networkId].stats = {};
+        networkCreateResultsHashmap[nn.networkId].stats = omit(m.statsObj, ["inputsObj", "train", "outputs", "normalization"]);
+
         
         newNeuralNetwork.markModified("overallMatchRate");
 
@@ -5864,7 +5870,7 @@ function initNeuralNetworkChild(nnChildIndex, cnf, callback){
         .save()
         .catch(function(err){
           console.log(chalkError("NNT | *** ERROR SAVE NN TO DB" 
-            + " | NID: " + m.networkObj.networkId
+            + " | NID: " + nn.networkId
             + " | " + err.message
           ));
         });
@@ -5886,155 +5892,155 @@ function initNeuralNetworkChild(nnChildIndex, cnf, callback){
           }
         }
 
-        if (m.statsObj.evolve.results.iterations < m.networkObj.evolve.options.iterations) {
+        if (m.statsObj.evolve.results.iterations < nn.evolve.options.iterations) {
 
           console.log(chalkError("NNT | XXX | NOT SAVING NN FILE TO DROPBOX ... EARLY COMPLETE?"
-            + " | " + m.networkObj.networkId
+            + " | " + nn.networkId
             + " | ITRNS: " + m.statsObj.evolve.results.iterations
             + " | MIN: " + cnf.globalMinSuccessRate.toFixed(2) + "%"
-            + " | " + m.networkObj.successRate.toFixed(2) + "%"
+            + " | " + nn.successRate.toFixed(2) + "%"
           ));
 
           saveFileQueue.push({localFlag: false, folder: statsFolder, file: statsFile, obj: statsObj});
 
-          printNetworkObj("NNT | " + m.networkObj.networkId, m.networkObj);
+          printNetworkObj("NNT | " + nn.networkId, nn);
         }
         else if (
-          (m.networkObj.seedNetworkId && (m.networkObj.test.results.successRate > m.networkObj.seedNetworkRes)) // better than seed nn
-          || (!m.networkObj.seedNetworkId && ((m.networkObj.test.results.successRate >= cnf.localMinSuccessRate) // no seed but better than local min
-          || (m.networkObj.test.results.successRate >= cnf.globalMinSuccessRate))) // better than global min
+          (nn.seedNetworkId && (nn.test.results.successRate > nn.seedNetworkRes)) // better than seed nn
+          || (!nn.seedNetworkId && (nn.test.results.successRate >= cnf.localMinSuccessRate)) // no seed but better than local min
+          || (nn.test.results.successRate >= cnf.globalMinSuccessRate) // better than global min
           ) { 
 
           // It's a Keeper!!
 
-          bestNetworkFile = m.networkObj.networkId + ".json";
+          bestNetworkFile = nn.networkId + ".json";
 
-          m.networkObj = networkDefaults(m.networkObj);
+          // nn = networkDefaults(nn);
 
           bestNetworkHashMap.set(
-            m.networkObj.networkId, 
+            nn.networkId, 
             { 
               entry: {
                 client_modified: moment(),
                 name: bestNetworkFile,
                 content_hash: false
               }, 
-              networkObj: m.networkObj
+              networkObj: nn
             }
           );
 
           // Add to nn child better than parent array
-          if (m.networkObj.seedNetworkId && (m.networkObj.test.results.successRate > m.networkObj.seedNetworkRes)) {
+          if (nn.seedNetworkId && (nn.test.results.successRate > nn.seedNetworkRes)) {
 
-            betterChildSeedNetworkIdSet.add(m.networkObj.networkId);
+            betterChildSeedNetworkIdSet.add(nn.networkId);
 
-            m.networkObj.betterChild = true;
-            neuralNetworkChildHashMap[m.nnChildId].betterChild = true;
+            nn.betterChild = true;
+            networkCreateResultsHashmap[nn.networkId].betterChild = true;
 
             console.log(chalkAlert("NNT | +++ BETTER CHILD"
-              + " [" + betterChildSeedNetworkIdSet.size + "] " + m.networkObj.networkId
-              + " | SR: " + m.networkObj.test.results.successRate.toFixed(3) + "%"
-              + " | SEED: " + m.networkObj.networkId
-              + " | SR: " + m.networkObj.seedNetworkRes.toFixed(3) + "%"
+              + " [" + betterChildSeedNetworkIdSet.size + "] " + nn.networkId
+              + " | SR: " + nn.test.results.successRate.toFixed(3) + "%"
+              + " | SEED: " + nn.seedNetworkId
+              + " | SR: " + nn.seedNetworkRes.toFixed(3) + "%"
             ));
           }
           // no seed but better than localMinSuccessRate, so act like better child and start parent/child chain
-          else if (!m.networkObj.seedNetworkId && (m.networkObj.test.results.successRate >= cnf.localMinSuccessRate)) {
+          else if (!nn.seedNetworkId && (nn.test.results.successRate >= cnf.localMinSuccessRate)) {
 
-            betterChildSeedNetworkIdSet.add(m.networkObj.networkId);
+            betterChildSeedNetworkIdSet.add(nn.networkId);
 
-            m.networkObj.betterChild = false;
-            neuralNetworkChildHashMap[m.nnChildId].betterChild = false;
+            nn.betterChild = false;
+            networkCreateResultsHashmap[nn.networkId].betterChild = false;
 
             console.log(chalkAlert("NNT | +++ ADD LOCAL SUCCESS TO BETTER CHILD SET"
-              + " [" + betterChildSeedNetworkIdSet.size + "] " + m.networkObj.networkId
-              + " | SR: " + m.networkObj.test.results.successRate.toFixed(3) + "%"
+              + " [" + betterChildSeedNetworkIdSet.size + "] " + nn.networkId
+              + " | SR: " + nn.test.results.successRate.toFixed(3) + "%"
             ));
           }
           else {
-            m.networkObj.betterChild = false;
-            neuralNetworkChildHashMap[m.nnChildId].betterChild = false;
+            nn.betterChild = false;
+            networkCreateResultsHashmap[nn.networkId].betterChild = false;
           }
 
-          if (inputsNetworksHashMap[m.networkObj.inputsId] === undefined) {
-            inputsNetworksHashMap[m.networkObj.inputsId] = new Set();
+          if (inputsNetworksHashMap[nn.inputsId] === undefined) {
+            inputsNetworksHashMap[nn.inputsId] = new Set();
           }
 
-          inputsNetworksHashMap[m.networkObj.inputsId].add(m.networkObj.networkId);
+          inputsNetworksHashMap[nn.inputsId].add(nn.networkId);
 
           console.log(chalkInfo("NNT | INPUTS ID"
-            + " | " + m.networkObj.inputsId
-            + " | INPUTS: " + m.networkObj.inputsObj.meta.numInputs
-            + " | " + inputsNetworksHashMap[m.networkObj.inputsId].size + " NETWORKS"
+            + " | " + nn.inputsId
+            + " | INPUTS: " + nn.inputsObj.meta.numInputs
+            + " | " + inputsNetworksHashMap[nn.inputsId].size + " NETWORKS"
           ));
 
-          if (m.networkObj.test.results.successRate >= cnf.globalMinSuccessRate) {
+          if (nn.test.results.successRate >= cnf.globalMinSuccessRate) {
 
             console.log(chalkInfo("NNT | ### SAVING NN FILE TO DROPBOX GLOBAL BEST"
               + " | " + globalBestNetworkFolder + "/" + bestNetworkFile
             ));
 
-            networkCreateResultsHashmap[m.networkObj.networkId].status = "PASS GLOBAL";
+            networkCreateResultsHashmap[nn.networkId].status = "PASS GLOBAL";
 
             statsObj.evolveStats.passGlobal += 1;
 
             slackText = "\n*GLOBAL BEST*";
-            slackText = slackText + "\n*" + m.networkObj.test.results.successRate.toFixed(2) + "%*";
-            slackText = slackText + "\n" + m.networkObj.networkId;
-            slackText = slackText + "\nELAPSED: " + msToTime(m.networkObj.evolve.elapsed);
-            slackText = slackText + "\nBETTER CHILD: " + m.networkObj.betterChild;
-            slackText = slackText + "\nIN: " + m.networkObj.inputsId;
-            slackText = slackText + "\nINPUTS: " + m.networkObj.network.input;
+            slackText = slackText + "\n*" + nn.test.results.successRate.toFixed(2) + "%*";
+            slackText = slackText + "\n" + nn.networkId;
+            slackText = slackText + "\nELAPSED: " + msToTime(nn.evolve.elapsed);
+            slackText = slackText + "\nBETTER CHILD: " + nn.betterChild;
+            slackText = slackText + "\nIN: " + nn.inputsId;
+            slackText = slackText + "\nINPUTS: " + nn.network.input;
 
             slackPostMessage(slackChannelPassGlobal, slackText);
 
-            saveFileQueue.push({localFlag: false, folder: globalBestNetworkFolder, file: bestNetworkFile, obj: m.networkObj});
+            saveFileQueue.push({localFlag: false, folder: globalBestNetworkFolder, file: bestNetworkFile, obj: nn});
             saveFileQueue.push({localFlag: false, folder: statsFolder, file: statsFile, obj: statsObj});
           }
-          else if (m.networkObj.test.results.successRate >= cnf.localMinSuccessRate) {
+          else if (nn.test.results.successRate >= cnf.localMinSuccessRate) {
 
-            localNetworkFile = m.networkObj.networkId + ".json";
+            localNetworkFile = nn.networkId + ".json";
 
             console.log(chalkInfo("NNT | ... SAVING NN FILE TO DROPBOX LOCAL BEST"
               + " | " + localBestNetworkFolder + "/" + localNetworkFile
             ));
 
-            networkCreateResultsHashmap[m.networkObj.networkId].status = "PASS LOCAL";
+            networkCreateResultsHashmap[nn.networkId].status = "PASS LOCAL";
 
             statsObj.evolveStats.passLocal += 1;
 
             slackText = "\n*LOCAL BEST*";
-            slackText = slackText + "\n*" + m.networkObj.test.results.successRate.toFixed(2) + "%*";
-            slackText = slackText + "\n" + m.networkObj.networkId;
-            slackText = slackText + "\nELAPSED: " + msToTime(m.networkObj.evolve.elapsed);
-            slackText = slackText + "\nBETTER CHILD: " + m.networkObj.betterChild;
-            slackText = slackText + "\nIN: " + m.networkObj.inputsId;
-            slackText = slackText + "\nINPUTS: " + m.networkObj.network.input;
+            slackText = slackText + "\n*" + nn.test.results.successRate.toFixed(2) + "%*";
+            slackText = slackText + "\n" + nn.networkId;
+            slackText = slackText + "\nELAPSED: " + msToTime(nn.evolve.elapsed);
+            slackText = slackText + "\nBETTER CHILD: " + nn.betterChild;
+            slackText = slackText + "\nIN: " + nn.inputsId;
+            slackText = slackText + "\nINPUTS: " + nn.network.input;
 
             slackPostMessage(slackChannelPassLocal, slackText);
 
-            saveFileQueue.push({localFlag: false, folder: localBestNetworkFolder, file: localNetworkFile, obj: m.networkObj});
+            saveFileQueue.push({localFlag: false, folder: localBestNetworkFolder, file: localNetworkFile, obj: nn});
             saveFileQueue.push({localFlag: false, folder: statsFolder, file: statsFile, obj: statsObj});
           }
 
-          printNetworkObj("NNT | " + m.networkObj.networkId, m.networkObj);
+          printNetworkObj("NNT | " + nn.networkId, nn);
         }
         else {
           console.log(chalkInfo("NNT | XXX | NOT SAVING NN GLOBAL DROPBOX ... LESS THAN GLOBAL MIN SUCCESS *OR* NOT BETTER THAN SEED"
-            + " | " + m.networkObj.networkId
-            + " | " + m.networkObj.successRate.toFixed(2) + "%"
+            + " | " + nn.networkId
+            + " | " + nn.successRate.toFixed(2) + "%"
             + " | " + cnf.globalMinSuccessRate.toFixed(2) + "%"
           ));
 
-          networkCreateResultsHashmap[m.networkObj.networkId].status = "FAIL";
+          networkCreateResultsHashmap[nn.networkId].status = "FAIL";
           saveFileQueue.push({localFlag: false, folder: statsFolder, file: statsFile, obj: statsObj});
 
           slackText = "\n*-FAIL-*";
-          slackText = slackText + "\n*" + m.networkObj.test.results.successRate.toFixed(2) + "%*";
-          slackText = slackText + "\n" + m.networkObj.networkId;
-          slackText = slackText + "\nELAPSED: " + msToTime(m.networkObj.evolve.elapsed);
-          slackText = slackText + "\nIN: " + m.networkObj.inputsId;
-          slackText = slackText + "\nINPUTS: " + m.networkObj.network.input;
+          slackText = slackText + "\n*" + nn.test.results.successRate.toFixed(2) + "%*";
+          slackText = slackText + "\n" + nn.networkId;
+          slackText = slackText + "\nELAPSED: " + msToTime(nn.evolve.elapsed);
+          slackText = slackText + "\nIN: " + nn.inputsId;
+          slackText = slackText + "\nINPUTS: " + nn.network.input;
 
           slackPostMessage(slackChannelFail, slackText);
 
@@ -6043,8 +6049,8 @@ function initNeuralNetworkChild(nnChildIndex, cnf, callback){
           printNetworkObj("NNT" + newNeuralNetwork.networkId, newNeuralNetwork);
         }
 
-        statsObj.evolveStats.results[m.networkObj.networkId] = {};
-        statsObj.evolveStats.results[m.networkObj.networkId] = networkCreateResultsHashmap[m.networkObj.networkId];
+        statsObj.evolveStats.results[nn.networkId] = {};
+        statsObj.evolveStats.results[nn.networkId] = networkCreateResultsHashmap[nn.networkId];
 
        break;
 
