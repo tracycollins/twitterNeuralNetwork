@@ -2587,6 +2587,68 @@ function loadTrainingSetsDropboxFolder(folder, callback){
   });
 }
 
+function updateDbNetwork(params, callback) {
+
+  statsObj.status = "UPDATE DB NETWORKS";
+
+  const networkObj = params.networkObj;
+  const incrementTestCycles = (params.incrementTestCycles !== undefined) ? params.incrementTestCycles : false;
+  const testHistoryItem = (params.testHistoryItem !== undefined) ? params.testHistoryItem : false;
+  const addToTestHistory = (params.addToTestHistory !== undefined) ? params.addToTestHistory : true;
+  const verbose = params.verbose || false;
+
+  const query = { networkId: networkObj.networkId };
+
+  let update = {};
+
+  update["$setOnInsert"] = { 
+    seedNetworkId: networkObj.seedNetworkId,
+    seedNetworkRes: networkObj.seedNetworkRes,
+    network: networkObj.network,
+    successRate: networkObj.successRate, 
+    numInputs: networkObj.numInputs,
+    numOutputs: networkObj.numOutputs,
+    inputsId: networkObj.inputsId,
+    inputsObj: networkObj.inputsObj,
+    outputs: networkObj.outputs,
+    evolve: networkObj.evolve,
+    test: networkObj.test
+  };
+
+  update["$set"] = { 
+    matchRate: networkObj.matchRate, 
+    overallMatchRate: networkObj.overallMatchRate,
+  };
+
+  if (incrementTestCycles) { update["$inc"] = { testCycles: 1 }; }
+  
+  if (testHistoryItem) { 
+    update["$push"] = { testCycleHistory: testHistoryItem };
+  }
+  else if (addToTestHistory) {
+    update["$addToSet"] = { testCycleHistory: { $each: networkObj.testCycleHistory } };
+  }
+
+  const options = {
+    new: true,
+    upsert: true,
+    setDefaultsOnInsert: true,
+  };
+
+  NeuralNetwork.findOneAndUpdate(query, update, options, function(err, nnDbUpdated){
+
+    if (err) {
+      console.log(chalkError("*** updateDbNetwork | NETWORK FIND ONE ERROR: " + err));
+      return callback(err, null);
+    }
+
+    if (verbose) { printNetworkObj("TNN | +++ NN DB UPDATED", nnDbUpdated); }
+
+    callback(null, nnDbUpdated);
+
+  });
+}
+
 function loadBestNetworkDropboxFolders (params, callback){
 
   if (configuration.offlineMode) {
@@ -2967,73 +3029,89 @@ function loadBestNetworkDropboxFolders (params, callback){
 
               inputsNetworksHashMap[networkObj.inputsId].add(networkObj.networkId);
 
-              NeuralNetwork.findOne({ networkId: networkObj.networkId }, function(err, nnDb){
+              updateDbNetwork({networkObj: networkObj, addToTestHistory: true, verbose: true}, function(err, nnDb){
                 if (err) {
                   console.log(chalkError("*** ERROR: DB NN FIND ONE ERROR | "+ networkObj.networkId + " | " + err));
+                  cb1();
                 }
                 else if (nnDb) {
 
- 
-                  nnDb = networkDefaults(nnDb);
+                  numNetworksLoaded += 1;
 
-                 if ((networkObj.overallMatchRate > 0) && (networkObj.overallMatchRate < 100)) {
-                    nnDb.overallMatchRate = networkObj.overallMatchRate;
+                  printNetworkObj("NNT | +++ NN HASH MAP [" + numNetworksLoaded + "]", nnDb);
+
+                  if (!currentBestNetwork || (nnDb.matchRate > currentBestNetwork.matchRate)) {
+
+                    currentBestNetwork = nnDb.network;
+
+                    printNetworkObj("NNT | *** NEW BEST NN", nnDb);
+
                   }
 
-                 if (networkObj.testCycles > nnDb.testCycles) {
-                    nnDb.testCycles = networkObj.testCycles;
-                  }
+                  bestNetworkHashMap.set(nnDb.networkId, { entry: entry, networkObj: nnDb});
 
-                 if (networkObj.testCycleHistory.length > nnDb.testCycleHistory.length) {
-                    nnDb.testCycleHistory = networkObj.testCycleHistory;
-                  }
+                  cb1();
 
-                  nnDb.markModified("overallMatchRate");
-                  nnDb.markModified("testCycles");
-                  nnDb.markModified("testCycleHistory");
-
-                  if (configuration.verbose) {
-                    printNetworkObj("NNT | . NN DB HIT", nnDb);
-                  }
-
-                  nnDb.save()
-                  .catch(function(err){
-                    console.log(err.message);
-                  });
                 }
                 else {
-                  let nn = new NeuralNetwork(networkObj);
-
-                  if ((nn.networkId === undefined) || (!nn.networkId) || (nn.networkId === null)) {
-                    console.log(chalkError("NNT | ERROR: NN NETWORK ID UNDEFINED ???\n" + jsonPrint(nn)));
-                  }
-
-                  nn = networkDefaults(nn);
-
-                  nn.markModified("overallMatchRate");
-                  nn.markModified("testCycleHistory");
-
-                  nn.save()
-                  .catch(function(err){
-                    console.log(err.message);
-                  });
+                  cb1();
                 }
               });
 
+              // NeuralNetwork.findOne({ networkId: networkObj.networkId }, function(err, nnDb){
+              //   if (err) {
+              //     console.log(chalkError("*** ERROR: DB NN FIND ONE ERROR | "+ networkObj.networkId + " | " + err));
+              //   }
+              //   else if (nnDb) {
 
-              numNetworksLoaded += 1;
+ 
+              //     nnDb = networkDefaults(nnDb);
 
-              printNetworkObj("NNT | + NN HASH MAP", networkObj);
+              //    if ((networkObj.overallMatchRate > 0) && (networkObj.overallMatchRate < 100)) {
+              //       nnDb.overallMatchRate = networkObj.overallMatchRate;
+              //     }
 
-              if (!currentBestNetwork || (networkObj.matchRate > currentBestNetwork.matchRate)) {
+              //    if (networkObj.testCycles > nnDb.testCycles) {
+              //       nnDb.testCycles = networkObj.testCycles;
+              //     }
 
-                currentBestNetwork = networkObj.network;
+              //    if (networkObj.testCycleHistory.length > nnDb.testCycleHistory.length) {
+              //       nnDb.testCycleHistory = networkObj.testCycleHistory;
+              //     }
 
-                printNetworkObj("NNT | * NEW BEST NN", networkObj);
+              //     nnDb.markModified("overallMatchRate");
+              //     nnDb.markModified("testCycles");
+              //     nnDb.markModified("testCycleHistory");
 
-              }
+              //     if (configuration.verbose) {
+              //       printNetworkObj("NNT | . NN DB HIT", nnDb);
+              //     }
 
-              cb1();
+              //     nnDb.save()
+              //     .catch(function(err){
+              //       console.log(err.message);
+              //     });
+              //   }
+              //   else {
+              //     let nn = new NeuralNetwork(networkObj);
+
+              //     if ((nn.networkId === undefined) || (!nn.networkId) || (nn.networkId === null)) {
+              //       console.log(chalkError("NNT | ERROR: NN NETWORK ID UNDEFINED ???\n" + jsonPrint(nn)));
+              //     }
+
+              //     nn = networkDefaults(nn);
+
+              //     nn.markModified("overallMatchRate");
+              //     nn.markModified("testCycleHistory");
+
+              //     nn.save()
+              //     .catch(function(err){
+              //       console.log(err.message);
+              //     });
+              //   }
+              // });
+
+
             }
             else if (((hostname === "google") && (folder === globalBestNetworkFolder))
               || ((hostname !== "google") && (folder === localBestNetworkFolder)) ) {
