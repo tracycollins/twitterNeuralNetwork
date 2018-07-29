@@ -1720,8 +1720,7 @@ function saveFile (params, callback){
 
       })
       .catch(function(err){
-        console.log(chalkError("NNT | *** DROPBOX FILES LIST FOLDER ERROR: " + err));
-        console.log(chalkError("NNT | *** DROPBOX FILES LIST FOLDER ERROR\n" + jsonPrint(err)));
+        console.log(chalkError("NNT | *** DROPBOX SAVE FILE ERROR: " + err));
         if (callback !== undefined) { callback(err, null); }
       });
     }
@@ -2025,9 +2024,6 @@ function listDropboxFolder(options, callback){
 
           })
           .catch(function(err){
-            // if (err.response.status === 429){
-            //   console.log(chalkAlert("NNT | DROPBOX LIST FOLDER ERROR | TOO MANY REQUESTS"));
-            // }
             console.trace(chalkError("NNT | *** DROPBOX filesListFolderContinue ERROR: ", err));
           });
 
@@ -2045,7 +2041,6 @@ function listDropboxFolder(options, callback){
   })
   .catch(function(err){
     console.log(chalkError("NNT | *** DROPBOX FILES LIST FOLDER ERROR: " + err));
-    console.log(chalkError("NNT | *** DROPBOX FILES LIST FOLDER ERROR\n" + jsonPrint(err)));
     callback(err, null);
   });
 }
@@ -2587,7 +2582,7 @@ function loadTrainingSetsDropboxFolder(folder, callback){
 
   })
   .catch(function(err){
-    console.log(chalkError("NNT | *** DROPBOX FILES LIST FOLDER ERROR\n" + jsonPrint(err)));
+    console.log(chalkError("NNT | *** DROPBOX FILES LIST FOLDER ERROR: " + err));
     if (callback !== undefined) { callback(err); }
   });
 }
