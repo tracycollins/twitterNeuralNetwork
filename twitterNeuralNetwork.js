@@ -3029,7 +3029,7 @@ function loadBestNetworkDropboxFolders (params, callback){
 
               inputsNetworksHashMap[networkObj.inputsId].add(networkObj.networkId);
 
-              updateDbNetwork({networkObj: networkObj, addToTestHistory: true, verbose: true}, function(err, nnDb){
+              updateDbNetwork({networkObj: networkObj, testHistoryItem: false, addToTestHistory: true, verbose: true}, function(err, nnDb){
                 if (err) {
                   console.log(chalkError("*** ERROR: DB NN FIND ONE ERROR | "+ networkObj.networkId + " | " + err));
                   cb1();
