@@ -3970,7 +3970,8 @@ function loadAllConfigFiles(callback){
 
         if (defaultConfig) {
 
-          defaultConfiguration = deepcopy(defaultConfig);
+          // defaultConfiguration = deepcopy(defaultConfig);
+          defaultConfiguration = defaultConfig;
 
           console.log(chalkAlert("NNT | +++ RELOADED DEFAULT CONFIG " + dropboxConfigDefaultFolder + "/" + dropboxConfigDefaultFile));
 
@@ -3994,7 +3995,8 @@ function loadAllConfigFiles(callback){
 
         if (hostConfig) {
 
-          hostConfiguration = deepcopy(hostConfig);
+          // hostConfiguration = deepcopy(hostConfig);
+          hostConfiguration = hostConfig;
 
           console.log(chalkAlert("NNT | +++ RELOADED HOST CONFIG " + dropboxConfigHostFolder + "/" + dropboxConfigHostFile));
 
@@ -4016,7 +4018,9 @@ function loadAllConfigFiles(callback){
 
     let defaultAndHostConfig = merge(defaultConfiguration, hostConfiguration); // host settings override defaults
     let tempConfig = merge(configuration, defaultAndHostConfig); // any new settings override existing config
-    configuration = deepcopy(tempConfig);
+
+    // configuration = deepcopy(tempConfig);
+    configuration = tempConfig;
 
     callback();
   });
@@ -5302,7 +5306,8 @@ function generateRandomEvolveConfig (cnf, callback){
     // bestNetworkHashMap entry --> bnhmObj = { entry: entry, networkObj: networkObj }
     const networkObj = bestNetworkHashMap.get(config.seedNetworkId).networkObj;
 
-    config.networkObj = deepcopy(networkObj);
+    // config.networkObj = deepcopy(networkObj);
+    config.networkObj = networkObj;
 
     config.architecture = "loadedNetwork";
     config.inputsId = networkObj.inputsId;
