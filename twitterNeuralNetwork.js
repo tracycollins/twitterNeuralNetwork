@@ -2803,9 +2803,9 @@ function loadBestNetworkDropboxFolders (params, callback){
 
                 numNetworksLoaded += 1;
 
-                if (!currentBestNetwork || (networkObj.successRate > currentBestNetwork.successRate)) {
+                if (!currentBestNetwork || (networkObj.overallMatchRate > currentBestNetwork.overallMatchRate)) {
 
-                  currentBestNetwork = networkObj.network;
+                  currentBestNetwork = networkObj;
 
                   printNetworkObj("NNT | * NEW BEST NN", networkObj);
                  }
@@ -2869,7 +2869,6 @@ function loadBestNetworkDropboxFolders (params, callback){
                 debug("dropboxClient filesDelete response\n" + jsonPrint(response));
 
                 printNetworkObj("NNT | XXX LOCAL NN (GLOBAL EXISTS)", networkObj);
-
               })
               .catch(function(err){
                 if (err.status === 409) {
@@ -2908,18 +2907,50 @@ function loadBestNetworkDropboxFolders (params, callback){
               if (inputsNetworksHashMap[networkObj.inputsId] === undefined) {
                 inputsNetworksHashMap[networkObj.inputsId] = new Set();
               }
+              
               inputsNetworksHashMap[networkObj.inputsId].add(networkObj.networkId);
 
-              numNetworksLoaded += 1;
+              updateDbNetwork({networkObj: networkObj, addToTestHistory: true}, function(err, nnDb){
+                if (err) {
+                  console.log(chalkError("*** ERROR: DB NN FIND ONE ERROR | "+ networkObj.networkId + " | " + err));
+                  cb1();
+                }
+                else if (nnDb) {
 
-              if (!currentBestNetwork || (networkObj.successRate > currentBestNetwork.successRate)) {
+                  numNetworksLoaded += 1;
 
-                currentBestNetwork = networkObj.network;
 
-                printNetworkObj("NNT | * NEW BEST NN", networkObj);
-              }
+                  if (!currentBestNetwork || (nnDb.overallMatchRate > currentBestNetwork.overallMatchRate)) {
 
-              cb1();
+                    currentBestNetwork = nnDb;
+
+                    printNetworkObj("NNT | *** NEW BEST NN", nnDb);
+
+                  }
+
+                  bestNetworkHashMap.set(nnDb.networkId, { entry: entry, networkObj: nnDb});
+
+                  printNetworkObj("NNT | +++ NN HASH MAP [" + numNetworksLoaded + " LOADED / " + bestNetworkHashMap.size + " IN HM]", nnDb);
+
+                  cb1();
+
+                }
+                else {
+                  cb1();
+                }
+              });
+
+
+              // numNetworksLoaded += 1;
+
+              // if (!currentBestNetwork || (networkObj.overallMatchRate > currentBestNetwork.overallMatchRate)) {
+
+              //   currentBestNetwork = networkObj;
+
+              //   printNetworkObj("NNT | * NEW BEST NN", networkObj);
+              // }
+
+              // cb1();
             });
           }
           else {
@@ -3029,7 +3060,7 @@ function loadBestNetworkDropboxFolders (params, callback){
 
               inputsNetworksHashMap[networkObj.inputsId].add(networkObj.networkId);
 
-              updateDbNetwork({networkObj: networkObj, testHistoryItem: false, addToTestHistory: true, verbose: true}, function(err, nnDb){
+              updateDbNetwork({networkObj: networkObj, addToTestHistory: true}, function(err, nnDb){
                 if (err) {
                   console.log(chalkError("*** ERROR: DB NN FIND ONE ERROR | "+ networkObj.networkId + " | " + err));
                   cb1();
@@ -3038,17 +3069,18 @@ function loadBestNetworkDropboxFolders (params, callback){
 
                   numNetworksLoaded += 1;
 
-                  printNetworkObj("NNT | +++ NN HASH MAP [" + numNetworksLoaded + "]", nnDb);
 
-                  if (!currentBestNetwork || (nnDb.matchRate > currentBestNetwork.matchRate)) {
+                  if (!currentBestNetwork || (nnDb.overallMatchRate > currentBestNetwork.overallMatchRate)) {
 
-                    currentBestNetwork = nnDb.network;
+                    currentBestNetwork = nnDb;
 
                     printNetworkObj("NNT | *** NEW BEST NN", nnDb);
 
                   }
 
                   bestNetworkHashMap.set(nnDb.networkId, { entry: entry, networkObj: nnDb});
+
+                  printNetworkObj("NNT | +++ NN HASH MAP [" + numNetworksLoaded + " LOADED / " + bestNetworkHashMap.size + " IN HM]", nnDb);
 
                   cb1();
 
@@ -3057,60 +3089,6 @@ function loadBestNetworkDropboxFolders (params, callback){
                   cb1();
                 }
               });
-
-              // NeuralNetwork.findOne({ networkId: networkObj.networkId }, function(err, nnDb){
-              //   if (err) {
-              //     console.log(chalkError("*** ERROR: DB NN FIND ONE ERROR | "+ networkObj.networkId + " | " + err));
-              //   }
-              //   else if (nnDb) {
-
- 
-              //     nnDb = networkDefaults(nnDb);
-
-              //    if ((networkObj.overallMatchRate > 0) && (networkObj.overallMatchRate < 100)) {
-              //       nnDb.overallMatchRate = networkObj.overallMatchRate;
-              //     }
-
-              //    if (networkObj.testCycles > nnDb.testCycles) {
-              //       nnDb.testCycles = networkObj.testCycles;
-              //     }
-
-              //    if (networkObj.testCycleHistory.length > nnDb.testCycleHistory.length) {
-              //       nnDb.testCycleHistory = networkObj.testCycleHistory;
-              //     }
-
-              //     nnDb.markModified("overallMatchRate");
-              //     nnDb.markModified("testCycles");
-              //     nnDb.markModified("testCycleHistory");
-
-              //     if (configuration.verbose) {
-              //       printNetworkObj("NNT | . NN DB HIT", nnDb);
-              //     }
-
-              //     nnDb.save()
-              //     .catch(function(err){
-              //       console.log(err.message);
-              //     });
-              //   }
-              //   else {
-              //     let nn = new NeuralNetwork(networkObj);
-
-              //     if ((nn.networkId === undefined) || (!nn.networkId) || (nn.networkId === null)) {
-              //       console.log(chalkError("NNT | ERROR: NN NETWORK ID UNDEFINED ???\n" + jsonPrint(nn)));
-              //     }
-
-              //     nn = networkDefaults(nn);
-
-              //     nn.markModified("overallMatchRate");
-              //     nn.markModified("testCycleHistory");
-
-              //     nn.save()
-              //     .catch(function(err){
-              //       console.log(err.message);
-              //     });
-              //   }
-              // });
-
 
             }
             else if (((hostname === "google") && (folder === globalBestNetworkFolder))
@@ -3154,6 +3132,7 @@ function loadBestNetworkDropboxFolders (params, callback){
             }
           });
         }
+
       }, function(err){
         cb0(err);
       });
