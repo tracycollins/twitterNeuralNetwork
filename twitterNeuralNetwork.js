@@ -2907,7 +2907,7 @@ function loadBestNetworkDropboxFolders (params, callback){
               if (inputsNetworksHashMap[networkObj.inputsId] === undefined) {
                 inputsNetworksHashMap[networkObj.inputsId] = new Set();
               }
-              
+
               inputsNetworksHashMap[networkObj.inputsId].add(networkObj.networkId);
 
               updateDbNetwork({networkObj: networkObj, addToTestHistory: true}, function(err, nnDb){
@@ -2940,17 +2940,6 @@ function loadBestNetworkDropboxFolders (params, callback){
                 }
               });
 
-
-              // numNetworksLoaded += 1;
-
-              // if (!currentBestNetwork || (networkObj.overallMatchRate > currentBestNetwork.overallMatchRate)) {
-
-              //   currentBestNetwork = networkObj;
-
-              //   printNetworkObj("NNT | * NEW BEST NN", networkObj);
-              // }
-
-              // cb1();
             });
           }
           else {
