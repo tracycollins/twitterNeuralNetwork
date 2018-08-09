@@ -3521,7 +3521,7 @@ function loadSeedNeuralNetwork(params, callback){
 
   debug(chalkNetwork("NNT | ... LOADING SEED NETWORK FROM DB\nPARAMS: " + jsonPrint(params)));
 
-  loadBestNetworkDropboxFolders(params, function loadBestCallback (err, numNetworksLoaded){
+  loadBestNetworkDropboxFolders(params, function(err, numNetworksLoaded){
 
     if (err) {
       if (err.status === 429) {
@@ -3605,7 +3605,6 @@ function loadSeedNeuralNetwork(params, callback){
           if (configuration.verbose) { console.log(t); }
 
           console.log("NNT | ============================================================================================================================================");
-
         })
         .catch(function(err){
           console.trace(chalkError("generateRandomEvolveConfig sortedHashmap ERROR: " + err + "/" + jsonPrint(err)));
@@ -3678,7 +3677,6 @@ function loadSeedNeuralNetwork(params, callback){
           console.log("NNT | ============================================================================================================================================");
 
         });
-
       })
       .catch(function(err){
         console.trace(chalkError("generateRandomEvolveConfig sortedHashmap ERROR: " + err + "/" + jsonPrint(err)));
