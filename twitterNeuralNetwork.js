@@ -241,10 +241,16 @@ process.on("unhandledRejection", function(err, promise) {
 });
 
 const jsonPrint = function (obj){
-  if (obj) {
-    return treeify.asTree(obj, true);
+  try {
+    if (obj) {
+      return treeify.asTree(obj, true);
+    }
+    else {
+      return "UNDEFINED";
+    }
   }
-  else {
+  catch (err) {
+    console.log(chalkError("*** ERROR jsonPrint: " + err));
     return "UNDEFINED";
   }
 };
@@ -5652,7 +5658,7 @@ function initMain(cnf, callback){
           loadTrainingSetsDropboxFolder(folder, function(err){
 
             if (err) {
-              console.log(chalkError("*** ERROR LOAD TRAINING SETS FOLDER\n" + jsonPrint(err)));
+              console.log(chalkError("*** ERROR LOAD TRAINING SETS FOLDER: ", err));
               createTrainingSetBusy = false;
               trainingSetReady = false;
               return callback(err);
