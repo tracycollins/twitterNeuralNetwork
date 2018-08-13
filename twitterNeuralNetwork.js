@@ -3109,18 +3109,16 @@ function loadBestNetworkDropboxFolders (params, callback){
                     + " | PATH: " + folder + "/" + entry.name
                     + " | TOO MANY REQUESTS"
                   ));
+                  return cb1(err);
                 }
-                else {
-                  console.log(chalkError("NNT | *** ERROR: XXX NN"
-                    + " | STATUS: " + err.status
-                    + " | PATH: " + folder + "/" + entry.name
-                    + " | SUMMARY: " + err.response.statusText
-                  ));
-                }
-                return cb1(err);
+                console.log(chalkError("NNT | *** ERROR: XXX NN"
+                  + " | STATUS: " + err.status
+                  + " | PATH: " + folder + "/" + entry.name
+                  + " | SUMMARY: " + err.response.statusText
+                ));
+                cb1(err);
               });
 
-              cb1();
             }
             else {
               cb1();
