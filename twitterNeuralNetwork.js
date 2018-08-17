@@ -100,6 +100,7 @@ const bestRuntimeNetworkFileName = "bestRuntimeNetwork.json";
 let saveFileQueue = [];
 
 const shell = require("shelljs");
+const retry = require("retry");
 const JSONParse = require("json-parse-safe");
 const arraySlice = require("array-slice");
 const util = require("util");
@@ -1736,17 +1737,39 @@ function saveFile (params, callback){
   }
 }
 
-function loadFile(path, file, callback) {
+function loadFileRetry(params, callback){
 
-  debug(chalkInfo("LOAD FOLDER " + path));
-  debug(chalkInfo("LOAD FILE " + file));
-  debug(chalkInfo("FULL PATH " + path + "/" + file));
+  let operation = retry.operation();
 
-  let fullPath = path + "/" + file;
+  operation.attempt(function(currentAttempt){
+
+    console.log(chalkAlert("loadFileRetry currentAttempt: " + currentAttempt));
+
+    loadFile(params, function(err, fileObj){
+
+      if (operation.retry(err)){
+        return;
+      }
+
+      callback(err ? operation.mainError() : null, fileObj);
+
+    });
+
+  });
+}
+
+function loadFile(params, callback) {
+
+  let fullPath = params.folder + "/" + params.file
+
+  debug(chalkInfo("LOAD FOLDER " + params.folder));
+  debug(chalkInfo("LOAD FILE " + params.file));
+  debug(chalkInfo("FULL PATH " + fullPath));
+
 
   if (configuration.offlineMode) {
     if (hostname === "mbp2") {
-      fullPath = "/Users/tc/Dropbox/Apps/wordAssociation" + path + "/" + file;
+      fullPath = "/Users/tc/Dropbox/Apps/wordAssociation/" + fullPath;
       debug(chalkInfo("OFFLINE_MODE: FULL PATH " + fullPath));
     }
     fs.readFile(fullPath, "utf8", function(err, data) {
@@ -1760,7 +1783,7 @@ function loadFile(path, file, callback) {
         + " | " + fullPath
       ));
 
-      if (file.match(/\.json$/gi)) {
+      if (params.file.match(/\.json$/gi)) {
 
         const fileObj = JSONParse(data);
 
@@ -1787,7 +1810,7 @@ function loadFile(path, file, callback) {
         + " | LOADING FILE FROM DROPBOX FILE: " + fullPath
       ));
 
-      if (file.match(/\.json$/gi)) {
+      if (params.file.match(/\.json$/gi)) {
 
         let payload = data.fileBinary;
 
@@ -1801,6 +1824,7 @@ function loadFile(path, file, callback) {
           callback(null, fileObj.value);
         }
         else {
+          console.log(chalkError("TNN | DROPBOX loadFile ERROR: " + fullPath + "\n", fileObj.error));
           callback(fileObj.error, null);
         }
       }
@@ -2129,7 +2153,7 @@ function loadInputsDropboxFolder(folder, callback){
             // + "\nOLD HASH: " + curInputsObj.entry.content_hash
           ));
 
-          loadFile(folder, entry.name, function(err, inputsObj){
+          loadFileRetry({folder: folder, file: entry.name}, function(err, inputsObj){
 
             if (err) {
               console.log(chalkError("NNT | DROPBOX INPUTS LOAD FILE ERROR: " + err));
@@ -2172,7 +2196,7 @@ function loadInputsDropboxFolder(folder, callback){
           ));
 
           // LOAD FROM BEST FOLDER AND SAVE LOCALLY
-          loadFile(folder, entry.name, function(err, inputsObj){
+          loadFileRetry({folder: folder, file: entry.name}, function(err, inputsObj){
 
             if (err) {
               console.log(chalkError("NNT | DROPBOX INPUTS LOAD FILE ERROR: " + err));
@@ -2230,7 +2254,7 @@ function loadInputsDropboxFolder(folder, callback){
       }
       else {
 
-        loadFile(folder, entry.name, function(err, inputsObj){
+        loadFileRetry({folder: folder, file: entry.name}, function(err, inputsObj){
 
           if (err) {
             console.log(chalkError("NNT | DROPBOX INPUTS LOAD FILE ERROR: " + err));
@@ -2310,10 +2334,10 @@ function updateUsersFromTrainingSet(trainingSetData, callback){
   let userIndex = 0;
   const numberUsers = trainingSetData.length;
 
-  if (configuration.testMode) {
-    trainingSetData.length = 100;
-    configuration.globalTrainingSetId = "smallGlobalTrainingSet";
-  }
+  // if (configuration.testMode) {
+  //   trainingSetData.length = 100;
+  //   configuration.globalTrainingSetId = "smallGlobalTrainingSet";
+  // }
 
   async.eachSeries(trainingSetData, function(user, cb) {
 
@@ -2455,15 +2479,16 @@ function loadTrainingSetsDropboxFolder(folder, callback){
         + " | " + entry.name
       ));
 
-      if (!configuration.testMode && !entry.name.startsWith(configuration.globalTrainingSetId)){
+      // if (!configuration.testMode && !entry.name.startsWith(configuration.globalTrainingSetId)){
+      if (!entry.name.startsWith(configuration.globalTrainingSetId)){
         debug("NNT | ... IGNORE DROPBOX TRAINING SETS FOLDER FILE: " + entry.name);
         return cb();
       }
 
-      if (configuration.testMode && !entry.name.startsWith("smallGlobalTrainingSet")){
-        debug("NNT | ... IGNORE DROPBOX TRAINING SETS FOLDER FILE: " + entry.name);
-        return cb();
-      }
+      // if (configuration.testMode && !entry.name.startsWith("smallGlobalTrainingSet")){
+      //   debug("NNT | ... IGNORE DROPBOX TRAINING SETS FOLDER FILE: " + entry.name);
+      //   return cb();
+      // }
 
       if (!entry.name.endsWith(".json")){
         debug("NNT | ... IGNORE DROPBOX TRAINING SETS FOLDER FILE: " + entry.name);
@@ -2492,7 +2517,7 @@ function loadTrainingSetsDropboxFolder(folder, callback){
             // + "\nOLD HASH: " + oldContentHash
           ));
 
-          loadFile(folder, entry.name, function(err, trainingSetObj){
+          loadFileRetry({folder: folder, file: entry.name}, function(err, trainingSetObj){
             if (err) {
               console.log(chalkError("NNT | DROPBOX TRAINING SET LOAD FILE ERROR: " + err));
               cb(err);
@@ -2542,7 +2567,7 @@ function loadTrainingSetsDropboxFolder(folder, callback){
       }
       else {
 
-        loadFile(folder, entry.name, function(err, trainingSetObj){
+        loadFileRetry({folder: folder, file: entry.name}, function(err, trainingSetObj){
           if (err) {
             console.log(chalkError("NNT | DROPBOX TRAINING SET LOAD FILE ERROR: " + err));
             cb(err);
@@ -2755,7 +2780,7 @@ function loadBestNetworkDropboxFolders (params, callback){
               // + "\nOLD HASH: " + oldContentHash
             ));
 
-            loadFile(folder, entry.name, function(err, networkObj){
+            loadFileRetry({folder: folder, file: entry.name}, function(err, networkObj){
 
               if (err) {
                 console.log(chalkError("NNT | DROPBOX BEST NETWORK RELOAD FILE ERROR: " + err));
@@ -2831,7 +2856,7 @@ function loadBestNetworkDropboxFolders (params, callback){
             ));
 
             // LOAD FROM BEST FOLDER AND SAVE LOCALLY
-            loadFile(globalBestNetworkFolder, entry.name, function(err, networkObj){
+            loadFileRetry({folder: globalBestNetworkFolder, file: entry.name}, function(err, networkObj){
 
               if (err) {
                 console.log(chalkError("NNT | DROPBOX BEST NETWORK RELOAD FILE ERROR: " + err));
@@ -2960,7 +2985,7 @@ function loadBestNetworkDropboxFolders (params, callback){
         }
         else {
 
-          loadFile(folder, entry.name, function(err, networkObj){
+          loadFileRetry({folder: folder, file: entry.name}, function(err, networkObj){
 
             if (err) {
               console.log(chalkError("NNT | DROPBOX BEST NETWORK LOAD FILE ERROR: " + err));
@@ -3276,7 +3301,7 @@ function loadConfigFile(folder, file, callback) {
           prevHostConfigFileModifiedMoment = moment(fileModifiedMoment);
         }
 
-        loadFile(folder, file, function(err, loadedConfigObj){
+        loadFileRetry({folder: folder, file: file}, function(err, loadedConfigObj){
 
           if (err) {
             console.error(chalkError("NNT | ERROR LOAD DROPBOX CONFIG: " + file
@@ -5015,12 +5040,12 @@ function generateGlobalTrainingTestSet (userHashMap, maxInputHashMap, callback){
 
   let trainingSetId;
 
-  if (configuration.testMode) { 
-    trainingSetId = "test_" + configuration.globalTrainingSetId + "_" + statsObj.runId; 
-  }
-  else {
+  // if (configuration.testMode) { 
+  //   trainingSetId = "test_" + configuration.globalTrainingSetId + "_" + statsObj.runId; 
+  // }
+  // else {
     trainingSetId = configuration.globalTrainingSetId + "_" + statsObj.runId; 
-  }
+  // }
 
   console.log(chalkAlert("NNT | ==================================================================="));
   console.log(chalkAlert("NNT | GENERATE TRAINING SET | " + nodeIds.length + " USERS | " + getTimeStamp()));
@@ -5166,10 +5191,10 @@ function generateGlobalTrainingTestSet (userHashMap, maxInputHashMap, callback){
     let dropboxFolder = (hostname === "google") ? "/home/tc/Dropbox/Apps/wordAssociation/config/utility/default/trainingSets" 
     : "/Users/tc/Dropbox/Apps/wordAssociation/config/utility/" + hostname + "/trainingSets";
 
-    if (configuration.testMode) {
-      dropboxFolder = (hostname === "google") ? "/home/tc/Dropbox/Apps/wordAssociation/config/utility/default/trainingSets_test" 
-      : "/Users/tc/Dropbox/Apps/wordAssociation/config/utility/" + hostname + "/trainingSets_test";
-    }
+    // if (configuration.testMode) {
+    //   dropboxFolder = (hostname === "google") ? "/home/tc/Dropbox/Apps/wordAssociation/config/utility/default/trainingSets_test" 
+    //   : "/Users/tc/Dropbox/Apps/wordAssociation/config/utility/" + hostname + "/trainingSets_test";
+    // }
 
     let folder = dropboxFolder;
     let fullPath = folder + "/" + file;
@@ -6507,6 +6532,7 @@ function initMainTimeOutFunction(){
 
       if (err){
         console.log(chalkError("INIT MAIN ERROR", err));
+        console.log(chalkError("INIT MAIN ERROR" + jsonPrint(err)));
         console.log(chalkAlert("RETRYING INIT MAIN..."));
         initMainTimeOutComplete = true;
         clearInterval(initMainInterval);
