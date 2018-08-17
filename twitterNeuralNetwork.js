@@ -3100,6 +3100,7 @@ function loadBestNetworkDropboxFolders (params, callback){
                 debug("dropboxClient filesDelete response\n" + jsonPrint(response));
 
                 printNetworkObj("NNT | XXX NN", networkObj);
+                cb1();
 
               })
               .catch(function(err){
