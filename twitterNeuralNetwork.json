@@ -4,7 +4,7 @@
     "name": "tnn",
     "script": "twitterNeuralNetwork.js",
     "cwd": "/home/tc/twitterNeuralNetwork",
-    "node_args": "--max-old-space-size=16384",
+    "node_args": "--max-old-space-size=24576",
     "autorestart": true,
     "restart_delay": 7200000,
     "env": {
@@ -12,7 +12,7 @@
       "NODE_ENV": "production",
       "TNN_QUIT_ON_COMPLETE": true,
       "TNN_SERVER_MODE": true,
-      "TNN_UTIL_TARGET_SERVER": "http://127.0.0.1/util",
+      "TNN_UTIL_TARGET_SERVER": "https://127.0.0.1/util",
       "GCLOUD_PROJECT": "graphic-tangent-627",
       "GOOGLE_PROJECT": "graphic-tangent-627",
       "DROPBOX_WORD_ASSO_ACCESS_TOKEN": "nknEWsIkD5UAAAAAAAQouTDFRBKfwsFzuS8PPi2Q_JVYnpotNuaHiddNtmG4mUTi",
