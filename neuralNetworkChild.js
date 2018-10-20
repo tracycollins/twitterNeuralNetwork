@@ -461,7 +461,7 @@ function convertTrainingDatum(params, datum, generateInputRaw, callback){
         }
         else {
           convertedDatum.input.push(datum.languageAnalysis[inputName]);
-          console.log("NNC | convertTrainingDatum INPUT | " + inputType + " | " + inputName + ": " + datum.languageAnalysis[inputName]);
+          // console.log("NNC | convertTrainingDatum INPUT | " + inputType + " | " + inputName + ": " + datum.languageAnalysis[inputName]);
         }
         async.setImmediate(function() {
           cb1();
