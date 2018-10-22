@@ -5165,13 +5165,13 @@ function generateGlobalTrainingTestSet (userHashMap, maxInputHashMap, callback){
     trainingSetSmallObj.trainingSet = {};
     trainingSetSmallObj.trainingSet.meta = {};
     trainingSetSmallObj.trainingSet.meta.numOutputs = trainingSet.meta.numOutputs;
-    trainingSetSmallObj.trainingSet.meta.setSize = SMALL_SET_SIZE;
+    // trainingSetSmallObj.trainingSet.meta.setSize = SMALL_SET_SIZE;
     trainingSetSmallObj.trainingSet.data = [];
     // trainingSetSmallObj.trainingSet.data = arraySlice(trainingSet.data, 0, SMALL_SET_SIZE);
 
     trainingSetSmallObj.testSet = {};
     trainingSetSmallObj.testSet.meta = {};
-    trainingSetSmallObj.testSet.meta.setSize = SMALL_TEST_SET_SIZE;
+    // trainingSetSmallObj.testSet.meta.setSize = SMALL_TEST_SET_SIZE;
     trainingSetSmallObj.testSet.meta.numOutputs = trainingSet.meta.numOutputs;
     trainingSetSmallObj.testSet.data = [];
     // trainingSetSmallObj.testSet.data = arraySlice(testSet.data, 0, SMALL_TEST_SET_SIZE);
@@ -5242,8 +5242,12 @@ function generateGlobalTrainingTestSet (userHashMap, maxInputHashMap, callback){
 
         // delete large training set to free up memory before create trainingSetSmallObj training and test sets
         trainingSetObj = {};
-        trainingSetData.length = SMALL_SET_SIZE;
-        testSet.length = SMALL_TEST_SET_SIZE;
+
+        trainingSet.data.length = SMALL_SET_SIZE;
+        trainingSet.meta.setSize = trainingSet.data.length;
+
+        testSet.data.length = SMALL_TEST_SET_SIZE;
+        testSet.meta.setSize = testSet.data.length;
 
         trainingSetSmallObj.trainingSet.data = trainingSet.data;
         trainingSetSmallObj.testSet.data = testSet.data;
