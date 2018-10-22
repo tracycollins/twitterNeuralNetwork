@@ -3022,30 +3022,29 @@ function loadBestNetworkDropboxFolders (params, callback){
                 + folder + "/" + entry.name));
 
               dropboxClient.filesDelete({path: folder + "/" + entry.name})
-              .then(function(response){
+                .then(function(response){
 
-                debug("dropboxClient filesDelete response\n" + jsonPrint(response));
+                  debug("dropboxClient filesDelete response\n" + jsonPrint(response));
 
-                printNetworkObj("NNT | XXX | INPUTS NOT IN INPUTS ID ARRAY", networkObj);
-
-              })
-              .catch(function(err){
-                if (err.status === 429) {
-                  console.log(chalkError("NNT | *** ERROR: XXX NN"
-                    + " | STATUS: " + err.status
-                    + " | PATH: " + folder + "/" + entry.name
-                    + " | TOO MANY REQUESTS"
-                  ));
-                }
-                else {
-                  console.log(chalkError("NNT | *** ERROR: XXX NN"
-                    + " | STATUS: " + err.status
-                    + " | PATH: " + folder + "/" + entry.name
-                    + " | SUMMARY: " + err.response.statusText
-                  ));
-                }
-                return cb1(err);
-              });
+                  printNetworkObj("NNT | XXX | INPUTS NOT IN INPUTS ID ARRAY", networkObj);
+                })
+                .catch(function(err){
+                  if (err.status === 429) {
+                    console.log(chalkError("NNT | *** ERROR: XXX NN"
+                      + " | STATUS: " + err.status
+                      + " | PATH: " + folder + "/" + entry.name
+                      + " | TOO MANY REQUESTS"
+                    ));
+                  }
+                  else {
+                    console.log(chalkError("NNT | *** ERROR: XXX NN"
+                      + " | STATUS: " + err.status
+                      + " | PATH: " + folder + "/" + entry.name
+                      + " | SUMMARY: " + err.response.statusText
+                    ));
+                  }
+                  return cb1(err);
+                });
 
               cb1();
             }
