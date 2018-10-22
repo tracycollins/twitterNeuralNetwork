@@ -85,8 +85,8 @@ const DEFAULT_INIT_MAIN_INTERVAL = process.env.TNN_INIT_MAIN_INTERVAL || 10*ONE_
 const DROPBOX_LIST_FOLDER_LIMIT = 50;
 const DROPBOX_MAX_FILE_UPLOAD = 140 * ONE_MEGABYTE; // bytes
 
-let socket;
-let socketKeepaliveInterval;
+// let socket;
+// let socketKeepaliveInterval;
 
 let userReadyInterval;
 
@@ -181,7 +181,7 @@ statsObj.pid = process.pid;
 statsObj.cpus = os.cpus().length;
 statsObj.commandLineArgsLoaded = false;
 
-statsObj.socketError = false;
+// statsObj.socketError = false;
 
 statsObj.serverConnected = false;
 statsObj.userReadyAck = false;
@@ -225,7 +225,7 @@ let statsPickArray = [
   "status", 
   "authenticated", 
   "numChildren", 
-  "socketError", 
+  // "socketError", 
   "userReadyAck", 
   "userReadyAckWait", 
   "userReadyTransmitted"
@@ -1460,12 +1460,12 @@ function quit(options){
       global.dbConnection.close(function () {
         
         console.log(chalkAlert(
-          "\n==========================\n"
-          + "MONGO DB CONNECTION CLOSED"
-          + "\n==========================\n"
+          "\nNNT | =========================="
+          + "\n NNT | MONGO DB CONNECTION CLOSED"
+          + "\nNNT | ==========================\n"
         ));
 
-        if (socket) { socket.disconnect(); }
+        // if (socket) { socket.disconnect(); }
         process.exit();
       });
 
@@ -3731,268 +3731,268 @@ function loadSeedNeuralNetwork(params, callback){
   });
 }
 
-function sendKeepAlive(userObj, callback){
-
-  if (!configuration.offlineMode && statsObj.userReadyAck && statsObj.serverConnected){
-
-    statsObj.elapsed = moment().valueOf() - statsObj.startTime;
-    statsObj.timeStamp = moment().format(compactDateTimeFormat);
-
-    statsObjSmall = pick(statsObj, statsPickArray);
-
-    debug(chalkInfo("TX KEEPALIVE"
-      + " | " + userObj.userId
-      + " | " + moment().format(compactDateTimeFormat)
-    ));
-
-    socket.emit(
-      "SESSION_KEEPALIVE", 
-      {
-        user: userObj, 
-        stats: statsObjSmall,
-        status: statsObj.status
-      }
-    );
-
-    callback(null);
-  }
-  else if (!configuration.serverMode) {
-    debug(chalkError("... OFFLINE | NO TX KEEPALIVE"
-      + " | " + userObj.userId
-      + " | CONNECTED: " + statsObj.serverConnected
-      + " | READY ACK: " + statsObj.userReadyAck
-      + " | " + moment().format(compactDateTimeFormat)
-    ));
-    callback(null);
-  }
-  else {
-    console.log(chalkError("!!!! CANNOT TX KEEPALIVE"
-      + " | " + userObj.userId
-      + " | CONNECTED: " + statsObj.serverConnected
-      + " | READY ACK: " + statsObj.userReadyAck
-      + " | " + moment().format(compactDateTimeFormat)
-    ));
-    callback("ERROR");
-  }
-}
+// function sendKeepAlive(userObj, callback){
+
+//   if (!configuration.offlineMode && statsObj.userReadyAck && statsObj.serverConnected){
+
+//     statsObj.elapsed = moment().valueOf() - statsObj.startTime;
+//     statsObj.timeStamp = moment().format(compactDateTimeFormat);
+
+//     statsObjSmall = pick(statsObj, statsPickArray);
+
+//     debug(chalkInfo("TX KEEPALIVE"
+//       + " | " + userObj.userId
+//       + " | " + moment().format(compactDateTimeFormat)
+//     ));
+
+//     socket.emit(
+//       "SESSION_KEEPALIVE", 
+//       {
+//         user: userObj, 
+//         stats: statsObjSmall,
+//         status: statsObj.status
+//       }
+//     );
+
+//     callback(null);
+//   }
+//   else if (!configuration.serverMode) {
+//     debug(chalkError("... OFFLINE | NO TX KEEPALIVE"
+//       + " | " + userObj.userId
+//       + " | CONNECTED: " + statsObj.serverConnected
+//       + " | READY ACK: " + statsObj.userReadyAck
+//       + " | " + moment().format(compactDateTimeFormat)
+//     ));
+//     callback(null);
+//   }
+//   else {
+//     console.log(chalkError("!!!! CANNOT TX KEEPALIVE"
+//       + " | " + userObj.userId
+//       + " | CONNECTED: " + statsObj.serverConnected
+//       + " | READY ACK: " + statsObj.userReadyAck
+//       + " | " + moment().format(compactDateTimeFormat)
+//     ));
+//     callback("ERROR");
+//   }
+// }
 
-function initKeepalive(userObj, interval){
+// function initKeepalive(userObj, interval){
 
-  clearInterval(socketKeepaliveInterval);
+//   clearInterval(socketKeepaliveInterval);
 
-  console.log(chalkConnect("START PRIMARY KEEPALIVE"
-    + " | READY ACK: " + statsObj.userReadyAck
-    + " | SERVER CONNECTED: " + statsObj.serverConnected
-    + " | INTERVAL: " + interval + " ms"
-  ));
+//   console.log(chalkConnect("START PRIMARY KEEPALIVE"
+//     + " | READY ACK: " + statsObj.userReadyAck
+//     + " | SERVER CONNECTED: " + statsObj.serverConnected
+//     + " | INTERVAL: " + interval + " ms"
+//   ));
 
-  sendKeepAlive(userObj, function(err){
-    if (err) {
-      console.log(chalkError("KEEPALIVE ERROR: " + err));
-    }
-    debug(chalkRed("KEEPALIVE"
-      + " | " + moment().format(compactDateTimeFormat)
-    ));
-  });
+//   sendKeepAlive(userObj, function(err){
+//     if (err) {
+//       console.log(chalkError("KEEPALIVE ERROR: " + err));
+//     }
+//     debug(chalkRed("KEEPALIVE"
+//       + " | " + moment().format(compactDateTimeFormat)
+//     ));
+//   });
 
-  socketKeepaliveInterval = setInterval(function(){ // TX KEEPALIVE
+//   socketKeepaliveInterval = setInterval(function(){ // TX KEEPALIVE
 
-    sendKeepAlive(userObj, function(err){
-      if (err) {
-        console.log(chalkError("KEEPALIVE ERROR: " + err));
-      }
-      debug(chalkRed("KEEPALIVE"
-        + " | " + moment().format(compactDateTimeFormat)
-      ));
-    });
+//     sendKeepAlive(userObj, function(err){
+//       if (err) {
+//         console.log(chalkError("KEEPALIVE ERROR: " + err));
+//       }
+//       debug(chalkRed("KEEPALIVE"
+//         + " | " + moment().format(compactDateTimeFormat)
+//       ));
+//     });
 
-  }, interval);
-}
+//   }, interval);
+// }
 
-function initUserReadyInterval(interval){
+// function initUserReadyInterval(interval){
 
-  console.log(chalkInfo("INIT USER READY INTERVAL"));
+//   console.log(chalkInfo("INIT USER READY INTERVAL"));
 
-  clearInterval(userReadyInterval);
+//   clearInterval(userReadyInterval);
 
-  userReadyInterval = setInterval(function(){
+//   userReadyInterval = setInterval(function(){
 
-    if (statsObj.serverConnected && !statsObj.userReadyTransmitted && !statsObj.userReadyAck){
+//     if (statsObj.serverConnected && !statsObj.userReadyTransmitted && !statsObj.userReadyAck){
 
-      statsObj.userReadyTransmitted = true; 
-      userObj.timeStamp = moment().valueOf();
-      socket.emit("USER_READY", {userId: userObj.userId, timeStamp: moment().valueOf()}); 
+//       statsObj.userReadyTransmitted = true; 
+//       userObj.timeStamp = moment().valueOf();
+//       socket.emit("USER_READY", {userId: userObj.userId, timeStamp: moment().valueOf()}); 
 
-    }
+//     }
 
-    else if (statsObj.userReadyTransmitted && !statsObj.userReadyAck) {
+//     else if (statsObj.userReadyTransmitted && !statsObj.userReadyAck) {
 
-      statsObj.userReadyAckWait += 1;
-      console.log(chalkDisconnect("... WAITING FOR USER_READY_ACK ..."));
+//       statsObj.userReadyAckWait += 1;
+//       console.log(chalkDisconnect("... WAITING FOR USER_READY_ACK ..."));
 
-    }
-  }, interval);
-}
+//     }
+//   }, interval);
+// }
 
-function initSocket(callback){
+// function initSocket(callback){
 
-  statsObj.status = "INIT SOCKET";
+//   statsObj.status = "INIT SOCKET";
 
-  if (!configuration.serverMode) {
-    console.log(chalkAlert("NNT | NO SERVER MODE | SKIP INIT SOCKET"));
-    return callback(null, null);
-  }
+//   if (!configuration.serverMode) {
+//     console.log(chalkAlert("NNT | NO SERVER MODE | SKIP INIT SOCKET"));
+//     return callback(null, null);
+//   }
 
-  console.log(chalkLog("INIT SOCKET"
-    + " | serverMode: " + configuration.serverMode
-    + " | TARGET SERVER: " + configuration.targetServer
-    + "\n" + jsonPrint(userObj)
-  ));
+//   console.log(chalkLog("INIT SOCKET"
+//     + " | serverMode: " + configuration.serverMode
+//     + " | TARGET SERVER: " + configuration.targetServer
+//     + "\n" + jsonPrint(userObj)
+//   ));
 
-  socket = require("socket.io-client")(configuration.targetServer, { rejectUnauthorized: false });
+//   socket = require("socket.io-client")(configuration.targetServer, { rejectUnauthorized: false });
 
-  socket.on("connect", function(){
+//   socket.on("connect", function(){
 
-    statsObj.serverConnected = true ;
-    statsObj.userReadyTransmitted = false;
-    statsObj.userReadyAck = false ;
-    statsObj.online = true;
-    statsObj.authenticated = false ;
+//     statsObj.serverConnected = true ;
+//     statsObj.userReadyTransmitted = false;
+//     statsObj.userReadyAck = false ;
+//     statsObj.online = true;
+//     statsObj.authenticated = false ;
 
-    console.log(chalkInfo("NNT | SERVER CONNECT | " + socket.id + " ... AUTHENTICATE ..."));
+//     console.log(chalkInfo("NNT | SERVER CONNECT | " + socket.id + " ... AUTHENTICATE ..."));
 
-    socket.on("unauthorized", function(err){
-      console.log("NNT | There was an error with the authentication:", err.message);
-    });
+//     socket.on("unauthorized", function(err){
+//       console.log("NNT | There was an error with the authentication:", err.message);
+//     });
 
-    socket.emit("authentication", { namespace: "util", userId: userObj.userId, password: "0123456789" });
+//     socket.emit("authentication", { namespace: "util", userId: userObj.userId, password: "0123456789" });
 
-    socket.on("authenticated", function() {
+//     socket.on("authenticated", function() {
 
-      console.log("AUTHENTICATED | " + socket.id);
+//       console.log("AUTHENTICATED | " + socket.id);
 
-      statsObj.serverConnected = true ;
-      statsObj.authenticated = true ;
+//       statsObj.serverConnected = true ;
+//       statsObj.authenticated = true ;
 
-      statsObj.socketId = socket.id;
+//       statsObj.socketId = socket.id;
 
-      console.log(chalkConnect( "CONNECTED TO HOST" 
-        + " | SERVER: " + configuration.targetServer 
-        + " | ID: " + socket.id 
-      ));
+//       console.log(chalkConnect( "CONNECTED TO HOST" 
+//         + " | SERVER: " + configuration.targetServer 
+//         + " | ID: " + socket.id 
+//       ));
 
-      initUserReadyInterval(5000);
+//       initUserReadyInterval(5000);
 
-    });
+//     });
 
-  });
+//   });
 
-  socket.on("reconnect", function(){
+//   socket.on("reconnect", function(){
 
-    statsObj.userReadyTransmitted = false;
-    statsObj.serverConnected = true ;
-    statsObj.userReadyAck = false ;
-    statsObj.online = true;
-    statsObj.authenticated = false ;
+//     statsObj.userReadyTransmitted = false;
+//     statsObj.serverConnected = true ;
+//     statsObj.userReadyAck = false ;
+//     statsObj.online = true;
+//     statsObj.authenticated = false ;
 
-    console.log(chalkConnect(moment().format(compactDateTimeFormat) 
-      + " | SERVER RECONNECT: " + socket.id
-      + " | SERVER: " + configuration.targetServer
-    ));
-  });
+//     console.log(chalkConnect(moment().format(compactDateTimeFormat) 
+//       + " | SERVER RECONNECT: " + socket.id
+//       + " | SERVER: " + configuration.targetServer
+//     ));
+//   });
 
-  socket.on("USER_READY_ACK", function(ackObj) {
+//   socket.on("USER_READY_ACK", function(ackObj) {
 
-    clearInterval(userReadyInterval);
+//     clearInterval(userReadyInterval);
 
-    statsObj.userReadyAck = true ;
+//     statsObj.userReadyAck = true ;
 
-    console.log(chalkConnect("RX USER_READY_ACK"
-      + " | " + moment().format(compactDateTimeFormat)
-      + " | " + socket.id
-      + " | USER ID: " + ackObj.userId
-      + " | SERVER: " + configuration.targetServer
-      + " | ACK TIMESTAMP: " + moment(parseInt(ackObj.timeStamp)).format(compactDateTimeFormat)
-    ));
+//     console.log(chalkConnect("RX USER_READY_ACK"
+//       + " | " + moment().format(compactDateTimeFormat)
+//       + " | " + socket.id
+//       + " | USER ID: " + ackObj.userId
+//       + " | SERVER: " + configuration.targetServer
+//       + " | ACK TIMESTAMP: " + moment(parseInt(ackObj.timeStamp)).format(compactDateTimeFormat)
+//     ));
 
-    initKeepalive(userObj, configuration.keepaliveInterval);
-  });
+//     initKeepalive(userObj, configuration.keepaliveInterval);
+//   });
 
-  socket.on("error", function(err){
+//   socket.on("error", function(err){
 
-    statsObj.socketError = err ;
-    statsObj.authenticated = false ;
+//     statsObj.socketError = err ;
+//     statsObj.authenticated = false ;
 
-    console.log(chalkDisconnect(moment().format(compactDateTimeFormat)
-      + " | ***** SERVER SOCKET ERROR"
-      + " | SERVER: " + configuration.targetServer
-      + " | " + err.type
-      + " | " + err.description
-    ));
-  });
+//     console.log(chalkDisconnect(moment().format(compactDateTimeFormat)
+//       + " | ***** SERVER SOCKET ERROR"
+//       + " | SERVER: " + configuration.targetServer
+//       + " | " + err.type
+//       + " | " + err.description
+//     ));
+//   });
 
-  socket.on("connect_error", function(err){
+//   socket.on("connect_error", function(err){
 
-    statsObj.userReadyTransmitted = false;
-    statsObj.userReadyAck = false ;
-    statsObj.serverConnected = false ;
-    statsObj.socketError = err ;
-    statsObj.online = false;
-    statsObj.authenticated = false ;
+//     statsObj.userReadyTransmitted = false;
+//     statsObj.userReadyAck = false ;
+//     statsObj.serverConnected = false ;
+//     statsObj.socketError = err ;
+//     statsObj.online = false;
+//     statsObj.authenticated = false ;
 
-    console.log(chalkDisconnect(moment().format(compactDateTimeFormat)
-      + " | ***** SERVER CONNECT ERROR"
-      + " | SERVER: " + configuration.targetServer
-      + " | " + err.type
-      + " | " + err.description
-    ));
+//     console.log(chalkDisconnect(moment().format(compactDateTimeFormat)
+//       + " | ***** SERVER CONNECT ERROR"
+//       + " | SERVER: " + configuration.targetServer
+//       + " | " + err.type
+//       + " | " + err.description
+//     ));
 
-  });
+//   });
 
-  socket.on("reconnect_error", function(err){
+//   socket.on("reconnect_error", function(err){
 
-    statsObj.userReadyTransmitted = false;
-    statsObj.userReadyAck = false ;
-    statsObj.serverConnected = false ;
-    statsObj.socketError = err ;
-    statsObj.online = false;
-    statsObj.authenticated = false ;
+//     statsObj.userReadyTransmitted = false;
+//     statsObj.userReadyAck = false ;
+//     statsObj.serverConnected = false ;
+//     statsObj.socketError = err ;
+//     statsObj.online = false;
+//     statsObj.authenticated = false ;
 
-    console.log(chalkDisconnect(moment().format(compactDateTimeFormat)
-      + " | ***** SERVER RECONNECT ERROR"
-      + " | SERVER: " + configuration.targetServer
-    ));
+//     console.log(chalkDisconnect(moment().format(compactDateTimeFormat)
+//       + " | ***** SERVER RECONNECT ERROR"
+//       + " | SERVER: " + configuration.targetServer
+//     ));
 
-  });
+//   });
 
-  socket.on("disconnect", function(){
+//   socket.on("disconnect", function(){
 
-    statsObj.userReadyTransmitted = false;
-    statsObj.userReadyAck = false ;
-    statsObj.serverConnected = false;
-    statsObj.online = false;
-    statsObj.authenticated = false ;
+//     statsObj.userReadyTransmitted = false;
+//     statsObj.userReadyAck = false ;
+//     statsObj.serverConnected = false;
+//     statsObj.online = false;
+//     statsObj.authenticated = false ;
 
-    console.log(chalkDisconnect(moment().format(compactDateTimeFormat)
-      + " | ***** SERVER DISCONNECT"
-      + " | SERVER: " + configuration.targetServer
-    ));
+//     console.log(chalkDisconnect(moment().format(compactDateTimeFormat)
+//       + " | ***** SERVER DISCONNECT"
+//       + " | SERVER: " + configuration.targetServer
+//     ));
 
-  });
+//   });
 
-  socket.on("GET_STATS", function() {
+//   socket.on("GET_STATS", function() {
 
-    chalkLog(chalkLog("RX STATS REQ"));
-    statsObjSmall = pick(statsObj, statsPickArray);
-    socket.emit("STATS", statsObjSmall);
-  });
+//     chalkLog(chalkLog("RX STATS REQ"));
+//     statsObjSmall = pick(statsObj, statsPickArray);
+//     socket.emit("STATS", statsObjSmall);
+//   });
 
-  socket.on("KEEPALIVE_ACK", function(userId) {
-    debug(chalkLog("RX KEEPALIVE_ACK | " + userId));
-  });
+//   socket.on("KEEPALIVE_ACK", function(userId) {
+//     debug(chalkLog("RX KEEPALIVE_ACK | " + userId));
+//   });
 
-  callback(null, null);
-}
+//   callback(null, null);
+// }
 
 function loadAllConfigFiles(callback){
 
@@ -5167,36 +5167,36 @@ function generateGlobalTrainingTestSet (userHashMap, maxInputHashMap, callback){
     trainingSetSmallObj.trainingSet.meta.numOutputs = trainingSet.meta.numOutputs;
     trainingSetSmallObj.trainingSet.meta.setSize = SMALL_SET_SIZE;
     trainingSetSmallObj.trainingSet.data = [];
-    trainingSetSmallObj.trainingSet.data = arraySlice(trainingSet.data, 0, SMALL_SET_SIZE);
+    // trainingSetSmallObj.trainingSet.data = arraySlice(trainingSet.data, 0, SMALL_SET_SIZE);
 
     trainingSetSmallObj.testSet = {};
     trainingSetSmallObj.testSet.meta = {};
     trainingSetSmallObj.testSet.meta.setSize = SMALL_TEST_SET_SIZE;
     trainingSetSmallObj.testSet.meta.numOutputs = trainingSet.meta.numOutputs;
     trainingSetSmallObj.testSet.data = [];
-    trainingSetSmallObj.testSet.data = arraySlice(testSet.data, 0, SMALL_TEST_SET_SIZE);
+    // trainingSetSmallObj.testSet.data = arraySlice(testSet.data, 0, SMALL_TEST_SET_SIZE);
 
     let trainingSetSmallEntry = {};
     trainingSetSmallEntry.name = trainingSetSmallObj.trainingSetId + ".json";
     trainingSetSmallEntry.content_hash = false;
     trainingSetSmallEntry.client_modified = moment();
 
-    console.log(chalkBlue("NNT | +++ SMALL TRAINING SET"
-      + " | ID: " + trainingSetSmallObj.trainingSetId
-      + " | OUT: " + trainingSetSmallObj.trainingSet.meta.numOutputs
-      + " | SIZE: " + trainingSetSmallObj.trainingSet.meta.setSize
-      + " | TEST SET SIZE: " + trainingSetSmallObj.testSet.meta.setSize
-    ));
+    // console.log(chalkBlue("NNT | +++ SMALL TRAINING SET"
+    //   + " | ID: " + trainingSetSmallObj.trainingSetId
+    //   + " | OUT: " + trainingSetSmallObj.trainingSet.meta.numOutputs
+    //   + " | SIZE: " + trainingSetSmallObj.trainingSet.meta.setSize
+    //   + " | TEST SET SIZE: " + trainingSetSmallObj.testSet.meta.setSize
+    // ));
 
     trainingSetHashMap.set(
       trainingSetObj.trainingSetId, 
       {entry: trainingSetEntry, trainingSetObj: trainingSetObj}
     );
 
-    trainingSetHashMap.set(
-      trainingSetSmallObj.trainingSetId, 
-      {entry: trainingSetEntry, trainingSetObj: trainingSetSmallObj}
-    );
+    // trainingSetHashMap.set(
+    //   trainingSetSmallObj.trainingSetId, 
+    //   {entry: trainingSetEntry, trainingSetObj: trainingSetSmallObj}
+    // );
 
     let file = trainingSetEntry.name;
     let fileSmall = trainingSetSmallEntry.name;
@@ -5239,7 +5239,27 @@ function generateGlobalTrainingTestSet (userHashMap, maxInputHashMap, callback){
         const fullPathSmall = folder + "/" + fileSmall;
 
         console.log(chalkInfo("NNT | SAVING SMALL TRAINING SET: " + fullPathSmall));
-        
+
+        // delete large training set to free up memory before create trainingSetSmallObj training and test sets
+        trainingSetObj = {};
+        trainingSetData.length = SMALL_SET_SIZE;
+        testSet.length = SMALL_TEST_SET_SIZE;
+
+        trainingSetSmallObj.trainingSet.data = trainingSet.data;
+        trainingSetSmallObj.testSet.data = testSet.data;
+
+        console.log(chalkBlue("NNT | +++ SMALL TRAINING SET"
+          + " | ID: " + trainingSetSmallObj.trainingSetId
+          + " | OUT: " + trainingSetSmallObj.trainingSet.meta.numOutputs
+          + " | SIZE: " + trainingSetSmallObj.trainingSet.meta.setSize
+          + " | TEST SET SIZE: " + trainingSetSmallObj.testSet.meta.setSize
+        ));
+
+        trainingSetHashMap.set(
+          trainingSetSmallObj.trainingSetId, 
+          {entry: trainingSetEntry, trainingSetObj: trainingSetSmallObj}
+        );
+
         writeJsonFile(fullPathSmall, trainingSetSmallObj)
         .then(function() {
 
@@ -6459,68 +6479,64 @@ function initTimeout(callback){
 
     initSaveFileQueue(configuration);
 
-    initSocket(function(){
+    requiredTrainingSet.forEach(function(nodeId) {
+      console.log(chalkLog("NNT | ... REQ TRAINING SET | @" + nodeId));
+    });
 
-      requiredTrainingSet.forEach(function(nodeId) {
-        console.log(chalkLog("NNT | ... REQ TRAINING SET | @" + nodeId));
-      });
+    let seedParams = {};
+    seedParams.purgeMin = ENABLE_INIT_PURGE_LOCAL ;  // use localPurgeMinSuccessRate to delete nn's
+    seedParams.folders = [globalBestNetworkFolder, localBestNetworkFolder];
 
-      let seedParams = {};
-      seedParams.purgeMin = ENABLE_INIT_PURGE_LOCAL ;  // use localPurgeMinSuccessRate to delete nn's
-      seedParams.folders = [globalBestNetworkFolder, localBestNetworkFolder];
+    if (cnf.seedNetworkId) {
+      seedParams.networkId = cnf.seedNetworkId;
+    }
 
-      if (cnf.seedNetworkId) {
-        seedParams.networkId = cnf.seedNetworkId;
-      }
+    if (cnf.createTrainingSetOnly) {
+      console.log(chalkAlert("NNT | *** CREATE TRAINING SET ONLY ... SKIP INIT NN CHILD ***"));
+      callback();
+    }
+    else {
 
-      if (cnf.createTrainingSetOnly) {
-        console.log(chalkAlert("NNT | *** CREATE TRAINING SET ONLY ... SKIP INIT NN CHILD ***"));
-        callback();
-      }
-      else {
+      loadSeedNeuralNetwork(seedParams, function(err1, results){
 
-        loadSeedNeuralNetwork(seedParams, function(err1, results){
+        debug("loadSeedNeuralNetwork results\n" + jsonPrint(results));
 
-          debug("loadSeedNeuralNetwork results\n" + jsonPrint(results));
-
-          if (err1){
-            if (err1.status === 429) {
-              console.log(chalkError("loadSeedNeuralNetwork ERROR | TOO MANY WRITES"));
-            }
-            else {
-              console.log(chalkError("loadSeedNeuralNetwork ERROR" + jsonPrint(err1)));
-            }
+        if (err1){
+          if (err1.status === 429) {
+            console.log(chalkError("loadSeedNeuralNetwork ERROR | TOO MANY WRITES"));
           }
+          else {
+            console.log(chalkError("loadSeedNeuralNetwork ERROR" + jsonPrint(err1)));
+          }
+        }
 
-          enableCreateChildren = true;
+        enableCreateChildren = true;
 
-          console.log(chalkLog("NNT | INIT NN CHILD"));
+        console.log(chalkLog("NNT | INIT NN CHILD"));
 
-          async.timesSeries(cnf.maxNeuralNetworkChildern, function initNnChild (n, next) {
+        async.timesSeries(cnf.maxNeuralNetworkChildern, function initNnChild (n, next) {
 
-            console.log(chalkAlert("INIT NN CHILD NUMBER " + n));
+          console.log(chalkAlert("INIT NN CHILD NUMBER " + n));
 
-            initNeuralNetworkChild(nnChildIndex, cnf, function(err, nnChild) {
-              nnChildIndex += 1;
-              next(err, nnChildIndex);
-            });
-
-          }, function(err2, children) {
-
-            if (err2){
-              console.log(chalkError("INIT NEURAL NETWORK CHILDREN ERROR\n" + jsonPrint(err2)));
-              return callback(err2);
-            }
-
-            console.log(chalkLog("END INIT NEURAL NETWORK CHILDREN: " + children.length));
-            enableCreateChildren = false;
-            callback();
+          initNeuralNetworkChild(nnChildIndex, cnf, function(err, nnChild) {
+            nnChildIndex += 1;
+            next(err, nnChildIndex);
           });
 
-        });
-      }
+        }, function(err2, children) {
 
-    });
+          if (err2){
+            console.log(chalkError("INIT NEURAL NETWORK CHILDREN ERROR\n" + jsonPrint(err2)));
+            return callback(err2);
+          }
+
+          console.log(chalkLog("END INIT NEURAL NETWORK CHILDREN: " + children.length));
+          enableCreateChildren = false;
+          callback();
+        });
+
+      });
+    }
 
   });
 }
