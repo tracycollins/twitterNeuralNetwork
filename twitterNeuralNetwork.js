@@ -813,8 +813,15 @@ function toMegabytes(sizeInBytes) {
   return sizeInBytes/ONE_MEGABYTE;
 }
 
-function msToTime(d) {
-  const duration = parseInt(d);
+function msToTime(duration) {
+
+  let sign = 1;
+
+  if (duration < 0) {
+    sign = -1;
+    duration = -duration;
+  }
+
   let seconds = parseInt((duration / 1000) % 60);
   let minutes = parseInt((duration / (1000 * 60)) % 60);
   let hours = parseInt((duration / (1000 * 60 * 60)) % 24);
@@ -823,7 +830,9 @@ function msToTime(d) {
   hours = (hours < 10) ? "0" + hours : hours;
   minutes = (minutes < 10) ? "0" + minutes : minutes;
   seconds = (seconds < 10) ? "0" + seconds : seconds;
-  return days + ":" + hours + ":" + minutes + ":" + seconds;
+
+  if (sign > 0) return days + ":" + hours + ":" + minutes + ":" + seconds;
+  return "- " + days + ":" + hours + ":" + minutes + ":" + seconds;
 }
 
 function printCat(c){
