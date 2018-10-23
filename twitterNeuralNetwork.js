@@ -6581,7 +6581,7 @@ function initArchiver(params){
    
   output.on("end", function() {
     console.log(chalkAlert("TNN | ARCHIVE | END"));
-    // statsObj.archiveOpen = false;
+    statsObj.archiveOpen = false;
   });
    
   archive.on("warning", function(err) {
