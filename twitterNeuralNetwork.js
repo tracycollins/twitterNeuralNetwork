@@ -5226,18 +5226,21 @@ function generateGlobalTrainingTestSet (userHashMap, maxInputHashMap, callback){
   statsObj.status = "GENERATE TRAINING SET";
 
   console.log(chalkAlert("NNT | ==================================================================="));
-  console.log(chalkAlert("NNT | GENERATE TRAINING SET | " + nodeIds.length + " USERS | " + getTimeStamp()));
+  console.log(chalkAlert("NNT | GENERATE TRAINING SET | " + trainingSetUsersHashMap.size + " USERS | " + getTimeStamp()));
   console.log(chalkAlert("NNT | ==================================================================="));
 
-  trainingSet.data = []
+  // trainingSet.data = []
 
-  trainingSetUsersHashMap.values();
+  let userFile;
+  
+  trainingSetUsersHashMap.values().forEach(function(user){
 
-  userFile = "user_" + nodeId + ".json";
+    userFile = "user_" + user.userId + ".json";
 
-  const userBuffer = Buffer.from(JSON.stringify(subUser));
+    const userBuffer = Buffer.from(JSON.stringify(subUser));
+    archive.append(userBuffer, { name: userFile });
 
-  archive.append(userBuffer, { name: userFile });
+  });
 
 
   let mihmObj = {};
