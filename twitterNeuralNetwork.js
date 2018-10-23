@@ -6574,6 +6574,8 @@ let initMainTimeOutComplete = false;
 
 function initArchiver(params){
 
+  createTrainingSetBusy = true;
+
   console.log(chalkAlert("TNN | INIT ARCHIVE\n" + jsonPrint(params)));
   // create a file to stream archive data to.
   const output = fs.createWriteStream(params.outputFile);
@@ -6586,12 +6588,14 @@ function initArchiver(params){
     const archiveSize = toMegabytes(archive.pointer());
     console.log(chalkAlert("TNN | ARCHIVE CLOSED | " + archiveSize.toFixed(2) + " MB"));
     statsObj.archiveOpen = false;
+    createTrainingSetBusy = false;
   });
    
   output.on("end", function() {
     const archiveSize = toMegabytes(archive.pointer());
     console.log(chalkAlert("TNN | ARCHIVE END | " + archiveSize.toFixed(2) + " MB"));
     statsObj.archiveOpen = false;
+    createTrainingSetBusy = false;
   });
    
   archive.on("warning", function(err) {
@@ -6620,6 +6624,7 @@ function initArchiver(params){
   archive.on("error", function(err) {
     console.log(chalkAlert("TNN | ARCHIVE | ERROR\n" + jsonPrint(err)));
     statsObj.archiveOpen = false;
+    createTrainingSetBusy = false;
     throw err;
   });
    
