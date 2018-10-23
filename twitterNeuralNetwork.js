@@ -1,8 +1,12 @@
 /*jslint node: true */
 /*jshint sub:true*/
 "use strict";
+
 global.dbConnection = false;
 let dbConnectionReady = false;
+
+const compactDateTimeFormat = "YYYYMMDD_HHmmss";
+
 
 const DEFAULT_OFFLINE_MODE = false;
 const DEFAULT_SERVER_MODE = false;
@@ -787,7 +791,6 @@ configuration.train.batchSize = DEFAULT_TRAIN_BATCH_SIZE;
 const slackOAuthAccessToken = "xoxp-3708084981-3708084993-206468961315-ec62db5792cd55071a51c544acf0da55";
 
 // const defaultDateTimeFormat = "YYYY-MM-DD HH:mm:ss ZZ";
-const compactDateTimeFormat = "YYYYMMDD_HHmmss";
 
 
 function toMegabytes(sizeInBytes) {
