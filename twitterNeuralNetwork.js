@@ -4987,14 +4987,12 @@ function unzipUsersToArray(params){
             });
 
             readStream.on("end",function(){
-              console.log(chalkInfo("TNN | UNZIP READ STREAM END"));
-              console.log(chalkInfo("TNN | TRAINING SET USERS HM SIZE: " + trainingSetUsersHashMap.size));
-              resolve();
+              console.log(chalkInfo("TNN | UNZIP STREAM END | TRAINING SET USERS HM SIZE: " + trainingSetUsersHashMap.size));
+              // resolve();
             });
 
             readStream.on("close",function(){
-              console.log(chalkInfo("TNN | UNZIP READ STREAM CLOSED"));
-              console.log(chalkInfo("TNN | TRAINING SET USERS HM SIZE: " + trainingSetUsersHashMap.size));
+              console.log(chalkInfo("TNN | UNZIP STREAM CLOSED | TRAINING SET USERS HM SIZE: " + trainingSetUsersHashMap.size));
               resolve();
             });
 
