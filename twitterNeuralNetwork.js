@@ -4294,6 +4294,11 @@ function updateCategorizedUsers(cnf, callback){
 
   statsObj.status = "UPDATE CATEGORIZED USERS";
 
+  let userSubDirectory = (hostname === "google") ? configuration.defaultTrainingSetsFolder + "/users"
+  : configuration.hostTrainingSetsFolder + "/users";
+
+  let userFile;
+
   userServerController.resetMaxInputsHashMap();
 
   let categorizedNodeIds = categorizedUserHashmap.keys();
@@ -4687,6 +4692,9 @@ function updateCategorizedUsers(cnf, callback){
                 ]);
 
               trainingSetUsersHashMap.set(subUser.nodeId, subUser);
+
+              userFile = "user_" + nodeId + ".json";
+              saveFileQueue.push({localFlag: false, folder: userSubDirectory, file: userFile, obj: user});
 
               debug("CL USR >DB"
                 + " | " + subUser.nodeId
