@@ -74,8 +74,8 @@ const ONE_HOUR = 60 * ONE_MINUTE;
 const ONE_KILOBYTE = 1024;
 const ONE_MEGABYTE = 1024 * ONE_KILOBYTE;
 
-const TEST_MODE_LENGTH = 500;
-const TEST_DROPBOX_NN_LOAD = 10;
+const TEST_MODE_LENGTH = 100;
+const TEST_DROPBOX_NN_LOAD = 5;
 
 const DEFAULT_LOAD_ALL_INPUTS = false;
 
@@ -4726,8 +4726,8 @@ function updateCategorizedUsers(cnf, callback){
     statsObj.normalization.score.max = maxScore;
 
     console.log(chalkInfo("NNT | CL U HIST | NORMALIZATION"
-      + " | MAG " + statsObj.normalization.magnitude.min + " min /" + statsObj.normalization.magnitude.max + " max"
-      + " | SCORE " + statsObj.normalization.score.min + " min /" + statsObj.normalization.score.max + " max"
+      + " | MAG " + statsObj.normalization.magnitude.min.toFixed(2) + " MIN / " + statsObj.normalization.magnitude.max.toFixed(2) + " MAX"
+      + " | SCORE " + statsObj.normalization.score.min.toFixed(2) + " MIN / " + statsObj.normalization.score.max.toFixed(2) + " MAX"
     ));
 
     showStats();
@@ -5232,29 +5232,36 @@ function generateGlobalTrainingTestSet (userHashMap, maxInputHashMap, callback){
   // trainingSet.data = []
 
   let userFile;
-  
-  trainingSetUsersHashMap.values().forEach(function(user){
+
+  async.eachSeries(trainingSetUsersHashMap.values(), function(user, cb){
 
     userFile = "user_" + user.userId + ".json";
 
-    const userBuffer = Buffer.from(JSON.stringify(subUser));
+    const userBuffer = Buffer.from(JSON.stringify(user));
+
     archive.append(userBuffer, { name: userFile });
 
+    cb();
+
+  }, function(err){
+
+    let mihmObj = {};
+
+    mihmObj.maxInputHashMap = {};
+    mihmObj.maxInputHashMap = maxInputHashMap;
+
+    mihmObj.normalization = {};
+    mihmObj.normalization = statsObj.normalization;
+
+    const buf = Buffer.from(JSON.stringify(mihmObj));
+
+    archive.append(buf, { name: "maxInputHashMap.json" });
+
+    archive.finalize();
+
+    callback();
+
   });
-
-
-  let mihmObj = {};
-  mihmObj.maxInputHashMap = {};
-  mihmObj.maxInputHashMap = maxInputHashMap;
-  mihmObj.normalization = {};
-  mihmObj.normalization = statsObj.normalization;
-
-  const buf = Buffer.from(JSON.stringify(mihmObj));
-  archive.append(buf, { name: "maxInputHashMap.json" });
-
-  archive.finalize();
-
-  callback();
 }
 
 function generateRandomEvolveConfig (cnf, callback){
@@ -6568,8 +6575,7 @@ function initArchiver(params){
   output.on("close", function() {
     const archiveSize = toMegabytes(archive.pointer());
 
-    console.log(chalkAlert("TNN | ARCHIVE | " + archiveSize.toFixed(2) + " MB"));
-    console.log(chalkAlert("TNN | ARCHIVE | CLOSED"));
+    console.log(chalkAlert("TNN | ARCHIVE CLOSED | " + archiveSize.toFixed(2) + " MB"));
   });
    
   output.on("end", function() {
