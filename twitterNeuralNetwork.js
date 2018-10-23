@@ -4600,15 +4600,15 @@ function updateCategorizedUsers(cnf, callback){
 
               trainingSetUsersHashMap.set(subUser.nodeId, subUser);
 
-              if (userIndex % 100 === 0) {
+              // if (userIndex % 100 === 0) {
 
-                console.log("CL USR >DB"
-                  + " [" + userIndex + "/" + categorizedNodeIds.length + "]"
-                  + " | " + subUser.nodeId
-                  + " | @" + subUser.screenName
-                  + " | C: " + subUser.category
-                );
-              }
+              //   console.log("CL USR >DB"
+              //     + " [" + userIndex + "/" + categorizedNodeIds.length + "]"
+              //     + " | " + subUser.nodeId
+              //     + " | @" + subUser.screenName
+              //     + " | C: " + subUser.category
+              //   );
+              // }
 
               cb0();
 
