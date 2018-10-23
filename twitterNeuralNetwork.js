@@ -5267,7 +5267,7 @@ function generateGlobalTrainingTestSet (userHashMap, maxInputHashMap, callback){
 
     waitArchiveDoneInterval = setInterval(function(){
 
-      if (!statsObj.archiveOpen) {
+      if (!statsObj.archiveOpen && !createTrainingSetBusy) {
         clearInterval(waitArchiveDoneInterval);
         console.log(chalkAlert("TNN | ARCHIVE DONE"));
         callback();
@@ -6615,6 +6615,8 @@ function initArchiver(params){
   });
    
   archive.pipe(output);
+  statsObj.archiveOpen = true;
+
 }
 
 function initMainTimeOutFunction(){
