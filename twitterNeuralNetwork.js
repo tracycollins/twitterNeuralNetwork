@@ -289,6 +289,7 @@ function getTimeStamp(inputTime) {
   }
 }
 
+let tempArchiveDirectory = "temp/archive_" + getTimeStamp();
 
 const networkDefaults = function (networkObj){
 
@@ -1550,7 +1551,7 @@ function saveFile (params, callback){
 
     options.access_token = configuration.DROPBOX.DROPBOX_WORD_ASSO_ACCESS_TOKEN;
     options.file_size = sizeof(params.obj);
-    options.destination = params.dropboxFolder + "/" + params.file;
+    options.destination = params.folder + "/" + params.file;
     options.autorename = true;
     options.mode = params.mode || "overwrite";
     options.mode = "overwrite";
@@ -4694,7 +4695,7 @@ function updateCategorizedUsers(cnf, callback){
               trainingSetUsersHashMap.set(subUser.nodeId, subUser);
 
               userFile = "user_" + nodeId + ".json";
-              saveFileQueue.push({localFlag: false, folder: userSubDirectory, file: userFile, obj: user});
+              saveFileQueue.push({localFlag: true, folder: tempArchiveDirectory, file: userFile, obj: user});
 
               debug("CL USR >DB"
                 + " | " + subUser.nodeId
@@ -4702,7 +4703,9 @@ function updateCategorizedUsers(cnf, callback){
                 + " | C: " + subUser.category
               );
 
-              cb0();
+              setTimeout(function(){
+                cb0();
+              }, 1000);
 
             });
 
@@ -5106,6 +5109,7 @@ function generateGlobalTrainingTestSet (userHashMap, maxInputHashMap, callback){
   let userSubDirectory = (hostname === "google") ? configuration.defaultTrainingSetsFolder + "/users"
   : configuration.hostTrainingSetsFolder + "/users";
 
+
   // let trainingSet = {};
   // trainingSet.meta = {};
   // trainingSet.data = [];
@@ -5135,10 +5139,10 @@ function generateGlobalTrainingTestSet (userHashMap, maxInputHashMap, callback){
 
     user.category = user.category || false;
 
-    if (configuration.saveTrainingSetDirectory) {
-      userFile = "user_" + nodeId + ".json";
-      saveFileQueue.push({localFlag: false, folder: userSubDirectory, file: userFile, obj: user});
-    }
+    // if (configuration.saveTrainingSetDirectory) {
+    //   userFile = "user_" + nodeId + ".json";
+    //   saveFileQueue.push({localFlag: false, folder: userSubDirectory, file: userFile, obj: user});
+    // }
 
     async.setImmediate(function() { 
       cb(); 
@@ -5199,7 +5203,7 @@ function generateGlobalTrainingTestSet (userHashMap, maxInputHashMap, callback){
     mihmObj.normalization = {};
     mihmObj.normalization = statsObj.normalization;
 
-    saveFileQueue.push({localFlag: false, folder: userSubDirectory, file: "maxInputHashMap.json", obj: mihmObj});
+    saveFileQueue.push({localFlag: true, folder: tempArchiveDirectory, file: "maxInputHashMap.json", obj: mihmObj});
 
     callback();
 
