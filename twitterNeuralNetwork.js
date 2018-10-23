@@ -5282,7 +5282,10 @@ function generateGlobalTrainingTestSet (userHashMap, maxInputHashMap, callback){
         callback();
       }
       else {
-        console.log(chalkLog("TNN | WAIT ARCHIVE DONE ..."));
+        console.log(chalkLog("TNN | WAIT ARCHIVE DONE"
+          + " | ARCHIVE OPEN: " + statsObj.archiveOpen
+          + " | CREATE TSET BUSY: " + createTrainingSetBusy
+        ));
       }
 
     }, 5000);
@@ -5737,8 +5740,8 @@ function initMain(cnf, callback){
           //   folder = defaultTrainingSetFolder;
           // }
 
-          createTrainingSetBusy = true;
-          trainingSetReady = false;
+          // createTrainingSetBusy = true;
+          // trainingSetReady = false;
 
           try {
             await loadUsersArchive({path: configuration.defaultUserArchivePath});
