@@ -25,8 +25,6 @@ const fs = require("fs");
 const yauzl = require("yauzl");
 
 let archive;
-let archiveOpen = false;
-
 let archiveOutputStream;
 
 
@@ -195,7 +193,7 @@ statsObj.pid = process.pid;
 statsObj.cpus = os.cpus().length;
 statsObj.commandLineArgsLoaded = false;
 
-// statsObj.socketError = false;
+statsObj.archiveOpen = false;
 
 statsObj.serverConnected = false;
 statsObj.userReadyAck = false;
@@ -5235,7 +5233,7 @@ function generateGlobalTrainingTestSet (userHashMap, maxInputHashMap, callback){
 
   let userFile;
 
-  if (!archiveOpen) {
+  if (!statsObj.archiveOpen) {
     initArchiver({outputFile: configuration.defaultUserArchivePath});
   }
 
@@ -5265,7 +5263,21 @@ function generateGlobalTrainingTestSet (userHashMap, maxInputHashMap, callback){
 
     archive.finalize();
 
-    callback();
+    let waitArchiveDoneInterval;
+
+    waitArchiveDoneInterval = setInterval(function(){
+
+      if (!statsObj.archiveOpen) {
+        clearInterval(waitArchiveDoneInterval);
+        console.log(chalkAlert("TNN | ARCHIVE DONE"));
+        callback();
+      }
+      else {
+        console.log(chalkLog("TNN | WAIT ARCHIVE DONE ..."));
+      }
+
+    }, 5000);
+
 
   });
 }
@@ -5732,23 +5744,6 @@ function initMain(cnf, callback){
             trainingSetReady = false;
             return callback(err);
           }
-
-          // loadTrainingSetsDropboxFolder(folder, function(err){
-
-          //   if (err) {
-          //     console.log(chalkError("*** ERROR LOAD TRAINING SETS FOLDER: ", err));
-          //     createTrainingSetBusy = false;
-          //     trainingSetReady = false;
-          //     return callback(err);
-          //   }
-
-          //   createTrainingSetBusy = false;
-          //   trainingSetReady = true;
-          //   runOnceFlag = true;
-
-          //   callback();
-
-          // });
         }
         else {
 
@@ -6581,12 +6576,12 @@ function initArchiver(params){
   output.on("close", function() {
     const archiveSize = toMegabytes(archive.pointer());
     console.log(chalkAlert("TNN | ARCHIVE CLOSED | " + archiveSize.toFixed(2) + " MB"));
-    archiveOpen = false;
+    statsObj.archiveOpen = false;
   });
    
   output.on("end", function() {
     console.log(chalkAlert("TNN | ARCHIVE | END"));
-    archiveOpen = false;
+    statsObj.archiveOpen = false;
   });
    
   archive.on("warning", function(err) {
@@ -6614,7 +6609,7 @@ function initArchiver(params){
    
   archive.on("error", function(err) {
     console.log(chalkAlert("TNN | ARCHIVE | ERROR\n" + jsonPrint(err)));
-    archiveOpen = false;
+    statsObj.archiveOpen = false;
     throw err;
   });
    
