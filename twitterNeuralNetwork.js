@@ -6580,7 +6580,8 @@ function initArchiver(params){
   });
    
   output.on("end", function() {
-    console.log(chalkAlert("TNN | ARCHIVE | END"));
+    const archiveSize = toMegabytes(archive.pointer());
+    console.log(chalkAlert("TNN | ARCHIVE END | " + archiveSize.toFixed(2) + " MB"));
     statsObj.archiveOpen = false;
   });
    
