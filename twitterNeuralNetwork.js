@@ -5093,112 +5093,14 @@ function generateGlobalTrainingTestSet (userHashMap, maxInputHashMap, callback){
   const nIds = userHashMap.keys();
   const nodeIds = _.shuffle(nIds);
 
-  // let trainingSetId;
-
-  // if (configuration.testMode) { 
-  //   trainingSetId = "test_" + configuration.globalTrainingSetId + "_" + statsObj.runId; 
-  // }
-  // else {
-    // trainingSetId = configuration.globalTrainingSetId + "_" + statsObj.runId; 
-  // }
-
   console.log(chalkAlert("NNT | ==================================================================="));
   console.log(chalkAlert("NNT | GENERATE TRAINING SET | " + nodeIds.length + " USERS | " + getTimeStamp()));
   console.log(chalkAlert("NNT | ==================================================================="));
 
-  // let dropboxFolder = (hostname === "google") ? "/home/tc/Dropbox/Apps/wordAssociation/config/utility/default/trainingSets" 
-  // : "/Users/tc/Dropbox/Apps/wordAssociation/config/utility/" + hostname + "/trainingSets";
-
   let userSubDirectory = (hostname === "google") ? configuration.defaultTrainingSetsFolder + "/users"
   : configuration.hostTrainingSetsFolder + "/users";
 
-
-  // let trainingSet = {};
-  // trainingSet.meta = {};
-  // trainingSet.data = [];
-
-  // let testSet = {};
-  // testSet.meta = {};
-  // testSet.meta.testSetId = trainingSetId + "_" + getTimeStamp();
-  // testSet.data = [];
-
   let userFile;
-
-  async.eachSeries(nodeIds, function(nodeId, cb){ 
-
-    const user = userHashMap.get(nodeId);
-
-    // let sentimentObj = {};
-    // sentimentObj.magnitude = 0;
-    // sentimentObj.score = 0;
-
-    // if ((user.languageAnalysis !== undefined)
-    //   && (user.languageAnalysis.sentiment !== undefined)) {
-
-    //   sentimentObj.magnitude = user.languageAnalysis.sentiment.magnitude || 0;
-    //   sentimentObj.score = user.languageAnalysis.sentiment.score || 0;
-
-    // }
-
-    user.category = user.category || false;
-
-    // if (configuration.saveTrainingSetDirectory) {
-    //   userFile = "user_" + nodeId + ".json";
-    //   saveFileQueue.push({localFlag: false, folder: userSubDirectory, file: userFile, obj: user});
-    // }
-
-    async.setImmediate(function() { 
-      cb(); 
-    });
-
-    // if (configuration.disableCreateTestSet) {
-
-    //   if (configuration.saveTrainingSetDirectory) {
-    //     userFile = "user_" + nodeId + ".json";
-    //     saveFileQueue.push({localFlag: false, folder: userSubDirectory, file: userFile, obj: user});
-    //   }
-
-    //   // trainingSet.data.push(user);
-
-    //   async.setImmediate(function() { 
-    //     cb(); 
-    //   });
-    // }
-    // else if ((testSet.data.length < (configuration.testSetRatio * nodeIds.length)) && (Math.random() >= configuration.testSetRatio)) {
-
-
-    //   if (configuration.saveTrainingSetDirectory) {
-    //     userFile = "user_" + nodeId + ".json";
-    //     saveFileQueue.push({localFlag: false, folder: userSubDirectory, file: userFile, obj: user});
-    //   }
-
-    //   // trainingSet.data.push(user);
-
-    //   async.setImmediate(function() { 
-    //     cb(); 
-    //   });
-    // }
-    // else {
-
-    //   if (configuration.saveTrainingSetDirectory) {
-    //     userFile = "user_" + nodeId + ".json";
-    //     saveFileQueue.push({localFlag: false, folder: userSubDirectory, file: userFile, obj: user});
-    //   }
-
-    //   // testSet.data.push(user);
-
-    //   async.setImmediate(function() { 
-    //     cb(); 
-    //   });
-    // }
-
-
-  }, function(err) { 
-
-    if (err) {
-      console.log(chalkError("GENERATE TRAINING SET ERROR\n" + jsonPrint(err)));
-      return callback(err, null);
-    }
 
     let mihmObj = {};
     mihmObj.maxInputHashMap = {};
@@ -5210,170 +5112,6 @@ function generateGlobalTrainingTestSet (userHashMap, maxInputHashMap, callback){
 
     callback();
 
-    // trainingSet.meta.numOutputs = 3;
-    // trainingSet.meta.setSize = trainingSet.data.length;
-
-    // testSet.meta.numOutputs = 3;
-    // testSet.meta.setSize = testSet.data.length;
-
-    // console.log(chalkBlue("NNT | +++ TRAINING SET"
-    //   + " | ID: " + trainingSetId
-    //   + " | OUT: " + trainingSet.meta.numOutputs
-    //   + " | SIZE: " + trainingSet.meta.setSize
-    //   + " | TEST SET SIZE: " + testSet.meta.setSize
-    // ));
-
-    // let trainingSetObj = {};
-    // trainingSetObj.trainingSetId = "globalTrainingSet";
-    // trainingSetObj.globalTrainingSetFlag = true;
-    // trainingSetObj.normalization = {};
-    // trainingSetObj.normalization = statsObj.normalization;
-    // trainingSetObj.maxInputHashMap = {};
-    // trainingSetObj.maxInputHashMap = maxInputHashMap;
-    // trainingSetObj.trainingSet = {};
-    // trainingSetObj.trainingSet = trainingSet;
-    // trainingSetObj.testSet = {};
-    // trainingSetObj.testSet = testSet;
-
-    // let trainingSetEntry = {};
-    // trainingSetEntry.name = trainingSetObj.trainingSetId + ".json";
-    // trainingSetEntry.content_hash = false;
-    // trainingSetEntry.client_modified = moment();
-
-    // let trainingSetSmallObj = {};
-    // trainingSetSmallObj.trainingSetId = "smallGlobalTrainingSet";
-    // trainingSetSmallObj.globalTrainingSetFlag = true;
-    // trainingSetSmallObj.normalization = {};
-    // trainingSetSmallObj.normalization = statsObj.normalization;
-    // trainingSetSmallObj.maxInputHashMap = {};
-    // trainingSetSmallObj.maxInputHashMap = maxInputHashMap;
-
-    // trainingSetSmallObj.trainingSet = {};
-    // trainingSetSmallObj.trainingSet.meta = {};
-    // trainingSetSmallObj.trainingSet.meta.numOutputs = trainingSet.meta.numOutputs;
-    // // trainingSetSmallObj.trainingSet.meta.setSize = SMALL_SET_SIZE;
-    // trainingSetSmallObj.trainingSet.data = [];
-    // // trainingSetSmallObj.trainingSet.data = arraySlice(trainingSet.data, 0, SMALL_SET_SIZE);
-
-    // trainingSetSmallObj.testSet = {};
-    // trainingSetSmallObj.testSet.meta = {};
-    // // trainingSetSmallObj.testSet.meta.setSize = SMALL_TEST_SET_SIZE;
-    // trainingSetSmallObj.testSet.meta.numOutputs = trainingSet.meta.numOutputs;
-    // trainingSetSmallObj.testSet.data = [];
-    // // trainingSetSmallObj.testSet.data = arraySlice(testSet.data, 0, SMALL_TEST_SET_SIZE);
-
-    // let trainingSetSmallEntry = {};
-    // trainingSetSmallEntry.name = trainingSetSmallObj.trainingSetId + ".json";
-    // trainingSetSmallEntry.content_hash = false;
-    // trainingSetSmallEntry.client_modified = moment();
-
-    // // console.log(chalkBlue("NNT | +++ SMALL TRAINING SET"
-    // //   + " | ID: " + trainingSetSmallObj.trainingSetId
-    // //   + " | OUT: " + trainingSetSmallObj.trainingSet.meta.numOutputs
-    // //   + " | SIZE: " + trainingSetSmallObj.trainingSet.meta.setSize
-    // //   + " | TEST SET SIZE: " + trainingSetSmallObj.testSet.meta.setSize
-    // // ));
-
-    // trainingSetHashMap.set(
-    //   trainingSetObj.trainingSetId, 
-    //   {entry: trainingSetEntry, trainingSetObj: trainingSetObj}
-    // );
-
-    // // trainingSetHashMap.set(
-    // //   trainingSetSmallObj.trainingSetId, 
-    // //   {entry: trainingSetEntry, trainingSetObj: trainingSetSmallObj}
-    // // );
-
-    // let file = trainingSetEntry.name;
-    // let fileSmall = trainingSetSmallEntry.name;
-
-    // // let dropboxFolder = (hostname === "google") ? "/home/tc/Dropbox/Apps/wordAssociation/config/utility/default/trainingSets" 
-    // // : "/Users/tc/Dropbox/Apps/wordAssociation/config/utility/" + hostname + "/trainingSets";
-
-    // // if (configuration.testMode) {
-    // //   dropboxFolder = (hostname === "google") ? "/home/tc/Dropbox/Apps/wordAssociation/config/utility/default/trainingSets_test" 
-    // //   : "/Users/tc/Dropbox/Apps/wordAssociation/config/utility/" + hostname + "/trainingSets_test";
-    // // }
-
-    // let folder = dropboxFolder;
-    // let fullPath = folder + "/" + file;
-
-    // const trainingSetObjSizeMbytes = sizeof(trainingSetObj)/ONE_MEGABYTE;
-
-    // console.log(chalkInfo("NNT | SAVING TRAINING SET"
-    //   + " | " + trainingSetObjSizeMbytes.toFixed(3) + " MB"
-    //   + " | " + fullPath
-    // ));
-
-    // writeJsonFile(fullPath, trainingSetObj)
-    // .then(function() {
-    //   console.log(chalkInfo("NNT | SAVED GLOBAL TRAINING SET | " + fullPath));
-
-    //   const maxInputHashMapPath = folder + "/maxInputHashMap.json";
-
-    //   let mihmObj = {};
-    //   mihmObj.maxInputHashMap = {};
-    //   mihmObj.maxInputHashMap = trainingSetObj.maxInputHashMap;
-    //   mihmObj.normalization = {};
-    //   mihmObj.normalization = trainingSetObj.normalization;
-
-    //   writeJsonFile(maxInputHashMapPath, mihmObj)
-    //   .then(function() {
- 
-    //     console.log(chalkInfo("NNT | SAVED MAX INPUT HASHMAP | " + maxInputHashMapPath));
-
-    //     const fullPathSmall = folder + "/" + fileSmall;
-
-    //     console.log(chalkInfo("NNT | SAVING SMALL TRAINING SET: " + fullPathSmall));
-
-    //     // delete large training set to free up memory before create trainingSetSmallObj training and test sets
-    //     trainingSetObj = {};
-
-    //     trainingSet.data.length = SMALL_SET_SIZE;
-    //     trainingSet.meta.setSize = trainingSet.data.length;
-
-    //     testSet.data.length = SMALL_TEST_SET_SIZE;
-    //     testSet.meta.setSize = testSet.data.length;
-
-    //     trainingSetSmallObj.trainingSet.data = trainingSet.data;
-    //     trainingSetSmallObj.testSet.data = testSet.data;
-
-    //     console.log(chalkBlue("NNT | +++ SMALL TRAINING SET"
-    //       + " | ID: " + trainingSetSmallObj.trainingSetId
-    //       + " | OUT: " + trainingSetSmallObj.trainingSet.meta.numOutputs
-    //       + " | SIZE: " + trainingSetSmallObj.trainingSet.meta.setSize
-    //       + " | TEST SET SIZE: " + trainingSetSmallObj.testSet.meta.setSize
-    //     ));
-
-    //     trainingSetHashMap.set(
-    //       trainingSetSmallObj.trainingSetId, 
-    //       {entry: trainingSetEntry, trainingSetObj: trainingSetSmallObj}
-    //     );
-
-    //     writeJsonFile(fullPathSmall, trainingSetSmallObj)
-    //     .then(function() {
-
-    //       console.log(chalkInfo("NNT | SAVED SMALL TRAINING SET | " + fullPathSmall));
-    //       console.log(chalkInfo("NNT | ======================= END GENERATE GLOBAL TRAINING SET ======================="));
-
-    //       if (callback !== undefined) { return callback(); }
-
-    //     });
-
-    //   });
-
-    // })
-    // .catch(function(error){
-    //   console.log(chalkError("NNT | " + moment().format(compactDateTimeFormat) 
-    //     + " | !!! ERROR DROBOX JSON WRITE | FILE: " + fullPath 
-    //     + " | ERROR: " + error
-    //     + " | ERROR\n" + jsonPrint(error)
-    //   ));
-    //   if (callback !== undefined) { return callback(error); }
-    // });
-
-
-  });
 }
 
 function generateRandomEvolveConfig (cnf, callback){
@@ -5754,8 +5492,28 @@ function initMain(cnf, callback){
   ));
 
   if (runOnceFlag && configuration.quitOnComplete && allCompleteFlag) {
-    quit("QUIT ON COMPLETE");
-    return callback();
+
+    if (saveFileQueue.length > 0) {
+
+      let waitSaveInterval;
+
+      waitSaveInterval = setInterval(function(){
+
+        if (saveFileQueue.length === 0) {
+          clearInterval(waitSaveInterval);
+          quit("QUIT ON COMPLETE");
+          return callback();
+        }
+
+        console.log(chalkLog("TNN | WAIT SAVE"));
+
+      }, 5000);
+
+    }
+    else {
+      quit("QUIT ON COMPLETE");
+      return callback();
+    }
   }
 
   loadInputsDropboxFolder(defaultInputsFolder, function(err1, results){
@@ -6314,14 +6072,6 @@ function initNetworkCreateInterval(interval) {
   clearInterval(networkCreateInterval);
 
   networkCreateInterval = setInterval(function(){
-
-    // if (initMainReady) {
-
-        // + " | ALL COMPLETE: " + allCompleteFlag
-        // + " | initMainTimeOutComplete: " + initMainTimeOutComplete
-        // + " | initMainReady: " + initMainReady
-        // + " | trainingSetReady: " + trainingSetReady
-        // + " | createTrainingSetBusy: " + createTrainingSetBusy
 
     if (initMainTimeOutComplete && trainingSetReady) {
 
