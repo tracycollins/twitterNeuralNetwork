@@ -708,7 +708,9 @@ configuration.histogramsFolder = "/config/utility/default/histograms";
 configuration.defaultTrainingSetsFolder = "/config/utility/default/trainingSets";
 configuration.hostTrainingSetsFolder = "/config/utility/" + hostname + "/trainingSets";
 
-configuration.defaultUserArchiveFolder = "/Users/tc/Dropbox/Apps/wordAssociation" + configuration.defaultTrainingSetsFolder + "/users";
+configuration.defaultUserArchiveFolder = (hostname === "google") ? "/home/tc/Dropbox/Apps/wordAssociation" + configuration.defaultTrainingSetsFolder + "/users" 
+  : "/Users/tc/Dropbox/Apps/wordAssociation" + configuration.defaultTrainingSetsFolder + "/users";
+  
 configuration.defaultUserArchiveFile = "users.zip";
 configuration.defaultUserArchivePath = configuration.defaultUserArchiveFolder + "/" + configuration.defaultUserArchiveFile;
 
@@ -1810,6 +1812,10 @@ function loadFile(params, callback) {
 
 
   if (configuration.offlineMode || params.loadLocalFile) {
+    if (hostname === "google") {
+      fullPath = "/home/tc/Dropbox/Apps/wordAssociation/" + fullPath;
+      console.log(chalkAlert("OFFLINE_MODE: FULL PATH " + fullPath));
+    }
     if ((hostname === "mbp3") || (hostname === "mbp2")) {
       fullPath = "/Users/tc/Dropbox/Apps/wordAssociation/" + fullPath;
       console.log(chalkAlert("OFFLINE_MODE: FULL PATH " + fullPath));
