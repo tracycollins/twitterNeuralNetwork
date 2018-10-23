@@ -25,6 +25,8 @@ const fs = require("fs");
 const yauzl = require("yauzl");
 
 let archive;
+let archiveOpen = false;
+
 let archiveOutputStream;
 
 
@@ -4170,9 +4172,9 @@ function initialize(cnf, callback){
           console.log(chalkAlert("USC READY | " + appname));
         });
 
-        if (configuration.createTrainingSet || configuration.createTrainingSetOnly){
-          initArchiver({outputFile: configuration.defaultUserArchivePath});
-        }
+        // if (configuration.createTrainingSet || configuration.createTrainingSetOnly){
+        //   initArchiver({outputFile: configuration.defaultUserArchivePath});
+        // }
 
         initStatsUpdate(configuration);
 
@@ -5232,6 +5234,10 @@ function generateGlobalTrainingTestSet (userHashMap, maxInputHashMap, callback){
   // trainingSet.data = []
 
   let userFile;
+
+  if (!archiveOpen) {
+    initArchiver({outputFile: configuration.defaultUserArchivePath});
+  }
 
   async.eachSeries(trainingSetUsersHashMap.values(), function(user, cb){
 
@@ -6574,12 +6580,13 @@ function initArchiver(params){
    
   output.on("close", function() {
     const archiveSize = toMegabytes(archive.pointer());
-
     console.log(chalkAlert("TNN | ARCHIVE CLOSED | " + archiveSize.toFixed(2) + " MB"));
+    archiveOpen = false;
   });
    
   output.on("end", function() {
     console.log(chalkAlert("TNN | ARCHIVE | END"));
+    archiveOpen = false;
   });
    
   archive.on("warning", function(err) {
@@ -6593,17 +6600,21 @@ function initArchiver(params){
   archive.on("progress", function(progress) {
 
     const progressMbytes = toMegabytes(progress.fs.processedBytes);
-    const totalMbytes = toMegabytes(progress.fs.totalBytes);
+    const totalMbytes = toMegabytes(archive.pointer());
 
-    console.log(chalkAlert("TNN | ARCHIVE | PROGRESS"
-      + " | ENTRIES: " + progress.entries.processed + " PROCESSED / " + progress.entries.total + " TOTAL"
-      + " | SIZE: " + progressMbytes.toFixed(2) + " PROCESSED / " + totalMbytes.toFixed(2) + " MB"
-      // + "\n" + jsonPrint(results)
-    ));
+    if (progress.entries.processed % 100 === 0) {
+      console.log(chalkAlert("TNN | ARCHIVE | PROGRESS"
+        + " | ENTRIES: " + progress.entries.processed + " PROCESSED / " + progress.entries.total + " TOTAL"
+        + " (" + (100*progress.entries.processed/progress.entries.total).toFixed(2) + "%)"
+        + " | SIZE: " + progressMbytes.toFixed(2) + " PROCESSED / " + totalMbytes.toFixed(2) + " MB"
+      ));
+    }
+
   });
    
   archive.on("error", function(err) {
     console.log(chalkAlert("TNN | ARCHIVE | ERROR\n" + jsonPrint(err)));
+    archiveOpen = false;
     throw err;
   });
    
