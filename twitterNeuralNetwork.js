@@ -5179,7 +5179,7 @@ function initCategorizedUserHashmap(callback){
             categorizedUserHashmap.set(nodeId, results.obj[nodeId]);
           });
 
-          if (configuration.verbose) {
+          if (configuration.verbose || (totalCount % 100 === 0)) {
 
             console.log(chalkInfo("NNT | LOADING CATEGORIZED USERS FROM DB"
               + " | TOTAL CATEGORIZED: " + totalCount
