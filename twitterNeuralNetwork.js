@@ -710,7 +710,7 @@ configuration.hostTrainingSetsFolder = "/config/utility/" + hostname + "/trainin
 
 configuration.defaultUserArchiveFolder = (hostname === "google") ? "/home/tc/Dropbox/Apps/wordAssociation" + configuration.defaultTrainingSetsFolder + "/users" 
   : "/Users/tc/Dropbox/Apps/wordAssociation" + configuration.defaultTrainingSetsFolder + "/users";
-  
+
 configuration.defaultUserArchiveFile = "users.zip";
 configuration.defaultUserArchivePath = configuration.defaultUserArchiveFolder + "/" + configuration.defaultUserArchiveFile;
 
@@ -4581,8 +4581,6 @@ function updateCategorizedUsers(cnf, callback){
                 return cb0(err);
               }
 
-              // console.log(chalkInfo("hist keys: " + Object.keys(updatedUser.histograms)));
-
               const subUser = pick(
                 updatedUser,
                 [
@@ -4602,21 +4600,17 @@ function updateCategorizedUsers(cnf, callback){
 
               trainingSetUsersHashMap.set(subUser.nodeId, subUser);
 
-              // userFile = "user_" + nodeId + ".json";
+              if (userIndex % 100 === 0) {
 
-              // const userBuffer = Buffer.from(JSON.stringify(subUser));
+                console.log("CL USR >DB"
+                  + " [" + userIndex + "/" + categorizedNodeIds.length + "]"
+                  + " | " + subUser.nodeId
+                  + " | @" + subUser.screenName
+                  + " | C: " + subUser.category
+                );
+              }
 
-              // archive.append(userBuffer, { name: userFile });
-
-              console.log("CL USR >DB"
-                + " | " + subUser.nodeId
-                + " | @" + subUser.screenName
-                + " | C: " + subUser.category
-              );
-
-              // setTimeout(function(){
-                cb0();
-              // }, 1000);
+              cb0();
 
             });
 
