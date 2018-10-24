@@ -20,10 +20,13 @@ const DEFAULT_SERVER_MODE = false;
 const DEFAULT_FIND_CAT_USER_CURSOR_LIMIT = 100;
 const DEFAULT_CURSOR_BATCH_SIZE = process.env.DEFAULT_CURSOR_BATCH_SIZE || 100;
 
+const DEFAULT_WAIT_UNLOCK_INTERVAL = 15*ONE_SECOND;
+const DEFAULT_WAIT_UNLOCK_TIMEOUT = 10*ONE_MINUTE;
+
 const DEFAULT_FILELOCK_RETRIES = 20;
-const DEFAULT_FILELOCK_RETRY_WAIT = 30*ONE_SECOND;
-const DEFAULT_FILELOCK_STALE = 10*ONE_MINUTE;
-const DEFAULT_FILELOCK_WAIT = 5*ONE_MINUTE;
+const DEFAULT_FILELOCK_RETRY_WAIT = DEFAULT_WAIT_UNLOCK_INTERVAL;
+const DEFAULT_FILELOCK_STALE = 2*DEFAULT_WAIT_UNLOCK_TIMEOUT;
+const DEFAULT_FILELOCK_WAIT = DEFAULT_WAIT_UNLOCK_TIMEOUT;
 
 let fileLockOptions = { 
   retries: DEFAULT_FILELOCK_WAIT,
@@ -737,6 +740,8 @@ configuration.maxNeuralNetworkChildern = (process.env.TNN_MAX_NEURAL_NETWORK_CHI
   ? process.env.TNN_MAX_NEURAL_NETWORK_CHILDREN 
   : DEFAULT_MAX_NEURAL_NETWORK_CHILDREN;
 
+configuration.waitUnlockIntervalValue = DEFAULT_WAIT_UNLOCK_INTERVAL;
+configuration.waitUnlockedTimeoutValue = DEFAULT_WAIT_UNLOCK_TIMEOUT;
 
 configuration.quitOnComplete = DEFAULT_QUIT_ON_COMPLETE;
 
@@ -5106,8 +5111,6 @@ async function generateGlobalTrainingTestSet (userHashMap, maxInputHashMap, call
 
         await releaseFileLock({file: lockFileName});
 
-        archiveFileLocked = false;
-
         console.log(chalkBlueBold("TNN | ARCHIVE | DONE"));
         callback();
 
@@ -6444,7 +6447,8 @@ function waitUnlocked(params){
     }
 
     let waitUnlockedTimeout;
-    const waitUnlockedTimeoutValue = params.timeout || 5*ONE_MINUTE;
+    const waitUnlockedTimeoutValue = params.timeout || configuration.waitUnlockedTimeoutValue;
+    const waitUnlockIntervalValue = params.interval || configuration.waitUnlockIntervalValue;
 
     let fileIsLocked;
     let waitUnlockInterval;
@@ -6482,7 +6486,7 @@ function waitUnlocked(params){
 
       console.log(chalkInfo("TNN | ... WAITING UNLOCK: " + params.file));
 
-    }, 15*ONE_SECOND);
+    }, configuration.waitUnlockIntervalValue);
 
   });
 
