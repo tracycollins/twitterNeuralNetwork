@@ -6385,7 +6385,12 @@ function initTimeout(callback){
     }
     else {
 
-      initWatch({rootFolder: configuration.defaultUserArchiveFolder});
+      try {
+        initWatch({rootFolder: configuration.defaultUserArchiveFolder});
+      }
+      catch(err){
+        console.log(chalkError("TNN | *** INIT WATCH ERROR: " + err));
+      }
 
       loadSeedNeuralNetwork(seedParams, function(err1, results){
 
@@ -6424,8 +6429,8 @@ function initTimeout(callback){
           enableCreateChildren = false;
           callback();
         });
-
       });
+
     }
 
   });
