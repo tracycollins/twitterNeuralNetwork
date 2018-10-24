@@ -4951,12 +4951,25 @@ function unzipUsersToArray(params){
 
       zipfile.on("close", function() {
         console.log(chalkAlert("TNN | UNZIP CLOSE"));
+        releaseFileLock({file: lockFileName}, function(err){
+          if (err) {
+            console.error(chalkError("TNN | *** ARCHIVE UNLOCK ERROR: " + err));
+            throw err;
+          }
+          archiveFileLocked = false;
+        });
         resolve(true);
       });
 
       zipfile.on("end", function() {
         console.log(chalkAlert("TNN | UNZIP END"));
-        // resolve(true);
+        releaseFileLock({file: lockFileName}, function(err){
+          if (err) {
+            console.error(chalkError("TNN | *** ARCHIVE UNLOCK ERROR: " + err));
+            throw err;
+          }
+          archiveFileLocked = false;
+        });
       });
 
       let hmHit = "TNN | --> UNZIP";
@@ -6678,7 +6691,7 @@ function waitUnlocked(params){
     fileIsLocked = lockFile.checkSync(params.file);
 
     if (!fileIsLocked) {
-      console.log(chalkInfo("TNN | +++ FILE UNLOCKED: " + params.file));
+      console.log(chalkInfo("TNN | OOO FILE IS UNLOCKED: " + params.file));
       return resolve();
     }
 
@@ -6698,7 +6711,7 @@ function waitUnlocked(params){
       if (!fileIsLocked) {
         clearTimeout(waitUnlockedTimeout);
         clearInterval(waitUnlockInterval);
-        console.log(chalkInfo("TNN | FILE IS UNLOCKED: " + params.file));
+        console.log(chalkInfo("TNN | OOO FILE IS UNLOCKED: " + params.file));
         return resolve();
       }
 
