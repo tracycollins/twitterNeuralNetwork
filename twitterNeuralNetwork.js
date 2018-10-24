@@ -4884,7 +4884,7 @@ function checkFileOpen(params){
 
     checkFileOpenInterval = setInterval(function(){
 
-      fs.open(params.path,"r+", function(err,data) {
+      fs.open(params.path,"r+", function(err,fd) {
         if (err) {
           console.log(chalkAlert("TNN | XXX FILE ALREADY OPEN: " + params.path + " | " + err));
           // return resolve(true);
@@ -4892,7 +4892,12 @@ function checkFileOpen(params){
         else {
           clearInterval(checkFileOpenInterval);
           console.log(chalkAlert("TNN | ... FILE NOT OPEN: " + params.path));
-          resolve(false);
+          fs.close(fd, function(err){
+            if (err) {
+              return reject(err);
+            }
+            resolve(false);
+          });
         }
  
       });
