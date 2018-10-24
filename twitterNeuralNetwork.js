@@ -4891,7 +4891,7 @@ function checkFileOpen(params){
         }
         else {
           clearInterval(checkFileOpenInterval);
-          console.log(chalkAlert("TNN | ... FILE NOT OPEN: " + params.path));
+          console.log(chalkLog("TNN | ... FILE NOT OPEN: " + params.path));
           fs.close(fd, function(err){
             if (err) {
               return reject(err);
