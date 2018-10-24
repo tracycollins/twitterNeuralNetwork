@@ -5093,6 +5093,7 @@ async function generateGlobalTrainingTestSet (userHashMap, maxInputHashMap, call
 
         clearInterval(waitArchiveDoneInterval);
 
+        const lockFileName = configuration.defaultUserArchivePath + ".lock";
 
         releaseFileLock({file: lockFileName}, function(err){
           if (err) {
