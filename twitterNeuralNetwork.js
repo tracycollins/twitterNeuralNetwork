@@ -20,7 +20,7 @@ const DEFAULT_SERVER_MODE = false;
 const DEFAULT_FIND_CAT_USER_CURSOR_LIMIT = 100;
 const DEFAULT_CURSOR_BATCH_SIZE = process.env.DEFAULT_CURSOR_BATCH_SIZE || 100;
 
-const DEFAULT_FILELOCK_RETRIES = 10;
+const DEFAULT_FILELOCK_RETRIES = 20;
 const DEFAULT_FILELOCK_RETRY_WAIT = 30*ONE_SECOND;
 const DEFAULT_FILELOCK_STALE = 10*ONE_MINUTE;
 const DEFAULT_FILELOCK_WAIT = 5*ONE_MINUTE;
@@ -6462,7 +6462,7 @@ function waitUnlocked(params){
     }
 
     let waitUnlockedTimeout;
-    const waitUnlockedTimeoutValue = params.timeout || ONE_MINUTE;
+    const waitUnlockedTimeoutValue = params.timeout || 5*ONE_MINUTE;
 
     let fileIsLocked;
     let waitUnlockInterval;
@@ -6500,7 +6500,7 @@ function waitUnlocked(params){
 
       console.log(chalkInfo("TNN | ... WAITING UNLOCK: " + params.file));
 
-    }, 10*ONE_SECOND);
+    }, 15*ONE_SECOND);
 
   });
 
@@ -6604,6 +6604,7 @@ function initArchiver(params){
         console.log(chalkGreen("TNN | ARCHIVE | CLOSED | " + archiveSize.toFixed(2) + " MB"));
         statsObj.archiveOpen = false;
         createTrainingSetBusy = false;
+
         // releaseFileLock({file: lockFileName}, function(err){
         //   if (err) {
         //     console.error(chalkError("TNN | *** ARCHIVE UNLOCK ERROR: " + err));
