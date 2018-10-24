@@ -184,6 +184,7 @@ let prevHostConfigFileModifiedMoment = moment("2010-01-01");
 let prevDefaultConfigFileModifiedMoment = moment("2010-01-01");
 let prevConfigFileModifiedMoment = moment("2010-01-01");
 
+let waitUnlockedSet = new Set();
 
 let bestNetworkHashMap = new HashMap();
 let inputsHashMap = new HashMap();
@@ -208,6 +209,7 @@ statsObj.commandLineArgsLoaded = false;
 
 statsObj.archiveOpen = false;
 statsObj.archiveModifiedMoment = moment("2010-01-01");
+statsObj.loadUsersArchiveBusy = false;
 
 statsObj.serverConnected = false;
 statsObj.userReadyAck = false;
@@ -4909,10 +4911,20 @@ function initWatch(params){
     monitor.on("created", async function (f, stat) {
       console.log(chalkInfo("TNN | +++ FILE CREATED: " + f));
       if (f.endsWith("users.zip")){
+
+        if  (statsObj.loadUsersArchiveBusy) {
+          console.log(chalkAlert("TNN | LOAD USERS ARCHIVE ALREADY BUSY: " + f));
+          return;
+        }
+
+        statsObj.loadUsersArchiveBusy = true;
+
         try {
           await loadUsersArchive({path: f});
+          statsObj.loadUsersArchiveBusy = false;
         }
         catch(err){
+          statsObj.loadUsersArchiveBusy = false;
           console.log(chalkError("TNN | *** WATCH CHANGE ERROR: " + err));
         }
       }
@@ -4921,10 +4933,20 @@ function initWatch(params){
     monitor.on("changed", async function (f, curr, prev) {
       console.log(chalkInfo("TNN | !!! FILE CHANGED: " + f));
       if (f.endsWith("users.zip")){
+
+        if  (statsObj.loadUsersArchiveBusy) {
+          console.log(chalkAlert("TNN | LOAD USERS ARCHIVE ALREADY BUSY: " + f));
+          return;
+        }
+
+        statsObj.loadUsersArchiveBusy = true;
+
         try {
           await loadUsersArchive({path: f});
+          statsObj.loadUsersArchiveBusy = false;
         }
         catch(err){
+          statsObj.loadUsersArchiveBusy = false;
           console.log(chalkError("TNN | *** WATCH CHANGE ERROR: " + err));
         }
       }
@@ -6429,9 +6451,15 @@ slackText = slackText + "\n" + getTimeStamp();
 
 slackPostMessage(slackChannel, slackText);
 
+
 function waitUnlocked(params){
 
   return new Promise(function(resolve, reject){
+
+    if (waitUnlockedSet.has(params.file)){
+      console.log(chalkAlert("TNN | ALREADY WAITING FOR UNLOCK: " + params.file));
+      return resolve(false);
+    }
 
     let waitUnlockedTimeout;
     const waitUnlockedTimeoutValue = params.timeout || ONE_MINUTE;
@@ -6446,13 +6474,15 @@ function waitUnlocked(params){
       return resolve();
     }
 
+    waitUnlockedSet.add(params.file);
+
     console.log(chalkInfo("TNN | ... WAITING UNLOCK: " + params.file));
 
     waitUnlockedTimeout = setTimeout(function(){
 
       console.log(chalkAlert("TNN | *** WAIT UNLOCK TIMEOUT: " + params.file));
       clearInterval(waitUnlockInterval);
-      resolve(false);
+      return resolve(false);
 
     }, waitUnlockedTimeoutValue);
 
@@ -6464,7 +6494,8 @@ function waitUnlocked(params){
         clearTimeout(waitUnlockedTimeout);
         clearInterval(waitUnlockInterval);
         console.log(chalkInfo("TNN | OOO FILE IS UNLOCKED: " + params.file));
-        return resolve();
+        waitUnlockedSet.delete(params.file);
+        return resolve(true);
       }
 
       console.log(chalkInfo("TNN | ... WAITING UNLOCK: " + params.file));
