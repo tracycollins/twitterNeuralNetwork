@@ -20,16 +20,16 @@ const DEFAULT_SERVER_MODE = false;
 const DEFAULT_FIND_CAT_USER_CURSOR_LIMIT = 100;
 const DEFAULT_CURSOR_BATCH_SIZE = process.env.DEFAULT_CURSOR_BATCH_SIZE || 100;
 
-const DEFAULT_FILELOCK_WAIT = 5*ONE_MINUTE;
 const DEFAULT_FILELOCK_RETRIES = 10;
 const DEFAULT_FILELOCK_RETRY_WAIT = 30*ONE_SECOND;
 const DEFAULT_FILELOCK_STALE = 10*ONE_MINUTE;
+const DEFAULT_FILELOCK_WAIT = 5*ONE_MINUTE;
 
 let fileLockOptions = { 
-  wait: DEFAULT_FILELOCK_WAIT,
   retries: DEFAULT_FILELOCK_WAIT,
+  retryWait: DEFAULT_FILELOCK_RETRY_WAIT,
   stale: DEFAULT_FILELOCK_STALE,
-  retryWait: DEFAULT_FILELOCK_RETRY_WAIT
+  wait: DEFAULT_FILELOCK_WAIT
 };
 
 
@@ -4930,7 +4930,7 @@ function unzipUsersToArray(params){
         statsObj.archiveOpen = false;
         createTrainingSetBusy = false;
 
-        return reject(new Error("USER ARCHIVE FILE LOCK FAILED"));
+        return resolve(false);
       }
     }
     catch(err){
@@ -4951,12 +4951,12 @@ function unzipUsersToArray(params){
 
       zipfile.on("close", function() {
         console.log(chalkAlert("TNN | UNZIP CLOSE"));
-        resolve();
+        resolve(true);
       });
 
       zipfile.on("end", function() {
         console.log(chalkAlert("TNN | UNZIP END"));
-        resolve();
+        // resolve(true);
       });
 
       let hmHit = "TNN | --> UNZIP";
@@ -5135,8 +5135,10 @@ function loadUsersArchive(params){
 
   return new Promise(async function(resolve, reject){
 
+    console.log(chalkLog("TNN | LOADING USERS ARCHIVE: " + params.path));
+
     try {
-      await unzipUsersToArray({path: params.path});
+      const unzipSuccess = await unzipUsersToArray({path: params.path});
       await updateTrainingSet();
       resolve();
     }
@@ -6663,27 +6665,75 @@ slackText = slackText + "\n" + getTimeStamp();
 
 slackPostMessage(slackChannel, slackText);
 
-function getFileLock(params){
+function waitUnlocked(params){
 
   return new Promise(function(resolve, reject){
 
-    // const fileIsLocked = lockFile.checkSync(params.file, fileLockCheckOptions);
+    let waitUnlockedTimeout;
+    const waitUnlockedTimeoutValue = params.timeout || ONE_MINUTE;
 
-    // if (fileIsLocked) {
-    //   return resolve(false);
-    // }
+    let fileIsLocked;
+    let waitUnlockInterval;
 
-    lockFile.lock(params.file, params.options, function(err){
+    fileIsLocked = lockFile.checkSync(params.file);
 
-      if (err) {
-        console.log(chalkAlert("TNN | *** FILE LOCK FAIL: " + params.file + "\n" + err));
-        return reject(err);
+    if (!fileIsLocked) {
+      console.log(chalkInfo("TNN | +++ FILE UNLOCKED: " + params.file));
+      return resolve();
+    }
+
+    console.log(chalkInfo("TNN | ... WAITING UNLOCK: " + params.file));
+
+    waitUnlockedTimeout = setTimeout(function(){
+
+      console.log(chalkError("TNN | *** WAIT UNLOCK TIMEOUT: " + params.file));
+      return reject(new Error("WAIT UNLOCK TIMEOUT"));
+
+    }, waitUnlockedTimeoutValue);
+
+    waitUnlockInterval = setInterval(function(){
+
+      fileIsLocked = lockFile.checkSync(params.file);
+
+      if (!fileIsLocked) {
+        clearTimeout(waitUnlockedTimeout);
+        clearInterval(waitUnlockInterval);
+        console.log(chalkInfo("TNN | FILE IS UNLOCKED: " + params.file));
+        return resolve();
       }
 
-      console.log(chalkGreen("TNN | +++ FILE LOCK: " + params.file));
-      resolve(true);
+      console.log(chalkInfo("TNN | ... WAITING UNLOCK: " + params.file));
 
-    });
+    }, 1000);
+
+  });
+
+}
+
+function getFileLock(params){
+
+  return new Promise(async function(resolve, reject){
+
+    try {
+
+      await waitUnlocked(params);
+
+      lockFile.lock(params.file, params.options, function(err){
+
+        if (err) {
+          console.log(chalkAlert("TNN | *** FILE LOCK FAIL: " + params.file + "\n" + err));
+          return reject(err);
+        }
+
+        console.log(chalkGreen("TNN | +++ FILE LOCK: " + params.file));
+        resolve(true);
+      });
+
+    }
+    catch(err){
+      console.log(chalkError("TNN | *** GET FILE LOCK ERROR: " + err));
+      return reject(err);
+    }
 
   });
 
