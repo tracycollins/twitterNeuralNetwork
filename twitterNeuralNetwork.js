@@ -680,10 +680,10 @@ if ( (process.env.TNN_SERVER_MODE !== undefined)
 }
 else {
   configuration.serverMode = DEFAULT_SERVER_MODE;
-  console.log(chalkInfo("TNN | DEFAULT_SERVER_MODE: " + configuration.serverMode));
+  console.log(chalkLog("TNN | DEFAULT_SERVER_MODE: " + configuration.serverMode));
 }
 
-console.log(chalkInfo("TNN | SERVER MODE: " + configuration.serverMode));
+console.log(chalkLog("TNN | SERVER MODE: " + configuration.serverMode));
 
 configuration.networkCreateMode = "evole";
 
@@ -863,7 +863,7 @@ const DEFAULT_RUN_ID = hostname + "_" + process.pid + "_" + statsObj.startTimeMo
 
 if (process.env.TNN_RUN_ID !== undefined) {
   statsObj.runId = process.env.TNN_RUN_ID;
-  console.log(chalkInfo("TNN | ENV RUN ID: " + statsObj.runId));
+  console.log(chalkLog("TNN | ENV RUN ID: " + statsObj.runId));
 }
 else {
   statsObj.runId = DEFAULT_RUN_ID;
@@ -3242,7 +3242,7 @@ function loadConfigFile(folder, file, callback) {
     
         if (fileModifiedMoment.isSameOrBefore(prevConfigFileModifiedMoment)){
 
-          console.log(chalkInfo("TNN | CONFIG FILE BEFORE OR EQUAL"
+          console.log(chalkLog("TNN | CONFIG FILE BEFORE OR EQUAL"
             + " | " + fullPath
             + " | PREV: " + prevConfigFileModifiedMoment.format(compactDateTimeFormat)
             + " | " + fileModifiedMoment.format(compactDateTimeFormat)
@@ -4099,7 +4099,7 @@ function updateCategorizedUsers(cnf, callback){
             currentChalk = chalk.bold.gray;
         }
 
-        debug(chalkInfo("\n==============================\n"));
+        debug(chalkLog("\n==============================\n"));
         debug(currentChalk("ADD  | U"
           + " | SEN: " + sentimentText
           + " | " + classText
@@ -4122,7 +4122,7 @@ function updateCategorizedUsers(cnf, callback){
 
         if ((statsObj.users.notCategorized + statsObj.users.updatedCategorized) % 100 === 0){
 
-          console.log(chalkInfo("TNN"
+          console.log(chalkLog("TNN"
             + " | START: " + categorizedUsersStartMoment.format(compactDateTimeFormat)
             + " | ELAPSED: " + msToTime(categorizedUsersElapsed)
             + " | REMAIN: " + msToTime(categorizedUsersRemain)
@@ -4289,7 +4289,7 @@ function updateCategorizedUsers(cnf, callback){
               statsObj.users.imageParse.skipped += 1;
 
               const imageHits = (user.histograms.images === undefined) ? 0 : Object.keys(user.histograms.images);
-              debug(chalkInfo("--- BANNER HIST HIT: @" + user.screenName + " | HITS: " + imageHits));
+              debug(chalkLog("--- BANNER HIST HIT: @" + user.screenName + " | HITS: " + imageHits));
 
               async.setImmediate(function() {
                 cb(null, text, null);
@@ -4407,7 +4407,7 @@ function updateCategorizedUsers(cnf, callback){
 
         if ((statsObj.users.notCategorized + statsObj.users.updatedCategorized) % 20 === 0){
 
-          console.log(chalkInfo("TNN"
+          console.log(chalkLog("TNN"
             + " | START: " + categorizedUsersStartMoment.format(compactDateTimeFormat)
             + " | ELAPSED: " + msToTime(categorizedUsersElapsed)
             + " | REMAIN: " + msToTime(categorizedUsersRemain)
@@ -4485,7 +4485,7 @@ function updateCategorizedUsers(cnf, callback){
     statsObj.normalization.score.min = minScore;
     statsObj.normalization.score.max = maxScore;
 
-    console.log(chalkInfo("TNN | CL U HIST | NORMALIZATION"
+    console.log(chalkLog("TNN | CL U HIST | NORMALIZATION"
       + " | MAG " + statsObj.normalization.magnitude.min.toFixed(2) + " MIN / " + statsObj.normalization.magnitude.max.toFixed(2) + " MAX"
       + " | SCORE " + statsObj.normalization.score.min.toFixed(2) + " MIN / " + statsObj.normalization.score.max.toFixed(2) + " MAX"
     ));
@@ -4687,7 +4687,7 @@ function unzipUsersToArray(params){
       });
 
       zipfile.on("close", function() {
-        console.log(chalkInfo("TNN | UNZIP CLOSE"));
+        console.log(chalkLog("TNN | UNZIP CLOSE"));
         releaseFileLock({file: lockFileName}, function(err){
           if (err) {
             console.error(chalkError("TNN | *** ARCHIVE UNLOCK ERROR: " + err));
@@ -4699,7 +4699,7 @@ function unzipUsersToArray(params){
       });
 
       zipfile.on("end", function() {
-        console.log(chalkInfo("TNN | UNZIP END"));
+        console.log(chalkLog("TNN | UNZIP END"));
         releaseFileLock({file: lockFileName}, function(err){
           if (err) {
             console.error(chalkError("TNN | *** ARCHIVE UNLOCK ERROR: " + err));
@@ -4733,7 +4733,7 @@ function unzipUsersToArray(params){
 
                 if (entry.fileName.endsWith("maxInputHashMap.json")) {
 
-                  console.log(chalkInfo("TNN | UNZIPPED MAX INPUT"));
+                  console.log(chalkLog("TNN | UNZIPPED MAX INPUT"));
 
                   userMaxInputHashMap = fileObj.maxInputHashMap;
                 }
@@ -4751,7 +4751,7 @@ function unzipUsersToArray(params){
                   trainingSetUsersHashMap.set(fileObj.userId, fileObj);
 
                   if (configuration.verbose || (statsObj.users.unzipped % 1000 === 0)) {
-                    console.log(chalkInfo(hmHit
+                    console.log(chalkLog(hmHit
                       + " [" + statsObj.users.zipHashMapHit + " HM HIT / " + statsObj.users.unzipped + " UZPD]"
                       + " 3C: " + fileObj.threeceeFollowing
                       + " | " + fileObj.userId
@@ -4869,7 +4869,7 @@ function updateTrainingSet(params){
 
     tObj.trainingSetObj.maxInputHashMap = userMaxInputHashMap;
 
-    console.log(chalkInfo("TNN | TRAINING SET"
+    console.log(chalkLog("TNN | TRAINING SET"
       + " | SIZE: " + tObj.trainingSetObj.trainingSet.meta.setSize
       + " | TEST SIZE: " + tObj.trainingSetObj.testSet.meta.setSize
     ));
@@ -4902,12 +4902,12 @@ function loadUsersArchive(params){
 
 function initWatch(params){
 
-  console.log(chalkInfo("TNN | INIT WATCH\n" + jsonPrint(params)));
+  console.log(chalkLog("TNN | INIT WATCH\n" + jsonPrint(params)));
 
   watch.createMonitor(params.rootFolder, function (monitor) {
 
     monitor.on("created", async function (f, stat) {
-      console.log(chalkInfo("TNN | FILE CREATED: " + f));
+      console.log(chalkInfo("TNN | +++ FILE CREATED: " + f));
       if (f.endsWith("users.zip")){
         try {
           await loadUsersArchive({path: f});
@@ -4919,7 +4919,7 @@ function initWatch(params){
     });
 
     monitor.on("changed", async function (f, curr, prev) {
-      console.log(chalkInfo("TNN | FILE CHANGED: " + f));
+      console.log(chalkInfo("TNN | !!! FILE CHANGED: " + f));
       if (f.endsWith("users.zip")){
         try {
           await loadUsersArchive({path: f});
@@ -4931,7 +4931,7 @@ function initWatch(params){
     });
 
     monitor.on("removed", function (f, stat) {
-      console.log(chalkInfo("TNN | FILE DELETED: " + f));
+      console.log(chalkInfo("TNN | XXX FILE DELETED: " + f));
     });
 
     // monitor.stop(); // Stop watching
@@ -4992,7 +4992,7 @@ function initCategorizedUserHashmap(callback){
 
           if (configuration.verbose || (totalCount % 1000 === 0)) {
 
-            console.log(chalkInfo("TNN | LOADING CATEGORIZED USERS FROM DB"
+            console.log(chalkLog("TNN | LOADING CATEGORIZED USERS FROM DB"
               + " | TOTAL CATEGORIZED: " + totalCount
               + " | LIMIT: " + p.limit
               + " | SKIP: " + p.skip
@@ -5013,7 +5013,7 @@ function initCategorizedUserHashmap(callback){
 
           more = false;
 
-          console.log(chalkInfo("TNN | LOADING CATEGORIZED USERS FROM DB"
+          console.log(chalkLog("TNN | LOADING CATEGORIZED USERS FROM DB"
             + " | TOTAL CATEGORIZED: " + totalCount
             + " | LIMIT: " + p.limit
             + " | SKIP: " + p.skip
@@ -5139,7 +5139,7 @@ function generateRandomEvolveConfig (cnf, callback){
     if (configuration.verbose) {
 
       console.log(chalkLog("\nTNN | BEST NETWORKS\nTNN | --------------------------------------------------------"));
-      console.log(chalkInfo("TNN | NNs IN HM: " + sortedBestNetworks.sortedKeys.length));
+      console.log(chalkLog("TNN | NNs IN HM: " + sortedBestNetworks.sortedKeys.length));
 
       sortedBestNetworks.sortedKeys.forEach(function(nnId){
 
@@ -5215,7 +5215,7 @@ function generateRandomEvolveConfig (cnf, callback){
     console.log("TNN | SEED INPUTS | " + networkObj.inputsId);
 
     if (cnf.randomizeSeedOptions) {
-      console.log(chalkInfo("TNN | RANDOMIZE SEED NETWORK OPTIONS | " + config.seedNetworkId));
+      console.log(chalkLog("TNN | RANDOMIZE SEED NETWORK OPTIONS | " + config.seedNetworkId));
       config.cost = randomItem([config.cost, networkObj.evolve.options.cost]);
       config.equal = randomItem([config.equal, networkObj.evolve.options.equal]);
       config.error = randomItem([config.error, networkObj.evolve.options.error]);
@@ -5262,7 +5262,7 @@ function generateRandomEvolveConfig (cnf, callback){
 
     tObj = trainingSetHashMap.get(cnf.globalTrainingSetId);
 
-    console.log(chalkInfo("TNN | USING TRAINING SET: " + tObj.trainingSetObj.trainingSetId));
+    console.log(chalkLog("TNN | USING TRAINING SET: " + tObj.trainingSetObj.trainingSetId));
 
     config.trainingSetId = tObj.trainingSetObj.trainingSetId;
     config.trainingSet = {};
@@ -5283,7 +5283,7 @@ function generateRandomEvolveConfig (cnf, callback){
   }
   else { // createTrainingSetOnly create training set
 
-    console.log(chalkInfo("TNN | ... START CREATE TRAINING SET"));
+    console.log(chalkLog("TNN | ... START CREATE TRAINING SET"));
 
     generateGlobalTrainingTestSet(trainingSetUsersHashMap, userMaxInputHashMap, function(err){
 
@@ -5293,7 +5293,7 @@ function generateRandomEvolveConfig (cnf, callback){
 
       tObj = trainingSetHashMap.get(cnf.globalTrainingSetId);
 
-      console.log(chalkInfo("TNN | USING TRAINING SET " + cnf.globalTrainingSetId));
+      console.log(chalkLog("TNN | USING TRAINING SET " + cnf.globalTrainingSetId));
 
       config.trainingSetId = tObj.trainingSetObj.trainingSetId;
       config.trainingSet = {};
@@ -5623,7 +5623,7 @@ function initMain(cnf, callback){
               return callback(err);
             }
 
-            console.log(chalkInfo("TNN | ... START CREATE TRAINING SET"));
+            console.log(chalkLog("TNN | ... START CREATE TRAINING SET"));
 
             generateGlobalTrainingTestSet(trainingSetUsersHashMap, userMaxInputHashMap, function(err){
 
@@ -5766,7 +5766,7 @@ function initNeuralNetworkChild(nnChildIndex, cnf, callback){
     switch(m.op) {
 
       case "INIT_COMPLETE":
-        console.log(chalkInfo("TNN | TEST NEURAL NETWORK | " + m.nnChildId));
+        console.log(chalkLog("TNN | TEST NEURAL NETWORK | " + m.nnChildId));
         neuralNetworkChildHashMap[m.nnChildId].child.send({op: "TEST_EVOLVE"});
       break;
 
@@ -5797,7 +5797,7 @@ function initNeuralNetworkChild(nnChildIndex, cnf, callback){
         }
         else {
           console.error(chalkError("TNN | *** TEST EVOLVE XOR FAILED *** | " + m.nnChildId));
-          console.log(chalkInfo("TNN | *** RETRY *** TEST NEURAL NETWORK | " + m.nnChildId));
+          console.log(chalkLog("TNN | *** RETRY *** TEST NEURAL NETWORK | " + m.nnChildId));
           neuralNetworkChildHashMap[m.nnChildId].child.send({op: "TEST_EVOLVE"});
         }
       break;
@@ -5961,7 +5961,7 @@ function initNeuralNetworkChild(nnChildIndex, cnf, callback){
 
           inputsNetworksHashMap[nn.inputsId].add(nn.networkId);
 
-          console.log(chalkInfo("TNN | INPUTS ID"
+          console.log(chalkLog("TNN | INPUTS ID"
             + " | " + nn.inputsId
             + " | INPUTS: " + nn.inputsObj.meta.numInputs
             + " | " + inputsNetworksHashMap[nn.inputsId].size + " NETWORKS"
@@ -5994,7 +5994,7 @@ function initNeuralNetworkChild(nnChildIndex, cnf, callback){
 
             localNetworkFile = nn.networkId + ".json";
 
-            console.log(chalkInfo("TNN | ... SAVING NN FILE TO DROPBOX LOCAL BEST"
+            console.log(chalkLog("TNN | ... SAVING NN FILE TO DROPBOX LOCAL BEST"
               + " | " + localBestNetworkFolder + "/" + localNetworkFile
             ));
 
@@ -6243,7 +6243,7 @@ function initNetworkCreateInterval(interval) {
                   else if (currentChild !== undefined) {
                     currentChild.status = "RUNNING" ;
                     neuralNetworkChildHashMap[nnChildId] = currentChild;
-                    console.log(chalkInfo("TNN | NETWORK CREATED | " + nnId));
+                    console.log(chalkLog("TNN | NETWORK CREATED | " + nnId));
                   }
                   else {
                     console.log(chalkAlert("TNN | ??? NETWORK NOT CREATED ??? | NN CHID: " + nnChildId + " | NNID: " + nnId));
@@ -6450,7 +6450,7 @@ function waitUnlocked(params){
     waitUnlockedTimeout = setTimeout(function(){
 
       console.log(chalkAlert("TNN | *** WAIT UNLOCK TIMEOUT: " + params.file));
-      // return reject(new Error("WAIT UNLOCK TIMEOUT"));
+      clearInterval(waitUnlockInterval);
       resolve(false);
 
     }, waitUnlockedTimeoutValue);
@@ -6468,7 +6468,7 @@ function waitUnlocked(params){
 
       console.log(chalkInfo("TNN | ... WAITING UNLOCK: " + params.file));
 
-    }, 1000);
+    }, 10*ONE_SECOND);
 
   });
 
@@ -6521,7 +6521,7 @@ function releaseFileLock(params){
         return reject(err);
       }
 
-      console.log(chalkGreen("TNN | --- FILE UNLOCK: " + params.file));
+      console.log(chalkLog("TNN | --- FILE UNLOCK: " + params.file));
       resolve(true);
 
     });
@@ -6602,7 +6602,7 @@ function initArchiver(params){
         const totalMbytes = toMegabytes(archive.pointer());
 
         if (progress.entries.processed % 100 === 0) {
-          console.log(chalkInfo("TNN | ARCHIVE | PROGRESS"
+          console.log(chalkLog("TNN | ARCHIVE | PROGRESS"
             + " | ENTRIES: " + progress.entries.processed + " PROCESSED / " + progress.entries.total + " TOTAL"
             + " (" + (100*progress.entries.processed/progress.entries.total).toFixed(2) + "%)"
             + " | SIZE: " + progressMbytes.toFixed(2) + " PROCESSED / " + totalMbytes.toFixed(2) + " MB"
