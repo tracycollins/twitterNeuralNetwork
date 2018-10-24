@@ -6700,7 +6700,8 @@ function waitUnlocked(params){
     waitUnlockedTimeout = setTimeout(function(){
 
       console.log(chalkError("TNN | *** WAIT UNLOCK TIMEOUT: " + params.file));
-      return reject(new Error("WAIT UNLOCK TIMEOUT"));
+      // return reject(new Error("WAIT UNLOCK TIMEOUT"));
+      resolve(false);
 
     }, waitUnlockedTimeoutValue);
 
@@ -6729,7 +6730,7 @@ function getFileLock(params){
 
     try {
 
-      await waitUnlocked(params);
+      const fileUnlocked = await waitUnlocked(params);
 
       lockFile.lock(params.file, params.options, function(err){
 
