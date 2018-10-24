@@ -4914,19 +4914,20 @@ function initWatch(params){
 
         if  (statsObj.loadUsersArchiveBusy) {
           console.log(chalkAlert("TNN | LOAD USERS ARCHIVE ALREADY BUSY: " + f));
-          return;
+        }
+        else {
+          statsObj.loadUsersArchiveBusy = true;
+
+          try {
+            await loadUsersArchive({path: f});
+            statsObj.loadUsersArchiveBusy = false;
+          }
+          catch(err){
+            statsObj.loadUsersArchiveBusy = false;
+            console.log(chalkError("TNN | *** WATCH CHANGE ERROR: " + err));
+          }
         }
 
-        statsObj.loadUsersArchiveBusy = true;
-
-        try {
-          await loadUsersArchive({path: f});
-          statsObj.loadUsersArchiveBusy = false;
-        }
-        catch(err){
-          statsObj.loadUsersArchiveBusy = false;
-          console.log(chalkError("TNN | *** WATCH CHANGE ERROR: " + err));
-        }
       }
     });
 
@@ -4936,18 +4937,18 @@ function initWatch(params){
 
         if  (statsObj.loadUsersArchiveBusy) {
           console.log(chalkAlert("TNN | LOAD USERS ARCHIVE ALREADY BUSY: " + f));
-          return;
         }
+        else {
+          statsObj.loadUsersArchiveBusy = true;
 
-        statsObj.loadUsersArchiveBusy = true;
-
-        try {
-          await loadUsersArchive({path: f});
-          statsObj.loadUsersArchiveBusy = false;
-        }
-        catch(err){
-          statsObj.loadUsersArchiveBusy = false;
-          console.log(chalkError("TNN | *** WATCH CHANGE ERROR: " + err));
+          try {
+            await loadUsersArchive({path: f});
+            statsObj.loadUsersArchiveBusy = false;
+          }
+          catch(err){
+            statsObj.loadUsersArchiveBusy = false;
+            console.log(chalkError("TNN | *** WATCH CHANGE ERROR: " + err));
+          }
         }
       }
     });
