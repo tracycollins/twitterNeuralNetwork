@@ -5116,6 +5116,7 @@ function archiveUsers(){
   });
 }
 
+
 async function generateGlobalTrainingTestSet (userHashMap, maxInputHashMap, callback){
 
   statsObj.status = "GENERATE TRAINING SET";
@@ -5153,10 +5154,13 @@ async function generateGlobalTrainingTestSet (userHashMap, maxInputHashMap, call
 
         const lockFileName = configuration.defaultUserArchivePath + ".lock";
 
-        await releaseFileLock({file: lockFileName});
+        setTimeout(async function(){
 
-        console.log(chalkBlueBold("TNN | ARCHIVE | DONE"));
-        callback();
+          await releaseFileLock({file: lockFileName});
+          console.log(chalkBlueBold("TNN | ARCHIVE | DONE"));
+          callback();
+
+        }, 30*ONE_SECOND);
 
       }
       else {
