@@ -16,6 +16,7 @@ const DEFAULT_CURSOR_BATCH_SIZE = process.env.DEFAULT_CURSOR_BATCH_SIZE || 100;
 
 const os = require("os");
 const moment = require("moment");
+const lockFile = require("lockfile");
 const merge = require("deepmerge");
 const treeify = require("treeify");
 const archiver = require("archiver");
@@ -74,8 +75,8 @@ const ONE_HOUR = 60 * ONE_MINUTE;
 const ONE_KILOBYTE = 1024;
 const ONE_MEGABYTE = 1024 * ONE_KILOBYTE;
 
-const TEST_MODE_LENGTH = 100;
-const TEST_DROPBOX_NN_LOAD = 5;
+const TEST_MODE_LENGTH = 500;
+const TEST_DROPBOX_NN_LOAD = 10;
 
 const DEFAULT_LOAD_ALL_INPUTS = false;
 
@@ -194,6 +195,7 @@ statsObj.cpus = os.cpus().length;
 statsObj.commandLineArgsLoaded = false;
 
 statsObj.archiveOpen = false;
+statsObj.archiveModifiedMoment = moment("2010-01-01");
 
 statsObj.serverConnected = false;
 statsObj.userReadyAck = false;
@@ -4908,9 +4910,27 @@ function unzipUsersToArray(params){
         return reject(err);
       }
 
+      // console.log(chalkAlert("NNT | ZIP FILE"
+      //   + "\n" + Object.keys(zipfile)
+      // ));
+
+      zipfile.on("error", function(err) {
+        console.log(chalkError("TNN | *** UNZIP ERROR: " + err));
+        reject(err);
+      });
+
+      zipfile.on("close", function() {
+        console.log(chalkAlert("TNN | UNZIP CLOSE"));
+        resolve();
+      });
+
+      zipfile.on("end", function() {
+        console.log(chalkAlert("TNN | UNZIP END"));
+        resolve();
+      });
+
       let hmHit = "TNN | --> UNZIP";
 
-      zipfile.readEntry();
       zipfile.on("entry", function(entry) {
         
         if (/\/$/.test(entry.fileName)) {
@@ -4921,6 +4941,10 @@ function unzipUsersToArray(params){
         } 
 
         else {
+
+          // console.log(chalkAlert("NNT | ZIP FILE ENTRY"
+          //   + "\n" + Object.keys(entry)
+          // ));
 
           zipfile.openReadStream(entry, function(err, readStream) {
 
@@ -4937,11 +4961,9 @@ function unzipUsersToArray(params){
 
                 if (entry.fileName.endsWith("maxInputHashMap.json")) {
 
-                  console.log(chalkInfo("TNN | UNZIPPED MAX INPUT"
-                  ));
+                  console.log(chalkInfo("TNN | UNZIPPED MAX INPUT"));
 
                   userMaxInputHashMap = fileObj.maxInputHashMap;
-
                 }
                 else {
 
@@ -4956,29 +4978,27 @@ function unzipUsersToArray(params){
 
                   trainingSetUsersHashMap.set(fileObj.userId, fileObj);
 
-                  console.log(chalkInfo(hmHit
-                    + " [" + statsObj.users.zipHashMapHit + " HM HIT /" + statsObj.users.unzipped + " UZPD]"
-                    + " 3C: " + fileObj.threeceeFollowing
-                    + " | " + fileObj.userId
-                    + " | @" + fileObj.screenName
-                    + " | " + fileObj.name
-                    + " | FLWRs: " + fileObj.followersCount
-                    + " | FRNDs: " + fileObj.friendsCount
-                    + " | CAT M: " + fileObj.category + " A: " + fileObj.categoryAuto
-                    // + "\n" + jsonPrint(fileObj)
-                  ));
-
+                  if (configuration.verbose || (statsObj.users.unzipped % 1000 === 0)) {
+                    console.log(chalkInfo(hmHit
+                      + " [" + statsObj.users.zipHashMapHit + " HM HIT / " + statsObj.users.unzipped + " UZPD]"
+                      + " 3C: " + fileObj.threeceeFollowing
+                      + " | " + fileObj.userId
+                      + " | @" + fileObj.screenName
+                      + " | " + fileObj.name
+                      + " | FLWRs: " + fileObj.followersCount
+                      + " | FRNDs: " + fileObj.friendsCount
+                      + " | CAT M: " + fileObj.category + " A: " + fileObj.categoryAuto
+                      // + "\n" + jsonPrint(fileObj)
+                    ));
+                  }
                 }
 
                 zipfile.readEntry();
               }
               catch (err){
                 console.log(chalkError("TNN | *** UNZIP READ STREAM ERROR: " + err));
-                if (err) {
-                  return reject(err);
-                }
+                return reject(err);
               }
-
             });
 
             readStream.on("data",function(chunk){
@@ -4986,10 +5006,10 @@ function unzipUsersToArray(params){
               userString += part;
             });
 
-            readStream.on("end",function(){
-              console.log(chalkInfo("TNN | UNZIP STREAM END | TRAINING SET USERS HM SIZE: " + trainingSetUsersHashMap.size));
-              // resolve();
-            });
+            // readStream.on("end",function(){
+            //   debug(chalkInfo("TNN | UNZIP STREAM END | TRAINING SET USERS HM SIZE: " + trainingSetUsersHashMap.size));
+            //   // resolve();
+            // });
 
             readStream.on("close",function(){
               console.log(chalkInfo("TNN | UNZIP STREAM CLOSED | TRAINING SET USERS HM SIZE: " + trainingSetUsersHashMap.size));
@@ -5004,6 +5024,9 @@ function unzipUsersToArray(params){
           });
         }
       });
+
+      zipfile.readEntry();
+
     });
 
   });
@@ -5179,7 +5202,7 @@ function initCategorizedUserHashmap(callback){
             categorizedUserHashmap.set(nodeId, results.obj[nodeId]);
           });
 
-          if (configuration.verbose || (totalCount % 100 === 0)) {
+          if (configuration.verbose || (totalCount % 1000 === 0)) {
 
             console.log(chalkInfo("NNT | LOADING CATEGORIZED USERS FROM DB"
               + " | TOTAL CATEGORIZED: " + totalCount
@@ -5228,7 +5251,26 @@ function initCategorizedUserHashmap(callback){
   );
 }
 
-function generateGlobalTrainingTestSet (userHashMap, maxInputHashMap, callback){
+function archiveUsers(){
+
+  return new Promise(function(resolve, reject){
+
+    if (archive === undefined) { return reject(err); }
+
+    async.each(trainingSetUsersHashMap.values(), function(user, cb){
+      const userFile = "user_" + user.userId + ".json";
+      const userBuffer = Buffer.from(JSON.stringify(user));
+      archive.append(userBuffer, { name: userFile });
+      cb();
+    }, function(err){
+      resolve();
+    });
+
+
+  });
+}
+
+async function generateGlobalTrainingTestSet (userHashMap, maxInputHashMap, callback){
 
   statsObj.status = "GENERATE TRAINING SET";
 
@@ -5236,25 +5278,10 @@ function generateGlobalTrainingTestSet (userHashMap, maxInputHashMap, callback){
   console.log(chalkAlert("NNT | GENERATE TRAINING SET | " + trainingSetUsersHashMap.size + " USERS | " + getTimeStamp()));
   console.log(chalkAlert("NNT | ==================================================================="));
 
-  // trainingSet.data = []
+  try {
 
-  let userFile;
-
-  if (!statsObj.archiveOpen) {
-    initArchiver({outputFile: configuration.defaultUserArchivePath});
-  }
-
-  async.eachSeries(trainingSetUsersHashMap.values(), function(user, cb){
-
-    userFile = "user_" + user.userId + ".json";
-
-    const userBuffer = Buffer.from(JSON.stringify(user));
-
-    archive.append(userBuffer, { name: userFile });
-
-    cb();
-
-  }, function(err){
+    await initArchiver({outputFile: configuration.defaultUserArchivePath});
+    await archiveUsers();
 
     let mihmObj = {};
 
@@ -5276,11 +5303,11 @@ function generateGlobalTrainingTestSet (userHashMap, maxInputHashMap, callback){
 
       if (!statsObj.archiveOpen && !createTrainingSetBusy) {
         clearInterval(waitArchiveDoneInterval);
-        console.log(chalkAlert("TNN | ARCHIVE DONE"));
+        console.log(chalkAlert("TNN | ARCHIVE | DONE"));
         callback();
       }
       else {
-        console.log(chalkLog("TNN | WAIT ARCHIVE DONE"
+        console.log(chalkLog("TNN | ARCHIVE | WAIT DONE"
           + " | ARCHIVE OPEN: " + statsObj.archiveOpen
           + " | CREATE TSET BUSY: " + createTrainingSetBusy
         ));
@@ -5288,8 +5315,12 @@ function generateGlobalTrainingTestSet (userHashMap, maxInputHashMap, callback){
 
     }, 5000);
 
+  }
+  catch(err){
+    console.log(chalkLog("TNN | *** ARCHIVE ERROR: " + err));
+    throw err;
+  }
 
-  });
 }
 
 function generateRandomEvolveConfig (cnf, callback){
@@ -5709,56 +5740,80 @@ function initMain(cnf, callback){
       seedParams.networkId = cnf.seedNetworkId;
     }
 
-    loadSeedNeuralNetwork(seedParams, function(err0, results){
+    loadSeedNeuralNetwork(seedParams, async function(err0, results){
 
       if (err0) {
         console.log(chalkError("*** ERROR loadSeedNeuralNetwork"));
         return callback(err0);
       }
 
-      initCategorizedUserHashmap(async function(err){
 
-        if (err) {
-          console.error(chalkError("NNT | *** ERROR: CATEGORIZED USER HASHMAP NOT INITIALIZED: ", err));
+      if (cnf.loadTrainingSetFromFile) {
+
+        try {
+
+          fs.stat(configuration.defaultUserArchivePath, async function(err, stats){
+            if (err) {
+              console.log(chalkError("NNT | *** USER ARCHIVE STATS ERROR: " + err));
+              return callback(err);
+            }
+
+            const curModifiedMoment = moment(stats.mtimeMs);
+
+            if (statsObj.archiveModifiedMoment.isBefore(curModifiedMoment)){
+
+              console.log(chalkAlert("TNN | *** USER ARCHIVE CHANGED"
+                + " | CUR MOD: " + getTimeStamp(curModifiedMoment)
+                + " | PREV MOD: " + getTimeStamp(statsObj.archiveModifiedMoment)
+                // + "\n" + jsonPrint(stats)
+              ));
+
+              await loadUsersArchive({path: configuration.defaultUserArchivePath});
+
+              statsObj.archiveModifiedMoment = moment(curModifiedMoment);
+
+              createTrainingSetBusy = false;
+              trainingSetReady = true;
+              runOnceFlag = true;
+              callback();
+
+            }
+            else {
+
+              console.log(chalkAlert("TNN | ... USER ARCHIVE NO CHANGE"
+                + " | CUR MOD: " + getTimeStamp(curModifiedMoment)
+                + " | PREV MOD: " + getTimeStamp(statsObj.archiveModifiedMoment)
+              ));
+
+              createTrainingSetBusy = false;
+              trainingSetReady = true;
+              runOnceFlag = true;
+              callback();
+            }
+
+          });
+ 
+        }
+        catch(err) {
+          console.log(chalkError("TNN | *** LOAD USER ARCHIVE ERROR: " + err));
+          createTrainingSetBusy = false;
+          trainingSetReady = false;
           return callback(err);
         }
+      }
+      else {
 
-        console.log(chalkInfo("NNT | LOADED " + categorizedUserHashmap.size + " TOTAL CATEGORIZED USERS"));
+        createTrainingSetBusy = true;
+        trainingSetReady = false;
 
-        if (cnf.loadTrainingSetFromFile) {
+        initCategorizedUserHashmap(async function(err){
 
-          // let folder;
-
-          // if (cnf.useLocalTrainingSets) {
-          //   console.log(chalkInfo("NNT | ... LOADING LOCAL TRAINING SETS FROM FOLDER " + localTrainingSetFolder));
-          //   folder = localTrainingSetFolder;
-          // }
-          // else {
-          //   console.log(chalkInfo("NNT | ... LOADING DEFAULT TRAINING SETS FROM FOLDER " + defaultTrainingSetFolder));
-          //   folder = defaultTrainingSetFolder;
-          // }
-
-          // createTrainingSetBusy = true;
-          // trainingSetReady = false;
-
-          try {
-            await loadUsersArchive({path: configuration.defaultUserArchivePath});
-            createTrainingSetBusy = false;
-            trainingSetReady = true;
-            runOnceFlag = true;
-            callback();
-          }
-          catch(err) {
-            console.log(chalkError("TNN | *** LOAD USER ARCHIVE ERROR: " + err));
-            createTrainingSetBusy = false;
-            trainingSetReady = false;
+          if (err) {
+            console.error(chalkError("NNT | *** ERROR: CATEGORIZED USER HASHMAP NOT INITIALIZED: ", err));
             return callback(err);
           }
-        }
-        else {
 
-          createTrainingSetBusy = true;
-          trainingSetReady = false;
+          console.log(chalkInfo("NNT | LOADED " + categorizedUserHashmap.size + " TOTAL CATEGORIZED USERS"));
 
           updateCategorizedUsers(cnf, function(err){
 
@@ -5794,8 +5849,11 @@ function initMain(cnf, callback){
               callback();
             });
           });
-        }
-      });
+
+        });
+      }
+
+
     });
 
   });
@@ -6519,7 +6577,6 @@ function initTimeout(callback){
     else {
 
       initWatch({rootFolder: configuration.defaultUserArchiveFolder});
-      // loadTrainingSet({folder: configuration.defaultUserArchiveFolder, file: configuration.defaultUserArchiveFile});
 
       loadSeedNeuralNetwork(seedParams, function(err1, results){
 
@@ -6570,68 +6627,168 @@ slackText = slackText + "\n" + getTimeStamp();
 
 slackPostMessage(slackChannel, slackText);
 
+function getFileLock(params){
+
+  return new Promise(function(resolve, reject){
+
+    const fileIsLocked = lockFile.checkSync(params.file);
+
+    if (fileIsLocked) {
+      return reject(new Error("File already locked"));
+    }
+
+    lockFile.lock(params.file, params.options, function(err){
+
+      if (err) {
+        console.log(chalkAlert("TNN | *** FILE LOCK FAIL: " + params.file + "\n" + err));
+        return reject(err);
+      }
+
+      console.log(chalkGreen("TNN | +++ FILE LOCK: " + params.file));
+      resolve(true);
+
+    });
+
+  });
+
+}
+
+function releaseFileLock(params){
+
+  return new Promise(function(resolve, reject){
+
+    const fileIsLocked = lockFile.checkSync(params.file);
+
+    if (!fileIsLocked) {
+      return resolve();
+    }
+
+    lockFile.unlock(params.file, function(err){
+
+      if (err) {
+        console.log(chalkAlert("TNN | *** FILE UNLOCK FAIL: " + params.file + "\n" + err));
+        return reject(err);
+      }
+
+      console.log(chalkGreen("TNN | --- FILE UNLOCK: " + params.file));
+      resolve(true);
+
+    });
+
+  });
+
+}
+
+
 let initMainTimeOut;
 let initMainTimeOutComplete = false;
 
 function initArchiver(params){
 
-  createTrainingSetBusy = true;
+  return new Promise(async function(resolve, reject){
 
-  console.log(chalkAlert("TNN | INIT ARCHIVE\n" + jsonPrint(params)));
-  // create a file to stream archive data to.
-  const output = fs.createWriteStream(params.outputFile);
-
-  archive = archiver("zip", {
-    zlib: { level: 9 } // Sets the compression level.
-  });
-   
-  output.on("close", function() {
-    const archiveSize = toMegabytes(archive.pointer());
-    console.log(chalkAlert("TNN | ARCHIVE CLOSED | " + archiveSize.toFixed(2) + " MB"));
-    statsObj.archiveOpen = false;
-    createTrainingSetBusy = false;
-  });
-   
-  output.on("end", function() {
-    const archiveSize = toMegabytes(archive.pointer());
-    console.log(chalkAlert("TNN | ARCHIVE END | " + archiveSize.toFixed(2) + " MB"));
-    statsObj.archiveOpen = false;
-    createTrainingSetBusy = false;
-  });
-   
-  archive.on("warning", function(err) {
-    console.log(chalkAlert("TNN | ARCHIVE | WARNING\n" + jsonPrint(err)));
-    if (err.code === "ENOENT") {
-    } else {
-      throw err;
-    }
-  });
-   
-  archive.on("progress", function(progress) {
-
-    const progressMbytes = toMegabytes(progress.fs.processedBytes);
-    const totalMbytes = toMegabytes(archive.pointer());
-
-    if (progress.entries.processed % 100 === 0) {
-      console.log(chalkAlert("TNN | ARCHIVE | PROGRESS"
-        + " | ENTRIES: " + progress.entries.processed + " PROCESSED / " + progress.entries.total + " TOTAL"
-        + " (" + (100*progress.entries.processed/progress.entries.total).toFixed(2) + "%)"
-        + " | SIZE: " + progressMbytes.toFixed(2) + " PROCESSED / " + totalMbytes.toFixed(2) + " MB"
-      ));
+    if (archive && archive.isOpen) {
+      return resolve();
     }
 
-  });
-   
-  archive.on("error", function(err) {
-    console.log(chalkAlert("TNN | ARCHIVE | ERROR\n" + jsonPrint(err)));
-    statsObj.archiveOpen = false;
-    createTrainingSetBusy = false;
-    throw err;
-  });
-   
-  archive.pipe(output);
-  statsObj.archiveOpen = true;
+    try {
 
+      const lockFileName = params.outputFile + ".lock";
+
+      let archiveFileLocked = await getFileLock({file: lockFileName, options: {}});
+
+      if (!archiveFileLocked) {
+
+        console.log(chalkAlert("TNN | *** FILE LOCK FAILED | SKIP INIT ARCHIVE: " + params.outputFile));
+
+        statsObj.archiveOpen = false;
+        createTrainingSetBusy = false;
+        return resolve();
+      }
+
+      createTrainingSetBusy = true;
+
+      console.log(chalkAlert("TNN | INIT ARCHIVE\n" + jsonPrint(params)));
+      // create a file to stream archive data to.
+      const output = fs.createWriteStream(params.outputFile);
+
+      archive = archiver("zip", {
+        zlib: { level: 9 } // Sets the compression level.
+      });
+       
+      output.on("close", function() {
+        const archiveSize = toMegabytes(archive.pointer());
+        console.log(chalkAlert("TNN | ARCHIVE | CLOSED | " + archiveSize.toFixed(2) + " MB"));
+        statsObj.archiveOpen = false;
+        createTrainingSetBusy = false;
+        releaseFileLock({file: lockFileName}, function(err){
+          if (err) {
+            console.error(chalkError("TNN | *** ARCHIVE UNLOCK ERROR: " + err));
+            throw err;
+          }
+          archiveFileLocked = false;
+        });
+      });
+       
+      output.on("end", function() {
+        const archiveSize = toMegabytes(archive.pointer());
+        console.log(chalkAlert("TNN | ARCHIVE | END | " + archiveSize.toFixed(2) + " MB"));
+        statsObj.archiveOpen = false;
+        createTrainingSetBusy = false;
+      });
+       
+      archive.on("warning", function(err) {
+        console.log(chalkAlert("TNN | ARCHIVE | WARNING\n" + jsonPrint(err)));
+        if (err.code === "ENOENT") {
+        } else {
+          throw err;
+        }
+      });
+       
+      archive.on("progress", function(progress) {
+
+        const progressMbytes = toMegabytes(progress.fs.processedBytes);
+        const totalMbytes = toMegabytes(archive.pointer());
+
+        if (progress.entries.processed % 100 === 0) {
+          console.log(chalkAlert("TNN | ARCHIVE | PROGRESS"
+            + " | ENTRIES: " + progress.entries.processed + " PROCESSED / " + progress.entries.total + " TOTAL"
+            + " (" + (100*progress.entries.processed/progress.entries.total).toFixed(2) + "%)"
+            + " | SIZE: " + progressMbytes.toFixed(2) + " PROCESSED / " + totalMbytes.toFixed(2) + " MB"
+          ));
+        }
+      });
+       
+      archive.on("close", function() {
+        console.log(chalkAlert("TNN | ARCHIVE | CLOSED"));
+        statsObj.archiveOpen = false;
+        createTrainingSetBusy = false;
+      });
+       
+      archive.on("finish", function() {
+        console.log(chalkAlert("TNN | ARCHIVE | FINISHED"));
+        statsObj.archiveOpen = false;
+        createTrainingSetBusy = false;
+      });
+       
+      archive.on("error", function(err) {
+        console.log(chalkAlert("TNN | ARCHIVE | ERROR\n" + jsonPrint(err)));
+        statsObj.archiveOpen = false;
+        createTrainingSetBusy = false;
+        throw err;
+      });
+       
+      archive.pipe(output);
+      statsObj.archiveOpen = true;
+
+      resolve();
+    }
+    catch(err){
+      console.log(chalkError("TNN | *** INIT ARCHIVE ERROR: " + err));
+      reject(err);
+    }
+
+  });
 }
 
 function initMainTimeOutFunction(){

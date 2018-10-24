@@ -38,6 +38,7 @@
     "json-parse-safe": "^1.0.5",
     "jsonfile": "^5.0.0",
     "keyword-extractor": "0.0.15",
+    "lockfile": "^1.0.4",
     "lodash": "^4.17.11",
     "mentions-regex": "^2.0.3",
     "moment": "^2.22.2",

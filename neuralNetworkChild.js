@@ -542,19 +542,6 @@ function convertTestDatum(params, inputs, datum, callback){
 
       const inputName = inName;
 
-      // if ((datum.histograms[inputType] !== undefined) && (datum.histograms[inputType][inputName] !== undefined)){
-      //   convertedDatum.input.push(1);
-      //   async.setImmediate(function() {
-      //     cb1();
-      //   });
-      // }
-      // else {
-      //   convertedDatum.input.push(0);
-      //   async.setImmediate(function() {
-      //     cb1();
-      //   });
-      // }
-
       if (inputType === "sentiment") {
         if (datum.languageAnalysis === undefined) {
           convertedDatum.input.push(0);
@@ -564,7 +551,7 @@ function convertTestDatum(params, inputs, datum, callback){
         }
         else {
           convertedDatum.input.push(datum.languageAnalysis[inputName]);
-          console.log("NNC | convertTestDatum | INPUT | " + inputType + " | " + inputName + ": " + datum.languageAnalysis[inputName]);
+          debug("NNC | convertTestDatum | INPUT | " + inputType + " | " + inputName + ": " + datum.languageAnalysis[inputName]);
         }
         async.setImmediate(function() { cb1(); });
       }
