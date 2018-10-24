@@ -5,14 +5,33 @@
 global.dbConnection = false;
 let dbConnectionReady = false;
 
-const compactDateTimeFormat = "YYYYMMDD_HHmmss";
+const ONE_SECOND = 1000;
+const ONE_MINUTE = 60 * ONE_SECOND;
+const ONE_HOUR = 60 * ONE_MINUTE;
 
+const ONE_KILOBYTE = 1024;
+const ONE_MEGABYTE = 1024 * ONE_KILOBYTE;
+
+const compactDateTimeFormat = "YYYYMMDD_HHmmss";
 
 const DEFAULT_OFFLINE_MODE = false;
 const DEFAULT_SERVER_MODE = false;
 
 const DEFAULT_FIND_CAT_USER_CURSOR_LIMIT = 100;
 const DEFAULT_CURSOR_BATCH_SIZE = process.env.DEFAULT_CURSOR_BATCH_SIZE || 100;
+
+const DEFAULT_FILELOCK_WAIT = 5*ONE_MINUTE;
+const DEFAULT_FILELOCK_RETRIES = 10;
+const DEFAULT_FILELOCK_RETRY_WAIT = 30*ONE_SECOND;
+const DEFAULT_FILELOCK_STALE = 10*ONE_MINUTE;
+
+let fileLockOptions = { 
+  wait: DEFAULT_FILELOCK_WAIT,
+  retries: DEFAULT_FILELOCK_WAIT,
+  stale: DEFAULT_FILELOCK_STALE,
+  retryWait: DEFAULT_FILELOCK_RETRY_WAIT
+};
+
 
 const os = require("os");
 const moment = require("moment");
@@ -67,13 +86,6 @@ const GLOBAL_TRAINING_SET_ID = "globalTrainingSet";
 
 const SMALL_SET_SIZE = 100;
 const SMALL_TEST_SET_SIZE = 20;
-
-const ONE_SECOND = 1000;
-const ONE_MINUTE = 60 * ONE_SECOND;
-const ONE_HOUR = 60 * ONE_MINUTE;
-
-const ONE_KILOBYTE = 1024;
-const ONE_MEGABYTE = 1024 * ONE_KILOBYTE;
 
 const TEST_MODE_LENGTH = 500;
 const TEST_DROPBOX_NN_LOAD = 10;
@@ -1436,7 +1448,7 @@ function showStats(options){
     printNetworkCreateResultsHashmap();
   }
   else {
-    console.log(chalkLog("============================================================"
+    console.log(chalkLog("NNT | ============================================================"
       + "\nNNT | S"
       + " | STATUS: " + statsObj.status
       + " | CPUs: " + statsObj.cpus
@@ -1447,7 +1459,7 @@ function showStats(options){
       + " | NOW " + moment().format(compactDateTimeFormat)
       + " | STRT " + moment(parseInt(statsObj.startTime)).format(compactDateTimeFormat)
       + " | ITR " + configuration.evolve.iterations
-      + "\n============================================================"
+      + "\nNNT | ============================================================"
     ));
 
     console.log(chalkLog("NNT | CL U HIST"
@@ -4902,17 +4914,35 @@ function unzipUsersToArray(params){
 
   console.log(chalkBlue("TNN | UNZIP USERS TO TRAINING SET: " + params.path));
 
-  return new Promise(function(resolve, reject) {
+  return new Promise(async function(resolve, reject) {
+
+    const lockFileName = params.path + ".lock";
+    let archiveFileLocked;
+
+    try {
+
+      archiveFileLocked = await getFileLock({file: lockFileName, options: fileLockOptions});
+
+      if (!archiveFileLocked) {
+
+        console.log(chalkAlert("TNN | *** USER ARCHIVE FILE LOCK FAILED: " + params.path));
+
+        statsObj.archiveOpen = false;
+        createTrainingSetBusy = false;
+
+        return reject(new Error("USER ARCHIVE FILE LOCK FAILED"));
+      }
+    }
+    catch(err){
+      console.error(chalkError("TNN | *** USER ARCHIVE FILE LOCK ERROR: " + err));
+      return reject(new Error("USER ARCHIVE FILE LOCK ERROR"));
+    }
 
     yauzl.open(params.path, {lazyEntries: true}, function(err, zipfile) {
 
       if (err) {
         return reject(err);
       }
-
-      // console.log(chalkAlert("NNT | ZIP FILE"
-      //   + "\n" + Object.keys(zipfile)
-      // ));
 
       zipfile.on("error", function(err) {
         console.log(chalkError("TNN | *** UNZIP ERROR: " + err));
@@ -4933,18 +4963,10 @@ function unzipUsersToArray(params){
 
       zipfile.on("entry", function(entry) {
         
-        if (/\/$/.test(entry.fileName)) {
-          // Directory file names end with '/'.
-          // Note that entires for directories themselves are optional.
-          // An entry's fileName implicitly requires its parent directories to exist.
-          zipfile.readEntry();
+        if (/\/$/.test(entry.fileName)) { 
+          zipfile.readEntry(); 
         } 
-
         else {
-
-          // console.log(chalkAlert("NNT | ZIP FILE ENTRY"
-          //   + "\n" + Object.keys(entry)
-          // ));
 
           zipfile.openReadStream(entry, function(err, readStream) {
 
@@ -5006,18 +5028,32 @@ function unzipUsersToArray(params){
               userString += part;
             });
 
-            // readStream.on("end",function(){
-            //   debug(chalkInfo("TNN | UNZIP STREAM END | TRAINING SET USERS HM SIZE: " + trainingSetUsersHashMap.size));
-            //   // resolve();
-            // });
-
             readStream.on("close",function(){
+
               console.log(chalkInfo("TNN | UNZIP STREAM CLOSED | TRAINING SET USERS HM SIZE: " + trainingSetUsersHashMap.size));
+
+              releaseFileLock({file: lockFileName}, function(err){
+                if (err) {
+                  console.error(chalkError("TNN | *** ARCHIVE UNLOCK ERROR: " + err));
+                  throw err;
+                }
+                archiveFileLocked = false;
+              });
+
               resolve();
             });
 
             readStream.on("error",function(err){
               console.log(chalkError("TNN | *** UNZIP READ STREAM ERROR: " + err));
+
+              releaseFileLock({file: lockFileName}, function(err){
+                if (err) {
+                  console.error(chalkError("TNN | *** ARCHIVE UNLOCK ERROR: " + err));
+                  throw err;
+                }
+                archiveFileLocked = false;
+              });
+
               reject(err);
             });
 
@@ -6631,11 +6667,11 @@ function getFileLock(params){
 
   return new Promise(function(resolve, reject){
 
-    const fileIsLocked = lockFile.checkSync(params.file);
+    // const fileIsLocked = lockFile.checkSync(params.file, fileLockCheckOptions);
 
-    if (fileIsLocked) {
-      return reject(new Error("File already locked"));
-    }
+    // if (fileIsLocked) {
+    //   return resolve(false);
+    // }
 
     lockFile.lock(params.file, params.options, function(err){
 
@@ -6695,7 +6731,7 @@ function initArchiver(params){
 
       const lockFileName = params.outputFile + ".lock";
 
-      let archiveFileLocked = await getFileLock({file: lockFileName, options: {}});
+      let archiveFileLocked = await getFileLock({file: lockFileName, options: fileLockOptions});
 
       if (!archiveFileLocked) {
 
