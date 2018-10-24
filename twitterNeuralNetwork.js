@@ -4683,137 +4683,123 @@ function unzipUsersToArray(params){
         return reject(err);
       }
 
-      zipfile.on("error", function(err) {
-        console.log(chalkError("TNN | *** UNZIP ERROR: " + err));
-        reject(err);
-      });
+      try {
 
-      zipfile.on("close", function() {
-        console.log(chalkLog("TNN | UNZIP CLOSE"));
-        releaseFileLock({file: lockFileName}, function(err){
-          if (err) {
-            console.error(chalkError("TNN | *** ARCHIVE UNLOCK ERROR: " + err));
-            throw err;
-          }
+        zipfile.on("error", async function(err) {
+          console.log(chalkError("TNN | *** UNZIP ERROR: " + err));
+          await releaseFileLock({file: lockFileName});
           archiveFileLocked = false;
+          reject(err);
         });
-        resolve(true);
-      });
 
-      zipfile.on("end", function() {
-        console.log(chalkLog("TNN | UNZIP END"));
-        releaseFileLock({file: lockFileName}, function(err){
-          if (err) {
-            console.error(chalkError("TNN | *** ARCHIVE UNLOCK ERROR: " + err));
-            throw err;
-          }
+        zipfile.on("close", async function() {
+          console.log(chalkLog("TNN | UNZIP CLOSE"));
+          await releaseFileLock({file: lockFileName});
           archiveFileLocked = false;
+          resolve(true);
         });
-      });
 
-      let hmHit = "TNN | --> UNZIP";
+        zipfile.on("end", async function() {
+          console.log(chalkLog("TNN | UNZIP END"));
+          await releaseFileLock({file: lockFileName});
+          archiveFileLocked = false;
+          resolve(true);
+        });
 
-      zipfile.on("entry", function(entry) {
-        
-        if (/\/$/.test(entry.fileName)) { 
-          zipfile.readEntry(); 
-        } 
-        else {
+        let hmHit = "TNN | --> UNZIP";
 
-          zipfile.openReadStream(entry, function(err, readStream) {
+        zipfile.on("entry", function(entry) {
+          
+          if (/\/$/.test(entry.fileName)) { 
+            zipfile.readEntry(); 
+          } 
+          else {
+            zipfile.openReadStream(entry, async function(err, readStream) {
 
-            if (err) {
-              return reject(err);
-            }
-
-            let userString = "";
-
-            readStream.on("end", function() {
-
-              try {
-                const fileObj = JSON.parse(userString);
-
-                if (entry.fileName.endsWith("maxInputHashMap.json")) {
-
-                  console.log(chalkLog("TNN | UNZIPPED MAX INPUT"));
-
-                  userMaxInputHashMap = fileObj.maxInputHashMap;
-                }
-                else {
-
-                  statsObj.users.unzipped += 1;
-
-                  hmHit = "TNN | --> UNZIP";
-
-                  if (trainingSetUsersHashMap.has(fileObj.userId)) {
-                    hmHit = "TNN | **> UNZIP";
-                    statsObj.users.zipHashMapHit += 1;
-                  }
-
-                  trainingSetUsersHashMap.set(fileObj.userId, fileObj);
-
-                  if (configuration.verbose || (statsObj.users.unzipped % 1000 === 0)) {
-                    console.log(chalkLog(hmHit
-                      + " [" + statsObj.users.zipHashMapHit + " HM HIT / " + statsObj.users.unzipped + " UZPD]"
-                      + " 3C: " + fileObj.threeceeFollowing
-                      + " | " + fileObj.userId
-                      + " | @" + fileObj.screenName
-                      + " | " + fileObj.name
-                      + " | FLWRs: " + fileObj.followersCount
-                      + " | FRNDs: " + fileObj.friendsCount
-                      + " | CAT M: " + fileObj.category + " A: " + fileObj.categoryAuto
-                      // + "\n" + jsonPrint(fileObj)
-                    ));
-                  }
-                }
-
-                zipfile.readEntry();
-              }
-              catch (err){
-                console.log(chalkError("TNN | *** UNZIP READ STREAM ERROR: " + err));
+              if (err) {
                 return reject(err);
               }
-            });
 
-            readStream.on("data",function(chunk){
-              let part = chunk.toString();
-              userString += part;
-            });
+              let userString = "";
 
-            readStream.on("close",function(){
+              readStream.on("end", async function() {
 
-              console.log(chalkInfo("TNN | UNZIP STREAM CLOSED | TRAINING SET USERS HM SIZE: " + trainingSetUsersHashMap.size));
+                try {
+                  const fileObj = JSON.parse(userString);
 
-              releaseFileLock({file: lockFileName}, function(err){
-                if (err) {
-                  console.error(chalkError("TNN | *** ARCHIVE UNLOCK ERROR: " + err));
-                  throw err;
+                  if (entry.fileName.endsWith("maxInputHashMap.json")) {
+
+                    console.log(chalkLog("TNN | UNZIPPED MAX INPUT"));
+
+                    userMaxInputHashMap = fileObj.maxInputHashMap;
+                  }
+                  else {
+
+                    statsObj.users.unzipped += 1;
+
+                    hmHit = "TNN | --> UNZIP";
+
+                    if (trainingSetUsersHashMap.has(fileObj.userId)) {
+                      hmHit = "TNN | **> UNZIP";
+                      statsObj.users.zipHashMapHit += 1;
+                    }
+
+                    trainingSetUsersHashMap.set(fileObj.userId, fileObj);
+
+                    if (configuration.verbose || (statsObj.users.unzipped % 1000 === 0)) {
+                      console.log(chalkLog(hmHit
+                        + " [" + statsObj.users.zipHashMapHit + " HM HIT / " + statsObj.users.unzipped + " UZPD]"
+                        + " 3C: " + fileObj.threeceeFollowing
+                        + " | " + fileObj.userId
+                        + " | @" + fileObj.screenName
+                        + " | " + fileObj.name
+                        + " | FLWRs: " + fileObj.followersCount
+                        + " | FRNDs: " + fileObj.friendsCount
+                        + " | CAT M: " + fileObj.category + " A: " + fileObj.categoryAuto
+                        // + "\n" + jsonPrint(fileObj)
+                      ));
+                    }
+                  }
+
+                  zipfile.readEntry();
                 }
-                archiveFileLocked = false;
+                catch (err){
+                  console.log(chalkError("TNN | *** UNZIP READ STREAM ERROR: " + err));
+                  await releaseFileLock({file: lockFileName});
+                  archiveFileLocked = false;
+                  return reject(err);
+                }
               });
 
-              resolve();
-            });
-
-            readStream.on("error",function(err){
-              console.log(chalkError("TNN | *** UNZIP READ STREAM ERROR: " + err));
-
-              releaseFileLock({file: lockFileName}, function(err){
-                if (err) {
-                  console.error(chalkError("TNN | *** ARCHIVE UNLOCK ERROR: " + err));
-                  throw err;
-                }
-                archiveFileLocked = false;
+              readStream.on("data",function(chunk){
+                let part = chunk.toString();
+                userString += part;
               });
 
-              reject(err);
+              readStream.on("close", async function(){
+                console.log(chalkInfo("TNN | UNZIP STREAM CLOSED | TRAINING SET USERS HM SIZE: " + trainingSetUsersHashMap.size));
+                await releaseFileLock({file: lockFileName});
+                archiveFileLocked = false;
+                resolve();
+              });
+
+              readStream.on("error",async function(err){
+                console.log(chalkError("TNN | *** UNZIP READ STREAM ERROR: " + err));
+                await releaseFileLock({file: lockFileName});
+                archiveFileLocked = false;
+                reject(err);
+              });
             });
+          }
+        });
 
-          });
-        }
-      });
+        zipfile.readEntry();
 
-      zipfile.readEntry();
+      }
+      catch(err){
+        console.log(chalkError("TNN | UNZIP USERS TO ARRAY ERROR: " + err));
+        return reject(err);
+      }
 
     });
 
@@ -5110,7 +5096,7 @@ async function generateGlobalTrainingTestSet (userHashMap, maxInputHashMap, call
 
     let waitArchiveDoneInterval;
 
-    waitArchiveDoneInterval = setInterval(function(){
+    waitArchiveDoneInterval = setInterval(async function(){
 
       if (!statsObj.archiveOpen && !createTrainingSetBusy) {
 
@@ -5118,17 +5104,12 @@ async function generateGlobalTrainingTestSet (userHashMap, maxInputHashMap, call
 
         const lockFileName = configuration.defaultUserArchivePath + ".lock";
 
-        releaseFileLock({file: lockFileName}, function(err){
-          if (err) {
-            console.error(chalkError("TNN | *** ARCHIVE UNLOCK ERROR: " + err));
-            return callback(err);
-          }
+        await releaseFileLock({file: lockFileName});
 
-          archiveFileLocked = false;
-          console.log(chalkBlueBold("TNN | ARCHIVE | DONE"));
-          callback();
+        archiveFileLocked = false;
 
-        });
+        console.log(chalkBlueBold("TNN | ARCHIVE | DONE"));
+        callback();
 
       }
       else {
@@ -6544,7 +6525,7 @@ function releaseFileLock(params){
     const fileIsLocked = lockFile.checkSync(params.file);
 
     if (!fileIsLocked) {
-      return resolve();
+      return resolve(true);
     }
 
     lockFile.unlock(params.file, function(err){
@@ -6605,14 +6586,6 @@ function initArchiver(params){
         console.log(chalkGreen("TNN | ARCHIVE | CLOSED | " + archiveSize.toFixed(2) + " MB"));
         statsObj.archiveOpen = false;
         createTrainingSetBusy = false;
-
-        // releaseFileLock({file: lockFileName}, function(err){
-        //   if (err) {
-        //     console.error(chalkError("TNN | *** ARCHIVE UNLOCK ERROR: " + err));
-        //     throw err;
-        //   }
-        //   archiveFileLocked = false;
-        // });
       });
        
       output.on("end", function() {
