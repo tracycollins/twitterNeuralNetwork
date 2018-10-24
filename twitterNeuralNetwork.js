@@ -4874,6 +4874,34 @@ function updateTrainingSet(params){
   });
 }
 
+function checkFileOpen(params){
+
+  return new Promise(async function(resolve, reject){
+
+    console.log(chalkLog("TNN | CHECK IF FILE OPEN: " + params.path));
+
+    let checkFileOpenInterval;
+
+    checkFileOpenInterval = setInterval(function(){
+
+      fs.open(params.path,"r+", function(err,data) {
+        if (err) {
+          console.log(chalkAlert("TNN | XXX FILE ALREADY OPEN: " + params.path + " | " + err));
+          // return resolve(true);
+        }
+        else {
+          clearInterval(checkFileOpenInterval);
+          console.log(chalkAlert("TNN | ... FILE NOT OPEN: " + params.path));
+          resolve(false);
+        }
+ 
+      });
+
+    }, 1000);
+
+  });
+}
+
 function loadUsersArchive(params){
 
   return new Promise(async function(resolve, reject){
@@ -4881,6 +4909,7 @@ function loadUsersArchive(params){
     console.log(chalkLog("TNN | LOADING USERS ARCHIVE: " + params.path));
 
     try {
+      const fileOpen = await checkFileOpen({path: params.path});
       const unzipSuccess = await unzipUsersToArray({path: params.path});
       await updateTrainingSet();
       resolve();
@@ -4893,14 +4922,22 @@ function loadUsersArchive(params){
   });
 }
 
+let watchOptions = {
+  ignoreDotFiles: true,
+  ignoreUnreadableDir: true,
+  ignoreNotPermitted: true,
+}
+
 function initWatch(params){
 
   console.log(chalkLog("TNN | INIT WATCH\n" + jsonPrint(params)));
 
-  watch.createMonitor(params.rootFolder, function (monitor) {
+  watch.createMonitor(params.rootFolder, watchOptions, function (monitor) {
 
     monitor.on("created", async function (f, stat) {
+
       console.log(chalkInfo("TNN | +++ FILE CREATED: " + f));
+
       if (f.endsWith("users.zip")){
 
         if  (statsObj.loadUsersArchiveBusy) {
@@ -4923,7 +4960,9 @@ function initWatch(params){
     });
 
     monitor.on("changed", async function (f, curr, prev) {
+
       console.log(chalkInfo("TNN | !!! FILE CHANGED: " + f));
+
       if (f.endsWith("users.zip")){
 
         if  (statsObj.loadUsersArchiveBusy) {
