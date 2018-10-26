@@ -4903,6 +4903,63 @@ function checkFileOpen(params){
   });
 }
 
+function fileSize(params){
+
+  return new Promise(async function(resolve, reject){
+
+    console.log(chalkLog("TNN | WAIT FILE SIZE: " + params.path));
+
+    let stats;
+
+    try {
+      stats = fs.statSync(params.path);
+    }
+    catch(err){
+      return reject(err);
+    }
+
+    let size = stats.size;
+    let prevSize = stats.size;
+
+    let interval = params.interval || 10*ONE_SECOND;
+
+    let sizeInterval;
+
+    sizeInterval = setInterval(function(){
+
+      console.log(chalkInfo("TNN | FILE SIZE"
+        + " | CUR: " + size
+        + " | PREV: " + prevSize
+      ));
+
+      if ((size > 0) && (size === prevSize)) {
+
+        clearInterval(sizeInterval);
+
+        console.log(chalkAlert("TNN | FILE SIZE STABLE"
+          + " | CUR: " + size
+          + " | PREV: " + prevSize
+        ));
+
+        return resolve();
+      }
+
+      try {
+        stats = fs.statSync(params.path);
+      }
+      catch(err){
+        clearInterval(sizeInterval);
+        return reject(err);
+      }
+      
+      size = stats.size;
+      prevSize = stats.size;
+
+    }, interval);
+
+  });
+}
+
 function loadUsersArchive(params){
 
   return new Promise(async function(resolve, reject){
@@ -5620,11 +5677,13 @@ function initMain(cnf, callback){
             if (statsObj.archiveModifiedMoment.isBefore(curModifiedMoment)){
 
               console.log(chalkBlueBold("TNN | *** USER ARCHIVE CHANGED"
+                + " | SIZE: " + stats.size
                 + " | CUR MOD: " + getTimeStamp(curModifiedMoment)
                 + " | PREV MOD: " + getTimeStamp(statsObj.archiveModifiedMoment)
                 // + "\n" + jsonPrint(stats)
               ));
 
+              await fileSize({path: configuration.defaultUserArchivePath});
               await loadUsersArchive({path: configuration.defaultUserArchivePath});
 
               statsObj.archiveModifiedMoment = moment(curModifiedMoment);
