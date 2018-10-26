@@ -1401,9 +1401,9 @@ function printNetworkCreateResultsHashmap(){
 
     const t = table(tableArray, { align: ["l", "l", "l", "l", "l", "r", "l", "l", "l", "l", "r", "r", "r", "l", "l", "r", "r", "r"] });
 
-    console.log(chalkLog.bgYellowBright("TNN | === NETWORK RESULTS ========================================================================================================================"));
-    console.log(chalkLog.bgYellowBright(t));
-    console.log(chalkLog.bgYellowBright("TNN | ============================================================================================================================================"));
+    console.log(chalkLog("TNN | === NETWORK RESULTS ========================================================================================================================"));
+    console.log(chalkLog(t));
+    console.log(chalkLog("TNN | ============================================================================================================================================"));
 
   });
 }
@@ -1455,7 +1455,7 @@ function showStats(options){
     printNetworkCreateResultsHashmap();
   }
   else {
-    console.log(chalkLog.bgYellowBright("TNN | ============================================================"
+    console.log(chalkLog("TNN | ============================================================"
       + "\nTNN | S"
       + " | STATUS: " + statsObj.status
       + " | CPUs: " + statsObj.cpus
@@ -1469,7 +1469,7 @@ function showStats(options){
       + "\nTNN | ============================================================"
     ));
 
-    console.log(chalkLog.bgYellowBright("TNN | CL U HIST"
+    console.log(chalkLog("TNN | CL U HIST"
       + " | L: " + categorizedUserHistogram.left
       + " | R: " + categorizedUserHistogram.right
       + " | N: " + categorizedUserHistogram.neutral
@@ -5840,7 +5840,7 @@ function printNeuralNetworkChildHashMap(){
         console.log(chalkWarn("??? UNKNOWN CHILD STATUS: " + neuralNetworkChildHashMap[nnChildId].status));
         chalkValue = chalkInfo;
     }
-    console.log(chalkValue.bgYellowBright("TNN"
+    console.log(chalkValue("TNN"
       + " | " + nnChildId
       + " | PID: " + neuralNetworkChildHashMap[nnChildId].pid
       + " | STATUS: " + neuralNetworkChildHashMap[nnChildId].status
