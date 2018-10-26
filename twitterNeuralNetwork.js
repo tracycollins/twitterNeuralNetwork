@@ -4721,6 +4721,7 @@ function unzipUsersToArray(params){
               }
 
               let userString = "";
+              let percent = 0;
 
               statsObj.users.zipHashMapHit = 0;
               statsObj.users.zipHashMapMiss = 0;
@@ -4922,6 +4923,8 @@ function fileSize(params){
 
   return new Promise(async function(resolve, reject){
 
+    let interval = params.interval || ONE_MINUTE;
+
     console.log(chalkLog("TNN | WAIT FILE SIZE: " + params.path));
 
     let stats;
@@ -4936,7 +4939,6 @@ function fileSize(params){
     let size = stats.size;
     let prevSize = stats.size;
 
-    let interval = params.interval || 10*ONE_SECOND;
 
     let sizeInterval;
 
