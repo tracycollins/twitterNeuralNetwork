@@ -5667,58 +5667,62 @@ function initMain(cnf, callback){
 
       if (cnf.loadTrainingSetFromFile) {
 
-        try {
+        // try {
 
-          fs.stat(configuration.defaultUserArchivePath, async function(err, stats){
-            if (err) {
-              console.log(chalkError("TNN | *** USER ARCHIVE STATS ERROR: " + err));
+        fs.stat(configuration.defaultUserArchivePath, async function(err, stats){
+          if (err) {
+            console.log(chalkError("TNN | *** USER ARCHIVE STATS ERROR: " + err));
+            return callback(err);
+          }
+
+          const curModifiedMoment = moment(stats.mtimeMs);
+
+          if (statsObj.archiveModifiedMoment.isBefore(curModifiedMoment)){
+
+            console.log(chalkBlueBold("TNN | *** USER ARCHIVE CHANGED"
+              + " | SIZE: " + stats.size
+              + " | CUR MOD: " + getTimeStamp(curModifiedMoment)
+              + " | PREV MOD: " + getTimeStamp(statsObj.archiveModifiedMoment)
+              // + "\n" + jsonPrint(stats)
+            ));
+
+            try {
+              await fileSize({path: configuration.defaultUserArchivePath});
+              await loadUsersArchive({path: configuration.defaultUserArchivePath});
+              statsObj.archiveModifiedMoment = moment(curModifiedMoment);
+              createTrainingSetBusy = false;
+              trainingSetReady = true;
+              runOnceFlag = true;
+              callback();
+            }
+            catch(err){
               return callback(err);
             }
 
-            const curModifiedMoment = moment(stats.mtimeMs);
 
-            if (statsObj.archiveModifiedMoment.isBefore(curModifiedMoment)){
+          }
+          else {
 
-              console.log(chalkBlueBold("TNN | *** USER ARCHIVE CHANGED"
-                + " | SIZE: " + stats.size
-                + " | CUR MOD: " + getTimeStamp(curModifiedMoment)
-                + " | PREV MOD: " + getTimeStamp(statsObj.archiveModifiedMoment)
-                // + "\n" + jsonPrint(stats)
-              ));
+            console.log(chalkLog("TNN | ... USER ARCHIVE NO CHANGE"
+              + " | CUR MOD: " + getTimeStamp(curModifiedMoment)
+              + " | PREV MOD: " + getTimeStamp(statsObj.archiveModifiedMoment)
+            ));
 
-              await fileSize({path: configuration.defaultUserArchivePath});
-              await loadUsersArchive({path: configuration.defaultUserArchivePath});
+            createTrainingSetBusy = false;
+            trainingSetReady = true;
+            runOnceFlag = true;
+            callback();
+          }
 
-              statsObj.archiveModifiedMoment = moment(curModifiedMoment);
-
-              createTrainingSetBusy = false;
-              trainingSetReady = true;
-              runOnceFlag = true;
-              callback();
-
-            }
-            else {
-
-              console.log(chalkLog("TNN | ... USER ARCHIVE NO CHANGE"
-                + " | CUR MOD: " + getTimeStamp(curModifiedMoment)
-                + " | PREV MOD: " + getTimeStamp(statsObj.archiveModifiedMoment)
-              ));
-
-              createTrainingSetBusy = false;
-              trainingSetReady = true;
-              runOnceFlag = true;
-              callback();
-            }
-
-          });
+        });
  
-        }
-        catch(err) {
-          console.log(chalkError("TNN | *** LOAD USER ARCHIVE ERROR: " + err));
-          createTrainingSetBusy = false;
-          trainingSetReady = false;
-          return callback(err);
-        }
+        // }
+        // catch(err) {
+        //   console.log(chalkError("TNN | *** LOAD USER ARCHIVE ERROR: " + err));
+        //   createTrainingSetBusy = false;
+        //   trainingSetReady = false;
+        //   return callback(err);
+        // }
       }
       else {
 
