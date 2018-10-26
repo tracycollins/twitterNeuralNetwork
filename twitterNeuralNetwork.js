@@ -4677,6 +4677,8 @@ function unzipUsersToArray(params){
         return resolve(false);
       }
 
+      await fileSize({path: params.path});
+
       yauzl.open(params.path, {lazyEntries: true}, function(err, zipfile) {
 
         if (err) {
@@ -4951,7 +4953,7 @@ function fileSize(params){
         clearInterval(sizeInterval);
         return reject(err);
       }
-      
+
       size = stats.size;
       prevSize = stats.size;
 
@@ -4968,6 +4970,7 @@ function loadUsersArchive(params){
 
     try {
       const fileOpen = await checkFileOpen({path: params.path});
+      await fileSize({path: params.path});
       const unzipSuccess = await unzipUsersToArray({path: params.path});
       await updateTrainingSet();
       resolve();
