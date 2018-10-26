@@ -4949,6 +4949,17 @@ function fileSize(params){
         + " | PREV: " + prevSize
       ));
 
+      try {
+        stats = fs.statSync(params.path);
+      }
+      catch(err){
+        clearInterval(sizeInterval);
+        return reject(err);
+      }
+
+      prevSize = size;
+      size = stats.size;
+
       if ((size > 0) && (size === prevSize)) {
 
         clearInterval(sizeInterval);
@@ -4961,16 +4972,6 @@ function fileSize(params){
         return resolve();
       }
 
-      try {
-        stats = fs.statSync(params.path);
-      }
-      catch(err){
-        clearInterval(sizeInterval);
-        return reject(err);
-      }
-
-      size = stats.size;
-      prevSize = stats.size;
 
     }, interval);
 
@@ -5711,7 +5712,9 @@ function initMain(cnf, callback){
               callback();
             }
             catch(err){
-              return callback(err);
+              createTrainingSetBusy = false;
+              trainingSetReady = false;
+              return callback();
             }
 
 
