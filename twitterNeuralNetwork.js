@@ -4676,19 +4676,12 @@ function unzipUsersToArray(params){
 
         return resolve(false);
       }
-    }
-    catch(err){
-      console.error(chalkError("TNN | *** USER ARCHIVE FILE LOCK ERROR: " + err));
-      return reject(new Error("USER ARCHIVE FILE LOCK ERROR"));
-    }
 
-    yauzl.open(params.path, {lazyEntries: true}, function(err, zipfile) {
+      yauzl.open(params.path, {lazyEntries: true}, function(err, zipfile) {
 
-      if (err) {
-        return reject(err);
-      }
-
-      try {
+        if (err) {
+          return reject(err);
+        }
 
         zipfile.on("error", async function(err) {
           console.log(chalkError("TNN | *** UNZIP ERROR: " + err));
@@ -4800,13 +4793,16 @@ function unzipUsersToArray(params){
 
         zipfile.readEntry();
 
-      }
-      catch(err){
-        console.log(chalkError("TNN | UNZIP USERS TO ARRAY ERROR: " + err));
-        return reject(err);
-      }
+      });
 
-    });
+
+    }
+    catch(err){
+      console.error(chalkError("TNN | *** USER ARCHIVE READ ERROR: " + err));
+      return reject(new Error("USER ARCHIVE READ ERROR"));
+    }
+
+
 
   });
 }
