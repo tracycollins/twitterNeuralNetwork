@@ -4975,8 +4975,10 @@ function initWatch(params){
           statsObj.loadUsersArchiveBusy = true;
 
           try {
-            await loadUsersArchive({path: f});
-            statsObj.loadUsersArchiveBusy = false;
+            setTimeout(async function(){
+              await loadUsersArchive({path: f});
+              statsObj.loadUsersArchiveBusy = false;
+            }, 30*ONE_SECOND);
           }
           catch(err){
             statsObj.loadUsersArchiveBusy = false;
