@@ -4722,6 +4722,10 @@ function unzipUsersToArray(params){
 
               let userString = "";
 
+              statsObj.users.zipHashMapHit = 0;
+              statsObj.users.zipHashMapMiss = 0;
+              statsObj.users.unzipped = 0;
+
               readStream.on("end", async function() {
 
                 try {
@@ -4743,12 +4747,21 @@ function unzipUsersToArray(params){
                       hmHit = "TNN | **> UNZIP";
                       statsObj.users.zipHashMapHit += 1;
                     }
+                    else {
+                      statsObj.users.zipHashMapMiss += 1;
+                    }
+
+                    percent = 100*(statsObj.users.zipHashMapHit/statsObj.users.unzipped);
 
                     trainingSetUsersHashMap.set(fileObj.userId, fileObj);
 
                     if (configuration.verbose || (statsObj.users.unzipped % 1000 === 0)) {
                       console.log(chalkLog(hmHit
-                        + " [" + statsObj.users.zipHashMapHit + " HM HIT / " + statsObj.users.unzipped + " UZPD]"
+                        + " | " + trainingSetUsersHashMap.size + " USERS IN HM"
+                        + " [ ZipHM: " + statsObj.users.zipHashMapMiss 
+                        + " MISS / " + statsObj.users.zipHashMapHit 
+                        + " HIT (" + percent.toFixed(2) + "%) ]"
+                        + " | " + statsObj.users.unzipped + " UNZPD ]"
                         + " 3C: " + fileObj.threeceeFollowing
                         + " | " + fileObj.userId
                         + " | @" + fileObj.screenName
@@ -4929,7 +4942,7 @@ function fileSize(params){
 
     sizeInterval = setInterval(function(){
 
-      console.log(chalkInfo("TNN | FILE SIZE"
+      console.log(chalkInfo("TNN | FILE SIZE | " + getTimeStamp()
         + " | CUR: " + size
         + " | PREV: " + prevSize
       ));
@@ -4938,7 +4951,7 @@ function fileSize(params){
 
         clearInterval(sizeInterval);
 
-        console.log(chalkAlert("TNN | FILE SIZE STABLE"
+        console.log(chalkAlert("TNN | FILE SIZE STABLE | " + getTimeStamp()
           + " | CUR: " + size
           + " | PREV: " + prevSize
         ));
@@ -4966,7 +4979,7 @@ function loadUsersArchive(params){
 
   return new Promise(async function(resolve, reject){
 
-    console.log(chalkLog("TNN | LOADING USERS ARCHIVE: " + params.path));
+    console.log(chalkLog("TNN | LOADING USERS ARCHIVE | " + getTimeStamp() + " | " + params.path));
 
     try {
       const fileOpen = await checkFileOpen({path: params.path});
@@ -4976,7 +4989,7 @@ function loadUsersArchive(params){
       resolve();
     }
     catch(err){
-      console.log(chalkError("TNN | *** LOAD USERS ARCHIVE ERROR: " + err));
+      console.log(chalkError("TNN | *** LOAD USERS ARCHIVE ERROR | " + getTimeStamp() + " | " + err));
       reject(err);
     }
 
@@ -4997,12 +5010,12 @@ function initWatch(params){
 
     monitor.on("created", async function (f, stat) {
 
-      console.log(chalkInfo("TNN | +++ FILE CREATED: " + f));
+      console.log(chalkInfo("TNN | +++ FILE CREATED | " + getTimeStamp() + " | " + f));
 
       if (f.endsWith("users.zip")){
 
         if  (statsObj.loadUsersArchiveBusy) {
-          console.log(chalkAlert("TNN | LOAD USERS ARCHIVE ALREADY BUSY: " + f));
+          console.log(chalkAlert("TNN | LOAD USERS ARCHIVE ALREADY BUSY | " + getTimeStamp() + " | " + f));
         }
         else {
           statsObj.loadUsersArchiveBusy = true;
@@ -5015,7 +5028,7 @@ function initWatch(params){
           }
           catch(err){
             statsObj.loadUsersArchiveBusy = false;
-            console.log(chalkError("TNN | *** WATCH CHANGE ERROR: " + err));
+            console.log(chalkError("TNN | *** WATCH CHANGE ERROR | " + getTimeStamp() + " | " + err));
           }
         }
 
@@ -5029,7 +5042,7 @@ function initWatch(params){
       if (f.endsWith("users.zip")){
 
         if  (statsObj.loadUsersArchiveBusy) {
-          console.log(chalkAlert("TNN | LOAD USERS ARCHIVE ALREADY BUSY: " + f));
+          console.log(chalkAlert("TNN | LOAD USERS ARCHIVE ALREADY BUSY | " + getTimeStamp() + " | " + f));
         }
         else {
           statsObj.loadUsersArchiveBusy = true;
@@ -5042,14 +5055,14 @@ function initWatch(params){
           }
           catch(err){
             statsObj.loadUsersArchiveBusy = false;
-            console.log(chalkError("TNN | *** WATCH CHANGE ERROR: " + err));
+            console.log(chalkError("TNN | *** WATCH CHANGE ERROR | " + getTimeStamp() + " | " + err));
           }
         }
       }
     });
 
     monitor.on("removed", function (f, stat) {
-      console.log(chalkInfo("TNN | XXX FILE DELETED: " + f));
+      console.log(chalkInfo("TNN | XXX FILE DELETED | " + getTimeStamp() + " | " + f));
     });
 
     // monitor.stop(); // Stop watching
