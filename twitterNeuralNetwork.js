@@ -4919,9 +4919,13 @@ function checkFileOpen(params){
   });
 }
 
+let sizeInterval;
+
 function fileSize(params){
 
   return new Promise(async function(resolve, reject){
+
+    clearInterval(sizeInterval);
 
     let interval = params.interval || ONE_MINUTE;
 
@@ -4938,9 +4942,6 @@ function fileSize(params){
 
     let size = stats.size;
     let prevSize = stats.size;
-
-
-    let sizeInterval;
 
     sizeInterval = setInterval(function(){
 
