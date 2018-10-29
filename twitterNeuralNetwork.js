@@ -2785,7 +2785,33 @@ function loadBestNetworkDropboxFolders (params, callback){
 
                 printNetworkObj("TNN | DROPBOX BEST NETWORK", networkObj);
 
+                if (!bestNetworkHashMap.has(networkObj.networkId) 
+                  && ((networkObj.successRate >= configuration.globalMinSuccessRate) 
+                  || (networkObj.overallMatchRate >= configuration.globalMinSuccessRate))) {
+
+                  printNetworkObj("TNN | LOAD GLOBAL BEST NETWORK", networkObj);
+
+                  slackText = "\n*GLOBAL BEST (ON LOCAL DIR LOAD)*";
+                  slackText = slackText + "\n*" + networkObj.successRate.toFixed(2) + "%*";
+                  slackText = slackText + "\n" + networkObj.networkId;
+                  slackText = slackText + "\nELAPSED: " + msToTime(networkObj.evolve.elapsed);
+                  slackText = slackText + "\nBETTER CHILD: " + networkObj.betterChild;
+                  slackText = slackText + "\nIN: " + networkObj.inputsId;
+                  slackText = slackText + "\nINPUTS: " + networkObj.network.input;
+
+                  slackPostMessage(slackChannelPassGlobal, slackText);
+
+                  saveFileQueue.push({localFlag: false, folder: globalBestNetworkFolder, file: entry.name, obj: networkObj});
+
+                }
+
                 bestNetworkHashMap.set(networkObj.networkId, { entry: entry, networkObj: networkObj});
+
+
+
+
+
+
 
                 let inputsEntry = {};
 
@@ -2814,7 +2840,8 @@ function loadBestNetworkDropboxFolders (params, callback){
               }
             });
           }
-          else if (oldContentHash && (oldContentHash !== entry.content_hash) && (curNetworkObj.entry.path_display !== entry.path_display)) {
+          else if (oldContentHash && (oldContentHash !== entry.content_hash) 
+            && (curNetworkObj.entry.path_display !== entry.path_display)) {
 
             console.log(chalkNetwork("TNN | DROPBOX BEST NETWORK CONTENT DIFF IN DIFF params.folders"
               + " | LAST MOD: " + moment(new Date(entry.client_modified)).format(compactDateTimeFormat)
@@ -3065,6 +3092,28 @@ function loadBestNetworkDropboxFolders (params, callback){
                     printNetworkObj("TNN | *** NEW BEST NN", nnDb);
 
                   }
+
+                  if ((folder !== "/config/utility/best/neuralNetworks") 
+                    && ((nnDb.successRate >= configuration.globalMinSuccessRate) 
+                    || (nnDb.overallMatchRate >= configuration.globalMinSuccessRate))) {
+
+                    printNetworkObj("TNN | LOAD GLOBAL BEST NETWORK", nnDb);
+
+                    slackText = "\n*GLOBAL BEST (ON LOCAL DIR LOAD)*";
+                    slackText = slackText + "\n*" + nnDb.successRate.toFixed(2) + "%*";
+                    slackText = slackText + "\n" + nnDb.networkId;
+                    slackText = slackText + "\nELAPSED: " + msToTime(nnDb.evolve.elapsed);
+                    slackText = slackText + "\nBETTER CHILD: " + nnDb.betterChild;
+                    slackText = slackText + "\nIN: " + nnDb.inputsId;
+                    slackText = slackText + "\nINPUTS: " + nnDb.network.input;
+
+                    slackPostMessage(slackChannelPassGlobal, slackText);
+
+                    saveFileQueue.push({localFlag: false, folder: globalBestNetworkFolder, file: entry.name, obj: nnDb});
+
+                  }
+
+
 
                   bestNetworkHashMap.set(nnDb.networkId, { entry: entry, networkObj: nnDb});
 
