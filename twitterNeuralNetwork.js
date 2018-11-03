@@ -878,11 +878,13 @@ else {
 }
 
 let globalhistograms = {};
-globalhistograms.words = {};
-globalhistograms.urls = {};
-globalhistograms.hashtags = {};
-globalhistograms.userMentions = {};
 globalhistograms.emoji = {};
+globalhistograms.hashtags = {};
+globalhistograms.images = {};
+globalhistograms.media = {};
+globalhistograms.urls = {};
+globalhistograms.userMentions = {};
+globalhistograms.words = {};
 
 let categorizedUserHashmap = new HashMap();
 
@@ -4415,16 +4417,6 @@ function updateCategorizedUsers(cnf, callback){
                 ]);
 
               trainingSetUsersHashMap.set(subUser.nodeId, subUser);
-
-              // if (userIndex % 100 === 0) {
-
-              //   console.log("CL USR >DB"
-              //     + " [" + userIndex + "/" + categorizedNodeIds.length + "]"
-              //     + " | " + subUser.nodeId
-              //     + " | @" + subUser.screenName
-              //     + " | C: " + subUser.category
-              //   );
-              // }
 
               cb0();
 
