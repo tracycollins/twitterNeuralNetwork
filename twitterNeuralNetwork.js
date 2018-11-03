@@ -881,7 +881,7 @@ let globalhistograms = {};
 globalhistograms.words = {};
 globalhistograms.urls = {};
 globalhistograms.hashtags = {};
-globalhistograms.mentions = {};
+globalhistograms.userMentions = {};
 globalhistograms.emoji = {};
 
 let categorizedUserHashmap = new HashMap();
