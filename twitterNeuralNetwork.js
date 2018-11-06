@@ -4973,47 +4973,56 @@ function fileSize(params){
     console.log(chalkLog("TNN | WAIT FILE SIZE: " + params.path));
 
     let stats;
+    let size;
+    let prevSize;
 
     try {
       stats = fs.statSync(params.path);
+      size = stats.size;
+      prevSize = stats.size;
     }
     catch(err){
       return reject(err);
     }
 
-    let size = stats.size;
-    let prevSize = stats.size;
 
-    sizeInterval = setInterval(function(){
+    sizeInterval = setInterval(async function(){
 
       console.log(chalkInfo("TNN | FILE SIZE | " + getTimeStamp()
         + " | CUR: " + size
         + " | PREV: " + prevSize
       ));
 
-      try {
-        stats = fs.statSync(params.path);
-      }
-      catch(err){
-        clearInterval(sizeInterval);
-        return reject(err);
-      }
+      // try {
+      //   stats = fs.statSync(params.path);
+      // }
+      // catch(err){
+      //   clearInterval(sizeInterval);
+      //   return reject(err);
+      // }
 
-      prevSize = size;
-      size = stats.size;
+      fs.stat(params.path, function(err, stats){
 
-      if ((size > 0) && (size === prevSize)) {
+        if (err) {
+          return reject(err);
+        }
 
-        clearInterval(sizeInterval);
+        prevSize = size;
+        size = stats.size;
 
-        console.log(chalkAlert("TNN | FILE SIZE STABLE | " + getTimeStamp()
-          + " | CUR: " + size
-          + " | PREV: " + prevSize
-        ));
+        if ((size > 0) && (size === prevSize)) {
 
-        return resolve();
-      }
+          clearInterval(sizeInterval);
 
+          console.log(chalkAlert("TNN | FILE SIZE STABLE | " + getTimeStamp()
+            + " | CUR: " + size
+            + " | PREV: " + prevSize
+          ));
+
+          resolve();
+        }
+
+      });
 
     }, interval);
 
