@@ -4984,36 +4984,43 @@ function fileSize(params){
     let size = stats.size;
     let prevSize = stats.size;
 
-    sizeInterval = setInterval(function(){
+    sizeInterval = setInterval(async function(){
 
       console.log(chalkInfo("TNN | FILE SIZE | " + getTimeStamp()
         + " | CUR: " + size
         + " | PREV: " + prevSize
       ));
 
-      try {
-        stats = fs.statSync(params.path);
-      }
-      catch(err){
-        clearInterval(sizeInterval);
-        return reject(err);
-      }
+      // try {
+      //   stats = fs.statSync(params.path);
+      // }
+      // catch(err){
+      //   clearInterval(sizeInterval);
+      //   return reject(err);
+      // }
 
-      prevSize = size;
-      size = stats.size;
+      fs.stats(params.path, function(err, stats){
 
-      if ((size > 0) && (size === prevSize)) {
+        if (err) {
+          return reject(err);
+        }
 
-        clearInterval(sizeInterval);
+        prevSize = size;
+        size = stats.size;
 
-        console.log(chalkAlert("TNN | FILE SIZE STABLE | " + getTimeStamp()
-          + " | CUR: " + size
-          + " | PREV: " + prevSize
-        ));
+        if ((size > 0) && (size === prevSize)) {
 
-        return resolve();
-      }
+          clearInterval(sizeInterval);
 
+          console.log(chalkAlert("TNN | FILE SIZE STABLE | " + getTimeStamp()
+            + " | CUR: " + size
+            + " | PREV: " + prevSize
+          ));
+
+          resolve();
+        }
+
+      });
 
     }, interval);
 
