@@ -4973,16 +4973,18 @@ function fileSize(params){
     console.log(chalkLog("TNN | WAIT FILE SIZE: " + params.path));
 
     let stats;
+    let size;
+    let prevSize;
 
     try {
       stats = fs.statSync(params.path);
+      size = stats.size;
+      prevSize = stats.size;
     }
     catch(err){
       return reject(err);
     }
 
-    let size = stats.size;
-    let prevSize = stats.size;
 
     sizeInterval = setInterval(async function(){
 
@@ -4999,7 +5001,7 @@ function fileSize(params){
       //   return reject(err);
       // }
 
-      fs.stats(params.path, function(err, stats){
+      fs.stat(params.path, function(err, stats){
 
         if (err) {
           return reject(err);
