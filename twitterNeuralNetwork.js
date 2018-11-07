@@ -357,10 +357,18 @@ function getChildProcesses(callback){
 
   const command = "pgrep " + NN_CHILD_PREFIX;
 
-  debug(chalkAlert("command: " + command));
+  debug(chalkLog("getChildProcesses command: " + command));
 
   let numChildren = 0;
   let childPidArray = [];
+
+  // const shPath = shell.exec("which sh").stdout;
+  // const bashPath = shell.exec("which bash").stdout;
+  // const pgrepPath = shell.exec("which pgrep").stdout;
+
+  // console.log("shPath: " + shPath);
+  // console.log("bashPath: " + bashPath);
+  // console.log("pgrepPath: " + pgrepPath);
 
   shell.exec(command, {silent: true}, function(code, stdout, stderr){
 
@@ -380,6 +388,8 @@ function getChildProcesses(callback){
         console.log(chalkInfo("TNN | stdoutArray:   " + stdoutArray));
         console.log(chalkInfo("TNN | FOUND CHILD PROCESSSES | NUM CH: " + statsObj.numChildren));
       }
+
+      if ((statsObj.numChildren === 0) && (callback !== undefined)) { callback(null, false); }
 
       async.eachSeries(stdoutArray, function(pidRaw, cb){
 
@@ -6455,28 +6465,28 @@ function initNetworkCreateInterval(interval) {
               break;
 
               case "TEST PASS":
-                console.log(chalkGreen("TNN | +++ NNC XOR TEST PASS | " + nnChildId));
+                console.log(chalkGreen("TNN | +++ NNC XOR TEST PASS | CHILD ID: " + nnChildId));
                 currentChild.status = "IDLE" ;
                 neuralNetworkChildHashMap[nnChildId] = currentChild;
               break;
 
               case "EXIT":
-                console.log(chalkAlert("TNN | *** NNC EXIT | " + nnChildId));
+                console.log(chalkAlert("TNN | *** NNC EXIT | CHILD ID: " + nnChildId));
                 killChild({nnChildId: nnChildId});
               break;
 
               case "CLOSE":
-                console.log(chalkAlert("TNN | *** NNC CLOSE | " + nnChildId));
+                console.log(chalkAlert("TNN | *** NNC CLOSE | CHILD ID: " + nnChildId));
                 killChild({nnChildId: nnChildId});
               break;
 
               case "ERROR":
-                console.log(chalkAlert("TNN | *** NNC ERROR | " + nnChildId));
+                console.log(chalkAlert("TNN | *** NNC ERROR | CHILD ID: " + nnChildId));
                 killChild({nnChildId: nnChildId});
               break;
 
               case "ZOMBIE":
-                console.log(chalkAlert("TNN | *** NNC ZOMBIE | " + nnChildId));
+                console.log(chalkAlert("TNN | *** NNC ZOMBIE | CHILD ID: " + nnChildId));
                 killChild({nnChildId: nnChildId});
               break;
 
@@ -6494,7 +6504,7 @@ function initNetworkCreateInterval(interval) {
 
               default:
                 console.log(chalkAlert("TNN | ??? UNKNOWN NNC STATUS"
-                  + " | " + nnChildId
+                  + " | CHILD ID: " + nnChildId
                   + " | STATUS: " + currentChild.status
                 ));
                 killChild({nnChildId: nnChildId});
