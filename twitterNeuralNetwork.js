@@ -646,9 +646,11 @@ mongoose.Promise = global.Promise;
 
 const userModel = require("@threeceelabs/mongoose-twitter/models/user.server.model");
 const neuralNetworkModel = require("@threeceelabs/mongoose-twitter/models/neuralNetwork.server.model");
+const networkInputsModel = require("@threeceelabs/mongoose-twitter/models/networkInputs.server.model");
 
 let User;
 let NeuralNetwork;
+let NetworkInputs;
 
 const wordAssoDb = require("@threeceelabs/mongoose-twitter");
 
@@ -1587,6 +1589,7 @@ function connectDb(callback){
 
       User = mongoose.model("User", userModel.UserSchema);
       NeuralNetwork = mongoose.model("NeuralNetwork", neuralNetworkModel.NeuralNetworkSchema);
+      NetworkInputs = mongoose.model("NetworkInputs", networkInputsModel.NetworkInputsSchema);
 
       callback(null, db);
     }
@@ -5071,16 +5074,17 @@ function initWatch(params){
         else {
           statsObj.loadUsersArchiveBusy = true;
 
-          try {
-            setTimeout(async function(){
+          setTimeout(async function(){
+            try {
               await loadUsersArchive({path: f});
               statsObj.loadUsersArchiveBusy = false;
-            }, 30*ONE_SECOND);
-          }
-          catch(err){
-            statsObj.loadUsersArchiveBusy = false;
-            console.log(chalkError("TNN | *** WATCH CHANGE ERROR | " + getTimeStamp() + " | " + err));
-          }
+            }
+            catch(err){
+              statsObj.loadUsersArchiveBusy = false;
+              console.log(chalkError("TNN | *** WATCH CHANGE ERROR | " + getTimeStamp() + " | " + err));
+            }
+          }, 30*ONE_SECOND);
+
         }
 
       }
@@ -5098,16 +5102,16 @@ function initWatch(params){
         else {
           statsObj.loadUsersArchiveBusy = true;
 
-          try {
-            setTimeout(async function(){
+          setTimeout(async function(){
+            try {
               await loadUsersArchive({path: f});
               statsObj.loadUsersArchiveBusy = false;
-            }, 30*ONE_SECOND);
-          }
-          catch(err){
-            statsObj.loadUsersArchiveBusy = false;
-            console.log(chalkError("TNN | *** WATCH CHANGE ERROR | " + getTimeStamp() + " | " + err));
-          }
+            }
+            catch(err){
+              statsObj.loadUsersArchiveBusy = false;
+              console.log(chalkError("TNN | *** WATCH CHANGE ERROR | " + getTimeStamp() + " | " + err));
+            }
+          }, 30*ONE_SECOND);
         }
       }
     });
