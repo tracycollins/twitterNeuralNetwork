@@ -429,7 +429,6 @@ function getChildProcesses(callback){
         if (callback !== undefined) { callback(null, childPidArray); }
 
       });
-
     }
 
     if (code === 1) {
@@ -4993,14 +4992,6 @@ function fileSize(params){
         + " | PREV: " + prevSize
       ));
 
-      // try {
-      //   stats = fs.statSync(params.path);
-      // }
-      // catch(err){
-      //   clearInterval(sizeInterval);
-      //   return reject(err);
-      // }
-
       fs.stat(params.path, function(err, stats){
 
         if (err) {
@@ -5014,7 +5005,7 @@ function fileSize(params){
 
           clearInterval(sizeInterval);
 
-          console.log(chalkAlert("TNN | FILE SIZE STABLE | " + getTimeStamp()
+          console.log(chalkInfo("TNN | FILE SIZE STABLE | " + getTimeStamp()
             + " | CUR: " + size
             + " | PREV: " + prevSize
           ));
@@ -5069,7 +5060,7 @@ function initWatch(params){
       if (f.endsWith("users.zip")){
 
         if  (statsObj.loadUsersArchiveBusy) {
-          console.log(chalkAlert("TNN | LOAD USERS ARCHIVE ALREADY BUSY | " + getTimeStamp() + " | " + f));
+          console.log(chalkInfo("TNN | LOAD USERS ARCHIVE ALREADY BUSY | " + getTimeStamp() + " | " + f));
         }
         else {
           statsObj.loadUsersArchiveBusy = true;
