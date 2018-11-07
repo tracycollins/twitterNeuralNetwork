@@ -372,8 +372,14 @@ function getChildProcesses(callback){
 
       statsObj.numChildren = stdoutArray.length;
 
-      debug(chalkInfo("TNN | FOUND CHILD PROCESSSES | NUM CH: " + statsObj.numChildren));
-
+      if (configuration.verbose) {
+        console.log(chalkInfo("TNN | command: " + command));
+        console.log(chalkInfo("TNN | code:    " + code));
+        console.log(chalkInfo("TNN | stdout:  " + stdout));
+        console.log(chalkInfo("TNN | stderr:  " + stderr));
+        console.log(chalkInfo("TNN | stdoutArray:   " + stdoutArray));
+        console.log(chalkInfo("TNN | FOUND CHILD PROCESSSES | NUM CH: " + statsObj.numChildren));
+      }
 
       async.eachSeries(stdoutArray, function(pidRaw, cb){
 
