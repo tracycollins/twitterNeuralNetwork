@@ -210,6 +210,8 @@ statsObj.pid = process.pid;
 statsObj.cpus = os.cpus().length;
 statsObj.commandLineArgsLoaded = false;
 
+statsObj.lockFileNameSet = new Set();
+
 statsObj.archiveOpen = false;
 statsObj.archiveModifiedMoment = moment("2010-01-01");
 statsObj.loadUsersArchiveBusy = false;
@@ -355,9 +357,9 @@ function printNetworkObj(title, networkObj) {
 
 function getChildProcesses(callback){
 
-  const command = "pgrep " + NN_CHILD_PREFIX;
+  const command = 'bash -c "pgrep ' + NN_CHILD_PREFIX + '"';
 
-  debug(chalkLog("getChildProcesses command: " + command));
+  console.log(chalkLog("getChildProcesses command: " + command));
 
   let numChildren = 0;
   let childPidArray = [];
@@ -397,9 +399,11 @@ function getChildProcesses(callback){
 
         if (parseInt(pid) > 0) {
 
-          const c = "ps -o command= -p " + pid;
+          const c = 'bash -c "ps -o command= -p ' + pid + '"';
+          // const c = "ps -o command= -p " + pid;
+          console.log(chalkLog("getChildProcesses getChildIds command: " + c));
 
-          shell.exec(c, {silent: true}, function(code, stdout, stderr){
+          shell.exec(c, {silent: true}, function getChildIds(code, stdout, stderr){
 
             const nnChildId = stdout.trim();
 
@@ -448,7 +452,7 @@ function getChildProcesses(callback){
     }
 
     if (code === 1) {
-      console.log(chalkInfo("TNN | NO NN CHILD PROCESSES FOUND"));
+      console.log(chalkBlue("TNN | NO NN CHILD PROCESSES FOUND"));
         if (callback !== undefined) { callback(null, []); }
     }
 
@@ -478,28 +482,57 @@ getChildProcesses(function(err, results){
   }
 });
 
-function killAll(callback){
+function killAll(){
 
-  getChildProcesses(function(err, results){
+  return new Promise(function(resolve, reject){
 
-    debug(chalkInfo("getChildProcesses RESULTS\n" + jsonPrint(results)));
+    try {
 
-    if (results) {
+      getChildProcesses(function(err, results){
 
-      async.eachSeries(results, function(childObj, cb){
-        killChild({pid: childObj.pid}, function(err, numKilled){
-          console.log(chalkAlert("TNN | KILL ALL | KILLED | PID: " + childObj.pid + " | CH ID: " + childObj.nnChildId));
-          cb();
-        });
-      }, function(err){
-        if (callback !== undefined) { callback(err, results); }
+        debug(chalkInfo("getChildProcesses RESULTS\n" + jsonPrint(results)));
+
+        let numKilled = 0;
+
+        if (results) {
+
+          async.eachSeries(results, function(childObj, cb){
+
+            killChild({pid: childObj.pid}, function(err, numKilled){
+              if (err) {
+                return cb(err);
+              }
+              numKilled += 1;
+              console.log(chalkAlert("TNN | KILL ALL | KILLED | PID: " + childObj.pid + " | CH ID: " + childObj.nnChildId));
+              cb();
+            });
+
+          }, function(err){
+
+            if (err) {
+              console.log(chalkError("TNN | *** KILL ALL ERROR: " + err));
+              return reject(err);
+            }
+
+            resolve(numKilled);
+
+          });
+        }
+        else {
+          console.log(chalkAlert("TNN | KILL ALL | NO CHILDREN"));
+          resolve(numKilled);
+        }
       });
+
     }
-    else {
-      console.log(chalkAlert("TNN | KILL ALL | NO CHILDREN"));
-      if (callback !== undefined) { callback(err, results); }
+    catch(err){
+      console.log(chalkAlert("TNN | *** KILL ALL ERROR: " + err));
+      return reject(err);
     }
+
+
   });
+
 }
 
 function findChildByPid(pid, callback){
@@ -1532,9 +1565,10 @@ function quit(options){
 
   showStats();
 
-  setTimeout(function(){
+  setTimeout(async function(){
 
-    killAll();
+    await killAll();
+    await releaseAllFileLocks();
 
     setTimeout(function() {
 
@@ -1555,16 +1589,16 @@ function quit(options){
   }, 1000);
 }
 
-process.on( "SIGINT", function() {
-  killAll(function(){
-    quit("SIGINT");
-  });
+process.on( "SIGINT", async function() {
+  await killAll();
+  await releaseAllFileLocks();
+  quit("SIGINT");
 });
 
-process.on("exit", function() {
-  killAll(function(){
-    quit("SIGINT");
-  });
+process.on("exit", async function() {
+  await killAll();
+  await releaseAllFileLocks();
+  quit("SIGINT");
 });
 
 function connectDb(callback){
@@ -5887,6 +5921,7 @@ function printNeuralNetworkChildHashMap(){
       break;
       case "INIT":
       case "COMPLETE":
+      case "EXIT":
         chalkValue = chalk.blue;
       break;
       case "ERROR":
@@ -5901,12 +5936,15 @@ function printNeuralNetworkChildHashMap(){
         console.log(chalkWarn("??? UNKNOWN CHILD STATUS: " + neuralNetworkChildHashMap[nnChildId].status));
         chalkValue = chalkInfo;
     }
-    console.log(chalkValue("TNN"
-      + " | " + nnChildId
+
+    console.log(chalkValue("TNN CHILD HM"
+      + " | CHILD ID: " + nnChildId
       + " | PID: " + neuralNetworkChildHashMap[nnChildId].pid
       + " | STATUS: " + neuralNetworkChildHashMap[nnChildId].status
     ));
+
     cb();
+
   }, function(){
 
   });
@@ -6707,7 +6745,10 @@ function getFileLock(params){
           return resolve(false);
         }
 
+        statsObj.lockFileNameSet.add(params.file);
+
         console.log(chalkGreen("TNN | +++ FILE LOCK: " + params.file));
+        console.log(chalkGreen("TNN | LOCKED FILES\n" + [...statsObj.lockFileNameSet]));
         resolve(true);
       });
 
@@ -6728,6 +6769,8 @@ function releaseFileLock(params){
     const fileIsLocked = lockFile.checkSync(params.file);
 
     if (!fileIsLocked) {
+      statsObj.lockFileNameSet.delete(params.file);
+      console.log(chalkGreen("TNN | LOCKED FILES\n" + [...statsObj.lockFileNameSet]));
       return resolve(true);
     }
 
@@ -6739,9 +6782,32 @@ function releaseFileLock(params){
       }
 
       console.log(chalkLog("TNN | --- FILE UNLOCK: " + params.file));
+      statsObj.lockFileNameSet.delete(params.file);
+      console.log(chalkGreen("TNN | LOCKED FILES\n" + [...statsObj.lockFileNameSet]));
       resolve(true);
 
     });
+
+  });
+
+}
+
+
+function releaseAllFileLocks(params){
+
+  return new Promise(async function(resolve, reject){
+
+    for (let lockFileName of lockFileNameSet) {
+      try{
+        await releaseFileLock(lockFileName);
+      }
+      catch (err){
+        console.log(chalkError("TNN | *** RELEASE FILE LOCK ERROR: " + err));
+        return reject(err);
+      }
+    }
+
+    resolve();
 
   });
 
