@@ -2,6 +2,10 @@
 /*jshint sub:true*/
 "use strict";
 
+console.log("\n\n=======================================");
+console.log("================ TNN ==================");
+console.log("=======================================\n\n");
+
 global.dbConnection = false;
 let dbConnectionReady = false;
 
@@ -34,6 +38,55 @@ let fileLockOptions = {
   stale: DEFAULT_FILELOCK_STALE,
   wait: DEFAULT_FILELOCK_WAIT
 };
+
+const chalk = require("chalk");
+const chalkAlert = chalk.red;
+const chalkBlue = chalk.blue;
+const chalkBlueBold = chalk.bold.blue;
+const chalkGreen = chalk.green;
+const chalkRedBold = chalk.bold.red;
+const chalkError = chalk.bold.red;
+const chalkWarn = chalk.red;
+const chalkLog = chalk.gray;
+const chalkInfo = chalk.black;
+const chalkNetwork = chalk.blue;
+const chalkConnect = chalk.green;
+const chalkDisconnect = chalk.yellow;
+const chalkRed = chalk.red;
+
+let configuration = {}; // merge of defaultConfiguration & hostConfiguration
+
+let defaultConfiguration = {}; // general configuration for TNN
+let hostConfiguration = {}; // host-specific configuration for TNN
+
+configuration.saveTrainingSetDirectory = true;
+
+if (DEFAULT_OFFLINE_MODE) {
+  configuration.offlineMode = true;
+  console.log(chalkAlert("TNN | DEFAULT_OFFLINE_MODE: " + configuration.offlineMode));
+}
+else if (
+  (process.env.TNN_OFFLINE_MODE !== undefined)
+  && (process.env.TNN_OFFLINE_MODE === "true") || (process.env.TNN_OFFLINE_MODE === true)
+  )
+{
+  configuration.offlineMode = true;
+}
+else {
+  configuration.offlineMode = false;
+}
+
+if ( (process.env.TNN_SERVER_MODE !== undefined) 
+  && (process.env.TNN_SERVER_MODE === "true" || process.env.TNN_SERVER_MODE === true))
+{
+  configuration.serverMode = true;
+}
+else {
+  configuration.serverMode = DEFAULT_SERVER_MODE;
+  console.log(chalkLog("TNN | DEFAULT_SERVER_MODE: " + configuration.serverMode));
+}
+
+console.log(chalkLog("TNN | SERVER MODE: " + configuration.serverMode));
 
 
 const os = require("os");
@@ -156,20 +209,6 @@ const randomInt = require("random-int");
 const EventEmitter2 = require("eventemitter2").EventEmitter2;
 const async = require("async");
 
-const chalk = require("chalk");
-const chalkAlert = chalk.red;
-const chalkBlue = chalk.blue;
-const chalkBlueBold = chalk.bold.blue;
-const chalkGreen = chalk.green;
-const chalkRedBold = chalk.bold.red;
-const chalkError = chalk.bold.red;
-const chalkWarn = chalk.red;
-const chalkLog = chalk.gray;
-const chalkInfo = chalk.black;
-const chalkNetwork = chalk.blue;
-const chalkConnect = chalk.green;
-const chalkDisconnect = chalk.yellow;
-const chalkRed = chalk.red;
 
 const debug = require("debug")("tnn");
 const debugCache = require("debug")("cache");
@@ -359,7 +398,7 @@ function getChildProcesses(callback){
 
   const command = 'bash -c "pgrep ' + NN_CHILD_PREFIX + '"';
 
-  console.log(chalkLog("getChildProcesses command: " + command));
+  if (configuration.verbose) { console.log(chalkLog("getChildProcesses command: " + command)); }
 
   let numChildren = 0;
   let childPidArray = [];
@@ -401,7 +440,7 @@ function getChildProcesses(callback){
 
           const c = 'bash -c "ps -o command= -p ' + pid + '"';
           // const c = "ps -o command= -p " + pid;
-          console.log(chalkLog("getChildProcesses getChildIds command: " + c));
+          if (configuration.verbose) { console.log(chalkLog("getChildProcesses getChildIds command: " + c)); }
 
           shell.exec(c, {silent: true}, function getChildIds(code, stdout, stderr){
 
@@ -706,39 +745,7 @@ let networkCreateInterval;
 let saveFileQueueInterval;
 let saveFileBusy = false;
 
-let configuration = {}; // merge of defaultConfiguration & hostConfiguration
 
-let defaultConfiguration = {}; // general configuration for TNN
-let hostConfiguration = {}; // host-specific configuration for TNN
-
-configuration.saveTrainingSetDirectory = true;
-
-if (DEFAULT_OFFLINE_MODE) {
-  configuration.offlineMode = true;
-  console.log(chalkAlert("TNN | DEFAULT_OFFLINE_MODE: " + configuration.offlineMode));
-}
-else if (
-  (process.env.TNN_OFFLINE_MODE !== undefined)
-  && (process.env.TNN_OFFLINE_MODE === "true") || (process.env.TNN_OFFLINE_MODE === true)
-  )
-{
-  configuration.offlineMode = true;
-}
-else {
-  configuration.offlineMode = false;
-}
-
-if ( (process.env.TNN_SERVER_MODE !== undefined) 
-  && (process.env.TNN_SERVER_MODE === "true" || process.env.TNN_SERVER_MODE === true))
-{
-  configuration.serverMode = true;
-}
-else {
-  configuration.serverMode = DEFAULT_SERVER_MODE;
-  console.log(chalkLog("TNN | DEFAULT_SERVER_MODE: " + configuration.serverMode));
-}
-
-console.log(chalkLog("TNN | SERVER MODE: " + configuration.serverMode));
 
 configuration.networkCreateMode = "evole";
 
@@ -4022,6 +4029,10 @@ function initialize(cnf, callback){
       statsObj.commandLineArgsLoaded = true;
 
 
+      if (configuration.enableStdin) {
+        initStdIn();
+      }
+
       connectDb(function(err, db){
         if (err) {
           dbConnectionReady = false;
@@ -4052,7 +4063,6 @@ function initialize(cnf, callback){
       });
 
     });
-
   });
 }
 
@@ -6572,9 +6582,9 @@ function initTimeout(callback){
       quit("INIT ERROR");
     }
 
-    if (configuration.enableStdin) {
-      initStdIn();
-    }
+    // if (configuration.enableStdin) {
+    //   initStdIn();
+    // }
 
     console.log(chalkBlue("\n\nTNN"
       + " | " + cnf.processName 
@@ -6748,7 +6758,9 @@ function getFileLock(params){
         statsObj.lockFileNameSet.add(params.file);
 
         console.log(chalkGreen("TNN | +++ FILE LOCK: " + params.file));
-        console.log(chalkGreen("TNN | LOCKED FILES\n" + [...statsObj.lockFileNameSet]));
+        console.log(chalkGreen("TNN | LOCKED FILES: " + statsObj.lockFileNameSet.size
+          + "\n" + [...statsObj.lockFileNameSet]
+        ));
         resolve(true);
       });
 
@@ -6797,7 +6809,9 @@ function releaseAllFileLocks(params){
 
   return new Promise(async function(resolve, reject){
 
-    for (let lockFileName of lockFileNameSet) {
+    console.log(chalkBlue("TNN | RELEASE ALL LOCKED FILES: " + statsObj.lockFileNameSet.size));
+
+    for (let lockFileName of statsObj.lockFileNameSet) {
       try{
         await releaseFileLock(lockFileName);
       }
