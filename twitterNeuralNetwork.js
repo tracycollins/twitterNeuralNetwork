@@ -6794,8 +6794,11 @@ function releaseFileLock(params){
       }
 
       console.log(chalkLog("TNN | --- FILE UNLOCK: " + params.file));
+
       statsObj.lockFileNameSet.delete(params.file);
+
       console.log(chalkGreen("TNN | LOCKED FILES\n" + [...statsObj.lockFileNameSet]));
+      
       resolve(true);
 
     });
