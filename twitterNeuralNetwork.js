@@ -938,7 +938,9 @@ let globalhistograms = {};
 globalhistograms.emoji = {};
 globalhistograms.hashtags = {};
 globalhistograms.images = {};
+globalhistograms.locations = {};
 globalhistograms.media = {};
+globalhistograms.places = {};
 globalhistograms.urls = {};
 globalhistograms.userMentions = {};
 globalhistograms.words = {};
@@ -4290,6 +4292,24 @@ function updateCategorizedUsers(cnf, callback){
               }
             }
           },
+          function userLocation(text, cb) {
+            if (user.location !== undefined) {
+              if (text) {
+                cb(null, text + " | " + user.location);
+              }
+              else {
+                cb(null, user.location);
+              }
+            }
+            else {
+              if (text) {
+                cb(null, text);
+              }
+              else {
+                cb(null, null);
+              }
+            }
+          },
           function userStatusText(text, cb) {
             if ((user.status !== undefined) && user.status && user.status.text) {
 
@@ -6798,7 +6818,7 @@ function releaseFileLock(params){
       statsObj.lockFileNameSet.delete(params.file);
 
       console.log(chalkGreen("TNN | LOCKED FILES\n" + [...statsObj.lockFileNameSet]));
-      
+
       resolve(true);
 
     });
