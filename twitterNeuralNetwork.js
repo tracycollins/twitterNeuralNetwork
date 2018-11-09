@@ -6,6 +6,22 @@ console.log("\n\n=======================================");
 console.log("================ TNN ==================");
 console.log("=======================================\n\n");
 
+let inputTypes = [
+  "emoji", 
+  "hashtags", 
+  "images", 
+  "locations", 
+  "media", 
+  "mentions", 
+  "places", 
+  "sentiment", 
+  "urls", 
+  "userMentions", 
+  "words"
+];
+
+inputTypes.sort();
+
 global.dbConnection = false;
 let dbConnectionReady = false;
 
@@ -935,15 +951,10 @@ else {
 }
 
 let globalhistograms = {};
-globalhistograms.emoji = {};
-globalhistograms.hashtags = {};
-globalhistograms.images = {};
-globalhistograms.locations = {};
-globalhistograms.media = {};
-globalhistograms.places = {};
-globalhistograms.urls = {};
-globalhistograms.userMentions = {};
-globalhistograms.words = {};
+
+inputTypes.forEach(function(type){
+  globalhistograms[type] = {};
+});
 
 let categorizedUserHashmap = new HashMap();
 
@@ -1116,8 +1127,6 @@ const dropboxConfigHostFolder = "/config/utility/" + hostname;
 const dropboxConfigDefaultFile = "default_" + configuration.DROPBOX.DROPBOX_TNN_CONFIG_FILE;
 const dropboxConfigHostFile = hostname + "_" + configuration.DROPBOX.DROPBOX_TNN_CONFIG_FILE;
 
-// const defaultHistogramsFolder = dropboxConfigDefaultFolder + "/histograms";
-// const localInputsFolder = dropboxConfigHostFolder + "/inputs";
 const defaultInputsFolder = dropboxConfigDefaultFolder + "/inputs";
 const defaultInputsArchiveFolder = dropboxConfigDefaultFolder + "/inputsArchive";
 
@@ -4463,9 +4472,6 @@ function updateCategorizedUsers(cnf, callback){
             if (bannerResults && bannerResults.label && bannerResults.label.images) {
               hist.images = bannerResults.label.images;
             }
-
-            // console.log(chalkInfo("hist keys: " + Object.keys(hist)));
-            // update user histogram in db
 
             const updateHistogramsParams = { 
               user: user, 
