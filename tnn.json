@@ -5,7 +5,7 @@
     "script": "twitterNeuralNetwork.js",
     "cwd": "/Volumes/RAID1/projects/twitterNeuralNetwork",
     "node_args": "--max-old-space-size=16384",
-    "autorestart": false,
+    "autorestart": true,
     "restart_delay": 300000,
     "env": {
       "FORCE_COLOR": 1,
