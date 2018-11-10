@@ -1416,7 +1416,12 @@ function printNetworkCreateResultsHashmap(){
     if (networkObj === undefined) {
       return cb("UNDEFINED");
     }
-    else if (networkObj.evolve === undefined) {
+    
+    if (networkObj.numInputs === undefined) {
+      return cb("numInputs UNDEFINED");
+    }
+    
+    if (networkObj.evolve === undefined) {
       networkObj.evolve.options.clear = "---";
       networkObj.evolve.options.cost = "---";
       networkObj.evolve.options.growth = "---";
@@ -1433,16 +1438,17 @@ function printNetworkCreateResultsHashmap(){
     let successRate = "";
     let elapsed = "";
 
-    status = (networkObj.status !== undefined) ? networkObj.status : "UNKNOWN";
-    snIdRes = (networkObj.seedNetworkId) ? networkObj.seedNetworkRes.toFixed(2) : "---";
+    status = (networkObj.status && networkObj.status !== undefined) ? networkObj.status : "UNKNOWN";
+    snIdRes = (networkObj.seedNetworkId && networkObj.seedNetworkId !== undefined) ? networkObj.seedNetworkRes.toFixed(2) : "---";
+    networkObj.betterChild = (networkObj.betterChild && networkObj.betterChild !== undefined) ? networkObj.betterChild : false;
 
-    iterations = (networkObj.evolve.results !== undefined) ? networkObj.evolve.results.iterations : "---";
-    error = ((networkObj.evolve.results !== undefined) 
+    iterations = (networkObj.evolve.results && networkObj.evolve.results !== undefined) ? networkObj.evolve.results.iterations : "---";
+    error = ((networkObj.evolve.results && networkObj.evolve.results !== undefined) 
       && (networkObj.evolve.results.error !== undefined)
       && networkObj.evolve.results.error)  ? networkObj.evolve.results.error.toFixed(5) : "---";
 
-    successRate = (networkObj.successRate !== undefined) ? networkObj.successRate.toFixed(2) : "---";
-    elapsed = (networkObj.evolve.elapsed !== undefined) ? networkObj.evolve.elapsed : (moment().valueOf() - networkObj.evolve.startTime);
+    successRate = (networkObj.successRate && networkObj.successRate !== undefined) ? networkObj.successRate.toFixed(2) : "---";
+    elapsed = (networkObj.evolve.elapsed && networkObj.evolve.elapsed !== undefined) ? networkObj.evolve.elapsed : (moment().valueOf() - networkObj.evolve.startTime);
 
     tableArray.push([
       "TNN | " + nnId,
