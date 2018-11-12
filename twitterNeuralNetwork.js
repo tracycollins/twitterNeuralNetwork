@@ -5176,9 +5176,13 @@ function initWatch(params){
           try {
             await loadUsersArchive({path: fullLocalPath, size: archiveFlagObj.size});
             statsObj.loadUsersArchiveBusy = false;
+            createTrainingSetBusy = false;
+            trainingSetReady = true;
           }
           catch(err){
             statsObj.loadUsersArchiveBusy = false;
+            createTrainingSetBusy = false;
+            trainingSetReady = false;
             console.log(chalkError("TNN | *** WATCH CHANGE ERROR | " + getTimeStamp() + " | " + err));
           }
 
@@ -5826,9 +5830,10 @@ function initMain(cnf, callback){
             callback();
           }
           catch(err){
-              createTrainingSetBusy = false;
-              trainingSetReady = false;
-              return callback();
+            statsObj.loadUsersArchiveBusy = false;
+            createTrainingSetBusy = false;
+            trainingSetReady = false;
+            return callback();
           }
 
         });
