@@ -797,13 +797,14 @@ configuration.enableRequiredTrainingSet = false;
 
 configuration.histogramsFolder = "/config/utility/default/histograms";
 
-configuration.defaultTrainingSetsFolder = "/config/utility/default/trainingSets";
-configuration.hostTrainingSetsFolder = "/config/utility/" + hostname + "/trainingSets";
+configuration.defaultTrainingSetsFolder = "/config/utility/default/trainingSets/users";
+configuration.hostTrainingSetsFolder = "/config/utility/" + hostname + "/trainingSets/users";
 
-configuration.defaultUserArchiveFolder = (hostname === "google") ? "/home/tc/Dropbox/Apps/wordAssociation" + configuration.defaultTrainingSetsFolder + "/users" 
-  : "/Users/tc/Dropbox/Apps/wordAssociation" + configuration.defaultTrainingSetsFolder + "/users";
+configuration.defaultUserArchiveFolder = (hostname === "google") ? "/home/tc/Dropbox/Apps/wordAssociation" + configuration.defaultTrainingSetsFolder 
+  : "/Users/tc/Dropbox/Apps/wordAssociation" + configuration.defaultTrainingSetsFolder;
 
 configuration.defaultUserArchiveFile = "users.zip";
+configuration.defaultUserArchiveFlagFile = "usersZipUploadComplete.json";
 configuration.defaultUserArchivePath = configuration.defaultUserArchiveFolder + "/" + configuration.defaultUserArchiveFile;
 
 configuration.trainingSetFile = "trainingSet.json";
@@ -1912,7 +1913,7 @@ function loadFileRetry(params, callback){
 
 function loadFile(params, callback) {
 
-  let fullPath = params.folder + "/" + params.file
+  let fullPath = params.path || params.folder + "/" + params.file;
 
   debug(chalkInfo("LOAD FOLDER " + params.folder));
   debug(chalkInfo("LOAD FILE " + params.file));
@@ -1939,7 +1940,7 @@ function loadFile(params, callback) {
         + " | " + fullPath
       ));
 
-      if (params.file.match(/\.json$/gi)) {
+      if (fullPath.match(/\.json$/gi)) {
 
         const fileObj = JSONParse(data);
 
@@ -1982,7 +1983,7 @@ function loadFile(params, callback) {
         + " | LOADING FILE FROM DROPBOX FILE: " + fullPath
       ));
 
-      if (params.file.match(/\.json$/gi)) {
+      if (fullPath.match(/\.json$/gi)) {
 
         let payload = data.fileBinary;
 
@@ -4100,8 +4101,8 @@ function updateCategorizedUsers(cnf, callback){
 
   statsObj.status = "UPDATE CATEGORIZED USERS";
 
-  let userSubDirectory = (hostname === "google") ? configuration.defaultTrainingSetsFolder + "/users"
-  : configuration.hostTrainingSetsFolder + "/users";
+  let userSubDirectory = (hostname === "google") ? configuration.defaultTrainingSetsFolder
+  : configuration.hostTrainingSetsFolder;
 
   let userFile;
 
@@ -4812,7 +4813,7 @@ function unzipUsersToArray(params){
         return resolve(false);
       }
 
-      await fileSize({path: params.path});
+      await fileSize(params);
 
       yauzl.open(params.path, {lazyEntries: true}, function(err, zipfile) {
 
@@ -5064,7 +5065,7 @@ function fileSize(params){
 
     let interval = params.interval || ONE_MINUTE;
 
-    console.log(chalkLog("TNN | WAIT FILE SIZE: " + params.path));
+    console.log(chalkLog("TNN | WAIT FILE SIZE: " + params.path + " | EXPECTED SIZE: " + params.size));
 
     let stats;
     let size;
@@ -5074,6 +5075,14 @@ function fileSize(params){
       stats = fs.statSync(params.path);
       size = stats.size;
       prevSize = stats.size;
+
+      if (params.size && (size === params.size)) {
+        console.log(chalkInfo("TNN | FILE SIZE EXPECTED | " + getTimeStamp()
+          + " | CUR: " + size
+          + " | EXPECTED: " + params.size
+        ));
+        return resolve();
+      }
     }
     catch(err){
       return reject(err);
@@ -5085,6 +5094,7 @@ function fileSize(params){
       console.log(chalkInfo("TNN | FILE SIZE | " + getTimeStamp()
         + " | CUR: " + size
         + " | PREV: " + prevSize
+        + " | EXPECTED: " + params.size
       ));
 
       fs.stat(params.path, function(err, stats){
@@ -5096,13 +5106,14 @@ function fileSize(params){
         prevSize = size;
         size = stats.size;
 
-        if ((size > 0) && (size === prevSize)) {
+        if ((size > 0) && ((params.size && (size === params.size)) || (size === prevSize))) {
 
           clearInterval(sizeInterval);
 
           console.log(chalkInfo("TNN | FILE SIZE STABLE | " + getTimeStamp()
             + " | CUR: " + size
             + " | PREV: " + prevSize
+            + " | EXPECTED: " + params.size
           ));
 
           resolve();
@@ -5122,9 +5133,9 @@ function loadUsersArchive(params){
     console.log(chalkLog("TNN | LOADING USERS ARCHIVE | " + getTimeStamp() + " | " + params.path));
 
     try {
-      const fileOpen = await checkFileOpen({path: params.path});
-      await fileSize({path: params.path});
-      const unzipSuccess = await unzipUsersToArray({path: params.path});
+      const fileOpen = await checkFileOpen(params);
+      await fileSize(params);
+      const unzipSuccess = await unzipUsersToArray(params);
       await updateTrainingSet();
       resolve();
     }
@@ -5148,59 +5159,37 @@ function initWatch(params){
 
   watch.createMonitor(params.rootFolder, watchOptions, function (monitor) {
 
-    monitor.on("created", async function (f, stat) {
+    const loadArchive = async function (f, stat) {
 
       console.log(chalkInfo("TNN | +++ FILE CREATED | " + getTimeStamp() + " | " + f));
 
-      if (f.endsWith("users.zip")){
+      if (f.endsWith(configuration.defaultUserArchiveFlagFile)){
 
-        if  (statsObj.loadUsersArchiveBusy) {
-          console.log(chalkInfo("TNN | LOAD USERS ARCHIVE ALREADY BUSY | " + getTimeStamp() + " | " + f));
-        }
-        else {
-          statsObj.loadUsersArchiveBusy = true;
+        console.log(chalkLog("TNN | LOAD USER ARCHIVE FLAG FILE: " + params.rootFolder + "/" + configuration.defaultUserArchiveFlagFile));
 
-          setTimeout(async function(){
-            try {
-              await loadUsersArchive({path: f});
-              statsObj.loadUsersArchiveBusy = false;
-            }
-            catch(err){
-              statsObj.loadUsersArchiveBusy = false;
-              console.log(chalkError("TNN | *** WATCH CHANGE ERROR | " + getTimeStamp() + " | " + err));
-            }
-          }, 30*ONE_SECOND);
+        loadFileRetry({folder: configuration.defaultTrainingSetsFolder, file: configuration.defaultUserArchiveFlagFile}, async function(err, archiveFlagObj){
 
-        }
+          console.log(chalkLog("TNN | USER ARCHIVE FLAG FILE | PATH: " + archiveFlagObj.path + " | SIZE: " + archiveFlagObj.size));
+
+          const fullLocalPath = (hostname === "google") ? "/home/tc/Dropbox/Apps/wordAssociation" + archiveFlagObj.path : "/Users/tc/Dropbox/Apps/wordAssociation" + archiveFlagObj.path;
+
+          try {
+            await loadUsersArchive({path: fullLocalPath, size: archiveFlagObj.size});
+            statsObj.loadUsersArchiveBusy = false;
+          }
+          catch(err){
+            statsObj.loadUsersArchiveBusy = false;
+            console.log(chalkError("TNN | *** WATCH CHANGE ERROR | " + getTimeStamp() + " | " + err));
+          }
+
+        });
 
       }
-    });
+    };
 
-    monitor.on("changed", async function (f, curr, prev) {
+    monitor.on("created", loadArchive);
 
-      console.log(chalkInfo("TNN | !!! FILE CHANGED: " + f));
-
-      if (f.endsWith("users.zip")){
-
-        if  (statsObj.loadUsersArchiveBusy) {
-          console.log(chalkAlert("TNN | LOAD USERS ARCHIVE ALREADY BUSY | " + getTimeStamp() + " | " + f));
-        }
-        else {
-          statsObj.loadUsersArchiveBusy = true;
-
-          setTimeout(async function(){
-            try {
-              await loadUsersArchive({path: f});
-              statsObj.loadUsersArchiveBusy = false;
-            }
-            catch(err){
-              statsObj.loadUsersArchiveBusy = false;
-              console.log(chalkError("TNN | *** WATCH CHANGE ERROR | " + getTimeStamp() + " | " + err));
-            }
-          }, 30*ONE_SECOND);
-        }
-      }
-    });
+    monitor.on("changed", loadArchive);
 
     monitor.on("removed", function (f, stat) {
       console.log(chalkInfo("TNN | XXX FILE DELETED | " + getTimeStamp() + " | " + f));
@@ -5821,56 +5810,77 @@ function initMain(cnf, callback){
 
       if (cnf.loadTrainingSetFromFile) {
 
-        // try {
+        loadFileRetry({folder: configuration.defaultTrainingSetsFolder, file: configuration.defaultUserArchiveFlagFile}, async function(err, archiveFlagObj){
 
-        fs.stat(configuration.defaultUserArchivePath, async function(err, stats){
-          if (err) {
-            console.log(chalkError("TNN | *** USER ARCHIVE STATS ERROR: " + err));
-            return callback(err);
-          }
+          console.log(chalkLog("TNN | USER ARCHIVE FLAG FILE | PATH: " + archiveFlagObj.path + " | SIZE: " + archiveFlagObj.size));
 
-          const curModifiedMoment = moment(stats.mtimeMs);
+          const fullLocalPath = (hostname === "google") ? "/home/tc/Dropbox/Apps/wordAssociation" + archiveFlagObj.path : "/Users/tc/Dropbox/Apps/wordAssociation" + archiveFlagObj.path;
 
-          if (statsObj.archiveModifiedMoment.isBefore(curModifiedMoment)){
-
-            console.log(chalkBlueBold("TNN | *** USER ARCHIVE CHANGED"
-              + " | SIZE: " + stats.size
-              + " | CUR MOD: " + getTimeStamp(curModifiedMoment)
-              + " | PREV MOD: " + getTimeStamp(statsObj.archiveModifiedMoment)
-              // + "\n" + jsonPrint(stats)
-            ));
-
-            try {
-              await fileSize({path: configuration.defaultUserArchivePath});
-              await loadUsersArchive({path: configuration.defaultUserArchivePath});
-              statsObj.archiveModifiedMoment = moment(curModifiedMoment);
-              createTrainingSetBusy = false;
-              trainingSetReady = true;
-              runOnceFlag = true;
-              callback();
-            }
-            catch(err){
-              createTrainingSetBusy = false;
-              trainingSetReady = false;
-              return callback();
-            }
-
-
-          }
-          else {
-
-            console.log(chalkLog("TNN | ... USER ARCHIVE NO CHANGE"
-              + " | CUR MOD: " + getTimeStamp(curModifiedMoment)
-              + " | PREV MOD: " + getTimeStamp(statsObj.archiveModifiedMoment)
-            ));
-
+          try {
+            await loadUsersArchive({path: fullLocalPath, size: archiveFlagObj.size});
+            statsObj.archiveModifiedMoment = moment(curModifiedMoment);
+            statsObj.loadUsersArchiveBusy = false;
             createTrainingSetBusy = false;
             trainingSetReady = true;
             runOnceFlag = true;
             callback();
           }
+          catch(err){
+              createTrainingSetBusy = false;
+              trainingSetReady = false;
+              return callback();
+          }
 
         });
+
+        // fs.stat(configuration.defaultUserArchivePath, async function(err, stats){
+        //   if (err) {
+        //     console.log(chalkError("TNN | *** USER ARCHIVE STATS ERROR: " + err));
+        //     return callback(err);
+        //   }
+
+        //   const curModifiedMoment = moment(stats.mtimeMs);
+
+        //   if (statsObj.archiveModifiedMoment.isBefore(curModifiedMoment)){
+
+        //     console.log(chalkBlueBold("TNN | *** USER ARCHIVE CHANGED"
+        //       + " | SIZE: " + stats.size
+        //       + " | CUR MOD: " + getTimeStamp(curModifiedMoment)
+        //       + " | PREV MOD: " + getTimeStamp(statsObj.archiveModifiedMoment)
+        //       // + "\n" + jsonPrint(stats)
+        //     ));
+
+        //     try {
+        //       await fileSize({path: configuration.defaultUserArchivePath});
+        //       await loadUsersArchive({path: configuration.defaultUserArchivePath});
+        //       statsObj.archiveModifiedMoment = moment(curModifiedMoment);
+        //       createTrainingSetBusy = false;
+        //       trainingSetReady = true;
+        //       runOnceFlag = true;
+        //       callback();
+        //     }
+        //     catch(err){
+        //       createTrainingSetBusy = false;
+        //       trainingSetReady = false;
+        //       return callback();
+        //     }
+
+
+        //   }
+        //   else {
+
+        //     console.log(chalkLog("TNN | ... USER ARCHIVE NO CHANGE"
+        //       + " | CUR MOD: " + getTimeStamp(curModifiedMoment)
+        //       + " | PREV MOD: " + getTimeStamp(statsObj.archiveModifiedMoment)
+        //     ));
+
+        //     createTrainingSetBusy = false;
+        //     trainingSetReady = true;
+        //     runOnceFlag = true;
+        //     callback();
+        //   }
+
+        // });
  
         // }
         // catch(err) {
