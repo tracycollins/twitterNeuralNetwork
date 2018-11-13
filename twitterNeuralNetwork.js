@@ -1440,12 +1440,15 @@ function printNetworkCreateResultsHashmap(){
     let error = "";
     let successRate = "";
     let elapsed = "";
+    let betterChild = "";
+    let seedNetworkId = "";
 
     status = (networkObj.status && networkObj.status !== undefined) ? networkObj.status : "UNKNOWN";
     snIdRes = (networkObj.seedNetworkId && networkObj.seedNetworkId !== undefined) ? networkObj.seedNetworkRes.toFixed(2) : "---";
-    networkObj.betterChild = (networkObj.betterChild && networkObj.betterChild !== undefined) ? networkObj.betterChild : "---";
-
+    betterChild = (networkObj.betterChild && networkObj.betterChild !== undefined) ? networkObj.betterChild : "---";
+    seedNetworkId = (networkObj.seedNetworkId && networkObj.seedNetworkId !== undefined) ? networkObj.seedNetworkId : "---";
     iterations = (networkObj.evolve.results && networkObj.evolve.results !== undefined) ? networkObj.evolve.results.iterations : "---";
+
     error = ((networkObj.evolve.results && networkObj.evolve.results !== undefined) 
       && (networkObj.evolve.results.error !== undefined)
       && networkObj.evolve.results.error)  ? networkObj.evolve.results.error.toFixed(5) : "---";
@@ -1456,8 +1459,8 @@ function printNetworkCreateResultsHashmap(){
     tableArray.push([
       "TNN | " + nnId,
       status,
-      networkObj.betterChild,
-      networkObj.seedNetworkId,
+      betterChild,
+      seedNetworkId,
       snIdRes,
       networkObj.numInputs,
       networkObj.evolve.options.clear,
