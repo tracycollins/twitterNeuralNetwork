@@ -2777,13 +2777,12 @@ function loadBestNetworkDropboxFolders (params, callback){
 
                   printNetworkObj("TNN | LOAD GLOBAL BEST NETWORK", networkObj);
 
-                  slackText = "\n*GLOBAL BEST (ON LOCAL DIR LOAD)*";
-                  slackText = slackText + "\n*" + networkObj.successRate.toFixed(2) + "%*";
-                  slackText = slackText + "\n" + networkObj.networkId;
-                  slackText = slackText + "\nELAPSED: " + msToTime(networkObj.evolve.elapsed);
+                  slackText = "\n*GLOBAL BEST (ON LOCAL DIR LOAD) | " + networkObj.successRate.toFixed(2) + "%*";
+                  slackText = slackText + "\n              " + networkObj.networkId;
+                  slackText = slackText + "\nIN:           " + networkObj.inputsId;
+                  slackText = slackText + "\nINPUTS:       " + networkObj.network.input;
                   slackText = slackText + "\nBETTER CHILD: " + networkObj.betterChild;
-                  slackText = slackText + "\nIN: " + networkObj.inputsId;
-                  slackText = slackText + "\nINPUTS: " + networkObj.network.input;
+                  slackText = slackText + "\nELAPSED:      " + msToTime(networkObj.evolve.elapsed);
 
                   slackPostMessage(slackChannelPassGlobal, slackText);
 
@@ -3080,13 +3079,13 @@ function loadBestNetworkDropboxFolders (params, callback){
 
                     printNetworkObj("TNN | LOAD GLOBAL BEST NETWORK", nnDb);
 
-                    slackText = "\n*GLOBAL BEST (ON LOCAL DIR LOAD)*";
-                    slackText = slackText + "\n*" + nnDb.successRate.toFixed(2) + "%*";
-                    slackText = slackText + "\n" + nnDb.networkId;
-                    slackText = slackText + "\nELAPSED: " + msToTime(nnDb.evolve.elapsed);
+                    slackText = "\n*GLOBAL BEST (ON LOCAL DIR LOAD) | " + nnDb.successRate.toFixed(2) + "%*";
+                    // slackText = slackText + "\n*" + networkObj.successRate.toFixed(2) + "%*";
+                    slackText = slackText + "\n              " + nnDb.networkId;
+                    slackText = slackText + "\nIN:           " + nnDb.inputsId;
+                    slackText = slackText + "\nINPUTS:       " + nnDb.network.input;
                     slackText = slackText + "\nBETTER CHILD: " + nnDb.betterChild;
-                    slackText = slackText + "\nIN: " + nnDb.inputsId;
-                    slackText = slackText + "\nINPUTS: " + nnDb.network.input;
+                    slackText = slackText + "\nELAPSED:      " + msToTime(nnDb.evolve.elapsed);
 
                     slackPostMessage(slackChannelPassGlobal, slackText);
 
@@ -6149,13 +6148,12 @@ function initNeuralNetworkChild(nnChildIndex, cnf, callback){
 
             statsObj.evolveStats.passGlobal += 1;
 
-            slackText = "\n*GLOBAL BEST*";
-            slackText = slackText + "\n*" + nn.test.results.successRate.toFixed(2) + "%*";
-            slackText = slackText + "\n" + nn.networkId;
-            slackText = slackText + "\nELAPSED: " + msToTime(nn.evolve.elapsed);
+            slackText = "\n*GLOBAL BEST | " + nn.test.results.successRate.toFixed(2) + "%*";
+            slackText = slackText + "\n              " + nn.networkId;
+            slackText = slackText + "\nIN:           " + nn.inputsId;
+            slackText = slackText + "\nINPUTS:       " + nn.network.input;
             slackText = slackText + "\nBETTER CHILD: " + nn.betterChild;
-            slackText = slackText + "\nIN: " + nn.inputsId;
-            slackText = slackText + "\nINPUTS: " + nn.network.input;
+            slackText = slackText + "\nELAPSED:      " + msToTime(nn.evolve.elapsed);
 
             slackPostMessage(slackChannelPassGlobal, slackText);
 
@@ -6174,13 +6172,12 @@ function initNeuralNetworkChild(nnChildIndex, cnf, callback){
 
             statsObj.evolveStats.passLocal += 1;
 
-            slackText = "\n*LOCAL BEST*";
-            slackText = slackText + "\n*" + nn.test.results.successRate.toFixed(2) + "%*";
-            slackText = slackText + "\n" + nn.networkId;
-            slackText = slackText + "\nELAPSED: " + msToTime(nn.evolve.elapsed);
+            slackText = "\n*LOCAL BEST | " + nn.test.results.successRate.toFixed(2) + "%*";
+            slackText = slackText + "\n              " + nn.networkId;
+            slackText = slackText + "\nIN:           " + nn.inputsId;
+            slackText = slackText + "\nINPUTS:       " + nn.network.input;
             slackText = slackText + "\nBETTER CHILD: " + nn.betterChild;
-            slackText = slackText + "\nIN: " + nn.inputsId;
-            slackText = slackText + "\nINPUTS: " + nn.network.input;
+            slackText = slackText + "\nELAPSED:      " + msToTime(nn.evolve.elapsed);
 
             slackPostMessage(slackChannelPassLocal, slackText);
 
