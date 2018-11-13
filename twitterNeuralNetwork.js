@@ -4598,99 +4598,6 @@ function convertDatum(params, inputs, datum, callback){
   });
 }
 
-// function testNetwork(nwObj, testObj, callback){
-
-//   statsObj.status = "TEST NETWORK";
-
-//   const nw = neataptic.Network.fromJSON(nwObj.network);
-
-//   console.log(chalkBlue("TNN | TEST NETWORK"
-//     + " | TEST RUN ID: " + testObj.testRunId
-//     + " | NETWORK ID: " + testObj.testRunId
-//     + " | " + testObj.testSet.meta.setSize + " TEST DATA POINTS"
-//   ));
-
-//   let numTested = 0;
-//   let numSkipped = 0; 
-//   let numPassed = 0;
-//   let successRate = 0;
-//   let testResultArray = [];
-
-//   let convertDatumParams = {};
-//   convertDatumParams.normalization = statsObj.normalization;
-
-//   let shuffledTestData = _.shuffle(testObj.testSet.data);
-
-//   async.eachSeries(shuffledTestData, function(datum, cb){
-
-//     convertDatum(convertDatumParams, nwObj.inputsObj.inputs, datum, function(err, testDatumObj){
-
-//       const testOutput = activateNetwork(nw, testDatumObj.input);
-
-//       debug(chalkLog("========================================"));
-
-//       numTested += 1;
-
-//       indexOfMax(testOutput, function(testMaxOutputIndex, to){
-
-//         debug("INDEX OF MAX TEST OUTPUT: " + to);
-
-//         indexOfMax(testDatumObj.output, function(expectedMaxOutputIndex, eo){
-
-//           debug("INDEX OF MAX TEST OUTPUT: " + eo);
-
-//           let passed = (testMaxOutputIndex === expectedMaxOutputIndex);
-
-//           numPassed = passed ? numPassed+1 : numPassed;
-
-//           successRate = 100 * numPassed/(numTested + numSkipped);
-
-//           let currentChalk = passed ? chalkLog : chalkAlert;
-
-//           testResultArray.push(
-//             {
-//               P: passed,
-//               EO: testDatumObj.output,
-//               EOI: expectedMaxOutputIndex,
-//               TO: testOutput, 
-//               TOI: testMaxOutputIndex
-//             }
-//           );
-
-//           debug(currentChalk("TEST RESULT: " + passed 
-//             + " | " + successRate.toFixed(2) + "%"
-//             + "\n" + testOutput[0]
-//             + " " + testOutput[1]
-//             + " " + testOutput[2]
-//             + " | TMOI: " + testMaxOutputIndex
-//             + "\n" + testDatumObj.output[0]
-//             + " " + testDatumObj.output[1]
-//             + " " + testDatumObj.output[2]
-//             + " | EMOI: " + expectedMaxOutputIndex
-//           ));
-
-//           cb();
-//         });
-
-//       });
-
-//     });
-
-//   }, function(err){
-
-//     callback(err, 
-//       { testRunId: testObj.testRunId, 
-//         numTests: testObj.testSet.meta.setSize, 
-//         numSkipped: numSkipped, 
-//         numPassed: numPassed, 
-//         successRate: successRate,
-//         testResultArray: testResultArray
-//       }
-//     );
-
-//   });
-// }
-
 function unzipUsersToArray(params){
 
   console.log(chalkBlue("TNN | UNZIP USERS TO TRAINING SET: " + params.path));
@@ -4698,8 +4605,6 @@ function unzipUsersToArray(params){
   return new Promise(async function(resolve, reject) {
 
     try {
-
-      await fileSize(params);
 
       yauzl.open(params.path, {lazyEntries: true}, function(err, zipfile) {
 
