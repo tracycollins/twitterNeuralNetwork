@@ -5578,15 +5578,15 @@ function allComplete(){
 
   getChildProcesses(function(err, childArray){
 
-    if (childArray.length === 0 ) { 
+    if (Object.keys(neuralNetworkChildHashMap).length === 0 ) { 
       allCompleteFlag = true;
-      console.log(chalkBlue("TNN | allComplete | NO NN CHILDREN"));
+      console.log(chalkBlue("TNN | allComplete | NO NN CHILDREN IN HM"));
       return;
     }
 
-    if (Object.keys(neuralNetworkChildHashMap).length === 0 ) { 
+    if (childArray.length === 0 ) { 
       allCompleteFlag = true;
-      console.log(chalkBlue("TNN | allComplete | NO NN CHILDREN"));
+      console.log(chalkBlue("TNN | allComplete | NO NN CHILDREN PROCESSES"));
       return;
     }
 
@@ -5868,7 +5868,7 @@ function printNeuralNetworkChildHashMap(){
         chalkValue = chalkInfo;
     }
 
-    console.log(chalkValue("TNN CHILD HM"
+    console.log(chalkValue("TNN | CHILD HM"
       + " | CHILD ID: " + nnChildId
       + " | PID: " + neuralNetworkChildHashMap[nnChildId].pid
       + " | STATUS: " + neuralNetworkChildHashMap[nnChildId].status
@@ -5887,7 +5887,6 @@ function initNeuralNetworkChild(nnChildIndex, cnf, callback){
 
   let nnChildId = NN_CHILD_PREFIX + nnChildIndex;
 
-  console.log(chalkBlue("TNN | +++ NEW NEURAL NETWORK CHILD | NNC ID: " + nnChildId));
 
   if ((neuralNetworkChildHashMap[nnChildId] !== undefined) && (neuralNetworkChildHashMap[nnChildId].status !== "NEW")) {
     console.log(chalkError("!!! ERROR initNeuralNetworkChild: NN CHILD EXISTS !!! | NNC ID: " + nnChildId
@@ -5910,6 +5909,13 @@ function initNeuralNetworkChild(nnChildIndex, cnf, callback){
   neuralNetworkChildHashMap[nnChildId].child = cp.fork("neuralNetworkChild.js", childEnv );
   neuralNetworkChildHashMap[nnChildId].pid = neuralNetworkChildHashMap[nnChildId].child.pid;
 
+  console.log(chalkBlue("TNN | +++ NEW NEURAL NETWORK CHILD"
+    + " | PID: " + neuralNetworkChildHashMap[nnChildId].pid 
+    + " | CH ID: " + nnChildId
+    + " | STATUS: " + neuralNetworkChildHashMap[nnChildId].status
+  ));
+
+  printNeuralNetworkChildHashMap();
 
   neuralNetworkChildHashMap[nnChildId].child.on("message", function(m){
 
