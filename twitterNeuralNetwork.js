@@ -3759,8 +3759,8 @@ function loadAllConfigFiles(callback){
       loadConfigFile(dropboxConfigHostFolder, dropboxConfigHostFile, function(err, hostConfig){
 
         if (err) {
-          console.log(error("TNN | ERROR LOADED HOST CONFIG " + dropboxConfigHostFolder + "/" + dropboxConfigHostFile));
-          console.log(error("TNN | ERROR LOADED HOST CONFIG " + err));
+          console.log(chalkError("TNN | ERROR LOADED HOST CONFIG " + dropboxConfigHostFolder + "/" + dropboxConfigHostFile));
+          console.log(chalkError("TNN | ERROR LOADED HOST CONFIG " + err));
           return cb(err);
         }
 
