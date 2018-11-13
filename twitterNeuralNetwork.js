@@ -411,7 +411,7 @@ function getChildProcesses(callback){
         console.log(chalkInfo("TNN | FOUND CHILD PROCESSSES | NUM CH: " + statsObj.numChildren));
       }
 
-      if ((statsObj.numChildren === 0) && (callback !== undefined)) { callback(null, false); }
+      if ((statsObj.numChildren === 0) && (callback !== undefined)) { callback(null, []); }
 
       async.eachSeries(stdoutArray, function(pidRaw, cb){
 
@@ -465,6 +465,8 @@ function getChildProcesses(callback){
         }
 
       }, function(err){
+
+        statsObj.numChildren = childPidArray.length;
 
         if (callback !== undefined) { callback(null, childPidArray); }
 
@@ -5483,9 +5485,9 @@ function allComplete(){
 
   getChildProcesses(function(err, childArray){
 
-    if (Object.keys(neuralNetworkChildHashMap).length === 0 ) { 
-      allCompleteFlag = true;
-      console.log(chalkBlue("TNN | allComplete | NO NN CHILDREN IN HM"));
+    if (Object.keys(neuralNetworkChildHashMap).length !== 0 ) { 
+      allCompleteFlag = false;
+      console.log(chalkBlue("TNN | allComplete: " + allCompleteFlag + " | NN CHILDREN IN HM: " + jsonPrint(Object.keys(neuralNetworkChildHashMap))));
       return;
     }
 
