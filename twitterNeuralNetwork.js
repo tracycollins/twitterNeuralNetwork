@@ -1443,7 +1443,7 @@ function printNetworkCreateResultsHashmap(){
 
     status = (networkObj.status && networkObj.status !== undefined) ? networkObj.status : "UNKNOWN";
     snIdRes = (networkObj.seedNetworkId && networkObj.seedNetworkId !== undefined) ? networkObj.seedNetworkRes.toFixed(2) : "---";
-    networkObj.betterChild = (networkObj.betterChild && networkObj.betterChild !== undefined) ? networkObj.betterChild : false;
+    networkObj.betterChild = (networkObj.betterChild && networkObj.betterChild !== undefined) ? networkObj.betterChild : "---";
 
     iterations = (networkObj.evolve.results && networkObj.evolve.results !== undefined) ? networkObj.evolve.results.iterations : "---";
     error = ((networkObj.evolve.results && networkObj.evolve.results !== undefined) 
