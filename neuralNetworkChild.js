@@ -82,7 +82,6 @@ process.title = process.env.NNC_CHILD_ID;
 
 let configuration = {};
 configuration.nnChildId = process.env.NNC_CHILD_ID;
-// configuration.crossEntropyWorkAroundEnabled = false;
 configuration.verbose = false;
 configuration.globalTestMode = false;
 configuration.defaultPopulationSize = 100;
@@ -591,7 +590,6 @@ function testNetwork(nwObj, testSet, maxInputHashMap, callback){
     + " | TEST SET ID: " + testSet.meta.testSetId
     + " | NETWORK ID: " + nwObj.networkId
     + " | " + testSet.meta.setSize + " TEST DATA POINTS"
-    // + " | TEST SET META: " + jsonPrint(testSet.meta)
   ));
 
   const nw = neataptic.Network.fromJSON(nwObj.network);
