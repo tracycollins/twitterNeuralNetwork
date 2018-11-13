@@ -40,20 +40,20 @@ const DEFAULT_SERVER_MODE = false;
 const DEFAULT_FIND_CAT_USER_CURSOR_LIMIT = 100;
 const DEFAULT_CURSOR_BATCH_SIZE = process.env.DEFAULT_CURSOR_BATCH_SIZE || 100;
 
-const DEFAULT_WAIT_UNLOCK_INTERVAL = 15*ONE_SECOND;
-const DEFAULT_WAIT_UNLOCK_TIMEOUT = 10*ONE_MINUTE;
+// const DEFAULT_WAIT_UNLOCK_INTERVAL = 15*ONE_SECOND;
+// const DEFAULT_WAIT_UNLOCK_TIMEOUT = 10*ONE_MINUTE;
 
-const DEFAULT_FILELOCK_RETRIES = 20;
-const DEFAULT_FILELOCK_RETRY_WAIT = DEFAULT_WAIT_UNLOCK_INTERVAL;
-const DEFAULT_FILELOCK_STALE = 2*DEFAULT_WAIT_UNLOCK_TIMEOUT;
-const DEFAULT_FILELOCK_WAIT = DEFAULT_WAIT_UNLOCK_TIMEOUT;
+// const DEFAULT_FILELOCK_RETRIES = 20;
+// const DEFAULT_FILELOCK_RETRY_WAIT = DEFAULT_WAIT_UNLOCK_INTERVAL;
+// const DEFAULT_FILELOCK_STALE = 2*DEFAULT_WAIT_UNLOCK_TIMEOUT;
+// const DEFAULT_FILELOCK_WAIT = DEFAULT_WAIT_UNLOCK_TIMEOUT;
 
-let fileLockOptions = { 
-  retries: DEFAULT_FILELOCK_WAIT,
-  retryWait: DEFAULT_FILELOCK_RETRY_WAIT,
-  stale: DEFAULT_FILELOCK_STALE,
-  wait: DEFAULT_FILELOCK_WAIT
-};
+// let fileLockOptions = { 
+//   retries: DEFAULT_FILELOCK_WAIT,
+//   retryWait: DEFAULT_FILELOCK_RETRY_WAIT,
+//   stale: DEFAULT_FILELOCK_STALE,
+//   wait: DEFAULT_FILELOCK_WAIT
+// };
 
 const chalk = require("chalk");
 const chalkAlert = chalk.red;
@@ -107,7 +107,7 @@ console.log(chalkLog("TNN | SERVER MODE: " + configuration.serverMode));
 
 const os = require("os");
 const moment = require("moment");
-const lockFile = require("lockfile");
+// const lockFile = require("lockfile");
 const merge = require("deepmerge");
 const treeify = require("treeify");
 const archiver = require("archiver");
@@ -242,7 +242,7 @@ let prevHostConfigFileModifiedMoment = moment("2010-01-01");
 let prevDefaultConfigFileModifiedMoment = moment("2010-01-01");
 let prevConfigFileModifiedMoment = moment("2010-01-01");
 
-let waitUnlockedSet = new Set();
+// let waitUnlockedSet = new Set();
 
 let bestNetworkHashMap = new HashMap();
 let inputsHashMap = new HashMap();
@@ -265,7 +265,7 @@ statsObj.pid = process.pid;
 statsObj.cpus = os.cpus().length;
 statsObj.commandLineArgsLoaded = false;
 
-statsObj.lockFileNameSet = new Set();
+// statsObj.lockFileNameSet = new Set();
 
 statsObj.archiveOpen = false;
 statsObj.archiveModifiedMoment = moment("2010-01-01");
@@ -814,8 +814,8 @@ configuration.maxNeuralNetworkChildern = (process.env.TNN_MAX_NEURAL_NETWORK_CHI
   ? process.env.TNN_MAX_NEURAL_NETWORK_CHILDREN 
   : DEFAULT_MAX_NEURAL_NETWORK_CHILDREN;
 
-configuration.waitUnlockIntervalValue = DEFAULT_WAIT_UNLOCK_INTERVAL;
-configuration.waitUnlockedTimeoutValue = DEFAULT_WAIT_UNLOCK_TIMEOUT;
+// configuration.waitUnlockIntervalValue = DEFAULT_WAIT_UNLOCK_INTERVAL;
+// configuration.waitUnlockedTimeoutValue = DEFAULT_WAIT_UNLOCK_TIMEOUT;
 
 configuration.quitOnComplete = DEFAULT_QUIT_ON_COMPLETE;
 
@@ -1593,7 +1593,7 @@ function quit(options){
   setTimeout(async function(){
 
     await killAll();
-    await releaseAllFileLocks();
+    // await releaseAllFileLocks();
 
     setTimeout(function() {
 
@@ -1616,13 +1616,13 @@ function quit(options){
 
 process.on( "SIGINT", async function() {
   await killAll();
-  await releaseAllFileLocks();
+  // await releaseAllFileLocks();
   quit("SIGINT");
 });
 
 process.on("exit", async function() {
   await killAll();
-  await releaseAllFileLocks();
+  // await releaseAllFileLocks();
   quit("SIGINT");
 });
 
@@ -2885,11 +2885,6 @@ function loadBestNetworkDropboxFolders (params, callback){
                 }
 
                 bestNetworkHashMap.set(networkObj.networkId, { entry: entry, networkObj: networkObj});
-
-
-
-
-
 
 
                 let inputsEntry = {};
@@ -4796,22 +4791,22 @@ function unzipUsersToArray(params){
 
   return new Promise(async function(resolve, reject) {
 
-    const lockFileName = params.path + ".lock";
-    let archiveFileLocked;
+    // const lockFileName = params.path + ".lock";
+    // let archiveFileLocked;
 
     try {
 
-      archiveFileLocked = await getFileLock({file: lockFileName, options: fileLockOptions});
+      // archiveFileLocked = await getFileLock({file: lockFileName, options: fileLockOptions});
 
-      if (!archiveFileLocked) {
+      // if (!archiveFileLocked) {
 
-        console.log(chalkAlert("TNN | *** USER ARCHIVE FILE LOCK FAILED: " + params.path));
+      //   console.log(chalkAlert("TNN | *** USER ARCHIVE FILE LOCK FAILED: " + params.path));
 
-        statsObj.archiveOpen = false;
-        createTrainingSetBusy = false;
+      //   statsObj.archiveOpen = false;
+      //   createTrainingSetBusy = false;
 
-        return resolve(false);
-      }
+      //   return resolve(false);
+      // }
 
       await fileSize(params);
 
@@ -4823,22 +4818,22 @@ function unzipUsersToArray(params){
 
         zipfile.on("error", async function(err) {
           console.log(chalkError("TNN | *** UNZIP ERROR: " + err));
-          await releaseFileLock({file: lockFileName});
-          archiveFileLocked = false;
+          // await releaseFileLock({file: lockFileName});
+          // archiveFileLocked = false;
           reject(err);
         });
 
         zipfile.on("close", async function() {
           console.log(chalkLog("TNN | UNZIP CLOSE"));
-          await releaseFileLock({file: lockFileName});
-          archiveFileLocked = false;
+          // await releaseFileLock({file: lockFileName});
+          // archiveFileLocked = false;
           resolve(true);
         });
 
         zipfile.on("end", async function() {
           console.log(chalkLog("TNN | UNZIP END"));
-          await releaseFileLock({file: lockFileName});
-          archiveFileLocked = false;
+          // await releaseFileLock({file: lockFileName});
+          // archiveFileLocked = false;
           resolve(true);
         });
 
@@ -4915,8 +4910,8 @@ function unzipUsersToArray(params){
                 }
                 catch (err){
                   console.log(chalkError("TNN | *** UNZIP READ STREAM ERROR: " + err));
-                  await releaseFileLock({file: lockFileName});
-                  archiveFileLocked = false;
+                  // await releaseFileLock({file: lockFileName});
+                  // archiveFileLocked = false;
                   return reject(err);
                 }
               });
@@ -4928,15 +4923,15 @@ function unzipUsersToArray(params){
 
               readStream.on("close", async function(){
                 console.log(chalkInfo("TNN | UNZIP STREAM CLOSED | TRAINING SET USERS HM SIZE: " + trainingSetUsersHashMap.size));
-                await releaseFileLock({file: lockFileName});
-                archiveFileLocked = false;
+                // await releaseFileLock({file: lockFileName});
+                // archiveFileLocked = false;
                 resolve();
               });
 
               readStream.on("error",async function(err){
                 console.log(chalkError("TNN | *** UNZIP READ STREAM ERROR: " + err));
-                await releaseFileLock({file: lockFileName});
-                archiveFileLocked = false;
+                // await releaseFileLock({file: lockFileName});
+                // archiveFileLocked = false;
                 reject(err);
               });
             });
@@ -5175,6 +5170,7 @@ function initWatch(params){
 
           try {
             await loadUsersArchive({path: fullLocalPath, size: archiveFlagObj.size});
+            statsObj.archiveModifiedMoment = moment();
             statsObj.loadUsersArchiveBusy = false;
             createTrainingSetBusy = false;
             trainingSetReady = true;
@@ -5359,11 +5355,11 @@ async function generateGlobalTrainingTestSet (userHashMap, maxInputHashMap, call
 
         clearInterval(waitArchiveDoneInterval);
 
-        const lockFileName = configuration.defaultUserArchivePath + ".lock";
+        // const lockFileName = configuration.defaultUserArchivePath + ".lock";
 
         setTimeout(async function(){
 
-          await releaseFileLock({file: lockFileName});
+          // await releaseFileLock({file: lockFileName});
           console.log(chalkBlueBold("TNN | ARCHIVE | DONE"));
           callback();
 
@@ -5822,7 +5818,7 @@ function initMain(cnf, callback){
 
           try {
             await loadUsersArchive({path: fullLocalPath, size: archiveFlagObj.size});
-            statsObj.archiveModifiedMoment = moment(curModifiedMoment);
+            statsObj.archiveModifiedMoment = moment();
             statsObj.loadUsersArchiveBusy = false;
             createTrainingSetBusy = false;
             trainingSetReady = true;
@@ -6730,152 +6726,146 @@ slackText = slackText + "\n" + getTimeStamp();
 
 slackPostMessage(slackChannel, slackText);
 
+// function waitUnlocked(params){
 
-function waitUnlocked(params){
+//   return new Promise(function(resolve, reject){
 
-  return new Promise(function(resolve, reject){
+//     if (waitUnlockedSet.has(params.file)){
+//       console.log(chalkAlert("TNN | ALREADY WAITING FOR UNLOCK: " + params.file));
+//       return resolve(false);
+//     }
 
-    if (waitUnlockedSet.has(params.file)){
-      console.log(chalkAlert("TNN | ALREADY WAITING FOR UNLOCK: " + params.file));
-      return resolve(false);
-    }
+//     let waitUnlockedTimeout;
+//     const waitUnlockedTimeoutValue = params.timeout || configuration.waitUnlockedTimeoutValue;
+//     const waitUnlockIntervalValue = params.interval || configuration.waitUnlockIntervalValue;
 
-    let waitUnlockedTimeout;
-    const waitUnlockedTimeoutValue = params.timeout || configuration.waitUnlockedTimeoutValue;
-    const waitUnlockIntervalValue = params.interval || configuration.waitUnlockIntervalValue;
+//     let fileIsLocked;
+//     let waitUnlockInterval;
 
-    let fileIsLocked;
-    let waitUnlockInterval;
+//     fileIsLocked = lockFile.checkSync(params.file);
 
-    fileIsLocked = lockFile.checkSync(params.file);
+//     if (!fileIsLocked) {
+//       console.log(chalkInfo("TNN | OOO FILE IS UNLOCKED: " + params.file));
+//       return resolve();
+//     }
 
-    if (!fileIsLocked) {
-      console.log(chalkInfo("TNN | OOO FILE IS UNLOCKED: " + params.file));
-      return resolve();
-    }
+//     waitUnlockedSet.add(params.file);
 
-    waitUnlockedSet.add(params.file);
+//     console.log(chalkInfo("TNN | ... WAITING UNLOCK: " + params.file));
 
-    console.log(chalkInfo("TNN | ... WAITING UNLOCK: " + params.file));
+//     waitUnlockedTimeout = setTimeout(function(){
 
-    waitUnlockedTimeout = setTimeout(function(){
+//       console.log(chalkAlert("TNN | *** WAIT UNLOCK TIMEOUT: " + params.file));
+//       clearInterval(waitUnlockInterval);
+//       return resolve(false);
 
-      console.log(chalkAlert("TNN | *** WAIT UNLOCK TIMEOUT: " + params.file));
-      clearInterval(waitUnlockInterval);
-      return resolve(false);
+//     }, waitUnlockedTimeoutValue);
 
-    }, waitUnlockedTimeoutValue);
+//     waitUnlockInterval = setInterval(function(){
 
-    waitUnlockInterval = setInterval(function(){
+//       fileIsLocked = lockFile.checkSync(params.file);
 
-      fileIsLocked = lockFile.checkSync(params.file);
+//       if (!fileIsLocked) {
+//         clearTimeout(waitUnlockedTimeout);
+//         clearInterval(waitUnlockInterval);
+//         console.log(chalkInfo("TNN | OOO FILE IS UNLOCKED: " + params.file));
+//         waitUnlockedSet.delete(params.file);
+//         return resolve(true);
+//       }
 
-      if (!fileIsLocked) {
-        clearTimeout(waitUnlockedTimeout);
-        clearInterval(waitUnlockInterval);
-        console.log(chalkInfo("TNN | OOO FILE IS UNLOCKED: " + params.file));
-        waitUnlockedSet.delete(params.file);
-        return resolve(true);
-      }
+//       console.log(chalkInfo("TNN | ... WAITING UNLOCK: " + params.file));
 
-      console.log(chalkInfo("TNN | ... WAITING UNLOCK: " + params.file));
+//     }, configuration.waitUnlockIntervalValue);
 
-    }, configuration.waitUnlockIntervalValue);
+//   });
+// }
 
-  });
+// function getFileLock(params){
 
-}
+//   return new Promise(async function(resolve, reject){
 
-function getFileLock(params){
+//     try {
 
-  return new Promise(async function(resolve, reject){
+//       const fileUnlocked = await waitUnlocked(params);
 
-    try {
+//       lockFile.lock(params.file, params.options, function(err){
 
-      const fileUnlocked = await waitUnlocked(params);
+//         if (err) {
+//           console.log(chalkError("TNN | *** FILE LOCK FAIL: " + params.file + "\n" + err));
+//           // return reject(err);
+//           return resolve(false);
+//         }
 
-      lockFile.lock(params.file, params.options, function(err){
+//         statsObj.lockFileNameSet.add(params.file);
 
-        if (err) {
-          console.log(chalkError("TNN | *** FILE LOCK FAIL: " + params.file + "\n" + err));
-          // return reject(err);
-          return resolve(false);
-        }
+//         console.log(chalkGreen("TNN | +++ FILE LOCK: " + params.file));
+//         console.log(chalkGreen("TNN | LOCKED FILES: " + statsObj.lockFileNameSet.size
+//           + "\n" + [...statsObj.lockFileNameSet]
+//         ));
+//         resolve(true);
+//       });
 
-        statsObj.lockFileNameSet.add(params.file);
+//     }
+//     catch(err){
+//       console.log(chalkError("TNN | *** GET FILE LOCK ERROR: " + err));
+//       return reject(err);
+//     }
 
-        console.log(chalkGreen("TNN | +++ FILE LOCK: " + params.file));
-        console.log(chalkGreen("TNN | LOCKED FILES: " + statsObj.lockFileNameSet.size
-          + "\n" + [...statsObj.lockFileNameSet]
-        ));
-        resolve(true);
-      });
+//   });
+// }
 
-    }
-    catch(err){
-      console.log(chalkError("TNN | *** GET FILE LOCK ERROR: " + err));
-      return reject(err);
-    }
+// function releaseFileLock(params){
 
-  });
+//   return new Promise(function(resolve, reject){
 
-}
+//     const fileIsLocked = lockFile.checkSync(params.file);
 
-function releaseFileLock(params){
+//     if (!fileIsLocked) {
+//       statsObj.lockFileNameSet.delete(params.file);
+//       console.log(chalkGreen("TNN | LOCKED FILES\n" + [...statsObj.lockFileNameSet]));
+//       return resolve(true);
+//     }
 
-  return new Promise(function(resolve, reject){
+//     lockFile.unlock(params.file, function(err){
 
-    const fileIsLocked = lockFile.checkSync(params.file);
+//       if (err) {
+//         console.log(chalkError("TNN | *** FILE UNLOCK FAIL: " + params.file + "\n" + err));
+//         return reject(err);
+//       }
 
-    if (!fileIsLocked) {
-      statsObj.lockFileNameSet.delete(params.file);
-      console.log(chalkGreen("TNN | LOCKED FILES\n" + [...statsObj.lockFileNameSet]));
-      return resolve(true);
-    }
+//       console.log(chalkLog("TNN | --- FILE UNLOCK: " + params.file));
 
-    lockFile.unlock(params.file, function(err){
+//       statsObj.lockFileNameSet.delete(params.file);
 
-      if (err) {
-        console.log(chalkError("TNN | *** FILE UNLOCK FAIL: " + params.file + "\n" + err));
-        return reject(err);
-      }
+//       console.log(chalkGreen("TNN | LOCKED FILES\n" + [...statsObj.lockFileNameSet]));
 
-      console.log(chalkLog("TNN | --- FILE UNLOCK: " + params.file));
+//       resolve(true);
 
-      statsObj.lockFileNameSet.delete(params.file);
+//     });
 
-      console.log(chalkGreen("TNN | LOCKED FILES\n" + [...statsObj.lockFileNameSet]));
+//   });
+// }
 
-      resolve(true);
+// function releaseAllFileLocks(params){
 
-    });
+//   return new Promise(async function(resolve, reject){
 
-  });
+//     console.log(chalkBlue("TNN | RELEASE ALL LOCKED FILES: " + statsObj.lockFileNameSet.size));
 
-}
+//     for (let lockFileName of statsObj.lockFileNameSet) {
+//       try{
+//         await releaseFileLock(lockFileName);
+//       }
+//       catch (err){
+//         console.log(chalkError("TNN | *** RELEASE FILE LOCK ERROR: " + err));
+//         return reject(err);
+//       }
+//     }
 
+//     resolve();
 
-function releaseAllFileLocks(params){
-
-  return new Promise(async function(resolve, reject){
-
-    console.log(chalkBlue("TNN | RELEASE ALL LOCKED FILES: " + statsObj.lockFileNameSet.size));
-
-    for (let lockFileName of statsObj.lockFileNameSet) {
-      try{
-        await releaseFileLock(lockFileName);
-      }
-      catch (err){
-        console.log(chalkError("TNN | *** RELEASE FILE LOCK ERROR: " + err));
-        return reject(err);
-      }
-    }
-
-    resolve();
-
-  });
-
-}
+//   });
+// }
 
 
 let initMainTimeOut;
@@ -6891,18 +6881,18 @@ function initArchiver(params){
 
     try {
 
-      const lockFileName = params.outputFile + ".lock";
+      // const lockFileName = params.outputFile + ".lock";
 
-      let archiveFileLocked = await getFileLock({file: lockFileName, options: fileLockOptions});
+      // let archiveFileLocked = await getFileLock({file: lockFileName, options: fileLockOptions});
 
-      if (!archiveFileLocked) {
+      // if (!archiveFileLocked) {
 
-        console.log(chalkAlert("TNN | *** FILE LOCK FAILED | SKIP INIT ARCHIVE: " + params.outputFile));
+      //   console.log(chalkAlert("TNN | *** FILE LOCK FAILED | SKIP INIT ARCHIVE: " + params.outputFile));
 
-        statsObj.archiveOpen = false;
-        createTrainingSetBusy = false;
-        return resolve();
-      }
+      //   statsObj.archiveOpen = false;
+      //   createTrainingSetBusy = false;
+      //   return resolve();
+      // }
 
       createTrainingSetBusy = true;
 
