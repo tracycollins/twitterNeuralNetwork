@@ -259,6 +259,8 @@ let betterChildSeedNetworkIdSet = new Set();
 let statsObj = {};
 let statsObjSmall = {};
 
+statsObj.archivePath = "";
+
 statsObj.status = "LOAD";
 statsObj.hostname = hostname;
 statsObj.pid = process.pid;
@@ -5128,7 +5130,7 @@ function loadUsersArchive(params){
     console.log(chalkLog("TNN | LOADING USERS ARCHIVE | " + getTimeStamp() + " | " + params.path));
 
     try {
-      const fileOpen = await checkFileOpen(params);
+      // const fileOpen = await checkFileOpen(params);
       await fileSize(params);
       const unzipSuccess = await unzipUsersToArray(params);
       await updateTrainingSet();
@@ -5814,12 +5816,21 @@ function initMain(cnf, callback){
 
           console.log(chalkLog("TNN | USER ARCHIVE FLAG FILE | PATH: " + archiveFlagObj.path + " | SIZE: " + archiveFlagObj.size));
 
+          if (archiveFlagObj.path === statsObj.archivePath) {
+            console.log(chalkLog("TNN | USERS ARCHIVE SAME ... SKIPPING | " + archiveFlagObj.path));
+            statsObj.loadUsersArchiveBusy = false;
+            createTrainingSetBusy = false;
+            trainingSetReady = true;
+            return callback();
+          }
+
           const fullLocalPath = (hostname === "google") ? "/home/tc/Dropbox/Apps/wordAssociation" + archiveFlagObj.path : "/Users/tc/Dropbox/Apps/wordAssociation" + archiveFlagObj.path;
 
           try {
             await loadUsersArchive({path: fullLocalPath, size: archiveFlagObj.size});
             statsObj.archiveModifiedMoment = moment();
             statsObj.loadUsersArchiveBusy = false;
+            statsObj.archivePath = archiveFlagObj.path;
             createTrainingSetBusy = false;
             trainingSetReady = true;
             runOnceFlag = true;
@@ -5829,7 +5840,7 @@ function initMain(cnf, callback){
             statsObj.loadUsersArchiveBusy = false;
             createTrainingSetBusy = false;
             trainingSetReady = false;
-            return callback();
+            return callback(err);
           }
 
         });
