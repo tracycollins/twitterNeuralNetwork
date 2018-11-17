@@ -164,7 +164,7 @@ const DEFAULT_CREATE_TRAINING_SET_ONLY = false;
 const DEFAULT_DISABLE_CREATE_TEST_SET = false;
 const DEFAULT_INIT_MAIN_INTERVAL = process.env.TNN_INIT_MAIN_INTERVAL || 10*ONE_MINUTE;
 
-const DROPBOX_LIST_FOLDER_LIMIT = 500;
+const DROPBOX_LIST_FOLDER_LIMIT = 50;
 const DROPBOX_MAX_FILE_UPLOAD = 140 * ONE_MEGABYTE; // bytes
 
 // let socket;
@@ -2637,36 +2637,335 @@ function updateDbNetwork(params, callback) {
   });
 }
 
-function loadBestNetworkDropboxFolders (params, callback){
+function updateInputsHashMap(params){
+  return new Promise(function(resolve, reject){
 
-  if (configuration.offlineMode) {
-    dropboxClient = dropboxLocalClient;
-  }
-  else {
-    dropboxClient = dropboxRemoteClient;
-  }
+    let networkObj = params.networkObj;
 
-  let numNetworksLoaded = 0;
+    let inputsEntry = {};
 
-  debug(chalkNetwork("TNN | ... LOADING DROPBOX BEST NN FOLDERS"
-    + " | " + params.folders.length + " FOLDERS"
-    + "\n" + jsonPrint(params.folders)
-  ));
+    inputsEntry.name = networkObj.inputsId + ".json";
+    inputsEntry.content_hash = false;
+    inputsEntry.client_modified = moment();
 
-  async.eachSeries(params.folders, function(folder, cb0){
+    inputsHashMap.set(networkObj.inputsId, {entry: inputsEntry, inputsObj: networkObj.inputsObj});
 
-    debug(chalkNetwork("TNN | ... LOADING DROPBOX BEST NN FOLDER | " + folder));
+    if (inputsNetworksHashMap[networkObj.inputsId] === undefined) {
+      inputsNetworksHashMap[networkObj.inputsId] = new Set();
+    }
 
-    let options = {
-      path: folder,
-      limit: DROPBOX_LIST_FOLDER_LIMIT
-    };
+    inputsNetworksHashMap[networkObj.inputsId].add(networkObj.networkId);
 
-    listDropboxFolder(options, function(err, response){
 
-      if (err) {
-        return cb0(err);
+    if (!currentBestNetwork || (networkObj.overallMatchRate > currentBestNetwork.overallMatchRate)) {
+      currentBestNetwork = networkObj;
+      printNetworkObj("TNN | * NEW BEST NN", networkObj);
+    }
+
+    let inputsEntry = {};
+
+    inputsEntry.name = networkObj.inputsId + ".json";
+    inputsEntry.content_hash = false;
+    inputsEntry.client_modified = moment();
+
+    inputsHashMap.set(networkObj.inputsId, {entry: inputsEntry, inputsObj: networkObj.inputsObj});
+
+    if (inputsNetworksHashMap[networkObj.inputsId] === undefined) {
+      inputsNetworksHashMap[networkObj.inputsId] = new Set();
+    }
+
+    inputsNetworksHashMap[networkObj.inputsId].add(networkObj.networkId);
+
+    resolve();
+  });
+}
+
+function processNetworkFileEntry(params){
+
+  return new Promise(function(resolve, reject){
+
+    let entry = params.entry;
+    let folder = params.folder;
+
+    const entryNameArray = entry.name.split(".");
+    const networkId = entryNameArray[0];
+
+    debug(chalkInfo("TNN | DROPBOX BEST NETWORK FOUND"
+      + " | LAST MOD: " + moment(new Date(entry.client_modified)).format(compactDateTimeFormat)
+      + " | " + networkId
+      + " | " + entry.name
+    ));
+
+    if (skipLoadNetworkSet.has(networkId)){
+      debug(chalkInfo("TNN | NN IN SKIP LOAD NN SET ... SKIPPING LOAD OF " + networkId));
+      return resolve(null);
+    }
+    
+    if (bestNetworkHashMap.has(networkId)){
+
+      let curNetworkObj = bestNetworkHashMap.get(networkId);
+      let oldContentHash = false;
+      let networkObj = {};
+
+      if ((curNetworkObj.entry.path_display === entry.path_display) && (curNetworkObj.entry !== undefined) && (curNetworkObj.entry.content_hash !== undefined)){
+        oldContentHash = curNetworkObj.entry.content_hash;
       }
+
+      if (oldContentHash && (oldContentHash === entry.content_hash)) {
+        debug(chalkLog("TNN | DROPBOX BEST NETWORK CONTENT SAME  "
+          + " | " + entry.name
+          + " | LAST MOD: " + moment(new Date(entry.client_modified)).format(compactDateTimeFormat)
+        ));
+        return resolve(null);
+      }
+
+      if (oldContentHash && (oldContentHash !== entry.content_hash) && (curNetworkObj.entry.path_display === entry.path_display)) {
+        console.log(chalkNetwork("TNN | DROPBOX BEST NETWORK CONTENT CHANGE"
+          + " | LAST MOD: " + moment(new Date(entry.client_modified)).format(compactDateTimeFormat)
+          + " | " + entry.path_display
+        ));
+      }
+      else if (oldContentHash && (oldContentHash !== entry.content_hash) && (curNetworkObj.entry.path_display !== entry.path_display)) {
+
+        console.log(chalkNetwork("TNN | DROPBOX BEST NETWORK CONTENT DIFF IN DIFF FOLDERS"
+          + " | LAST MOD: " + moment(new Date(entry.client_modified)).format(compactDateTimeFormat)
+          + " | " + entry.path_display
+        ));
+
+        folder = globalBestNetworkFolder;
+      }
+
+    }
+
+    networkObj = await loadFileRetry({folder: folder, file: entry.name});
+
+    networkObj = networkDefaults(networkObj);
+
+    printNetworkObj("TNN | DROPBOX BEST NETWORK", networkObj);
+
+    bestNetworkHashMap.set(networkObj.networkId, { entry: entry, networkObj: networkObj});
+
+    await updateInputsHashMap({networkObj: networkObj});
+
+    numNetworksLoaded += 1;
+
+    let nnDb = await updateDbNetwork({networkObj: networkObj, addToTestHistory: true});
+
+    if (nnDb) {
+
+      numNetworksLoaded += 1;
+
+      if (!currentBestNetwork || (nnDb.overallMatchRate > currentBestNetwork.overallMatchRate)) {
+        currentBestNetwork = nnDb;
+        printNetworkObj("TNN | *** NEW BEST NN", nnDb);
+      }
+
+      bestNetworkHashMap.set(nnDb.networkId, { entry: entry, networkObj: nnDb});
+      printNetworkObj("TNN | +++ NN HASH MAP [" + numNetworksLoaded + " LOADED / " + bestNetworkHashMap.size + " IN HM]", nnDb);
+    }
+
+    // else {
+
+    //   try {
+    //     networkObj = await loadFileRetry({folder: folder, file: entry.name});
+      
+    //     if ((networkObj === undefined) || !networkObj) {
+    //       console.log(chalkError("TNN | DROPBOX BEST NETWORK LOAD FILE ERROR | JSON UNDEFINED ??? "));
+    //       purgeNetwork(networkId);
+    //       return;
+    //     }
+
+    //     networkObj = networkDefaults(networkObj);
+
+    //     if (!configuration.inputsIdArray.includes(networkObj.inputsId)) {
+
+    //       if (!configuration.deleteNotInInputsIdArray){
+    //         console.log(chalkInfo("TNN | NN INPUTS NOT IN INPUTS ID ARRAY ... SKIPPING"
+    //           + " | NUM INPUTS: " + networkObj.numInputs
+    //           + " | INPUTS ID: " + networkObj.inputsId
+    //           + " | " + folder + "/" + entry.name
+    //         ));
+    //         skipLoadNetworkSet.add(networkObj.networkId);
+    //         return;
+    //       }
+
+    //       console.log(chalkInfo("TNN | NN INPUTS NOT IN INPUTS ID ARRAY ... DELETING: " 
+    //         + folder + "/" + entry.name));
+
+    //       dropboxClient.filesDelete({path: folder + "/" + entry.name})
+    //         .then(function(response){
+    //           debug("dropboxClient filesDelete response\n" + jsonPrint(response));
+    //           printNetworkObj("TNN | XXX | INPUTS NOT IN INPUTS ID ARRAY", networkObj);
+    //           return;
+    //         })
+    //         .catch(function(err){
+    //           if (err.status === 429) {
+    //             console.log(chalkError("TNN | *** ERROR: XXX NN"
+    //               + " | STATUS: " + err.status
+    //               + " | PATH: " + folder + "/" + entry.name
+    //               + " | TOO MANY REQUESTS"
+    //             ));
+    //           }
+    //           else {
+    //             console.log(chalkError("TNN | *** ERROR: XXX NN"
+    //               + " | STATUS: " + err.status
+    //               + " | PATH: " + folder + "/" + entry.name
+    //               + " | SUMMARY: " + err.response.statusText
+    //             ));
+    //           }
+    //           return(err);
+    //         });
+    //     }
+    //     else if ((options.networkId !== undefined) 
+    //       || ((folder === "/config/utility/best/neuralNetworks") && (networkObj.successRate > configuration.globalMinSuccessRate))
+    //       || ((folder === "/config/utility/best/neuralNetworks") && (networkObj.matchRate > configuration.globalMinSuccessRate))
+    //       || (params.purgeMin && (folder !== "/config/utility/best/neuralNetworks") && (networkObj.successRate > configuration.localPurgeMinSuccessRate))
+    //       || (params.purgeMin && (folder !== "/config/utility/best/neuralNetworks") && (networkObj.matchRate > configuration.localPurgeMinSuccessRate))
+    //       || (!params.purgeMin && (folder !== "/config/utility/best/neuralNetworks") && (networkObj.successRate > configuration.localMinSuccessRate))
+    //       || (!params.purgeMin && (folder !== "/config/utility/best/neuralNetworks") && (networkObj.matchRate > configuration.localMinSuccessRate))) {
+
+
+    //       bestNetworkHashMap.set(networkObj.networkId, { entry: entry, networkObj: networkObj});
+
+    //       let inObj = {};
+
+    //       if (inputsHashMap.has(networkObj.inputsId)) {
+    //         inObj = inputsHashMap.get(networkObj.inputsId);
+    //         inObj.inputsObj = networkObj.inputsObj;
+    //         inObj.entry.content_hash = false;
+    //         inObj.entry.client_modified = moment();
+    //       }
+    //       else {
+    //         inObj.inputsObj = {};
+    //         inObj.inputsObj = networkObj.inputsObj;
+    //         inObj.entry = {};
+    //         inObj.entry.name = networkObj.inputsId + ".json";
+    //         inObj.entry.content_hash = false;
+    //         inObj.entry.client_modified = moment();
+    //       }
+
+    //       inputsHashMap.set(networkObj.inputsId, inObj);
+
+    //       if (inputsNetworksHashMap[networkObj.inputsId] === undefined) {
+    //         inputsNetworksHashMap[networkObj.inputsId] = new Set();
+    //       }
+
+    //       inputsNetworksHashMap[networkObj.inputsId].add(networkObj.networkId);
+
+    //       let nnDb = await updateDbNetwork({networkObj: networkObj, addToTestHistory: true});
+
+    //       if (nnDb) {
+
+    //         numNetworksLoaded += 1;
+
+    //         if (!currentBestNetwork || (nnDb.overallMatchRate > currentBestNetwork.overallMatchRate)) {
+    //           currentBestNetwork = nnDb;
+    //           printNetworkObj("TNN | *** NEW BEST NN", nnDb);
+    //         }
+
+    //         if ((folder !== "/config/utility/best/neuralNetworks") 
+    //           && ((nnDb.successRate >= configuration.globalMinSuccessRate) 
+    //           || (nnDb.overallMatchRate >= configuration.globalMinSuccessRate))) {
+
+    //           printNetworkObj("TNN | LOAD GLOBAL BEST NETWORK", nnDb);
+
+    //           slackText = "\n*GLOBAL BEST (ON LOCAL DIR LOAD) | " + nnDb.successRate.toFixed(2) + "%*";
+    //           // slackText = slackText + "\n*" + networkObj.successRate.toFixed(2) + "%*";
+    //           slackText = slackText + "\n              " + nnDb.networkId;
+    //           slackText = slackText + "\nIN:           " + nnDb.inputsId;
+    //           slackText = slackText + "\nINPUTS:       " + nnDb.network.input;
+    //           slackText = slackText + "\nBETTER CHILD: " + nnDb.betterChild;
+    //           slackText = slackText + "\nELAPSED:      " + msToTime(nnDb.evolve.elapsed);
+
+    //           slackPostMessage(slackChannelPassGlobal, slackText);
+
+    //           saveFileQueue.push({localFlag: false, folder: globalBestNetworkFolder, file: entry.name, obj: nnDb});
+    //         }
+
+    //         bestNetworkHashMap.set(nnDb.networkId, { entry: entry, networkObj: nnDb});
+    //         printNetworkObj("TNN | +++ NN HASH MAP [" + numNetworksLoaded + " LOADED / " + bestNetworkHashMap.size + " IN HM]", nnDb);
+
+    //       }
+
+    //       return;
+    //     }
+    //     else if (((hostname === "google") && (folder === globalBestNetworkFolder))
+    //       || ((hostname !== "google") && (folder === localBestNetworkFolder)) ) {
+
+    //       printNetworkObj("TNN | DELETING NN", networkObj);
+
+    //       purgeNetwork(networkObj.networkId);
+    //       purgeInputs(networkObj.inputsId);
+
+    //       dropboxClient.filesDelete({path: folder + "/" + entry.name})
+    //       .then(function(response){
+
+    //         debug("dropboxClient filesDelete response\n" + jsonPrint(response));
+
+    //         printNetworkObj("TNN | XXX NN", networkObj);
+    //         return;
+
+    //       })
+    //       .catch(function(err){
+    //         if (err.status === 429) {
+    //           console.log(chalkError("TNN | *** ERROR: XXX NN"
+    //             + " | STATUS: " + err.status
+    //             + " | PATH: " + folder + "/" + entry.name
+    //             + " | TOO MANY REQUESTS"
+    //           ));
+    //           return(err);
+    //         }
+    //         console.log(chalkError("TNN | *** ERROR: XXX NN"
+    //           + " | STATUS: " + err.status
+    //           + " | PATH: " + folder + "/" + entry.name
+    //           + " | SUMMARY: " + err.response.statusText
+    //         ));
+    //         return(err);
+    //       });
+    //     }
+    //     else {
+    //       return;
+    //     }
+
+    //   }
+    //   catch(err){
+    //     console.log(chalkError("TNN | DROPBOX BEST NETWORK LOAD FILE ERROR: " + err));
+    //     // purgeNetwork(networkId);
+    //     return(err);
+    //   }
+    // }
+
+  });
+}
+
+function loadBestNetworkDropboxFolders (params){
+
+  return new Promise(function(resolve, reject){
+
+    if (configuration.offlineMode) {
+      dropboxClient = dropboxLocalClient;
+    }
+    else {
+      dropboxClient = dropboxRemoteClient;
+    }
+
+    let numNetworksLoaded = 0;
+
+    debug(chalkNetwork("TNN | ... LOADING DROPBOX BEST NN FOLDERS"
+      + " | " + params.folders.length + " FOLDERS"
+      + "\n" + jsonPrint(params.folders)
+    ));
+
+    async.eachSeries(params.folders, async function(folder){
+
+      debug(chalkNetwork("TNN | ... LOADING DROPBOX BEST NN FOLDER | " + folder));
+
+      let options = {
+        path: folder,
+        limit: DROPBOX_LIST_FOLDER_LIMIT
+      };
+
+      const response = await listDropboxFolder(options);
 
       debug(chalkLog("DROPBOX LIST FOLDER"
         + " | ENTRIES: " + response.entries.length
@@ -2677,7 +2976,7 @@ function loadBestNetworkDropboxFolders (params, callback){
         console.log(chalkAlert("TNN | DROPBOX BEST NETWORKS FOLDER: NO FILES? " + folder
           + " | " + response.entries.length + " FILES FOUND"
         ));
-        return cb0();
+        return;
       }
 
       if (configuration.testMode) {
@@ -2689,477 +2988,451 @@ function loadBestNetworkDropboxFolders (params, callback){
         + " | " + response.entries.length + " FILES FOUND"
       ));
 
-      async.eachSeries(response.entries, function(entry, cb1){
+      async.eachSeries(response.entries, async function(entry){
 
         debug("entry\n" + jsonPrint(entry));
 
         if (entry.name === bestRuntimeNetworkFileName) {
           debug(chalkInfo("... SKIPPING LOAD OF " + entry.name));
-          return cb1();
+          return;
         }
 
         if (!entry.name.endsWith(".json")) {
           debug(chalkInfo("... SKIPPING LOAD OF " + entry.name));
-          return cb1();
+          return;
         }
 
-        const entryNameArray = entry.name.split(".");
-        const networkId = entryNameArray[0];
-
-        debug(chalkInfo("TNN | DROPBOX BEST NETWORK FOUND"
-          + " | LAST MOD: " + moment(new Date(entry.client_modified)).format(compactDateTimeFormat)
-          + " | " + networkId
-          + " | " + entry.name
-        ));
-
-        if (skipLoadNetworkSet.has(networkId)){
-          debug(chalkInfo("TNN | NN IN SKIP LOAD NN SET ... SKIPPING LOAD OF " + networkId));
-          return cb1();
+        try{
+          const results = await processNetworkFileEntry({folder: folder, entry: entry});
         }
+        catch(err){
+          return(err);
+        }
+
+        // const entryNameArray = entry.name.split(".");
+        // const networkId = entryNameArray[0];
+
+        // debug(chalkInfo("TNN | DROPBOX BEST NETWORK FOUND"
+        //   + " | LAST MOD: " + moment(new Date(entry.client_modified)).format(compactDateTimeFormat)
+        //   + " | " + networkId
+        //   + " | " + entry.name
+        // ));
+
+        // if (skipLoadNetworkSet.has(networkId)){
+        //   debug(chalkInfo("TNN | NN IN SKIP LOAD NN SET ... SKIPPING LOAD OF " + networkId));
+        //   return;
+        // }
         
-        if (bestNetworkHashMap.has(networkId)){
+        // if (bestNetworkHashMap.has(networkId)){
 
-          let curNetworkObj = bestNetworkHashMap.get(networkId);
-          let oldContentHash = false;
+        //   let curNetworkObj = bestNetworkHashMap.get(networkId);
+        //   let oldContentHash = false;
 
-          if ((curNetworkObj.entry.path_display === entry.path_display) 
-            && (curNetworkObj.entry !== undefined) && (curNetworkObj.entry.content_hash !== undefined)){
-            oldContentHash = curNetworkObj.entry.content_hash;
-          }
+        //   if ((curNetworkObj.entry.path_display === entry.path_display) 
+        //     && (curNetworkObj.entry !== undefined) && (curNetworkObj.entry.content_hash !== undefined)){
+        //     oldContentHash = curNetworkObj.entry.content_hash;
+        //   }
 
-          if (oldContentHash && (oldContentHash !== entry.content_hash) 
-            && (curNetworkObj.entry.path_display === entry.path_display)) {
+        //   if (oldContentHash && (oldContentHash !== entry.content_hash) 
+        //     && (curNetworkObj.entry.path_display === entry.path_display)) {
 
-            console.log(chalkNetwork("TNN | DROPBOX BEST NETWORK CONTENT CHANGE"
-              + " | LAST MOD: " + moment(new Date(entry.client_modified)).format(compactDateTimeFormat)
-              + " | " + entry.path_display
-              // + "\nCUR HASH: " + entry.content_hash
-              // + "\nOLD HASH: " + oldContentHash
-            ));
+        //     console.log(chalkNetwork("TNN | DROPBOX BEST NETWORK CONTENT CHANGE"
+        //       + " | LAST MOD: " + moment(new Date(entry.client_modified)).format(compactDateTimeFormat)
+        //       + " | " + entry.path_display
+        //       // + "\nCUR HASH: " + entry.content_hash
+        //       // + "\nOLD HASH: " + oldContentHash
+        //     ));
 
-            loadFileRetry({folder: folder, file: entry.name}, function(err, networkObj){
+        //     let networkObj = await loadFileRetry({folder: folder, file: entry.name});
 
-              if (err) {
-                console.log(chalkError("TNN | DROPBOX BEST NETWORK RELOAD FILE ERROR: " + err));
-                purgeNetwork(networkId);
-                cb1();
-              }
-              else if ((networkObj === undefined) || !networkObj) {
-                console.log(chalkError("TNN | DROPBOX BEST NETWORK RELOAD FILE ERROR | JSON UNDEFINED ??? "));
-                purgeNetwork(networkId);
-                cb1();
-              }
-              else {
+        //     // if (err) {
+        //     //   console.log(chalkError("TNN | DROPBOX BEST NETWORK RELOAD FILE ERROR: " + err));
+        //     //   purgeNetwork(networkId);
+        //     //   cb1();
+        //     // }
+        //     if ((networkObj === undefined) || !networkObj) {
+        //       console.log(chalkError("TNN | DROPBOX BEST NETWORK RELOAD FILE ERROR | JSON UNDEFINED ??? "));
+        //       purgeNetwork(networkId);
+        //       return;
+        //     }
 
-                if (networkObj.networkId !== networkId) {
-                  console.log(chalkError("*** NETWORK OBJ NETWORK ID MISMATCH | " + networkObj.networkId + " | " + networkId));
-                  return cb1("NETWORK OBJ NETWORK ID MISMATCH");
-                }
+        //     if (networkObj.networkId !== networkId) {
+        //       console.log(chalkError("*** NETWORK OBJ NETWORK ID MISMATCH | " + networkObj.networkId + " | " + networkId));
+        //       return;
+        //     }
 
-                if (networkObj.numInputs === undefined) {
-                  console.log(chalkError("*** NETWORK NETWORK numInputs UNDEFINED | " + networkObj.networkId));
-                  return cb1("NETWORK OBJ NETWORK numInputs UNDEFINED");
-                }
+        //     if (networkObj.numInputs === undefined) {
+        //       console.log(chalkError("*** NETWORK NETWORK numInputs UNDEFINED | " + networkObj.networkId));
+        //       return;
+        //     }
 
-                if (networkObj.inputsId === undefined) {
-                  console.log(chalkError("*** NETWORK OBJ INPUTS ID UNDEFINED | entry.name: " + entry.name 
-                    + " | networkObj.networkId: " + networkObj.networkId));
-                  console.log(chalkError("*** NETWORK OBJ INPUTS ID UNDEFINED | networkObj:" + jsonPrint(networkObj)));
-                  return cb1("NETWORK OBJ INPUTS ID UNDEFINED");
-                }
-
-
-                networkObj = networkDefaults(networkObj);
-
-                printNetworkObj("TNN | DROPBOX BEST NETWORK", networkObj);
-
-                if (!bestNetworkHashMap.has(networkObj.networkId) 
-                  && ((networkObj.successRate >= configuration.globalMinSuccessRate) 
-                  || (networkObj.overallMatchRate >= configuration.globalMinSuccessRate))) {
-
-                  printNetworkObj("TNN | LOAD GLOBAL BEST NETWORK", networkObj);
-
-                  slackText = "\n*GLOBAL BEST (ON LOCAL DIR LOAD) | " + networkObj.successRate.toFixed(2) + "%*";
-                  slackText = slackText + "\n              " + networkObj.networkId;
-                  slackText = slackText + "\nIN:           " + networkObj.inputsId;
-                  slackText = slackText + "\nINPUTS:       " + networkObj.network.input;
-                  slackText = slackText + "\nBETTER CHILD: " + networkObj.betterChild;
-                  slackText = slackText + "\nELAPSED:      " + msToTime(networkObj.evolve.elapsed);
-
-                  slackPostMessage(slackChannelPassGlobal, slackText);
-
-                  saveFileQueue.push({localFlag: false, folder: globalBestNetworkFolder, file: entry.name, obj: networkObj});
-
-                }
-
-                bestNetworkHashMap.set(networkObj.networkId, { entry: entry, networkObj: networkObj});
+        //     if (networkObj.inputsId === undefined) {
+        //       console.log(chalkError("*** NETWORK OBJ INPUTS ID UNDEFINED | entry.name: " + entry.name 
+        //         + " | networkObj.networkId: " + networkObj.networkId));
+        //       console.log(chalkError("*** NETWORK OBJ INPUTS ID UNDEFINED | networkObj:" + jsonPrint(networkObj)));
+        //       return;
+        //     }
 
 
-                let inputsEntry = {};
+        //     networkObj = networkDefaults(networkObj);
 
-                inputsEntry.name = networkObj.inputsId + ".json";
-                inputsEntry.content_hash = false;
-                inputsEntry.client_modified = moment();
+        //     printNetworkObj("TNN | DROPBOX BEST NETWORK", networkObj);
 
-                inputsHashMap.set(networkObj.inputsId, {entry: inputsEntry, inputsObj: networkObj.inputsObj});
+        //     if (!bestNetworkHashMap.has(networkObj.networkId) 
+        //       && ((networkObj.successRate >= configuration.globalMinSuccessRate) 
+        //       || (networkObj.overallMatchRate >= configuration.globalMinSuccessRate))) {
 
-                if (inputsNetworksHashMap[networkObj.inputsId] === undefined) {
-                  inputsNetworksHashMap[networkObj.inputsId] = new Set();
-                }
+        //       printNetworkObj("TNN | LOAD GLOBAL BEST NETWORK", networkObj);
 
-                inputsNetworksHashMap[networkObj.inputsId].add(networkObj.networkId);
+        //       slackText = "\n*GLOBAL BEST (ON LOCAL DIR LOAD) | " + networkObj.successRate.toFixed(2) + "%*";
+        //       slackText = slackText + "\n              " + networkObj.networkId;
+        //       slackText = slackText + "\nIN:           " + networkObj.inputsId;
+        //       slackText = slackText + "\nINPUTS:       " + networkObj.network.input;
+        //       slackText = slackText + "\nBETTER CHILD: " + networkObj.betterChild;
+        //       slackText = slackText + "\nELAPSED:      " + msToTime(networkObj.evolve.elapsed);
 
-                numNetworksLoaded += 1;
+        //       slackPostMessage(slackChannelPassGlobal, slackText);
 
-                if (!currentBestNetwork || (networkObj.overallMatchRate > currentBestNetwork.overallMatchRate)) {
+        //       saveFileQueue.push({localFlag: false, folder: globalBestNetworkFolder, file: entry.name, obj: networkObj});
 
-                  currentBestNetwork = networkObj;
+        //     }
 
-                  printNetworkObj("TNN | * NEW BEST NN", networkObj);
-                 }
+        //     bestNetworkHashMap.set(networkObj.networkId, { entry: entry, networkObj: networkObj});
 
-                cb1();
-              }
-            });
-          }
-          else if (oldContentHash && (oldContentHash !== entry.content_hash) 
-            && (curNetworkObj.entry.path_display !== entry.path_display)) {
+        //     let inputsEntry = {};
 
-            console.log(chalkNetwork("TNN | DROPBOX BEST NETWORK CONTENT DIFF IN DIFF params.folders"
-              + " | LAST MOD: " + moment(new Date(entry.client_modified)).format(compactDateTimeFormat)
-              + "\nCUR: " + entry.path_display
-              + " | " + entry.content_hash
-              + "\nOLD: " + curNetworkObj.entry.path_display
-              + " | " + curNetworkObj.entry.content_hash
-            ));
+        //     inputsEntry.name = networkObj.inputsId + ".json";
+        //     inputsEntry.content_hash = false;
+        //     inputsEntry.client_modified = moment();
 
-            // LOAD FROM BEST FOLDER AND SAVE LOCALLY
-            loadFileRetry({folder: globalBestNetworkFolder, file: entry.name}, function(err, networkObj){
+        //     inputsHashMap.set(networkObj.inputsId, {entry: inputsEntry, inputsObj: networkObj.inputsObj});
 
-              if (err) {
-                console.log(chalkError("TNN | DROPBOX BEST NETWORK RELOAD FILE ERROR: " + err));
-                purgeNetwork(networkId);
-                return cb1();
-              }
-              
-              if ((networkObj === undefined) || !networkObj) {
-                console.log(chalkError("TNN | DROPBOX BEST NETWORK RELOAD FILE ERROR | JSON UNDEFINED ??? "));
-                purgeNetwork(networkId);
-                return cb1();
-              }
+        //     if (inputsNetworksHashMap[networkObj.inputsId] === undefined) {
+        //       inputsNetworksHashMap[networkObj.inputsId] = new Set();
+        //     }
 
-              if (networkObj.inputsId === undefined) {
-                console.log(chalkError("*** NETWORK OBJ INPUTS ID UNDEFINED | entry.name: " + entry.name 
-                  + " | networkObj.networkId: " + networkObj.networkId));
-                console.log(chalkError("*** NETWORK OBJ INPUTS ID UNDEFINED | networkObj:" + jsonPrint(networkObj)));
-                return cb1("NETWORK OBJ INPUTS ID UNDEFINED");
-              }
+        //     inputsNetworksHashMap[networkObj.inputsId].add(networkObj.networkId);
 
-              if (networkObj.networkId !== networkId) {
-                console.log(chalkError("*** NETWORK OBJ NETWORK ID MISMATCH | " 
-                  + networkObj.networkId + " | " + networkId));
-                return cb1("NETWORK OBJ NETWORK ID MISMATCH");
-              }
+        //     numNetworksLoaded += 1;
 
-              if (networkObj.numInputs === undefined) {
-                console.log(chalkError("*** NETWORK NETWORK numInputs UNDEFINED | " + networkObj.networkId));
-                return cb1("NETWORK OBJ NETWORK numInputs UNDEFINED");
-              }
+        //     if (!currentBestNetwork || (networkObj.overallMatchRate > currentBestNetwork.overallMatchRate)) {
 
-              networkObj = networkDefaults(networkObj);
+        //       currentBestNetwork = networkObj;
 
-              printNetworkObj("TNN | DROPBOX GLOBAL BEST NETWORK", networkObj);
+        //       printNetworkObj("TNN | * NEW BEST NN", networkObj);
+        //     }
 
-              bestNetworkHashMap.set(networkObj.networkId, { entry: entry, networkObj: networkObj.network});
+        //     return;
 
-              dropboxClient.filesDelete({path: localBestNetworkFolder + "/" + entry.name})
-              .then(function(response){
+        //   }
+        //   else if (oldContentHash && (oldContentHash !== entry.content_hash) 
+        //     && (curNetworkObj.entry.path_display !== entry.path_display)) {
 
-                debug("dropboxClient filesDelete response\n" + jsonPrint(response));
+        //     console.log(chalkNetwork("TNN | DROPBOX BEST NETWORK CONTENT DIFF IN DIFF params.folders"
+        //       + " | LAST MOD: " + moment(new Date(entry.client_modified)).format(compactDateTimeFormat)
+        //       + "\nCUR: " + entry.path_display
+        //       + " | " + entry.content_hash
+        //       + "\nOLD: " + curNetworkObj.entry.path_display
+        //       + " | " + curNetworkObj.entry.content_hash
+        //     ));
 
-                printNetworkObj("TNN | XXX LOCAL NN (GLOBAL EXISTS)", networkObj);
-              })
-              .catch(function(err){
-                if (err.status === 409) {
-                  console.log(chalkError("TNN | *** ERROR: XXX NN"
-                    + " | STATUS: " + err.status
-                    + " | PATH: " + localBestNetworkFolder + "/" + entry.name
-                    + " | CONFLICT | DOES NOT EXIST"
-                  ));
-                }
-                else if (err.status === 429) {
-                  console.log(chalkError("TNN | *** ERROR: XXX NN"
-                    + " | STATUS: " + err.status
-                    + " | PATH: " + localBestNetworkFolder + "/" + entry.name
-                    + " | TOO MANY REQUESTS"
-                  ));
-                }
-                else {
-                  console.log(chalkError("TNN | *** ERROR: XXX NN"
-                    + " | STATUS: " + err.status
-                    + " | PATH: " + localBestNetworkFolder + "/" + entry.name
-                    + " | SUMMARY: " + err.response.statusText
-                    + "\n" + jsonPrint(err)
-                  ));
-                }
-                return cb1(err);
-              });
+        //     // LOAD FROM BEST FOLDER AND SAVE LOCALLY
+        //     let networkObj = await loadFileRetry({folder: globalBestNetworkFolder, file: entry.name});
 
-              let inputsEntry = {};
-
-              inputsEntry.name = networkObj.inputsId + ".json";
-              inputsEntry.content_hash = false;
-              inputsEntry.client_modified = moment();
-
-              inputsHashMap.set(networkObj.inputsId, {entry: inputsEntry, inputsObj: networkObj.inputsObj});
-
-              if (inputsNetworksHashMap[networkObj.inputsId] === undefined) {
-                inputsNetworksHashMap[networkObj.inputsId] = new Set();
-              }
-
-              inputsNetworksHashMap[networkObj.inputsId].add(networkObj.networkId);
-
-              updateDbNetwork({networkObj: networkObj, addToTestHistory: true}, function(err, nnDb){
-                if (err) {
-                  console.log(chalkError("*** ERROR: DB NN FIND ONE ERROR | "+ networkObj.networkId + " | " + err));
-                  cb1();
-                }
-                else if (nnDb) {
-
-                  numNetworksLoaded += 1;
-
-
-                  if (!currentBestNetwork || (nnDb.overallMatchRate > currentBestNetwork.overallMatchRate)) {
-
-                    currentBestNetwork = nnDb;
-
-                    printNetworkObj("TNN | *** NEW BEST NN", nnDb);
-
-                  }
-
-                  bestNetworkHashMap.set(nnDb.networkId, { entry: entry, networkObj: nnDb});
-
-                  printNetworkObj("TNN | +++ NN HASH MAP [" + numNetworksLoaded + " LOADED / " + bestNetworkHashMap.size + " IN HM]", nnDb);
-
-                  cb1();
-
-                }
-                else {
-                  cb1();
-                }
-              });
-
-            });
-          }
-          else {
-            debug(chalkLog("TNN | DROPBOX BEST NETWORK CONTENT SAME  "
-              + " | " + entry.name
-              + " | LAST MOD: " + moment(new Date(entry.client_modified)).format(compactDateTimeFormat)
-              + "\nCUR HASH: " + entry.content_hash
-              + "\nOLD HASH: " + oldContentHash
-            ));
-            cb1();
-          }
-        }
-        else {
-
-          loadFileRetry({folder: folder, file: entry.name}, function(err, networkObj){
-
-            if (err) {
-              console.log(chalkError("TNN | DROPBOX BEST NETWORK LOAD FILE ERROR: " + err));
-              purgeNetwork(networkId);
-              return cb1();
-            }
+        //     // if (err) {
+        //     //   console.log(chalkError("TNN | DROPBOX BEST NETWORK RELOAD FILE ERROR: " + err));
+        //     //   purgeNetwork(networkId);
+        //     //   return cb1();
+        //     // }
             
-            if ((networkObj === undefined) || !networkObj) {
-              console.log(chalkError("TNN | DROPBOX BEST NETWORK LOAD FILE ERROR | JSON UNDEFINED ??? "));
-              purgeNetwork(networkId);
-              return cb1();
-            }
+        //     if ((networkObj === undefined) || !networkObj) {
+        //       console.log(chalkError("TNN | DROPBOX BEST NETWORK RELOAD FILE ERROR | JSON UNDEFINED ??? "));
+        //       purgeNetwork(networkId);
+        //       return;
+        //     }
 
-            networkObj = networkDefaults(networkObj);
+        //     if (networkObj.inputsId === undefined) {
+        //       console.log(chalkError("*** NETWORK OBJ INPUTS ID UNDEFINED | entry.name: " + entry.name 
+        //         + " | networkObj.networkId: " + networkObj.networkId));
+        //       console.log(chalkError("*** NETWORK OBJ INPUTS ID UNDEFINED | networkObj:" + jsonPrint(networkObj)));
+        //       return;
+        //     }
 
-            if (!configuration.inputsIdArray.includes(networkObj.inputsId)) {
+        //     if (networkObj.networkId !== networkId) {
+        //       console.log(chalkError("*** NETWORK OBJ NETWORK ID MISMATCH | " 
+        //         + networkObj.networkId + " | " + networkId));
+        //       return;
+        //     }
 
-              if (!configuration.deleteNotInInputsIdArray){
-                console.log(chalkInfo("TNN | NN INPUTS NOT IN INPUTS ID ARRAY ... SKIPPING"
-                  + " | NUM INPUTS: " + networkObj.numInputs
-                  + " | INPUTS ID: " + networkObj.inputsId
-                  + " | " + folder + "/" + entry.name
-                ));
-                skipLoadNetworkSet.add(networkObj.networkId);
-                return cb1();
-              }
+        //     if (networkObj.numInputs === undefined) {
+        //       console.log(chalkError("*** NETWORK NETWORK numInputs UNDEFINED | " + networkObj.networkId));
+        //       return;
+        //     }
 
-              console.log(chalkInfo("TNN | NN INPUTS NOT IN INPUTS ID ARRAY ... DELETING: " 
-                + folder + "/" + entry.name));
+        //     networkObj = networkDefaults(networkObj);
 
-              dropboxClient.filesDelete({path: folder + "/" + entry.name})
-                .then(function(response){
+        //     printNetworkObj("TNN | DROPBOX GLOBAL BEST NETWORK", networkObj);
 
-                  debug("dropboxClient filesDelete response\n" + jsonPrint(response));
+        //     bestNetworkHashMap.set(networkObj.networkId, { entry: entry, networkObj: networkObj.network});
 
-                  printNetworkObj("TNN | XXX | INPUTS NOT IN INPUTS ID ARRAY", networkObj);
-                  cb1();
-                })
-                .catch(function(err){
-                  if (err.status === 429) {
-                    console.log(chalkError("TNN | *** ERROR: XXX NN"
-                      + " | STATUS: " + err.status
-                      + " | PATH: " + folder + "/" + entry.name
-                      + " | TOO MANY REQUESTS"
-                    ));
-                  }
-                  else {
-                    console.log(chalkError("TNN | *** ERROR: XXX NN"
-                      + " | STATUS: " + err.status
-                      + " | PATH: " + folder + "/" + entry.name
-                      + " | SUMMARY: " + err.response.statusText
-                    ));
-                  }
-                  cb1(err);
-                });
+        //     dropboxClient.filesDelete({path: localBestNetworkFolder + "/" + entry.name})
+        //     .then(function(response){
 
-            }
-            else if ((options.networkId !== undefined) 
-              || ((folder === "/config/utility/best/neuralNetworks") && (networkObj.successRate > configuration.globalMinSuccessRate))
-              || ((folder === "/config/utility/best/neuralNetworks") && (networkObj.matchRate > configuration.globalMinSuccessRate))
-              || (params.purgeMin && (folder !== "/config/utility/best/neuralNetworks") && (networkObj.successRate > configuration.localPurgeMinSuccessRate))
-              || (params.purgeMin && (folder !== "/config/utility/best/neuralNetworks") && (networkObj.matchRate > configuration.localPurgeMinSuccessRate))
-              || (!params.purgeMin && (folder !== "/config/utility/best/neuralNetworks") && (networkObj.successRate > configuration.localMinSuccessRate))
-              || (!params.purgeMin && (folder !== "/config/utility/best/neuralNetworks") && (networkObj.matchRate > configuration.localMinSuccessRate))) {
+        //       debug("dropboxClient filesDelete response\n" + jsonPrint(response));
+
+        //       printNetworkObj("TNN | XXX LOCAL NN (GLOBAL EXISTS)", networkObj);
+        //     })
+        //     .catch(function(err){
+        //       if (err.status === 409) {
+        //         console.log(chalkError("TNN | *** ERROR: XXX NN"
+        //           + " | STATUS: " + err.status
+        //           + " | PATH: " + localBestNetworkFolder + "/" + entry.name
+        //           + " | CONFLICT | DOES NOT EXIST"
+        //         ));
+        //       }
+        //       else if (err.status === 429) {
+        //         console.log(chalkError("TNN | *** ERROR: XXX NN"
+        //           + " | STATUS: " + err.status
+        //           + " | PATH: " + localBestNetworkFolder + "/" + entry.name
+        //           + " | TOO MANY REQUESTS"
+        //         ));
+        //       }
+        //       else {
+        //         console.log(chalkError("TNN | *** ERROR: XXX NN"
+        //           + " | STATUS: " + err.status
+        //           + " | PATH: " + localBestNetworkFolder + "/" + entry.name
+        //           + " | SUMMARY: " + err.response.statusText
+        //           + "\n" + jsonPrint(err)
+        //         ));
+        //       }
+        //       return(err);
+        //     });
+
+        //     let inputsEntry = {};
+
+        //     inputsEntry.name = networkObj.inputsId + ".json";
+        //     inputsEntry.content_hash = false;
+        //     inputsEntry.client_modified = moment();
+
+        //     inputsHashMap.set(networkObj.inputsId, {entry: inputsEntry, inputsObj: networkObj.inputsObj});
+
+        //     if (inputsNetworksHashMap[networkObj.inputsId] === undefined) {
+        //       inputsNetworksHashMap[networkObj.inputsId] = new Set();
+        //     }
+
+        //     inputsNetworksHashMap[networkObj.inputsId].add(networkObj.networkId);
+
+        //     let nnDb = await updateDbNetwork({networkObj: networkObj, addToTestHistory: true});
+        //       // if (err) {
+        //       //   console.log(chalkError("*** ERROR: DB NN FIND ONE ERROR | "+ networkObj.networkId + " | " + err));
+        //       //   cb1();
+        //       // }
+        //     if (nnDb) {
+
+        //       numNetworksLoaded += 1;
+
+        //       if (!currentBestNetwork || (nnDb.overallMatchRate > currentBestNetwork.overallMatchRate)) {
+        //         currentBestNetwork = nnDb;
+        //         printNetworkObj("TNN | *** NEW BEST NN", nnDb);
+        //       }
+
+        //       bestNetworkHashMap.set(nnDb.networkId, { entry: entry, networkObj: nnDb});
+        //       printNetworkObj("TNN | +++ NN HASH MAP [" + numNetworksLoaded + " LOADED / " + bestNetworkHashMap.size + " IN HM]", nnDb);
+        //     }
+
+        //     return;
+
+        //   }
+        //   else {
+        //     debug(chalkLog("TNN | DROPBOX BEST NETWORK CONTENT SAME  "
+        //       + " | " + entry.name
+        //       + " | LAST MOD: " + moment(new Date(entry.client_modified)).format(compactDateTimeFormat)
+        //       + "\nCUR HASH: " + entry.content_hash
+        //       + "\nOLD HASH: " + oldContentHash
+        //     ));
+        //     return;
+        //   }
+        // }
+        // else {
+
+        //   try {
+        //     networkObj = await loadFileRetry({folder: folder, file: entry.name});
+          
+        //     if ((networkObj === undefined) || !networkObj) {
+        //       console.log(chalkError("TNN | DROPBOX BEST NETWORK LOAD FILE ERROR | JSON UNDEFINED ??? "));
+        //       purgeNetwork(networkId);
+        //       return;
+        //     }
+
+        //     networkObj = networkDefaults(networkObj);
+
+        //     if (!configuration.inputsIdArray.includes(networkObj.inputsId)) {
+
+        //       if (!configuration.deleteNotInInputsIdArray){
+        //         console.log(chalkInfo("TNN | NN INPUTS NOT IN INPUTS ID ARRAY ... SKIPPING"
+        //           + " | NUM INPUTS: " + networkObj.numInputs
+        //           + " | INPUTS ID: " + networkObj.inputsId
+        //           + " | " + folder + "/" + entry.name
+        //         ));
+        //         skipLoadNetworkSet.add(networkObj.networkId);
+        //         return;
+        //       }
+
+        //       console.log(chalkInfo("TNN | NN INPUTS NOT IN INPUTS ID ARRAY ... DELETING: " 
+        //         + folder + "/" + entry.name));
+
+        //       dropboxClient.filesDelete({path: folder + "/" + entry.name})
+        //         .then(function(response){
+        //           debug("dropboxClient filesDelete response\n" + jsonPrint(response));
+        //           printNetworkObj("TNN | XXX | INPUTS NOT IN INPUTS ID ARRAY", networkObj);
+        //           return;
+        //         })
+        //         .catch(function(err){
+        //           if (err.status === 429) {
+        //             console.log(chalkError("TNN | *** ERROR: XXX NN"
+        //               + " | STATUS: " + err.status
+        //               + " | PATH: " + folder + "/" + entry.name
+        //               + " | TOO MANY REQUESTS"
+        //             ));
+        //           }
+        //           else {
+        //             console.log(chalkError("TNN | *** ERROR: XXX NN"
+        //               + " | STATUS: " + err.status
+        //               + " | PATH: " + folder + "/" + entry.name
+        //               + " | SUMMARY: " + err.response.statusText
+        //             ));
+        //           }
+        //           return(err);
+        //         });
+        //     }
+        //     else if ((options.networkId !== undefined) 
+        //       || ((folder === "/config/utility/best/neuralNetworks") && (networkObj.successRate > configuration.globalMinSuccessRate))
+        //       || ((folder === "/config/utility/best/neuralNetworks") && (networkObj.matchRate > configuration.globalMinSuccessRate))
+        //       || (params.purgeMin && (folder !== "/config/utility/best/neuralNetworks") && (networkObj.successRate > configuration.localPurgeMinSuccessRate))
+        //       || (params.purgeMin && (folder !== "/config/utility/best/neuralNetworks") && (networkObj.matchRate > configuration.localPurgeMinSuccessRate))
+        //       || (!params.purgeMin && (folder !== "/config/utility/best/neuralNetworks") && (networkObj.successRate > configuration.localMinSuccessRate))
+        //       || (!params.purgeMin && (folder !== "/config/utility/best/neuralNetworks") && (networkObj.matchRate > configuration.localMinSuccessRate))) {
 
 
-              bestNetworkHashMap.set(networkObj.networkId, { entry: entry, networkObj: networkObj});
+        //       bestNetworkHashMap.set(networkObj.networkId, { entry: entry, networkObj: networkObj});
 
-              let inObj = {};
+        //       let inObj = {};
 
-              if (inputsHashMap.has(networkObj.inputsId)) {
-                inObj = inputsHashMap.get(networkObj.inputsId);
-                inObj.inputsObj = networkObj.inputsObj;
-                inObj.entry.content_hash = false;
-                inObj.entry.client_modified = moment();
-              }
-              else {
-                inObj.inputsObj = {};
-                inObj.inputsObj = networkObj.inputsObj;
-                inObj.entry = {};
-                inObj.entry.name = networkObj.inputsId + ".json";
-                inObj.entry.content_hash = false;
-                inObj.entry.client_modified = moment();
-              }
+        //       if (inputsHashMap.has(networkObj.inputsId)) {
+        //         inObj = inputsHashMap.get(networkObj.inputsId);
+        //         inObj.inputsObj = networkObj.inputsObj;
+        //         inObj.entry.content_hash = false;
+        //         inObj.entry.client_modified = moment();
+        //       }
+        //       else {
+        //         inObj.inputsObj = {};
+        //         inObj.inputsObj = networkObj.inputsObj;
+        //         inObj.entry = {};
+        //         inObj.entry.name = networkObj.inputsId + ".json";
+        //         inObj.entry.content_hash = false;
+        //         inObj.entry.client_modified = moment();
+        //       }
 
-              inputsHashMap.set(networkObj.inputsId, inObj);
+        //       inputsHashMap.set(networkObj.inputsId, inObj);
 
-              if (inputsNetworksHashMap[networkObj.inputsId] === undefined) {
-                inputsNetworksHashMap[networkObj.inputsId] = new Set();
-              }
+        //       if (inputsNetworksHashMap[networkObj.inputsId] === undefined) {
+        //         inputsNetworksHashMap[networkObj.inputsId] = new Set();
+        //       }
 
-              inputsNetworksHashMap[networkObj.inputsId].add(networkObj.networkId);
+        //       inputsNetworksHashMap[networkObj.inputsId].add(networkObj.networkId);
 
-              updateDbNetwork({networkObj: networkObj, addToTestHistory: true}, function(err, nnDb){
-                if (err) {
-                  console.log(chalkError("*** ERROR: DB NN FIND ONE ERROR | "+ networkObj.networkId + " | " + err));
-                  cb1();
-                }
-                else if (nnDb) {
+        //       let nnDb = await updateDbNetwork({networkObj: networkObj, addToTestHistory: true});
 
-                  numNetworksLoaded += 1;
+        //       if (nnDb) {
 
+        //         numNetworksLoaded += 1;
 
-                  if (!currentBestNetwork || (nnDb.overallMatchRate > currentBestNetwork.overallMatchRate)) {
+        //         if (!currentBestNetwork || (nnDb.overallMatchRate > currentBestNetwork.overallMatchRate)) {
+        //           currentBestNetwork = nnDb;
+        //           printNetworkObj("TNN | *** NEW BEST NN", nnDb);
+        //         }
 
-                    currentBestNetwork = nnDb;
+        //         if ((folder !== "/config/utility/best/neuralNetworks") 
+        //           && ((nnDb.successRate >= configuration.globalMinSuccessRate) 
+        //           || (nnDb.overallMatchRate >= configuration.globalMinSuccessRate))) {
 
-                    printNetworkObj("TNN | *** NEW BEST NN", nnDb);
+        //           printNetworkObj("TNN | LOAD GLOBAL BEST NETWORK", nnDb);
 
-                  }
+        //           slackText = "\n*GLOBAL BEST (ON LOCAL DIR LOAD) | " + nnDb.successRate.toFixed(2) + "%*";
+        //           // slackText = slackText + "\n*" + networkObj.successRate.toFixed(2) + "%*";
+        //           slackText = slackText + "\n              " + nnDb.networkId;
+        //           slackText = slackText + "\nIN:           " + nnDb.inputsId;
+        //           slackText = slackText + "\nINPUTS:       " + nnDb.network.input;
+        //           slackText = slackText + "\nBETTER CHILD: " + nnDb.betterChild;
+        //           slackText = slackText + "\nELAPSED:      " + msToTime(nnDb.evolve.elapsed);
 
-                  if ((folder !== "/config/utility/best/neuralNetworks") 
-                    && ((nnDb.successRate >= configuration.globalMinSuccessRate) 
-                    || (nnDb.overallMatchRate >= configuration.globalMinSuccessRate))) {
+        //           slackPostMessage(slackChannelPassGlobal, slackText);
 
-                    printNetworkObj("TNN | LOAD GLOBAL BEST NETWORK", nnDb);
+        //           saveFileQueue.push({localFlag: false, folder: globalBestNetworkFolder, file: entry.name, obj: nnDb});
+        //         }
 
-                    slackText = "\n*GLOBAL BEST (ON LOCAL DIR LOAD) | " + nnDb.successRate.toFixed(2) + "%*";
-                    // slackText = slackText + "\n*" + networkObj.successRate.toFixed(2) + "%*";
-                    slackText = slackText + "\n              " + nnDb.networkId;
-                    slackText = slackText + "\nIN:           " + nnDb.inputsId;
-                    slackText = slackText + "\nINPUTS:       " + nnDb.network.input;
-                    slackText = slackText + "\nBETTER CHILD: " + nnDb.betterChild;
-                    slackText = slackText + "\nELAPSED:      " + msToTime(nnDb.evolve.elapsed);
+        //         bestNetworkHashMap.set(nnDb.networkId, { entry: entry, networkObj: nnDb});
+        //         printNetworkObj("TNN | +++ NN HASH MAP [" + numNetworksLoaded + " LOADED / " + bestNetworkHashMap.size + " IN HM]", nnDb);
 
-                    slackPostMessage(slackChannelPassGlobal, slackText);
+        //       }
 
-                    saveFileQueue.push({localFlag: false, folder: globalBestNetworkFolder, file: entry.name, obj: nnDb});
+        //       return;
+        //     }
+        //     else if (((hostname === "google") && (folder === globalBestNetworkFolder))
+        //       || ((hostname !== "google") && (folder === localBestNetworkFolder)) ) {
 
-                  }
+        //       printNetworkObj("TNN | DELETING NN", networkObj);
 
-                  bestNetworkHashMap.set(nnDb.networkId, { entry: entry, networkObj: nnDb});
+        //       purgeNetwork(networkObj.networkId);
+        //       purgeInputs(networkObj.inputsId);
 
-                  printNetworkObj("TNN | +++ NN HASH MAP [" + numNetworksLoaded + " LOADED / " + bestNetworkHashMap.size + " IN HM]", nnDb);
+        //       dropboxClient.filesDelete({path: folder + "/" + entry.name})
+        //       .then(function(response){
 
-                  cb1();
+        //         debug("dropboxClient filesDelete response\n" + jsonPrint(response));
 
-                }
-                else {
-                  cb1();
-                }
-              });
+        //         printNetworkObj("TNN | XXX NN", networkObj);
+        //         return;
 
-            }
-            else if (((hostname === "google") && (folder === globalBestNetworkFolder))
-              || ((hostname !== "google") && (folder === localBestNetworkFolder)) ) {
+        //       })
+        //       .catch(function(err){
+        //         if (err.status === 429) {
+        //           console.log(chalkError("TNN | *** ERROR: XXX NN"
+        //             + " | STATUS: " + err.status
+        //             + " | PATH: " + folder + "/" + entry.name
+        //             + " | TOO MANY REQUESTS"
+        //           ));
+        //           return(err);
+        //         }
+        //         console.log(chalkError("TNN | *** ERROR: XXX NN"
+        //           + " | STATUS: " + err.status
+        //           + " | PATH: " + folder + "/" + entry.name
+        //           + " | SUMMARY: " + err.response.statusText
+        //         ));
+        //         return(err);
+        //       });
+        //     }
+        //     else {
+        //       return;
+        //     }
 
-              printNetworkObj("TNN | DELETING NN", networkObj);
-
-              purgeNetwork(networkObj.networkId);
-              purgeInputs(networkObj.inputsId);
-
-              dropboxClient.filesDelete({path: folder + "/" + entry.name})
-              .then(function(response){
-
-                debug("dropboxClient filesDelete response\n" + jsonPrint(response));
-
-                printNetworkObj("TNN | XXX NN", networkObj);
-                cb1();
-
-              })
-              .catch(function(err){
-                if (err.status === 429) {
-                  console.log(chalkError("TNN | *** ERROR: XXX NN"
-                    + " | STATUS: " + err.status
-                    + " | PATH: " + folder + "/" + entry.name
-                    + " | TOO MANY REQUESTS"
-                  ));
-                  return cb1(err);
-                }
-                console.log(chalkError("TNN | *** ERROR: XXX NN"
-                  + " | STATUS: " + err.status
-                  + " | PATH: " + folder + "/" + entry.name
-                  + " | SUMMARY: " + err.response.statusText
-                ));
-                cb1(err);
-              });
-
-            }
-            else {
-              cb1();
-            }
-          });
-        }
+        //   }
+        //   catch(err){
+        //     console.log(chalkError("TNN | DROPBOX BEST NETWORK LOAD FILE ERROR: " + err));
+        //     // purgeNetwork(networkId);
+        //     return(err);
+        //   }
+        // }
 
       }, function(err){
-        if (err) { console.log(chalkError("TNN | *** ERROR LOAD DROPBOX FOLDER: " + folder + " | " + err)); }
-        console.log(chalkLog("TNN | LOAD FOLDER: " + folder));
-        cb0(err);
+        return(err);
       });
 
+
+    }, function(err){
+        resolve(numNetworksLoaded);
     });
 
-  }, function(err){
-      if (err) { console.log(chalkError("TNN | *** ERROR LOAD DROPBOX FOLDERS: " + err)); }
-      if (callback !== undefined) { callback(err, numNetworksLoaded); }
   });
 }
 
