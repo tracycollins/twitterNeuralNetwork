@@ -6,9 +6,9 @@ console.log("\n\n=======================================");
 console.log("================ TNN ==================");
 console.log("=======================================\n\n");
 
-let inputTypes = [
+const DEFAULT_INPUT_TYPES = [
   "emoji", 
-  "hashtags", 
+  "hashtags",  
   "images", 
   "locations", 
   "media", 
@@ -20,7 +20,14 @@ let inputTypes = [
   "words"
 ];
 
-inputTypes.sort();
+DEFAULT_INPUT_TYPES.sort();
+
+let globalhistograms = {};
+
+DEFAULT_INPUT_TYPES.forEach(function(type){
+  globalhistograms[type] = {};
+});
+
 
 global.dbConnection = false;
 let dbConnectionReady = false;
@@ -911,12 +918,6 @@ else {
   statsObj.runId = DEFAULT_RUN_ID;
   console.log(chalkLog("TNN | DEFAULT RUN ID: " + statsObj.runId));
 }
-
-let globalhistograms = {};
-
-inputTypes.forEach(function(type){
-  globalhistograms[type] = {};
-});
 
 let categorizedUserHashmap = new HashMap();
 
@@ -4197,7 +4198,7 @@ function updateCategorizedUsers(cnf, callback){
           function userName(text, cb) {
             if (user.name !== undefined) {
               if (text) {
-                cb(null, text + " | " + user.name);
+                cb(null, text + "\n" + user.name);
               }
               else {
                 cb(null, user.name);
@@ -4215,7 +4216,7 @@ function updateCategorizedUsers(cnf, callback){
           function userLocation(text, cb) {
             if (user.location !== undefined) {
               if (text) {
-                cb(null, text + " | " + user.location);
+                cb(null, text + "\n" + user.location);
               }
               else {
                 cb(null, user.location);
@@ -4388,7 +4389,7 @@ function updateCategorizedUsers(cnf, callback){
               user: user, 
               histograms: hist, 
               computeMaxInputsFlag: true,
-              accumulateFlag: true
+              accumulateFlag: false
             };
 
             userServerController.updateHistograms(updateHistogramsParams, function(err, updatedUser){
