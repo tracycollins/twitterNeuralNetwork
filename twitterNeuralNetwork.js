@@ -6615,12 +6615,13 @@ function initMainTimeOutFunction(){
 
   initTimeout(function(){
 
-    initMain(configuration, function(err){
+    initMain(configuration, async function(err){
 
       if (err){
         console.log(chalkError("INIT MAIN ERROR", err));
         console.log(chalkError("INIT MAIN ERROR" + jsonPrint(err)));
         console.log(chalkAlert("RETRYING INIT MAIN..."));
+        await killAll();
         initMainTimeOutComplete = true;
         clearInterval(initMainInterval);
         initMainTimeOutFunction();
