@@ -30,7 +30,32 @@ DEFAULT_INPUT_TYPES.forEach(function(type){
 
 
 global.dbConnection = false;
+const mongoose = require("mongoose");
+mongoose.set("useFindAndModify", false);
+
+global.wordAssoDb = require("@threeceelabs/mongoose-twitter");
+
+global.Emoji;
+global.Hashtag;
+global.Location;
+global.Media;
+global.NetworkInputs;
+global.NeuralNetwork;
+global.Place;
+global.Tweet;
+global.Url;
+global.User;
+global.Word;
+
 let dbConnectionReady = false;
+let dbConnectionReadyInterval;
+
+let UserServerController;
+let userServerController;
+
+let userServerControllerReady = false;
+
+
 
 const ONE_SECOND = 1000;
 const ONE_MINUTE = 60 * ONE_SECOND;
@@ -713,23 +738,20 @@ let slackText = "";
 let initMainInterval;
 
 
-const mongoose = require("mongoose");
-mongoose.Promise = global.Promise;
+// const userModel = require("@threeceelabs/mongoose-twitter/models/user.server.model");
+// const neuralNetworkModel = require("@threeceelabs/mongoose-twitter/models/neuralNetwork.server.model");
+// const networkInputsModel = require("@threeceelabs/mongoose-twitter/models/networkInputs.server.model");
 
-const userModel = require("@threeceelabs/mongoose-twitter/models/user.server.model");
-const neuralNetworkModel = require("@threeceelabs/mongoose-twitter/models/neuralNetwork.server.model");
-const networkInputsModel = require("@threeceelabs/mongoose-twitter/models/networkInputs.server.model");
+// let User;
+// let NeuralNetwork;
+// let NetworkInputs;
 
-let User;
-let NeuralNetwork;
-let NetworkInputs;
+// const wordAssoDb = require("@threeceelabs/mongoose-twitter");
 
-const wordAssoDb = require("@threeceelabs/mongoose-twitter");
+// let UserServerController;
+// let userServerController;
 
-let UserServerController;
-let userServerController;
-
-let userServerControllerReady = false;
+// let userServerControllerReady = false;
 
 let networkCreateInterval;
 let saveFileQueueInterval;
@@ -1583,44 +1605,130 @@ process.on("exit", async function() {
   quit("SIGINT");
 });
 
-function connectDb(callback){
+// function connectDb(){
 
-  statsObj.status = "CONNECT DB";
+//   return new Promise(async function(resolve, reject){
 
-  wordAssoDb.connect("TNN_" + process.pid, function(err, db){
-    if (err) {
-      console.log(chalkError("*** TNN | MONGO DB CONNECTION ERROR: " + err));
-      callback(err, null);
-      dbConnectionReady = false;
+//     try {
+
+//       statsObj.status = "CONNECT DB";
+
+//       wordAssoDb.connect("TNN_" + process.pid, function(err, db){
+//         if (err) {
+//           console.log(chalkError("*** TNN | MONGO DB CONNECTION ERROR: " + err));
+//           callback(err, null);
+//           dbConnectionReady = false;
+//         }
+//         else {
+
+//           db.on("error", function(){
+//             console.error.bind(console, "*** TNN | MONGO DB CONNECTION ERROR ***\n");
+//             console.log(chalkError("*** TNN | MONGO DB CONNECTION ERROR ***\n"));
+//             db.close();
+//             dbConnectionReady = false;
+//           });
+
+//           db.on("disconnected", function(){
+//             console.error.bind(console, "*** TNN | MONGO DB DISCONNECTED ***\n");
+//             console.log(chalkAlert("*** TNN | MONGO DB DISCONNECTED ***\n"));
+//             dbConnectionReady = false;
+//           });
+
+//           global.dbConnection = db;
+
+
+//           console.log(chalkGreen("TNN | MONGOOSE DEFAULT CONNECTION OPEN"));
+
+//           dbConnectionReady = true;
+
+//           User = mongoose.model("User", userModel.UserSchema);
+//           NeuralNetwork = mongoose.model("NeuralNetwork", neuralNetworkModel.NeuralNetworkSchema);
+//           NetworkInputs = mongoose.model("NetworkInputs", networkInputsModel.NetworkInputsSchema);
+
+//           resolve(db);
+//         }
+//       });
+//     }
+//     catch(err){
+//       return reject(err);
+//     }
+
+//   });
+// }
+
+function connectDb(){
+
+  return new Promise(async function(resolve, reject){
+
+    try {
+
+      statsObj.status = "CONNECTING MONGO DB";
+
+      wordAssoDb.connect("TNN_" + process.pid, async function(err, db){
+
+        if (err) {
+          console.log(chalkError("TNN | *** MONGO DB CONNECTION ERROR: " + err));
+          statsObj.status = "MONGO CONNECTION ERROR";
+          dbConnectionReady = false;
+          quit(statsObj.status);
+          return reject(err);
+        }
+
+        db.on("error", async function(){
+          statsObj.status = "MONGO ERROR";
+          console.error.bind(console, "TNN | *** MONGO DB CONNECTION ERROR ***\n");
+          console.log(chalkError("TNN | *** MONGO DB CONNECTION ERROR ***\n"));
+          db.close();
+          dbConnectionReady = false;
+          quit(statsObj.status);
+        });
+
+        db.on("disconnected", async function(){
+          statsObj.status = "MONGO DISCONNECTED";
+          console.error.bind(console, "TNN | *** MONGO DB DISCONNECTED ***\n");
+          console.log(chalkAlert("TNN | *** MONGO DB DISCONNECTED ***\n"));
+          dbConnectionReady = false;
+          quit(statsObj.status);
+        });
+
+
+        global.dbConnection = db;
+
+        console.log(chalk.green("TNN | MONGOOSE DEFAULT CONNECTION OPEN"));
+
+
+        const neuralNetworkModel = require("@threeceelabs/mongoose-twitter/models/neuralNetwork.server.model");
+        const networkInputsModel = require("@threeceelabs/mongoose-twitter/models/networkInputs.server.model");
+        const userModel = require("@threeceelabs/mongoose-twitter/models/user.server.model");
+
+        global.NeuralNetwork = dbConnection.model("NeuralNetwork", neuralNetworkModel.NeuralNetworkSchema);
+        global.NetworkInputs = mongoose.model("NetworkInputs", networkInputsModel.NetworkInputsSchema);
+        global.User = dbConnection.model("User", userModel.UserSchema);
+
+        UserServerController = require("@threeceelabs/user-server-controller");
+        userServerController = new UserServerController("TNN_USC");
+
+        userServerControllerReady = false;
+        userServerController.on("ready", function(appname){
+
+          statsObj.status = "MONGO DB CONNECTED";
+
+          userServerControllerReady = true;
+          console.log(chalkLog("TNN | USC READY | " + appname));
+          dbConnectionReady = true;
+
+          resolve(db);
+
+        });
+      });
     }
-    else {
-
-      db.on("error", function(){
-        console.error.bind(console, "*** TNN | MONGO DB CONNECTION ERROR ***\n");
-        console.log(chalkError("*** TNN | MONGO DB CONNECTION ERROR ***\n"));
-        db.close();
-        dbConnectionReady = false;
-      });
-
-      db.on("disconnected", function(){
-        console.error.bind(console, "*** TNN | MONGO DB DISCONNECTED ***\n");
-        console.log(chalkAlert("*** TNN | MONGO DB DISCONNECTED ***\n"));
-        dbConnectionReady = false;
-      });
-
-
-      console.log(chalkGreen("TNN | MONGOOSE DEFAULT CONNECTION OPEN"));
-
-      dbConnectionReady = true;
-
-      User = mongoose.model("User", userModel.UserSchema);
-      NeuralNetwork = mongoose.model("NeuralNetwork", neuralNetworkModel.NeuralNetworkSchema);
-      NetworkInputs = mongoose.model("NetworkInputs", networkInputsModel.NetworkInputsSchema);
-
-      callback(null, db);
+    catch(err){
+      console.log(chalkError("TNN | *** MONGO DB CONNECT ERROR: " + err));
+      reject(err);
     }
   });
 }
+
 
 function saveFile (params, callback){
 
@@ -2462,20 +2570,13 @@ function userChanged(uOld, uNew){
   });
 }
 
-function updateUsersFromTrainingSet(trainingSetData, callback){
+function updateUserFromTrainingSet(params){
 
-  let updatedUserCount = 0;
-  let userIndex = 0;
-  const numberUsers = trainingSetData.length;
+  return new Promise(function(resolve, reject){
 
-  // if (configuration.testMode) {
-  //   trainingSetData.length = 100;
-  //   configuration.globalTrainingSetId = "smallGlobalTrainingSet";
-  // }
+    let user = params.user;
 
-  async.eachSeries(trainingSetData, function(user, cb) {
-
-    debug(chalkLog("... UPDATING USER FROM TRAINING + TEST SET DATA"
+    debug(chalkLog("... UPDATING USER FROM TRAINING SET"
       + " | CM: " + printCat(user.category)
       + " | CA: " + printCat(user.categoryAuto)
       + " | @" + user.screenName
@@ -2484,29 +2585,25 @@ function updateUsersFromTrainingSet(trainingSetData, callback){
     if (user.userId === undefined) { user.userId = user.nodeId; }
 
     User.findOne({ nodeId: user.nodeId }).exec(function(err, userDb) {
-      userIndex += 1;
       if (err) {
         console.log(chalkError("*** ERROR FIND ONE USER trainingSet: "
-          + " [" + updatedUserCount + "/" + userIndex + "/" + numberUsers + "]"
           + " | CM: " + printCat(user.category)
           + " | CA: " + printCat(user.categoryAuto)
           + " | UID: " + user.userId
           + " | @" + user.screenName
           + " | ERROR: " + err
         ));
-        cb();
+        return reject(err);
       }
-      else if (!userDb){
+      
+      if (!userDb){
 
         const newUser = new User(user);
 
         newUser.save()
         .then(function(updatedUser){
 
-          updatedUserCount += 1;
-
           console.log(chalkLog("TNN | +++ ADD NET USER FROM TRAINING SET  "
-            + " [" + updatedUserCount + "/" + userIndex + "/" + numberUsers + "]"
             + " | CM: " + printCat(updatedUser.category)
             + " | CA: " + printCat(updatedUser.categoryAuto)
             + " | UID: " + updatedUser.userId
@@ -2517,46 +2614,30 @@ function updateUsersFromTrainingSet(trainingSetData, callback){
             + " | FRNDS: " + updatedUser.friendsCount
           ));
 
+          resolve(updatedUser);
+
         })
         .catch(function(err){
           console.log("TNN |ERROR: updateUsersFromTrainingSet newUser: " + err.message);
+          return reject(err);
         });
 
-        cb();
 
       }
       else if (userChanged(user, userDb)) {
 
         userDb.category = user.category;
         userDb.categoryAuto = user.categoryAuto;
+        userDb.threeceeFollowing = user.threeceeFollowing;
+        userDb.screenName = user.screenName;
+        userDb.statusesCount = user.statusesCount;
+        userDb.followersCount = user.followersCount;
+        userDb.friendsCount = user.friendsCount;
 
         userDb.save()
         .then(function(updatedUser){
-          updatedUserCount += 1;
 
           console.log(chalkLog("+++ UPDATED USER FROM TRAINING SET  "
-            + " [" + updatedUserCount + "/" + userIndex + "/" + numberUsers + "]"
-            + " | CM: " + printCat(updatedUser.category)
-            + " | CA: " + printCat(updatedUser.categoryAuto)
-            + " | UID: " + updatedUser.userId
-            + " | @" + updatedUser.screenName
-            + " | 3CF: " + updatedUser.threeceeFollowing
-            + " | Ts: " + updatedUser.statusesCount
-            + " | FLWRs: " + updatedUser.followersCount
-            + " | FRNDS: " + updatedUser.friendsCount
-          ));
-
-        })
-        .catch(function(err){
-          console.log("TNN | ERROR: updateUsersFromTrainingSet: " + err.message);
-        });
-
-        cb();
-      }
-      else {
-        if ((userIndex % 1000) === 0) {
-          console.log(chalkLog("TNN | --- NO UPDATE USER FROM TRAINING SET"
-            + " [" + updatedUserCount + "/" + userIndex + "/" + numberUsers + "]"
             + " | CM: " + printCat(userDb.category)
             + " | CA: " + printCat(userDb.categoryAuto)
             + " | UID: " + userDb.userId
@@ -2566,14 +2647,35 @@ function updateUsersFromTrainingSet(trainingSetData, callback){
             + " | FLWRs: " + userDb.followersCount
             + " | FRNDS: " + userDb.friendsCount
           ));
-        }
-        cb();
+
+          resolve(updatedUser);
+
+        })
+        .catch(function(err){
+          console.log("TNN | ERROR: updateUsersFromTrainingSet: " + err.message);
+          return reject(err);
+        });
+
+      }
+      else {
+        console.log(chalkLog("TNN | --- NO UPDATE USER FROM TRAINING SET"
+          + " | CM: " + printCat(userDb.category)
+          + " | CA: " + printCat(userDb.categoryAuto)
+          + " | UID: " + userDb.userId
+          + " | @" + userDb.screenName
+          + " | 3CF: " + userDb.threeceeFollowing
+          + " | Ts: " + userDb.statusesCount
+          + " | FLWRs: " + userDb.followersCount
+          + " | FRNDS: " + userDb.friendsCount
+        ));
+
+        resolve(userDb);
+
       }
     });
-  }, function(){
-    // spinnerUpdateUsers.succeed("TNN | UPDATED USERS: " + updatedUserCount + "/" + userIndex + "/" + numberUsers );
-    callback();
+
   });
+
 }
 
 function updateDbNetwork(params, callback) {
@@ -3936,7 +4038,7 @@ function initialize(cnf, callback){
 
   loadAllConfigFiles(function(err){
 
-    loadCommandLineArgs(function(err, results){
+    loadCommandLineArgs(async function(err, results){
     
       const configArgs = Object.keys(configuration);
 
@@ -3956,13 +4058,9 @@ function initialize(cnf, callback){
         initStdIn();
       }
 
-      connectDb(function(err, db){
-        if (err) {
-          dbConnectionReady = false;
-          return callback(err, configuration);
-        }
+      try {
 
-        global.dbConnection = db;
+        global.dbConnection = await connectDb();
 
         UserServerController = require("@threeceelabs/user-server-controller");
         userServerController = new UserServerController("TNN_USC");
@@ -3974,16 +4072,17 @@ function initialize(cnf, callback){
           console.log(chalkGreen("TNN | +++ USC READY | " + appname));
         });
 
-        // if (configuration.createTrainingSet || configuration.createTrainingSetOnly){
-        //   initArchiver({outputFile: configuration.defaultUserArchivePath});
-        // }
-
         initStatsUpdate(configuration);
 
         loadInputsDropboxFolder(defaultInputsFolder, function(err, results){
           callback(err, configuration);
         });
-      });
+      }
+      catch(err){
+        dbConnectionReady = false;
+        return callback(err, configuration);
+      }
+
 
     });
   });
@@ -4679,7 +4778,9 @@ function unzipUsersToArray(params){
 
                     percent = 100*(statsObj.users.zipHashMapHit/statsObj.users.unzipped);
 
-                    trainingSetUsersHashMap.set(fileObj.userId, fileObj);
+                    trainingSetUsersHashMap.set(fileObj.nodeId, fileObj);
+
+                    let dbUser = await updateUserFromTrainingSet({user: fileObj});
 
                     if (configuration.verbose || (statsObj.users.unzipped % 1000 === 0)) {
                       console.log(chalkLog(hmHit
@@ -4688,13 +4789,13 @@ function unzipUsersToArray(params){
                         + " MISS / " + statsObj.users.zipHashMapHit 
                         + " HIT (" + percent.toFixed(2) + "%) ]"
                         + " | " + statsObj.users.unzipped + " UNZPD ]"
-                        + " 3C: " + fileObj.threeceeFollowing
-                        + " | " + fileObj.userId
-                        + " | @" + fileObj.screenName
-                        + " | " + fileObj.name
-                        + " | FLWRs: " + fileObj.followersCount
-                        + " | FRNDs: " + fileObj.friendsCount
-                        + " | CAT M: " + fileObj.category + " A: " + fileObj.categoryAuto
+                        + " 3C: " + dbUser.threeceeFollowing
+                        + " | " + dbUser.userId
+                        + " | @" + dbUser.screenName
+                        + " | " + dbUser.name
+                        + " | FLWRs: " + dbUser.followersCount
+                        + " | FRNDs: " + dbUser.friendsCount
+                        + " | CAT M: " + dbUser.category + " A: " + dbUser.categoryAuto
                         // + "\n" + jsonPrint(fileObj)
                       ));
                     }
