@@ -123,7 +123,6 @@ let runOnceFlag = false;
 let allCompleteFlag = false;
 
 let networkCreateResultsHashmap = {};
-let neuralNetworkChildHashMap = {};
 
 const bestRuntimeNetworkFileName = "bestRuntimeNetwork.json";
 let enableCreateChildren = false;
@@ -3985,9 +3984,9 @@ function findChildByPid(pid, callback){
 
   let foundChildId = false;
 
-  async.each(Object.keys(neuralNetworkChildHashMap), function(nnChildId, cb){
+  async.each(Object.keys(childHashMap), function(nnChildId, cb){
 
-    if (pid && (neuralNetworkChildHashMap[nnChildId].pid === pid)){
+    if (pid && (childHashMap[nnChildId].pid === pid)){
 
       foundChildId = nnChildId;
 
@@ -6171,17 +6170,17 @@ function childCreate(params){
 
             printNetworkCreateResultsHashmap();
 
-            if (neuralNetworkChildHashMap[m.childId] === undefined) {
-              console.log(chalkError("??? CHILD NOT IN neuralNetworkChildHashMap ??? | CHILD ID: "+ m.childId));
-              neuralNetworkChildHashMap[m.childId] = {};
-              neuralNetworkChildHashMap[m.childId].status = "IDLE";
+            if (childHashMap[m.childId] === undefined) {
+              console.log(chalkError("??? CHILD NOT IN childHashMap ??? | CHILD ID: "+ m.childId));
+              childHashMap[m.childId] = {};
+              childHashMap[m.childId].status = "IDLE";
             }
             else {
               if (configuration.quitOnComplete) {
-                neuralNetworkChildHashMap[m.childId].status = "COMPLETE";
+                childHashMap[m.childId].status = "COMPLETE";
               }
               else {
-                neuralNetworkChildHashMap[m.childId].status = "IDLE";
+                childHashMap[m.childId].status = "IDLE";
               }
             }
 
