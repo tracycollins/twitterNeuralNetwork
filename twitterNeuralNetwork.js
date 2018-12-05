@@ -221,7 +221,7 @@ const GLOBAL_TRAINING_SET_ID = "globalTrainingSet";
 
 const DEFAULT_SEED_RANDOMIZE_OPTIONS = true;
 const DEFAULT_USE_LOCAL_TRAINING_SETS = false;
-const DEFAULT_MAX_NEURAL_NETWORK_CHILDREN = 2;
+const DEFAULT_MAX_NEURAL_NETWORK_CHILDREN = 1;
 const DEFAULT_TEST_RATIO = 0.20;
 const DEFAULT_NETWORK_CREATE_MODE = "evolve";
 const DEFAULT_ITERATIONS = 10;
@@ -4750,6 +4750,12 @@ function loadConfigFile(params) {
         console.log(MODULE_ID_PREFIX + " | LOADED KEEPALIVE_INTERVAL: " + loadedConfigObj.KEEPALIVE_INTERVAL);
         newConfiguration.keepaliveInterval = loadedConfigObj.KEEPALIVE_INTERVAL;
       }
+
+      if (loadedConfigObj.TNN_MAX_NEURAL_NETWORK_CHILDREN !== undefined){
+        console.log("TNN | LOADED TNN_MAX_NEURAL_NETWORK_CHILDREN: " + loadedConfigObj.TNN_MAX_NEURAL_NETWORK_CHILDREN);
+        newConfiguration.maxNumberChildren = loadedConfigObj.TNN_MAX_NEURAL_NETWORK_CHILDREN;
+      }
+
 
       if (loadedConfigObj.TNN_GLOBAL_MIN_SUCCESS_RATE !== undefined){
         console.log("TNN | LOADED TNN_GLOBAL_MIN_SUCCESS_RATE: " + loadedConfigObj.TNN_GLOBAL_MIN_SUCCESS_RATE);
