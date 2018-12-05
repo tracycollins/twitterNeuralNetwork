@@ -4,8 +4,10 @@
 
 let quitOnCompleteFlag = false;
 
+const DEFAULT_INPUTS_BINARY_MODE = true;
+
 const TEST_MODE = false; // applies only to parent
-const QUIT_ON_COMPLETE = true;
+const QUIT_ON_COMPLETE = false;
 
 const MODULE_NAME = "tncChild";
 const MODULE_ID_PREFIX = "TNC";
@@ -163,6 +165,7 @@ process.on("unhandledRejection", function(err, promise) {
 
 let configuration = {};
 
+configuration.inputsBinaryMode = DEFAULT_INPUTS_BINARY_MODE;
 configuration.testMode = TEST_MODE;
 configuration.statsUpdateIntervalTime = STATS_UPDATE_INTERVAL;
 
@@ -1522,9 +1525,11 @@ function convertTrainingDatum(params, datum, generateInputRaw, callback){
         });
       }
       else if ((datum.histograms[inputType] !== undefined) && (datum.histograms[inputType][inputName] !== undefined)){
-        // convertedDatum.input.push(1);
 
-        if ((params.trainingSet.maxInputHashMap === undefined) 
+        if (configuration.inputsBinaryMode) {
+          convertedDatum.input.push(1);
+        }
+        else if ((params.trainingSet.maxInputHashMap === undefined) 
           || (params.trainingSet.maxInputHashMap[inputType] === undefined)) {
           debug(chalkAlert("UNDEFINED??? params.trainingSet.maxInputHashMap." + inputType + " | " + inputName));
           convertedDatum.input.push(1);
@@ -2301,18 +2306,21 @@ const fsmStates = {
   "EVOLVE":{
     onEnter: async function(event, oldState, newState) {
       if (event !== "fsm_tick") {
+
         reporter(event, oldState, newState);
         statsObj.fsmStatus = "EVOLVE";
         process.send({op:"STATS", childId: configuration.childId, data: statsObj});
 
-        try{
+        try {
 
           let networkObj = await evolve(evolveOptions);
 
           networkObj.evolve.options = pick(networkObj.evolve.options, ["clear", "cost", "growth", "equal", "mutationRate", "popsize", "elitism"]);
 
           process.send({op:"EVOLVE_COMPLETE", childId: configuration.childId, networkObj: networkObj, statsObj: statsObj});
-          
+
+          fsm.fsm_evolve_complete();
+
         }
         catch(err){
           console.log(MODULE_ID_PREFIX + " | *** EVOLVE ERROR: " + err);
@@ -2322,9 +2330,6 @@ const fsmStates = {
       }
     },
     fsm_tick: function() {
-      if (statsObj.evolveComplete) {
-        fsm.fsm_evolve_complete();
-      }
     },
     "fsm_init": "INIT",
     "fsm_exit": "EXIT",
@@ -2420,6 +2425,7 @@ process.on("message", function(m) {
       statsObj.childId = m.childId;
       process.title = m.childId;
       process.name = m.childId;
+      configuration.inputsBinaryMode = m.inputsBinaryMode || DEFAULT_INPUTS_BINARY_MODE;
       fsm.fsm_init();
     break;
 
@@ -2562,10 +2568,12 @@ process.on("message", function(m) {
     break;
 
     case "PING":
-      console.log(chalkInfo(MODULE_ID_PREFIX + " | PING"
-        + " | CHILD ID: " + m.childId
-        + " | PING ID: " + m.pingId
-      ));
+      if (configuration.verbose) {
+        console.log(chalkInfo(MODULE_ID_PREFIX + " | PING"
+          + " | CHILD ID: " + m.childId
+          + " | PING ID: " + m.pingId
+        ));
+      }
       process.send({op:"PONG", pingId: m.pingId, childId: configuration.childId, data: statsObj});
     break;
 

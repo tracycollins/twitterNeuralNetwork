@@ -10,7 +10,7 @@
     "env": {
       "FORCE_COLOR": 1,
       "NODE_ENV": "production",
-      "TNN_QUIT_ON_COMPLETE": true,
+      "TNN_QUIT_ON_COMPLETE": false,
       "TNN_SERVER_MODE": true,
       "TNN_UTIL_TARGET_SERVER": "https://127.0.0.1/util",
       "GCLOUD_PROJECT": "graphic-tangent-627",
