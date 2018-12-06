@@ -52,6 +52,7 @@ configuration.quitOnComplete = QUIT_ON_COMPLETE;
 configuration.statsUpdateIntervalTime = STATS_UPDATE_INTERVAL;
 
 const os = require("os");
+const path = require("path");
 const moment = require("moment");
 const HashMap = require("hashmap").HashMap;
 const pick = require("object.pick");
@@ -363,7 +364,7 @@ configuration.maxNumberChildren = (process.env.TNN_MAX_NEURAL_NETWORK_CHILDREN !
 
 if (process.env.TNN_QUIT_ON_COMPLETE !== undefined) {
 
-  console.log("TNN | ENV TNN_QUIT_ON_COMPLETE: " + process.env.TNN_QUIT_ON_COMPLETE);
+  console.log(MODULE_ID_PREFIX + " | ENV TNN_QUIT_ON_COMPLETE: " + process.env.TNN_QUIT_ON_COMPLETE);
 
   if (!process.env.TNN_QUIT_ON_COMPLETE || (process.env.TNN_QUIT_ON_COMPLETE === false) || (process.env.TNN_QUIT_ON_COMPLETE === "false")) {
     configuration.quitOnComplete = false ;
@@ -509,13 +510,13 @@ function printNetworkObj(title, networkObj) {
 function indexOfMax (arr, callback) {
 
   if (arr.length === 0) {
-    console.log(chalkAlert("TNN | indexOfMax: 0 LENG ARRAY: -1"));
+    console.log(chalkAlert(MODULE_ID_PREFIX + " | indexOfMax: 0 LENG ARRAY: -1"));
     return callback(-2, arr) ; 
   }
 
   if ((arr[0] === arr[1]) && (arr[1] === arr[2])){
-    debug(chalkInfo("TNN | indexOfMax: ALL EQUAL"));
-    debug(chalkInfo("TNN | ARR" 
+    debug(chalkInfo(MODULE_ID_PREFIX + " | indexOfMax: ALL EQUAL"));
+    debug(chalkInfo(MODULE_ID_PREFIX + " | ARR" 
       + " | " + arr[0].toFixed(2) 
       + " - " + arr[1].toFixed(2) 
       + " - " + arr[2].toFixed(2)
@@ -524,17 +525,17 @@ function indexOfMax (arr, callback) {
     return callback(4, [1,1,1]) ; 
   }
 
-  debug("TNN | B4 ARR: " + arr[0].toFixed(2) + " - " + arr[1].toFixed(2) + " - " + arr[2].toFixed(2));
+  debug(MODULE_ID_PREFIX + " | B4 ARR: " + arr[0].toFixed(2) + " - " + arr[1].toFixed(2) + " - " + arr[2].toFixed(2));
   arrayNormalize(arr);
-  debug("TNN | AF ARR: " + arr[0].toFixed(2) + " - " + arr[1].toFixed(2) + " - " + arr[2].toFixed(2));
+  debug(MODULE_ID_PREFIX + " | AF ARR: " + arr[0].toFixed(2) + " - " + arr[1].toFixed(2) + " - " + arr[2].toFixed(2));
 
   if (((arr[0] === 1) && (arr[1] === 1)) 
     || ((arr[0] === 1) && (arr[2] === 1))
     || ((arr[1] === 1) && (arr[2] === 1))){
 
-    debug(chalkAlert("TNN | indexOfMax: MULTIPLE SET"));
+    debug(chalkAlert(MODULE_ID_PREFIX + " | indexOfMax: MULTIPLE SET"));
 
-    debug(chalkAlert("TNN | ARR" 
+    debug(chalkAlert(MODULE_ID_PREFIX + " | ARR" 
       + " | " + arr[0].toFixed(2) 
       + " - " + arr[1].toFixed(2) 
       + " - " + arr[2].toFixed(2)
@@ -643,7 +644,7 @@ function printResultsHashmap(){
   let tableArray = [];
 
   tableArray.push([
-    "TNN | NNID",
+    MODULE_ID_PREFIX + " | NNID",
     "STATUS",
     "BETTER CH",
     "SEED",
@@ -708,7 +709,7 @@ function printResultsHashmap(){
     elapsed = (networkObj.evolve.elapsed && networkObj.evolve.elapsed !== undefined) ? networkObj.evolve.elapsed : (moment().valueOf() - networkObj.evolve.startTime);
 
     tableArray.push([
-      "TNN | " + networkId,
+      MODULE_ID_PREFIX + " | " + networkId,
       status,
       betterChild,
       seedNetworkId,
@@ -734,9 +735,9 @@ function printResultsHashmap(){
 
     const t = table(tableArray, { align: ["l", "l", "l", "l", "l", "r", "l", "l", "l", "l", "r", "r", "r", "l", "l", "r", "r", "r"] });
 
-    console.log(chalkLog("TNN | === NETWORK RESULTS ========================================================================================================================"));
+    console.log(chalkLog(MODULE_ID_PREFIX + " | === NETWORK RESULTS ========================================================================================================================"));
     console.log(chalkLog(t));
-    console.log(chalkLog("TNN | ============================================================================================================================================"));
+    console.log(chalkLog(MODULE_ID_PREFIX + " | ============================================================================================================================================"));
 
   });
 }
@@ -746,7 +747,7 @@ function printInputsHashMap(){
   let tableArray = [];
 
   tableArray.push([
-    "TNN | INPUTS ID",
+    MODULE_ID_PREFIX + " | INPUTS ID",
     "INPTS"
   ]);
 
@@ -755,7 +756,7 @@ function printInputsHashMap(){
     const inputsObj = inputsHashMap.get(inputsId).inputsObj;
 
     tableArray.push([
-      "TNN | " + inputsId,
+      MODULE_ID_PREFIX + " | " + inputsId,
       inputsObj.meta.numInputs
     ]);
 
@@ -765,17 +766,17 @@ function printInputsHashMap(){
 
     const t = table(tableArray, { align: ["l", "r"] });
 
-    console.log(chalkBlueBold("TNN | ============================================================================================================================================"));
-    console.log(chalkBlueBold("TNN | INPUTS HASHMAP"));
+    console.log(chalkBlueBold(MODULE_ID_PREFIX + " | ============================================================================================================================================"));
+    console.log(chalkBlueBold(MODULE_ID_PREFIX + " | INPUTS HASHMAP"));
     console.log(chalkInfo(t));
-    console.log(chalkBlueBold("TNN | ============================================================================================================================================"));
+    console.log(chalkBlueBold(MODULE_ID_PREFIX + " | ============================================================================================================================================"));
 
   });
 }
 
 function purgeNetwork(networkId, callback){
 
-  console.log(chalkInfo("TNN | XXX PURGE NETWORK: " + networkId));
+  console.log(chalkInfo(MODULE_ID_PREFIX + " | XXX PURGE NETWORK: " + networkId));
 
   networkHashMap.delete(networkId);
 
@@ -793,17 +794,17 @@ function purgeNetwork(networkId, callback){
 function purgeInputs(inputsId, callback){
 
   if (!configuration.inputsIdArray.includes(inputsId)){
-    console.log(chalkInfo("TNN | XXX PURGE INPUTS: " + inputsId));
+    console.log(chalkInfo(MODULE_ID_PREFIX + " | XXX PURGE INPUTS: " + inputsId));
     inputsHashMap.delete(inputsId);
     skipLoadInputsSet.add(inputsId);
   }
   else {
-    console.log(chalkInfo("TNN | ** NO XXX PURGE INPUTS ... IN CONFIGURATION INPUTS ID ARRAY" 
+    console.log(chalkInfo(MODULE_ID_PREFIX + " | ** NO XXX PURGE INPUTS ... IN CONFIGURATION INPUTS ID ARRAY" 
       + " | INPUTS ID: " + inputsId
     ));
 
     if (configuration.verbose) {
-      console.log(chalkInfo("TNN | CONFIGURATION INPUTS ID ARRAY\n" + jsonPrint(configuration.inputsIdArray) ));
+      console.log(chalkInfo(MODULE_ID_PREFIX + " | CONFIGURATION INPUTS ID ARRAY\n" + jsonPrint(configuration.inputsIdArray) ));
     }
   }
 
@@ -819,7 +820,7 @@ function loadInputsDropboxFolder(params){
 
     let folder = params.folder || defaultInputsFolder;
 
-    console.log(chalkLog("TNN | ... LOADING DROPBOX INPUTS FOLDER | " + folder));
+    console.log(chalkLog(MODULE_ID_PREFIX + " | ... LOADING DROPBOX INPUTS FOLDER | " + folder));
 
     let listDropboxFolderParams = {
       folder: params.folder,
@@ -833,11 +834,11 @@ function loadInputsDropboxFolder(params){
       dropboxFolderResults = await listDropboxFolder(listDropboxFolderParams);
     }
     catch(err){
-      console.log(chalkError("TNN | ERROR LOADING DROPBOX INPUTS FOLDER | " + listDropboxFolderParams.folder + " | " + err));
+      console.log(chalkError(MODULE_ID_PREFIX + " | ERROR LOADING DROPBOX INPUTS FOLDER | " + listDropboxFolderParams.folder + " | " + err));
       return reject(err);
     }
 
-    console.log(chalkBlue("TNN | DROPBOX LIST INPUTS FOLDER"
+    console.log(chalkBlue(MODULE_ID_PREFIX + " | DROPBOX LIST INPUTS FOLDER"
       + " | ENTRIES: " + dropboxFolderResults.entries.length
       + " | PATH:" + listDropboxFolderParams.folder
     ));
@@ -851,7 +852,7 @@ function loadInputsDropboxFolder(params){
 
       let inputsObj;
 
-      debug(chalkInfo("TNN | DROPBOX INPUTS FILE FOUND"
+      debug(chalkInfo(MODULE_ID_PREFIX + " | DROPBOX INPUTS FILE FOUND"
         + " | LAST MOD: " + moment(new Date(entry.client_modified)).format(compactDateTimeFormat)
         + " | INPUTS ID: " + entryInputsId
         + " | " + entry.name
@@ -859,7 +860,7 @@ function loadInputsDropboxFolder(params){
 
       if (configuration.testMode && (inputsHashMap.size >= TEST_DROPBOX_INPUTS_LOAD)){
         if (configuration.verbose) {
-          console.log(chalkInfo("TNN | TEST MODE SKIP LOAD INPUTS SET | " + entryInputsId));
+          console.log(chalkInfo(MODULE_ID_PREFIX + " | TEST MODE SKIP LOAD INPUTS SET | " + entryInputsId));
         }
         skippedInputsFiles += 1;
         return;
@@ -867,7 +868,7 @@ function loadInputsDropboxFolder(params){
       
       if (skipLoadInputsSet.has(entryInputsId)){
         if (configuration.verbose) {
-          console.log(chalkInfo("TNN | INPUTS IN SKIP LOAD INPUTS SET ... SKIPPING LOAD OF " + entryInputsId));
+          console.log(chalkInfo(MODULE_ID_PREFIX + " | INPUTS IN SKIP LOAD INPUTS SET ... SKIPPING LOAD OF " + entryInputsId));
         }
         skippedInputsFiles += 1;
         return;
@@ -876,7 +877,7 @@ function loadInputsDropboxFolder(params){
       if (!configuration.loadAllInputs && !configuration.inputsIdArray.includes(entryInputsId)){
 
         if (configuration.verbose){
-          console.log(chalkInfo("TNN | DROPBOX INPUTS NOT IN INPUTS ID ARRAY ... SKIPPING"
+          console.log(chalkInfo(MODULE_ID_PREFIX + " | DROPBOX INPUTS NOT IN INPUTS ID ARRAY ... SKIPPING"
             + " | " + entryInputsId
             + " | " + defaultInputsArchiveFolder + "/" + entry.name
           ));
@@ -894,7 +895,7 @@ function loadInputsDropboxFolder(params){
 
         if ((curInputsObj.entry.content_hash !== entry.content_hash) && (curInputsObj.entry.path_display === entry.path_display)) {
 
-          console.log(chalkInfo("TNN | DROPBOX INPUTS CONTENT CHANGE"
+          console.log(chalkInfo(MODULE_ID_PREFIX + " | DROPBOX INPUTS CONTENT CHANGE"
             + " | LAST MOD: " + moment(new Date(entry.client_modified)).format(compactDateTimeFormat)
             + " | " + entry.name
             // + "\nCUR HASH: " + entry.content_hash
@@ -905,16 +906,16 @@ function loadInputsDropboxFolder(params){
             inputsObj = await loadFileRetry({folder: folder, file: entry.name});
           }
           catch(err) {
-            console.log(chalkError("TNN | DROPBOX INPUTS LOAD FILE ERROR: " + err));
+            console.log(chalkError(MODULE_ID_PREFIX + " | DROPBOX INPUTS LOAD FILE ERROR: " + err));
             return;
           }
 
           if ((inputsObj === undefined) || !inputsObj) {
-            console.log(chalkError("TNN | DROPBOX INPUTS LOAD FILE ERROR | JSON UNDEFINED ??? "));
+            console.log(chalkError(MODULE_ID_PREFIX + " | DROPBOX INPUTS LOAD FILE ERROR | JSON UNDEFINED ??? "));
             return;
           }
 
-          console.log(chalkInfo("TNN | DROPBOX INPUTS"
+          console.log(chalkInfo(MODULE_ID_PREFIX + " | DROPBOX INPUTS"
             + " | " + entry.name
             + " | " + inputsObj.inputsId
           ));
@@ -938,7 +939,7 @@ function loadInputsDropboxFolder(params){
         
         if ((curInputsObj.entry.content_hash !== entry.content_hash) && (curInputsObj.entry.path_display !== entry.path_display)) {
 
-          console.log(chalkNetwork("TNN | DROPBOX INPUTS CONTENT DIFF IN DIFF FOLDERS"
+          console.log(chalkNetwork(MODULE_ID_PREFIX + " | DROPBOX INPUTS CONTENT DIFF IN DIFF FOLDERS"
             + " | LAST MOD: " + moment(new Date(entry.client_modified)).format(compactDateTimeFormat)
             // + "\nCUR: " + entry.path_display
             // + "\nOLD: " + curInputsObj.entry.path_display
@@ -949,16 +950,16 @@ function loadInputsDropboxFolder(params){
             inputsObj = await loadFileRetry({folder: folder, file: entry.name});
           }
           catch(err) {
-            console.log(chalkError("TNN | DROPBOX INPUTS LOAD FILE ERROR: " + err));
+            console.log(chalkError(MODULE_ID_PREFIX + " | DROPBOX INPUTS LOAD FILE ERROR: " + err));
             return;
           }
 
           if (err) {
-            console.log(chalkError("TNN | DROPBOX INPUTS LOAD FILE ERROR: " + err));
+            console.log(chalkError(MODULE_ID_PREFIX + " | DROPBOX INPUTS LOAD FILE ERROR: " + err));
             return;
           }
           else if ((inputsObj === undefined) || !inputsObj) {
-            console.log(chalkError("TNN | DROPBOX INPUTS LOAD FILE ERROR | JSON UNDEFINED ??? "));
+            console.log(chalkError(MODULE_ID_PREFIX + " | DROPBOX INPUTS LOAD FILE ERROR | JSON UNDEFINED ??? "));
             return;
           }
           else {
@@ -979,7 +980,7 @@ function loadInputsDropboxFolder(params){
 
             const inputTypes = Object.keys(inputsObj.inputs);
 
-            console.log(chalkInfo("TNN | + INPUTS HASH MAP"
+            console.log(chalkInfo(MODULE_ID_PREFIX + " | + INPUTS HASH MAP"
               + " | " + inputsHashMap.count() + " INs IN HM"
               + " | " + inputsObj.inputsId
             ));
@@ -987,18 +988,18 @@ function loadInputsDropboxFolder(params){
             let totalInputs = 0;
 
             inputTypes.forEach(function(inputType){
-              debug("TNN | " + inputsObj.inputsId + " | INPUT TYPE: " + inputType + " | " + inputsObj.inputs[inputType].length + " INPUTS");
+              debug(MODULE_ID_PREFIX + " | " + inputsObj.inputsId + " | INPUT TYPE: " + inputType + " | " + inputsObj.inputs[inputType].length + " INPUTS");
               totalInputs += inputsObj.inputs[inputType].length;
             });
 
-            console.log("TNN | " + inputsObj.inputsId + " | TOTAL INPUTS TYPE: " + totalInputs);
+            console.log(MODULE_ID_PREFIX + " | " + inputsObj.inputsId + " | TOTAL INPUTS TYPE: " + totalInputs);
 
             return;
 
           }
         }
 
-        debug(chalkLog("TNN | DROPBOX INPUTS CONTENT SAME  "
+        debug(chalkLog(MODULE_ID_PREFIX + " | DROPBOX INPUTS CONTENT SAME  "
           + " | " + entry.name
           + " | LAST MOD: " + moment(new Date(entry.client_modified)).format(compactDateTimeFormat)
         ));
@@ -1011,12 +1012,12 @@ function loadInputsDropboxFolder(params){
         inputsObj = await loadFileRetry({folder: folder, file: entry.name});
       }
       catch(err) {
-        console.log(chalkError("TNN | DROPBOX INPUTS LOAD FILE ERROR: " + err));
+        console.log(chalkError(MODULE_ID_PREFIX + " | DROPBOX INPUTS LOAD FILE ERROR: " + err));
         return;
       }
 
       if ((inputsObj === undefined) || !inputsObj) {
-        console.log(chalkError("TNN | DROPBOX INPUTS LOAD FILE ERROR | JSON UNDEFINED ??? "));
+        console.log(chalkError(MODULE_ID_PREFIX + " | DROPBOX INPUTS LOAD FILE ERROR | JSON UNDEFINED ??? "));
         // purgeInputs(entryInputsId);
         return;
       }
@@ -1037,7 +1038,7 @@ function loadInputsDropboxFolder(params){
 
       const inputTypes = Object.keys(inputsObj.inputs);
 
-      console.log(chalkInfo("TNN | + INPUTS HASH MAP"
+      console.log(chalkInfo(MODULE_ID_PREFIX + " | + INPUTS HASH MAP"
         + " | " + inputsHashMap.count() + " INs IN HM"
         + " | " + inputsObj.inputsId
       ));
@@ -1045,18 +1046,18 @@ function loadInputsDropboxFolder(params){
       let totalInputs = 0;
 
       inputTypes.forEach(function(inputType){
-        debug("TNN | " + inputsObj.inputsId + " | INPUT TYPE: " + inputType + " | " + inputsObj.inputs[inputType].length + " INPUTS");
+        debug(MODULE_ID_PREFIX + " | " + inputsObj.inputsId + " | INPUT TYPE: " + inputType + " | " + inputsObj.inputs[inputType].length + " INPUTS");
         totalInputs += inputsObj.inputs[inputType].length;
       });
 
-      console.log("TNN | " + inputsObj.inputsId + " | TOTAL INPUTS TYPE: " + totalInputs);
+      console.log(MODULE_ID_PREFIX + " | " + inputsObj.inputsId + " | TOTAL INPUTS TYPE: " + totalInputs);
 
       return;
 
     }, function(err){
 
       if (skippedInputsFiles > 0) {
-        console.log(chalkInfo("TNN | SKIPPED LOAD OF " + skippedInputsFiles + " INPUTS FILES | " + folder));
+        console.log(chalkInfo(MODULE_ID_PREFIX + " | SKIPPED LOAD OF " + skippedInputsFiles + " INPUTS FILES | " + folder));
       }
 
       if (configuration.verbose) {
@@ -1073,15 +1074,19 @@ function loadInputsDropboxFolder(params){
 let userWatchPropertyArray = [
   "bannerImageUrl",
   "category", 
-  "description", 
+  "description",
+  "expandedUrl",
   "followersCount", 
+  "following", 
   "friendsCount", 
   "isTopTerm",
   "lastTweetId",
   "location",
+  "profileUrl",
   "quotedStatusId",
   "statusesCount",
   "statusId",
+  "threeceeFollowing",
   "url",
   "verified"
 ];
@@ -1128,7 +1133,7 @@ function updateUserFromTrainingSet(params){
         newUser.save()
         .then(function(updatedUser){
 
-          console.log(chalkLog("TNN | +++ ADD NET USER FROM TRAINING SET  "
+          console.log(chalkLog(MODULE_ID_PREFIX + " | +++ ADD NET USER FROM TRAINING SET  "
             + " | CM: " + printCat(updatedUser.category)
             + " | CA: " + printCat(updatedUser.categoryAuto)
             + " | UID: " + updatedUser.userId
@@ -1143,7 +1148,7 @@ function updateUserFromTrainingSet(params){
 
         })
         .catch(function(err){
-          console.log("TNN | ERROR: updateUsersFromTrainingSet newUser: " + err.message);
+          console.log(MODULE_ID_PREFIX + " | ERROR: updateUsersFromTrainingSet newUser: " + err.message);
           resolve();
           // return reject(err);
         });
@@ -1152,20 +1157,25 @@ function updateUserFromTrainingSet(params){
       }
       else if (userChanged(user, userDb)) {
 
-        userDb.mentions = user.mentions;
+        userDb.bannerImageUrl = user.bannerImageUrl;
         userDb.category = user.category;
         userDb.categoryAuto = user.categoryAuto;
-        userDb.following = user.following;
-        userDb.threeceeFollowing = user.threeceeFollowing;
-        userDb.name = user.name;
-        userDb.screenName = user.screenName;
-        userDb.statusesCount = user.statusesCount;
+        userDb.description = user.description;
+        userDb.expandedUrl = user.expandedUrl;
         userDb.followersCount = user.followersCount;
+        userDb.following = user.following;
         userDb.friends = user.friends;
         userDb.friendsCount = user.friendsCount;
+        userDb.mentions = user.mentions;
+        userDb.name = user.name;
         userDb.profileHistograms = user.profileHistograms;
+        userDb.profileUrl = user.profileUrl;
+        userDb.screenName = user.screenName;
+        userDb.statusesCount = user.statusesCount;
+        userDb.threeceeFollowing = user.threeceeFollowing;
         userDb.tweetHistograms = user.tweetHistograms;
-        userDb.description = user.description;
+        userDb.url = user.url;
+        userDb.verified = user.verified;
 
         userDb.save()
         .then(function(updatedUser){
@@ -1185,7 +1195,7 @@ function updateUserFromTrainingSet(params){
 
         })
         .catch(function(err){
-          console.log("TNN | ERROR: updateUsersFromTrainingSet: " + err.message);
+          console.log(MODULE_ID_PREFIX + " | ERROR: updateUsersFromTrainingSet: " + err.message);
           return reject(err);
         });
 
@@ -1193,7 +1203,7 @@ function updateUserFromTrainingSet(params){
       else {
 
         if (configuration.verbose) {
-          console.log(chalkLog("TNN | --- NO UPDATE USER FROM TRAINING SET"
+          console.log(chalkLog(MODULE_ID_PREFIX + " | --- NO UPDATE USER FROM TRAINING SET"
             + " | CM: " + printCat(userDb.category)
             + " | CA: " + printCat(userDb.categoryAuto)
             + " | UID: " + userDb.userId
@@ -1271,12 +1281,272 @@ function updateDbNetwork(params) {
         return reject(err);
       }
 
-      if (verbose) { printNetworkObj("TNN | +++ NN DB UPDATED", nnDbUpdated); }
+      if (verbose) { printNetworkObj(MODULE_ID_PREFIX + " | +++ NN DB UPDATED", nnDbUpdated); }
 
       resolve(nnDbUpdated);
     });
 
   });
+}
+
+function listDropboxFolders(params){
+
+  return new Promise(function(resolve, reject){
+
+    if (configuration.offlineMode) {
+      dropboxClient = dropboxLocalClient;
+    }
+    else {
+      dropboxClient = dropboxRemoteClient;
+    }
+
+    console.log(chalkNetwork(MODULE_ID_PREFIX + " | ... GETTING DROPBOX FOLDERS ENTRIES"
+      + " | " + params.folders.length + " FOLDERS"
+      + "\n" + jsonPrint(params.folders)
+    ));
+
+    let totalEntries = [];
+    let promiseArray = [];
+
+    params.folders.forEach(function(folder){
+
+      const listDropboxFolderParams = {
+        folder: folder,
+        limit: DROPBOX_LIST_FOLDER_LIMIT
+      };
+
+      const p = listDropboxFolder(listDropboxFolderParams);
+      promiseArray.push(p);
+
+    });
+
+    Promise.all(promiseArray)
+    .then(function(results){
+      results.forEach(function(folderListing){
+        console.log(chalkLog(MODULE_ID_PREFIX + " | RESULTS | ENTRIES: "  + folderListing.entries.length));
+        totalEntries = _.concat(totalEntries, folderListing.entries);
+      });
+      resolve(totalEntries);
+    })
+    .catch(function(err){
+      reject(err);
+    });
+
+    // async.each(params.folders, async function(folder){
+
+    //   debug(chalkNetwork(MODULE_ID_PREFIX + " | ... LOADING DROPBOX FOLDER | " + folder));
+
+    //   let listDropboxFolderParams = {
+    //     folder: folder,
+    //     limit: DROPBOX_LIST_FOLDER_LIMIT
+    //   };
+
+
+    //   try {
+
+    //     let entries = await listDropboxFolder(listDropboxFolderParams);
+
+    //     totalEntries.push(entries);
+
+    //     console.log(chalkLog("DROPBOX LIST FOLDER"
+    //       + " | ENTRIES: " + entries.length
+    //       + " | PATH:" + listDropboxFolderParams.folder
+    //     ));
+
+    //     return;
+
+    //   }
+    //   catch(err){
+    //     console.log(chalkError(MODULE_ID_PREFIX + " | ERROR LOADING DROPBOX INPUTS FOLDER | " + listDropboxFolderParams.folder + " | " + err));
+    //     return err;
+    //   }
+
+    // }, function(err, allEntries){
+    //   if (err) {
+    //     return reject(err);
+    //   }
+    //   const result = _.concat(totalEntries);
+    //   resolve(allEntries);
+    // });
+
+  });
+}
+
+function validateNetwork(params){
+
+  return new Promise(function(resolve, reject){
+
+    if (!params || params === undefined || params.networkObj === undefined || params.networkId === undefined) {
+      console.log(chalkError(MODULE_ID_PREFIX + " | validateNetwork *** PARAMS UNDEFINED ??? "));
+      return reject(new Error("params undefined"));
+    }
+
+    let networkObj = params.networkObj;
+
+    if (networkObj.networkId !== params.networkId) {
+      console.log(chalkError(MODULE_ID_PREFIX + " | *** NETWORK ID MISMATCH"
+        + " | " + networkObj.networkId 
+        + " | " + params.networkId
+      ));
+      return resolve();
+      // return reject(new Error("NETWORK ID MISMATCH"));
+    }
+
+    if (networkObj.numInputs === undefined) {
+      console.log(chalkError(MODULE_ID_PREFIX + " | *** NETWORK NETWORK numInputs UNDEFINED"
+        + " | " + networkObj.networkId
+      ));
+      return resolve();
+      // return reject(new Error("NETWORK NUMBER OF INPUTS UNDEFINED"));
+    }
+
+    if (networkObj.inputsId === undefined) {
+      console.log(chalkError(MODULE_ID_PREFIX + " | *** NETWORK INPUTS ID UNDEFINED"
+        + " | " + networkObj.networkId));
+      return resolve();
+      // return reject(new Error("NETWORK INPUTS ID UNDEFINED"));
+    }
+
+    let nnObj = networkDefaults(networkObj);
+
+    resolve(nnObj);
+
+  });
+}
+
+
+function checkNetworkHash(params){
+
+  return new Promise(function(resolve, reject){
+
+    if (!params || params === undefined || params.entry === undefined) {
+      console.log(chalkError(MODULE_ID_PREFIX + " | checkNetworkHash *** PARAMS UNDEFINED ??? "));
+      return reject(new Error("params undefined"));
+    }
+
+    let entry = params.entry;
+
+    debug("entry\n" + jsonPrint(entry));
+
+    if (entry.name === bestRuntimeNetworkFileName) {
+      debug(chalkInfo("... SKIPPING LOAD OF " + entry.name));
+      return ;
+    }
+
+    if (!entry.name.endsWith(".json")) {
+      debug(chalkInfo("... SKIPPING LOAD OF " + entry.name));
+      return ;
+    }
+
+    const entryNameArray = entry.name.split(".");
+    const networkId = entryNameArray[0];
+
+    if (!networkHashMap.has(networkId)){
+      return resolve(false);
+    }
+
+    let networkObj = networkHashMap.get(networkId);
+    let oldContentHash = false;
+
+    if ((networkObj.entry.path_display === entry.path_display) 
+      && (networkObj.entry !== undefined) && (networkObj.entry.content_hash !== undefined)){
+      oldContentHash = networkObj.entry.content_hash;
+    }
+
+    if (oldContentHash && (oldContentHash !== entry.content_hash) 
+      && (networkObj.entry.path_display === entry.path_display)) {
+
+      console.log(chalkNetwork(MODULE_ID_PREFIX + " | DROPBOX NETWORK CONTENT CHANGE"
+        + " | LAST MOD: " + moment(new Date(entry.client_modified)).format(compactDateTimeFormat)
+        + " | " + entry.path_display
+      ));
+
+      return resolve("stale");
+
+    }
+    
+    if (oldContentHash && (oldContentHash !== entry.content_hash) 
+      && (networkObj.entry.path_display !== entry.path_display)) {
+
+      console.log(chalkNetwork(MODULE_ID_PREFIX + " | DROPBOX NETWORK CONTENT DIFF IN DIFF params.folders"
+        + " | LAST MOD: " + moment(new Date(entry.client_modified)).format(compactDateTimeFormat)
+        // + "\nCUR: " + entry.path_display
+        // + " | " + entry.content_hash
+        // + "\nOLD: " + networkObj.entry.path_display
+        // + " | " + networkObj.entry.content_hash
+      ));
+
+      return resolve("mismatch");
+
+    }
+
+    console.log(chalkLog(MODULE_ID_PREFIX + " | DROPBOX NETWORK CONTENT SAME  "
+      + " | " + entry.name
+      + " | LAST MOD: " + moment(new Date(entry.client_modified)).format(compactDateTimeFormat)
+      // + "\nCUR HASH: " + entry.content_hash
+      // + "\nOLD HASH: " + oldContentHash
+    ));
+
+    resolve("same");
+
+  });
+}
+
+
+function dropboxFileDelete(params){
+
+  return new Promise(function(resolve, reject){
+
+    if (!params || !params.folder || !params.file) {
+      return reject(new Error("params undefined"));
+    }
+
+    const path = params.folder + "/" + params.file;
+
+    dropboxClient.filesDelete({path: path})
+    .then(function(response){
+      debug("dropboxClient filesDelete response\n" + jsonPrint(response));
+      return resolve();
+    })
+    .catch(function(err){
+      if (err.status === 409) {
+        console.log(chalkError(MODULE_ID_PREFIX + " | *** ERROR DROPBOX FILE DELETE"
+          + " | STATUS: " + err.status
+          + " | PATH: " + path
+          + " | DOES NOT EXIST"
+        ));
+      }
+      else if (err.status === 429) {
+        console.log(chalkError(MODULE_ID_PREFIX + " | *** ERROR: XXX NN"
+          + " | STATUS: " + err.status
+          + " | PATH: " + path
+          + " | TOO MANY REQUESTS"
+        ));
+      }
+      else {
+        console.log(chalkError(MODULE_ID_PREFIX + " | *** ERROR: XXX NN"
+          + " | STATUS: " + err.status
+          + " | PATH: " + path
+          + " | SUMMARY: " + err.response.statusText
+          + "\n" + jsonPrint(err)
+        ));
+      }
+      return reject(err);
+    });
+
+  });
+
+}
+
+function networkPass(params) {
+  const pass = ((params.folder === "/config/utility/best/neuralNetworks") && (networkObj.successRate > configuration.globalMinSuccessRate))
+  || ((params.folder === "/config/utility/best/neuralNetworks") && (networkObj.matchRate > configuration.globalMinSuccessRate))
+  || (params.purgeMin && (params.folder !== "/config/utility/best/neuralNetworks") && (networkObj.successRate > configuration.localPurgeMinSuccessRate))
+  || (params.purgeMin && (params.folder !== "/config/utility/best/neuralNetworks") && (networkObj.matchRate > configuration.localPurgeMinSuccessRate))
+  || (!params.purgeMin && (params.folder !== "/config/utility/best/neuralNetworks") && (networkObj.successRate > configuration.localMinSuccessRate))
+  || (!params.purgeMin && (params.folder !== "/config/utility/best/neuralNetworks") && (networkObj.matchRate > configuration.localMinSuccessRate));
+
+  return pass;
 }
 
 function loadBestNetworkDropboxFolders (params){
@@ -1291,492 +1561,194 @@ function loadBestNetworkDropboxFolders (params){
     }
 
     let numNetworksLoaded = 0;
+    let dropboxFoldersEntries;
 
-    console.log(chalkNetwork("TNN | ... LOADING DROPBOX BEST NN FOLDERS"
+    console.log(chalkNetwork(MODULE_ID_PREFIX + " | ... LOADING DROPBOX NETWORK FOLDERS"
       + " | " + params.folders.length + " FOLDERS"
       + "\n" + jsonPrint(params.folders)
     ));
 
-    async.eachSeries(params.folders, async function(folder){
+    try {
+      dropboxFoldersEntries = await listDropboxFolders(params);
+    }
+    catch(err){
+      return reject(err);
+    }
 
-      debug(chalkNetwork("TNN | ... LOADING DROPBOX BEST NN FOLDER | " + folder));
+    async.eachSeries(dropboxFoldersEntries, async function(entry){
 
-      let listDropboxFolderParams = {
-        folder: folder,
-        limit: DROPBOX_LIST_FOLDER_LIMIT
-      };
+      debug("entry\n" + jsonPrint(entry));
 
-      let dropboxFolderResults;
-
-      try{
-        dropboxFolderResults = await listDropboxFolder(listDropboxFolderParams);
-      }
-      catch(err){
-        console.log(chalkError("TNN | ERROR LOADING DROPBOX INPUTS FOLDER | " + listDropboxFolderParams.folder + " | " + err));
-        return err;
-      }
-
-      debug(chalkLog("DROPBOX LIST FOLDER"
-        + " | ENTRIES: " + dropboxFolderResults.entries.length
-        + " | PATH:" + listDropboxFolderParams.folder
-      ));
-
-      if (dropboxFolderResults.entries.length === 0) {
-        console.log(chalkAlert("TNN | DROPBOX BEST NETWORKS FOLDER: NO FILES? " + folder
-          + " | " + dropboxFolderResults.entries.length + " FILES FOUND"
-        ));
+      if (entry.name === bestRuntimeNetworkFileName) {
+        debug(chalkInfo("... SKIPPING LOAD OF " + entry.name));
         return ;
       }
 
-      if (configuration.testMode) {
-        dropboxFolderResults.entries.length = Math.min(dropboxFolderResults.entries.length, TEST_DROPBOX_NN_LOAD);
-        console.log(chalkAlert("TNN | *** TEST MODE *** | LOAD MAX " + TEST_DROPBOX_NN_LOAD + " BEST NETWORKS"));
+      if (!entry.name.endsWith(".json")) {
+        debug(chalkInfo("... SKIPPING LOAD OF " + entry.name));
+        return ;
       }
 
-      console.log(chalkLog("TNN | DROPBOX BEST NETWORKS FOLDER FILES " + folder
-        + " | " + dropboxFolderResults.entries.length + " FILES FOUND"
-      ));
+      const folder = path.dirname(entry.path_display);
 
-      async.eachSeries(dropboxFolderResults.entries, async function(entry){
+      const entryNameArray = entry.name.split(".");
+      const networkId = entryNameArray[0];
 
-        debug("entry\n" + jsonPrint(entry));
-
-        if (entry.name === bestRuntimeNetworkFileName) {
-          debug(chalkInfo("... SKIPPING LOAD OF " + entry.name));
-          return ;
-        }
-
-        if (!entry.name.endsWith(".json")) {
-          debug(chalkInfo("... SKIPPING LOAD OF " + entry.name));
-          return ;
-        }
-
-        const entryNameArray = entry.name.split(".");
-        const networkId = entryNameArray[0];
-
-        debug(chalkInfo("TNN | DROPBOX BEST NETWORK FOUND"
+      if (configuration.verbose) {
+        console.log(chalkInfo(MODULE_ID_PREFIX + " | DROPBOX NETWORK FOUND"
           + " | LAST MOD: " + moment(new Date(entry.client_modified)).format(compactDateTimeFormat)
           + " | " + networkId
+          + " | FOLDER: " + folder
           + " | " + entry.name
         ));
+      }
 
-        if (skipLoadNetworkSet.has(networkId)){
-          debug(chalkInfo("TNN | NN IN SKIP LOAD NN SET ... SKIPPING LOAD OF " + networkId));
-          return ;
+      if (skipLoadNetworkSet.has(networkId)){
+        debug(chalkInfo(MODULE_ID_PREFIX + " | NN IN SKIP LOAD NN SET ... SKIPPING LOAD OF " + networkId));
+        return ;
+      }
+
+      let networkObj;
+
+      try {
+
+        const networkHashResult = await checkNetworkHash({entry: entry});
+
+        if (networkHashResult === "same"){ // no change
+          return;
         }
 
-        let networkObj;
+        networkObj = await loadFileRetry({path: entry.path_lower});
+        networkObj = await validateNetwork({networkId: networkId, networkObj: networkObj});
 
-        if (networkHashMap.has(networkId)){
+        // invalid networkObj
+        if (!networkObj) {  
+          purgeNetwork(networkId);
+          return;
+        }
 
-          let curNetworkObj = networkHashMap.get(networkId);
-          let oldContentHash = false;
-
-          if ((curNetworkObj.entry.path_display === entry.path_display) 
-            && (curNetworkObj.entry !== undefined) && (curNetworkObj.entry.content_hash !== undefined)){
-            oldContentHash = curNetworkObj.entry.content_hash;
+        // load only networks using specific inputIds; maybe delete if not in set
+        if (!configuration.inputsIdArray.includes(networkObj.inputsId)) {
+          if (configuration.deleteNotInInputsIdArray){
+            console.log(chalkInfo(MODULE_ID_PREFIX + " | NN INPUTS NOT IN INPUTS ID ARRAY ... DELETING"
+              + " | NUM INPUTS: " + networkObj.numInputs
+              + " | INPUTS ID: " + networkObj.inputsId
+              + " | " + entry.path_display
+            ));
+            return;
+            await dropboxFileDelete({folder: localBestNetworkFolder, file: entry.name});
           }
 
-          if (oldContentHash && (oldContentHash !== entry.content_hash) 
-            && (curNetworkObj.entry.path_display === entry.path_display)) {
+          console.log(chalkInfo(MODULE_ID_PREFIX + " | NN INPUTS NOT IN INPUTS ID ARRAY ... SKIPPING"
+            + " | NUM INPUTS: " + networkObj.numInputs
+            + " | INPUTS ID: " + networkObj.inputsId
+            + " | " + entry.path_display
+          ));
 
-            console.log(chalkNetwork("TNN | DROPBOX BEST NETWORK CONTENT CHANGE"
-              + " | LAST MOD: " + moment(new Date(entry.client_modified)).format(compactDateTimeFormat)
-              + " | " + entry.path_display
-              // + "\nCUR HASH: " + entry.content_hash
-              // + "\nOLD HASH: " + oldContentHash
-            ));
+          skipLoadNetworkSet.add(networkObj.networkId);
+          return;
+        }
 
-            try {
-              networkObj = await loadFileRetry({folder: folder, file: entry.name});
-            }
-            catch(err) {
-              console.log(chalkError("TNN | DROPBOX BEST NETWORK RELOAD FILE ERROR: " + err));
-              purgeNetwork(networkId);
-              return err;
-            }
+        printNetworkObj(MODULE_ID_PREFIX + " | DROPBOX NETWORK", networkObj);
 
-            if ((networkObj === undefined) || !networkObj) {
-              console.log(chalkError("TNN | DROPBOX BEST NETWORK RELOAD FILE ERROR | JSON UNDEFINED ??? "));
-              purgeNetwork(networkId);
-              return;
-            }
+        // SAVE LOCAL NETWORK TO GLOBAL
+        if (!networkHashMap.has(networkObj.networkId) 
+          && ((networkObj.successRate >= configuration.globalMinSuccessRate) 
+          || (networkObj.overallMatchRate >= configuration.globalMinSuccessRate))) {
 
-            if (networkObj.networkId !== networkId) {
-              console.log(chalkError("*** NETWORK OBJ NETWORK ID MISMATCH | " + networkObj.networkId + " | " + networkId));
-              purgeNetwork(networkId);
-              return (new Error("NETWORK OBJ NETWORK ID MISMATCH"));
-            }
+          networkHashMap.set(networkObj.networkId, { entry: entry, networkObj: networkObj});
 
-            if (networkObj.numInputs === undefined) {
-              console.log(chalkError("*** NETWORK NETWORK numInputs UNDEFINED | " + networkObj.networkId));
-              purgeNetwork(networkId);
-              return (new Error("NETWORK OBJ NETWORK numInputs UNDEFINED"));
-            }
+          printNetworkObj(MODULE_ID_PREFIX + " | SAVE LOCAL NETWORK TO GLOBAL", networkObj);
 
-            if (networkObj.inputsId === undefined) {
-              console.log(chalkError("*** NETWORK OBJ INPUTS ID UNDEFINED | entry.name: " + entry.name 
-                + " | networkObj.networkId: " + networkObj.networkId));
-              console.log(chalkError("*** NETWORK OBJ INPUTS ID UNDEFINED | networkObj:" + jsonPrint(networkObj)));
-              purgeNetwork(networkId);
-              return (new Error("NETWORK OBJ INPUTS ID UNDEFINED"));
-            }
+          saveFileQueue.push({localFlag: false, folder: globalBestNetworkFolder, file: entry.name, obj: networkObj});
+        }
 
-            networkObj = networkDefaults(networkObj);
+        if (networkHashResult === "mismatch"){
+          await dropboxFileDelete({folder: localBestNetworkFolder, file: entry.name});
+        }
 
-            printNetworkObj("TNN | DROPBOX BEST NETWORK", networkObj);
+        // NETWORK PASS SUCCESS or MATCH MIN
+        if (networkPass({folder: folder, purgeMin: params.purgeMin, networkObj: networkObj})) {
 
-            if (!networkHashMap.has(networkObj.networkId) 
-              && ((networkObj.successRate >= configuration.globalMinSuccessRate) 
-              || (networkObj.overallMatchRate >= configuration.globalMinSuccessRate))) {
+          networkHashMap.set(networkObj.networkId, { entry: entry, networkObj: networkObj});
 
-              printNetworkObj("TNN | LOAD GLOBAL BEST NETWORK", networkObj);
+          let inObj = {};
 
-              saveFileQueue.push({localFlag: false, folder: globalBestNetworkFolder, file: entry.name, obj: networkObj});
-            }
+          if (inputsHashMap.has(networkObj.inputsId)) {
+            inObj = inputsHashMap.get(networkObj.inputsId);
+            inObj.inputsObj = networkObj.inputsObj;
+            inObj.entry.content_hash = false;
+            inObj.entry.client_modified = moment();
+          }
+          else {
+            inObj.inputsObj = {};
+            inObj.inputsObj = networkObj.inputsObj;
+            inObj.entry = {};
+            inObj.entry.name = networkObj.inputsId + ".json";
+            inObj.entry.content_hash = false;
+            inObj.entry.client_modified = moment();
+          }
 
-            networkHashMap.set(networkObj.networkId, { entry: entry, networkObj: networkObj});
+          inputsHashMap.set(networkObj.inputsId, inObj);
 
-            let inputsEntry = {};
+          if (inputsNetworksHashMap[networkObj.inputsId] === undefined) {
+            inputsNetworksHashMap[networkObj.inputsId] = new Set();
+          }
 
-            inputsEntry.name = networkObj.inputsId + ".json";
-            inputsEntry.content_hash = false;
-            inputsEntry.client_modified = moment();
+          inputsNetworksHashMap[networkObj.inputsId].add(networkObj.networkId);
 
-            inputsHashMap.set(networkObj.inputsId, {entry: inputsEntry, inputsObj: networkObj.inputsObj});
 
-            if (inputsNetworksHashMap[networkObj.inputsId] === undefined) {
-              inputsNetworksHashMap[networkObj.inputsId] = new Set();
-            }
+          let nnDb;
 
-            inputsNetworksHashMap[networkObj.inputsId].add(networkObj.networkId);
+          try {
+            nnDb = await updateDbNetwork({networkObj: networkObj, addToTestHistory: true});
+          }
+          catch(err){
+            console.log(chalkError("*** ERROR: DB NN FIND ONE ERROR | "+ networkObj.networkId + " | " + err));
+            return err;
+          }
+
+          if (nnDb) {
 
             numNetworksLoaded += 1;
 
-            if (!currentBestNetwork || (networkObj.overallMatchRate > currentBestNetwork.overallMatchRate)) {
-              currentBestNetwork = networkObj;
-              printNetworkObj("TNN | * NEW BEST NN", networkObj);
+            if (!currentBestNetwork || (nnDb.overallMatchRate > currentBestNetwork.overallMatchRate)) {
+              currentBestNetwork = nnDb;
+              printNetworkObj(MODULE_ID_PREFIX + " | *** NEW BEST NN", nnDb);
             }
 
-            return;
-          }
-          else if (oldContentHash && (oldContentHash !== entry.content_hash) 
-            && (curNetworkObj.entry.path_display !== entry.path_display)) {
-
-            console.log(chalkNetwork("TNN | DROPBOX BEST NETWORK CONTENT DIFF IN DIFF params.folders"
-              + " | LAST MOD: " + moment(new Date(entry.client_modified)).format(compactDateTimeFormat)
-              + "\nCUR: " + entry.path_display
-              + " | " + entry.content_hash
-              + "\nOLD: " + curNetworkObj.entry.path_display
-              + " | " + curNetworkObj.entry.content_hash
-            ));
-
-            // LOAD FROM BEST FOLDER AND SAVE LOCALLY
-
-            try {
-              networkObj = await loadFileRetry({folder: globalBestNetworkFolder, file: entry.name});
-            }
-            catch(err) {
-              console.log(chalkError("TNN | DROPBOX BEST NETWORK RELOAD FILE ERROR: " + err));
-              purgeNetwork(networkId);
-              return err;
-            }
-
-            if ((networkObj === undefined) || !networkObj) {
-              console.log(chalkError("TNN | DROPBOX BEST NETWORK RELOAD FILE ERROR | JSON UNDEFINED ??? "));
-              purgeNetwork(networkId);
-              return;
-            }
-
-            if (networkObj.networkId !== networkId) {
-              console.log(chalkError("*** NETWORK OBJ NETWORK ID MISMATCH | " + networkObj.networkId + " | " + networkId));
-              purgeNetwork(networkId);
-              return (new Error("NETWORK OBJ NETWORK ID MISMATCH"));
-            }
-
-            if (networkObj.numInputs === undefined) {
-              console.log(chalkError("*** NETWORK NETWORK numInputs UNDEFINED | " + networkObj.networkId));
-              purgeNetwork(networkId);
-              return (new Error("NETWORK OBJ NETWORK numInputs UNDEFINED"));
-            }
-
-            if (networkObj.inputsId === undefined) {
-              console.log(chalkError("*** NETWORK OBJ INPUTS ID UNDEFINED | entry.name: " + entry.name 
-                + " | networkObj.networkId: " + networkObj.networkId));
-              console.log(chalkError("*** NETWORK OBJ INPUTS ID UNDEFINED | networkObj:" + jsonPrint(networkObj)));
-              purgeNetwork(networkId);
-              return (new Error("NETWORK OBJ INPUTS ID UNDEFINED"));
-            }
-
-            networkObj = networkDefaults(networkObj);
-
-            printNetworkObj("TNN | DROPBOX GLOBAL BEST NETWORK", networkObj);
-
-            networkHashMap.set(networkObj.networkId, { entry: entry, networkObj: networkObj.network});
-
-            dropboxClient.filesDelete({path: localBestNetworkFolder + "/" + entry.name})
-            .then(function(response){
-              debug("dropboxClient filesDelete response\n" + jsonPrint(response));
-              printNetworkObj("TNN | XXX LOCAL NN (GLOBAL EXISTS)", networkObj);
-            })
-            .catch(function(err){
-              if (err.status === 409) {
-                console.log(chalkError("TNN | *** ERROR: XXX NN"
-                  + " | STATUS: " + err.status
-                  + " | PATH: " + localBestNetworkFolder + "/" + entry.name
-                  + " | CONFLICT | DOES NOT EXIST"
-                ));
-              }
-              else if (err.status === 429) {
-                console.log(chalkError("TNN | *** ERROR: XXX NN"
-                  + " | STATUS: " + err.status
-                  + " | PATH: " + localBestNetworkFolder + "/" + entry.name
-                  + " | TOO MANY REQUESTS"
-                ));
-              }
-              else {
-                console.log(chalkError("TNN | *** ERROR: XXX NN"
-                  + " | STATUS: " + err.status
-                  + " | PATH: " + localBestNetworkFolder + "/" + entry.name
-                  + " | SUMMARY: " + err.response.statusText
-                  + "\n" + jsonPrint(err)
-                ));
-              }
-              return err;
-            });
-
-            let inputsEntry = {};
-
-            inputsEntry.name = networkObj.inputsId + ".json";
-            inputsEntry.content_hash = false;
-            inputsEntry.client_modified = moment();
-
-            inputsHashMap.set(networkObj.inputsId, {entry: inputsEntry, inputsObj: networkObj.inputsObj});
-
-            if (inputsNetworksHashMap[networkObj.inputsId] === undefined) {
-              inputsNetworksHashMap[networkObj.inputsId] = new Set();
-            }
-
-            inputsNetworksHashMap[networkObj.inputsId].add(networkObj.networkId);
-
-            let nnDb;
-
-            try{
-              nnDb = await updateDbNetwork({networkObj: networkObj, addToTestHistory: true});
-            }
-            catch(err){
-              console.log(chalkError("*** ERROR: DB NN FIND ONE ERROR | "+ networkObj.networkId + " | " + err));
-              return;
-            }
-
-            if (nnDb) {
-
-              numNetworksLoaded += 1;
-
-              if (!currentBestNetwork || (nnDb.overallMatchRate > currentBestNetwork.overallMatchRate)) {
-                currentBestNetwork = nnDb;
-                printNetworkObj("TNN | *** NEW BEST NN", nnDb);
-              }
-
-              networkHashMap.set(nnDb.networkId, { entry: entry, networkObj: nnDb});
-              printNetworkObj("TNN | +++ NN HASH MAP [" + numNetworksLoaded + " LOADED / " + networkHashMap.size + " IN HM]", nnDb);
-            }
-
-            return;
-          }
-          else {
-            debug(chalkLog("TNN | DROPBOX BEST NETWORK CONTENT SAME  "
-              + " | " + entry.name
-              + " | LAST MOD: " + moment(new Date(entry.client_modified)).format(compactDateTimeFormat)
-              + "\nCUR HASH: " + entry.content_hash
-              + "\nOLD HASH: " + oldContentHash
-            ));
-            return;
+            networkHashMap.set(nnDb.networkId, { entry: entry, networkObj: nnDb});
+            printNetworkObj(MODULE_ID_PREFIX + " | +++ NN HASH MAP [" + numNetworksLoaded + " LOADED / " + networkHashMap.size + " IN HM]", nnDb);
           }
 
-        }
-        else {
-
-          try {
-            networkObj = await loadFileRetry({folder: folder, file: entry.name});
-          }
-          catch(err) {
-            console.log(chalkError("TNN | DROPBOX BEST NETWORK RELOAD FILE ERROR: " + err));
-            purgeNetwork(networkId);
-            return err;
-          }
-          
-          if ((networkObj === undefined) || !networkObj) {
-            console.log(chalkError("TNN | DROPBOX BEST NETWORK LOAD FILE ERROR | JSON UNDEFINED ??? "));
-            purgeNetwork(networkId);
-            return;
+          if (!currentBestNetwork || (networkObj.overallMatchRate > currentBestNetwork.overallMatchRate)) {
+            currentBestNetwork = networkObj;
+            printNetworkObj(MODULE_ID_PREFIX + " | * NEW BEST NN", networkObj);
           }
 
-          networkObj = networkDefaults(networkObj);
-
-          if (!configuration.inputsIdArray.includes(networkObj.inputsId)) {
-
-            if (!configuration.deleteNotInInputsIdArray){
-              console.log(chalkInfo("TNN | NN INPUTS NOT IN INPUTS ID ARRAY ... SKIPPING"
-                + " | NUM INPUTS: " + networkObj.numInputs
-                + " | INPUTS ID: " + networkObj.inputsId
-                + " | " + folder + "/" + entry.name
-              ));
-              skipLoadNetworkSet.add(networkObj.networkId);
-              return;
-            }
-
-            console.log(chalkInfo("TNN | NN INPUTS NOT IN INPUTS ID ARRAY ... DELETING: " 
-              + folder + "/" + entry.name));
-
-            dropboxClient.filesDelete({path: folder + "/" + entry.name})
-              .then(function(response){
-
-                debug("dropboxClient filesDelete response\n" + jsonPrint(response));
-
-                printNetworkObj("TNN | XXX | INPUTS NOT IN INPUTS ID ARRAY", networkObj);
-                return;
-              })
-              .catch(function(err){
-                if (err.status === 429) {
-                  console.log(chalkError("TNN | *** ERROR: XXX NN"
-                    + " | STATUS: " + err.status
-                    + " | PATH: " + folder + "/" + entry.name
-                    + " | TOO MANY REQUESTS"
-                  ));
-                }
-                else {
-                  console.log(chalkError("TNN | *** ERROR: XXX NN"
-                    + " | STATUS: " + err.status
-                    + " | PATH: " + folder + "/" + entry.name
-                    + " | SUMMARY: " + err.response.statusText
-                  ));
-                }
-                return err;
-              });
-
-          }
-          else if (
-               ((folder === "/config/utility/best/neuralNetworks") && (networkObj.successRate > configuration.globalMinSuccessRate))
-            || ((folder === "/config/utility/best/neuralNetworks") && (networkObj.matchRate > configuration.globalMinSuccessRate))
-            || (params.purgeMin && (folder !== "/config/utility/best/neuralNetworks") && (networkObj.successRate > configuration.localPurgeMinSuccessRate))
-            || (params.purgeMin && (folder !== "/config/utility/best/neuralNetworks") && (networkObj.matchRate > configuration.localPurgeMinSuccessRate))
-            || (!params.purgeMin && (folder !== "/config/utility/best/neuralNetworks") && (networkObj.successRate > configuration.localMinSuccessRate))
-            || (!params.purgeMin && (folder !== "/config/utility/best/neuralNetworks") && (networkObj.matchRate > configuration.localMinSuccessRate))) {
-
-
-            networkHashMap.set(networkObj.networkId, { entry: entry, networkObj: networkObj});
-
-            let inObj = {};
-
-            if (inputsHashMap.has(networkObj.inputsId)) {
-              inObj = inputsHashMap.get(networkObj.inputsId);
-              inObj.inputsObj = networkObj.inputsObj;
-              inObj.entry.content_hash = false;
-              inObj.entry.client_modified = moment();
-            }
-            else {
-              inObj.inputsObj = {};
-              inObj.inputsObj = networkObj.inputsObj;
-              inObj.entry = {};
-              inObj.entry.name = networkObj.inputsId + ".json";
-              inObj.entry.content_hash = false;
-              inObj.entry.client_modified = moment();
-            }
-
-            inputsHashMap.set(networkObj.inputsId, inObj);
-
-            if (inputsNetworksHashMap[networkObj.inputsId] === undefined) {
-              inputsNetworksHashMap[networkObj.inputsId] = new Set();
-            }
-
-            inputsNetworksHashMap[networkObj.inputsId].add(networkObj.networkId);
-
-            let nnDb;
-
-            try{
-              nnDb = await updateDbNetwork({networkObj: networkObj, addToTestHistory: true});
-            }
-            catch(err){
-              console.log(chalkError("*** ERROR: DB NN FIND ONE ERROR | "+ networkObj.networkId + " | " + err));
-              return;
-            }
-
-            if (nnDb) {
-
-              numNetworksLoaded += 1;
-
-              if (!currentBestNetwork || (nnDb.overallMatchRate > currentBestNetwork.overallMatchRate)) {
-                currentBestNetwork = nnDb;
-                printNetworkObj("TNN | *** NEW BEST NN", nnDb);
-              }
-
-              if ((folder !== "/config/utility/best/neuralNetworks") 
-                && ((nnDb.successRate >= configuration.globalMinSuccessRate) 
-                || (nnDb.overallMatchRate >= configuration.globalMinSuccessRate))) {
-
-                printNetworkObj("TNN | LOAD GLOBAL BEST NETWORK", nnDb);
-                saveFileQueue.push({localFlag: false, folder: globalBestNetworkFolder, file: entry.name, obj: nnDb});
-              }
-
-              networkHashMap.set(nnDb.networkId, { entry: entry, networkObj: nnDb});
-
-              printNetworkObj("TNN | +++ NN HASH MAP [" + numNetworksLoaded + " LOADED / " + networkHashMap.size + " IN HM]", nnDb);
-            }
-
-            return;
-
-          }
-          else if (((hostname === "google") && (folder === globalBestNetworkFolder))
-            || ((hostname !== "google") && (folder === localBestNetworkFolder)) ) {
-
-            printNetworkObj("TNN | DELETING NN", networkObj);
-
-            purgeNetwork(networkObj.networkId);
-            purgeInputs(networkObj.inputsId);
-
-            dropboxClient.filesDelete({path: folder + "/" + entry.name})
-            .then(function(response){
-
-              debug("dropboxClient filesDelete response\n" + jsonPrint(response));
-
-              printNetworkObj("TNN | XXX NN", networkObj);
-              return;
-
-            })
-            .catch(function(err){
-              if (err.status === 429) {
-                console.log(chalkError("TNN | *** ERROR: XXX NN"
-                  + " | STATUS: " + err.status
-                  + " | PATH: " + folder + "/" + entry.name
-                  + " | TOO MANY REQUESTS"
-                ));
-                return (err);
-              }
-              console.log(chalkError("TNN | *** ERROR: XXX NN"
-                + " | STATUS: " + err.status
-                + " | PATH: " + folder + "/" + entry.name
-                + " | SUMMARY: " + err.response.statusText
-              ));
-              return (err);
-            });
-
-          }
-          else {
-            return;
-          }
+          return;
         }
 
-      }, function(err){
-        if (err) { console.log(chalkError("TNN | *** ERROR LOAD DROPBOX FOLDER: " + folder + " | " + err)); }
-        console.log(chalkLog("TNN | LOAD FOLDER: " + folder));
+        if (((hostname === "google") && (folder === globalBestNetworkFolder))
+          || ((hostname !== "google") && (folder === localBestNetworkFolder)) ) {
+
+          printNetworkObj(MODULE_ID_PREFIX + " | DELETING NN", networkObj);
+
+          purgeNetwork(networkObj.networkId);
+          purgeInputs(networkObj.inputsId);
+          await dropboxFileDelete({folder: localBestNetworkFolder, file: entry.name});
+          return;
+        }
+
+        return;
+      }
+      catch(err){
         return err;
-      });
-
+      }
 
     }, function(err){
       if (err) { 
-        console.log(chalkError("TNN | *** ERROR LOAD DROPBOX FOLDERS: " + err)); 
+        console.log(chalkError(MODULE_ID_PREFIX + " | *** ERROR LOAD DROPBOX FOLDERS: " + err)); 
         return reject(err);
       }
       resolve(numNetworksLoaded);
@@ -1791,7 +1763,7 @@ function loadSeedNeuralNetwork(params){
 
     statsObj.status = "LOAD NEURAL NETWORKS";
 
-    console.log(chalkNetwork("TNN | ... LOADING SEED NETWORK FROM DB\nPARAMS: " + jsonPrint(params)));
+    console.log(chalkNetwork(MODULE_ID_PREFIX + " | ... LOADING SEED NETWORK FROM DB\nPARAMS: " + jsonPrint(params)));
 
     let numNetworksLoaded = 0;
 
@@ -1800,14 +1772,14 @@ function loadSeedNeuralNetwork(params){
     }
     catch(err){
       if (err.status === 429) {
-        console.log(chalkError("TNN | LOAD DROPBOX BEST NETWORK ERR"
+        console.log(chalkError(MODULE_ID_PREFIX + " | LOAD DROPBOX BEST NETWORK ERR"
           + " | FOLDERS: " + params.folders
           + " | STATUS: " + err.status
           + " | TOO MANY REQUESTS"
         ));
       }
       else {
-        console.log(chalkError("TNN | LOAD DROPBOX BEST NETWORK ERR"
+        console.log(chalkError(MODULE_ID_PREFIX + " | LOAD DROPBOX BEST NETWORK ERR"
           + " | FOLDERS: " + params.folders
           + " | STATUS: " + err.status
           + " | ERROR: " + err
@@ -1827,7 +1799,7 @@ function loadSeedNeuralNetwork(params){
           let tableArray = [];
 
           tableArray.push([
-            "TNN | ",
+            MODULE_ID_PREFIX + " | ",
             "TC",
             "TCH",
             "OAMR %",
@@ -1854,7 +1826,7 @@ function loadSeedNeuralNetwork(params){
               }
 
               tableArray.push([
-                "TNN | ",
+                MODULE_ID_PREFIX + " | ",
                 nn.testCycles,
                 nn.testCycleHistory.length,
                 nn.overallMatchRate.toFixed(2),
@@ -1874,10 +1846,10 @@ function loadSeedNeuralNetwork(params){
 
           const t = table(tableArray, { align: ["l", "r", "r", "r", "r", "r", "r", "l", "l"] });
 
-          console.log("TNN | ============================================================================================================================================");
-          console.log(chalkLog("TNN | ... NO BEST NETWORKS CHANGED / LOADED | NNs IN HM: " + sortedBestNetworks.sortedKeys.length));
+          console.log(MODULE_ID_PREFIX + " | ============================================================================================================================================");
+          console.log(chalkLog(MODULE_ID_PREFIX + " | ... NO BEST NETWORKS CHANGED / LOADED | NNs IN HM: " + sortedBestNetworks.sortedKeys.length));
           if (configuration.verbose) { console.log(t); }
-          console.log("TNN | ============================================================================================================================================");
+          console.log(MODULE_ID_PREFIX + " | ============================================================================================================================================");
 
         })
         .catch(function(err){
@@ -1896,7 +1868,7 @@ function loadSeedNeuralNetwork(params){
       let tableArray = [];
 
       tableArray.push([
-        "TNN | ",
+        MODULE_ID_PREFIX + " | ",
         "TCs",
         "TCH",
         "OAMR %",
@@ -1925,7 +1897,7 @@ function loadSeedNeuralNetwork(params){
           }
 
           tableArray.push([
-            "TNN | ",
+            MODULE_ID_PREFIX + " | ",
             nn.testCycles,
             nn.testCycleHistory.length,
             nn.overallMatchRate.toFixed(2),
@@ -1946,10 +1918,10 @@ function loadSeedNeuralNetwork(params){
 
         const t = table(tableArray, { align: ["l", "r", "r", "r", "r", "r", "r", "l", "l"] });
 
-        console.log("TNN | ============================================================================================================================================");
-        console.log(chalkInfo("TNN | +++ BEST NETWORKS CHANGED / LOADED | NNs IN HM: " + sortedBestNetworks.sortedKeys.length));
+        console.log(MODULE_ID_PREFIX + " | ============================================================================================================================================");
+        console.log(chalkInfo(MODULE_ID_PREFIX + " | +++ BEST NETWORKS CHANGED / LOADED | NNs IN HM: " + sortedBestNetworks.sortedKeys.length));
         console.log(t);
-        console.log("TNN | ============================================================================================================================================");
+        console.log(MODULE_ID_PREFIX + " | ============================================================================================================================================");
 
       });
     })
@@ -1982,20 +1954,20 @@ function updateCategorizedUsers(params){
 
     if (configuration.testMode) {
       categorizedNodeIds.length = TEST_MODE_LENGTH;
-      console.log(chalkAlert("TNN | *** TEST MODE *** | CATEGORIZE MAX " + TEST_MODE_LENGTH + " USERS"));
+      console.log(chalkAlert(MODULE_ID_PREFIX + " | *** TEST MODE *** | CATEGORIZE MAX " + TEST_MODE_LENGTH + " USERS"));
     }
 
     let maxMagnitude = -Infinity;
     let minScore = Infinity;
     let maxScore = -Infinity;
 
-    console.log(chalkBlue("TNN | UPDATE CATEGORIZED USERS: " + categorizedNodeIds.length));
+    console.log(chalkBlue(MODULE_ID_PREFIX + " | UPDATE CATEGORIZED USERS: " + categorizedNodeIds.length));
 
     if (configuration.normalization) {
       maxMagnitude = configuration.normalization.magnitude.max;
       minScore = configuration.normalization.score.min;
       maxScore = configuration.normalization.score.max;
-      console.log(chalkInfo("TNN | SET NORMALIZATION\n" + jsonPrint(configuration.normalization)));
+      console.log(chalkInfo(MODULE_ID_PREFIX + " | SET NORMALIZATION\n" + jsonPrint(configuration.normalization)));
     }
 
     statsObj.users.updatedCategorized = 0;
@@ -2016,26 +1988,26 @@ function updateCategorizedUsers(params){
         userIndex += 1;
 
         if (err){
-          console.error(chalkError("TNN | *** UPDATE CATEGORIZED USERS: USER FIND ONE ERROR: " + err));
+          console.error(chalkError(MODULE_ID_PREFIX + " | *** UPDATE CATEGORIZED USERS: USER FIND ONE ERROR: " + err));
           statsObj.errors.users.findOne += 1;
           return cb0(err) ;
         }
 
         if (!user){
-          console.log(chalkLog("TNN | *** UPDATE CATEGORIZED USERS: USER NOT FOUND: NID: " + nodeId));
+          console.log(chalkLog(MODULE_ID_PREFIX + " | *** UPDATE CATEGORIZED USERS: USER NOT FOUND: NID: " + nodeId));
           statsObj.users.notFound += 1;
           statsObj.users.notCategorized += 1;
           return cb0() ;
         }
 
         if (user.screenName === undefined) {
-          console.log(chalkError("TNN | *** UPDATE CATEGORIZED USERS: USER SCREENNAME UNDEFINED\n" + jsonPrint(user)));
+          console.log(chalkError(MODULE_ID_PREFIX + " | *** UPDATE CATEGORIZED USERS: USER SCREENNAME UNDEFINED\n" + jsonPrint(user)));
           statsObj.users.screenNameUndefined += 1;
           statsObj.users.notCategorized += 1;
           return cb0("USER SCREENNAME UNDEFINED", null) ;
         }
 
-        debug(chalkInfo("TNN | UPDATE CL USR <DB"
+        debug(chalkInfo(MODULE_ID_PREFIX + " | UPDATE CL USR <DB"
           + " [" + userIndex + "/" + categorizedNodeIds.length + "]"
           + " | " + user.nodeId
           + " | @" + user.screenName
@@ -2140,7 +2112,7 @@ function updateCategorizedUsers(params){
               + " USERS CATEGORIZED"
             ));
 
-            console.log(chalkLog("TNN | CL U HIST"
+            console.log(chalkLog(MODULE_ID_PREFIX + " | CL U HIST"
               + " | L: " + categorizedUserHistogram.left 
               + " | R: " + categorizedUserHistogram.right
               + " | N: " + categorizedUserHistogram.neutral
@@ -2298,11 +2270,11 @@ function updateCategorizedUsers(params){
                   else {
                     statsObj.users.imageParse.parsed += 1;
                     user.bannerImageAnalyzed = user.bannerImageUrl;
-                    debug(chalkInfo("TNN | PARSE BANNER IMAGE"
+                    debug(chalkInfo(MODULE_ID_PREFIX + " | PARSE BANNER IMAGE"
                       + " | RESULTS\n" + jsonPrint(results)
                     ));
                     if (results.text !== undefined) {
-                      console.log(chalkInfo("TNN | +++ BANNER ANALYZED: @" + user.screenName + " | " + classText + " | " + results.text));
+                      console.log(chalkInfo(MODULE_ID_PREFIX + " | +++ BANNER ANALYZED: @" + user.screenName + " | " + classText + " | " + results.text));
                       text = text + "\n" + results.text;
                     }
 
@@ -2396,7 +2368,7 @@ function updateCategorizedUsers(params){
           statsObj.users.notCategorized += 1;
 
           if (statsObj.users.notCategorized % 10 === 0){
-            console.log(chalkLog("TNN | " + statsObj.users.notCategorized + " USERS NOT CATEGORIZED"));
+            console.log(chalkLog(MODULE_ID_PREFIX + " | " + statsObj.users.notCategorized + " USERS NOT CATEGORIZED"));
           }
 
           debug(chalkBlue("TNN *** USR DB NOT CL"
@@ -2430,7 +2402,7 @@ function updateCategorizedUsers(params){
               + " USERS CATEGORIZED"
             ));
 
-            console.log(chalkLog("TNN | CL U HIST"
+            console.log(chalkLog(MODULE_ID_PREFIX + " | CL U HIST"
               + " | L: " + categorizedUserHistogram.left
               + " | R: " + categorizedUserHistogram.right
               + " | N: " + categorizedUserHistogram.neutral
@@ -2457,10 +2429,10 @@ function updateCategorizedUsers(params){
 
       if (err) {
         if (err === "INTERRUPT") {
-          console.log(chalkAlert("TNN | INTERRUPT"));
+          console.log(chalkAlert(MODULE_ID_PREFIX + " | INTERRUPT"));
         }
         else {
-          console.log(chalkError("TNN | UPDATE CATEGORIZED USERS ERROR: " + err));
+          console.log(chalkError(MODULE_ID_PREFIX + " | UPDATE CATEGORIZED USERS ERROR: " + err));
         }
       }
 
@@ -2484,7 +2456,7 @@ function updateCategorizedUsers(params){
         + " (" + categorizedUsersPercent.toFixed(1) + "%)" + " USERS CATEGORIZED"
       ));
 
-      console.log(chalkBlueBold("TNN | CL U HIST"
+      console.log(chalkBlueBold(MODULE_ID_PREFIX + " | CL U HIST"
         + " | L: " + categorizedUserHistogram.left
         + " | R: " + categorizedUserHistogram.right
         + " | N: " + categorizedUserHistogram.neutral
@@ -2498,7 +2470,7 @@ function updateCategorizedUsers(params){
       statsObj.normalization.score.min = minScore;
       statsObj.normalization.score.max = maxScore;
 
-      console.log(chalkLog("TNN | CL U HIST | NORMALIZATION"
+      console.log(chalkLog(MODULE_ID_PREFIX + " | CL U HIST | NORMALIZATION"
         + " | MAG " + statsObj.normalization.magnitude.min.toFixed(2) + " MIN / " + statsObj.normalization.magnitude.max.toFixed(2) + " MAX"
         + " | SCORE " + statsObj.normalization.score.min.toFixed(2) + " MIN / " + statsObj.normalization.score.max.toFixed(2) + " MAX"
       ));
@@ -2576,7 +2548,7 @@ function convertDatum(params, inputs, datum, callback){
 
 function unzipUsersToArray(params){
 
-  console.log(chalkBlue("TNN | UNZIP USERS TO TRAINING SET: " + params.path));
+  console.log(chalkBlue(MODULE_ID_PREFIX + " | UNZIP USERS TO TRAINING SET: " + params.path));
 
   return new Promise(async function(resolve, reject) {
 
@@ -2589,21 +2561,21 @@ function unzipUsersToArray(params){
         }
 
         zipfile.on("error", async function(err) {
-          console.log(chalkError("TNN | *** UNZIP ERROR: " + err));
+          console.log(chalkError(MODULE_ID_PREFIX + " | *** UNZIP ERROR: " + err));
           reject(err);
         });
 
         zipfile.on("close", async function() {
-          console.log(chalkLog("TNN | UNZIP CLOSE"));
+          console.log(chalkLog(MODULE_ID_PREFIX + " | UNZIP CLOSE"));
           resolve(true);
         });
 
         zipfile.on("end", async function() {
-          console.log(chalkLog("TNN | UNZIP END"));
+          console.log(chalkLog(MODULE_ID_PREFIX + " | UNZIP END"));
           resolve(true);
         });
 
-        let hmHit = "TNN | --> UNZIP";
+        let hmHit = MODULE_ID_PREFIX + " | --> UNZIP";
 
         zipfile.on("entry", function(entry) {
           
@@ -2631,7 +2603,7 @@ function unzipUsersToArray(params){
 
                   if (entry.fileName.endsWith("maxInputHashMap.json")) {
 
-                    console.log(chalkLog("TNN | UNZIPPED MAX INPUT"));
+                    console.log(chalkLog(MODULE_ID_PREFIX + " | UNZIPPED MAX INPUT"));
 
                     userMaxInputHashMap = fileObj.maxInputHashMap;
                   }
@@ -2639,10 +2611,10 @@ function unzipUsersToArray(params){
 
                     statsObj.users.unzipped += 1;
 
-                    hmHit = "TNN | --> UNZIP";
+                    hmHit = MODULE_ID_PREFIX + " | --> UNZIP";
 
                     if (trainingSetUsersHashMap.has(fileObj.userId)) {
-                      hmHit = "TNN | **> UNZIP";
+                      hmHit = MODULE_ID_PREFIX + " | **> UNZIP";
                       statsObj.users.zipHashMapHit += 1;
                     }
                     else {
@@ -2678,7 +2650,7 @@ function unzipUsersToArray(params){
                   zipfile.readEntry();
                 }
                 catch (err){
-                  console.log(chalkError("TNN | *** UNZIP READ STREAM ERROR: " + err));
+                  console.log(chalkError(MODULE_ID_PREFIX + " | *** UNZIP READ STREAM ERROR: " + err));
                   return reject(err);
                 }
               });
@@ -2689,12 +2661,12 @@ function unzipUsersToArray(params){
               });
 
               readStream.on("close", async function(){
-                console.log(chalkInfo("TNN | UNZIP STREAM CLOSED | TRAINING SET USERS HM SIZE: " + trainingSetUsersHashMap.size));
+                console.log(chalkInfo(MODULE_ID_PREFIX + " | UNZIP STREAM CLOSED | TRAINING SET USERS HM SIZE: " + trainingSetUsersHashMap.size));
                 resolve();
               });
 
               readStream.on("error",async function(err){
-                console.log(chalkError("TNN | *** UNZIP READ STREAM ERROR EVENT: " + err));
+                console.log(chalkError(MODULE_ID_PREFIX + " | *** UNZIP READ STREAM ERROR EVENT: " + err));
                 reject(err);
               });
             });
@@ -2707,7 +2679,7 @@ function unzipUsersToArray(params){
 
     }
     catch(err){
-      console.error(chalkError("TNN | *** USER ARCHIVE READ ERROR: " + err));
+      console.error(chalkError(MODULE_ID_PREFIX + " | *** USER ARCHIVE READ ERROR: " + err));
       return reject(new Error("USER ARCHIVE READ ERROR"));
     }
 
@@ -2716,7 +2688,7 @@ function unzipUsersToArray(params){
 
 function updateTrainingSet(params){
 
-  console.log(chalkBlue("TNN | UPDATE TRAINING SET"));
+  console.log(chalkBlue(MODULE_ID_PREFIX + " | UPDATE TRAINING SET"));
 
   return new Promise(function(resolve, reject) {
 
@@ -2724,11 +2696,11 @@ function updateTrainingSet(params){
 
     if (trainingSetHashMap.has(configuration.globalTrainingSetId)) {
       tObj = trainingSetHashMap.get(configuration.globalTrainingSetId);
-      console.log(chalkInfo("TNN | +++ TRAINING SET HM HIT: " + tObj.trainingSetObj.trainingSetId));
+      console.log(chalkInfo(MODULE_ID_PREFIX + " | +++ TRAINING SET HM HIT: " + tObj.trainingSetObj.trainingSetId));
     }
     else {
 
-      console.log(chalkInfo("TNN | --- TRAINING SET HM MISS: " + configuration.globalTrainingSetId + " ... CREATING..."));
+      console.log(chalkInfo(MODULE_ID_PREFIX + " | --- TRAINING SET HM MISS: " + configuration.globalTrainingSetId + " ... CREATING..."));
 
       tObj.trainingSetObj = {};
 
@@ -2765,7 +2737,7 @@ function updateTrainingSet(params){
 
     tObj.trainingSetObj.maxInputHashMap = userMaxInputHashMap;
 
-    console.log(chalkLog("TNN | TRAINING SET"
+    console.log(chalkLog(MODULE_ID_PREFIX + " | TRAINING SET"
       + " | SIZE: " + tObj.trainingSetObj.trainingSet.meta.setSize
       + " | TEST SIZE: " + tObj.trainingSetObj.testSet.meta.setSize
     ));
@@ -2787,7 +2759,7 @@ function fileSize(params){
 
     let interval = params.interval || ONE_MINUTE;
 
-    console.log(chalkLog("TNN | WAIT FILE SIZE: " + params.path + " | EXPECTED SIZE: " + params.size));
+    console.log(chalkLog(MODULE_ID_PREFIX + " | WAIT FILE SIZE: " + params.path + " | EXPECTED SIZE: " + params.size));
 
     let stats;
     let size;
@@ -2799,7 +2771,7 @@ function fileSize(params){
       prevSize = stats.size;
 
       if (params.size && (size === params.size)) {
-        console.log(chalkInfo("TNN | FILE SIZE EXPECTED | " + getTimeStamp()
+        console.log(chalkInfo(MODULE_ID_PREFIX + " | FILE SIZE EXPECTED | " + getTimeStamp()
           + " | CUR: " + size
           + " | EXPECTED: " + params.size
         ));
@@ -2813,7 +2785,7 @@ function fileSize(params){
 
     sizeInterval = setInterval(async function(){
 
-      console.log(chalkInfo("TNN | FILE SIZE | " + getTimeStamp()
+      console.log(chalkInfo(MODULE_ID_PREFIX + " | FILE SIZE | " + getTimeStamp()
         + " | CUR: " + size
         + " | PREV: " + prevSize
         + " | EXPECTED: " + params.size
@@ -2832,7 +2804,7 @@ function fileSize(params){
 
           clearInterval(sizeInterval);
 
-          console.log(chalkInfo("TNN | FILE SIZE STABLE | " + getTimeStamp()
+          console.log(chalkInfo(MODULE_ID_PREFIX + " | FILE SIZE STABLE | " + getTimeStamp()
             + " | CUR: " + size
             + " | PREV: " + prevSize
             + " | EXPECTED: " + params.size
@@ -2852,7 +2824,7 @@ function loadUsersArchive(params){
 
   return new Promise(async function(resolve, reject){
 
-    console.log(chalkLog("TNN | LOADING USERS ARCHIVE | " + getTimeStamp() + " | " + params.path));
+    console.log(chalkLog(MODULE_ID_PREFIX + " | LOADING USERS ARCHIVE | " + getTimeStamp() + " | " + params.path));
 
     try {
       // const fileOpen = await checkFileOpen(params);
@@ -2862,7 +2834,7 @@ function loadUsersArchive(params){
       resolve();
     }
     catch(err){
-      console.log(chalkError("TNN | *** LOAD USERS ARCHIVE ERROR | " + getTimeStamp() + " | " + err));
+      console.log(chalkError(MODULE_ID_PREFIX + " | *** LOAD USERS ARCHIVE ERROR | " + getTimeStamp() + " | " + err));
       reject(err);
     }
 
@@ -2877,21 +2849,21 @@ let watchOptions = {
 
 function initWatch(params){
 
-  console.log(chalkLog("TNN | INIT WATCH\n" + jsonPrint(params)));
+  console.log(chalkLog(MODULE_ID_PREFIX + " | INIT WATCH\n" + jsonPrint(params)));
 
   watch.createMonitor(params.rootFolder, watchOptions, function (monitor) {
 
     const loadArchive = async function (f, stat) {
 
-      console.log(chalkInfo("TNN | +++ FILE CREATED | " + getTimeStamp() + " | " + f));
+      console.log(chalkInfo(MODULE_ID_PREFIX + " | +++ FILE CREATED | " + getTimeStamp() + " | " + f));
 
       if (f.endsWith(configuration.defaultUserArchiveFlagFile)){
 
-        console.log(chalkLog("TNN | LOAD USER ARCHIVE FLAG FILE: " + params.rootFolder + "/" + configuration.defaultUserArchiveFlagFile));
+        console.log(chalkLog(MODULE_ID_PREFIX + " | LOAD USER ARCHIVE FLAG FILE: " + params.rootFolder + "/" + configuration.defaultUserArchiveFlagFile));
 
         loadFileRetry({folder: configuration.defaultTrainingSetsFolder, file: configuration.defaultUserArchiveFlagFile}, async function(err, archiveFlagObj){
 
-          console.log(chalkLog("TNN | USER ARCHIVE FLAG FILE | PATH: " + archiveFlagObj.path + " | SIZE: " + archiveFlagObj.size));
+          console.log(chalkLog(MODULE_ID_PREFIX + " | USER ARCHIVE FLAG FILE | PATH: " + archiveFlagObj.path + " | SIZE: " + archiveFlagObj.size));
 
           // const fullLocalPath = (hostname === "google") ? "/home/tc/Dropbox/Apps/wordAssociation" + archiveFlagObj.path : "/Users/tc/Dropbox/Apps/wordAssociation" + archiveFlagObj.path;
 
@@ -2905,7 +2877,7 @@ function initWatch(params){
           catch(err){
             // statsObj.loadUsersArchiveBusy = false;
             // statsObj.trainingSetReady = false;
-            console.log(chalkError("TNN | *** WATCH CHANGE ERROR | " + getTimeStamp() + " | " + err));
+            console.log(chalkError(MODULE_ID_PREFIX + " | *** WATCH CHANGE ERROR | " + getTimeStamp() + " | " + err));
           }
 
         });
@@ -2918,7 +2890,7 @@ function initWatch(params){
     monitor.on("changed", loadArchive);
 
     monitor.on("removed", function (f, stat) {
-      console.log(chalkInfo("TNN | XXX FILE DELETED | " + getTimeStamp() + " | " + f));
+      console.log(chalkInfo(MODULE_ID_PREFIX + " | XXX FILE DELETED | " + getTimeStamp() + " | " + f));
     });
 
     // monitor.stop(); // Stop watching
@@ -2961,7 +2933,7 @@ function initCategorizedUserHashmap(params){
         userServerController.findCategorizedUsersCursor(p, function(err, results){
 
           if (err) {
-            console.error(chalkError("TNN | ERROR: initCategorizedUserHashmap: " + err));
+            console.error(chalkError(MODULE_ID_PREFIX + " | ERROR: initCategorizedUserHashmap: " + err));
             cb(err);
           }
           else if (results) {
@@ -2981,7 +2953,7 @@ function initCategorizedUserHashmap(params){
 
             if (configuration.verbose || (totalCount % 1000 === 0)) {
 
-              console.log(chalkLog("TNN | LOADING CATEGORIZED USERS FROM DB"
+              console.log(chalkLog(MODULE_ID_PREFIX + " | LOADING CATEGORIZED USERS FROM DB"
                 + " | TOTAL CATEGORIZED: " + totalCount
                 + " | LIMIT: " + p.limit
                 + " | SKIP: " + p.skip
@@ -3002,7 +2974,7 @@ function initCategorizedUserHashmap(params){
 
             more = false;
 
-            console.log(chalkLog("TNN | LOADING CATEGORIZED USERS FROM DB"
+            console.log(chalkLog(MODULE_ID_PREFIX + " | LOADING CATEGORIZED USERS FROM DB"
               + " | TOTAL CATEGORIZED: " + totalCount
               + " | LIMIT: " + p.limit
               + " | SKIP: " + p.skip
@@ -3021,7 +2993,7 @@ function initCategorizedUserHashmap(params){
 
       function(err){
         if (err) {
-          console.log(chalkError("TNN | INIT CATEGORIZED USER HASHMAP ERROR: " + err + "\n" + jsonPrint(err)));
+          console.log(chalkError(MODULE_ID_PREFIX + " | INIT CATEGORIZED USER HASHMAP ERROR: " + err + "\n" + jsonPrint(err)));
           return reject(err);
         }
         resolve();
@@ -3055,9 +3027,9 @@ async function generateGlobalTrainingTestSet (userHashMap, maxInputHashMap, call
 
   statsObj.status = "GENERATE TRAINING SET";
 
-  console.log(chalkBlueBold("TNN | ==================================================================="));
-  console.log(chalkBlueBold("TNN | GENERATE TRAINING SET | " + trainingSetUsersHashMap.size + " USERS | " + getTimeStamp()));
-  console.log(chalkBlueBold("TNN | ==================================================================="));
+  console.log(chalkBlueBold(MODULE_ID_PREFIX + " | ==================================================================="));
+  console.log(chalkBlueBold(MODULE_ID_PREFIX + " | GENERATE TRAINING SET | " + trainingSetUsersHashMap.size + " USERS | " + getTimeStamp()));
+  console.log(chalkBlueBold(MODULE_ID_PREFIX + " | ==================================================================="));
 
   try {
 
@@ -3087,13 +3059,13 @@ async function generateGlobalTrainingTestSet (userHashMap, maxInputHashMap, call
         clearInterval(waitArchiveDoneInterval);
 
         setTimeout(async function(){
-          console.log(chalkBlueBold("TNN | ARCHIVE | DONE"));
+          console.log(chalkBlueBold(MODULE_ID_PREFIX + " | ARCHIVE | DONE"));
           callback();
         }, 30*ONE_SECOND);
 
       }
       else {
-        console.log(chalkLog("TNN | ARCHIVE | WAIT DONE"
+        console.log(chalkLog(MODULE_ID_PREFIX + " | ARCHIVE | WAIT DONE"
           + " | ARCHIVE OPEN: " + statsObj.archiveOpen
         ));
       }
@@ -3102,7 +3074,7 @@ async function generateGlobalTrainingTestSet (userHashMap, maxInputHashMap, call
 
   }
   catch(err){
-    console.log(chalkLog("TNN | *** ARCHIVE ERROR: " + err));
+    console.log(chalkLog(MODULE_ID_PREFIX + " | *** ARCHIVE ERROR: " + err));
     throw err;
   }
 }
@@ -3116,7 +3088,7 @@ function generateRandomEvolveConfig (params){
     let config = {};
     config.networkCreateMode = "evolve";
 
-    debug(chalkLog("TNN | NETWORK CREATE MODE: " + config.networkCreateMode));
+    debug(chalkLog(MODULE_ID_PREFIX + " | NETWORK CREATE MODE: " + config.networkCreateMode));
 
     let sortedBestNetworks;
     try{
@@ -3125,13 +3097,13 @@ function generateRandomEvolveConfig (params){
 
       if (configuration.verbose) {
         console.log(chalkLog("\nTNN | BEST NETWORKS\nTNN | --------------------------------------------------------"));
-        console.log(chalkLog("TNN | NNs IN HM: " + sortedBestNetworks.sortedKeys.length));
+        console.log(chalkLog(MODULE_ID_PREFIX + " | NNs IN HM: " + sortedBestNetworks.sortedKeys.length));
         sortedBestNetworks.sortedKeys.forEach(function(networkId){
           const nn = networkHashMap.get(networkId).networkObj;
           printNetworkObj("TNN", nn);
         });
       }
-      console.log(chalkLog("TNN | --------------------------------------------------------"));
+      console.log(chalkLog(MODULE_ID_PREFIX + " | --------------------------------------------------------"));
     }
     catch(err){
       console.trace(chalkError("generateRandomEvolveConfig SORTER ERROR: " + err));
@@ -3148,7 +3120,7 @@ function generateRandomEvolveConfig (params){
 
       betterChildSeedNetworkIdSet.delete(config.seedNetworkId);
 
-      console.log(chalkBlueBold("TNN | USING BETTER CHILD SEED"
+      console.log(chalkBlueBold(MODULE_ID_PREFIX + " | USING BETTER CHILD SEED"
         + " [" + betterChildSeedNetworkIdSet.size + "] SEED: " + config.seedNetworkId
       ));
     }
@@ -3162,7 +3134,7 @@ function generateRandomEvolveConfig (params){
     const inputsHashMapKeys = inputsHashMap.keys();
 
     console.log(chalkLog(MODULE_ID_PREFIX + " | inputsHashMapKeys: " + inputsHashMapKeys.length));
-    debug(chalkLog("TNN | inputsHashMapKeys: " + inputsHashMapKeys));
+    debug(chalkLog(MODULE_ID_PREFIX + " | inputsHashMapKeys: " + inputsHashMapKeys));
 
     config.seedInputsId = randomItem(inputsHashMapKeys);
 
@@ -3182,7 +3154,7 @@ function generateRandomEvolveConfig (params){
 
     if (configuration.enableSeedNetwork && config.seedNetworkId && networkHashMap.has(config.seedNetworkId)) {
 
-      console.log("TNN | SEED NETWORK | " + config.seedNetworkId);
+      console.log(MODULE_ID_PREFIX + " | SEED NETWORK | " + config.seedNetworkId);
 
       // networkHashMap entry --> bnhmObj = { entry: entry, networkObj: networkObj }
       const networkObj = networkHashMap.get(config.seedNetworkId).networkObj;
@@ -3193,10 +3165,10 @@ function generateRandomEvolveConfig (params){
       config.inputsId = networkObj.inputsId;
       config.inputsObj = {};
       config.inputsObj = networkObj.inputsObj;
-      console.log("TNN | SEED INPUTS | " + networkObj.inputsId);
+      console.log(MODULE_ID_PREFIX + " | SEED INPUTS | " + networkObj.inputsId);
 
       if (configuration.randomizeSeedOptions) {
-        console.log(chalkLog("TNN | RANDOMIZE SEED NETWORK OPTIONS | " + config.seedNetworkId));
+        console.log(chalkLog(MODULE_ID_PREFIX + " | RANDOMIZE SEED NETWORK OPTIONS | " + config.seedNetworkId));
         config.cost = randomItem([config.cost, networkObj.evolve.options.cost]);
         config.equal = randomItem([config.equal, networkObj.evolve.options.equal]);
         config.error = randomItem([config.error, networkObj.evolve.options.error]);
@@ -3206,7 +3178,7 @@ function generateRandomEvolveConfig (params){
         config.elitism = randomItem([config.elitism, networkObj.evolve.options.elitism]);
       }
       else {
-        console.log(chalkLog("TNN | USE SEED NETWORK OPTIONS | " + config.seedNetworkId));
+        console.log(chalkLog(MODULE_ID_PREFIX + " | USE SEED NETWORK OPTIONS | " + config.seedNetworkId));
         config.cost = networkObj.evolve.options.cost;
         config.equal = networkObj.evolve.options.equal;
         config.error = networkObj.evolve.options.error;
@@ -3222,7 +3194,7 @@ function generateRandomEvolveConfig (params){
         config.inputsObj = inputsHashMap.get(config.seedInputsId).inputsObj;
         config.architecture = "random";
         config.inputsId = config.seedInputsId;
-        debug("TNN | RANDOM ARCH | SEED INPUTS: " + config.seedInputsId);
+        debug(MODULE_ID_PREFIX + " | RANDOM ARCH | SEED INPUTS: " + config.seedInputsId);
       }
       else {
         console.log("TNN *** ERROR *** | RANDOM ARCH | seedInputsId " + config.seedInputsId + " NOT IN inputsHashMap");
@@ -3232,16 +3204,16 @@ function generateRandomEvolveConfig (params){
 
     let tObj = {};
 
-    console.log(chalkLog("TNN | LOAD GLOBAL TRAINING SET FROM HASHMAP: " + configuration.globalTrainingSetId));
+    console.log(chalkLog(MODULE_ID_PREFIX + " | LOAD GLOBAL TRAINING SET FROM HASHMAP: " + configuration.globalTrainingSetId));
 
     if (!trainingSetHashMap.has(configuration.globalTrainingSetId)) {
-      console.log(chalkError("TNN | *** TRAINING SET NOT IN HASHMAP: " + configuration.globalTrainingSetId));
+      console.log(chalkError(MODULE_ID_PREFIX + " | *** TRAINING SET NOT IN HASHMAP: " + configuration.globalTrainingSetId));
       return reject(new Error("TRAINING SET NOT IN HASHMAP: " + configuration.globalTrainingSetId));
     }
 
     tObj = trainingSetHashMap.get(configuration.globalTrainingSetId);
 
-    console.log(chalkLog("TNN | USING TRAINING SET: " + tObj.trainingSetObj.trainingSetId));
+    console.log(chalkLog(MODULE_ID_PREFIX + " | USING TRAINING SET: " + tObj.trainingSetObj.trainingSetId));
 
     if (configuration.testMode) {
       tObj.trainingSetObj.trainingSet.meta.setSize = 500;
@@ -3280,7 +3252,7 @@ function initNetworkCreate(params){
 
     statsObj.status = "INIT NETWORK CREATE";
 
-    console.log(chalkLog("TNN | INIT NETWORK CREATE"
+    console.log(chalkLog(MODULE_ID_PREFIX + " | INIT NETWORK CREATE"
       + " | CHILD " + childId
       + " | NNC ID: " + networkId
     ));
@@ -3316,7 +3288,7 @@ function initNetworkCreate(params){
           console.log(chalkBlue("\nTNN | START NETWORK EVOLVE"));
 
           console.log(chalkBlue(
-               "TNN | NN ID: " + networkId
+               MODULE_ID_PREFIX + " | NN ID: " + networkId
             + "\nTNN | ARCHITECTURE:        " + messageObj.architecture
             + "\nTNN | COST:                " + messageObj.cost
             + "\nTNN | TRAINING SET LENGTH: " + messageObj.trainingSet.meta.setSize
@@ -3328,13 +3300,13 @@ function initNetworkCreate(params){
           ));
 
           if (messageObj.seedNetworkId) {
-            console.log(chalkBlue("TNN | SEED:                " + messageObj.seedNetworkId 
+            console.log(chalkBlue(MODULE_ID_PREFIX + " | SEED:                " + messageObj.seedNetworkId 
               + " | SR: " + messageObj.seedNetworkRes.toFixed(2) + "%"
             ));
-            console.log(chalkBlue("TNN | BETTER CHILD SEED:   " + messageObj.isBetterChildSeed));
+            console.log(chalkBlue(MODULE_ID_PREFIX + " | BETTER CHILD SEED:   " + messageObj.isBetterChildSeed));
           }
           else {
-            console.log(chalkBlue("TNN | SEED:                ----"));
+            console.log(chalkBlue(MODULE_ID_PREFIX + " | SEED:                ----"));
           }
 
           resultsHashmap[messageObj.testRunId] = {};
@@ -3372,7 +3344,7 @@ function initNetworkCreate(params){
         break;
 
         default:
-          console.log(chalkError("TNN | UNKNOWN NETWORK CREATE MODE: " + configuration.networkCreateMode));
+          console.log(chalkError(MODULE_ID_PREFIX + " | UNKNOWN NETWORK CREATE MODE: " + configuration.networkCreateMode));
           return reject(new Error("UNKNOWN NETWORK CREATE MODE: " + configuration.networkCreateMode));
       }
     }
@@ -3390,13 +3362,13 @@ function allComplete(){
 
     if (Object.keys(childHashMap).length !== 0 ) { 
       allCompleteFlag = false;
-      console.log(chalkBlue("TNN | allComplete: " + allCompleteFlag + " | NN CHILDREN IN HM: " + jsonPrint(Object.keys(childHashMap))));
+      console.log(chalkBlue(MODULE_ID_PREFIX + " | allComplete: " + allCompleteFlag + " | NN CHILDREN IN HM: " + jsonPrint(Object.keys(childHashMap))));
       return;
     }
 
     if (childArray.length === 0 ) { 
       allCompleteFlag = true;
-      console.log(chalkBlue("TNN | allComplete | NO NN CHILDREN PROCESSES"));
+      console.log(chalkBlue(MODULE_ID_PREFIX + " | allComplete | NO NN CHILDREN PROCESSES"));
       return;
     }
 
@@ -3405,7 +3377,7 @@ function allComplete(){
     async.each(Object.keys(childHashMap), function(childId, cb){
 
       if (configuration.verbose) {
-        console.log(chalkLog("TNN | allComplete"
+        console.log(chalkLog(MODULE_ID_PREFIX + " | allComplete"
           + " | NNC " + childId 
           + " STATUS: " + childHashMap[childId].status
         ));
@@ -3468,7 +3440,7 @@ function printchildHashMap(){
         chalkValue = chalkInfo;
     }
 
-    console.log(chalkValue("TNN | CHILD HM"
+    console.log(chalkValue(MODULE_ID_PREFIX + " | CHILD HM"
       + " | CHILD ID: " + childId
       + " | PID: " + childHashMap[childId].pid
       + " | STATUS: " + childHashMap[childId].status
@@ -3862,7 +3834,7 @@ function touchChildPidFile(params){
 
       touch.sync(path, { force: true });
 
-      console.log(chalkBlue("TNN | TOUCH CHILD PID FILE: " + path));
+      console.log(chalkBlue(MODULE_ID_PREFIX + " | TOUCH CHILD PID FILE: " + path));
       resolve(path);
     }
     catch(err){
@@ -3919,7 +3891,7 @@ function getChildProcesses(params){
         // cool kid
         childPidArray.push({ pid: childPid, childId: childId});
 
-        console.log(chalkInfo("TNN | FOUND CHILD"
+        console.log(chalkInfo(MODULE_ID_PREFIX + " | FOUND CHILD"
           + " [ " + childPidArray.length + " CHILDREN ]"
           + " | ID: " + childId
           + " | PID: " + childPid
@@ -3934,20 +3906,20 @@ function getChildProcesses(params){
         console.log("SHELL: CHILD NOT IN HASH | ID: " + childId + " | PID: " + childPid);
 
         if (childHashMap[childId] === undefined) {
-          console.log(chalkAlert("TNN | *** CHILD NOT IN HM"
+          console.log(chalkAlert(MODULE_ID_PREFIX + " | *** CHILD NOT IN HM"
             + " | " + childId
           ));
         }
 
         if (childHashMap[childId] && childHashMap[childId].pid === undefined) {
-          console.log(chalkAlert("TNN | *** CHILD PID HM MISMATCH"
+          console.log(chalkAlert(MODULE_ID_PREFIX + " | *** CHILD PID HM MISMATCH"
             + " | " + childId
             + " | HM PID: " + childHashMap[childId].pid
             + " | PID: " + childPid
           ));
         }
 
-        console.log(chalkAlert("TNN | *** CHILD ZOMBIE"
+        console.log(chalkAlert(MODULE_ID_PREFIX + " | *** CHILD ZOMBIE"
           + " | " + childId
           + " | TERMINATING ..."
           // + "\nchildHashMap[childId]" + jsonPrint(childHashMap[childId])
@@ -3956,7 +3928,7 @@ function getChildProcesses(params){
         kill(childPid, function(err){
 
           if (err) {
-            console.log(chalkError("TNN | *** KILL ZOMBIE ERROR: ", err));
+            console.log(chalkError(MODULE_ID_PREFIX + " | *** KILL ZOMBIE ERROR: ", err));
             return cb(err);
           }
 
@@ -3965,7 +3937,7 @@ function getChildProcesses(params){
 
           delete childHashMap[childId];
 
-          console.log(chalkAlert("TNN | XXX CHILD ZOMBIE"
+          console.log(chalkAlert(MODULE_ID_PREFIX + " | XXX CHILD ZOMBIE"
             + " [ " + childPidArray.length + " CHILDREN ]"
             + " | ID: " + childId
             + " | PID: " + childPid
@@ -4058,11 +4030,11 @@ function killAll(params){
 
           killChild({pid: childObj.pid})
           .then(function(){
-            console.log(chalkAlert("TNN | KILL ALL | KILLED | PID: " + childObj.pid + " | CH ID: " + childObj.childId));
+            console.log(chalkAlert(MODULE_ID_PREFIX + " | KILL ALL | KILLED | PID: " + childObj.pid + " | CH ID: " + childObj.childId));
             cb();
           })
           .catch(function(err){
-            console.log(chalkError("TNN | *** KILL CHILD ERROR"
+            console.log(chalkError(MODULE_ID_PREFIX + " | *** KILL CHILD ERROR"
               + " | PID: " + childObj.pid
               + " | ERROR: " + err
             ));
@@ -4081,7 +4053,7 @@ function killAll(params){
       }
       else {
 
-        console.log(chalkBlue("TNN | KILL ALL | NO CHILDREN"));
+        console.log(chalkBlue(MODULE_ID_PREFIX + " | KILL ALL | NO CHILDREN"));
         resolve(childPidArray);
       }
     }
@@ -4342,8 +4314,9 @@ function loadFile(params) {
 
     let noErrorNotFound = params.noErrorNotFound || false;
 
-    let fullPath = params.folder + "/" + params.file
+    let fullPath = params.path || params.folder + "/" + params.file;
 
+    debug(chalkInfo("LOAD PATH " + params.path));
     debug(chalkInfo("LOAD FOLDER " + params.folder));
     debug(chalkInfo("LOAD FILE " + params.file));
     debug(chalkInfo("FULL PATH " + fullPath));
@@ -4373,7 +4346,7 @@ function loadFile(params) {
           + " | " + fullPath
         ));
 
-        if (params.file.match(/\.json$/gi)) {
+        if (fullPath.match(/\.json$/gi)) {
 
           const fileObj = JSONParse(data);
 
@@ -4418,7 +4391,7 @@ function loadFile(params) {
           + " | LOADING FILE FROM DROPBOX FILE: " + fullPath
         ));
 
-        if (params.file.match(/\.json$/gi)) {
+        if (fullPath.match(/\.json$/gi)) {
 
           let payload = data.fileBinary;
 
@@ -4607,7 +4580,7 @@ function listDropboxFolder(params){
 
               })
               .catch(function(err){
-                console.trace(chalkError("TNN | *** DROPBOX filesListFolderContinue ERROR: ", err));
+                console.trace(chalkError(MODULE_ID_PREFIX + " | *** DROPBOX filesListFolderContinue ERROR: ", err));
                 return reject(err);
               });
 
@@ -4618,20 +4591,20 @@ function listDropboxFolder(params){
 
           function(err){
             if (err) {
-              console.log(chalkError("TNN | DROPBOX LIST FOLDERS: " + err + "\n" + jsonPrint(err)));
+              console.log(chalkError(MODULE_ID_PREFIX + " | DROPBOX LIST FOLDERS: " + err + "\n" + jsonPrint(err)));
               return reject(err);
             }
             resolve(results);
           });
       })
       .catch(function(err){
-        console.log(chalkError("TNN | *** DROPBOX FILES LIST FOLDER ERROR: " + err));
+        console.log(chalkError(MODULE_ID_PREFIX + " | *** DROPBOX FILES LIST FOLDER ERROR: " + err));
         return reject(err);
       });
 
     }
     catch(err){
-      console.log(chalkError("TNN | *** DROPBOX FILES LIST FOLDER ERROR: " + err));
+      console.log(chalkError(MODULE_ID_PREFIX + " | *** DROPBOX FILES LIST FOLDER ERROR: " + err));
       return reject(err);
     }
 
@@ -4752,38 +4725,38 @@ function loadConfigFile(params) {
       }
 
       if (loadedConfigObj.TNN_MAX_NEURAL_NETWORK_CHILDREN !== undefined){
-        console.log("TNN | LOADED TNN_MAX_NEURAL_NETWORK_CHILDREN: " + loadedConfigObj.TNN_MAX_NEURAL_NETWORK_CHILDREN);
+        console.log(MODULE_ID_PREFIX + " | LOADED TNN_MAX_NEURAL_NETWORK_CHILDREN: " + loadedConfigObj.TNN_MAX_NEURAL_NETWORK_CHILDREN);
         newConfiguration.maxNumberChildren = loadedConfigObj.TNN_MAX_NEURAL_NETWORK_CHILDREN;
       }
 
 
       if (loadedConfigObj.TNN_GLOBAL_MIN_SUCCESS_RATE !== undefined){
-        console.log("TNN | LOADED TNN_GLOBAL_MIN_SUCCESS_RATE: " + loadedConfigObj.TNN_GLOBAL_MIN_SUCCESS_RATE);
+        console.log(MODULE_ID_PREFIX + " | LOADED TNN_GLOBAL_MIN_SUCCESS_RATE: " + loadedConfigObj.TNN_GLOBAL_MIN_SUCCESS_RATE);
         newConfiguration.globalMinSuccessRate = loadedConfigObj.TNN_GLOBAL_MIN_SUCCESS_RATE;
       }
 
       if (loadedConfigObj.TNN_LOCAL_MIN_SUCCESS_RATE !== undefined){
-        console.log("TNN | LOADED TNN_LOCAL_MIN_SUCCESS_RATE: " + loadedConfigObj.TNN_LOCAL_MIN_SUCCESS_RATE);
+        console.log(MODULE_ID_PREFIX + " | LOADED TNN_LOCAL_MIN_SUCCESS_RATE: " + loadedConfigObj.TNN_LOCAL_MIN_SUCCESS_RATE);
         newConfiguration.localMinSuccessRate = loadedConfigObj.TNN_LOCAL_MIN_SUCCESS_RATE;
       }
 
       if (loadedConfigObj.TNN_LOCAL_PURGE_MIN_SUCCESS_RATE !== undefined){
-        console.log("TNN | LOADED TNN_LOCAL_PURGE_MIN_SUCCESS_RATE: " + loadedConfigObj.TNN_LOCAL_PURGE_MIN_SUCCESS_RATE);
+        console.log(MODULE_ID_PREFIX + " | LOADED TNN_LOCAL_PURGE_MIN_SUCCESS_RATE: " + loadedConfigObj.TNN_LOCAL_PURGE_MIN_SUCCESS_RATE);
         newConfiguration.localPurgeMinSuccessRate = loadedConfigObj.TNN_LOCAL_PURGE_MIN_SUCCESS_RATE;
       }
 
       if (loadedConfigObj.TNN_EVOLVE_THREADS !== undefined){
-        console.log("TNN | LOADED TNN_EVOLVE_THREADS: " + loadedConfigObj.TNN_EVOLVE_THREADS);
+        console.log(MODULE_ID_PREFIX + " | LOADED TNN_EVOLVE_THREADS: " + loadedConfigObj.TNN_EVOLVE_THREADS);
         newConfiguration.evolve.threads = loadedConfigObj.TNN_EVOLVE_THREADS;
       }
 
       if (loadedConfigObj.TNN_INPUTS_IDS !== undefined){
-        console.log("TNN | LOADED TNN_INPUTS_IDS: " + loadedConfigObj.TNN_INPUTS_IDS);
+        console.log(MODULE_ID_PREFIX + " | LOADED TNN_INPUTS_IDS: " + loadedConfigObj.TNN_INPUTS_IDS);
         newConfiguration.inputsIdArray = loadedConfigObj.TNN_INPUTS_IDS;
       }
 
       if (loadedConfigObj.TNN_EVOLVE_ITERATIONS !== undefined){
-        console.log("TNN | LOADED TNN_EVOLVE_ITERATIONS: " + loadedConfigObj.TNN_EVOLVE_ITERATIONS);
+        console.log(MODULE_ID_PREFIX + " | LOADED TNN_EVOLVE_ITERATIONS: " + loadedConfigObj.TNN_EVOLVE_ITERATIONS);
         if (newConfiguration.evolve === undefined) { newConfiguration.evolve = {}; }
         newConfiguration.evolve.iterations = loadedConfigObj.TNN_EVOLVE_ITERATIONS;
       }
@@ -5263,7 +5236,7 @@ if (commandLineConfig.targetServer === "REMOTE"){
 }
 
 if (Object.keys(commandLineConfig).includes("help")) {
-  console.log("TNN |optionDefinitions\n" + jsonPrint(optionDefinitions));
+  console.log(MODULE_ID_PREFIX + " |optionDefinitions\n" + jsonPrint(optionDefinitions));
   quit("help");
 }
 
@@ -5336,7 +5309,7 @@ function loadTrainingSet(params){
 
     let archiveFlagObj = await loadFileRetry({folder: configuration.defaultTrainingSetsFolder, file: configuration.defaultUserArchiveFlagFile});
 
-    console.log(chalkLog("TNN | USER ARCHIVE FLAG FILE | PATH: " + archiveFlagObj.path + " | SIZE: " + archiveFlagObj.size));
+    console.log(chalkLog(MODULE_ID_PREFIX + " | USER ARCHIVE FLAG FILE | PATH: " + archiveFlagObj.path + " | SIZE: " + archiveFlagObj.size));
 
     if (archiveFlagObj.path !== statsObj.archivePath) {
 
@@ -5358,7 +5331,7 @@ function loadTrainingSet(params){
       }
     }
     else {
-      console.log(chalkLog("TNN | USERS ARCHIVE SAME ... SKIPPING | " + archiveFlagObj.path));
+      console.log(chalkLog(MODULE_ID_PREFIX + " | USERS ARCHIVE SAME ... SKIPPING | " + archiveFlagObj.path));
       statsObj.loadUsersArchiveBusy = false;
       statsObj.trainingSetReady = true;
       resolve();
@@ -5548,7 +5521,7 @@ const fsmStates = {
 
         try {
           await childCreateAll();
-          console.log(chalkBlue("TNN | CREATED ALL CHILDREN: " + Object.keys(childHashMap).length));
+          console.log(chalkBlue(MODULE_ID_PREFIX + " | CREATED ALL CHILDREN: " + Object.keys(childHashMap).length));
         }
         catch(err){
           console.log(chalkError(MODULE_ID_PREFIX + " | *** CREATE ALL CHILDREN ERROR: " + err));
@@ -5740,7 +5713,7 @@ const fsmStates = {
 
           childCreateAll()
             .then(function(){
-              console.log(chalkBlue("TNN | CREATED ALL CHILDREN: " + Object.keys(childHashMap).length));
+              console.log(chalkBlue(MODULE_ID_PREFIX + " | CREATED ALL CHILDREN: " + Object.keys(childHashMap).length));
               createChildrenInProgress = false;
             })
             .catch(function(err){
@@ -5958,7 +5931,7 @@ function startNetworkCreate(params){
     try {
       let networkId = getNewNetworkId();
 
-      console.log(chalkBlue("TNN | START EVOLVE CHILD"
+      console.log(chalkBlue(MODULE_ID_PREFIX + " | START EVOLVE CHILD"
         + " | CHILD: " + params.childId
         + " | NETWORK ID: " + networkId
       ));
@@ -5977,7 +5950,7 @@ function childStartAll(params){
   return new Promise(function(resolve, reject){
     try {
 
-      console.log(chalkBlue("TNN | START EVOLVE ALL CHILDREN: " + Object.keys(childHashMap).length));
+      console.log(chalkBlue(MODULE_ID_PREFIX + " | START EVOLVE ALL CHILDREN: " + Object.keys(childHashMap).length));
 
       Object.keys(childHashMap).forEach(async function(childId) {
 
@@ -6176,7 +6149,7 @@ function childCreate(params){
 
         let newNeuralNetwork;
 
-        if (configuration.verbose) {console.log(chalkLog("TNN | <R MSG | CHILD " + childId + " | " + m.op));}
+        if (configuration.verbose) {console.log(chalkLog(MODULE_ID_PREFIX + " | <R MSG | CHILD " + childId + " | " + m.op));}
 
         switch(m.op) {
 
@@ -6186,7 +6159,7 @@ function childCreate(params){
           break;
 
           case "EVOLVE_SCHEDULE":
-            console.log(chalkLog("TNN | EVOLVE | " + m.childId + " | " + m.stats.networkId
+            console.log(chalkLog(MODULE_ID_PREFIX + " | EVOLVE | " + m.childId + " | " + m.stats.networkId
               + " | F: " + m.stats.fitness
               + " | E: " + m.stats.error
               + " | S: " + moment(m.stats.evolveStart).format(compactDateTimeFormat)
@@ -6209,7 +6182,7 @@ function childCreate(params){
             snIdRes = (nn.seedNetworkId !== undefined) ? nn.seedNetworkRes.toFixed(2) : "---";
 
             console.log(chalkBlue("\nTNN ========================================================\n"
-              +   "TNN | NETWORK EVOLVE + TEST COMPLETE"
+              +   MODULE_ID_PREFIX + " | NETWORK EVOLVE + TEST COMPLETE"
               + "\nTNN |                  " + m.childId
               + "\nTNN | NID:             " + nn.networkId
               + "\nTNN | SR%:             " + nn.test.results.successRate.toFixed(2) + "%"
@@ -6234,7 +6207,7 @@ function childCreate(params){
             newNeuralNetwork
             .save()
             .catch(function(err){
-              console.log(chalkError("TNN | *** ERROR SAVE NN TO DB" 
+              console.log(chalkError(MODULE_ID_PREFIX + " | *** ERROR SAVE NN TO DB" 
                 + " | NID: " + nn.networkId
                 + " | " + err.message
               ));
@@ -6263,7 +6236,7 @@ function childCreate(params){
 
             if (m.statsObj.evolve.results.iterations < nn.evolve.options.iterations) {
 
-              console.log(chalkError("TNN | XXX | NOT SAVING NN FILE TO DROPBOX ... EARLY COMPLETE?"
+              console.log(chalkError(MODULE_ID_PREFIX + " | XXX | NOT SAVING NN FILE TO DROPBOX ... EARLY COMPLETE?"
                 + " | " + nn.networkId
                 + " | ITRNS: " + m.statsObj.evolve.results.iterations
                 + " | MIN: " + configuration.globalMinSuccessRate.toFixed(2) + "%"
@@ -6274,7 +6247,7 @@ function childCreate(params){
 
               saveFileQueue.push({localFlag: false, folder: statsFolder, file: statsFile, obj: statsObj});
 
-              printNetworkObj("TNN | " + nn.networkId, nn);
+              printNetworkObj(MODULE_ID_PREFIX + " | " + nn.networkId, nn);
             }
             else if (
               (nn.seedNetworkId && (nn.test.results.successRate > nn.seedNetworkRes)) // better than seed nn
@@ -6306,7 +6279,7 @@ function childCreate(params){
                 nn.betterChild = true;
                 resultsHashmap[nn.networkId].betterChild = true;
 
-                console.log(chalk.green("TNN | +++ BETTER CHILD"
+                console.log(chalk.green(MODULE_ID_PREFIX + " | +++ BETTER CHILD"
                   + " [" + betterChildSeedNetworkIdSet.size + "] " + nn.networkId
                   + " | SR: " + nn.test.results.successRate.toFixed(3) + "%"
                   + " | SEED: " + nn.seedNetworkId
@@ -6321,7 +6294,7 @@ function childCreate(params){
                 nn.betterChild = false;
                 resultsHashmap[nn.networkId].betterChild = false;
 
-                console.log(chalkGreen("TNN | +++ ADD LOCAL SUCCESS TO BETTER CHILD SET"
+                console.log(chalkGreen(MODULE_ID_PREFIX + " | +++ ADD LOCAL SUCCESS TO BETTER CHILD SET"
                   + " [" + betterChildSeedNetworkIdSet.size + "] " + nn.networkId
                   + " | SR: " + nn.test.results.successRate.toFixed(3) + "%"
                 ));
@@ -6337,7 +6310,7 @@ function childCreate(params){
 
               inputsNetworksHashMap[nn.inputsId].add(nn.networkId);
 
-              console.log(chalkLog("TNN | INPUTS ID"
+              console.log(chalkLog(MODULE_ID_PREFIX + " | INPUTS ID"
                 + " | " + nn.inputsId
                 + " | INPUTS: " + nn.inputsObj.meta.numInputs
                 + " | " + inputsNetworksHashMap[nn.inputsId].size + " NETWORKS"
@@ -6345,7 +6318,7 @@ function childCreate(params){
 
               if (nn.test.results.successRate >= configuration.globalMinSuccessRate) {
 
-                console.log(chalkInfo("TNN | ### SAVING NN FILE TO DROPBOX GLOBAL BEST"
+                console.log(chalkInfo(MODULE_ID_PREFIX + " | ### SAVING NN FILE TO DROPBOX GLOBAL BEST"
                   + " | " + globalBestNetworkFolder + "/" + bestNetworkFile
                 ));
 
@@ -6362,7 +6335,7 @@ function childCreate(params){
 
                 // slackPostMessage(slackChannelPassGlobal, slackText);
 
-                // printNetworkObj("TNN | " + nn.networkId, nn);
+                // printNetworkObj(MODULE_ID_PREFIX + " | " + nn.networkId, nn);
 
                 saveFileQueue.push({localFlag: false, folder: globalBestNetworkFolder, file: bestNetworkFile, obj: nn});
                 saveFileQueue.push({localFlag: false, folder: statsFolder, file: statsFile, obj: statsObj});
@@ -6371,7 +6344,7 @@ function childCreate(params){
 
                 localNetworkFile = nn.networkId + ".json";
 
-                console.log(chalkLog("TNN | ... SAVING NN FILE TO DROPBOX LOCAL BEST"
+                console.log(chalkLog(MODULE_ID_PREFIX + " | ... SAVING NN FILE TO DROPBOX LOCAL BEST"
                   + " | " + localBestNetworkFolder + "/" + localNetworkFile
                 ));
 
@@ -6387,16 +6360,16 @@ function childCreate(params){
                 // slackText = slackText + "\nELAPSED:      " + msToTime(nn.evolve.elapsed);
 
                 // slackPostMessage(slackChannelPassLocal, slackText);
-                // printNetworkObj("TNN | " + nn.networkId, nn);
+                // printNetworkObj(MODULE_ID_PREFIX + " | " + nn.networkId, nn);
 
                 saveFileQueue.push({localFlag: false, folder: localBestNetworkFolder, file: localNetworkFile, obj: nn});
                 saveFileQueue.push({localFlag: false, folder: statsFolder, file: statsFile, obj: statsObj});
               }
 
-              // printNetworkObj("TNN | " + nn.networkId, nn);
+              // printNetworkObj(MODULE_ID_PREFIX + " | " + nn.networkId, nn);
             }
             else {
-              console.log(chalkInfo("TNN | XXX | NOT SAVING NN GLOBAL DROPBOX ... LESS THAN GLOBAL MIN SUCCESS *OR* NOT BETTER THAN SEED"
+              console.log(chalkInfo(MODULE_ID_PREFIX + " | XXX | NOT SAVING NN GLOBAL DROPBOX ... LESS THAN GLOBAL MIN SUCCESS *OR* NOT BETTER THAN SEED"
                 + " | " + nn.networkId
                 + " | " + nn.successRate.toFixed(2) + "%"
                 + " | " + configuration.globalMinSuccessRate.toFixed(2) + "%"
@@ -6415,7 +6388,7 @@ function childCreate(params){
               // slackPostMessage(slackChannelFail, slackText);
 
               statsObj.evolveStats.fail += 1;
-              // printNetworkObj("TNN | " + nn.networkId, nn);
+              // printNetworkObj(MODULE_ID_PREFIX + " | " + nn.networkId, nn);
 
               // printNetworkObj("TNN" + newNeuralNetwork.networkId, newNeuralNetwork);
             }
@@ -6462,7 +6435,7 @@ function childCreate(params){
           break;
 
           default:
-            console.error(chalkError("TNN | CHILD " + childId + " | UNKNOWN OP: " + m.op));
+            console.error(chalkError(MODULE_ID_PREFIX + " | CHILD " + childId + " | UNKNOWN OP: " + m.op));
             childEvents.emit("CHILD_UNKNOWN_OP", { data: { childId: childId, op: m.op } } );
         }
       });
@@ -6653,7 +6626,7 @@ function checkChildState (params) {
 
 //     child.on("message", function(m){
 
-//       console.log(chalkLog("TNN | <R MSG | CHILD " + childId + " | " + m.op));
+//       console.log(chalkLog(MODULE_ID_PREFIX + " | <R MSG | CHILD " + childId + " | " + m.op));
 
 //       switch(m.op) {
 
@@ -6676,7 +6649,7 @@ function checkChildState (params) {
 //         break;
 
 //         default:
-//           console.error(chalkError("TNN | CHILD " + childId + " | UNKNOWN OP: " + m.op));
+//           console.error(chalkError(MODULE_ID_PREFIX + " | CHILD " + childId + " | UNKNOWN OP: " + m.op));
 //           childEvents.emit("CHILD_UNKNOWN_OP", { data: { childId: childId, op: m.op } } );
 //       }
 //     });
