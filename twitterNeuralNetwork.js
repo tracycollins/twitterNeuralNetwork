@@ -72,6 +72,10 @@ const randomItem = require("random-item");
 const randomFloat = require("random-float");
 const randomInt = require("random-int");
 const yauzl = require("yauzl");
+const validUrl = require("valid-url");
+const atob = require("atob");
+const btoa = require("btoa");
+const https = require("follow-redirects").https;
 
 const writeJsonFile = require("write-json-file");
 const sizeof = require("object-sizeof");
@@ -1112,9 +1116,76 @@ function userChanged(uOld, uNew){
   });
 }
 
+
+function encodeHistogramUrls(params){
+  return new Promise(function(resolve, reject){
+
+    let user = params.user;
+
+    async.eachSeries(["profileHistograms", "tweetHistograms"], function(histogram, cb){
+
+      let urls = objectPath.get(user, [histogram, "urls"]);
+
+      if (urls) {
+
+        debug("URLS\n" + jsonPrint(urls));
+
+        async.eachSeries(Object.keys(urls), async function(url){
+
+          if (validUrl.isUri(url)){
+            const urlB64 = btoa(url);
+            console.log(chalkAlert("HISTOGRAM " + histogram + ".urls | " + url + " -> " + urlB64));
+            urls[urlB64] = urls[url];
+            delete urls[url];
+            return;
+          }
+
+          if (url === "url") {
+            console.log(chalkAlert("HISTOGRAM " + histogram + ".urls | XXX URL: " + url));
+            delete urls[url];
+            return;
+          }
+
+          if (validUrl.isUri(atob(url))) {
+            console.log(chalkGreen("HISTOGRAM " + histogram + ".urls | IS B64: " + url));
+            return;
+          }
+
+          console.log(chalkAlert("HISTOGRAM " + histogram + ".urls |  XXX NOT URL NOR B64: " + url));
+          delete urls[url];
+          return;
+
+        }, function(err){
+          if (err) {
+            console.log(chalkError(MODULE_ID_PREFIX + " | *** ENCODE HISTOGRAM URL ERROR: " + err));
+            return cb(err);
+          }
+          if (Object.keys(urls).length > 0){
+            console.log("CONVERTED URLS\n" + jsonPrint(urls));
+          }
+          user[histogram].urls = urls;
+          cb();
+        });
+
+      }
+      else {
+        cb();
+      }
+
+    }, function(err){
+      if (err) {
+        console.log(chalkError(MODULE_ID_PREFIX + " | *** ENCODE HISTOGRAM URL ERROR: " + err));
+        return reject(err);
+      }
+      resolve(user);
+    });
+
+  });
+}
+
 function updateUserFromTrainingSet(params){
 
-  return new Promise(function(resolve, reject){
+  return new Promise(async function(resolve, reject){
 
     let user = params.user;
 
@@ -1125,6 +1196,13 @@ function updateUserFromTrainingSet(params){
     ));
 
     if (user.userId === undefined) { user.userId = user.nodeId; }
+
+    try {
+      user = await encodeHistogramUrls({user: user});
+    }
+    catch(err){
+      return reject(err);
+    }
 
     User.findOne({ nodeId: user.nodeId }).exec(function(err, userDb) {
       if (err) {
@@ -1160,9 +1238,8 @@ function updateUserFromTrainingSet(params){
 
         })
         .catch(function(err){
-          console.log(MODULE_ID_PREFIX + " | ERROR: updateUsersFromTrainingSet newUser: " + err.message);
+          console.log(MODULE_ID_PREFIX + " | ERROR: updateUserFromTrainingSet newUser: " + err.message);
           resolve();
-          // return reject(err);
         });
 
 
@@ -1207,7 +1284,7 @@ function updateUserFromTrainingSet(params){
 
         })
         .catch(function(err){
-          console.log(MODULE_ID_PREFIX + " | ERROR: updateUsersFromTrainingSet: " + err.message);
+          console.log(MODULE_ID_PREFIX + " | ERROR: updateUserFromTrainingSet: " + err.message);
           return reject(err);
         });
 
@@ -2738,9 +2815,9 @@ function unzipUsersToArray(params){
 
                     percent = 100*(statsObj.users.zipHashMapHit/statsObj.users.unzipped);
 
-                    trainingSetUsersHashMap.set(fileObj.nodeId, fileObj);
-
                     let dbUser = await updateUserFromTrainingSet({user: fileObj});
+
+                    trainingSetUsersHashMap.set(dbUser.nodeId, dbUser);
 
                     if (dbUser && (configuration.verbose || (statsObj.users.unzipped % 1000 === 0))) {
 
