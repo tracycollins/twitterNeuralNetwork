@@ -77,7 +77,8 @@ const writeJsonFile = require("write-json-file");
 const sizeof = require("object-sizeof");
 
 const fs = require("fs");
-const JSONParse = require("json-parse-safe");
+// const JSONParse = require("json-parse-safe");
+const JSONParse = require("safe-json-parse");
 const debug = require("debug")("TNN");
 const util = require("util");
 const deepcopy = require("deep-copy");
@@ -490,11 +491,13 @@ const networkDefaults = function (networkObj){
   return networkObj;
 };
 
-function printNetworkObj(title, networkObj) {
+function printNetworkObj(title, networkObj, format) {
+
+  const chalkFormat = (format !== undefined) ? format : chalkNetwork;
 
   networkObj = networkDefaults(networkObj);
 
-  console.log(chalkNetwork(title
+  console.log(chalkFormat(title
     + " | OAMR: " + networkObj.overallMatchRate.toFixed(2) + "%"
     + " | MR: " + networkObj.matchRate.toFixed(2) + "%"
     + " | SR: " + networkObj.successRate.toFixed(2) + "%"
@@ -774,39 +777,59 @@ function printInputsHashMap(){
   });
 }
 
-function purgeNetwork(networkId, callback){
+function purgeNetwork(networkId){
 
-  console.log(chalkInfo(MODULE_ID_PREFIX + " | XXX PURGE NETWORK: " + networkId));
+  return new Promise(function(resolve, reject){
 
-  networkHashMap.delete(networkId);
+    try {
+      console.log(chalkAlert(MODULE_ID_PREFIX + " | XXX PURGE NETWORK: " + networkId));
 
-  betterChildSeedNetworkIdSet.delete(networkId);
+      networkHashMap.delete(networkId);
 
-  skipLoadNetworkSet.add(networkId);
+      betterChildSeedNetworkIdSet.delete(networkId);
 
-  if (resultsHashmap[networkId] !== undefined) { 
-    resultsHashmap[networkId].status = "PURGED";
-  }
+      skipLoadNetworkSet.add(networkId);
+          throw err;
 
-  if (callback !== undefined) { callback(); }
+      if (resultsHashmap[networkId] !== undefined) { 
+        resultsHashmap[networkId].status = "PURGED";
+      }
+      resolve();
+    }
+    catch(err){
+      return reject(err);
+    }
+
+  });
 }
 
 function purgeInputs(inputsId, callback){
 
-  if (!configuration.inputsIdArray.includes(inputsId)){
-    console.log(chalkInfo(MODULE_ID_PREFIX + " | XXX PURGE INPUTS: " + inputsId));
-    inputsHashMap.delete(inputsId);
-    skipLoadInputsSet.add(inputsId);
-  }
-  else {
-    console.log(chalkInfo(MODULE_ID_PREFIX + " | ** NO XXX PURGE INPUTS ... IN CONFIGURATION INPUTS ID ARRAY" 
-      + " | INPUTS ID: " + inputsId
-    ));
+  return new Promise(function(resolve, reject){
 
-    if (configuration.verbose) {
-      console.log(chalkInfo(MODULE_ID_PREFIX + " | CONFIGURATION INPUTS ID ARRAY\n" + jsonPrint(configuration.inputsIdArray) ));
+    try {
+      if (!configuration.inputsIdArray.includes(inputsId)){
+        console.log(chalkInfo(MODULE_ID_PREFIX + " | XXX PURGE INPUTS: " + inputsId));
+        inputsHashMap.delete(inputsId);
+        skipLoadInputsSet.add(inputsId);
+      }
+      else {
+        console.log(chalkInfo(MODULE_ID_PREFIX + " | ** NO XXX PURGE INPUTS ... IN CONFIGURATION INPUTS ID ARRAY" 
+          + " | INPUTS ID: " + inputsId
+        ));
+
+        if (configuration.verbose) {
+          console.log(chalkInfo(MODULE_ID_PREFIX + " | CONFIGURATION INPUTS ID ARRAY\n" + jsonPrint(configuration.inputsIdArray) ));
+        }
+      }
+      resolve();
     }
-  }
+    catch(err){
+      return reject(err);
+    }
+
+  });
+
 
   if (callback !== undefined) { callback(); }
 }
@@ -980,19 +1003,14 @@ function loadInputsDropboxFolder(params){
 
             const inputTypes = Object.keys(inputsObj.inputs);
 
-            console.log(chalkInfo(MODULE_ID_PREFIX + " | + INPUTS HASH MAP"
-              + " | " + inputsHashMap.count() + " INs IN HM"
-              + " | " + inputsObj.inputsId
-            ));
+            // let totalInputs = 0;
 
-            let totalInputs = 0;
+            // inputTypes.forEach(function(inputType){
+            //   debug(MODULE_ID_PREFIX + " | " + inputsObj.inputsId + " | INPUT TYPE: " + inputType + " | " + inputsObj.inputs[inputType].length + " INPUTS");
+            //   totalInputs += inputsObj.inputs[inputType].length;
+            // });
 
-            inputTypes.forEach(function(inputType){
-              debug(MODULE_ID_PREFIX + " | " + inputsObj.inputsId + " | INPUT TYPE: " + inputType + " | " + inputsObj.inputs[inputType].length + " INPUTS");
-              totalInputs += inputsObj.inputs[inputType].length;
-            });
-
-            console.log(MODULE_ID_PREFIX + " | " + inputsObj.inputsId + " | TOTAL INPUTS TYPE: " + totalInputs);
+            console.log(MODULE_ID_PREFIX + " | +++ INPUTS [" + inputsHashMap.count() + " INs IN HM] | " + inputsObj.meta.numInputs + " INPUTS | " + inputsObj.inputsId);
 
             return;
 
@@ -1018,7 +1036,6 @@ function loadInputsDropboxFolder(params){
 
       if ((inputsObj === undefined) || !inputsObj) {
         console.log(chalkError(MODULE_ID_PREFIX + " | DROPBOX INPUTS LOAD FILE ERROR | JSON UNDEFINED ??? "));
-        // purgeInputs(entryInputsId);
         return;
       }
 
@@ -1038,19 +1055,14 @@ function loadInputsDropboxFolder(params){
 
       const inputTypes = Object.keys(inputsObj.inputs);
 
-      console.log(chalkInfo(MODULE_ID_PREFIX + " | + INPUTS HASH MAP"
-        + " | " + inputsHashMap.count() + " INs IN HM"
-        + " | " + inputsObj.inputsId
-      ));
+      // let totalInputs = 0;
 
-      let totalInputs = 0;
+      // inputTypes.forEach(function(inputType){
+      //   debug(MODULE_ID_PREFIX + " | " + inputsObj.inputsId + " | INPUT TYPE: " + inputType + " | " + inputsObj.inputs[inputType].length + " INPUTS");
+      //   totalInputs += inputsObj.inputs[inputType].length;
+      // });
 
-      inputTypes.forEach(function(inputType){
-        debug(MODULE_ID_PREFIX + " | " + inputsObj.inputsId + " | INPUT TYPE: " + inputType + " | " + inputsObj.inputs[inputType].length + " INPUTS");
-        totalInputs += inputsObj.inputs[inputType].length;
-      });
-
-      console.log(MODULE_ID_PREFIX + " | " + inputsObj.inputsId + " | TOTAL INPUTS TYPE: " + totalInputs);
+      console.log(MODULE_ID_PREFIX + " | +++ INPUTS [" + inputsHashMap.size + " IN HM] | " + inputsObj.meta.numInputs + " INPUTS | " + inputsObj.inputsId);
 
       return;
 
@@ -1229,6 +1241,10 @@ function updateDbNetwork(params) {
   return new Promise(function(resolve, reject){
 
     statsObj.status = "UPDATE DB NETWORKS";
+
+    if (configuration.verbose) {
+      printNetworkObj(MODULE_ID_PREFIX + " | [" + networkHashMap.size + "] >>> UPDATE NN DB", params.networkObj);
+    }
 
     const networkObj = params.networkObj;
     const incrementTestCycles = (params.incrementTestCycles !== undefined) ? params.incrementTestCycles : false;
@@ -1429,12 +1445,12 @@ function checkNetworkHash(params){
     debug("entry\n" + jsonPrint(entry));
 
     if (entry.name === bestRuntimeNetworkFileName) {
-      debug(chalkInfo("... SKIPPING LOAD OF " + entry.name));
+      console.log(chalkInfo(MODULE_ID_PREFIX + " | ... SKIPPING LOAD OF " + entry.name));
       return ;
     }
 
     if (!entry.name.endsWith(".json")) {
-      debug(chalkInfo("... SKIPPING LOAD OF " + entry.name));
+      console.log(chalkInfo(MODULE_ID_PREFIX + " | ... SKIPPING LOAD OF " + entry.name));
       return ;
     }
 
@@ -1442,7 +1458,8 @@ function checkNetworkHash(params){
     const networkId = entryNameArray[0];
 
     if (!networkHashMap.has(networkId)){
-      return resolve(false);
+      // console.log(chalkInfo(MODULE_ID_PREFIX + " | ... NOT IN HASH " + entry.name));
+      return resolve("miss");
     }
 
     let networkObj = networkHashMap.get(networkId);
@@ -1505,6 +1522,10 @@ function dropboxFileDelete(params){
 
     dropboxClient.filesDelete({path: path})
     .then(function(response){
+      console.log(chalkError(MODULE_ID_PREFIX + " | XXX DROPBOX FILE DELETE"
+        + " | STATUS: " + err.status
+        + " | " + path
+      ));
       debug("dropboxClient filesDelete response\n" + jsonPrint(response));
       return resolve();
     })
@@ -1539,12 +1560,12 @@ function dropboxFileDelete(params){
 }
 
 function networkPass(params) {
-  const pass = ((params.folder === "/config/utility/best/neuralNetworks") && (networkObj.successRate > configuration.globalMinSuccessRate))
-  || ((params.folder === "/config/utility/best/neuralNetworks") && (networkObj.matchRate > configuration.globalMinSuccessRate))
-  || (params.purgeMin && (params.folder !== "/config/utility/best/neuralNetworks") && (networkObj.successRate > configuration.localPurgeMinSuccessRate))
-  || (params.purgeMin && (params.folder !== "/config/utility/best/neuralNetworks") && (networkObj.matchRate > configuration.localPurgeMinSuccessRate))
-  || (!params.purgeMin && (params.folder !== "/config/utility/best/neuralNetworks") && (networkObj.successRate > configuration.localMinSuccessRate))
-  || (!params.purgeMin && (params.folder !== "/config/utility/best/neuralNetworks") && (networkObj.matchRate > configuration.localMinSuccessRate));
+  const pass = ((params.folder === "/config/utility/best/neuralNetworks") && (params.networkObj.successRate > configuration.globalMinSuccessRate))
+  || ((params.folder === "/config/utility/best/neuralNetworks") && (params.networkObj.matchRate > configuration.globalMinSuccessRate))
+  || (params.purgeMin && (params.folder !== "/config/utility/best/neuralNetworks") && (params.networkObj.successRate > configuration.localPurgeMinSuccessRate))
+  || (params.purgeMin && (params.folder !== "/config/utility/best/neuralNetworks") && (params.networkObj.matchRate > configuration.localPurgeMinSuccessRate))
+  || (!params.purgeMin && (params.folder !== "/config/utility/best/neuralNetworks") && (params.networkObj.successRate > configuration.localMinSuccessRate))
+  || (!params.purgeMin && (params.folder !== "/config/utility/best/neuralNetworks") && (params.networkObj.matchRate > configuration.localMinSuccessRate));
 
   return pass;
 }
@@ -1575,17 +1596,28 @@ function loadBestNetworkDropboxFolders (params){
       return reject(err);
     }
 
+    if (configuration.testMode) {
+      dropboxFoldersEntries = _.shuffle(dropboxFoldersEntries);
+      // dropboxFoldersEntries.length = Math.min(TEST_DROPBOX_NN_LOAD, dropboxFoldersEntries.length);
+      // console.log(chalkAlert(MODULE_ID_PREFIX + " | !!! TEST MODE | LOAD " + TEST_DROPBOX_NN_LOAD + " NNs"));
+    }
+
     async.eachSeries(dropboxFoldersEntries, async function(entry){
+
+      if (configuration.testMode && (numNetworksLoaded >= TEST_DROPBOX_NN_LOAD)) {
+        // console.log(chalkInfo(MODULE_ID_PREFIX + " | !!! TEST MODE | LOADED " + numNetworksLoaded + " NNs"));
+        return "TEST_MODE";
+      }
 
       debug("entry\n" + jsonPrint(entry));
 
       if (entry.name === bestRuntimeNetworkFileName) {
-        debug(chalkInfo("... SKIPPING LOAD OF " + entry.name));
+        console.log(chalkInfo(MODULE_ID_PREFIX + " | ... SKIPPING LOAD OF " + entry.name));
         return ;
       }
 
       if (!entry.name.endsWith(".json")) {
-        debug(chalkInfo("... SKIPPING LOAD OF " + entry.name));
+        console.log(chalkInfo(MODULE_ID_PREFIX + " | ... SKIPPING LOAD OF " + entry.name));
         return ;
       }
 
@@ -1604,33 +1636,65 @@ function loadBestNetworkDropboxFolders (params){
       }
 
       if (skipLoadNetworkSet.has(networkId)){
-        debug(chalkInfo(MODULE_ID_PREFIX + " | NN IN SKIP LOAD NN SET ... SKIPPING LOAD OF " + networkId));
+        console.log(chalkInfo(MODULE_ID_PREFIX + " | DROPBOX NETWORK IN SKIP SET | SKIPPING ..."
+          + " | " + networkId
+          + " | FOLDER: " + folder
+          + " | " + entry.name
+        ));
         return ;
       }
+      
+      // console.log(chalkInfo(MODULE_ID_PREFIX + " | DROPBOX NETWORK IN *NOT* SKIP SET"
+      //   + " | " + networkId
+      //   + " | FOLDER: " + folder
+      //   + " | " + entry.name
+      // ));
 
       let networkObj;
 
       try {
 
+        // console.log(chalkInfo(MODULE_ID_PREFIX + " | CHECK NETWORK HASH"
+        //   + " | " + networkId
+        //   + " | FOLDER: " + folder
+        //   + " | " + entry.name
+        // ));
+
         const networkHashResult = await checkNetworkHash({entry: entry});
 
+        // console.log(chalkInfo(MODULE_ID_PREFIX + " | CHECK NETWORK HASH RESULT: " + networkHashResult
+        //   + " | " + networkId
+        //   + " | FOLDER: " + folder
+        //   + " | " + entry.name
+        // ));
+
         if (networkHashResult === "same"){ // no change
+          console.log(chalkInfo(MODULE_ID_PREFIX + " | NN NO CHANGE"
+            + " | " + networkId
+            + " | FOLDER: " + folder
+            + " | " + entry.name
+          ));
           return;
         }
 
         networkObj = await loadFileRetry({path: entry.path_lower});
+
+        // printNetworkObj(MODULE_ID_PREFIX + " | LOADED DROPBOX NETWORK", networkObj);
+
         networkObj = await validateNetwork({networkId: networkId, networkObj: networkObj});
+
+        // printNetworkObj(MODULE_ID_PREFIX + " | VALIDATED DROPBOX NETWORK", networkObj);
 
         // invalid networkObj
         if (!networkObj) {  
-          purgeNetwork(networkId);
+          await purgeNetwork(networkId);
           return;
         }
 
         // load only networks using specific inputIds; maybe delete if not in set
         if (!configuration.inputsIdArray.includes(networkObj.inputsId)) {
           if (configuration.deleteNotInInputsIdArray){
-            console.log(chalkInfo(MODULE_ID_PREFIX + " | NN INPUTS NOT IN INPUTS ID ARRAY ... DELETING"
+            console.log(chalkInfo(MODULE_ID_PREFIX + " | XXX NN INPUTS NOT IN INPUTS ID ARRAY ... DELETING"
               + " | NUM INPUTS: " + networkObj.numInputs
               + " | INPUTS ID: " + networkObj.inputsId
               + " | " + entry.path_display
@@ -1639,38 +1703,74 @@ function loadBestNetworkDropboxFolders (params){
             await dropboxFileDelete({folder: localBestNetworkFolder, file: entry.name});
           }
 
-          console.log(chalkInfo(MODULE_ID_PREFIX + " | NN INPUTS NOT IN INPUTS ID ARRAY ... SKIPPING"
+          console.log(chalkInfo(MODULE_ID_PREFIX + " | --- NN INPUTS NOT IN INPUTS ID ARRAY ... SKIPPING"
             + " | NUM INPUTS: " + networkObj.numInputs
             + " | INPUTS ID: " + networkObj.inputsId
             + " | " + entry.path_display
           ));
 
           skipLoadNetworkSet.add(networkObj.networkId);
+          throw err;
           return;
         }
 
-        printNetworkObj(MODULE_ID_PREFIX + " | DROPBOX NETWORK", networkObj);
+        // printNetworkObj(MODULE_ID_PREFIX + " | 0 | DROPBOX NETWORK", networkObj);
 
+        //========================
         // SAVE LOCAL NETWORK TO GLOBAL
+        //========================
+
         if (!networkHashMap.has(networkObj.networkId) 
           && ((networkObj.successRate >= configuration.globalMinSuccessRate) 
           || (networkObj.overallMatchRate >= configuration.globalMinSuccessRate))) {
 
           networkHashMap.set(networkObj.networkId, { entry: entry, networkObj: networkObj});
 
-          printNetworkObj(MODULE_ID_PREFIX + " | SAVE LOCAL NETWORK TO GLOBAL", networkObj);
+          printNetworkObj(MODULE_ID_PREFIX + " | SAVE LOCAL NETWORK TO GLOBAL", networkObj, chalkGreen);
 
           saveFileQueue.push({localFlag: false, folder: globalBestNetworkFolder, file: entry.name, obj: networkObj});
         }
 
+        // printNetworkObj(MODULE_ID_PREFIX + " | 1 | DROPBOX NETWORK", networkObj);
+
+        //========================
+        // NETWORK MISMATCH GLOBAL/LOCAL
+        //========================
+
         if (networkHashResult === "mismatch"){
+          console.log(chalkNetwork(MODULE_ID_PREFIX + " | DROPBOX GLOBAL/LOCAL NETWORK MISMATCH ... DELETING"
+            + " | INPUTS: " + networkObj.numInputs
+            + " | INPUTS ID: " + networkObj.inputsId
+            + " | " + entry.path_display
+          ));
           await dropboxFileDelete({folder: localBestNetworkFolder, file: entry.name});
+          return;
         }
 
+        // printNetworkObj(MODULE_ID_PREFIX + " | 2 | DROPBOX NETWORK", networkObj);
+
+        //========================
         // NETWORK PASS SUCCESS or MATCH MIN
-        if (networkPass({folder: folder, purgeMin: params.purgeMin, networkObj: networkObj})) {
+        //========================
+
+        const passed = networkPass({folder: folder, purgeMin: params.purgeMin, networkObj: networkObj});
+
+        if (passed) {
+
+          numNetworksLoaded += 1;
 
           networkHashMap.set(networkObj.networkId, { entry: entry, networkObj: networkObj});
+
+          printNetworkObj(MODULE_ID_PREFIX + " | +++ NN HASH MAP [" + numNetworksLoaded + " LOADED / " + networkHashMap.size + " IN HM]", networkObj);
+
+          if (!currentBestNetwork || (networkObj.overallMatchRate > currentBestNetwork.overallMatchRate)) {
+            currentBestNetwork = networkObj;
+            printNetworkObj(MODULE_ID_PREFIX + " | *** NEW BEST NN", networkObj, chalkGreen);
+          }
+
+          //========================
+          // UPDATE INPUTS HASHMAP
+          //========================
 
           let inObj = {};
 
@@ -1697,7 +1797,9 @@ function loadBestNetworkDropboxFolders (params){
 
           inputsNetworksHashMap[networkObj.inputsId].add(networkObj.networkId);
 
-
+          //========================
+          // UPDATE DB
+          //========================
           let nnDb;
 
           try {
@@ -1710,35 +1812,41 @@ function loadBestNetworkDropboxFolders (params){
 
           if (nnDb) {
 
-            numNetworksLoaded += 1;
-
             if (!currentBestNetwork || (nnDb.overallMatchRate > currentBestNetwork.overallMatchRate)) {
               currentBestNetwork = nnDb;
-              printNetworkObj(MODULE_ID_PREFIX + " | *** NEW BEST NN", nnDb);
+              printNetworkObj(MODULE_ID_PREFIX + " | *** NEW BEST NN (DB)", nnDb, chalkGreen);
             }
 
             networkHashMap.set(nnDb.networkId, { entry: entry, networkObj: nnDb});
-            printNetworkObj(MODULE_ID_PREFIX + " | +++ NN HASH MAP [" + numNetworksLoaded + " LOADED / " + networkHashMap.size + " IN HM]", nnDb);
+            // printNetworkObj(MODULE_ID_PREFIX + " | >>> NN DB UPDATE [" + numNetworksLoaded + " LOADED / " + networkHashMap.size + " IN HM]", nnDb);
           }
 
-          if (!currentBestNetwork || (networkObj.overallMatchRate > currentBestNetwork.overallMatchRate)) {
-            currentBestNetwork = networkObj;
-            printNetworkObj(MODULE_ID_PREFIX + " | * NEW BEST NN", networkObj);
-          }
+          // if (!currentBestNetwork || (networkObj.overallMatchRate > currentBestNetwork.overallMatchRate)) {
+          //   currentBestNetwork = networkObj;
+          //   printNetworkObj(MODULE_ID_PREFIX + " | * NEW BEST NN", networkObj);
+          // }
 
           return;
         }
+
+        // printNetworkObj(MODULE_ID_PREFIX + " | 3 | DROPBOX NETWORK", networkObj);
+
+        //========================
+        // PURGE FAILING NETWORKS
+        //========================
 
         if (((hostname === "google") && (folder === globalBestNetworkFolder))
           || ((hostname !== "google") && (folder === localBestNetworkFolder)) ) {
 
           printNetworkObj(MODULE_ID_PREFIX + " | DELETING NN", networkObj);
 
-          purgeNetwork(networkObj.networkId);
-          purgeInputs(networkObj.inputsId);
+          await purgeNetwork(networkObj.networkId);
+          await purgeInputs(networkObj.inputsId);
           await dropboxFileDelete({folder: localBestNetworkFolder, file: entry.name});
           return;
         }
+
+        printNetworkObj(MODULE_ID_PREFIX + " | --- NN HASH MAP [" + numNetworksLoaded + " LOADED / " + networkHashMap.size + " IN HM]", nnDb);
 
         return;
       }
@@ -1748,6 +1856,10 @@ function loadBestNetworkDropboxFolders (params){
 
     }, function(err){
       if (err) { 
+        if (err == "TEST_MODE") {
+          console.log(chalkInfo(MODULE_ID_PREFIX + " | !!! TEST MODE | LOADED " + numNetworksLoaded + " NNs"));
+          return resolve(numNetworksLoaded);
+        }
         console.log(chalkError(MODULE_ID_PREFIX + " | *** ERROR LOAD DROPBOX FOLDERS: " + err)); 
         return reject(err);
       }
@@ -1763,23 +1875,26 @@ function loadSeedNeuralNetwork(params){
 
     statsObj.status = "LOAD NEURAL NETWORKS";
 
-    console.log(chalkNetwork(MODULE_ID_PREFIX + " | ... LOADING SEED NETWORK FROM DB\nPARAMS: " + jsonPrint(params)));
+    console.log(chalkNetwork(MODULE_ID_PREFIX + " | LOADING SEED NETWORKS FROM DROPBOX ..."));
 
     let numNetworksLoaded = 0;
 
     try{
       numNetworksLoaded = await loadBestNetworkDropboxFolders(params);
+      console.log(chalkBlueBold(MODULE_ID_PREFIX + " | LOADED " + numNetworksLoaded + " NETWORKS"));
+      printNetworkObj(MODULE_ID_PREFIX + " | BEST NETWORK", currentBestNetwork, chalkBlueBold);
+      currentBestNetwork
     }
     catch(err){
       if (err.status === 429) {
-        console.log(chalkError(MODULE_ID_PREFIX + " | LOAD DROPBOX BEST NETWORK ERR"
+        console.log(chalkError(MODULE_ID_PREFIX + " | LOAD DROPBOX NETWORKS ERR"
           + " | FOLDERS: " + params.folders
           + " | STATUS: " + err.status
           + " | TOO MANY REQUESTS"
         ));
       }
       else {
-        console.log(chalkError(MODULE_ID_PREFIX + " | LOAD DROPBOX BEST NETWORK ERR"
+        console.log(chalkError(MODULE_ID_PREFIX + " | LOAD DROPBOX NETWORKS ERR"
           + " | FOLDERS: " + params.folders
           + " | STATUS: " + err.status
           + " | ERROR: " + err
@@ -3288,15 +3403,15 @@ function initNetworkCreate(params){
           console.log(chalkBlue("\nTNN | START NETWORK EVOLVE"));
 
           console.log(chalkBlue(
-               MODULE_ID_PREFIX + " | NN ID: " + networkId
-            + "\nTNN | ARCHITECTURE:        " + messageObj.architecture
-            + "\nTNN | COST:                " + messageObj.cost
-            + "\nTNN | TRAINING SET LENGTH: " + messageObj.trainingSet.meta.setSize
-            + "\nTNN | TEST SET LENGTH:     " + messageObj.testSet.data.length
-            + "\nTNN | INPUTS ID:           " + messageObj.inputsId
-            + "\nTNN | INPUTS:              " + messageObj.inputsObj.meta.numInputs
-            + "\nTNN | OUTPUTS:             " + messageObj.trainingSet.meta.numOutputs
-            + "\nTNN | ITERATIONS:          " + messageObj.iterations
+                     MODULE_ID_PREFIX + " | NN ID:        " + networkId
+            + "\n" + MODULE_ID_PREFIX + " | ARCHITECTURE: " + messageObj.architecture
+            + "\n" + MODULE_ID_PREFIX + " | INPUTS ID:    " + messageObj.inputsId
+            + "\n" + MODULE_ID_PREFIX + " | INPUTS:       " + messageObj.inputsObj.meta.numInputs
+            + "\n" + MODULE_ID_PREFIX + " | OUTPUTS:      " + messageObj.trainingSet.meta.numOutputs
+            + "\n" + MODULE_ID_PREFIX + " | TRAINING SET: " + messageObj.trainingSet.meta.setSize
+            + "\n" + MODULE_ID_PREFIX + " | TEST SET:     " + messageObj.testSet.data.length
+            + "\n" + MODULE_ID_PREFIX + " | COST:         " + messageObj.cost
+            + "\n" + MODULE_ID_PREFIX + " | ITERATIONS:   " + messageObj.iterations
           ));
 
           if (messageObj.seedNetworkId) {
@@ -3333,7 +3448,7 @@ function initNetworkCreate(params){
 
           resultsHashmap[messageObj.testRunId] = networkCreateObj;
 
-          saveFileQueue.push({localFlag: false, folder: statsFolder, file: statsFile, obj: statsObj});
+          // saveFileQueue.push({localFlag: false, folder: statsFolder, file: statsFile, obj: statsObj});
 
           printResultsHashmap();
 
@@ -4152,7 +4267,7 @@ function initStatsUpdate(callback) {
     statsObj.elapsed = getElapsedTimeStamp();
     statsObj.timeStamp = getTimeStamp();
 
-    saveFile({folder: statsFolder, file: statsFile, obj: statsObj});
+    saveFile({localFlag: false, folder: statsFolder, file: statsFile, obj: statsObj});
 
     clearInterval(statsUpdateInterval);
 
@@ -4161,7 +4276,7 @@ function initStatsUpdate(callback) {
       statsObj.elapsed = getElapsedTimeStamp();
       statsObj.timeStamp = getTimeStamp();
 
-      saveFileQueue.push({folder: statsFolder, file: statsFile, obj: statsObj});
+      saveFileQueue.push({localFlag: false, folder: statsFolder, file: statsFile, obj: statsObj});
       statsObj.queues.saveFileQueue.size = saveFileQueue.length;
 
       try{
@@ -4348,9 +4463,16 @@ function loadFile(params) {
 
         if (fullPath.match(/\.json$/gi)) {
 
-          const fileObj = JSONParse(data);
+          JSONParse(data, function(err, fileObj){
+            if (err) {
+              console.log(chalkError(getTimeStamp()
+                + " | *** LOAD FILE FROM DROPBOX ERROR"
+                + " | " + fullPath
+                + " | " + err
+              ));
 
-          if (fileObj.value) {
+              return reject(err);
+            }
 
             const fileObjSizeMbytes = sizeof(fileObj)/ONE_MEGABYTE;
 
@@ -4360,16 +4482,32 @@ function loadFile(params) {
               + " | " + fullPath
             ));
 
-            return resolve(fileObj.value);
-          }
+            return resolve(fileObj);
 
-          console.log(chalkError(getTimeStamp()
-            + " | *** LOAD FILE FROM DROPBOX ERROR"
-            + " | " + fullPath
-            + " | " + fileObj.error
-          ));
+          });
 
-          return reject(fileObj.error);
+          // const fileObj = JSONParse(data);
+
+          // if (fileObj.value) {
+
+          //   const fileObjSizeMbytes = sizeof(fileObj)/ONE_MEGABYTE;
+
+          //   console.log(chalkInfo(getTimeStamp()
+          //     + " | LOADED FILE FROM DROPBOX"
+          //     + " | " + fileObjSizeMbytes.toFixed(2) + " MB"
+          //     + " | " + fullPath
+          //   ));
+
+          //   return resolve(fileObj.value);
+          // }
+
+          // console.log(chalkError(getTimeStamp()
+          //   + " | *** LOAD FILE FROM DROPBOX ERROR"
+          //   + " | " + fullPath
+          //   + " | " + fileObj.error
+          // ));
+
+          // return reject(fileObj.error);
 
         }
 
@@ -4399,14 +4537,35 @@ function loadFile(params) {
             return reject(new Error(MODULE_ID_PREFIX + " LOAD FILE PAYLOAD UNDEFINED"));
           }
 
-          const fileObj = JSONParse(payload);
+          JSONParse(payload, function(err, fileObj){
+            if (err) {
+              console.log(chalkError(getTimeStamp()
+                + " | *** LOAD FILE FROM DROPBOX ERROR"
+                + " | " + fullPath
+                + " | " + err
+              ));
 
-          if (fileObj.value) {
-            return resolve(fileObj.value);
-          }
+              return reject(err);
+            }
 
-          console.log(chalkError(MODULE_ID_PREFIX + " | *** DROPBOX loadFile ERROR: " + fullPath));
-          return reject(fileObj.error);
+            return resolve(fileObj);
+
+          });
+
+          // try {
+
+          //   const fileObj = JSONParse(payload);
+
+          //   if (fileObj.value) {
+          //     return resolve(fileObj.value);
+          //   }
+          //   resolve();
+          // }
+          // catch(err){
+          //   console.log(chalkError(MODULE_ID_PREFIX + " | *** DROPBOX loadFile ERROR: " + fullPath));
+          //   return reject(fileObj.error);
+          // }
+
         }
         else {
           resolve();
@@ -4431,7 +4590,7 @@ function loadFile(params) {
           return resolve(new Error("NO INTERNET"));
         }
 
-        reject(error);
+        reject(err);
 
       });
     }
@@ -4445,22 +4604,35 @@ function loadFileRetry(params){
     let resolveOnNotFound = params.resolveOnNotFound || false;
     let maxRetries = params.maxRetries || 5;
     let retryNumber;
+    let backOffTime = params.initialBackOffTime || ONE_SECOND;
+    let path = params.path || params.folder + "/" + params.file;
 
     for (retryNumber = 0; retryNumber < maxRetries; retryNumber++) {
       try {
         
+        const fileObj = await loadFile(params);
+
         if (retryNumber > 0) { 
           console.log(chalkAlert(MODULE_ID_PREFIX + " | FILE LOAD RETRY"
-            + " | " + folder + "/" + file
+            + " | " + path
+            + " | BACKOFF: " + msToTime(backOffTime)
             + " | " + retryNumber + " OF " + maxRetries
           )); 
         }
 
-        const fileObj = await loadFile(params);
         return resolve(fileObj);
         break;
       } 
       catch(err) {
+        backOffTime *= 1.5;
+        setTimeout(function(){
+          console.log(chalkAlert(MODULE_ID_PREFIX + " | FILE LOAD ERROR ... RETRY"
+            + " | " + path
+            + " | BACKOFF: " + msToTime(backOffTime)
+            + " | " + retryNumber + " OF " + maxRetries
+            + " | ERROR: " + err
+          )); 
+        }, backOffTime);
       }
     }
 
@@ -4864,6 +5036,7 @@ function saveFile(params, callback){
 
   let fullPath = params.folder + "/" + params.file;
   let limit = params.limit || DROPBOX_LIST_FOLDER_LIMIT;
+  let localFlag = params.localFlag || false;
 
   debug(chalkInfo("LOAD FOLDER " + params.folder));
   debug(chalkInfo("LOAD FILE " + params.file));
@@ -4871,7 +5044,7 @@ function saveFile(params, callback){
 
   let options = {};
 
-  if (params.localFlag) {
+  if (localFlag) {
 
     const objSizeMBytes = sizeof(params.obj)/ONE_MEGABYTE;
 
@@ -4921,7 +5094,7 @@ function saveFile(params, callback){
       })
       .catch(function(error){
         if (error.status === 413){
-          console.error(chalkError(MODULE_ID_PREFIX + " | " + moment().format(compactDateTimeFormat) 
+          console.log(chalkError(MODULE_ID_PREFIX + " | " + moment().format(compactDateTimeFormat) 
             + " | !!! ERROR DROBOX JSON WRITE | FILE: " + fullPath 
             + " | ERROR: 413"
             + " | ERROR: FILE TOO LARGE"
@@ -4929,23 +5102,25 @@ function saveFile(params, callback){
           if (callback !== undefined) { return callback(error.error_summary); }
         }
         else if (error.status === 429){
-          console.error(chalkError(MODULE_ID_PREFIX + " | " + moment().format(compactDateTimeFormat) 
+          console.log(chalkError(MODULE_ID_PREFIX + " | " + moment().format(compactDateTimeFormat) 
             + " | !!! ERROR DROBOX JSON WRITE | FILE: " + fullPath 
             + " | ERROR: TOO MANY WRITES"
           ));
           if (callback !== undefined) { return callback(error.error_summary); }
         }
         else if (error.status === 500){
-          console.error(chalkError(MODULE_ID_PREFIX + " | " + moment().format(compactDateTimeFormat) 
+          console.log(chalkError(MODULE_ID_PREFIX + " | " + moment().format(compactDateTimeFormat) 
             + " | !!! ERROR DROBOX JSON WRITE | FILE: " + fullPath 
             + " | ERROR: DROPBOX SERVER ERROR"
           ));
           if (callback !== undefined) { return callback(error.error_summary); }
         }
         else {
-          console.trace(chalkError(MODULE_ID_PREFIX + " | " + moment().format(compactDateTimeFormat) 
+          console.log(chalkError(MODULE_ID_PREFIX + " | " + moment().format(compactDateTimeFormat) 
             + " | !!! ERROR DROBOX JSON WRITE | FILE: " + fullPath 
-            + " | ERROR: " + error
+            + "\n" + MODULE_ID_PREFIX + " | ERROR:        " + error
+            + "\n" + MODULE_ID_PREFIX + " | ERROR CODE:   " + error.code
+            + "\n" + MODULE_ID_PREFIX + " | ERROR STATUS: " + error.status
           ));
           if (callback !== undefined) { return callback(error); }
         }
@@ -6245,7 +6420,7 @@ function childCreate(params){
 
               resultsHashmap[nn.networkId].status = "FAIL";
 
-              saveFileQueue.push({localFlag: false, folder: statsFolder, file: statsFile, obj: statsObj});
+              // saveFileQueue.push({localFlag: false, folder: statsFolder, file: statsFile, obj: statsObj});
 
               printNetworkObj(MODULE_ID_PREFIX + " | " + nn.networkId, nn);
             }
@@ -6338,7 +6513,7 @@ function childCreate(params){
                 // printNetworkObj(MODULE_ID_PREFIX + " | " + nn.networkId, nn);
 
                 saveFileQueue.push({localFlag: false, folder: globalBestNetworkFolder, file: bestNetworkFile, obj: nn});
-                saveFileQueue.push({localFlag: false, folder: statsFolder, file: statsFile, obj: statsObj});
+                // saveFileQueue.push({localFlag: false, folder: statsFolder, file: statsFile, obj: statsObj});
               }
               else if (nn.test.results.successRate >= configuration.localMinSuccessRate) {
 
@@ -6363,7 +6538,7 @@ function childCreate(params){
                 // printNetworkObj(MODULE_ID_PREFIX + " | " + nn.networkId, nn);
 
                 saveFileQueue.push({localFlag: false, folder: localBestNetworkFolder, file: localNetworkFile, obj: nn});
-                saveFileQueue.push({localFlag: false, folder: statsFolder, file: statsFile, obj: statsObj});
+                // saveFileQueue.push({localFlag: false, folder: statsFolder, file: statsFile, obj: statsObj});
               }
 
               // printNetworkObj(MODULE_ID_PREFIX + " | " + nn.networkId, nn);
@@ -6376,7 +6551,7 @@ function childCreate(params){
               ));
 
               resultsHashmap[nn.networkId].status = "FAIL";
-              saveFileQueue.push({localFlag: false, folder: statsFolder, file: statsFile, obj: statsObj});
+              // saveFileQueue.push({localFlag: false, folder: statsFolder, file: statsFile, obj: statsObj});
 
               // slackText = "\n*-FAIL-*";
               // slackText = slackText + "\n*" + nn.test.results.successRate.toFixed(2) + "%*";
