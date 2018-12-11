@@ -3061,14 +3061,8 @@ function initWatch(params){
 
           try {
             await loadTrainingSet({folder: configuration.defaultTrainingSetsFolder, file: configuration.defaultUserArchiveFlagFile});
-            // await loadUsersArchive({path: fullLocalPath, size: archiveFlagObj.size});
-            // statsObj.archiveModifiedMoment = moment();
-            // statsObj.loadUsersArchiveBusy = false;
-            // statsObj.trainingSetReady = true;
           }
           catch(err){
-            // statsObj.loadUsersArchiveBusy = false;
-            // statsObj.trainingSetReady = false;
             console.log(chalkError(MODULE_ID_PREFIX + " | *** WATCH CHANGE ERROR | " + getTimeStamp() + " | " + err));
           }
 
@@ -5565,10 +5559,8 @@ function loadTrainingSet(params){
 
     if (archiveFlagObj.path !== statsObj.archivePath) {
 
-      const fullLocalPath = (hostname === "google") ? "/home/tc/Dropbox/Apps/wordAssociation" + archiveFlagObj.path : "/Users/tc/Dropbox/Apps/wordAssociation" + archiveFlagObj.path;
-
       try {
-        await loadUsersArchive({path: fullLocalPath, size: archiveFlagObj.size});
+        await loadUsersArchive({path: archiveFlagObj.path, size: archiveFlagObj.size});
         statsObj.archiveModified = getTimeStamp();
         statsObj.loadUsersArchiveBusy = false;
         statsObj.archivePath = archiveFlagObj.path;

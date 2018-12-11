@@ -11,7 +11,7 @@
     "@threeceelabs/mongoose-twitter": "^1.0.186",
     "@threeceelabs/tweet-server-controller": "^1.0.415",
     "@threeceelabs/twitter-image-parser": "^1.0.65",
-    "@threeceelabs/twitter-text-parser": "^1.0.76",
+    "@threeceelabs/twitter-text-parser": "^1.0.77",
     "@threeceelabs/user-server-controller": "^1.0.395",
     "archiver": "^3.0.0",
     "array-normalize": "^1.1.3",
