@@ -2,8 +2,9 @@
 /*jshint sub:true*/
 "use strict";
 
-const HOST = process.env.PRIMARY_HOST || "local";
-const PRIMARY_HOST = process.env.PRIMARY_HOST || "macpro2";
+// const HOST = process.env.PRIMARY_HOST || "local";
+// const PRIMARY_HOST = process.env.PRIMARY_HOST || "macpro2";
+const HOST = "default";
 
 let quitOnCompleteFlag = false;
 
@@ -367,10 +368,10 @@ configuration.default.trainingSetsFolder = DROPBOX_CONFIG_DEFAULT_FOLDER + "/tra
 configuration.default.userArchiveFolder = DROPBOX_CONFIG_DEFAULT_FOLDER + "/trainingSets/users";
 configuration.default.userArchivePath = configuration.default.userArchiveFolder + "/" + configuration.userArchiveFile;
 
-configuration.trainingSetsFolder = configuration[PRIMARY_HOST].trainingSetsFolder;
-configuration.archiveFileUploadCompleteFlagFolder = configuration[PRIMARY_HOST].trainingSetsFolder + "/users";
-configuration.userArchiveFolder = configuration[PRIMARY_HOST].userArchiveFolder;
-configuration.userArchivePath = "/Users/tc/Dropbox/Apps/wordAssociation" + configuration[PRIMARY_HOST].userArchivePath;
+configuration.trainingSetsFolder = configuration[HOST].trainingSetsFolder;
+configuration.archiveFileUploadCompleteFlagFolder = configuration[HOST].trainingSetsFolder + "/users";
+configuration.userArchiveFolder = configuration[HOST].userArchiveFolder;
+configuration.userArchivePath = "/Users/tc/Dropbox/Apps/wordAssociation" + configuration[HOST].userArchivePath;
 
 configuration.defaultUserArchiveFlagFile = "usersZipUploadComplete.json";
 configuration.trainingSetFile = "trainingSet.json";
