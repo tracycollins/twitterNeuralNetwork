@@ -54,6 +54,8 @@ const objectPath = require("object-path");
 const fetch = require("isomorphic-fetch"); // or another library of choice.
 const NodeCache = require("node-cache");
 const merge = require("deepmerge");
+const MergeHistograms = require("@threeceelabs/mergehistograms");
+const mergeHistograms = new MergeHistograms();
 const arrayNormalize = require("array-normalize");
 
 const writeJsonFile = require("write-json-file");
@@ -1386,9 +1388,9 @@ function testNetwork(params){
     let maxInputHashMap = params.maxInputHashMap;
 
     console.log(chalkBlue("NNC | TEST NETWORK"
-      + " | TEST SET ID: " + testSet.meta.testSetId
+      + " | TEST SET ID: " + params.testSet.meta.testSetId
       + " | NETWORK ID: " + networkObj.networkId
-      + " | " + testSet.meta.setSize + " TEST DATA POINTS"
+      + " | " + params.testSet.meta.setSize + " TEST DATA POINTS"
     ));
 
     const nw = neataptic.Network.fromJSON(networkObj.network);
@@ -1403,65 +1405,63 @@ function testNetwork(params){
     convertDatumParams.normalization = statsObj.normalization;
     convertDatumParams.maxInputHashMap = maxInputHashMap;
 
-    let shuffledTestData = _.shuffle(testSet.data);
+    let shuffledTestData = _.shuffle(params.testSet.data);
 
-    async.each(shuffledTestData, function(datum, cb){
+    async.each(shuffledTestData, async function(datum){
 
-      convertTestDatum(convertDatumParams, networkObj.inputsObj.inputs, datum, function(err, testDatumObj){
+      try {
 
-        activateNetwork(nw, testDatumObj.input, function(testOutput){
+        // console.log(chalkLog(MODULE_ID_PREFIX
+        //  + " | IN: " + networkObj.inputsObj.inputsId
+        //  + " | @" + datum.screenName
+        //  // + "\ndatum\n" + jsonPrint(datum)
+        // ));
 
-          debug(chalkLog("========================================"));
+        let testDatumObj = await convertDatum({datum: datum, inputsObj: networkObj.inputsObj, generateInputRaw: false});
+        let testOutput = await activateNetwork({network: nw, input: testDatumObj.input});
+        let testMaxOutputIndex = await indexOfMax(testOutput);
+        let expectedMaxOutputIndex = await indexOfMax(testDatumObj.output);
 
-          numTested += 1;
+        debug("INDEX OF MAX TEST OUTPUT: " + expectedMaxOutputIndex);
 
-          indexOfMax(testOutput, function(testMaxOutputIndex, to){
+        let passed = (testMaxOutputIndex === expectedMaxOutputIndex);
 
-            debug("INDEX OF MAX TEST OUTPUT: " + to);
+        numTested += 1;
 
-            indexOfMax(testDatumObj.output, function(expectedMaxOutputIndex, eo){
+        numPassed = passed ? numPassed+1 : numPassed;
 
-              debug("INDEX OF MAX TEST OUTPUT: " + eo);
+        successRate = 100 * numPassed/(numTested + numSkipped);
 
-              let passed = (testMaxOutputIndex === expectedMaxOutputIndex);
+        let currentChalk = passed ? chalkLog : chalkAlert;
 
-              numPassed = passed ? numPassed+1 : numPassed;
+        testResultArray.push(
+          {
+            P: passed,
+            EO: testDatumObj.output,
+            EOI: expectedMaxOutputIndex,
+            TO: testOutput, 
+            TOI: testMaxOutputIndex
+          }
+        );
 
-              successRate = 100 * numPassed/(numTested + numSkipped);
+        console.log(currentChalk("TEST RESULT: " + passed 
+          + " | " + successRate.toFixed(2) + "%"
+          + " | " + testOutput[0]
+          + " " + testOutput[1]
+          + " " + testOutput[2]
+          + " | TMOI: " + testMaxOutputIndex
+          + " | " + testDatumObj.output[0]
+          + " " + testDatumObj.output[1]
+          + " " + testDatumObj.output[2]
+          + " | EMOI: " + expectedMaxOutputIndex
+        ));
 
-              let currentChalk = passed ? chalkLog : chalkAlert;
+        return;
 
-              testResultArray.push(
-                {
-                  P: passed,
-                  EO: testDatumObj.output,
-                  EOI: expectedMaxOutputIndex,
-                  TO: testOutput, 
-                  TOI: testMaxOutputIndex
-                }
-              );
-
-              debug(currentChalk("TEST RESULT: " + passed 
-                + " | " + successRate.toFixed(2) + "%"
-                + "\n" + testOutput[0]
-                + " " + testOutput[1]
-                + " " + testOutput[2]
-                + " | TMOI: " + testMaxOutputIndex
-                + "\n" + testDatumObj.output[0]
-                + " " + testDatumObj.output[1]
-                + " " + testDatumObj.output[2]
-                + " | EMOI: " + expectedMaxOutputIndex
-              ));
-
-              cb();
-
-            });
-
-          });
-
-        });
-
-      });
+      }
+      catch(err){
+        return reject(err);
+      }
 
     }, function(err){
 
@@ -1469,183 +1469,139 @@ function testNetwork(params){
         return reject(err);
       }
 
-      resolve({ 
-        testSetId: testSet.meta.testSetId, 
-        numTests: testSet.meta.setSize, 
+      const testResults = { 
+        testSetId: params.testSet.meta.testSetId, 
+        numTests: params.testSet.meta.setSize, 
         numSkipped: numSkipped, 
         numPassed: numPassed, 
         successRate: successRate
+      };
+
+      debug(chalkNetwork(MODULE_ID_PREFIX
+        + " | TEST RESULTS\n" + jsonPrint(testResults)
+      ));
+
+      resolve(testResults);
+
+    });
+
+  });
+
+}
+
+function convertDatum(params){
+
+  let datum = params.datum;
+  let generateInputRaw = params.generateInputRaw;
+
+    // console.log(chalkLog(MODULE_ID_PREFIX
+    //  + " | IN: " + params.inputsObj.inputsId
+    //  + " | @" + datum.screenName
+    //  // + "\ndatum\n" + jsonPrint(datum)
+    // ));
+
+  return new Promise(async function(resolve, reject){
+
+    try {
+
+      const inputTypes = Object.keys(params.inputsObj.inputs).sort();
+
+      let mergedHistograms = await mergeHistograms.merge({ histogramA: datum.tweetHistograms, histogramB: datum.profileHistograms });
+
+      let convertedDatum = {};
+
+      convertedDatum.screenName = datum.screenName;
+      convertedDatum.input = [];
+      convertedDatum.output = [];
+      convertedDatum.inputRaw = [];
+
+      switch (datum.category) {
+        case "left":
+        convertedDatum.output = [1, 0, 0];
+        break;
+        case "neutral":
+        convertedDatum.output = [0, 1, 0];
+        break;
+        case "right":
+        convertedDatum.output = [0, 0, 1];
+        break;
+        case "default":
+        convertedDatum.output = [0, 0, 0];
+        break;
+      }
+
+      async.eachSeries(inputTypes, function(inputType, cb0){
+
+        const inNames = params.inputsObj.inputs[inputType].sort();
+
+        async.eachSeries(inNames, function(inName, cb1){
+
+          const inputName = inName;
+
+          if (generateInputRaw) {
+            convertedDatum.inputRaw.push(inputName);
+          }
+
+          if (inputType === "sentiment") {
+            if (datum.languageAnalysis === undefined) {
+              convertedDatum.input.push(0);
+            }
+            else if (datum.languageAnalysis[inputName] === undefined) {
+              convertedDatum.input.push(0);
+            }
+            else {
+              convertedDatum.input.push(datum.languageAnalysis[inputName]);
+            }
+            async.setImmediate(function() {
+              cb1();
+            });
+          }
+          else if (mergedHistograms[inputType] && (mergedHistograms[inputType] !== undefined) && (mergedHistograms[inputType][inputName] !== undefined)){
+
+            if (configuration.inputsBinaryMode) {
+              convertedDatum.input.push(1);
+            }
+            else if ((params.trainingSet.maxInputHashMap === undefined) 
+              || (params.trainingSet.maxInputHashMap[inputType] === undefined)) {
+              debug(chalkAlert("UNDEFINED??? params.trainingSet.maxInputHashMap." + inputType + " | " + inputName));
+              convertedDatum.input.push(1);
+            }
+            else {
+              const inputValue = (params.trainingSet.maxInputHashMap[inputType][inputName] > 0) 
+                ? mergedHistograms[inputType][inputName]/params.trainingSet.maxInputHashMap[inputType][inputName] 
+                : 1;
+              convertedDatum.input.push(inputValue);
+            }
+
+            async.setImmediate(function() {
+              cb1();
+            });
+          }
+          else {
+            convertedDatum.input.push(0);
+            async.setImmediate(function() {
+              cb1();
+            });
+          }
+
+        }, function(){
+          cb0();
+        });
+
+      }, function(){
+        resolve(convertedDatum);
       });
 
-    });
+    }
+    catch(err){
+      console.log(chalkError(MODULE_ID_PREFIX
+        + " | *** CONVERT TRAINING DATUM ERROR: " + err
+      ));
+      return reject(err);
+    }
 
   });
 
-}
-
-function convertTrainingDatum(params, datum, generateInputRaw, callback){
-
-  const inputTypes = Object.keys(params.inputsObj.inputs).sort();
-
-  let convertedDatum = {};
-  convertedDatum.user = {};
-  convertedDatum.user = datum.screenName;
-  convertedDatum.input = [];
-  convertedDatum.output = [];
-  convertedDatum.inputRaw = [];
-
-  switch (datum.category) {
-    case "left":
-    convertedDatum.output = [1, 0, 0];
-    break;
-    case "neutral":
-    convertedDatum.output = [0, 1, 0];
-    break;
-    case "right":
-    convertedDatum.output = [0, 0, 1];
-    break;
-    case "default":
-    convertedDatum.output = [0, 0, 0];
-    break;
-  }
-
-  async.eachSeries(inputTypes, function(inputType, cb0){
-
-    const inNames = params.inputsObj.inputs[inputType].sort();
-
-    async.eachSeries(inNames, function(inName, cb1){
-
-      const inputName = inName;
-
-      if (generateInputRaw) {
-        convertedDatum.inputRaw.push(inputName);
-      }
-
-      if (inputType === "sentiment") {
-        if (datum.languageAnalysis === undefined) {
-          convertedDatum.input.push(0);
-        }
-        else if (datum.languageAnalysis[inputName] === undefined) {
-          convertedDatum.input.push(0);
-        }
-        else {
-          convertedDatum.input.push(datum.languageAnalysis[inputName]);
-          // console.log("NNC | convertTrainingDatum INPUT | " + inputType + " | " + inputName + ": " + datum.languageAnalysis[inputName]);
-        }
-        async.setImmediate(function() {
-          cb1();
-        });
-      }
-      else if ((datum.histograms[inputType] !== undefined) && (datum.histograms[inputType][inputName] !== undefined)){
-
-        if (configuration.inputsBinaryMode) {
-          convertedDatum.input.push(1);
-        }
-        else if ((params.trainingSet.maxInputHashMap === undefined) 
-          || (params.trainingSet.maxInputHashMap[inputType] === undefined)) {
-          debug(chalkAlert("UNDEFINED??? params.trainingSet.maxInputHashMap." + inputType + " | " + inputName));
-          convertedDatum.input.push(1);
-        }
-        else {
-          const inputValue = (params.trainingSet.maxInputHashMap[inputType][inputName] > 0) 
-            ? datum.histograms[inputType][inputName]/params.trainingSet.maxInputHashMap[inputType][inputName] 
-            : 1;
-          convertedDatum.input.push(inputValue);
-        }
-
-        async.setImmediate(function() {
-          cb1();
-        });
-      }
-      else {
-        convertedDatum.input.push(0);
-        async.setImmediate(function() {
-          cb1();
-        });
-      }
-
-    }, function(){
-      cb0();
-    });
-
-  }, function(){
-    callback(null, convertedDatum);
-  });
-}
-
-function convertTestDatum(params, inputs, datum, callback){
-
-  const inputTypes = Object.keys(inputs).sort();
-
-  let convertedDatum = {};
-  convertedDatum.user = {};
-  convertedDatum.user = datum.screenName;
-  convertedDatum.input = [];
-  convertedDatum.output = [];
-
-  switch (datum.category) {
-    case "left":
-    convertedDatum.output = [1, 0, 0];
-    break;
-    case "neutral":
-    convertedDatum.output = [0, 1, 0];
-    break;
-    case "right":
-    convertedDatum.output = [0, 0, 1];
-    break;
-    default:
-    convertedDatum.output = [0, 0, 0];
-  }
-
-  async.eachSeries(inputTypes, function(inputType, cb0){
-
-    const inNames = inputs[inputType].sort();
-
-    async.eachSeries(inNames, function(inName, cb1){
-
-      const inputName = inName;
-
-      if (inputType === "sentiment") {
-        if (datum.languageAnalysis === undefined) {
-          convertedDatum.input.push(0);
-        }
-        else if (datum.languageAnalysis[inputName] === undefined) {
-          convertedDatum.input.push(0);
-        }
-        else {
-          convertedDatum.input.push(datum.languageAnalysis[inputName]);
-          debug("NNC | convertTestDatum | INPUT | " + inputType + " | " + inputName + ": " + datum.languageAnalysis[inputName]);
-        }
-        async.setImmediate(function() { cb1(); });
-      }
-      else if ((datum.histograms[inputType] !== undefined) && (datum.histograms[inputType][inputName] !== undefined)){
-
-        if ((params.maxInputHashMap === undefined) 
-          || (params.maxInputHashMap[inputType] === undefined)) {
-          debug(chalkAlert("NNC | convertTestDatum | UNDEFINED??? params.maxInputHashMap." + inputType + " | " + inputName));
-          convertedDatum.input.push(1);
-        }
-        else {
-          const inputValue = (params.maxInputHashMap[inputType][inputName] > 0) 
-            ? datum.histograms[inputType][inputName]/params.maxInputHashMap[inputType][inputName] 
-            : 1;
-          convertedDatum.input.push(inputValue);
-        }
-
-        async.setImmediate(function() { cb1(); });
-      }
-      else {
-        convertedDatum.input.push(0);
-        async.setImmediate(function() { cb1(); });
-      }
-
-    }, function(){
-      cb0();
-    });
-
-  }, function(){
-    callback(null, convertedDatum);
-  });
 }
 
 function networkEvolve(params) {
@@ -1813,15 +1769,17 @@ function trainingSetPrep(params){
     let inputRaw = [];
     let generateInputRaw = true;
     
-    console.log("NNC | TRAINING SET PREP"
+    console.log(chalkLog(MODULE_ID_PREFIX
+      + " | TRAINING SET PREP"
       + " | DATA LENGTH: " + params.trainingSet.data.length
-    );
+    ));
 
     const shuffledTrainingData = _.shuffle(params.trainingSet.data);
 
-    async.each(shuffledTrainingData, function(datum, cb){
+    async.eachSeries(shuffledTrainingData, async function(datum){
 
-      convertTrainingDatum(params, datum, generateInputRaw, function(err, datumObj){
+      try {
+        let datumObj = await convertDatum({datum: datum, inputsObj: params.inputsObj, generateInputRaw: generateInputRaw});
 
         if (datumObj.inputRaw.length > 0) { 
           generateInputRaw = false;
@@ -1833,11 +1791,14 @@ function trainingSetPrep(params){
           output: datumObj.output
         });
 
-        async.setImmediate(function() {
-          cb();
-        });
-
-      });
+        async.setImmediate(function() { return; });
+      }
+      catch(err){
+        console.log(chalkError(MODULE_ID_PREFIX
+          + " | *** ERROR TRAINING SET PREP: " + err 
+        ));
+        return err;
+      }
 
     }, function(err){
 
@@ -1846,30 +1807,6 @@ function trainingSetPrep(params){
       }
 
       resolve(trainingSet);
-
-      // console.log(chalkBlueBold(MODULE_ID_PREFIX + " | START EVOLVE"
-      //   + " | " + configuration.childId
-      //   + " | INPUTS ID: " + params.inputsId
-      //   + " | IN: " + params.inputsObj.meta.numInputs
-      //   + " | IN: " + trainingSet[0].input.length
-      //   + " | OUT: " + params.trainingSet.meta.numOutputs
-      //   + " | OUT: " + trainingSet[0].output.length
-      //   + " | ITRTNS: " + options.iterations
-      //   + " | TRAINING SET: " + trainingSet.length + " DATA PTS"
-      //   + " | TEST SET: " + params.testSet.meta.setSize + " DATA PTS"
-      // ));
-
-      // try {
-      //   await networkEvolve(params);
-      //   resolve();
-      // }
-      // catch(err){
-      //   statsObj.evolve.endTime = moment().valueOf();
-      //   statsObj.evolve.elapsed = moment().valueOf() - statsObj.evolve.startTime;
-      //   console.error(chalkError("NNC | " + configuration.childId + " | NETWORK EVOLVE ERROR: " + err + "\n" + jsonPrint(err)));
-      //   process.send({op: "ERROR", childId: configuration.childId, error: err});
-      //   return reject(err);
-      // }
 
     });
 
@@ -2077,81 +2014,99 @@ function evolve(params){
   });
 }
 
-function activateNetwork(n, input, callback){
-  let output;
-  output = n.activate(input);
-  callback(output);
+function activateNetwork(params){
+  return new Promise(function(resolve, reject){
+    try {
+      let output;
+      output = params.network.activate(params.input);
+      resolve(output);
+    }
+    catch(err){
+      return reject(err);
+    }
+
+  });
 }
 
-function indexOfMax (arr, callback) {
+function indexOfMax (arr) {
 
-  if (arr.length === 0) {
-    console.log(chalkAlert("NNC | indexOfMax: 0 LENG ARRAY: -1"));
-    return(callback(-2, arr)) ; 
-  }
+  return new Promise(function(resolve, reject){
 
-  if ((arr[0] === arr[1]) && (arr[1] === arr[2])){
-    debug(chalkAlert("NNT | indexOfMax: ALL EQUAL"));
-    debug(chalkAlert("NNT | ARR" 
-      + " | " + arr[0].toFixed(2) 
-      + " - " + arr[1].toFixed(2) 
-      + " - " + arr[2].toFixed(2)
-    ));
-    if (arr[0] === 0) { return(callback(-4, arr)); }
-    return(callback(4, [1,1,1])) ; 
-  }
-
-  debug("NNT | B4 ARR: " + arr[0].toFixed(2) + " - " + arr[1].toFixed(2) + " - " + arr[2].toFixed(2));
-  arrayNormalize(arr);
-  debug("NNT | AF ARR: " + arr[0].toFixed(2) + " - " + arr[1].toFixed(2) + " - " + arr[2].toFixed(2));
-
-  if (((arr[0] === 1) && (arr[1] === 1)) 
-    || ((arr[0] === 1) && (arr[2] === 1))
-    || ((arr[1] === 1) && (arr[2] === 1))){
-
-    debug(chalkAlert("NNT | indexOfMax: MULTIPLE SET"));
-
-    debug(chalkAlert("NNT | ARR" 
-      + " | " + arr[0].toFixed(2) 
-      + " - " + arr[1].toFixed(2) 
-      + " - " + arr[2].toFixed(2)
-    ));
-
-    async.eachOf(arr, function(val, index, cb0){
-      if (val < 1) {
-        arr[index] = 0;
+    try {
+      if (arr.length === 0) {
+        console.log(chalkAlert("NNC | indexOfMax: 0 LENG ARRAY: -1"));
+        return resolve(-2); 
       }
-      cb0(); 
-    }, function(){
-      callback(3, arr); 
-    });
 
-  }
-  else {
-
-    let max = 0;
-    let maxIndex = -1;
-
-    async.eachOfSeries(arr, function(val, index, cb1){
-      if (val > max) {
-        maxIndex = index;
-        max = val;
-      }
-      cb1(); 
-    }, function(){
-
-      async.eachOf(arr, function(val, index, cb2){
-        if (val < 1) {
-          arr[index] = 0;
+      if ((arr[0] === arr[1]) && (arr[1] === arr[2])){
+        debug(chalkAlert("NNT | indexOfMax: ALL EQUAL"));
+        debug(chalkAlert("NNT | ARR" 
+          + " | " + arr[0].toFixed(2) 
+          + " - " + arr[1].toFixed(2) 
+          + " - " + arr[2].toFixed(2)
+        ));
+        if (arr[0] === 0) { 
+          return resolve(-4); 
         }
-        cb2(); 
-      }, function(){
-        callback(maxIndex, arr); 
-      });
+        return resolve(4); 
+      }
 
-    });
+      debug("NNT | B4 ARR: " + arr[0].toFixed(2) + " - " + arr[1].toFixed(2) + " - " + arr[2].toFixed(2));
+      arrayNormalize(arr);
+      debug("NNT | AF ARR: " + arr[0].toFixed(2) + " - " + arr[1].toFixed(2) + " - " + arr[2].toFixed(2));
 
-  }
+      if (((arr[0] === 1) && (arr[1] === 1)) 
+        || ((arr[0] === 1) && (arr[2] === 1))
+        || ((arr[1] === 1) && (arr[2] === 1))){
+
+        debug(chalkAlert("NNT | indexOfMax: MULTIPLE SET"));
+
+        debug(chalkAlert("NNT | ARR" 
+          + " | " + arr[0].toFixed(2) 
+          + " - " + arr[1].toFixed(2) 
+          + " - " + arr[2].toFixed(2)
+        ));
+
+        async.eachOf(arr, function(val, index, cb0){
+          if (val < 1) {
+            arr[index] = 0;
+          }
+          cb0(); 
+        }, function(){
+          resolve(3); 
+        });
+
+      }
+      else {
+
+        let max = 0;
+        let maxIndex = -1;
+
+        async.eachOfSeries(arr, function(val, index, cb1){
+          if (val > max) {
+            maxIndex = index;
+            max = val;
+          }
+          cb1(); 
+        }, function(){
+
+          async.eachOf(arr, function(val, index, cb2){
+            if (val < 1) {
+              arr[index] = 0;
+            }
+            cb2(); 
+          }, function(){
+            resolve(maxIndex); 
+          });
+
+        });
+      }
+    }
+    catch(err){
+      return reject(err);
+    }
+
+  });
 }
 
 //=========================================================================

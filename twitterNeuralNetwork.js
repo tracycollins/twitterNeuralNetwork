@@ -2,6 +2,10 @@
 /*jshint sub:true*/
 "use strict";
 
+const HOST = process.env.PRIMARY_HOST || "local";
+const PRIMARY_HOST = process.env.PRIMARY_HOST || "macpro2";
+
+
 let quitOnCompleteFlag = false;
 
 
@@ -53,6 +57,7 @@ configuration.statsUpdateIntervalTime = STATS_UPDATE_INTERVAL;
 
 const os = require("os");
 const path = require("path");
+const watch = require("watch");
 const moment = require("moment");
 const HashMap = require("hashmap").HashMap;
 const pick = require("object.pick");
@@ -67,6 +72,8 @@ const objectPath = require("object-path");
 const fetch = require("isomorphic-fetch"); // or another library of choice.
 const NodeCache = require("node-cache");
 const merge = require("deepmerge");
+const MergeHistograms = require("@threeceelabs/mergehistograms");
+const mergeHistograms = new MergeHistograms();
 const table = require("text-table");
 const randomItem = require("random-item");
 const randomFloat = require("random-float");
@@ -347,20 +354,40 @@ configuration.seedNetworkProbability = DEFAULT_SEED_NETWORK_PROBABILITY;
 configuration.initMainIntervalTime = DEFAULT_INIT_MAIN_INTERVAL;
 configuration.enableRequiredTrainingSet = false;
 
-configuration.histogramsFolder = "/config/utility/default/histograms";
+const DROPBOX_CONFIG_FOLDER = "/config/utility";
+const DROPBOX_CONFIG_DEFAULT_FOLDER = DROPBOX_CONFIG_FOLDER + "/default";
+const DROPBOX_CONFIG_HOST_FOLDER = DROPBOX_CONFIG_FOLDER + "/" + hostname;
 
-configuration.defaultTrainingSetsFolder = "/config/utility/default/trainingSets/users";
-configuration.hostTrainingSetsFolder = "/config/utility/" + hostname + "/trainingSets/users";
+configuration.local = {};
+configuration.local.trainingSetsFolder = DROPBOX_CONFIG_HOST_FOLDER + "/trainingSets";
+configuration.local.userArchiveFolder = DROPBOX_CONFIG_HOST_FOLDER + "/trainingSets/users";
+configuration.local.userArchivePath = configuration.local.userArchiveFolder + "/" + configuration.userArchiveFile;
 
-configuration.defaultUserArchiveFolder = (hostname === "google") ? "/home/tc/Dropbox/Apps/wordAssociation" + configuration.defaultTrainingSetsFolder 
-  : "/Users/tc/Dropbox/Apps/wordAssociation" + configuration.defaultTrainingSetsFolder;
+configuration.default = {};
+configuration.default.trainingSetsFolder = DROPBOX_CONFIG_DEFAULT_FOLDER + "/trainingSets";
+configuration.default.userArchiveFolder = DROPBOX_CONFIG_DEFAULT_FOLDER + "/trainingSets/users";
+configuration.default.userArchivePath = configuration.default.userArchiveFolder + "/" + configuration.userArchiveFile;
 
-configuration.defaultUserArchiveFile = "users.zip";
+configuration.trainingSetsFolder = configuration[HOST].trainingSetsFolder;
+configuration.archiveFileUploadCompleteFlagFolder = configuration[HOST].trainingSetsFolder + "/users";
+configuration.userArchiveFolder = configuration[HOST].userArchiveFolder;
+configuration.userArchivePath = "/Users/tc/Dropbox/Apps/wordAssociation" + configuration[HOST].userArchivePath;
+
 configuration.defaultUserArchiveFlagFile = "usersZipUploadComplete.json";
-configuration.defaultUserArchivePath = configuration.defaultUserArchiveFolder + "/" + configuration.defaultUserArchiveFile;
-
 configuration.trainingSetFile = "trainingSet.json";
 configuration.requiredTrainingSetFile = "requiredTrainingSet.txt";
+
+// configuration.histogramsFolder = "/config/utility/default/histograms";
+
+// configuration.defaultTrainingSetsFolder = "/config/utility/default/trainingSets/users";
+// configuration.hostTrainingSetsFolder = "/config/utility/" + hostname + "/trainingSets/users";
+
+// configuration.defaultUserArchiveFolder = (hostname === PRIMARY_HOST) ? "/home/tc/Dropbox/Apps/wordAssociation" + configuration.defaultTrainingSetsFolder 
+//   : "/Users/tc/Dropbox/Apps/wordAssociation" + configuration.defaultTrainingSetsFolder;
+
+// configuration.defaultUserArchiveFile = "users.zip";
+// configuration.defaultUserArchivePath = configuration.defaultUserArchiveFolder + "/" + configuration.defaultUserArchiveFile;
+
 
 configuration.maxNumberChildren = (process.env.TNN_MAX_NEURAL_NETWORK_CHILDREN !== undefined) 
   ? process.env.TNN_MAX_NEURAL_NETWORK_CHILDREN 
@@ -1134,24 +1161,24 @@ function encodeHistogramUrls(params){
 
           if (validUrl.isUri(url)){
             const urlB64 = btoa(url);
-            console.log(chalkAlert("HISTOGRAM " + histogram + ".urls | " + url + " -> " + urlB64));
+            debug(chalkAlert("HISTOGRAM " + histogram + ".urls | " + url + " -> " + urlB64));
             urls[urlB64] = urls[url];
             delete urls[url];
             return;
           }
 
           if (url === "url") {
-            console.log(chalkAlert("HISTOGRAM " + histogram + ".urls | XXX URL: " + url));
+            debug(chalkAlert("HISTOGRAM " + histogram + ".urls | XXX URL: " + url));
             delete urls[url];
             return;
           }
 
           if (validUrl.isUri(atob(url))) {
-            console.log(chalkGreen("HISTOGRAM " + histogram + ".urls | IS B64: " + url));
+            debug(chalkGreen("HISTOGRAM " + histogram + ".urls | IS B64: " + url));
             return;
           }
 
-          console.log(chalkAlert("HISTOGRAM " + histogram + ".urls |  XXX NOT URL NOR B64: " + url));
+          debug(chalkAlert("HISTOGRAM " + histogram + ".urls |  XXX NOT URL NOR B64: " + url));
           delete urls[url];
           return;
 
@@ -1160,9 +1187,9 @@ function encodeHistogramUrls(params){
             console.log(chalkError(MODULE_ID_PREFIX + " | *** ENCODE HISTOGRAM URL ERROR: " + err));
             return cb(err);
           }
-          if (Object.keys(urls).length > 0){
-            console.log("CONVERTED URLS\n" + jsonPrint(urls));
-          }
+          // if (Object.keys(urls).length > 0){
+          //   console.log("CONVERTED URLS\n" + jsonPrint(urls));
+          // }
           user[histogram].urls = urls;
           cb();
         });
@@ -1675,14 +1702,11 @@ function loadBestNetworkDropboxFolders (params){
 
     if (configuration.testMode) {
       dropboxFoldersEntries = _.shuffle(dropboxFoldersEntries);
-      // dropboxFoldersEntries.length = Math.min(TEST_DROPBOX_NN_LOAD, dropboxFoldersEntries.length);
-      // console.log(chalkAlert(MODULE_ID_PREFIX + " | !!! TEST MODE | LOAD " + TEST_DROPBOX_NN_LOAD + " NNs"));
     }
 
     async.eachSeries(dropboxFoldersEntries, async function(entry){
 
       if (configuration.testMode && (numNetworksLoaded >= TEST_DROPBOX_NN_LOAD)) {
-        // console.log(chalkInfo(MODULE_ID_PREFIX + " | !!! TEST MODE | LOADED " + numNetworksLoaded + " NNs"));
         return "TEST_MODE";
       }
 
@@ -2126,616 +2150,11 @@ function loadSeedNeuralNetwork(params){
     
   });
 
-
-}
-
-function updateCategorizedUsers(params){
-
-  return new Promise(function(resolve, reject){
-
-    statsObj.status = "UPDATE CATEGORIZED USERS";
-
-    let userSubDirectory = (hostname === "google") ? configuration.defaultTrainingSetsFolder
-    : configuration.hostTrainingSetsFolder;
-
-    let userFile;
-
-    userServerController.resetMaxInputsHashMap();
-
-    let categorizedNodeIds = categorizedUserHashmap.keys();
-
-    if (configuration.testMode) {
-      categorizedNodeIds.length = TEST_MODE_LENGTH;
-      console.log(chalkAlert(MODULE_ID_PREFIX + " | *** TEST MODE *** | CATEGORIZE MAX " + TEST_MODE_LENGTH + " USERS"));
-    }
-
-    let maxMagnitude = -Infinity;
-    let minScore = Infinity;
-    let maxScore = -Infinity;
-
-    console.log(chalkBlue(MODULE_ID_PREFIX + " | UPDATE CATEGORIZED USERS: " + categorizedNodeIds.length));
-
-    if (configuration.normalization) {
-      maxMagnitude = configuration.normalization.magnitude.max;
-      minScore = configuration.normalization.score.min;
-      maxScore = configuration.normalization.score.max;
-      console.log(chalkInfo(MODULE_ID_PREFIX + " | SET NORMALIZATION\n" + jsonPrint(configuration.normalization)));
-    }
-
-    statsObj.users.updatedCategorized = 0;
-    statsObj.users.notCategorized = 0;
-
-    let userIndex = 0;
-    let categorizedUsersPercent = 0;
-    let categorizedUsersStartMoment = moment();
-    let categorizedUsersEndMoment = moment();
-    let categorizedUsersElapsed = 0;
-    let categorizedUsersRemain = 0;
-    let categorizedUsersRate = 0;
-
-    async.eachSeries(categorizedNodeIds, function(nodeId, cb0){
-
-      User.findOne( { "$or":[ {nodeId: nodeId.toString()}, {screenName: nodeId.toLowerCase()} ]}, function(err, user){
-
-        userIndex += 1;
-
-        if (err){
-          console.error(chalkError(MODULE_ID_PREFIX + " | *** UPDATE CATEGORIZED USERS: USER FIND ONE ERROR: " + err));
-          statsObj.errors.users.findOne += 1;
-          return cb0(err) ;
-        }
-
-        if (!user){
-          console.log(chalkLog(MODULE_ID_PREFIX + " | *** UPDATE CATEGORIZED USERS: USER NOT FOUND: NID: " + nodeId));
-          statsObj.users.notFound += 1;
-          statsObj.users.notCategorized += 1;
-          return cb0() ;
-        }
-
-        if (user.screenName === undefined) {
-          console.log(chalkError(MODULE_ID_PREFIX + " | *** UPDATE CATEGORIZED USERS: USER SCREENNAME UNDEFINED\n" + jsonPrint(user)));
-          statsObj.users.screenNameUndefined += 1;
-          statsObj.users.notCategorized += 1;
-          return cb0("USER SCREENNAME UNDEFINED", null) ;
-        }
-
-        debug(chalkInfo(MODULE_ID_PREFIX + " | UPDATE CL USR <DB"
-          + " [" + userIndex + "/" + categorizedNodeIds.length + "]"
-          + " | " + user.nodeId
-          + " | @" + user.screenName
-        ));
-
-        let sentimentText;
-
-        let sentimentObj = {};
-        sentimentObj.magnitude = 0;
-        sentimentObj.score = 0;
-
-        if ((user.languageAnalysis !== undefined)
-          && (user.languageAnalysis.sentiment !== undefined)) {
-
-          sentimentObj.magnitude = user.languageAnalysis.sentiment.magnitude || 0;
-          sentimentObj.score = user.languageAnalysis.sentiment.score || 0;
-
-          if (!configuration.normalization) {
-            maxMagnitude = Math.max(maxMagnitude, sentimentObj.magnitude);
-            minScore = Math.min(minScore, sentimentObj.score);
-            maxScore = Math.max(maxScore, sentimentObj.score);
-          }
-        }
-        else {
-          user.languageAnalysis = {};
-          user.languageAnalysis.sentiment = {};
-          user.languageAnalysis.sentiment.magnitude = 0;
-          user.languageAnalysis.sentiment.score = 0;
-        }
-
-        sentimentText = "M: " + sentimentObj.magnitude.toFixed(2) + " S: " + sentimentObj.score.toFixed(2);
-
-        const category = user.category || false;
-
-        if (category) {
-
-          let classText = "";
-          let currentChalk = chalkLog;
-
-          switch (category) {
-            case "left":
-              categorizedUserHistogram.left += 1;
-              classText = "L";
-              currentChalk = chalk.blue;
-            break;
-            case "right":
-              categorizedUserHistogram.right += 1;
-              classText = "R";
-              currentChalk = chalk.yellow;
-            break;
-            case "neutral":
-              categorizedUserHistogram.neutral += 1;
-              classText = "N";
-              currentChalk = chalk.black;
-            break;
-            case "positive":
-              categorizedUserHistogram.positive += 1;
-              classText = "+";
-              currentChalk = chalk.green;
-            break;
-            case "negative":
-              categorizedUserHistogram.negative += 1;
-              classText = "-";
-              currentChalk = chalk.red;
-            break;
-            default:
-              categorizedUserHistogram.none += 1;
-              classText = "O";
-              currentChalk = chalk.bold.gray;
-          }
-
-          debug(chalkLog("\n==============================\n"));
-          debug(currentChalk("ADD  | U"
-            + " | SEN: " + sentimentText
-            + " | " + classText
-            + " | " + user.screenName
-            + " | " + user.nodeId
-            + " | " + user.name
-            + " | 3C FOLLOW: " + user.threeceeFollowing
-            + " | FLLWs: " + user.followersCount
-            + " | FRNDs: " + user.friendsCount
-          ));
-
-          statsObj.users.updatedCategorized += 1;
-
-          categorizedUsersPercent = 100 * (statsObj.users.notCategorized + statsObj.users.updatedCategorized)/categorizedNodeIds.length;
-          categorizedUsersElapsed = (moment().valueOf() - categorizedUsersStartMoment.valueOf()); // mseconds
-          categorizedUsersRate = categorizedUsersElapsed/statsObj.users.updatedCategorized; // msecs/userCategorized
-          categorizedUsersRemain = (categorizedNodeIds.length - (statsObj.users.notCategorized + statsObj.users.updatedCategorized)) * categorizedUsersRate; // mseconds
-          categorizedUsersEndMoment = moment();
-          categorizedUsersEndMoment.add(categorizedUsersRemain, "ms");
-
-          if ((statsObj.users.notCategorized + statsObj.users.updatedCategorized) % 100 === 0){
-
-            console.log(chalkLog("TNN"
-              + " | START: " + categorizedUsersStartMoment.format(compactDateTimeFormat)
-              + " | ELAPSED: " + msToTime(categorizedUsersElapsed)
-              + " | REMAIN: " + msToTime(categorizedUsersRemain)
-              + " | ETC: " + categorizedUsersEndMoment.format(compactDateTimeFormat)
-              + " | " + (statsObj.users.notCategorized + statsObj.users.updatedCategorized) + "/" + categorizedNodeIds.length
-              + " (" + categorizedUsersPercent.toFixed(1) + "%)"
-              + " USERS CATEGORIZED"
-            ));
-
-            console.log(chalkLog(MODULE_ID_PREFIX + " | CL U HIST"
-              + " | L: " + categorizedUserHistogram.left 
-              + " | R: " + categorizedUserHistogram.right
-              + " | N: " + categorizedUserHistogram.neutral
-              + " | +: " + categorizedUserHistogram.positive
-              + " | -: " + categorizedUserHistogram.negative
-              + " | 0: " + categorizedUserHistogram.none
-            ));
-
-          }
-
-          async.waterfall([
-            function userScreenName(cb) {
-              if (user.screenName !== undefined) {
-                cb(null, "@" + user.screenName);
-              }
-              else {
-                cb(null, null);
-              }
-            },
-            function userName(text, cb) {
-              if (user.name !== undefined) {
-                if (text) {
-                  cb(null, text + "\n" + user.name);
-                }
-                else {
-                  cb(null, user.name);
-                }
-              }
-              else {
-                if (text) {
-                  cb(null, text);
-                }
-                else {
-                  cb(null, null);
-                }
-              }
-            },
-            function userLocation(text, cb) {
-              if (user.location !== undefined) {
-                if (text) {
-                  cb(null, text + "\n" + user.location);
-                }
-                else {
-                  cb(null, user.location);
-                }
-              }
-              else {
-                if (text) {
-                  cb(null, text);
-                }
-                else {
-                  cb(null, null);
-                }
-              }
-            },
-            function userStatusText(text, cb) {
-              if ((user.status !== undefined) && user.status && user.status.text) {
-
-                debug(chalkBlue("T"
-                  + " | " + user.nodeId
-                  + " | " + jsonPrint(user.status.text)
-                ));
-
-                if (text) {
-                  cb(null, text + "\n" + user.status.text);
-                }
-                else {
-                  cb(null, user.status.text);
-                }
-              }
-              else {
-                if (text) {
-                  cb(null, text);
-                }
-                else {
-                  cb(null, null);
-                }
-              }
-            },
-            function userRetweetText(text, cb) {
-              if ((user.status !== undefined) && user.status) {
-                if ((user.status.retweeted_status !== undefined) && user.status.retweeted_status) {
-
-                  debug(chalkBlue("R"
-                    + " | " + user.nodeId
-                    + " | " + jsonPrint(user.status.retweeted_status.text)
-                  ));
-
-                  if (text) {
-                    cb(null, text + "\n" + user.status.retweeted_status.text);
-                  }
-                  else {
-                    cb(null, user.status.retweeted_status.text);
-                  }
-                }
-                else {
-                  if (text) {
-                    cb(null, text);
-                  }
-                  else {
-                    cb(null, null);
-                  }
-                }
-              }
-              else {
-                if (text) {
-                  cb(null, text);
-                }
-                else {
-                  cb(null, null);
-                }
-              }
-            },
-            function userDescriptionText(text, cb) {
-              if ((user.description !== undefined) && user.description) {
-                if (text) {
-                  cb(null, text + "\n" + user.description);
-                }
-                else {
-                  cb(null, user.description);
-                }
-              }
-              else {
-                if (text) {
-                  cb(null, text);
-                }
-                else {
-                  cb(null, null);
-                }
-              }
-            },
-            function userBannerImage(text, cb) {
-              if (user.bannerImageUrl 
-                && (!user.bannerImageAnalyzed 
-                  || (user.bannerImageAnalyzed !== user.bannerImageUrl)
-                  || configuration.forceBannerImageAnalysis
-                )) 
-              {
-
-                twitterImageParser.parseImage(user.bannerImageUrl, { screenName: user.screenName, category: user.category, updateGlobalHistograms: true}, function(err, results){
-                  if (err) {
-                    console.log(chalkError("*** PARSE BANNER IMAGE ERROR"
-                      + " | REQ: " + results.text
-                      + " | ERR: " + err.code + " | " + err.note
-                    ));
-
-                    if (statsObj.errors.imageParse[err.code] === undefined) {
-                      statsObj.errors.imageParse[err.code] = 1;
-                    }
-                    else {
-                      statsObj.errors.imageParse[err.code] += 1;
-                    }
-                    cb(null, text, null);
-                  }
-                  else {
-                    statsObj.users.imageParse.parsed += 1;
-                    user.bannerImageAnalyzed = user.bannerImageUrl;
-                    debug(chalkInfo(MODULE_ID_PREFIX + " | PARSE BANNER IMAGE"
-                      + " | RESULTS\n" + jsonPrint(results)
-                    ));
-                    if (results.text !== undefined) {
-                      console.log(chalkInfo(MODULE_ID_PREFIX + " | +++ BANNER ANALYZED: @" + user.screenName + " | " + classText + " | " + results.text));
-                      text = text + "\n" + results.text;
-                    }
-
-                    cb(null, text, results);
-                  }
-                });
-              }
-              else if (user.bannerImageUrl && user.bannerImageAnalyzed && (user.bannerImageUrl === user.bannerImageAnalyzed)) {
-
-                statsObj.users.imageParse.skipped += 1;
-
-                const imageHits = (user.histograms.images === undefined) ? 0 : Object.keys(user.histograms.images);
-                debug(chalkLog("--- BANNER HIST HIT: @" + user.screenName + " | HITS: " + imageHits));
-
-                async.setImmediate(function() {
-                  cb(null, text, null);
-                });
-
-              }
-              else {
-                async.setImmediate(function() {
-                  cb(null, text, null);
-                });
-              }
-            }
-          ], function (err, text, bannerResults) {
-
-            if (err) {
-              console.error(chalkError("*** ERROR " + err));
-              return cb0(err) ;
-            }
-
-            if (!text || (text === undefined)) { text = " "; }
-
-            // parse the user's text for hashtags, urls, emoji, screenNames, and words; create histogram
-
-            twitterTextParser.parseText(text, {updateGlobalHistograms: true}, function(err, hist){
-
-              if (err) {
-                console.error("*** PARSE TEXT ERROR\n" + err);
-                return cb0(err);
-              }
-
-              if (bannerResults && bannerResults.label && bannerResults.label.images) {
-                hist.images = bannerResults.label.images;
-              }
-
-              const updateHistogramsParams = { 
-                user: user, 
-                histograms: hist, 
-                computeMaxInputsFlag: true,
-                accumulateFlag: false
-              };
-
-              userServerController.updateHistograms(updateHistogramsParams, function(err, updatedUser){
-
-                if (err) {
-                  console.error("*** UPDATE USER HISTOGRAMS ERROR\n" + err);
-                  return cb0(err);
-                }
-
-                const subUser = pick(
-                  updatedUser,
-                  [
-                    "userId", 
-                    "screenName", 
-                    "nodeId", 
-                    "name",
-                    "statusesCount",
-                    "followersCount",
-                    "friendsCount",
-                    "languageAnalysis", 
-                    "category", 
-                    "categoryAuto", 
-                    "histograms", 
-                    "threeceeFollowing"
-                  ]);
-
-                trainingSetUsersHashMap.set(subUser.nodeId, subUser);
-
-                cb0();
-
-              });
-
-            });
-
-          });   
-        }
-        else {
-
-          statsObj.users.notCategorized += 1;
-
-          if (statsObj.users.notCategorized % 10 === 0){
-            console.log(chalkLog(MODULE_ID_PREFIX + " | " + statsObj.users.notCategorized + " USERS NOT CATEGORIZED"));
-          }
-
-          debug(chalkBlue("TNN *** USR DB NOT CL"
-            + " | CM: " + user.category
-            + " | CM HM: " + categorizedUserHashmap.get(nodeId).manual
-            + " | " + user.nodeId
-            + " | " + user.screenName
-            + " | " + user.name
-            + " | 3CF: " + user.threeceeFollowing
-            + " | FLs: " + user.followersCount
-            + " | FRs: " + user.friendsCount
-            + " | SEN: " + sentimentText
-          ));
-
-          categorizedUsersPercent = 100 * (statsObj.users.notCategorized + statsObj.users.updatedCategorized)/categorizedNodeIds.length;
-          categorizedUsersElapsed = (moment().valueOf() - categorizedUsersStartMoment.valueOf()); // mseconds
-          categorizedUsersRate = categorizedUsersElapsed/statsObj.users.updatedCategorized; // msecs/userCategorized
-          categorizedUsersRemain = (categorizedNodeIds.length - (statsObj.users.notCategorized + statsObj.users.updatedCategorized)) * categorizedUsersRate; // mseconds
-          categorizedUsersEndMoment = moment();
-          categorizedUsersEndMoment.add(categorizedUsersRemain, "ms");
-
-          if ((statsObj.users.notCategorized + statsObj.users.updatedCategorized) % 20 === 0){
-
-            console.log(chalkLog("TNN"
-              + " | START: " + categorizedUsersStartMoment.format(compactDateTimeFormat)
-              + " | ELAPSED: " + msToTime(categorizedUsersElapsed)
-              + " | REMAIN: " + msToTime(categorizedUsersRemain)
-              + " | ETC: " + categorizedUsersEndMoment.format(compactDateTimeFormat)
-              + " | " + (statsObj.users.notCategorized + statsObj.users.updatedCategorized) + "/" + categorizedNodeIds.length
-              + " (" + categorizedUsersPercent.toFixed(1) + "%)"
-              + " USERS CATEGORIZED"
-            ));
-
-            console.log(chalkLog(MODULE_ID_PREFIX + " | CL U HIST"
-              + " | L: " + categorizedUserHistogram.left
-              + " | R: " + categorizedUserHistogram.right
-              + " | N: " + categorizedUserHistogram.neutral
-              + " | +: " + categorizedUserHistogram.positive
-              + " | -: " + categorizedUserHistogram.negative
-              + " | 0: " + categorizedUserHistogram.none
-            ));
-
-          }
-
-          user.category = categorizedUserHashmap.get(nodeId).manual;
-
-          userServerController.findOneUser(user, {noInc: true}, function(err, updatedUser){
-            if (err) {
-              return cb0(err);
-            }
-            debug("updatedUser\n" + jsonPrint(updatedUser));
-            cb0();
-          });
-        }
-      });
-
-    }, async function(err){
-
-      if (err) {
-        if (err === "INTERRUPT") {
-          console.log(chalkAlert(MODULE_ID_PREFIX + " | INTERRUPT"));
-        }
-        else {
-          console.log(chalkError(MODULE_ID_PREFIX + " | UPDATE CATEGORIZED USERS ERROR: " + err));
-        }
-      }
-
-      userMaxInputHashMap = userServerController.getMaxInputsHashMap();
-
-      // console.log("MAX INPUT HASHMAP keys\n" + Object.keys(userMaxInputHashMap.images));
-
-      categorizedUsersPercent = 100 * (statsObj.users.notCategorized + statsObj.users.updatedCategorized)/categorizedNodeIds.length;
-      categorizedUsersElapsed = (moment().valueOf() - categorizedUsersStartMoment.valueOf()); // mseconds
-      categorizedUsersRate = categorizedUsersElapsed/statsObj.users.updatedCategorized; // msecs/userCategorized
-      categorizedUsersRemain = (categorizedNodeIds.length - (statsObj.users.notCategorized + statsObj.users.updatedCategorized)) * categorizedUsersRate; // mseconds
-      categorizedUsersEndMoment = moment();
-      categorizedUsersEndMoment.add(categorizedUsersRemain, "ms");
-
-      console.log(chalkBlueBold("\nTNN | ======================= END CATEGORIZE USERS ======================="
-        + "\nTNN | ==== START:   " + categorizedUsersStartMoment.format(compactDateTimeFormat)
-        + "\nTNN | ==== ELAPSED: " + msToTime(categorizedUsersElapsed)
-        + "\nTNN | ==== REMAIN:  " + msToTime(categorizedUsersRemain)
-        + "\nTNN | ==== ETC:     " + categorizedUsersEndMoment.format(compactDateTimeFormat)
-        + "\nTNN | ====          " + (statsObj.users.notCategorized + statsObj.users.updatedCategorized) + "/" + categorizedNodeIds.length
-        + " (" + categorizedUsersPercent.toFixed(1) + "%)" + " USERS CATEGORIZED"
-      ));
-
-      console.log(chalkBlueBold(MODULE_ID_PREFIX + " | CL U HIST"
-        + " | L: " + categorizedUserHistogram.left
-        + " | R: " + categorizedUserHistogram.right
-        + " | N: " + categorizedUserHistogram.neutral
-        + " | +: " + categorizedUserHistogram.positive
-        + " | -: " + categorizedUserHistogram.negative
-        + " | 0: " + categorizedUserHistogram.none
-      ));
-
-
-      statsObj.normalization.magnitude.max = maxMagnitude;
-      statsObj.normalization.score.min = minScore;
-      statsObj.normalization.score.max = maxScore;
-
-      console.log(chalkLog(MODULE_ID_PREFIX + " | CL U HIST | NORMALIZATION"
-        + " | MAG " + statsObj.normalization.magnitude.min.toFixed(2) + " MIN / " + statsObj.normalization.magnitude.max.toFixed(2) + " MAX"
-        + " | SCORE " + statsObj.normalization.score.min.toFixed(2) + " MIN / " + statsObj.normalization.score.max.toFixed(2) + " MAX"
-      ));
-
-      try{
-        await showStats();
-      }
-      catch(err){
-        console.log(chalkError(MODULE_ID_PREFIX + " | *** SHOW STATS ERROR: " + err));
-      }
-
-      resolve();
-
-    });
-
-  });
 }
 
 function activateNetwork(n, input){
-
   const output = n.activate(input);
   return output;
-}
-
-function convertDatum(params, inputs, datum, callback){
-
-  const inputTypes = Object.keys(inputs).sort();
-
-  let convertedDatum = {};
-  convertedDatum.user = {};
-  convertedDatum.user = datum.screenName;
-  convertedDatum.input = [];
-  convertedDatum.output = [];
-
-  switch (datum.category) {
-    case "left":
-    convertedDatum.output = [1, 0, 0];
-    break;
-    case "neutral":
-    convertedDatum.output = [0, 1, 0];
-    break;
-    case "right":
-    convertedDatum.output = [0, 0, 1];
-    break;
-    default:
-    convertedDatum.output = [0, 0, 0];
-  }
-
-  async.eachSeries(inputTypes, function(inputType, cb0){
-
-    async.eachSeries(inputs[inputType], function(inName, cb1){
-
-      const inputName = inName;
-
-      if ((datum.histograms[inputType] !== undefined) && (datum.histograms[inputType][inputName] !== undefined)){
-        convertedDatum.input.push(1);
-        async.setImmediate(function() {
-          cb1();
-        });
-      }
-      else {
-        convertedDatum.input.push(0);
-        async.setImmediate(function() {
-          cb1();
-        });
-      }
-    }, function(){
-      cb0();
-    });
-
-  }, function(){
-    callback(null, convertedDatum);
-  });
 }
 
 function unzipUsersToArray(params){
@@ -3053,14 +2472,14 @@ function initWatch(params){
 
         console.log(chalkLog(MODULE_ID_PREFIX + " | LOAD USER ARCHIVE FLAG FILE: " + params.rootFolder + "/" + configuration.defaultUserArchiveFlagFile));
 
-        loadFileRetry({folder: configuration.defaultTrainingSetsFolder, file: configuration.defaultUserArchiveFlagFile}, async function(err, archiveFlagObj){
+        loadFileRetry({folder: configuration.userArchiveFolder, file: configuration.defaultUserArchiveFlagFile}, async function(err, archiveFlagObj){
 
           console.log(chalkLog(MODULE_ID_PREFIX + " | USER ARCHIVE FLAG FILE | PATH: " + archiveFlagObj.path + " | SIZE: " + archiveFlagObj.size));
 
           // const fullLocalPath = (hostname === "google") ? "/home/tc/Dropbox/Apps/wordAssociation" + archiveFlagObj.path : "/Users/tc/Dropbox/Apps/wordAssociation" + archiveFlagObj.path;
 
           try {
-            await loadTrainingSet({folder: configuration.defaultTrainingSetsFolder, file: configuration.defaultUserArchiveFlagFile});
+            await loadTrainingSet({folder: configuration.userArchiveFolder, file: configuration.defaultUserArchiveFlagFile});
           }
           catch(err){
             console.log(chalkError(MODULE_ID_PREFIX + " | *** WATCH CHANGE ERROR | " + getTimeStamp() + " | " + err));
@@ -3080,7 +2499,7 @@ function initWatch(params){
     });
 
     // monitor.stop(); // Stop watching
-  })
+  });
 }
 
 function initCategorizedUserHashmap(params){
@@ -3402,10 +2821,10 @@ function generateRandomEvolveConfig (params){
     console.log(chalkLog(MODULE_ID_PREFIX + " | USING TRAINING SET: " + tObj.trainingSetObj.trainingSetId));
 
     if (configuration.testMode) {
-      tObj.trainingSetObj.trainingSet.meta.setSize = 500;
-      tObj.trainingSetObj.trainingSet.data.length = 500;
-      tObj.trainingSetObj.testSet.meta.setSize = 100;
-      tObj.trainingSetObj.testSet.data.length = 100;
+      tObj.trainingSetObj.trainingSet.data.length = Math.min(tObj.trainingSetObj.trainingSet.data.length, TEST_MODE_LENGTH);
+      tObj.trainingSetObj.testSet.data.length = parseInt(configuration.testSetRatio * tObj.trainingSetObj.trainingSet.data.length);
+      tObj.trainingSetObj.trainingSet.meta.setSize = tObj.trainingSetObj.trainingSet.data.length;
+      tObj.trainingSetObj.testSet.meta.setSize = tObj.trainingSetObj.testSet.data.length;
     }
 
     config.trainingSetId = tObj.trainingSetObj.trainingSetId;
@@ -4557,29 +3976,6 @@ function loadFile(params) {
 
           });
 
-          // const fileObj = JSONParse(data);
-
-          // if (fileObj.value) {
-
-          //   const fileObjSizeMbytes = sizeof(fileObj)/ONE_MEGABYTE;
-
-          //   console.log(chalkInfo(getTimeStamp()
-          //     + " | LOADED FILE FROM DROPBOX"
-          //     + " | " + fileObjSizeMbytes.toFixed(2) + " MB"
-          //     + " | " + fullPath
-          //   ));
-
-          //   return resolve(fileObj.value);
-          // }
-
-          // console.log(chalkError(getTimeStamp()
-          //   + " | *** LOAD FILE FROM DROPBOX ERROR"
-          //   + " | " + fullPath
-          //   + " | " + fileObj.error
-          // ));
-
-          // return reject(fileObj.error);
-
         }
 
         console.log(chalkError(getTimeStamp()
@@ -4622,20 +4018,6 @@ function loadFile(params) {
             return resolve(fileObj);
 
           });
-
-          // try {
-
-          //   const fileObj = JSONParse(payload);
-
-          //   if (fileObj.value) {
-          //     return resolve(fileObj.value);
-          //   }
-          //   resolve();
-          // }
-          // catch(err){
-          //   console.log(chalkError(MODULE_ID_PREFIX + " | *** DROPBOX loadFile ERROR: " + fullPath));
-          //   return reject(fileObj.error);
-          // }
 
         }
         else {
@@ -5553,7 +4935,22 @@ function loadTrainingSet(params){
 
     statsObj.status = "LOAD TRAINING SET";
 
-    let archiveFlagObj = await loadFileRetry({folder: configuration.defaultTrainingSetsFolder, file: configuration.defaultUserArchiveFlagFile});
+    console.log(chalkLog(MODULE_ID_PREFIX
+      + " | LOAD ARCHIVE FLAG FILE: " + configuration.userArchiveFolder + "/" + configuration.defaultUserArchiveFlagFile
+    ));
+
+    let archiveFlagObj;
+
+    try{
+      archiveFlagObj = await loadFileRetry({folder: configuration.userArchiveFolder, file: configuration.defaultUserArchiveFlagFile});
+    }
+    catch(err){
+      console.log(chalkError(MODULE_ID_PREFIX + " | *** USERS ARCHIVE FLAG FILE LOAD ERROR: " + err));
+      statsObj.loadUsersArchiveBusy = false;
+      statsObj.trainingSetReady = false;
+      return reject(err);
+    }
+
 
     console.log(chalkLog(MODULE_ID_PREFIX + " | USER ARCHIVE FLAG FILE | PATH: " + archiveFlagObj.path + " | SIZE: " + archiveFlagObj.size));
 
@@ -5911,12 +5308,12 @@ const fsmStates = {
 
           await loadInputsDropboxFolder({folder: defaultInputsFolder});
           await loadSeedNeuralNetwork(seedParams);
-          await loadTrainingSet({folder: configuration.defaultTrainingSetsFolder, file: configuration.defaultUserArchiveFlagFile});
+          await loadTrainingSet({folder: configuration.userArchiveFolder, file: configuration.defaultUserArchiveFlagFile});
           await childStartAll();
 
         }
         catch(err){
-          console.trace(chalkError(MODULE_ID_PREFIX + " | *** ALL CHILDREN STATS ERROR: " + err));
+          console.trace(chalkError(MODULE_ID_PREFIX + " | *** RUN ERROR: " + err));
         }
 
         // console.log(MODULE_ID_PREFIX + " | RUN | onEnter | " + event);
@@ -7051,6 +6448,7 @@ setTimeout(async function(){
 
     try {
       await connectDb();
+      initWatch({rootFolder: "/Users/tc/Dropbox/Apps/wordAssociation" + configuration.userArchiveFolder});
     }
     catch(err){
       dbConnectionReady = false;
