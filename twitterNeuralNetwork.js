@@ -5,7 +5,6 @@
 const HOST = process.env.PRIMARY_HOST || "local";
 const PRIMARY_HOST = process.env.PRIMARY_HOST || "macpro2";
 
-
 let quitOnCompleteFlag = false;
 
 
@@ -368,26 +367,14 @@ configuration.default.trainingSetsFolder = DROPBOX_CONFIG_DEFAULT_FOLDER + "/tra
 configuration.default.userArchiveFolder = DROPBOX_CONFIG_DEFAULT_FOLDER + "/trainingSets/users";
 configuration.default.userArchivePath = configuration.default.userArchiveFolder + "/" + configuration.userArchiveFile;
 
-configuration.trainingSetsFolder = configuration[HOST].trainingSetsFolder;
-configuration.archiveFileUploadCompleteFlagFolder = configuration[HOST].trainingSetsFolder + "/users";
-configuration.userArchiveFolder = configuration[HOST].userArchiveFolder;
-configuration.userArchivePath = "/Users/tc/Dropbox/Apps/wordAssociation" + configuration[HOST].userArchivePath;
+configuration.trainingSetsFolder = configuration[PRIMARY_HOST].trainingSetsFolder;
+configuration.archiveFileUploadCompleteFlagFolder = configuration[PRIMARY_HOST].trainingSetsFolder + "/users";
+configuration.userArchiveFolder = configuration[PRIMARY_HOST].userArchiveFolder;
+configuration.userArchivePath = "/Users/tc/Dropbox/Apps/wordAssociation" + configuration[PRIMARY_HOST].userArchivePath;
 
 configuration.defaultUserArchiveFlagFile = "usersZipUploadComplete.json";
 configuration.trainingSetFile = "trainingSet.json";
 configuration.requiredTrainingSetFile = "requiredTrainingSet.txt";
-
-// configuration.histogramsFolder = "/config/utility/default/histograms";
-
-// configuration.defaultTrainingSetsFolder = "/config/utility/default/trainingSets/users";
-// configuration.hostTrainingSetsFolder = "/config/utility/" + hostname + "/trainingSets/users";
-
-// configuration.defaultUserArchiveFolder = (hostname === PRIMARY_HOST) ? "/home/tc/Dropbox/Apps/wordAssociation" + configuration.defaultTrainingSetsFolder 
-//   : "/Users/tc/Dropbox/Apps/wordAssociation" + configuration.defaultTrainingSetsFolder;
-
-// configuration.defaultUserArchiveFile = "users.zip";
-// configuration.defaultUserArchivePath = configuration.defaultUserArchiveFolder + "/" + configuration.defaultUserArchiveFile;
-
 
 configuration.maxNumberChildren = (process.env.TNN_MAX_NEURAL_NETWORK_CHILDREN !== undefined) 
   ? process.env.TNN_MAX_NEURAL_NETWORK_CHILDREN 
