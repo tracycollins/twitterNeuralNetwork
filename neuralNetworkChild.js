@@ -1444,7 +1444,7 @@ function testNetwork(params){
           }
         );
 
-        console.log(currentChalk("TEST RESULT: " + passed 
+        debug(currentChalk("TEST RESULT: " + passed 
           + " | " + successRate.toFixed(2) + "%"
           + " | " + testOutput[0]
           + " " + testOutput[1]

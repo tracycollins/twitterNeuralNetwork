@@ -4931,6 +4931,7 @@ function loadTrainingSet(params){
 
     try{
       archiveFlagObj = await loadFileRetry({folder: configuration.userArchiveFolder, file: configuration.defaultUserArchiveFlagFile});
+      console.log(chalkError(MODULE_ID_PREFIX + " | USERS ARCHIVE FLAG FILE\n" + jsonPrint(archiveFlagObj)));
     }
     catch(err){
       console.log(chalkError(MODULE_ID_PREFIX + " | *** USERS ARCHIVE FLAG FILE LOAD ERROR: " + err));
@@ -4940,7 +4941,7 @@ function loadTrainingSet(params){
     }
 
 
-    console.log(chalkLog(MODULE_ID_PREFIX + " | USER ARCHIVE FLAG FILE | PATH: " + archiveFlagObj.path + " | SIZE: " + archiveFlagObj.size));
+    console.log(chalkLog(MODULE_ID_PREFIX + " | USER ARCHIVE FILE | PATH: " + archiveFlagObj.path + " | SIZE: " + archiveFlagObj.size));
 
     if (archiveFlagObj.path !== statsObj.archivePath) {
 
