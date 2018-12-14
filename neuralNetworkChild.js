@@ -1567,7 +1567,11 @@ function convertDatum(params){
               convertedDatum.input.push(1);
             }
             else {
-              const inputValue = (params.trainingSet.maxInputHashMap[inputType][inputName] > 0) 
+              const inputValue = (
+                params.trainingSet.maxInputHashMap[inputType] 
+                && params.trainingSet.maxInputHashMap[inputType][inputName] 
+                && (params.trainingSet.maxInputHashMap[inputType][inputName] > 0)
+              ) 
                 ? mergedHistograms[inputType][inputName]/params.trainingSet.maxInputHashMap[inputType][inputName] 
                 : 1;
               convertedDatum.input.push(inputValue);
