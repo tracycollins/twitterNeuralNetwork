@@ -1204,13 +1204,18 @@ function updateUserFromTrainingSet(params){
 
     let user = params.user;
 
+    if ((user.userId === undefined) && (user.nodeId === undefined)) { 
+      return reject (new Error("userId and nodeId undefined"));
+    }
+
     debug(chalkLog("... UPDATING USER FROM TRAINING SET"
       + " | CM: " + printCat(user.category)
       + " | CA: " + printCat(user.categoryAuto)
       + " | @" + user.screenName
     ));
 
-    if (user.userId === undefined) { user.userId = user.nodeId; }
+    if (user.nodeId && (user.userId === undefined)) { user.userId = user.nodeId; }
+    if (user.userId && (user.nodeId === undefined)) { user.nodeId = user.userId; }
 
     try {
       user = await encodeHistogramUrls({user: user});
@@ -2224,26 +2229,32 @@ function unzipUsersToArray(params){
 
                     let dbUser = await updateUserFromTrainingSet({user: fileObj});
 
-                    trainingSetUsersHashMap.set(dbUser.nodeId, dbUser);
+                    if (dbUser && dbUser !== undefined) {
 
-                    if (dbUser && (configuration.verbose || (statsObj.users.unzipped % 1000 === 0))) {
 
-                      console.log(chalkLog(hmHit
-                        + " | " + trainingSetUsersHashMap.size + " USERS IN HM"
-                        + " [ ZipHM: " + statsObj.users.zipHashMapMiss 
-                        + " MISS / " + statsObj.users.zipHashMapHit 
-                        + " HIT (" + percent.toFixed(2) + "%) ]"
-                        + " | " + statsObj.users.unzipped + " UNZPD ]"
-                        + " 3C: " + dbUser.threeceeFollowing
-                        + " | " + dbUser.userId
-                        + " | @" + dbUser.screenName
-                        + " | " + dbUser.name
-                        + " | FLWRs: " + dbUser.followersCount
-                        + " | FRNDs: " + dbUser.friendsCount
-                        + " | CAT M: " + dbUser.category + " A: " + dbUser.categoryAuto
-                        // + "\n" + jsonPrint(fileObj)
-                      ));
+                      trainingSetUsersHashMap.set(dbUser.nodeId, dbUser);
+
+                      if (dbUser && (configuration.verbose || (statsObj.users.unzipped % 1000 === 0))) {
+
+                        console.log(chalkLog(hmHit
+                          + " | " + trainingSetUsersHashMap.size + " USERS IN HM"
+                          + " [ ZipHM: " + statsObj.users.zipHashMapMiss 
+                          + " MISS / " + statsObj.users.zipHashMapHit 
+                          + " HIT (" + percent.toFixed(2) + "%) ]"
+                          + " | " + statsObj.users.unzipped + " UNZPD ]"
+                          + " 3C: " + dbUser.threeceeFollowing
+                          + " | " + dbUser.userId
+                          + " | @" + dbUser.screenName
+                          + " | " + dbUser.name
+                          + " | FLWRs: " + dbUser.followersCount
+                          + " | FRNDs: " + dbUser.friendsCount
+                          + " | CAT M: " + dbUser.category + " A: " + dbUser.categoryAuto
+                          // + "\n" + jsonPrint(fileObj)
+                        ));
+                      }
+
                     }
+
                   }
 
                   zipfile.readEntry();
