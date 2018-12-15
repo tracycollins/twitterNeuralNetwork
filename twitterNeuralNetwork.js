@@ -5319,53 +5319,8 @@ const fsmStates = {
     "fsm_exit": "EXIT",
     "fsm_error": "ERROR",
     "fsm_reset": "RESET"
-    // "fsm_start": "START"
   },
 
-  // "START":{
-  //   onEnter: async function(event, oldState, newState) {
-  //     if (event !== "fsm_tick") {
-  //       reporter(event, oldState, newState);
-
-  //       statsObj.status = "FSM START";
-
-  //       try{
-  //         await childStartAll();
-  //       }
-  //       catch(err){
-  //         console.log(chalkError(MODULE_ID_PREFIX + " | *** ALL CHILDREN START ERROR: " + err));
-  //       }
-  //     }
-  //   },
-  //   fsm_tick: function() {
-
-  //     checkChildState({checkState:"RUN", noChildrenTrue: false}).then(async function(allChildrenRunning){
-  //       debug("FETCH_END TICK"
-  //         + " | ALL CHILDREN RUN: " + allChildrenRunning
-  //       );
-  //       if (!allChildrenRunning) { 
-  //         try{
-  //           await childStartAll();
-  //         }
-  //         catch(err){
-  //           console.log(chalkError(MODULE_ID_PREFIX + " | *** ALL CHILDREN START ERROR: " + err));
-  //         }
-  //       }
-  //       if (allChildrenRunning) { fsm.fsm_run(); }
-
-  //     })
-  //     .catch(function(err){
-  //       console.log(chalkError(MODULE_ID_PREFIX + " | *** ALL CHILDREN RUN ERROR: " + err));
-  //       fsm.fsm_error();
-  //     });
-
-  //   },
-  //   "fsm_quit": "QUIT",
-  //   "fsm_exit": "EXIT",
-  //   "fsm_error": "ERROR",
-  //   "fsm_reset": "RESET",
-  //   "fsm_run": "RUN"
-  // },
 
   "RUN":{
     onEnter: async function(event, oldState, newState) {
@@ -5435,8 +5390,11 @@ const fsmStates = {
           createChildrenInProgress = true;
 
           childCreateAll()
-            .then(function(){
-              console.log(chalkBlue(MODULE_ID_PREFIX + " | CREATED ALL CHILDREN: " + Object.keys(childHashMap).length));
+            .then(function(childIdArray){
+              console.log(chalkBlue(MODULE_ID_PREFIX + " | CREATED ALL CHILDREN: " + childIdArray.length));
+              childIdArray.forEach(async function(childId){
+                await startNetworkCreate({childId: childId});
+              });
               createChildrenInProgress = false;
             })
             .catch(function(err){
@@ -5531,6 +5489,7 @@ function childCreateAll(params){
 
     params = params || {};
 
+    let childrenCreatedArray = [];
     let maxNumberChildren = params.maxNumberChildren || configuration.maxNumberChildren;
 
     let interval = params.interval || 5*ONE_SECOND;
@@ -5588,6 +5547,7 @@ function childCreateAll(params){
 
           childCreate(createParams)
           .then(function(){
+            childrenCreatedArray.push(childId);
             childIndex += 1;
             configuration.childIndex = childIndex;
             statsObj.childIndex = childIndex;
@@ -5607,7 +5567,7 @@ function childCreateAll(params){
           console.log(chalkError(MODULE_ID_PREFIX + " | *** ERROR CREATE ALL CHILDREN: " + err));
           return reject(err);
         }
-        resolve();
+        resolve(childrenCreatedArray);
       });
 
 

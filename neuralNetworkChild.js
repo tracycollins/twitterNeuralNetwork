@@ -2038,7 +2038,7 @@ function indexOfMax (arr) {
 
     try {
       if (arr.length === 0) {
-        console.log(chalkAlert("NNC | indexOfMax: 0 LENG ARRAY: -1"));
+        debug(chalkAlert("NNC | indexOfMax: 0 LENG ARRAY: -1"));
         return resolve(-2); 
       }
 
