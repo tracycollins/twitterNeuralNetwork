@@ -3149,6 +3149,78 @@ configuration.slackChannel = {};
 // configuration.keepaliveInterval = KEEPALIVE_INTERVAL;
 // configuration.quitOnComplete = QUIT_ON_COMPLETE;
 
+function initWatchAllConfigFiles(params){
+  return new Promise(async function(resolve, reject){
+
+    params = params || {};
+
+    console.log(chalkBlue(MODULE_ID_PREFIX + " | INIT WATCH ALL CONFIG FILES\n" + jsonPrint(params)));
+
+    try{
+
+      await loadAllConfigFiles();
+      await loadCommandLineArgs();
+
+     // const defaultConfig = await loadConfigFile({folder: dropboxConfigDefaultFolder, file: dropboxConfigDefaultFile});      
+     //  const hostConfig = await loadConfigFile({folder: dropboxConfigHostFolder, file: dropboxConfigHostFile});
+
+      const options = {
+        ignoreDotFiles: true,
+        ignoreUnreadableDir: true,
+        ignoreNotPermitted: true,
+      }
+
+      watch.createMonitor("/Users/tc/Dropbox/Apps/wordAssociation" + dropboxConfigDefaultFolder, options, function (monitorDefaultConfig) {
+
+        console.log(chalkBlue(MODULE_ID_PREFIX + " | INIT WATCH DEFAULT CONFIG FOLDER: " + "/Users/tc/Dropbox/Apps/wordAssociation" + dropboxConfigDefaultFolder));
+
+        monitorDefaultConfig.on("created", async function(){
+          await loadAllConfigFiles();
+          await loadCommandLineArgs();
+        });
+
+        monitorDefaultConfig.on("changed", async function(){
+          await loadAllConfigFiles();
+          await loadCommandLineArgs();
+        });
+
+        monitorDefaultConfig.on("removed", function (f, stat) {
+          console.log(chalkInfo(MODULE_ID_PREFIX + " | XXX FILE DELETED | " + getTimeStamp() + " | " + f));
+        });
+
+      });
+
+      watch.createMonitor("/Users/tc/Dropbox/Apps/wordAssociation" + dropboxConfigHostFolder, options, function (monitorHostConfig) {
+
+        console.log(chalkBlue(MODULE_ID_PREFIX + " | INIT WATCH HOSE CONFIG FOLDER: " + "/Users/tc/Dropbox/Apps/wordAssociation" + dropboxConfigHostFolder));
+
+        monitorHostConfig.on("created", async function(){
+          await loadAllConfigFiles();
+          await loadCommandLineArgs();
+        });
+
+        monitorHostConfig.on("changed", async function(){
+          await loadAllConfigFiles();
+          await loadCommandLineArgs();
+        });
+
+        monitorDefaultConfig.on("removed", function (f, stat) {
+          console.log(chalkInfo(MODULE_ID_PREFIX + " | XXX FILE DELETED | " + getTimeStamp() + " | " + f));
+        });
+
+      });
+
+      resolve();
+    }
+    catch(err){
+      console.log(chalkError(MODULE_ID_PREFIX
+        + " | *** INIT LOAD ALL CONFIG INTERVAL ERROR: " + err
+      ));
+      return reject(err);
+    }
+  });
+}
+
 function initConfig(cnf) {
 
   return new Promise(async function(resolve, reject){
@@ -3172,10 +3244,10 @@ function initConfig(cnf) {
     }
 
     try {
-      // await initSlackWebClient();
-      // await initSlackRtmClient();
-      await loadAllConfigFiles();
-      await loadCommandLineArgs();
+
+      await initWatchAllConfigFiles();
+      // await loadAllConfigFiles();
+      // await loadCommandLineArgs();
 
       const configArgs = Object.keys(configuration);
 
