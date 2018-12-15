@@ -1631,7 +1631,7 @@ function dropboxFileMove(params){
       console.log(chalkAlert(MODULE_ID_PREFIX + " | ->- DROPBOX FILE MOVE"
         + " | " + srcPath
         + " > " + dstPath
-        + " | RESPONSE\n" + jsonPrint(response)
+        // + " | RESPONSE\n" + jsonPrint(response)
       ));
       debug("dropboxClient filesMoveV2 response\n" + jsonPrint(response));
       return resolve();
@@ -3230,6 +3230,28 @@ function initWatchAllConfigFolders(params){
         ignoreUnreadableDir: true,
         ignoreNotPermitted: true,
       }
+
+      watch.createMonitor("/Users/tc/Dropbox/Apps/wordAssociation" + defaultInputsFolder, options, function (monitorInputs) {
+
+        console.log(chalkBlue(MODULE_ID_PREFIX + " | INIT WATCH INPUTS CONFIG FOLDER: " + "/Users/tc/Dropbox/Apps/wordAssociation" + defaultInputsFolder));
+
+        monitorInputs.on("created", async function(f, stat){
+          if (f.startsWith("inputs_")){
+            await loadInputsDropboxFolder({folder: defaultInputsFolder});
+          }
+
+        });
+
+        monitorInputs.on("removed", function (f, stat) {
+          const inputsId = f.name.replace(".json", "");
+          inputsHashMap.delete(inputsId);
+          console.log(chalkInfo(MODULE_ID_PREFIX + " | XXX INPUTS FILE DELETED | " + getTimeStamp() 
+            + " | " + inputsId 
+            + "\n" + f
+          ));
+        });
+
+      });
 
       watch.createMonitor("/Users/tc/Dropbox/Apps/wordAssociation" + dropboxConfigDefaultFolder, options, function (monitorDefaultConfig) {
 
