@@ -2471,7 +2471,7 @@ function initWatch(params){
 
     const loadArchive = async function (f, stat) {
 
-      console.log(chalkInfo(MODULE_ID_PREFIX + " | +++ FILE CREATED | " + getTimeStamp() + " | " + f));
+      console.log(chalkInfo(MODULE_ID_PREFIX + " | +++ FILE CREATED or CHANGED | " + getTimeStamp() + " | " + f));
 
       if (f.endsWith(configuration.defaultUserArchiveFlagFile)){
 
@@ -3174,14 +3174,19 @@ function initWatchAllConfigFolders(params){
 
         console.log(chalkBlue(MODULE_ID_PREFIX + " | INIT WATCH DEFAULT CONFIG FOLDER: " + "/Users/tc/Dropbox/Apps/wordAssociation" + dropboxConfigDefaultFolder));
 
-        monitorDefaultConfig.on("created", async function(){
-          await loadAllConfigFiles();
-          await loadCommandLineArgs();
+        monitorDefaultConfig.on("created", async function(f, stat){
+          if (f.endsWith(dropboxConfigDefaultFile)){
+            await loadAllConfigFiles();
+            await loadCommandLineArgs();
+          }
+
         });
 
-        monitorDefaultConfig.on("changed", async function(){
-          await loadAllConfigFiles();
-          await loadCommandLineArgs();
+        monitorDefaultConfig.on("changed", async function(f, stat){
+          if (f.endsWith(dropboxConfigDefaultFile)){
+            await loadAllConfigFiles();
+            await loadCommandLineArgs();
+          }
         });
 
         monitorDefaultConfig.on("removed", function (f, stat) {
@@ -3195,13 +3200,17 @@ function initWatchAllConfigFolders(params){
         console.log(chalkBlue(MODULE_ID_PREFIX + " | INIT WATCH HOSE CONFIG FOLDER: " + "/Users/tc/Dropbox/Apps/wordAssociation" + dropboxConfigHostFolder));
 
         monitorHostConfig.on("created", async function(){
-          await loadAllConfigFiles();
-          await loadCommandLineArgs();
+          if (f.endsWith(dropboxConfigHostFile)){
+            await loadAllConfigFiles();
+            await loadCommandLineArgs();
+          }
         });
 
         monitorHostConfig.on("changed", async function(){
-          await loadAllConfigFiles();
-          await loadCommandLineArgs();
+          if (f.endsWith(dropboxConfigHostFile)){
+            await loadAllConfigFiles();
+            await loadCommandLineArgs();
+          }
         });
 
         monitorHostConfig.on("removed", function (f, stat) {
@@ -4130,7 +4139,7 @@ function loadFileRetry(params){
   return new Promise(async function(resolve, reject){
 
     let resolveOnNotFound = params.resolveOnNotFound || false;
-    let maxRetries = params.maxRetries || 5;
+    let maxRetries = params.maxRetries || 10;
     let retryNumber;
     let backOffTime = params.initialBackOffTime || ONE_SECOND;
     let path = params.path || params.folder + "/" + params.file;
@@ -4152,7 +4161,7 @@ function loadFileRetry(params){
         break;
       } 
       catch(err) {
-        backOffTime *= 1.5;
+        backOffTime *= 2;
         setTimeout(function(){
           console.log(chalkAlert(MODULE_ID_PREFIX + " | FILE LOAD ERROR ... RETRY"
             + " | " + path
