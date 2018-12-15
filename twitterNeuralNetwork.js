@@ -3149,7 +3149,7 @@ configuration.slackChannel = {};
 // configuration.keepaliveInterval = KEEPALIVE_INTERVAL;
 // configuration.quitOnComplete = QUIT_ON_COMPLETE;
 
-function initWatchAllConfigFiles(params){
+function initWatchAllConfigFolders(params){
   return new Promise(async function(resolve, reject){
 
     params = params || {};
@@ -3204,7 +3204,7 @@ function initWatchAllConfigFiles(params){
           await loadCommandLineArgs();
         });
 
-        monitorDefaultConfig.on("removed", function (f, stat) {
+        monitorHostConfig.on("removed", function (f, stat) {
           console.log(chalkInfo(MODULE_ID_PREFIX + " | XXX FILE DELETED | " + getTimeStamp() + " | " + f));
         });
 
@@ -3245,9 +3245,7 @@ function initConfig(cnf) {
 
     try {
 
-      await initWatchAllConfigFiles();
-      // await loadAllConfigFiles();
-      // await loadCommandLineArgs();
+      await initWatchAllConfigFolders();
 
       const configArgs = Object.keys(configuration);
 
