@@ -164,6 +164,7 @@ statsObj.queues = {};
 //=========================================================================
 const ENABLE_INIT_PURGE_LOCAL = true;
 const DEFAULT_LOAD_ALL_INPUTS = false;
+const DEFAULT_ARCHIVE_NOT_IN_INPUTS_ID_ARRAY = true;
 const DEFAULT_DELETE_NOT_IN_INPUTS_ID_ARRAY = false;
 const SMALL_SET_SIZE = 100;
 const SMALL_TEST_SET_SIZE = 20;
@@ -327,6 +328,7 @@ configuration.networkCreateMode = "evole";
 
 configuration.childPingAllInterval = DEFAULT_CHILD_PING_INTERVAL;
 
+configuration.archiveNotInInputsIdArray = DEFAULT_ARCHIVE_NOT_IN_INPUTS_ID_ARRAY;
 configuration.deleteNotInInputsIdArray = DEFAULT_DELETE_NOT_IN_INPUTS_ID_ARRAY;
 
 configuration.globalTrainingSetId = GLOBAL_TRAINING_SET_ID;
@@ -1613,6 +1615,59 @@ function checkNetworkHash(params){
 }
 
 
+function dropboxFileMove(params){
+
+  return new Promise(function(resolve, reject){
+
+    if (!params || !params.srcFolder || !params.srcFile || !params.dstFolder || !params.dstFile) {
+      return reject(new Error("params undefined"));
+    }
+
+    const srcPath = params.srcFolder + "/" + params.srcFile;
+    const dstPath = params.dstFolder + "/" + params.dstFile;
+
+    dropboxClient.filesMoveV2({from_path: srcPath, to_path: dstPath})
+    .then(function(response){
+      console.log(chalkAlert(MODULE_ID_PREFIX + " | ->- DROPBOX FILE MOVE"
+        + " | " + srcPath
+        + " > " + dstPath
+        + " | RESPONSE\n" + jsonPrint(response)
+      ));
+      debug("dropboxClient filesMoveV2 response\n" + jsonPrint(response));
+      return resolve();
+    })
+    .catch(function(err){
+      if (err.status === 409) {
+        console.log(chalkError(MODULE_ID_PREFIX + " | *** ERROR DROPBOX FILE MOVE"
+          + " | STATUS: " + err.status
+          + " | " + srcPath
+          + " > " + dstPath
+          + " | DOES NOT EXIST"
+        ));
+      }
+      else if (err.status === 429) {
+        console.log(chalkError(MODULE_ID_PREFIX + " | *** ERROR: XXX NN"
+          + " | STATUS: " + err.status
+          + " | " + srcPath
+          + " > " + dstPath
+          + " | TOO MANY REQUESTS"
+        ));
+      }
+      else {
+        console.log(chalkError(MODULE_ID_PREFIX + " | *** ERROR: XXX NN"
+          + " | STATUS: " + err.status
+          + " | " + srcPath
+          + " > " + dstPath
+          + " | SUMMARY: " + err.response.statusText
+          + "\n" + jsonPrint(err)
+        ));
+      }
+      return reject(err);
+    });
+
+  });
+}
+
 function dropboxFileDelete(params){
 
   return new Promise(function(resolve, reject){
@@ -1659,7 +1714,6 @@ function dropboxFileDelete(params){
     });
 
   });
-
 }
 
 function networkPass(params) {
@@ -1793,14 +1847,24 @@ function loadBestNetworkDropboxFolders (params){
 
         // load only networks using specific inputIds; maybe delete if not in set
         if (!configuration.inputsIdArray.includes(networkObj.inputsId)) {
-          if (configuration.deleteNotInInputsIdArray){
+
+          if (configuration.archiveNotInInputsIdArray && (entry.path_display.includes(localBestNetworkFolder))){
+            console.log(chalkInfo(MODULE_ID_PREFIX + " | 000 NN INPUTS NOT IN INPUTS ID ARRAY ... ARCHIVING"
+              + " | NUM INPUTS: " + networkObj.numInputs
+              + " | INPUTS ID: " + networkObj.inputsId
+              + " | " + entry.path_display
+            ));
+            await dropboxFileMove({srcFolder: localBestNetworkFolder, srcFile: entry.name, dstFolder: localArchiveNetworkFolder, dstFile: entry.name});
+            return;
+          }
+          else if (configuration.deleteNotInInputsIdArray){
             console.log(chalkInfo(MODULE_ID_PREFIX + " | XXX NN INPUTS NOT IN INPUTS ID ARRAY ... DELETING"
               + " | NUM INPUTS: " + networkObj.numInputs
               + " | INPUTS ID: " + networkObj.inputsId
               + " | " + entry.path_display
             ));
-            return;
             await dropboxFileDelete({folder: localBestNetworkFolder, file: entry.name});
+            return;
           }
 
           console.log(chalkInfo(MODULE_ID_PREFIX + " | --- NN INPUTS NOT IN INPUTS ID ARRAY ... SKIPPING"
@@ -3905,6 +3969,7 @@ const defaultTrainingSetUserArchive = defaultTrainingSetFolder + "/users/users.z
 
 const globalBestNetworkFolder = "/config/utility/best/neuralNetworks";
 const localBestNetworkFolder = "/config/utility/" + hostname + "/neuralNetworks/best";
+const localArchiveNetworkFolder = "/config/utility/" + hostname + "/neuralNetworks/archive";
 
 let globalCategorizedUsersFolder = dropboxConfigDefaultFolder + "/categorizedUsers";
 let categorizedUsersFile = "categorizedUsers_manual.json";
