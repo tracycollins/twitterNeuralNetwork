@@ -1281,10 +1281,16 @@ function updateUserFromTrainingSet(params){
         userDb.profileUrl = user.profileUrl;
         userDb.screenName = user.screenName;
         userDb.statusesCount = user.statusesCount;
+        userDb.status = user.status;
         userDb.threeceeFollowing = user.threeceeFollowing;
         userDb.tweetHistograms = user.tweetHistograms;
         userDb.url = user.url;
         userDb.verified = user.verified;
+
+        userdb.markModified("category");
+        userdb.markModified("categoryAuto");
+        userdb.markModified("profileHistograms");
+        userdb.markModified("tweetHistograms");
 
         userDb.save()
         .then(function(updatedUser){
@@ -6461,9 +6467,6 @@ setTimeout(async function(){
       if (dbConnectionReady) {
 
         clearInterval(dbConnectionReadyInterval);
-
-        // initFsmTickInterval(FSM_TICK_INTERVAL);
-        // fsm.fsm_resetEnd();
         
       }
       else {
