@@ -3161,9 +3161,6 @@ function initWatchAllConfigFolders(params){
       await loadAllConfigFiles();
       await loadCommandLineArgs();
 
-     // const defaultConfig = await loadConfigFile({folder: dropboxConfigDefaultFolder, file: dropboxConfigDefaultFile});      
-     //  const hostConfig = await loadConfigFile({folder: dropboxConfigHostFolder, file: dropboxConfigHostFile});
-
       const options = {
         ignoreDotFiles: true,
         ignoreUnreadableDir: true,
@@ -3199,14 +3196,14 @@ function initWatchAllConfigFolders(params){
 
         console.log(chalkBlue(MODULE_ID_PREFIX + " | INIT WATCH HOSE CONFIG FOLDER: " + "/Users/tc/Dropbox/Apps/wordAssociation" + dropboxConfigHostFolder));
 
-        monitorHostConfig.on("created", async function(){
+        monitorHostConfig.on("created", async function(f, stat){
           if (f.endsWith(dropboxConfigHostFile)){
             await loadAllConfigFiles();
             await loadCommandLineArgs();
           }
         });
 
-        monitorHostConfig.on("changed", async function(){
+        monitorHostConfig.on("changed", async function(f, stat){
           if (f.endsWith(dropboxConfigHostFile)){
             await loadAllConfigFiles();
             await loadCommandLineArgs();
