@@ -1848,7 +1848,7 @@ function loadBestNetworkDropboxFolders (params){
         // load only networks using specific inputIds; maybe delete if not in set
         if (!configuration.inputsIdArray.includes(networkObj.inputsId)) {
 
-          if (configuration.archiveNotInInputsIdArray && (entry.path_display.includes(localBestNetworkFolder))){
+          if (configuration.archiveNotInInputsIdArray && (entry.path_display.toLowerCase().includes(localBestNetworkFolder.toLowerCase()))){
             console.log(chalkInfo(MODULE_ID_PREFIX + " | 000 NN INPUTS NOT IN INPUTS ID ARRAY ... ARCHIVING"
               + " | NUM INPUTS: " + networkObj.numInputs
               + " | INPUTS ID: " + networkObj.inputsId
@@ -3990,7 +3990,7 @@ const localTrainingSetFolder = dropboxConfigHostFolder + "/trainingSets";
 const defaultTrainingSetUserArchive = defaultTrainingSetFolder + "/users/users.zip";
 
 const globalBestNetworkFolder = "/config/utility/best/neuralNetworks";
-const localBestNetworkFolder = "/config/utility/" + hostname + "/neuralNetworks/best";
+const localBestNetworkFolder =    "/config/utility/" + hostname + "/neuralNetworks/best";
 const localArchiveNetworkFolder = "/config/utility/" + hostname + "/neuralNetworks/archive";
 
 let globalCategorizedUsersFolder = dropboxConfigDefaultFolder + "/categorizedUsers";
