@@ -1831,7 +1831,7 @@ function loadBestNetworkDropboxFolders (params){
           return;
         }
 
-        networkObj = await loadFileRetry({path: entry.path_lower});
+        networkObj = await loadFileRetry({path: entry.path_display});
 
         // printNetworkObj(MODULE_ID_PREFIX + " | LOADED DROPBOX NETWORK", networkObj);
 
@@ -4373,7 +4373,8 @@ function listDropboxFolder(params){
 
               })
               .catch(function(err){
-                console.trace(chalkError(MODULE_ID_PREFIX + " | *** DROPBOX filesListFolderContinue ERROR: ", err));
+                console.trace(chalkError(MODULE_ID_PREFIX + " | *** DROPBOX filesListFolderContinue ERROR: ", jsonPrint(err.tag)));
+                console.trace(chalkError(MODULE_ID_PREFIX + " | *** DROPBOX filesListFolderContinue ERROR: ", err.tag));
                 return reject(err);
               });
 
