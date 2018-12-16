@@ -5905,8 +5905,9 @@ function childCreate(params){
 
           case "EVOLVE_SCHEDULE":
 
+            _.set(resultsHashmap[m.stats.networkId], 'evolve.results.iterations', m.stats.iteration);
 
-            resultsHashmap[m.stats.networkId].evolve.results.iterations = m.stats.iteration;
+            // resultsHashmap[m.stats.networkId].evolve.results.iterations = m.stats.iteration;
             
             console.log(chalkLog(MODULE_ID_PREFIX + " | EVOLVE | " + m.childId + " | " + m.stats.networkId
               + " | F: " + m.stats.fitness
@@ -6520,6 +6521,7 @@ function initStdIn() {
       case "s":
         try {
           await showStats((key === "S"));
+          printResultsHashmap();
         }
         catch(err){
           console.log(chalkError(MODULE_ID_PREFIX + " | *** SHOW STATS ERROR: " + err));
