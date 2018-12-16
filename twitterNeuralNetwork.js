@@ -3144,6 +3144,7 @@ function initWatchAllConfigFolders(params){
     try{
 
       await loadAllConfigFiles();
+      await loadNetworkInputsConfig();
       await loadCommandLineArgs();
 
       const options = {
@@ -3185,7 +3186,6 @@ function initWatchAllConfigFolders(params){
           ));
           inputsHashMap.delete(inputsId);
         });
-
       });
 
       watch.createMonitor("/Users/tc/Dropbox/Apps/wordAssociation" + dropboxConfigDefaultFolder, options, function (monitorDefaultConfig) {
@@ -3198,6 +3198,10 @@ function initWatchAllConfigFolders(params){
             await loadCommandLineArgs();
           }
 
+          if (f.endsWith(defaultNetworkInputsConfigFile)){
+            await loadNetworkInputsConfig();
+          }
+
         });
 
         monitorDefaultConfig.on("changed", async function(f, stat){
@@ -3205,12 +3209,16 @@ function initWatchAllConfigFolders(params){
             await loadAllConfigFiles();
             await loadCommandLineArgs();
           }
+
+          if (f.endsWith(defaultNetworkInputsConfigFile)){
+            await loadNetworkInputsConfig();
+          }
+
         });
 
         monitorDefaultConfig.on("removed", function (f, stat) {
           console.log(chalkInfo(MODULE_ID_PREFIX + " | XXX FILE DELETED | " + getTimeStamp() + " | " + f));
         });
-
       });
 
       watch.createMonitor("/Users/tc/Dropbox/Apps/wordAssociation" + dropboxConfigHostFolder, options, function (monitorHostConfig) {
@@ -3234,7 +3242,6 @@ function initWatchAllConfigFolders(params){
         monitorHostConfig.on("removed", function (f, stat) {
           console.log(chalkInfo(MODULE_ID_PREFIX + " | XXX FILE DELETED | " + getTimeStamp() + " | " + f));
         });
-
       });
 
       resolve();
@@ -5006,6 +5013,35 @@ function loadCommandLineArgs(){
   });
 }
 
+function loadNetworkInputsConfig(params){
+
+  return new Promise(async function(resolve, reject){
+
+    statsObj.status = "LOAD NETWORK INPUTS CONFIG";
+
+    console.log(chalkLog(MODULE_ID_PREFIX
+      + " | LOAD NETWORK INPUTS CONFIG FILE: " + dropboxConfigDefaultFolder + "/" + defaultNetworkInputsConfigFile
+    ));
+
+    let networkInputsObj;
+
+    try{
+      networkInputsObj = await loadFileRetry({folder: dropboxConfigDefaultFolder, file: defaultNetworkInputsConfigFile});
+
+      configuration.inputsIdArray = networkInputsObj.INPUTS_IDS;
+
+      console.log(chalkNetwork(MODULE_ID_PREFIX + " | LOADED NETWORK INPUTS ARRAY\n" + jsonPrint(configuration.inputsIdArray)));
+      statsObj.networkInputsSetReady = true;
+      resolve();
+    }
+    catch(err){
+      console.log(chalkError(MODULE_ID_PREFIX + " | *** NETWORK INPUTS CONFIG FILE LOAD ERROR: " + err));
+      statsObj.networkInputsSetReady = false;
+      return reject(err);
+    }
+
+  });
+}
 
 function initChildPingAllInterval(params){
 
@@ -5368,6 +5404,7 @@ const fsmStates = {
           await initChildPingAllInterval();
           await childStatsAll();
 
+          await loadNetworkInputsConfig();
           await loadInputsDropboxFolder({folder: defaultInputsFolder});
           await loadSeedNeuralNetwork(seedParams);
           await loadTrainingSet({folder: configuration.userArchiveFolder, file: configuration.defaultUserArchiveFlagFile});
@@ -5867,6 +5904,10 @@ function childCreate(params){
           break;
 
           case "EVOLVE_SCHEDULE":
+
+
+            resultsHashmap[m.stats.networkId].evolve.results.iterations = m.stats.iteration;
+            
             console.log(chalkLog(MODULE_ID_PREFIX + " | EVOLVE | " + m.childId + " | " + m.stats.networkId
               + " | F: " + m.stats.fitness
               + " | E: " + m.stats.error
@@ -5878,6 +5919,30 @@ function childCreate(params){
               + " | ETC: " + moment().add(m.stats.timeToComplete).format(compactDateTimeFormat)
               + " | I: " + m.stats.iteration + " / " + m.stats.totalIterations
             ));
+
+            // resultsHashmap[nn.networkId] = {};
+            // resultsHashmap[nn.networkId] = omit(nn, ["network", "inputs", "outputs", "inputsObj"]);
+            // resultsHashmap[nn.networkId].status = "COMPLETE";
+            // resultsHashmap[nn.networkId].stats = {};
+            // resultsHashmap[nn.networkId].stats = omit(m.statsObj, ["inputsObj", "train", "outputs", "normalization"]);
+            // const networkObj = resultsHashmap[networkId];
+
+
+            // status = (networkObj.status && networkObj.status !== undefined) ? networkObj.status : "UNKNOWN";
+            // snIdRes = (networkObj.seedNetworkId && networkObj.seedNetworkId !== undefined) ? networkObj.seedNetworkRes.toFixed(2) : "---";
+            // betterChild = (networkObj.betterChild && networkObj.betterChild !== undefined) ? networkObj.betterChild : "---";
+            // seedNetworkId = (networkObj.seedNetworkId && networkObj.seedNetworkId !== undefined) ? networkObj.seedNetworkId : "---";
+            // iterations = (networkObj.evolve.results && networkObj.evolve.results !== undefined) ? networkObj.evolve.results.iterations : "---";
+
+            // error = ((networkObj.evolve.results && networkObj.evolve.results !== undefined) 
+            //   && (networkObj.evolve.results.error !== undefined)
+            //   && networkObj.evolve.results.error)  ? networkObj.evolve.results.error.toFixed(5) : "---";
+
+            // successRate = (networkObj.successRate && networkObj.successRate !== undefined) ? networkObj.successRate.toFixed(2) : "---";
+            // elapsed = (networkObj.evolve.elapsed && networkObj.evolve.elapsed !== undefined) ? networkObj.evolve.elapsed : (moment().valueOf() - networkObj.evolve.startTime);
+
+
+
           break;
 
           case "EVOLVE_COMPLETE":
