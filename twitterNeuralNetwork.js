@@ -855,6 +855,51 @@ function purgeInputs(inputsId, callback){
   if (callback !== undefined) { callback(); }
 }
 
+function loadInputsDropboxFile(params){
+  return new Promise(async function(resolve, reject){
+
+    let inputsObj;
+
+    try {
+      inputsObj = await loadFileRetry({folder: params.folder, file: params.file});
+    }
+    catch(err) {
+      console.log(chalkError(MODULE_ID_PREFIX + " | DROPBOX INPUTS LOAD FILE ERROR: " + err));
+      return reject(err);
+    }
+
+    if ((inputsObj === undefined) || !inputsObj) {
+      console.log(chalkError(MODULE_ID_PREFIX + " | DROPBOX INPUTS LOAD FILE ERROR | JSON UNDEFINED ??? "));
+      return reject(new Error("JSON UNDEFINED"));
+    }
+
+    if (inputsObj.meta === undefined) {
+      inputsObj.meta = {};
+      inputsObj.meta.numInputs = 0;
+      Object.keys(inputsObj.inputs).forEach(function(inputType){
+        inputsObj.meta.numInputs += inputsObj.inputs[inputType].length;
+      });
+    }
+
+    if (inputsHashMap.has(inputsObj.inputsId) && (params.entry === undefined)){
+
+      params.entry = inputsHashMap.get(inputsObj.inputsId).entry;
+
+    }
+
+    inputsHashMap.set(inputsObj.inputsId, {entry: params.entry, inputsObj: inputsObj} );
+
+    if (inputsNetworksHashMap[inputsObj.inputsId] === undefined) {
+      inputsNetworksHashMap[inputsObj.inputsId] = new Set();
+    }
+
+    console.log(MODULE_ID_PREFIX + " | +++ INPUTS [" + inputsHashMap.size + " IN HM] | " + inputsObj.meta.numInputs + " INPUTS | " + inputsObj.inputsId);
+
+    resolve(inputsObj);
+
+  });
+}
+
 
 function loadInputsDropboxFolder(params){
 
@@ -864,7 +909,7 @@ function loadInputsDropboxFolder(params){
 
     let folder = params.folder || defaultInputsFolder;
 
-    console.log(chalkLog(MODULE_ID_PREFIX + " | ... LOADING DROPBOX INPUTS FOLDER | " + folder));
+    console.log(chalkLog(MODULE_ID_PREFIX + " | LOADING DROPBOX INPUTS FOLDER | " + folder));
 
     let listDropboxFolderParams = {
       folder: params.folder,
@@ -945,40 +990,6 @@ function loadInputsDropboxFolder(params){
             // + "\nCUR HASH: " + entry.content_hash
             // + "\nOLD HASH: " + curInputsObj.entry.content_hash
           ));
-
-          try {
-            inputsObj = await loadFileRetry({folder: folder, file: entry.name});
-          }
-          catch(err) {
-            console.log(chalkError(MODULE_ID_PREFIX + " | DROPBOX INPUTS LOAD FILE ERROR: " + err));
-            return;
-          }
-
-          if ((inputsObj === undefined) || !inputsObj) {
-            console.log(chalkError(MODULE_ID_PREFIX + " | DROPBOX INPUTS LOAD FILE ERROR | JSON UNDEFINED ??? "));
-            return;
-          }
-
-          console.log(chalkInfo(MODULE_ID_PREFIX + " | DROPBOX INPUTS"
-            + " | " + entry.name
-            + " | " + inputsObj.inputsId
-          ));
-
-          if (inputsObj.meta === undefined) {
-            inputsObj.meta = {};
-            inputsObj.meta.numInputs = 0;
-            Object.keys(inputsObj.inputs).forEach(function(inputType){
-              inputsObj.meta.numInputs += inputsObj.inputs[inputType].length;
-            });
-          }
-
-          inputsHashMap.set(inputsObj.inputsId, {entry: entry, inputsObj: inputsObj} );
-
-          if (inputsNetworksHashMap[inputsObj.inputsId] === undefined) {
-            inputsNetworksHashMap[inputsObj.inputsId] = new Set();
-          }
-
-          return;
         }
         
         if ((curInputsObj.entry.content_hash !== entry.content_hash) && (curInputsObj.entry.path_display !== entry.path_display)) {
@@ -989,101 +1000,11 @@ function loadInputsDropboxFolder(params){
             // + "\nOLD: " + curInputsObj.entry.path_display
           ));
 
-            // LOAD FROM BEST FOLDER AND SAVE LOCALLY
-          try {
-            inputsObj = await loadFileRetry({folder: folder, file: entry.name});
-          }
-          catch(err) {
-            console.log(chalkError(MODULE_ID_PREFIX + " | DROPBOX INPUTS LOAD FILE ERROR: " + err));
-            return;
-          }
-
-          if (err) {
-            console.log(chalkError(MODULE_ID_PREFIX + " | DROPBOX INPUTS LOAD FILE ERROR: " + err));
-            return;
-          }
-          else if ((inputsObj === undefined) || !inputsObj) {
-            console.log(chalkError(MODULE_ID_PREFIX + " | DROPBOX INPUTS LOAD FILE ERROR | JSON UNDEFINED ??? "));
-            return;
-          }
-          else {
-
-            if (inputsObj.meta === undefined) {
-              inputsObj.meta = {};
-              inputsObj.meta.numInputs = 0;
-              Object.keys(inputsObj.inputs).forEach(function(inputType){
-                inputsObj.meta.numInputs += inputsObj.inputs[inputType].length;
-              });
-            }
-
-            inputsHashMap.set(inputsObj.inputsId, {entry: entry, inputsObj: inputsObj} );
-
-            if (inputsNetworksHashMap[inputsObj.inputsId] === undefined) {
-              inputsNetworksHashMap[inputsObj.inputsId] = new Set();
-            }
-
-            const inputTypes = Object.keys(inputsObj.inputs);
-
-            // let totalInputs = 0;
-
-            // inputTypes.forEach(function(inputType){
-            //   debug(MODULE_ID_PREFIX + " | " + inputsObj.inputsId + " | INPUT TYPE: " + inputType + " | " + inputsObj.inputs[inputType].length + " INPUTS");
-            //   totalInputs += inputsObj.inputs[inputType].length;
-            // });
-
-            console.log(MODULE_ID_PREFIX + " | +++ INPUTS [" + inputsHashMap.count() + " INs IN HM] | " + inputsObj.meta.numInputs + " INPUTS | " + inputsObj.inputsId);
-
-            return;
-
-          }
         }
 
-        debug(chalkLog(MODULE_ID_PREFIX + " | DROPBOX INPUTS CONTENT SAME  "
-          + " | " + entry.name
-          + " | LAST MOD: " + moment(new Date(entry.client_modified)).format(compactDateTimeFormat)
-        ));
-
-        return;
       }
 
-
-      try {
-        inputsObj = await loadFileRetry({folder: folder, file: entry.name});
-      }
-      catch(err) {
-        console.log(chalkError(MODULE_ID_PREFIX + " | DROPBOX INPUTS LOAD FILE ERROR: " + err));
-        return;
-      }
-
-      if ((inputsObj === undefined) || !inputsObj) {
-        console.log(chalkError(MODULE_ID_PREFIX + " | DROPBOX INPUTS LOAD FILE ERROR | JSON UNDEFINED ??? "));
-        return;
-      }
-
-      if (inputsObj.meta === undefined) {
-        inputsObj.meta = {};
-        inputsObj.meta.numInputs = 0;
-        Object.keys(inputsObj.inputs).forEach(function(inputType){
-          inputsObj.meta.numInputs += inputsObj.inputs[inputType].length;
-        });
-      }
-
-      inputsHashMap.set(inputsObj.inputsId, {entry: entry, inputsObj: inputsObj} );
-
-      if (inputsNetworksHashMap[inputsObj.inputsId] === undefined) {
-        inputsNetworksHashMap[inputsObj.inputsId] = new Set();
-      }
-
-      const inputTypes = Object.keys(inputsObj.inputs);
-
-      // let totalInputs = 0;
-
-      // inputTypes.forEach(function(inputType){
-      //   debug(MODULE_ID_PREFIX + " | " + inputsObj.inputsId + " | INPUT TYPE: " + inputType + " | " + inputsObj.inputs[inputType].length + " INPUTS");
-      //   totalInputs += inputsObj.inputs[inputType].length;
-      // });
-
-      console.log(MODULE_ID_PREFIX + " | +++ INPUTS [" + inputsHashMap.size + " IN HM] | " + inputsObj.meta.numInputs + " INPUTS | " + inputsObj.inputsId);
+      await loadInputsDropboxFile({folder: folder, file: entry.name, entry: entry});
 
       return;
 
@@ -3236,19 +3157,33 @@ function initWatchAllConfigFolders(params){
         console.log(chalkBlue(MODULE_ID_PREFIX + " | INIT WATCH INPUTS CONFIG FOLDER: " + "/Users/tc/Dropbox/Apps/wordAssociation" + defaultInputsFolder));
 
         monitorInputs.on("created", async function(f, stat){
-          if (f.startsWith("inputs_")){
-            await loadInputsDropboxFolder({folder: defaultInputsFolder});
+          const fileNameArray = f.split("/");
+          const file = fileNameArray[fileNameArray.length-1];
+          if (file.startsWith("inputs_")) {
+            console.log(chalkBlue(MODULE_ID_PREFIX + " | +++ INPUTS FILE CREATED: " + f));
+            await loadInputsDropboxFile({folder: defaultInputsFolder, file: file});
           }
 
         });
 
+        monitorInputs.on("changed", async function(f, stat){
+          const fileNameArray = f.split("/");
+          const file = fileNameArray[fileNameArray.length-1];
+          if (file.startsWith("inputs_")) {
+            console.log(chalkBlue(MODULE_ID_PREFIX + " | -/- INPUTS FILE CHANGED: " + f));
+            await loadInputsDropboxFile({folder: defaultInputsFolder, file: file});
+          }
+        });
+
+
         monitorInputs.on("removed", function (f, stat) {
-          const inputsId = f.name.replace(".json", "");
-          inputsHashMap.delete(inputsId);
-          console.log(chalkInfo(MODULE_ID_PREFIX + " | XXX INPUTS FILE DELETED | " + getTimeStamp() 
+          const fileNameArray = f.split("/");
+          const inputsId = fileNameArray[fileNameArray.length-1].replace(".json", "");
+          console.log(chalkAlert(MODULE_ID_PREFIX + " | XXX INPUTS FILE DELETED | " + getTimeStamp() 
             + " | " + inputsId 
             + "\n" + f
           ));
+          inputsHashMap.delete(inputsId);
         });
 
       });
@@ -3970,6 +3905,8 @@ configuration.DROPBOX.DROPBOX_STATS_FILE = process.env.DROPBOX_STATS_FILE || MOD
 const dropboxConfigFolder = "/config/utility";
 const dropboxConfigDefaultFolder = "/config/utility/default";
 const dropboxConfigHostFolder = "/config/utility/" + hostname;
+
+const defaultNetworkInputsConfigFile = "default_networkInputsConfig.json";
 
 const dropboxConfigDefaultFile = "default_" + configuration.DROPBOX.DROPBOX_CONFIG_FILE;
 const dropboxConfigHostFile = hostname + "_" + configuration.DROPBOX.DROPBOX_CONFIG_FILE;
