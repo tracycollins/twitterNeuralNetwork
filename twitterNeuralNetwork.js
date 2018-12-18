@@ -1810,7 +1810,6 @@ function dropboxFileDelete(params){
         console.log(chalkError(MODULE_ID_PREFIX + " | *** ERROR: XXX NN"
           + " | STATUS: " + err.status
           + " | PATH: " + path
-          + " | SUMMARY: " + err.response.statusText
           + "\n" + jsonPrint(err)
         ));
       }
