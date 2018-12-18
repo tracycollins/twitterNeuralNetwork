@@ -2352,55 +2352,76 @@ function fileSize(params){
     let size;
     let prevSize;
 
-    try {
-      stats = fs.statSync(params.path);
-      size = stats.size;
-      prevSize = stats.size;
 
-      if (params.size && (size === params.size)) {
-        console.log(chalkInfo(MODULE_ID_PREFIX + " | FILE SIZE EXPECTED | " + getTimeStamp()
-          + " | CUR: " + size
-          + " | EXPECTED: " + params.size
-        ));
-        return resolve();
+    let exists = fs.existsSync(params.path);
+
+    if (exists) {
+
+      try {
+        stats = fs.statSync(params.path);
+        size = stats.size;
+        prevSize = stats.size;
+
+        if (params.size && (size === params.size)) {
+          console.log(chalkInfo(MODULE_ID_PREFIX + " | FILE SIZE EXPECTED | " + getTimeStamp()
+            + " | EXISTS: " + exists
+            + " | CUR: " + size
+            + " | EXPECTED: " + params.size
+          ));
+          return resolve();
+        }
       }
+      catch(err){
+        return reject(err);
+      }
+
     }
-    catch(err){
-      return reject(err);
+    else {
+      console.log(chalkAlert(MODULE_ID_PREFIX + " | ??? FILE SIZE | NON-EXISTENT FILE | " + getTimeStamp()
+        + " | EXISTS: " + exists
+        + " | EXPECTED: " + params.size
+      ));
     }
 
 
     sizeInterval = setInterval(async function(){
 
       console.log(chalkInfo(MODULE_ID_PREFIX + " | FILE SIZE | " + getTimeStamp()
+        + " | EXISTS: " + exists
         + " | CUR: " + size
         + " | PREV: " + prevSize
         + " | EXPECTED: " + params.size
       ));
 
-      fs.stat(params.path, function(err, stats){
+      exists = fs.existsSync(params.path);
 
-        if (err) {
-          return reject(err);
-        }
+      if (exists) {
 
-        prevSize = size;
-        size = stats.size;
+        fs.stat(params.path, function(err, stats){
 
-        if ((size > 0) && ((params.size && (size === params.size)) || (size === prevSize))) {
+          if (err) {
+            return reject(err);
+          }
 
-          clearInterval(sizeInterval);
+          prevSize = size;
+          size = stats.size;
 
-          console.log(chalkInfo(MODULE_ID_PREFIX + " | FILE SIZE STABLE | " + getTimeStamp()
-            + " | CUR: " + size
-            + " | PREV: " + prevSize
-            + " | EXPECTED: " + params.size
-          ));
+          if ((size > 0) && ((params.size && (size === params.size)) || (size === prevSize))) {
 
-          resolve();
-        }
+            clearInterval(sizeInterval);
 
-      });
+            console.log(chalkInfo(MODULE_ID_PREFIX + " | FILE SIZE STABLE | " + getTimeStamp()
+              + " | EXISTS: " + exists
+              + " | CUR: " + size
+              + " | PREV: " + prevSize
+              + " | EXPECTED: " + params.size
+            ));
+
+            resolve();
+          }
+
+        });
+      }
 
     }, interval);
 
