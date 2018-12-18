@@ -2462,20 +2462,20 @@ function initWatch(params){
 
         console.log(chalkLog(MODULE_ID_PREFIX + " | LOAD USER ARCHIVE FLAG FILE: " + params.rootFolder + "/" + configuration.defaultUserArchiveFlagFile));
 
-        loadFileRetry({folder: configuration.userArchiveFolder, file: configuration.defaultUserArchiveFlagFile}, async function(err, archiveFlagObj){
+        let archiveFlagObj;
+
+        try {
+
+          archiveFlagObj = await loadFileRetry({folder: configuration.userArchiveFolder, file: configuration.defaultUserArchiveFlagFile});
 
           console.log(chalkLog(MODULE_ID_PREFIX + " | USER ARCHIVE FLAG FILE | PATH: " + archiveFlagObj.path + " | SIZE: " + archiveFlagObj.size));
 
-          // const fullLocalPath = (hostname === "google") ? "/home/tc/Dropbox/Apps/wordAssociation" + archiveFlagObj.path : "/Users/tc/Dropbox/Apps/wordAssociation" + archiveFlagObj.path;
+          await loadTrainingSet({folder: configuration.userArchiveFolder, file: configuration.defaultUserArchiveFlagFile});
 
-          try {
-            await loadTrainingSet({folder: configuration.userArchiveFolder, file: configuration.defaultUserArchiveFlagFile});
-          }
-          catch(err){
-            console.log(chalkError(MODULE_ID_PREFIX + " | *** WATCH CHANGE ERROR | " + getTimeStamp() + " | " + err));
-          }
-
-        });
+        }
+        catch(err){
+          console.log(chalkError(MODULE_ID_PREFIX + " | *** WATCH CHANGE ERROR | " + getTimeStamp() + " | " + err));
+        }
 
       }
     };
