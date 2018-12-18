@@ -2196,10 +2196,18 @@ function unzipUsersToArray(params){
 
                     percent = 100*(statsObj.users.zipHashMapHit/statsObj.users.unzipped);
 
-                    let dbUser = await updateUserFromTrainingSet({user: fileObj});
+                    let dbUser;
+
+                    try {
+                      dbUser = await updateUserFromTrainingSet({user: fileObj});
+                    }
+                    catch(err){
+                      console.log(chalkAlert(MODULE_ID_PREFIX
+                        + " | *** ERROR UPDATE USER FROM TRAINING SET ... SKIPPING | " + err 
+                      ));
+                    }
 
                     if (dbUser && dbUser !== undefined) {
-
 
                       trainingSetUsersHashMap.set(dbUser.nodeId, dbUser);
 
