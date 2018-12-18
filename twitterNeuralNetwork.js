@@ -810,7 +810,6 @@ function purgeNetwork(networkId){
       betterChildSeedNetworkIdSet.delete(networkId);
 
       skipLoadNetworkSet.add(networkId);
-          throw err;
 
       if (resultsHashmap[networkId] !== undefined) { 
         resultsHashmap[networkId].status = "PURGED";
