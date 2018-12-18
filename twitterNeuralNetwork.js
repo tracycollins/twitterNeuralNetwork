@@ -3,12 +3,13 @@
 "use strict";
 
 // const HOST = process.env.PRIMARY_HOST || "local";
-// const PRIMARY_HOST = process.env.PRIMARY_HOST || "macpro2";
+const PRIMARY_HOST = process.env.PRIMARY_HOST || "macpro2";
 const HOST = "default";
 
 let quitOnCompleteFlag = false;
 
 
+const DEFAULT_PURGE_MIN = false; // applies only to parent
 const TEST_MODE = false; // applies only to parent
 const CHILD_TEST_MODE = false; // applies only to children
 const GLOBAL_TEST_MODE = false;  // applies to parent and all children
@@ -50,6 +51,7 @@ let statsObj = {};
 let statsObjSmall = {};
 let configuration = {};
 
+configuration.purgeMin = DEFAULT_PURGE_MIN;
 configuration.testMode = TEST_MODE;
 configuration.globalTestMode = GLOBAL_TEST_MODE;
 configuration.quitOnComplete = QUIT_ON_COMPLETE;
@@ -1016,10 +1018,10 @@ function loadNetworkDropboxFile(params){
       // PURGE FAILING NETWORKS
       //========================
 
-      if (((hostname === "google") && (params.folder === globalBestNetworkFolder))
-        || ((hostname !== "google") && (params.folder === localBestNetworkFolder)) ) {
+      if (((hostname === PRIMARY_HOST) && (params.folder === globalBestNetworkFolder))
+        || ((hostname !== PRIMARY_HOST) && (params.folder === localBestNetworkFolder)) ) {
 
-        printNetworkObj(MODULE_ID_PREFIX + " | DELETING NN", networkObj);
+        printNetworkObj(MODULE_ID_PREFIX + " | DELETING NN", networkObj, chalkAlert);
 
         await purgeNetwork(networkObj.networkId);
         await purgeInputs(networkObj.inputsId);
@@ -1027,7 +1029,7 @@ function loadNetworkDropboxFile(params){
         return resolve(null);
       }
 
-      printNetworkObj(MODULE_ID_PREFIX + " | --- NN HASH MAP [" + networkHashMap.size + " IN HM]", networkObj);
+      printNetworkObj(MODULE_ID_PREFIX + " | --- NN HASH MAP [" + networkHashMap.size + " IN HM]", networkObj, chalkLog);
 
       return resolve(networkObj);
     }
@@ -1750,7 +1752,7 @@ function dropboxFileMove(params){
         ));
       }
       else if (err.status === 429) {
-        console.log(chalkError(MODULE_ID_PREFIX + " | *** ERROR: XXX NN"
+        console.log(chalkError(MODULE_ID_PREFIX + " | *** MOVE ERROR: XXX NN"
           + " | STATUS: " + err.status
           + " | " + srcPath
           + " > " + dstPath
@@ -1758,7 +1760,7 @@ function dropboxFileMove(params){
         ));
       }
       else {
-        console.log(chalkError(MODULE_ID_PREFIX + " | *** ERROR: XXX NN"
+        console.log(chalkError(MODULE_ID_PREFIX + " | *** MOVE ERROR: XXX NN"
           + " | STATUS: " + err.status
           + " | " + srcPath
           + " > " + dstPath
@@ -1800,16 +1802,17 @@ function dropboxFileDelete(params){
         ));
       }
       else if (err.status === 429) {
-        console.log(chalkError(MODULE_ID_PREFIX + " | *** ERROR: XXX NN"
+        console.log(chalkError(MODULE_ID_PREFIX + " | *** DELETE ERROR: XXX NN"
           + " | STATUS: " + err.status
           + " | PATH: " + path
           + " | TOO MANY REQUESTS"
         ));
       }
       else {
-        console.log(chalkError(MODULE_ID_PREFIX + " | *** ERROR: XXX NN"
+        console.log(chalkError(MODULE_ID_PREFIX + " | *** DELETE ERROR: XXX NN"
           + " | STATUS: " + err.status
           + " | PATH: " + path
+          + " | ERR: " + err
           + "\n" + jsonPrint(err)
         ));
       }
@@ -3175,6 +3178,7 @@ function initWatchAllConfigFolders(params){
           const file = fileNameArray[fileNameArray.length-1];
           if (file.endsWith(".json") && !file.startsWith("bestRuntimeNetwork")) {
             console.log(chalkBlue(MODULE_ID_PREFIX + " | +++ NETWORK FILE CREATED: " + f));
+            await delay({period: 30*ONE_SECOND, verbose: true});
             await loadNetworkDropboxFile({folder: globalBestNetworkFolder, file: file});
           }
 
@@ -3185,6 +3189,7 @@ function initWatchAllConfigFolders(params){
           const file = fileNameArray[fileNameArray.length-1];
           if (file.endsWith(".json") && !file.startsWith("bestRuntimeNetwork")) {
             console.log(chalkBlue(MODULE_ID_PREFIX + " | -/- NETWORK FILE CHANGED: " + f));
+            await delay({period: 30*ONE_SECOND, verbose: true});
             await loadNetworkDropboxFile({folder: globalBestNetworkFolder, file: file});
           }
         });
@@ -3214,6 +3219,7 @@ function initWatchAllConfigFolders(params){
           const file = fileNameArray[fileNameArray.length-1];
           if (file.startsWith("inputs_")) {
             console.log(chalkBlue(MODULE_ID_PREFIX + " | +++ INPUTS FILE CREATED: " + f));
+            await delay({period: 30*ONE_SECOND, verbose: true});
             await loadInputsDropboxFile({folder: defaultInputsFolder, file: file});
           }
 
@@ -3224,6 +3230,7 @@ function initWatchAllConfigFolders(params){
           const file = fileNameArray[fileNameArray.length-1];
           if (file.startsWith("inputs_")) {
             console.log(chalkBlue(MODULE_ID_PREFIX + " | -/- INPUTS FILE CHANGED: " + f));
+            await delay({period: 30*ONE_SECOND, verbose: true});
             await loadInputsDropboxFile({folder: defaultInputsFolder, file: file});
           }
         });
@@ -3250,11 +3257,13 @@ function initWatchAllConfigFolders(params){
 
         monitorDefaultConfig.on("created", async function(f, stat){
           if (f.endsWith(dropboxConfigDefaultFile)){
+            await delay({period: 30*ONE_SECOND, verbose: true});
             await loadAllConfigFiles();
             await loadCommandLineArgs();
           }
 
           if (f.endsWith(defaultNetworkInputsConfigFile)){
+            await delay({period: 30*ONE_SECOND, verbose: true});
             await loadNetworkInputsConfig();
           }
 
@@ -3262,11 +3271,13 @@ function initWatchAllConfigFolders(params){
 
         monitorDefaultConfig.on("changed", async function(f, stat){
           if (f.endsWith(dropboxConfigDefaultFile)){
+            await delay({period: 30*ONE_SECOND, verbose: true});
             await loadAllConfigFiles();
             await loadCommandLineArgs();
           }
 
           if (f.endsWith(defaultNetworkInputsConfigFile)){
+            await delay({period: 30*ONE_SECOND, verbose: true});
             await loadNetworkInputsConfig();
           }
 
@@ -3566,6 +3577,29 @@ function getTimeStamp(inputTime) {
     currentTimeStamp = moment(parseInt(inputTime)).format(compactDateTimeFormat);
     return currentTimeStamp;
   }
+}
+
+function delay(params) {
+
+  params = params || {};
+
+  let period = params.period || 10*ONE_SECOND;
+  let verbose = params.verbose || false;
+
+  return new Promise(function(resolve, reject){
+
+    if (verbose) {
+      console.log(chalkLog(MODULE_ID_PREFIX + " | +++ DELAY START | NOW: " + getTimeStamp() + " | PERIOD: " + msToTime(period)));
+    }
+
+    setTimeout(function(){
+      if (verbose) {
+        console.log(chalkLog(MODULE_ID_PREFIX + " | XXX DELAY END | NOW: " + getTimeStamp() + " | PERIOD: " + msToTime(period)));
+      }
+      resolve();
+    }, period);
+  });
+
 }
 
 function getElapsed(){
@@ -4516,6 +4550,16 @@ function loadConfigFile(params) {
         }
       }
 
+      if (loadedConfigObj.TNN_PURGE_MIN !== undefined) {
+        console.log(MODULE_ID_PREFIX + " | LOADED TNN_PURGE_MIN: " + loadedConfigObj.TNN_PURGE_MIN);
+        if ((loadedConfigObj.TNN_PURGE_MIN === true) || (loadedConfigObj.TNN_PURGE_MIN === "true")) {
+          newConfiguration.purgeMin = true;
+        }
+        if ((loadedConfigObj.TNN_PURGE_MIN === false) || (loadedConfigObj.TNN_PURGE_MIN === "false")) {
+          newConfiguration.purgeMin = false;
+        }
+      }
+
       if (loadedConfigObj.VERBOSE !== undefined) {
         console.log(MODULE_ID_PREFIX + " | LOADED VERBOSE: " + loadedConfigObj.VERBOSE);
         if ((loadedConfigObj.VERBOSE === true) || (loadedConfigObj.VERBOSE === "true")) {
@@ -4540,7 +4584,6 @@ function loadConfigFile(params) {
         console.log(MODULE_ID_PREFIX + " | LOADED TNN_MAX_NEURAL_NETWORK_CHILDREN: " + loadedConfigObj.TNN_MAX_NEURAL_NETWORK_CHILDREN);
         newConfiguration.maxNumberChildren = loadedConfigObj.TNN_MAX_NEURAL_NETWORK_CHILDREN;
       }
-
 
       if (loadedConfigObj.TNN_GLOBAL_MIN_SUCCESS_RATE !== undefined){
         console.log(MODULE_ID_PREFIX + " | LOADED TNN_GLOBAL_MIN_SUCCESS_RATE: " + loadedConfigObj.TNN_GLOBAL_MIN_SUCCESS_RATE);
@@ -5467,7 +5510,7 @@ const fsmStates = {
 
           let seedParams = {};
 
-          seedParams.purgeMin = false ;  // use localPurgeMinSuccessRate to delete nn's
+          seedParams.purgeMin = configuration.purgeMin || false ;  // use localPurgeMinSuccessRate to delete nn's
           seedParams.folders = [globalBestNetworkFolder, localBestNetworkFolder];
 
           if (configuration.seedNetworkId) {
