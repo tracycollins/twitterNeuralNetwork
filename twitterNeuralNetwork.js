@@ -1834,6 +1834,8 @@ function loadBestNetworkDropboxFolders (params){
 
   return new Promise(async function(resolve, reject){
 
+    params = params || {};
+
     if (configuration.offlineMode) {
       dropboxClient = dropboxLocalClient;
     }
@@ -1902,7 +1904,7 @@ function loadBestNetworkDropboxFolders (params){
       }
       
       try {
-        let networkObj = await loadNetworkDropboxFile({folder: folder, file: entry.name});
+        let networkObj = await loadNetworkDropboxFile({folder: folder, file: entry.name, purgeMin: params.purgeMin});
         if (networkObj) {
           numNetworksLoaded += 1;
         }
