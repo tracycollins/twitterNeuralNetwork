@@ -3179,7 +3179,12 @@ function initWatchAllConfigFolders(params){
           if (file.endsWith(".json") && !file.startsWith("bestRuntimeNetwork")) {
             console.log(chalkBlue(MODULE_ID_PREFIX + " | +++ NETWORK FILE CREATED: " + f));
             await delay({period: 30*ONE_SECOND, verbose: true});
-            await loadNetworkDropboxFile({folder: globalBestNetworkFolder, file: file});
+            try{
+              await loadNetworkDropboxFile({folder: globalBestNetworkFolder, file: file});
+            }
+            catch(err){
+              console.log(chalkBlue(MODULE_ID_PREFIX + " | *** LOAD NETWORK FILE CREATED ERROR | " + f + ": " + err));
+            }
           }
 
         });
@@ -3190,7 +3195,12 @@ function initWatchAllConfigFolders(params){
           if (file.endsWith(".json") && !file.startsWith("bestRuntimeNetwork")) {
             console.log(chalkBlue(MODULE_ID_PREFIX + " | -/- NETWORK FILE CHANGED: " + f));
             await delay({period: 30*ONE_SECOND, verbose: true});
-            await loadNetworkDropboxFile({folder: globalBestNetworkFolder, file: file});
+            try{
+              await loadNetworkDropboxFile({folder: globalBestNetworkFolder, file: file});
+            }
+            catch(err){
+              console.log(chalkBlue(MODULE_ID_PREFIX + " | *** LOAD NETWORK FILE CREATED ERROR | " + f + ": " + err));
+            }
           }
         });
 
@@ -3220,7 +3230,12 @@ function initWatchAllConfigFolders(params){
           if (file.startsWith("inputs_")) {
             console.log(chalkBlue(MODULE_ID_PREFIX + " | +++ INPUTS FILE CREATED: " + f));
             await delay({period: 30*ONE_SECOND, verbose: true});
-            await loadInputsDropboxFile({folder: defaultInputsFolder, file: file});
+            try{
+              await loadInputsDropboxFile({folder: defaultInputsFolder, file: file});
+            }
+            catch(err){
+              console.log(chalkBlue(MODULE_ID_PREFIX + " | *** LOAD INPUTS FILE CREATED ERROR | " + f + ": " + err));
+            }
           }
 
         });
@@ -3231,6 +3246,12 @@ function initWatchAllConfigFolders(params){
           if (file.startsWith("inputs_")) {
             console.log(chalkBlue(MODULE_ID_PREFIX + " | -/- INPUTS FILE CHANGED: " + f));
             await delay({period: 30*ONE_SECOND, verbose: true});
+            try{
+              await loadInputsDropboxFile({folder: defaultInputsFolder, file: file});
+            }
+            catch(err){
+              console.log(chalkBlue(MODULE_ID_PREFIX + " | *** LOAD INPUTS FILE CHANGED ERROR | " + f + ": " + err));
+            }
             await loadInputsDropboxFile({folder: defaultInputsFolder, file: file});
           }
         });
