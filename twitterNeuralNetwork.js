@@ -3156,19 +3156,19 @@ function initWatchAllConfigFolders(params){
           const file = fileNameArray[fileNameArray.length-1];
           if (file.endsWith(".json") && !file.startsWith("bestRuntimeNetwork")) {
             console.log(chalkBlue(MODULE_ID_PREFIX + " | -/- NETWORK FILE CHANGED: " + f));
-            await loadInputsDropboxFile({folder: defaultInputsFolder, file: file});
+            await loadNetworkDropboxFile({folder: globalBestNetworkFolder, file: file});
           }
         });
 
 
         monitorNetworks.on("removed", function (f, stat) {
           const fileNameArray = f.split("/");
-          const inputsId = fileNameArray[fileNameArray.length-1].replace(".json", "");
+          const networkId = fileNameArray[fileNameArray.length-1].replace(".json", "");
           console.log(chalkAlert(MODULE_ID_PREFIX + " | XXX NETWORK FILE DELETED | " + getTimeStamp() 
-            + " | " + inputsId 
+            + " | " + networkId 
             + "\n" + f
           ));
-          networkHashMap.delete(inputsId);
+          networkHashMap.delete(networkId);
         });
       });
 
@@ -3254,7 +3254,7 @@ function initWatchAllConfigFolders(params){
 
       watch.createMonitor("/Users/tc/Dropbox/Apps/wordAssociation" + dropboxConfigHostFolder, options, function (monitorHostConfig) {
 
-        console.log(chalkBlue(MODULE_ID_PREFIX + " | INIT WATCH HOSE CONFIG FOLDER: " + "/Users/tc/Dropbox/Apps/wordAssociation" + dropboxConfigHostFolder));
+        console.log(chalkBlue(MODULE_ID_PREFIX + " | INIT WATCH HOST CONFIG FOLDER: " + "/Users/tc/Dropbox/Apps/wordAssociation" + dropboxConfigHostFolder));
 
         monitorHostConfig.on("created", async function(f, stat){
           if (f.endsWith(dropboxConfigHostFile)){
