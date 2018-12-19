@@ -6019,7 +6019,15 @@ function childCreate(params){
 
           case "EVOLVE_COMPLETE":
 
-            const nn = networkDefaults(m.networkObj);
+            let nn;
+
+            try {
+              nn = await networkDefaults(m.networkObj);
+            }
+            catch(err){
+              console.trace(chalkError("EVOLVE_COMPLETE ERROR: " + err));
+              throw err;
+            }
 
             statsObj.evolveStats.total += 1;
 

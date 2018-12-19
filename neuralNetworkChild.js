@@ -1390,7 +1390,8 @@ function testNetwork(params){
     console.log(chalkBlue("NNC | TEST NETWORK"
       + " | TEST SET ID: " + params.testSet.meta.testSetId
       + " | NETWORK ID: " + networkObj.networkId
-      + " | " + params.testSet.meta.setSize + " TEST DATA POINTS"
+      + " | " + params.testSet.meta.setSize + " TEST META DATA POINTS"
+      + " | " + params.testSet.data.length + " TEST DATA LENGTH"
     ));
 
     const nw = neataptic.Network.fromJSON(networkObj.network);
