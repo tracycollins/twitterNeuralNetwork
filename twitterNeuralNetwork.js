@@ -36,7 +36,7 @@ const SAVE_FILE_QUEUE_INTERVAL = ONE_SECOND;
 const TWITTER_DEFAULT_USER = "altthreecee00";
 
 const DROPBOX_MAX_SAVE_NORMAL = 20 * ONE_MEGABYTE;
-const DROPBOX_LIST_FOLDER_LIMIT = 50;
+const DROPBOX_LIST_FOLDER_LIMIT = 20;
 const DROPBOX_TIMEOUT = 30 * ONE_SECOND;
 
 const compactDateTimeFormat = "YYYYMMDD_HHmmss";
@@ -51,6 +51,7 @@ let statsObj = {};
 let statsObjSmall = {};
 let configuration = {};
 
+configuration.offlineMode = OFFLINE_MODE;
 configuration.primaryHost = PRIMARY_HOST;
 configuration.purgeMin = DEFAULT_PURGE_MIN;
 configuration.testMode = TEST_MODE;
@@ -531,7 +532,7 @@ async function printNetworkObj(title, networkObj, format) {
     networkObj = await networkDefaults(networkObj);
   }
   catch(err){
-    console.log(chalkError("printNetworkObj ERROR: " + err));
+    console.trace(chalkError("printNetworkObj ERROR: " + err + "\nTITLE: " + title));
     return;
   }
 
@@ -886,7 +887,7 @@ function loadNetworkDropboxFile(params){
 
       networkObj = await validateNetwork({networkId: networkId, networkObj: networkObj});
 
-      if (!networkObj) {  
+      if (!networkObj || networkObj === undefined) {  
         console.log(chalkInfo(MODULE_ID_PREFIX + " | ??? INVALID NETWORK ... PURGING"
           + " | " + path
         ));
@@ -1035,6 +1036,10 @@ function loadNetworkDropboxFile(params){
 
       if (((hostname === PRIMARY_HOST) && (params.folder === globalBestNetworkFolder))
         || ((hostname !== PRIMARY_HOST) && (params.folder === localBestNetworkFolder)) ) {
+
+          // const localBestNetworkFolder =    "/config/utility/" + hostname + "/neuralNetworks/best";
+
+          // /config/utility/macpro2/neuralnetworks/best
 
         printNetworkObj(
           MODULE_ID_PREFIX 
@@ -1549,12 +1554,12 @@ function listDropboxFolders(params){
 
   return new Promise(function(resolve, reject){
 
-    if (configuration.offlineMode) {
-      dropboxClient = dropboxLocalClient;
-    }
-    else {
-      dropboxClient = dropboxRemoteClient;
-    }
+    // if (configuration.offlineMode) {
+    //   dropboxClient = dropboxLocalClient;
+    // }
+    // else {
+    //   dropboxClient = dropboxRemoteClient;
+    // }
 
     console.log(chalkNetwork(MODULE_ID_PREFIX + " | ... GETTING DROPBOX FOLDERS ENTRIES"
       + " | " + params.folders.length + " FOLDERS"
@@ -1564,15 +1569,20 @@ function listDropboxFolders(params){
     let totalEntries = [];
     let promiseArray = [];
 
-    params.folders.forEach(function(folder){
+    params.folders.forEach(async function(folder){
 
       const listDropboxFolderParams = {
         folder: folder,
         limit: DROPBOX_LIST_FOLDER_LIMIT
       };
 
-      const p = listDropboxFolder(listDropboxFolderParams);
-      promiseArray.push(p);
+      try {
+        const p = listDropboxFolder(listDropboxFolderParams);
+        promiseArray.push(p);
+      }
+      catch(err){
+        return reject(err);
+      }
 
     });
 
@@ -1626,9 +1636,15 @@ function validateNetwork(params){
       // return reject(new Error("NETWORK INPUTS ID UNDEFINED"));
     }
 
-    let nnObj = networkDefaults(networkObj);
+    try {
+      let nnObj = networkDefaults(networkObj);
+      resolve(nnObj);
+    }
+    catch(err){
+      console.trace(chalkError("validateNetwork ERROR: " + err));
+      return;
+    }
 
-    resolve(nnObj);
 
   });
 }
@@ -1831,12 +1847,12 @@ function loadBestNetworkDropboxFolders (params){
 
     params = params || {};
 
-    if (configuration.offlineMode) {
-      dropboxClient = dropboxLocalClient;
-    }
-    else {
-      dropboxClient = dropboxRemoteClient;
-    }
+    // if (configuration.offlineMode) {
+    //   dropboxClient = dropboxLocalClient;
+    // }
+    // else {
+    //   dropboxClient = dropboxRemoteClient;
+    // }
 
     let numNetworksLoaded = 0;
     let dropboxFoldersEntries;
@@ -1863,7 +1879,7 @@ function loadBestNetworkDropboxFolders (params){
         return "TEST_MODE";
       }
 
-      debug("entry\n" + jsonPrint(entry));
+      // console.log("entry.path_display: " + entry.path_display);
 
       if (entry.name === bestRuntimeNetworkFileName) {
         console.log(chalkInfo(MODULE_ID_PREFIX + " | ... SKIPPING LOAD OF " + entry.name));
@@ -1943,7 +1959,6 @@ function loadSeedNeuralNetwork(params){
       numNetworksLoaded = await loadBestNetworkDropboxFolders(params);
       console.log(chalkBlueBold(MODULE_ID_PREFIX + " | LOADED " + numNetworksLoaded + " NETWORKS"));
       printNetworkObj(MODULE_ID_PREFIX + " | BEST NETWORK", currentBestNetwork, chalkBlueBold);
-      currentBestNetwork
     }
     catch(err){
       if (err.status === 429) {
@@ -2360,10 +2375,11 @@ function fileSize(params){
         prevSize = stats.size;
 
         if (params.size && (size === params.size)) {
-          console.log(chalkInfo(MODULE_ID_PREFIX + " | FILE SIZE EXPECTED | " + getTimeStamp()
+          console.log(chalkGreen(MODULE_ID_PREFIX + " | FILE SIZE EXPECTED | " + getTimeStamp()
             + " | EXISTS: " + exists
             + " | CUR: " + size
             + " | EXPECTED: " + params.size
+            + " | " + params.path
           ));
           return resolve();
         }
@@ -2377,6 +2393,7 @@ function fileSize(params){
       console.log(chalkAlert(MODULE_ID_PREFIX + " | ??? FILE SIZE | NON-EXISTENT FILE | " + getTimeStamp()
         + " | EXISTS: " + exists
         + " | EXPECTED: " + params.size
+        + " | " + params.path
       ));
     }
 
@@ -2388,6 +2405,7 @@ function fileSize(params){
         + " | CUR: " + size
         + " | PREV: " + prevSize
         + " | EXPECTED: " + params.size
+        + " | " + params.path
       ));
 
       exists = fs.existsSync(params.path);
@@ -2406,11 +2424,12 @@ function fileSize(params){
 
             clearInterval(sizeInterval);
 
-            console.log(chalkInfo(MODULE_ID_PREFIX + " | FILE SIZE STABLE | " + getTimeStamp()
+            console.log(chalkGreen(MODULE_ID_PREFIX + " | FILE SIZE STABLE | " + getTimeStamp()
               + " | EXISTS: " + exists
               + " | CUR: " + size
               + " | PREV: " + prevSize
               + " | EXPECTED: " + params.size
+              + " | " + params.path
             ));
 
             resolve();
@@ -3056,10 +3075,6 @@ function printchildHashMap(){
 
 process.title = MODULE_ID.toLowerCase() + "_" + process.pid;
 
-// process.on("exit", function() {
-//   console.log(chalkAlert(MODULE_ID_PREFIX + " | PROCESS EXIT | " + getTimeStamp()));
-// });
-
 process.on("exit", function(code, signal) {
   console.log(chalkAlert(MODULE_ID_PREFIX
     + " | PROCESS EXIT"
@@ -3077,15 +3092,6 @@ process.on("close", function(code, signal) {
     + " | " + `SIGNAL: ${signal}`
   ));
 });
-
-// process.on("message", function(msg) {
-//   if ((msg === "SIGINT") || (msg === "shutdown")) {
-//     setTimeout(function() {
-//       console.log(chalkAlert(MODULE_ID_PREFIX + " | *** QUITTING twitterFollowerExplorer"));
-//       // process.exit(0);
-//     }, ONE_SECOND);
-//   }
-// });
 
 process.on("SIGHUP", function(code, signal) {
   console.log(chalkAlert(MODULE_ID_PREFIX
@@ -3888,35 +3894,6 @@ function killAll(params){
 // STATS
 //=========================================================================
 
-// let startTimeMoment = moment();
-
-// statsObj.pid = process.pid;
-// statsObj.cpus = os.cpus().length;
-
-// statsObj.runId = MODULE_ID.toLowerCase() + "_" + getTimeStamp();
-
-// statsObj.hostname = hostname;
-// statsObj.startTime = getTimeStamp();
-// statsObj.elapsedMS = 0;
-// statsObj.elapsed = getElapsedTimeStamp();
-// statsObj.status = "START";
-
-// statsObj.serverConnected = false;
-// statsObj.userReadyAck = false;
-// statsObj.userReadyAckWait = 0;
-// statsObj.userReadyTransmitted = false;
-// statsObj.authenticated = false;
-
-// statsObj.queues = {};
-
-// let statsPickArray = [
-//   "pid", 
-//   "startTime", 
-//   "elapsed", 
-//   "elapsedMS", 
-//   "status"
-// ];
-
 function showStats(options) {
 
   return new Promise(async function(resolve, reject){
@@ -4376,8 +4353,6 @@ function listDropboxFolder(params){
 
       statsObj.status = "LIST DROPBOX FOLDER: " + params.folder;
 
-      console.log(chalkNetwork(MODULE_ID_PREFIX + " | LISTING DROPBOX FOLDER | " + params.folder));
-
       let results = {};
       results.entries = [];
 
@@ -4385,12 +4360,12 @@ function listDropboxFolder(params){
       let more = false;
       let limit = params.limit || DROPBOX_LIST_FOLDER_LIMIT;
 
-      if (configuration.offlineMode) {
-        dropboxClient = dropboxLocalClient;
-      }
-      else {
-        dropboxClient = dropboxRemoteClient;
-      }
+      console.log(chalkNetwork(MODULE_ID_PREFIX
+        + " | LISTING DROPBOX FOLDER"
+        + " | LIMIT: " + limit
+        + " | " + params.folder
+        // + "\n" + jsonPrint(params)
+      ));
 
       dropboxClient.filesListFolder({path: params.folder, limit: limit})
       .then(function(response){
@@ -4452,7 +4427,8 @@ function listDropboxFolder(params){
               return reject(err);
             }
             resolve(results);
-          });
+          }
+        );
       })
       .catch(function(err){
         console.log(chalkError(MODULE_ID_PREFIX + " | *** DROPBOX FILES LIST FOLDER ERROR: " + err));
