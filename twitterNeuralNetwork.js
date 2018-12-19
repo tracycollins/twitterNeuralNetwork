@@ -1432,7 +1432,11 @@ function updateUserFromTrainingSet(params){
 
         })
         .catch(function(err){
-          console.log(MODULE_ID_PREFIX + " | ERROR: updateUserFromTrainingSet newUser: " + err.message);
+          console.log(MODULE_ID_PREFIX + " | ERROR: updateUserFromTrainingSet"
+            + " | UID: " + user.userId
+            + " | @" + user.screenName
+            + " ERROR: " + err.message
+          );
           resolve();
         });
 
@@ -2257,7 +2261,9 @@ function unzipUsersToArray(params){
                       ));
                     }
 
-                    if (dbUser && dbUser !== undefined) {
+                    if (dbUser && dbUser !== undefined 
+                      && ((dbUser.category === "left") || (dbUser.category === "right") || (dbUser.category === "neutral"))
+                      ) {
 
                       trainingSetUsersHashMap.set(dbUser.nodeId, dbUser);
 

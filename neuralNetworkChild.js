@@ -1545,9 +1545,12 @@ function convertDatum(params){
         case "right":
         convertedDatum.output = [0, 0, 1];
         break;
-        case "default":
-        convertedDatum.output = [0, 0, 0];
-        break;
+        default:
+        console.log(chalkError(MODULE_ID_PREFIX
+          + " | *** CATEGORY ERROR: " + datum.category 
+          + " | @" + datum.screenName
+        ));
+        return reject(new Error("UNKNOWN CATEGORY: " + datum.category));
       }
 
       async.eachSeries(inputTypes, function(inputType, cb0){
@@ -1815,7 +1818,17 @@ function trainingSetPrep(params){
             + " | *** ERROR TRAINING SET PREP ERROR" 
             + " | INPUT NUMBER MISMATCH" 
             + " | INPUTS NUM IN: " + params.inputsObj.meta.numInputs
-            + " | DATUM NUM IN: " + datumObj.input
+            + " | DATUM NUM IN: " + datumObj.input.length
+          ));q
+          return (new Error("INPUT NUMBER MISMATCH"));
+        }
+
+        if (datumObj.output.length !== 3) { 
+          console.log(chalkError(MODULE_ID_PREFIX
+            + " | *** ERROR TRAINING SET PREP ERROR" 
+            + " | OUTPUT NUMBER MISMATCH" 
+            + " | INPUTS NUM IN: " + params.inputsObj.meta.numOutputs
+            + " | DATUM NUM IN: " + datumObj.output.length
           ));
           return (new Error("INPUT NUMBER MISMATCH"));
         }
