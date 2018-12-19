@@ -2341,13 +2341,13 @@ function fileSize(params){
 
     clearInterval(sizeInterval);
 
-    let interval = params.interval || ONE_MINUTE;
+    let interval = params.interval || 10*ONE_SECOND;
 
     console.log(chalkLog(MODULE_ID_PREFIX + " | WAIT FILE SIZE: " + params.path + " | EXPECTED SIZE: " + params.size));
 
     let stats;
-    let size;
-    let prevSize;
+    let size = 0;
+    let prevSize = 0;
 
 
     let exists = fs.existsSync(params.path);
@@ -2393,7 +2393,6 @@ function fileSize(params){
       exists = fs.existsSync(params.path);
 
       if (exists) {
-
         fs.stat(params.path, function(err, stats){
 
           if (err) {
@@ -2416,7 +2415,6 @@ function fileSize(params){
 
             resolve();
           }
-
         });
       }
 
