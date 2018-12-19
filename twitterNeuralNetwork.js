@@ -930,7 +930,7 @@ function loadNetworkDropboxFile(params){
             + " | INPUTS ID: " + networkObj.inputsId
             + " | " + path
           ));
-          await dropboxFileMove({srcFolder: localBestNetworkFolder, srcFile: file, dstFolder: localArchiveNetworkFolder, dstFile:file});
+          await dropboxFileMove({srcFolder: localBestNetworkFolder, srcFile: params.file, dstFolder: localArchiveNetworkFolder, dstFile: params.file});
           return resolve(null);
         }
         else if (configuration.deleteNotInInputsIdArray && path.toLowerCase().includes(localBestNetworkFolder.toLowerCase())){
@@ -939,7 +939,7 @@ function loadNetworkDropboxFile(params){
             + " | INPUTS ID: " + networkObj.inputsId
             + " | " + path
           ));
-          await dropboxFileDelete({folder: localBestNetworkFolder, file: file});
+          await dropboxFileDelete({folder: localBestNetworkFolder, file: params.file});
           return resolve(null);
         }
 
