@@ -2,9 +2,39 @@
 /*jshint sub:true*/
 "use strict";
 
-// const HOST = process.env.PRIMARY_HOST || "local";
+const MODULE_NAME = "twitterNeuralNetwork";
+const MODULE_ID_PREFIX = "TNN";
+const CHILD_PREFIX = "tnc_node";
+
+const os = require("os");
+let hostname = os.hostname();
+hostname = hostname.replace(/.local/g, "");
+hostname = hostname.replace(/.home/g, "");
+hostname = hostname.replace(/.at.net/g, "");
+hostname = hostname.replace(/.fios-router.home/g, "");
+hostname = hostname.replace(/word0-instance-1/g, "google");
+hostname = hostname.replace(/word/g, "google");
+
 const PRIMARY_HOST = process.env.PRIMARY_HOST || "google";
-const HOST = "default";
+const HOST = (hostname === PRIMARY_HOST) ? "default" : "local";
+
+console.log("=========================================");
+console.log("=========================================");
+console.log("MODULE_NAME:  " + MODULE_NAME);
+console.log("PRIMARY_HOST: " + PRIMARY_HOST);
+console.log("HOST:         " + HOST);
+console.log("HOST NAME:    " + hostname);
+console.log("=========================================");
+console.log("=========================================");
+
+let DROPBOX_ROOT_FOLDER;
+
+if (HOST === "google") {
+  DROPBOX_ROOT_FOLDER = "/home/tc/Dropbox/Apps/wordAssociation";
+}
+else {
+  DROPBOX_ROOT_FOLDER = "/Users/tc/Dropbox/Apps/wordAssociation";
+}
 
 let quitOnCompleteFlag = false;
 
@@ -15,9 +45,6 @@ const CHILD_TEST_MODE = false; // applies only to children
 const GLOBAL_TEST_MODE = false;  // applies to parent and all children
 const QUIT_ON_COMPLETE = false;
 
-const MODULE_NAME = "twitterNeuralNetwork";
-const MODULE_ID_PREFIX = "TNN";
-const CHILD_PREFIX = "tnc_node";
 
 const ONE_SECOND = 1000 ;
 const ONE_MINUTE = ONE_SECOND*60 ;
@@ -59,7 +86,6 @@ configuration.globalTestMode = GLOBAL_TEST_MODE;
 configuration.quitOnComplete = QUIT_ON_COMPLETE;
 configuration.statsUpdateIntervalTime = STATS_UPDATE_INTERVAL;
 
-const os = require("os");
 const path = require("path");
 const watch = require("watch");
 const moment = require("moment");
@@ -126,14 +152,6 @@ const childEvents = new ChildEvents();
 // HOST
 //=========================================================================
 
-let hostname = os.hostname();
-hostname = hostname.replace(/.local/g, "");
-hostname = hostname.replace(/.home/g, "");
-hostname = hostname.replace(/.at.net/g, "");
-hostname = hostname.replace(/.fios-router.home/g, "");
-hostname = hostname.replace(/word0-instance-1/g, "google");
-hostname = hostname.replace(/word/g, "google");
-
 const MODULE_ID = MODULE_ID_PREFIX + "_node_" + hostname;
 
 let startTimeMoment = moment();
@@ -152,6 +170,8 @@ statsObj.startTime = getTimeStamp();
 statsObj.elapsedMS = 0;
 statsObj.elapsed = getElapsedTimeStamp();
 statsObj.status = "START";
+
+statsObj.archiveFile = "";
 
 statsObj.serverConnected = false;
 statsObj.userReadyAck = false;
@@ -367,17 +387,15 @@ const DROPBOX_CONFIG_HOST_FOLDER = DROPBOX_CONFIG_FOLDER + "/" + hostname;
 configuration.local = {};
 configuration.local.trainingSetsFolder = DROPBOX_CONFIG_HOST_FOLDER + "/trainingSets";
 configuration.local.userArchiveFolder = DROPBOX_CONFIG_HOST_FOLDER + "/trainingSets/users";
-configuration.local.userArchivePath = configuration.local.userArchiveFolder + "/" + configuration.userArchiveFile;
 
 configuration.default = {};
 configuration.default.trainingSetsFolder = DROPBOX_CONFIG_DEFAULT_FOLDER + "/trainingSets";
 configuration.default.userArchiveFolder = DROPBOX_CONFIG_DEFAULT_FOLDER + "/trainingSets/users";
-configuration.default.userArchivePath = configuration.default.userArchiveFolder + "/" + configuration.userArchiveFile;
 
 configuration.trainingSetsFolder = configuration[HOST].trainingSetsFolder;
 configuration.archiveFileUploadCompleteFlagFolder = configuration[HOST].trainingSetsFolder + "/users";
-configuration.userArchiveFolder = configuration[HOST].userArchiveFolder;
-configuration.userArchivePath = "/Users/tc/Dropbox/Apps/wordAssociation" + configuration[HOST].userArchivePath;
+
+configuration.userArchiveFolder = configuration.default.userArchiveFolder;
 
 configuration.defaultUserArchiveFlagFile = "usersZipUploadComplete.json";
 configuration.trainingSetFile = "trainingSet.json";
@@ -931,15 +949,22 @@ function loadNetworkDropboxFile(params){
       // SAVE LOCAL NETWORK TO GLOBAL
       //========================
 
-      if (!networkHashMap.has(networkObj.networkId) 
+      if ((params.folder.toLowerCase() !== globalBestNetworkFolder.toLowerCase())
+        && !networkHashMap.has(networkObj.networkId)
         && ((networkObj.successRate >= configuration.globalMinSuccessRate) 
         || (networkObj.overallMatchRate >= configuration.globalMinSuccessRate))) {
 
         networkHashMap.set(networkObj.networkId, { entry: entry, networkObj: networkObj});
 
-        printNetworkObj(MODULE_ID_PREFIX + " | SAVE LOCAL NETWORK TO GLOBAL", networkObj, chalkGreen);
+        printNetworkObj(MODULE_ID_PREFIX 
+          + " | SAVE LOCAL NETWORK TO GLOBAL"
+          + " | FOLDER: " + params.folder, 
+          networkObj, 
+          chalkGreen
+        );
 
         saveFileQueue.push({localFlag: false, folder: globalBestNetworkFolder, file: entry.name, obj: networkObj});
+        await dropboxFileDelete({folder: params.folder, file: entry.name});
       }
 
       //========================
@@ -1034,8 +1059,8 @@ function loadNetworkDropboxFile(params){
       // PURGE FAILING NETWORKS
       //========================
 
-      if (((hostname === PRIMARY_HOST) && (params.folder === globalBestNetworkFolder))
-        || ((hostname !== PRIMARY_HOST) && (params.folder === localBestNetworkFolder)) ) {
+      if (((hostname === PRIMARY_HOST) && (params.folder.toLowerCase() === globalBestNetworkFolder.toLowerCase()))
+        || ((hostname !== PRIMARY_HOST) && (params.folder.toLowerCase() === localBestNetworkFolder.toLowerCase())) ) {
 
           // const localBestNetworkFolder =    "/config/utility/" + hostname + "/neuralNetworks/best";
 
@@ -1571,6 +1596,10 @@ function listDropboxFolders(params){
 
     params.folders.forEach(async function(folder){
 
+    console.log(chalkNetwork(MODULE_ID_PREFIX + " | ... GETTING DROPBOX FOLDERS ENTRIES"
+      + " | FOLDER: " + folder
+    ));
+
       const listDropboxFolderParams = {
         folder: folder,
         limit: DROPBOX_LIST_FOLDER_LIMIT
@@ -1590,6 +1619,7 @@ function listDropboxFolders(params){
     .then(function(results){
       results.forEach(function(folderListing){
         console.log(chalkLog(MODULE_ID_PREFIX + " | RESULTS | ENTRIES: "  + folderListing.entries.length));
+        // console.log(chalkLog(MODULE_ID_PREFIX + " | RESULTS | folderListing ENTRY\n"  + jsonPrint(folderListing.entries[0])));
         totalEntries = _.concat(totalEntries, folderListing.entries);
       });
       resolve(totalEntries);
@@ -1716,12 +1746,14 @@ function checkNetworkHash(params){
 
     }
 
-    console.log(chalkLog(MODULE_ID_PREFIX + " | DROPBOX NETWORK CONTENT SAME  "
-      + " | " + entry.name
-      + " | LAST MOD: " + moment(new Date(entry.client_modified)).format(compactDateTimeFormat)
-      // + "\nCUR HASH: " + entry.content_hash
-      // + "\nOLD HASH: " + oldContentHash
-    ));
+    if (configuration.verbose) {
+      console.log(chalkLog(MODULE_ID_PREFIX + " | DROPBOX NETWORK CONTENT SAME  "
+        + " | " + entry.name
+        + " | LAST MOD: " + moment(new Date(entry.client_modified)).format(compactDateTimeFormat)
+        // + "\nCUR HASH: " + entry.content_hash
+        // + "\nOLD HASH: " + oldContentHash
+      ));
+    }
 
     resolve("same");
 
@@ -1795,7 +1827,6 @@ function dropboxFileDelete(params){
     dropboxClient.filesDelete({path: path})
     .then(function(response){
       console.log(chalkError(MODULE_ID_PREFIX + " | XXX DROPBOX FILE DELETE"
-        + " | STATUS: " + response.status
         + " | " + path
       ));
       debug("dropboxClient filesDelete response\n" + jsonPrint(response));
@@ -1831,12 +1862,12 @@ function dropboxFileDelete(params){
 }
 
 function networkPass(params) {
-  const pass = ((params.folder === "/config/utility/best/neuralNetworks") && (params.networkObj.successRate > configuration.globalMinSuccessRate))
-  || ((params.folder === "/config/utility/best/neuralNetworks") && (params.networkObj.matchRate > configuration.globalMinSuccessRate))
-  || (params.purgeMin && (params.folder !== "/config/utility/best/neuralNetworks") && (params.networkObj.successRate > configuration.localPurgeMinSuccessRate))
-  || (params.purgeMin && (params.folder !== "/config/utility/best/neuralNetworks") && (params.networkObj.matchRate > configuration.localPurgeMinSuccessRate))
-  || (!params.purgeMin && (params.folder !== "/config/utility/best/neuralNetworks") && (params.networkObj.successRate > configuration.localMinSuccessRate))
-  || (!params.purgeMin && (params.folder !== "/config/utility/best/neuralNetworks") && (params.networkObj.matchRate > configuration.localMinSuccessRate));
+  const pass = ((params.folder.toLowerCase() === globalBestNetworkFolder.toLowerCase()) && (params.networkObj.successRate >= configuration.globalMinSuccessRate))
+  || ((params.folder.toLowerCase() === globalBestNetworkFolder.toLowerCase()) && (params.networkObj.matchRate >= configuration.globalMinSuccessRate))
+  || (params.purgeMin && (params.folder.toLowerCase() !== globalBestNetworkFolder.toLowerCase()) && (params.networkObj.successRate >= configuration.localPurgeMinSuccessRate))
+  || (params.purgeMin && (params.folder.toLowerCase() !== globalBestNetworkFolder.toLowerCase()) && (params.networkObj.matchRate >= configuration.localPurgeMinSuccessRate))
+  || (!params.purgeMin && (params.folder.toLowerCase() !== globalBestNetworkFolder.toLowerCase()) && (params.networkObj.successRate >= configuration.localMinSuccessRate))
+  || (!params.purgeMin && (params.folder.toLowerCase() !== globalBestNetworkFolder.toLowerCase()) && (params.networkObj.matchRate >= configuration.localMinSuccessRate));
 
   return pass;
 }
@@ -1881,7 +1912,7 @@ function loadBestNetworkDropboxFolders (params){
 
       // console.log("entry.path_display: " + entry.path_display);
 
-      if (entry.name === bestRuntimeNetworkFileName) {
+      if (entry.name.toLowerCase() === bestRuntimeNetworkFileName.toLowerCase()) {
         console.log(chalkInfo(MODULE_ID_PREFIX + " | ... SKIPPING LOAD OF " + entry.name));
         return ;
       }
@@ -2446,7 +2477,15 @@ function loadUsersArchive(params){
 
   return new Promise(async function(resolve, reject){
 
-    console.log(chalkLog(MODULE_ID_PREFIX + " | LOADING USERS ARCHIVE | " + getTimeStamp() + " | " + params.path));
+    const defaultUserArchiveFolder = DROPBOX_ROOT_FOLDER + configuration.userArchiveFolder;
+
+    params.folder = params.folder || defaultUserArchiveFolder;
+
+    console.log(chalkLog(MODULE_ID_PREFIX 
+      + " | LOADING USERS ARCHIVE"
+      + " | " + getTimeStamp() 
+      + " | " + params.folder + "/" + params.file
+    ));
 
     try {
       // const fileOpen = await checkFileOpen(params);
@@ -2489,9 +2528,9 @@ function initWatch(params){
 
           archiveFlagObj = await loadFileRetry({folder: configuration.userArchiveFolder, file: configuration.defaultUserArchiveFlagFile});
 
-          console.log(chalkLog(MODULE_ID_PREFIX + " | USER ARCHIVE FLAG FILE | PATH: " + archiveFlagObj.path + " | SIZE: " + archiveFlagObj.size));
+          console.log(chalkLog(MODULE_ID_PREFIX + " | USER ARCHIVE FLAG FILE | FILE: " + archiveFlagObj.file + " | SIZE: " + archiveFlagObj.size));
 
-          await loadTrainingSet({folder: configuration.userArchiveFolder, file: configuration.defaultUserArchiveFlagFile});
+          await loadTrainingSet({folder: configuration.userArchiveFolder, file: archiveFlagObj.file});
 
         }
         catch(err){
@@ -2620,80 +2659,6 @@ function initCategorizedUserHashmap(params){
 
 }
 
-function archiveUsers(){
-
-  return new Promise(function(resolve, reject){
-
-    if (archive === undefined) { return reject(err); }
-
-    async.each(trainingSetUsersHashMap.values(), function(user, cb){
-      const userFile = "user_" + user.userId + ".json";
-      const userBuffer = Buffer.from(JSON.stringify(user));
-      archive.append(userBuffer, { name: userFile });
-      cb();
-    }, function(err){
-      resolve();
-    });
-
-
-  });
-}
-
-async function generateGlobalTrainingTestSet (userHashMap, maxInputHashMap, callback){
-
-  statsObj.status = "GENERATE TRAINING SET";
-
-  console.log(chalkBlueBold(MODULE_ID_PREFIX + " | ==================================================================="));
-  console.log(chalkBlueBold(MODULE_ID_PREFIX + " | GENERATE TRAINING SET | " + trainingSetUsersHashMap.size + " USERS | " + getTimeStamp()));
-  console.log(chalkBlueBold(MODULE_ID_PREFIX + " | ==================================================================="));
-
-  try {
-
-    await initArchiver({outputFile: configuration.defaultUserArchivePath});
-    await archiveUsers();
-
-    let mihmObj = {};
-
-    mihmObj.maxInputHashMap = {};
-    mihmObj.maxInputHashMap = maxInputHashMap;
-
-    mihmObj.normalization = {};
-    mihmObj.normalization = statsObj.normalization;
-
-    const buf = Buffer.from(JSON.stringify(mihmObj));
-
-    archive.append(buf, { name: "maxInputHashMap.json" });
-
-    archive.finalize();
-
-    let waitArchiveDoneInterval;
-
-    waitArchiveDoneInterval = setInterval(async function(){
-
-      if (!statsObj.archiveOpen) {
-
-        clearInterval(waitArchiveDoneInterval);
-
-        setTimeout(async function(){
-          console.log(chalkBlueBold(MODULE_ID_PREFIX + " | ARCHIVE | DONE"));
-          callback();
-        }, 30*ONE_SECOND);
-
-      }
-      else {
-        console.log(chalkLog(MODULE_ID_PREFIX + " | ARCHIVE | WAIT DONE"
-          + " | ARCHIVE OPEN: " + statsObj.archiveOpen
-        ));
-      }
-
-    }, 5000);
-
-  }
-  catch(err){
-    console.log(chalkLog(MODULE_ID_PREFIX + " | *** ARCHIVE ERROR: " + err));
-    throw err;
-  }
-}
 
 function generateRandomEvolveConfig (params){
 
@@ -5199,15 +5164,15 @@ function loadTrainingSet(params){
     }
 
 
-    console.log(chalkLog(MODULE_ID_PREFIX + " | USER ARCHIVE FILE | PATH: " + archiveFlagObj.path + " | SIZE: " + archiveFlagObj.size));
+    console.log(chalkLog(MODULE_ID_PREFIX + " | USER ARCHIVE FILE | FILE: " + archiveFlagObj.file + " | SIZE: " + archiveFlagObj.size));
 
-    if (archiveFlagObj.path !== statsObj.archivePath) {
+    if (archiveFlagObj.file !== statsObj.archiveFile) {
 
       try {
-        await loadUsersArchive({path: archiveFlagObj.path, size: archiveFlagObj.size});
+        await loadUsersArchive({file: archiveFlagObj.file, size: archiveFlagObj.size});
         statsObj.archiveModified = getTimeStamp();
         statsObj.loadUsersArchiveBusy = false;
-        statsObj.archivePath = archiveFlagObj.path;
+        statsObj.archiveFile = archiveFlagObj.file;
         statsObj.trainingSetReady = true;
         runOnceFlag = true;
         resolve();
@@ -6686,7 +6651,7 @@ setTimeout(async function(){
 
     try {
       await connectDb();
-      initWatch({rootFolder: "/Users/tc/Dropbox/Apps/wordAssociation" + configuration.userArchiveFolder});
+      initWatch({rootFolder: DROPBOX_ROOT_FOLDER + configuration.userArchiveFolder});
     }
     catch(err){
       dbConnectionReady = false;
