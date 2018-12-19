@@ -3,7 +3,7 @@
 "use strict";
 
 // const HOST = process.env.PRIMARY_HOST || "local";
-const PRIMARY_HOST = process.env.PRIMARY_HOST || "macpro2";
+const PRIMARY_HOST = process.env.PRIMARY_HOST || "google";
 const HOST = "default";
 
 let quitOnCompleteFlag = false;
@@ -51,6 +51,7 @@ let statsObj = {};
 let statsObjSmall = {};
 let configuration = {};
 
+configuration.primaryHost = PRIMARY_HOST;
 configuration.purgeMin = DEFAULT_PURGE_MIN;
 configuration.testMode = TEST_MODE;
 configuration.globalTestMode = GLOBAL_TEST_MODE;
@@ -502,23 +503,37 @@ let statsPickArray = [
 
 statsObjSmall = pick(statsObj, statsPickArray);
 
-const networkDefaults = function (networkObj){
+function networkDefaults(networkObj){
 
-  if (networkObj.betterChild === undefined) { networkObj.betterChild = false; }
-  if (networkObj.testCycles === undefined) { networkObj.testCycles = 0; }
-  if (networkObj.testCycleHistory === undefined) { networkObj.testCycleHistory = []; }
-  if (networkObj.overallMatchRate === undefined) { networkObj.overallMatchRate = 0; }
-  if (networkObj.matchRate === undefined) { networkObj.matchRate = 0; }
-  if (networkObj.successRate === undefined) { networkObj.successRate = 0; }
+  return new Promise(function(resolve, reject){
 
-  return networkObj;
-};
+    if (!networkObj || networkObj === undefined) {
+      console.log(chalkError("networkDefaults ERROR: networkObj UNDEFINED"));
+      return reject(new Error("networkDefaults ERROR: networkObj UNDEFINED"));
+    }
 
-function printNetworkObj(title, networkObj, format) {
+    if (networkObj.betterChild === undefined) { networkObj.betterChild = false; }
+    if (networkObj.testCycles === undefined) { networkObj.testCycles = 0; }
+    if (networkObj.testCycleHistory === undefined) { networkObj.testCycleHistory = []; }
+    if (networkObj.overallMatchRate === undefined) { networkObj.overallMatchRate = 0; }
+    if (networkObj.matchRate === undefined) { networkObj.matchRate = 0; }
+    if (networkObj.successRate === undefined) { networkObj.successRate = 0; }
+
+    return resolve(networkObj);
+  });
+}
+
+async function printNetworkObj(title, networkObj, format) {
 
   const chalkFormat = (format !== undefined) ? format : chalkNetwork;
 
-  networkObj = networkDefaults(networkObj);
+  try {
+    networkObj = await networkDefaults(networkObj);
+  }
+  catch(err){
+    console.log(chalkError("printNetworkObj ERROR: " + err));
+    return;
+  }
 
   console.log(chalkFormat(title
     + " | OAMR: " + networkObj.overallMatchRate.toFixed(2) + "%"
@@ -882,7 +897,7 @@ function loadNetworkDropboxFile(params){
       // load only networks using specific inputIds; maybe delete if not in set
       if (!configuration.inputsIdArray.includes(networkObj.inputsId)) {
 
-        if (configuration.archiveNotInInputsIdArray && (path.toLowerCase().includes(localBestNetworkFolder.toLowerCase()))){
+        if (configuration.archiveNotInInputsIdArray && path.toLowerCase().includes(localBestNetworkFolder.toLowerCase())){
           console.log(chalkInfo(MODULE_ID_PREFIX + " | 000 NN INPUTS NOT IN INPUTS ID ARRAY ... ARCHIVING"
             + " | NUM INPUTS: " + networkObj.numInputs
             + " | INPUTS ID: " + networkObj.inputsId
@@ -891,7 +906,7 @@ function loadNetworkDropboxFile(params){
           await dropboxFileMove({srcFolder: localBestNetworkFolder, srcFile: file, dstFolder: localArchiveNetworkFolder, dstFile:file});
           return resolve(null);
         }
-        else if (configuration.deleteNotInInputsIdArray){
+        else if (configuration.deleteNotInInputsIdArray && path.toLowerCase().includes(localBestNetworkFolder.toLowerCase())){
           console.log(chalkInfo(MODULE_ID_PREFIX + " | XXX NN INPUTS NOT IN INPUTS ID ARRAY ... DELETING"
             + " | NUM INPUTS: " + networkObj.numInputs
             + " | INPUTS ID: " + networkObj.inputsId
@@ -1021,15 +1036,29 @@ function loadNetworkDropboxFile(params){
       if (((hostname === PRIMARY_HOST) && (params.folder === globalBestNetworkFolder))
         || ((hostname !== PRIMARY_HOST) && (params.folder === localBestNetworkFolder)) ) {
 
-        printNetworkObj(MODULE_ID_PREFIX + " | DELETING NN", networkObj, chalkAlert);
+        printNetworkObj(
+          MODULE_ID_PREFIX 
+            + " | XXX DELETING NN [" + networkHashMap.size + " IN HM]"
+            + " | PRIMARY_HOST: " + PRIMARY_HOST
+            + " | FOLDER: " + params.folder, 
+          networkObj, 
+          chalkAlert
+        );
 
         await purgeNetwork(networkObj.networkId);
         await purgeInputs(networkObj.inputsId);
-        await dropboxFileDelete({folder: localBestNetworkFolder, file: entry.name});
+        await dropboxFileDelete({folder: params.folder, file: entry.name});
         return resolve(null);
       }
 
-      printNetworkObj(MODULE_ID_PREFIX + " | --- NN HASH MAP [" + networkHashMap.size + " IN HM]", networkObj, chalkLog);
+      printNetworkObj(
+        MODULE_ID_PREFIX 
+          + " | --- NN HASH MAP [" + networkHashMap.size + " IN HM]"
+          + " | PRIMARY_HOST: " + PRIMARY_HOST
+          + " | FOLDER: " + params.folder, 
+        networkObj, 
+        chalkLog
+      );
 
       return resolve(networkObj);
     }
@@ -1559,43 +1588,6 @@ function listDropboxFolders(params){
       reject(err);
     });
 
-    // async.each(params.folders, async function(folder){
-
-    //   debug(chalkNetwork(MODULE_ID_PREFIX + " | ... LOADING DROPBOX FOLDER | " + folder));
-
-    //   let listDropboxFolderParams = {
-    //     folder: folder,
-    //     limit: DROPBOX_LIST_FOLDER_LIMIT
-    //   };
-
-
-    //   try {
-
-    //     let entries = await listDropboxFolder(listDropboxFolderParams);
-
-    //     totalEntries.push(entries);
-
-    //     console.log(chalkLog("DROPBOX LIST FOLDER"
-    //       + " | ENTRIES: " + entries.length
-    //       + " | PATH:" + listDropboxFolderParams.folder
-    //     ));
-
-    //     return;
-
-    //   }
-    //   catch(err){
-    //     console.log(chalkError(MODULE_ID_PREFIX + " | ERROR LOADING DROPBOX INPUTS FOLDER | " + listDropboxFolderParams.folder + " | " + err));
-    //     return err;
-    //   }
-
-    // }, function(err, allEntries){
-    //   if (err) {
-    //     return reject(err);
-    //   }
-    //   const result = _.concat(totalEntries);
-    //   resolve(allEntries);
-    // });
-
   });
 }
 
@@ -1787,7 +1779,7 @@ function dropboxFileDelete(params){
     dropboxClient.filesDelete({path: path})
     .then(function(response){
       console.log(chalkError(MODULE_ID_PREFIX + " | XXX DROPBOX FILE DELETE"
-        + " | STATUS: " + err.status
+        + " | STATUS: " + response.status
         + " | " + path
       ));
       debug("dropboxClient filesDelete response\n" + jsonPrint(response));
