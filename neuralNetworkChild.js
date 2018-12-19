@@ -1792,10 +1792,15 @@ function trainingSetPrep(params){
     let trainingSet = [];
     let inputRaw = [];
     let generateInputRaw = true;
-    
+
+    params.trainingSet.meta.numInputs = params.inputsObj.meta.numInputs;
+    params.testSet.meta.numInputs = params.inputsObj.meta.numInputs;
+
     console.log(chalkLog(MODULE_ID_PREFIX
       + " | TRAINING SET PREP"
       + " | DATA LENGTH: " + params.trainingSet.data.length
+      + " | INPUTS NUM IN: " + params.inputsObj.meta.numInputs
+      + "\nTRAINING SET META\n" + jsonPrint(params.trainingSet.meta)
     ));
 
     const shuffledTrainingData = _.shuffle(params.trainingSet.data);
@@ -1804,6 +1809,16 @@ function trainingSetPrep(params){
 
       try {
         let datumObj = await convertDatum({datum: datum, inputsObj: params.inputsObj, generateInputRaw: generateInputRaw});
+
+        if (datumObj.input.length !== params.inputsObj.meta.numInputs) { 
+          console.log(chalkError(MODULE_ID_PREFIX
+            + " | *** ERROR TRAINING SET PREP ERROR" 
+            + " | INPUT NUMBER MISMATCH" 
+            + " | INPUTS NUM IN: " + params.inputsObj.meta.numInputs
+            + " | DATUM NUM IN: " + datumObj.input
+          ));
+          return (new Error("INPUT NUMBER MISMATCH"));
+        }
 
         if (datumObj.inputRaw.length > 0) { 
           generateInputRaw = false;
@@ -1815,7 +1830,7 @@ function trainingSetPrep(params){
           output: datumObj.output
         });
 
-        async.setImmediate(function() { return; });
+        return;
       }
       catch(err){
         console.log(chalkError(MODULE_ID_PREFIX
@@ -2288,6 +2303,30 @@ const fsmStates = {
 
         try {
 
+          // evolveOptions = {
+          //   runId: m.testRunId,
+          //   threads: m.threads,
+          //   architecture: m.architecture,
+          //   seedNetworkId: m.seedNetworkId,
+          //   seedNetworkRes: m.seedNetworkRes,
+          //   inputsId: m.inputsId,
+          //   inputsObj: m.inputsObj,
+          //   outputs: m.outputs,
+          //   trainingSet: m.trainingSet,
+          //   testSet: m.testSet,
+          //   mutation: m.mutation,
+          //   equal: m.equal,
+          //   popsize: m.popsize,
+          //   elitism: m.elitism,
+          //   log: m.log,
+          //   error: m.error,
+          //   iterations: m.iterations,
+          //   mutationRate: m.mutationRate,
+          //   cost: m.cost,
+          //   growth: m.growth,
+          //   clear: m.clear
+          // };
+
           let networkObj = await evolve(evolveOptions);
 
           networkObj.evolve.options = pick(networkObj.evolve.options, ["clear", "cost", "growth", "equal", "mutationRate", "popsize", "elitism"]);
@@ -2298,7 +2337,10 @@ const fsmStates = {
 
         }
         catch(err){
-          console.log(MODULE_ID_PREFIX + " | *** EVOLVE ERROR: " + err);
+          console.log(chalkError(MODULE_ID_PREFIX + " | *** EVOLVE ERROR: " + err));
+          console.log(chalkError(MODULE_ID_PREFIX + " | *** EVOLVE ERROR\ninputsObj\n" + jsonPrint(evolveOptions.inputsObj.meta)));
+          console.log(chalkError(MODULE_ID_PREFIX + " | *** EVOLVE ERROR\ntrainingSet\n" + jsonPrint(evolveOptions.trainingSet.meta)));
+          console.log(chalkError(MODULE_ID_PREFIX + " | *** EVOLVE ERROR\ntestSet\n" + jsonPrint(evolveOptions.testSet.meta)));
           fsm.fsm_error();
         }
 

@@ -2261,7 +2261,7 @@ function unzipUsersToArray(params){
 
                       trainingSetUsersHashMap.set(dbUser.nodeId, dbUser);
 
-                      if (dbUser && (configuration.verbose || (statsObj.users.unzipped % 1000 === 0))) {
+                      if (configuration.verbose || (statsObj.users.unzipped % 1000 === 0)) {
 
                         console.log(chalkLog(hmHit
                           + " | " + trainingSetUsersHashMap.size + " USERS IN HM"
@@ -2682,6 +2682,7 @@ function generateRandomEvolveConfig (params){
     debug(chalkLog(MODULE_ID_PREFIX + " | NETWORK CREATE MODE: " + config.networkCreateMode));
 
     let sortedBestNetworks;
+
     try{
 
       sortedBestNetworks = await sortedHashmap({ sortKey: "networkObj.overallMatchRate", hashmap: networkHashMap, max: 500});
