@@ -1460,7 +1460,10 @@ function testNetwork(params){
 
       }
       catch(err){
-        return reject(err);
+        console.trace(chalkError(MODULE_ID_PREFIX
+          + " | *** TEST ERROR: " + err
+        ));
+        return err;
       }
 
     }, function(err){

@@ -39,7 +39,7 @@ else {
 let quitOnCompleteFlag = false;
 
 
-const DEFAULT_PURGE_MIN = false; // applies only to parent
+const DEFAULT_PURGE_MIN = true; // applies only to parent
 const TEST_MODE = false; // applies only to parent
 const CHILD_TEST_MODE = false; // applies only to children
 const GLOBAL_TEST_MODE = false;  // applies to parent and all children
@@ -1069,7 +1069,6 @@ function loadNetworkDropboxFile(params){
         printNetworkObj(
           MODULE_ID_PREFIX 
             + " | XXX DELETING NN [" + networkHashMap.size + " IN HM]"
-            + " | PRIMARY_HOST: " + PRIMARY_HOST
             + " | FOLDER: " + params.folder, 
           networkObj, 
           chalkAlert
@@ -2480,11 +2479,14 @@ function loadUsersArchive(params){
     const defaultUserArchiveFolder = DROPBOX_ROOT_FOLDER + configuration.userArchiveFolder;
 
     params.folder = params.folder || defaultUserArchiveFolder;
+    params.path = (params.path !== undefined) ? params.path : params.folder + "/" + params.file;
 
     console.log(chalkLog(MODULE_ID_PREFIX 
       + " | LOADING USERS ARCHIVE"
       + " | " + getTimeStamp() 
-      + " | " + params.folder + "/" + params.file
+      + "\n PATH:   " + params.path
+      + "\n FOLDER: " + params.folder
+      + "\n FILE:   " + params.file
     ));
 
     try {
