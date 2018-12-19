@@ -3132,9 +3132,9 @@ function initWatchAllConfigFolders(params){
       // WATCH NETWORKS
       //========================
 
-      watch.createMonitor("/Users/tc/Dropbox/Apps/wordAssociation" + globalBestNetworkFolder, options, function (monitorNetworks) {
+      watch.createMonitor(DROPBOX_ROOT_FOLDER + globalBestNetworkFolder, options, function (monitorNetworks) {
 
-        console.log(chalkBlue(MODULE_ID_PREFIX + " | INIT WATCH GLOBAL NETWORKS FOLDER: " + "/Users/tc/Dropbox/Apps/wordAssociation" + globalBestNetworkFolder));
+        console.log(chalkBlue(MODULE_ID_PREFIX + " | INIT WATCH GLOBAL NETWORKS FOLDER: " + DROPBOX_ROOT_FOLDER + globalBestNetworkFolder));
 
         monitorNetworks.on("created", async function(f, stat){
           const fileNameArray = f.split("/");
@@ -3183,9 +3183,9 @@ function initWatchAllConfigFolders(params){
       // WATCH INPUTS
       //========================
 
-      watch.createMonitor("/Users/tc/Dropbox/Apps/wordAssociation" + defaultInputsFolder, options, function (monitorInputs) {
+      watch.createMonitor(DROPBOX_ROOT_FOLDER + defaultInputsFolder, options, function (monitorInputs) {
 
-        console.log(chalkBlue(MODULE_ID_PREFIX + " | INIT WATCH INPUTS CONFIG FOLDER: " + "/Users/tc/Dropbox/Apps/wordAssociation" + defaultInputsFolder));
+        console.log(chalkBlue(MODULE_ID_PREFIX + " | INIT WATCH INPUTS CONFIG FOLDER: " + DROPBOX_ROOT_FOLDER + defaultInputsFolder));
 
         monitorInputs.on("created", async function(f, stat){
           const fileNameArray = f.split("/");
@@ -3235,9 +3235,9 @@ function initWatchAllConfigFolders(params){
       // WATCH DEFAULT CONFIG
       //========================
 
-      watch.createMonitor("/Users/tc/Dropbox/Apps/wordAssociation" + dropboxConfigDefaultFolder, options, function (monitorDefaultConfig) {
+      watch.createMonitor(DROPBOX_ROOT_FOLDER + dropboxConfigDefaultFolder, options, function (monitorDefaultConfig) {
 
-        console.log(chalkBlue(MODULE_ID_PREFIX + " | INIT WATCH DEFAULT CONFIG FOLDER: " + "/Users/tc/Dropbox/Apps/wordAssociation" + dropboxConfigDefaultFolder));
+        console.log(chalkBlue(MODULE_ID_PREFIX + " | INIT WATCH DEFAULT CONFIG FOLDER: " + DROPBOX_ROOT_FOLDER + dropboxConfigDefaultFolder));
 
         monitorDefaultConfig.on("created", async function(f, stat){
           if (f.endsWith(dropboxConfigDefaultFile)){
@@ -3276,9 +3276,9 @@ function initWatchAllConfigFolders(params){
       // WATCH HOST CONFIG
       //========================
 
-      watch.createMonitor("/Users/tc/Dropbox/Apps/wordAssociation" + dropboxConfigHostFolder, options, function (monitorHostConfig) {
+      watch.createMonitor(DROPBOX_ROOT_FOLDER + dropboxConfigHostFolder, options, function (monitorHostConfig) {
 
-        console.log(chalkBlue(MODULE_ID_PREFIX + " | INIT WATCH HOST CONFIG FOLDER: " + "/Users/tc/Dropbox/Apps/wordAssociation" + dropboxConfigHostFolder));
+        console.log(chalkBlue(MODULE_ID_PREFIX + " | INIT WATCH HOST CONFIG FOLDER: " + DROPBOX_ROOT_FOLDER + dropboxConfigHostFolder));
 
         monitorHostConfig.on("created", async function(f, stat){
           if (f.endsWith(dropboxConfigHostFile)){
@@ -3968,8 +3968,8 @@ const dropboxConfigDefaultFile = "default_" + configuration.DROPBOX.DROPBOX_CONF
 const dropboxConfigHostFile = hostname + "_" + configuration.DROPBOX.DROPBOX_CONFIG_FILE;
 
 let childPidFolderLocal = (hostname === "google") 
-  ? "/home/tc/Dropbox/Apps/wordAssociation/config/utility/google/children" 
-  : "/Users/tc/Dropbox/Apps/wordAssociation/config/utility/" + hostname + "/children";
+  ? DROPBOX_ROOT_FOLDER + "/config/utility/google/children" 
+  : DROPBOX_ROOT_FOLDER + "/config/utility/" + hostname + "/children";
 
 let statsFolder = "/stats/" + hostname;
 let statsFile = configuration.DROPBOX.DROPBOX_STATS_FILE;
@@ -4016,7 +4016,7 @@ else {
 function filesListFolderLocal(options){
   return new Promise(function(resolve, reject) {
 
-    const fullPath = "/Users/tc/Dropbox/Apps/wordAssociation" + options.path;
+    const fullPath = DROPBOX_ROOT_FOLDER + options.path;
 
     fs.readdir(fullPath, function(err, items){
       if (err) {
@@ -4057,7 +4057,7 @@ function filesGetMetadataLocal(options){
 
   return new Promise(function(resolve, reject) {
 
-    const fullPath = "/Users/tc/Dropbox/Apps/wordAssociation" + options.path;
+    const fullPath = DROPBOX_ROOT_FOLDER + options.path;
 
     fs.stat(fullPath, function(err, stats){
       if (err) {
@@ -4090,15 +4090,8 @@ function loadFile(params) {
 
     if (configuration.offlineMode || params.loadLocalFile) {
 
-      if (hostname === "google") {
-        fullPath = "/home/tc/Dropbox/Apps/wordAssociation/" + fullPath;
-        console.log(chalkInfo("OFFLINE_MODE: FULL PATH " + fullPath));
-      }
-
-      if ((hostname === "mbp3") || (hostname === "mbp2")) {
-        fullPath = "/Users/tc/Dropbox/Apps/wordAssociation/" + fullPath;
-        console.log(chalkInfo("OFFLINE_MODE: FULL PATH " + fullPath));
-      }
+      fullPath = DROPBOX_ROOT_FOLDER + fullPath;
+      console.log(chalkInfo("OFFLINE_MODE: FULL PATH " + fullPath));
 
       fs.readFile(fullPath, "utf8", function(err, data) {
 

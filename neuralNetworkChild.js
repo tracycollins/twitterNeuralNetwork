@@ -2,6 +2,41 @@
 /*jshint sub:true*/
 "use strict";
 
+const MODULE_NAME = "tncChild";
+const MODULE_ID_PREFIX = "TNC";
+
+const os = require("os");
+let hostname = os.hostname();
+hostname = hostname.replace(/.local/g, "");
+hostname = hostname.replace(/.home/g, "");
+hostname = hostname.replace(/.at.net/g, "");
+hostname = hostname.replace(/.fios-router.home/g, "");
+hostname = hostname.replace(/word0-instance-1/g, "google");
+hostname = hostname.replace(/word/g, "google");
+
+const MODULE_ID = MODULE_ID_PREFIX + "_" + hostname;
+
+const PRIMARY_HOST = process.env.PRIMARY_HOST || "google";
+const HOST = (hostname === PRIMARY_HOST) ? "default" : "local";
+
+console.log("=========================================");
+console.log("=========================================");
+console.log("MODULE_NAME:  " + MODULE_NAME);
+console.log("PRIMARY_HOST: " + PRIMARY_HOST);
+console.log("HOST:         " + HOST);
+console.log("HOST NAME:    " + hostname);
+console.log("=========================================");
+console.log("=========================================");
+
+let DROPBOX_ROOT_FOLDER;
+
+if (HOST === "google") {
+  DROPBOX_ROOT_FOLDER = "/home/tc/Dropbox/Apps/wordAssociation";
+}
+else {
+  DROPBOX_ROOT_FOLDER = "/Users/tc/Dropbox/Apps/wordAssociation";
+}
+
 let quitOnCompleteFlag = false;
 
 const DEFAULT_INPUTS_BINARY_MODE = true;
@@ -9,8 +44,6 @@ const DEFAULT_INPUTS_BINARY_MODE = true;
 const TEST_MODE = false; // applies only to parent
 const QUIT_ON_COMPLETE = false;
 
-const MODULE_NAME = "tncChild";
-const MODULE_ID_PREFIX = "TNC";
 
 const ONE_SECOND = 1000 ;
 const ONE_MINUTE = ONE_SECOND*60 ;
@@ -44,7 +77,6 @@ const neataptic = require("neataptic");
 
 let network;
 
-const os = require("os");
 const _ = require("lodash");
 const moment = require("moment");
 const defaults = require("object.defaults");
@@ -88,15 +120,6 @@ const chalkInfo = chalk.black;
 // HOST
 //=========================================================================
 
-let hostname = os.hostname();
-hostname = hostname.replace(/.local/g, "");
-hostname = hostname.replace(/.home/g, "");
-hostname = hostname.replace(/.at.net/g, "");
-hostname = hostname.replace(/.fios-router.home/g, "");
-hostname = hostname.replace(/word0-instance-1/g, "google");
-hostname = hostname.replace(/word/g, "google");
-
-const MODULE_ID = MODULE_ID_PREFIX + "_" + hostname;
 
 //=========================================================================
 // PROCESS EVENT HANDLERS
@@ -547,7 +570,7 @@ else {
 function filesListFolderLocal(options){
   return new Promise(function(resolve, reject) {
 
-    const fullPath = "/Users/tc/Dropbox/Apps/wordAssociation" + options.path;
+    const fullPath = DROPBOX_ROOT_FOLDER + options.path;
 
     fs.readdir(fullPath, function(err, items){
       if (err) {
@@ -588,7 +611,7 @@ function filesGetMetadataLocal(options){
 
   return new Promise(function(resolve, reject) {
 
-    const fullPath = "/Users/tc/Dropbox/Apps/wordAssociation" + options.path;
+    const fullPath = DROPBOX_ROOT_FOLDER + options.path;
 
     fs.stat(fullPath, function(err, stats){
       if (err) {
@@ -620,15 +643,8 @@ function loadFile(params) {
 
     if (configuration.offlineMode || params.loadLocalFile) {
 
-      if (hostname === "google") {
-        fullPath = "/home/tc/Dropbox/Apps/wordAssociation/" + fullPath;
-        console.log(chalkInfo("OFFLINE_MODE: FULL PATH " + fullPath));
-      }
-
-      if ((hostname === "mbp3") || (hostname === "mbp2")) {
-        fullPath = "/Users/tc/Dropbox/Apps/wordAssociation/" + fullPath;
-        console.log(chalkInfo("OFFLINE_MODE: FULL PATH " + fullPath));
-      }
+      fullPath = DROPBOX_ROOT_FOLDER + fullPath;
+      console.log(chalkInfo("OFFLINE_MODE: FULL PATH " + fullPath));
 
       fs.readFile(fullPath, "utf8", function(err, data) {
 
