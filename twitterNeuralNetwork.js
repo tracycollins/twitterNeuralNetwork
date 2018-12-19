@@ -29,7 +29,7 @@ console.log("=========================================");
 
 let DROPBOX_ROOT_FOLDER;
 
-if (HOST === "google") {
+if (hostname === "google") {
   DROPBOX_ROOT_FOLDER = "/home/tc/Dropbox/Apps/wordAssociation";
 }
 else {
