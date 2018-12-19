@@ -197,7 +197,15 @@ const TEST_DROPBOX_NN_LOAD = 10;
 const TEST_DROPBOX_INPUTS_LOAD = 10;
 const DEFAULT_CHILD_ID_PREFIX = "tnc_node_";
 
-configuration.childAppPath = "/Volumes/RAID1/projects/twitterNeuralNetwork/neuralNetworkChild.js";
+if (hostname === "google") {
+  configuration.cwd = "/home/tc/twitterNeuralNetwork";
+}
+else {
+  configuration.cwd = "/Volumes/RAID1/projects/twitterNeuralNetwork";
+}
+
+configuration.childAppPath = configuration.cwd + "/neuralNetworkChild.js";
+
 configuration.childIdPrefix = DEFAULT_CHILD_ID_PREFIX;
 configuration.childIndex = 0;
 
@@ -5624,7 +5632,7 @@ function childCreateAll(params){
     let childId = CHILD_PREFIX + "_" + childIndex;
 
     let options = {};
-    options.cwd = "/Volumes/RAID1/projects/twitterNeuralNetwork";
+    options.cwd = configuration.cwd;
     options.env = {};
     options.env = configuration.DROPBOX;
     options.env.DROPBOX_STATS_FILE = statsObj.runId + "_" + childId + ".json";
@@ -5923,7 +5931,7 @@ function childCreate(params){
 
     // console.log("cwd: " + process.cwd());
 
-    options.cwd = params.cwd || "/Volumes/RAID1/projects/twitterNeuralNetwork";
+    options.cwd = params.cwd || configuration.cwd;
 
 
     statsObj.status = "CHILD CREATE | CH ID: " + childId + " | APP: " + appPath;
