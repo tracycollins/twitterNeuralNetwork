@@ -39,7 +39,7 @@ else {
 
 let quitOnCompleteFlag = false;
 
-const DEFAULT_INPUTS_BINARY_MODE = true;
+const DEFAULT_INPUTS_BINARY_MODE = false;
 
 const TEST_MODE = false; // applies only to parent
 const QUIT_ON_COMPLETE = false;
@@ -198,6 +198,8 @@ configuration.slackChannel = {};
 
 configuration.keepaliveInterval = KEEPALIVE_INTERVAL;
 configuration.quitOnComplete = QUIT_ON_COMPLETE;
+
+let maxInputHashMap = {};
 
 let evolveOptions = {};
 
@@ -1584,18 +1586,18 @@ function convertDatum(params){
             if (configuration.inputsBinaryMode) {
               convertedDatum.input.push(1);
             }
-            else if ((params.trainingSet.maxInputHashMap === undefined) 
-              || (params.trainingSet.maxInputHashMap[inputType] === undefined)) {
-              debug(chalkAlert("UNDEFINED??? params.trainingSet.maxInputHashMap." + inputType + " | " + inputName));
+            else if ((maxInputHashMap === undefined) 
+              || (maxInputHashMap[inputType] === undefined)) {
+              debug(chalkAlert("UNDEFINED??? maxInputHashMap." + inputType + " | " + inputName));
               convertedDatum.input.push(1);
             }
             else {
               const inputValue = (
-                params.trainingSet.maxInputHashMap[inputType] 
-                && params.trainingSet.maxInputHashMap[inputType][inputName] 
-                && (params.trainingSet.maxInputHashMap[inputType][inputName] > 0)
+                maxInputHashMap[inputType] 
+                && maxInputHashMap[inputType][inputName] 
+                && (maxInputHashMap[inputType][inputName] > 0)
               ) 
-                ? mergedHistograms[inputType][inputName]/params.trainingSet.maxInputHashMap[inputType][inputName] 
+                ? mergedHistograms[inputType][inputName]/maxInputHashMap[inputType][inputName] 
                 : 1;
               convertedDatum.input.push(inputValue);
             }
@@ -2471,7 +2473,11 @@ process.on("message", function(m) {
       console.log(chalkInfo(MODULE_ID_PREFIX + " | CONFIG_EVOLVE"
         + " | CHILD ID: " + m.childId
       ));
+
       configuration.childId = m.childId;
+
+      maxInputHashMap = m.maxInputHashMap;
+
 
       statsObj.training.startTime = moment().valueOf();
       statsObj.training.testRunId = m.testRunId;
