@@ -293,7 +293,7 @@ function slackMessageHandler(message){
           resolve();
         break;
         case "PING":
-          await slackSendWebMessage(hostname + " | TNN | PONG");
+          slackSendWebMessage(hostname + " | TNN | PONG");
           resolve();
         break;
         case "NONE":
@@ -6477,11 +6477,6 @@ function childCreate(params){
                 slackText = slackText + "\nBETTER CHILD: " + nn.betterChild;
                 slackText = slackText + "\nELAPSED:      " + msToTime(nn.evolve.elapsed);
 
-                // const token = msgObj.token || slackOAuthAccessToken;
-                // const channel = msgObj.channel || configuration.slackChannel.id;
-                // const text = msgObj.text || msgObj;
-
-
                 slackSendWebMessage({ channel: slackChannelPassGlobal, text: slackText});
 
                 printNetworkObj(MODULE_ID_PREFIX + " | " + nn.networkId, nn);
@@ -6878,8 +6873,8 @@ setTimeout(async function(){
       + "--------------------------------------------------------"
     ));
 
-    await initSlackRtmClient();
-    await initSlackWebClient();
+    initSlackRtmClient();
+    initSlackWebClient();
 
     initFsmTickInterval(FSM_TICK_INTERVAL);
 
