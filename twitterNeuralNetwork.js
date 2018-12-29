@@ -465,6 +465,8 @@ statsObj.maxChildrenCreated = false;
 
 statsObj.queues = {};
 
+statsObj.networkResults = {};
+
 //=========================================================================
 // TNN SPECIFIC
 //=========================================================================
@@ -1082,6 +1084,24 @@ function printResultsHashmap(){
         successRate
       ]);
 
+      if (!statsObj.networkResults[networkId] || statsObj.networkResults[networkId] === undefined){
+        statsObj.networkResults[networkId] = {};
+        statsObj.networkResults[networkId].networkObj = {};
+        statsObj.networkResults[networkId].networkObj.evolve = {};
+        statsObj.networkResults[networkId].networkObj.evolve.options = {};
+      }
+
+      statsObj.networkResults[networkId].status = status;
+      statsObj.networkResults[networkId].betterChild = betterChild;
+      statsObj.networkResults[networkId].seedNetworkId = seedNetworkId;
+      statsObj.networkResults[networkId].snIdRes = snIdRes;
+      statsObj.networkResults[networkId].networkObj.evolve.options = pick(networkObj.evolve.options, ["clear", "cost", "growth", "equal", "mutationRate", "popsize", "elitism"]);
+      statsObj.networkResults[networkId].startTime = getTimeStamp(networkObj.evolve.startTime);
+      statsObj.networkResults[networkId].elapsed = msToTime(elapsed);
+      statsObj.networkResults[networkId].iterations = iterations;
+      statsObj.networkResults[networkId].error = error;
+      statsObj.networkResults[networkId].successRate = successRate;
+
       async.setImmediate(function() { cb(); });
 
     }, function(err){
@@ -1096,7 +1116,7 @@ function printResultsHashmap(){
       console.log(chalkLog(t));
       console.log(chalkLog(MODULE_ID_PREFIX + " | ============================================================================================================================================"));
 
-      statsObj.networkResults = t;
+      // statsObj.networkResults = t;
 
       resolve();
     });
@@ -6302,6 +6322,22 @@ function childCreate(params){
               + " | ETC: " + moment().add(m.stats.timeToComplete).format(compactDateTimeFormat)
               + " | I: " + m.stats.iteration + " / " + m.stats.totalIterations
             ));
+
+            if (!statsObj.networkResults[m.stats.networkId] || statsObj.networkResults[m.stats.networkId] === undefined){
+              statsObj.networkResults[m.stats.networkId] = {};
+              statsObj.networkResults[m.stats.networkId].networkObj = {};
+              statsObj.networkResults[m.stats.networkId].networkObj.evolve = {};
+              statsObj.networkResults[m.stats.networkId].networkObj.evolve.options = {};
+            }
+
+            statsObj.networkResults[m.stats.networkId].startTime = getTimeStamp(m.stats.evolveStart);
+            statsObj.networkResults[m.stats.networkId].elapsed = msToTime(m.stats.evolveElapsed);
+            statsObj.networkResults[m.stats.networkId].iteration = m.stats.iteration;
+            statsObj.networkResults[m.stats.networkId].totalIterations = m.stats.totalIterations;
+            statsObj.networkResults[m.stats.networkId].rate = (m.stats.iterationRate/1000.0).toFixed(1);
+            statsObj.networkResults[m.stats.networkId].timeToComplete = moment().add(m.stats.timeToComplete).format(compactDateTimeFormat);
+            statsObj.networkResults[m.stats.networkId].error = m.stats.error;
+            statsObj.networkResults[m.stats.networkId].fitness = m.stats.fitness;
 
           break;
 
