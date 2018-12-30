@@ -589,6 +589,21 @@ const DEFAULT_EVOLVE_COST_ARRAY = [
   "CROSS_ENTROPY",
   "MSE"
 ];
+const DEFAULT_EVOLVE_MOD_ACTIVATION_ARRAY = [
+  "LOGISTIC",
+  "TANH",
+  "RELU",
+  "IDENTITY",
+  "STEP",
+  "SOFTSIGN",
+  "SINUSOID",
+  "GAUSSIAN",
+  "BENT_IDENTITY",
+  "BIPOLAR",
+  "BIPOLAR_SIGMOID",
+  "HARD_TANH",
+  "ABSOLUTE"
+];
 
 const DEFAULT_TRAIN_THREADS = 1;
 const DEFAULT_TRAIN_ARCHITECTURE = "perceptron";
@@ -713,6 +728,10 @@ if (process.env.TNN_QUIT_ON_COMPLETE !== undefined) {
 configuration.costArray = (process.env.TNN_EVOLVE_COST_ARRAY !== undefined) 
   ? process.env.TNN_EVOLVE_COST_ARRAY 
   : DEFAULT_EVOLVE_COST_ARRAY;
+
+configuration.activationArray = (process.env.TNN_EVOLVE_MOD_ACTIVATION_ARRAY !== undefined) 
+  ? process.env.TNN_EVOLVE_MOD_ACTIVATION_ARRAY 
+  : DEFAULT_EVOLVE_MOD_ACTIVATION_ARRAY;
 
 configuration.globalMinSuccessRate = (process.env.TNN_GLOBAL_MIN_SUCCESS_RATE !== undefined) 
   ? process.env.TNN_GLOBAL_MIN_SUCCESS_RATE 
@@ -3055,6 +3074,7 @@ function generateRandomEvolveConfig (params){
     config.log = configuration.evolve.log;
     config.mutation = DEFAULT_EVOLVE_MUTATION;
 
+    config.activation = randomItem(configuration.activationArray);
     config.cost = randomItem(configuration.costArray);
     config.clear = randomItem([true, false]);
     config.equal = true;

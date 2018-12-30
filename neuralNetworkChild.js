@@ -1978,6 +1978,11 @@ function evolve(params){
           options.cost = neataptic.methods.cost[params[key]];
         break;
 
+        case "activation":
+          console.log("NNC" + " | " + configuration.childId + " | EVOLVE OPTION | " + key + ": " + params[key]);
+          options.activation = neataptic.methods.activation[params[key]];
+        break;
+
         default:
           if ((key !== "log") && (key !== "trainingSet")){
             console.log("NNC" + " | " + configuration.childId + " | EVOLVE OPTION | " + key + ": " + params[key]);
@@ -2344,7 +2349,7 @@ const fsmStates = {
 
           let networkObj = await evolve(evolveOptions);
 
-          networkObj.evolve.options = pick(networkObj.evolve.options, ["clear", "cost", "growth", "equal", "mutationRate", "popsize", "elitism"]);
+          networkObj.evolve.options = pick(networkObj.evolve.options, ["clear", "cost", "activation", "growth", "equal", "mutationRate", "popsize", "elitism"]);
 
           process.send({op:"EVOLVE_COMPLETE", childId: configuration.childId, networkObj: networkObj, statsObj: statsObj});
 
@@ -2514,6 +2519,7 @@ process.on("message", function(m) {
         iterations: m.iterations,
         mutationRate: m.mutationRate,
         cost: m.cost,
+        activation: m.activation,
         growth: m.growth,
         clear: m.clear
       };
@@ -2529,6 +2535,7 @@ process.on("message", function(m) {
         mutationRate: m.mutationRate,
         equal: m.equal,
         cost: m.cost,
+        activation: m.activation,
         clear: m.clear,
         error: m.error,
         popsize: m.popsize,
