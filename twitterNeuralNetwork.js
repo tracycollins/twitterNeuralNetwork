@@ -352,7 +352,15 @@ function initSlackWebClient(params){
           };
 
           message.attachments = [];
-          message.attachments.push({text: "INIT", fields: [ { title: "SRC", value: hostname + "_" + process.pid }, { title: "DST", value: "ALL" } ]});
+          // message.attachments.push({text: "INIT", fields: [ { title: "SRC", value: hostname + "_" + process.pid }, { title: "DST", value: "ALL" } ]});
+          message.attachments.push({
+            text: "INIT", 
+            fields: [ 
+              { title: "SRC", value: hostname + "_" + process.pid }, 
+              { title: "MOD", value: MODULE_NAME }, 
+              { title: "DST", value: "ALL" } 
+            ]
+          });
 
           const chatPostMessageResponse = await slackWebClient.chat.postMessage(message);
           console.log("TNN | SLACK WEB CHAT POST MESSAGE RESPONSE\n" + jsonPrint(chatPostMessageResponse));
