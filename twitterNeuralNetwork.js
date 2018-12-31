@@ -52,13 +52,14 @@ const ONE_MINUTE = ONE_SECOND*60 ;
 const ONE_KILOBYTE = 1024;
 const ONE_MEGABYTE = 1024 * ONE_KILOBYTE;
 
+const SAVE_FILE_QUEUE_INTERVAL = 5*ONE_SECOND;
 const KEEPALIVE_INTERVAL = ONE_MINUTE;
 const QUIT_WAIT_INTERVAL = 5*ONE_SECOND;
 const STATS_UPDATE_INTERVAL = ONE_MINUTE;
 const DEFAULT_CHILD_PING_INTERVAL = ONE_MINUTE;
 
 const SAVE_CACHE_DEFAULT_TTL = 60;
-const SAVE_FILE_QUEUE_INTERVAL = ONE_SECOND;
+const SAVE_FILE_QUEUE_INTERVAL = 5*ONE_SECOND;
 
 const TWITTER_DEFAULT_USER = "altthreecee00";
 
@@ -675,7 +676,7 @@ configuration.globalTrainingSetId = GLOBAL_TRAINING_SET_ID;
 configuration.disableCreateTestSet = DEFAULT_DISABLE_CREATE_TEST_SET;
 
 configuration.inputsIdArray = [];
-configuration.saveFileQueueInterval = 1000;
+configuration.saveFileQueueInterval = SAVE_FILE_QUEUE_INTERVAL;
 
 configuration.useLocalTrainingSets = DEFAULT_USE_LOCAL_TRAINING_SETS;
 configuration.loadAllInputs = DEFAULT_LOAD_ALL_INPUTS;
