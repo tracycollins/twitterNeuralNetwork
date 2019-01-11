@@ -20,7 +20,7 @@
     "array-unique": "^0.3.2",
     "async": "^2.6.1",
     "atob": "^2.1.2",
-    "autolinker": "^2.2.1",
+    "autolinker": "^2.2.2",
     "chalk": "^2.4.2",
     "child_process": "^1.0.2",
     "columnify": "^1.5.4",
