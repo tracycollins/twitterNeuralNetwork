@@ -5,6 +5,7 @@
 const MODULE_NAME = "twitterNeuralNetwork";
 const MODULE_ID_PREFIX = "TNN";
 const CHILD_PREFIX = "tnc_node";
+const CHILD_PREFIX_SHORT = "CH";
 
 const os = require("os");
 let hostname = os.hostname();
@@ -5990,6 +5991,7 @@ function childCreateAll(params){
     let childIndex = params.childIndex || configuration.childIndex;
 
     let childId = CHILD_PREFIX + "_" + childIndex;
+    let childIdShort = CHILD_PREFIX_SHORT + "_" + childIndex;
 
     let options = {};
     options.cwd = configuration.cwd;
@@ -5997,6 +5999,7 @@ function childCreateAll(params){
     options.env = configuration.DROPBOX;
     options.env.DROPBOX_STATS_FILE = statsObj.runId + "_" + childId + ".json";
     options.env.CHILD_ID = childId;
+    options.env.CHILD_ID_SHORT = childIdShort;
     options.env.NODE_ENV = "production";
 
     let createParams = {};
@@ -6004,6 +6007,7 @@ function childCreateAll(params){
     createParams.options = {};
     createParams.config = {};
     createParams.childId = childId;
+    createParams.childIdShort = childIdShort;
     createParams.verbose = params.verbose || configuration.verbose;
     createParams.appPath = params.appPath || configuration.childAppPath;
     createParams.options = params.options || options;
@@ -6020,22 +6024,13 @@ function childCreateAll(params){
 
         setTimeout(async function(){
 
-          // const childId = params.childId;
-          // const appPath = params.appPath;
-          // const env = params.env;
-          // const config = params.config || {};
-          // const verbose = params.verbose || false;
-
-          // options.env = {};
-          // options.env = configuration.DROPBOX;
-          // options.env.DROPBOX_NNC_STATS_FILE = statsObj.runId + "_" + childId + ".json";
-          // options.env.NNC_CHILD_ID = childId;
-          // options.env.NODE_ENV = "production";
-
-
           childId = CHILD_PREFIX + "_" + hostname + "_" + process.pid + "_" + childIndex;
+          childIdShort = CHILD_PREFIX_SHORT + "_" + process.pid + "_" + childIndex;
+
           createParams.childId = childId;
+          createParams.childIdShort = childIdShort;
           options.env.CHILD_ID = childId;
+          options.env.CHILD_ID_SHORT = childIdShort;
 
           if (configuration.verbose) {console.log("createParams\n" + jsonPrint(createParams));}
 
@@ -6244,6 +6239,7 @@ function childInit(params){
   params = params || {};
 
   const childId = params.childId;
+  const childIdShort = params.childIdShort;
   const config = params.config || {};
   const verbose = params.verbose || false;
 
@@ -6254,6 +6250,7 @@ function childInit(params){
     const command = {
       op: "INIT",
       childId: childId,
+      childIdShort: childIdShort,
       verbose: verbose,
       config: config
     };
@@ -6281,6 +6278,7 @@ function childCreate(params){
     let args = params.args || [];
 
     const childId = params.childId;
+    const childIdShort = params.childIdShort;
     const appPath = params.appPath;
     const env = params.env;
     const config = params.config || {};
@@ -6339,16 +6337,20 @@ function childCreate(params){
 
             _.set(resultsHashmap[m.stats.networkId], 'evolve.results.iterations', m.stats.iteration);
             
-            console.log(chalkLog(MODULE_ID_PREFIX + " | EVOLVE | " + m.childId + " | " + m.stats.networkId
-              + " | F: " + m.stats.fitness
-              + " | E: " + m.stats.error
-              + " | S: " + moment(m.stats.evolveStart).format(compactDateTimeFormat)
-              + " | N: " + moment().format(compactDateTimeFormat)
-              + " | R: " + msToTime(m.stats.evolveElapsed)
-              + " | RATE: " + (m.stats.iterationRate/1000.0).toFixed(1) + " s/I"
-              + " | ETC: " + msToTime(m.stats.timeToComplete)
-              + " | ETC: " + moment().add(m.stats.timeToComplete).format(compactDateTimeFormat)
-              + " | I: " + m.stats.iteration + " / " + m.stats.totalIterations
+            console.log(chalkLog(MODULE_ID_PREFIX 
+              + " | " + m.childIdShort 
+              + " | " + m.stats.networkId
+              + " | IN " + m.stats.numInputs
+              + " " + m.stats.inputsId
+              // + " | F: " + m.stats.fitness
+              // + " | E: " + m.stats.error
+              + " | S " + moment(m.stats.evolveStart).format(compactDateTimeFormat)
+              + " | N " + moment().format(compactDateTimeFormat)
+              + " | R " + msToTime(m.stats.evolveElapsed)
+              + " | RATE " + (m.stats.iterationRate/1000.0).toFixed(1)
+              + " | ETC " + msToTime(m.stats.timeToComplete)
+              + " | ETC " + moment().add(m.stats.timeToComplete).format(compactDateTimeFormat)
+              + " | I " + m.stats.iteration + "/" + m.stats.totalIterations
             ));
 
             if (!statsObj.networkResults[m.stats.networkId] || statsObj.networkResults[m.stats.networkId] === undefined){
@@ -6647,7 +6649,7 @@ function childCreate(params){
 
       childHashMap[childId].child = child;
 
-      const initResponse = await childInit({childId: childId, config: config});
+      const initResponse = await childInit({childId: childId, childIdShort: childIdShort, config: config});
 
       const childPidFile = await touchChildPidFile({ childId: childId, pid: child.pid });
 

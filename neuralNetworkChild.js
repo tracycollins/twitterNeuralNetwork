@@ -1909,8 +1909,35 @@ function evolve(params){
 
         statsObj.evolve.stats = schedParams;
 
+      // evolveOptions = {
+      //   runId: m.testRunId,
+      //   threads: m.threads,
+      //   architecture: m.architecture,
+      //   seedNetworkId: m.seedNetworkId,
+      //   seedNetworkRes: m.seedNetworkRes,
+      //   inputsId: m.inputsId,
+      //   inputsObj: m.inputsObj,
+      //   outputs: m.outputs,
+      //   trainingSet: m.trainingSet,
+      //   testSet: m.testSet,
+      //   mutation: m.mutation,
+      //   equal: m.equal,
+      //   popsize: m.popsize,
+      //   elitism: m.elitism,
+      //   log: m.log,
+      //   error: m.error,
+      //   iterations: m.iterations,
+      //   mutationRate: m.mutationRate,
+      //   cost: m.cost,
+      //   activation: m.activation,
+      //   growth: m.growth,
+      //   clear: m.clear
+      // };
+
         const sObj = {
           networkId: params.runId,
+          numInputs: params.inputsObj.meta.numInputs,
+          inputsId: params.inputsId,
           evolveStart: schedStartTime,
           evolveElapsed: elapsedInt,
           totalIterations: params.iterations,
@@ -1921,7 +1948,7 @@ function evolve(params){
           fitness: schedParams.fitness.toFixed(5) || "---"
         };
 
-        process.send({op: "EVOLVE_SCHEDULE", childId: configuration.childId, stats: sObj});
+        process.send({op: "EVOLVE_SCHEDULE", childId: configuration.childId, childIdShort: configuration.childIdShort, stats: sObj});
 
         function schedMsToTime(duration) {
           let seconds = parseInt((duration / 1000) % 60);
@@ -2459,7 +2486,9 @@ process.on("message", function(m) {
         + " | CHILD ID: " + m.childId
       ));
       configuration.childId = m.childId;
+      configuration.childIdShort = m.childIdShort;
       statsObj.childId = m.childId;
+      statsObj.childIdShort = m.childIdShort;
       process.title = m.childId;
       process.name = m.childId;
       configuration.inputsBinaryMode = m.inputsBinaryMode || DEFAULT_INPUTS_BINARY_MODE;
