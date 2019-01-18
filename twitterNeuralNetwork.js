@@ -1989,7 +1989,7 @@ function validateNetwork(params){
   return new Promise(function(resolve, reject){
 
     if (!params || params === undefined || params.networkObj === undefined || params.networkId === undefined) {
-      console.log(chalkError(MODULE_ID_PREFIX + " | validateNetwork *** PARAMS UNDEFINED ??? "));
+      console.log(chalkError(MODULE_ID_PREFIX + " | validateNetwork *** PARAMS UNDEFINED ???\nPARAMS\n" + jsonPrint(params)));
       return reject(new Error("params undefined"));
     }
 
@@ -3497,7 +3497,7 @@ function initWatchAllConfigFolders(params){
         monitorNetworks.on("created", async function(f, stat){
           const fileNameArray = f.split("/");
           const file = fileNameArray[fileNameArray.length-1];
-          if (file.endsWith(".json") && !file.startsWith("bestRuntimeNetwork")) {
+          if (!fileNameArray.includes("archive") && file.endsWith(".json") && !file.startsWith("bestRuntimeNetwork")) {
             console.log(chalkBlue(MODULE_ID_PREFIX + " | +++ NETWORK FILE CREATED: " + f));
             await delay({period: 30*ONE_SECOND, verbose: true});
             try{
@@ -3513,7 +3513,7 @@ function initWatchAllConfigFolders(params){
         monitorNetworks.on("changed", async function(f, stat){
           const fileNameArray = f.split("/");
           const file = fileNameArray[fileNameArray.length-1];
-          if (file.endsWith(".json") && !file.startsWith("bestRuntimeNetwork")) {
+          if (!fileNameArray.includes("archive") && file.endsWith(".json") && !file.startsWith("bestRuntimeNetwork")) {
             console.log(chalkBlue(MODULE_ID_PREFIX + " | -/- NETWORK FILE CHANGED: " + f));
             await delay({period: 30*ONE_SECOND, verbose: true});
             try{
