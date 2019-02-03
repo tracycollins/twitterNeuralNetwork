@@ -1,9 +1,11 @@
  /*jslint node: true */
 /*jshint sub:true*/
-"use strict";
+
 
 const MODULE_NAME = "tncChild";
 const MODULE_ID_PREFIX = "TNC";
+
+const DEFAULT_QUIT_ON_COMPLETE = false;
 
 const os = require("os");
 let hostname = os.hostname();
@@ -28,47 +30,26 @@ console.log("HOST NAME:    " + hostname);
 console.log("=========================================");
 console.log("=========================================");
 
-let DROPBOX_ROOT_FOLDER;
+// let DROPBOX_ROOT_FOLDER;
 
-if (hostname === "google") {
-  DROPBOX_ROOT_FOLDER = "/home/tc/Dropbox/Apps/wordAssociation";
-}
-else {
-  DROPBOX_ROOT_FOLDER = "/Users/tc/Dropbox/Apps/wordAssociation";
-}
-
-let quitOnCompleteFlag = false;
+// if (hostname === "google") {
+//   DROPBOX_ROOT_FOLDER = "/home/tc/Dropbox/Apps/wordAssociation";
+// }
+// else {
+//   DROPBOX_ROOT_FOLDER = "/Users/tc/Dropbox/Apps/wordAssociation";
+// }
 
 const DEFAULT_INPUTS_BINARY_MODE = false;
 
 const TEST_MODE = false; // applies only to parent
-const QUIT_ON_COMPLETE = false;
 
-
-const ONE_SECOND = 1000 ;
-const ONE_MINUTE = ONE_SECOND*60 ;
-
-const ONE_KILOBYTE = 1024;
-const ONE_MEGABYTE = 1024 * ONE_KILOBYTE;
+const ONE_SECOND = 1000;
+const ONE_MINUTE = ONE_SECOND*60;
 
 const KEEPALIVE_INTERVAL = ONE_MINUTE;
 const QUIT_WAIT_INTERVAL = ONE_SECOND;
-const STATS_UPDATE_INTERVAL = ONE_MINUTE;
-
-const SAVE_CACHE_DEFAULT_TTL = 60;
-const SAVE_FILE_QUEUE_INTERVAL = 5*ONE_SECOND;
-
-const DROPBOX_MAX_SAVE_NORMAL = 20 * ONE_MEGABYTE;
-const DROPBOX_LIST_FOLDER_LIMIT = 50;
-const DROPBOX_TIMEOUT = 30 * ONE_SECOND;
 
 const compactDateTimeFormat = "YYYYMMDD_HHmmss";
-
-const NUM_RANDOM_NETWORKS = 100;
-const IMAGE_QUOTA_TIMEOUT = 60000;
-
-const DEFAULT_FORCE_INIT_RANDOM_NETWORKS = true;
-const OFFLINE_MODE = false;
 
 //=========================================================================
 // MODULE REQUIRES
@@ -79,40 +60,23 @@ let network;
 
 const _ = require("lodash");
 const moment = require("moment");
-const defaults = require("object.defaults");
 const pick = require("object.pick");
 const treeify = require("treeify");
-const objectPath = require("object-path");
-const fetch = require("isomorphic-fetch"); // or another library of choice.
-const NodeCache = require("node-cache");
-const merge = require("deepmerge");
 const MergeHistograms = require("@threeceelabs/mergehistograms");
 const mergeHistograms = new MergeHistograms();
 const arrayNormalize = require("array-normalize");
 
-const writeJsonFile = require("write-json-file");
-const sizeof = require("object-sizeof");
-
-const fs = require("fs");
-const JSONParse = require("json-parse-safe");
 const debug = require("debug")("tfe");
 const util = require("util");
 const deepcopy = require("deep-copy");
-const randomItem = require("random-item");
 const async = require("async");
-const omit = require("object.omit");
-const HashMap = require("hashmap").HashMap;
 
 const chalk = require("chalk");
-const chalkConnect = chalk.green;
 const chalkNetwork = chalk.blue;
 const chalkBlueBold = chalk.blue.bold;
-const chalkTwitter = chalk.blue;
-const chalkTwitterBold = chalk.bold.blue;
 const chalkBlue = chalk.blue;
 const chalkError = chalk.bold.red;
 const chalkAlert = chalk.red;
-const chalkWarn = chalk.red;
 const chalkLog = chalk.gray;
 const chalkInfo = chalk.black;
 
@@ -192,12 +156,12 @@ let configuration = {};
 
 configuration.inputsBinaryMode = DEFAULT_INPUTS_BINARY_MODE;
 configuration.testMode = TEST_MODE;
-configuration.statsUpdateIntervalTime = STATS_UPDATE_INTERVAL;
+// configuration.statsUpdateIntervalTime = STATS_UPDATE_INTERVAL;
 
 configuration.slackChannel = {};
 
 configuration.keepaliveInterval = KEEPALIVE_INTERVAL;
-configuration.quitOnComplete = QUIT_ON_COMPLETE;
+configuration.quitOnComplete = DEFAULT_QUIT_ON_COMPLETE;
 
 let maxInputHashMap = {};
 
@@ -215,7 +179,7 @@ function initConfig(cnf) {
 
     cnf.processName = process.env.PROCESS_NAME || MODULE_ID;
     cnf.testMode = (process.env.TEST_MODE === "true") ? true : cnf.testMode;
-    cnf.quitOnError = process.env.QUIT_ON_ERROR || false ;
+    cnf.quitOnError = process.env.QUIT_ON_ERROR || false;
 
     if (process.env.QUIT_ON_COMPLETE === "false") { cnf.quitOnComplete = false; }
     else if ((process.env.QUIT_ON_COMPLETE === true) || (process.env.QUIT_ON_COMPLETE === "true")) {
@@ -235,7 +199,7 @@ function initConfig(cnf) {
         }
       });
       
-      resolve(configuration) ;
+      resolve(configuration);
 
     }
     catch(err){
@@ -246,8 +210,8 @@ function initConfig(cnf) {
   });
 }
 
-function init(params){
-  return new Promise(async function(resolve, reject){
+function init(){
+  return new Promise(async function(resolve){
     statsObj.status = "INIT";
     resolve();
   });
@@ -257,38 +221,32 @@ function init(params){
 // MONGO DB
 //=========================================================================
 
-global.dbConnection = false;
+global.globalDbConnection = false;
 const mongoose = require("mongoose");
 mongoose.set("useFindAndModify", false);
 
-global.wordAssoDb = require("@threeceelabs/mongoose-twitter");
+global.globalWordAssoDb = require("@threeceelabs/mongoose-twitter");
 
-global.Emoji;
-global.Hashtag;
-global.Location;
-global.Media;
-global.NetworkInputs;
-global.NeuralNetwork;
-global.Place;
-global.Tweet;
-global.Url;
-global.User;
-global.Word;
+const emojiModel = require("@threeceelabs/mongoose-twitter/models/emoji.server.model");
+const hashtagModel = require("@threeceelabs/mongoose-twitter/models/hashtag.server.model");
+const locationModel = require("@threeceelabs/mongoose-twitter/models/location.server.model");
+const mediaModel = require("@threeceelabs/mongoose-twitter/models/media.server.model");
+const neuralNetworkModel = require("@threeceelabs/mongoose-twitter/models/neuralNetwork.server.model");
+const placeModel = require("@threeceelabs/mongoose-twitter/models/place.server.model");
+const tweetModel = require("@threeceelabs/mongoose-twitter/models/tweet.server.model");
+const urlModel = require("@threeceelabs/mongoose-twitter/models/url.server.model");
+const userModel = require("@threeceelabs/mongoose-twitter/models/user.server.model");
+const wordModel = require("@threeceelabs/mongoose-twitter/models/word.server.model");
 
-let dbConnectionReady = false;
 let dbConnectionReadyInterval;
 
-let UserServerController;
+const UserServerController = require("@threeceelabs/user-server-controller");
 let userServerController;
 let userServerControllerReady = false;
 
-let TweetServerController;
+const TweetServerController = require("@threeceelabs/tweet-server-controller");
 let tweetServerController;
 let tweetServerControllerReady = false;
-
-let userDbUpdateQueueInterval;
-let userDbUpdateQueueReadyFlag = true;
-let userDbUpdateQueue = [];
 
 function connectDb(){
 
@@ -298,13 +256,11 @@ function connectDb(){
 
       statsObj.status = "CONNECTING MONGO DB";
 
-      wordAssoDb.connect(MODULE_ID + "_" + process.pid, async function(err, db){
+      global.globalWordAssoDb.connect(MODULE_ID + "_" + process.pid, async function(err, db){
 
         if (err) {
           console.log(chalkError(MODULE_ID_PREFIX + " | *** MONGO DB CONNECTION ERROR: " + err));
           statsObj.status = "MONGO CONNECTION ERROR";
-          // slackSendMessage(hostname + " | TFE | " + statsObj.status);
-          dbConnectionReady = false;
           quit({cause: "MONGO DB ERROR: " + err});
           return reject(err);
         }
@@ -313,9 +269,7 @@ function connectDb(){
           statsObj.status = "MONGO ERROR";
           console.error.bind(console, MODULE_ID_PREFIX + " | *** MONGO DB CONNECTION ERROR");
           console.log(chalkError(MODULE_ID_PREFIX + " | *** MONGO DB CONNECTION ERROR"));
-          // slackSendMessage(hostname + " | TFE | " + statsObj.status);
           db.close();
-          dbConnectionReady = false;
           quit({cause: "MONGO DB ERROR: " + err});
         });
 
@@ -324,44 +278,29 @@ function connectDb(){
           console.error.bind(console, MODULE_ID_PREFIX + " | *** MONGO DB DISCONNECTED");
           // slackSendMessage(hostname + " | TFE | " + statsObj.status);
           console.log(chalkAlert(MODULE_ID_PREFIX + " | *** MONGO DB DISCONNECTED"));
-          dbConnectionReady = false;
           quit({cause: "MONGO DB DISCONNECTED"});
         });
 
 
-        global.dbConnection = db;
+        global.globalDbConnection = db;
 
         console.log(chalk.green(MODULE_ID_PREFIX + " | MONGOOSE DEFAULT CONNECTION OPEN"));
 
-
-        const emojiModel = require("@threeceelabs/mongoose-twitter/models/emoji.server.model");
-        const hashtagModel = require("@threeceelabs/mongoose-twitter/models/hashtag.server.model");
-        const locationModel = require("@threeceelabs/mongoose-twitter/models/location.server.model");
-        const mediaModel = require("@threeceelabs/mongoose-twitter/models/media.server.model");
-        const neuralNetworkModel = require("@threeceelabs/mongoose-twitter/models/neuralNetwork.server.model");
-        const placeModel = require("@threeceelabs/mongoose-twitter/models/place.server.model");
-        const tweetModel = require("@threeceelabs/mongoose-twitter/models/tweet.server.model");
-        const urlModel = require("@threeceelabs/mongoose-twitter/models/url.server.model");
-        const userModel = require("@threeceelabs/mongoose-twitter/models/user.server.model");
-        const wordModel = require("@threeceelabs/mongoose-twitter/models/word.server.model");
-
-        global.Emoji = global.dbConnection.model("Emoji", emojiModel.EmojiSchema);
-        global.Hashtag = global.dbConnection.model("Hashtag", hashtagModel.HashtagSchema);
-        global.Location = global.dbConnection.model("Location", locationModel.LocationSchema);
-        global.Media = global.dbConnection.model("Media", mediaModel.MediaSchema);
-        global.NeuralNetwork = global.dbConnection.model("NeuralNetwork", neuralNetworkModel.NeuralNetworkSchema);
-        global.Place = global.dbConnection.model("Place", placeModel.PlaceSchema);
-        global.Tweet = global.dbConnection.model("Tweet", tweetModel.TweetSchema);
-        global.Url = global.dbConnection.model("Url", urlModel.UrlSchema);
-        global.User = global.dbConnection.model("User", userModel.UserSchema);
-        global.Word = global.dbConnection.model("Word", wordModel.WordSchema);
+        global.globalEmoji = global.globalDbConnection.model("Emoji", emojiModel.EmojiSchema);
+        global.globalHashtag = global.globalDbConnection.model("Hashtag", hashtagModel.HashtagSchema);
+        global.globalLocation = global.globalDbConnection.model("Location", locationModel.LocationSchema);
+        global.globalMedia = global.globalDbConnection.model("Media", mediaModel.MediaSchema);
+        global.globalNeuralNetwork = global.globalDbConnection.model("NeuralNetwork", neuralNetworkModel.NeuralNetworkSchema);
+        global.globalPlace = global.globalDbConnection.model("Place", placeModel.PlaceSchema);
+        global.globalTweet = global.globalDbConnection.model("Tweet", tweetModel.TweetSchema);
+        global.globalUrl = global.globalDbConnection.model("Url", urlModel.UrlSchema);
+        global.globalUser = global.globalDbConnection.model("User", userModel.UserSchema);
+        global.globalWord = global.globalDbConnection.model("Word", wordModel.WordSchema);
 
         const uscChildName = MODULE_ID_PREFIX + "_USC";
-        UserServerController = require("@threeceelabs/user-server-controller");
         userServerController = new UserServerController(uscChildName);
 
         const tscChildName = MODULE_ID_PREFIX + "_TSC";
-        TweetServerController = require("@threeceelabs/tweet-server-controller");
         tweetServerController = new TweetServerController(tscChildName);
 
         tweetServerController.on("ready", function(appname){
@@ -374,19 +313,24 @@ function connectDb(){
           console.trace(chalkError(MODULE_ID_PREFIX + " | *** " + tscChildName + " ERROR | " + err));
         });
 
-        userServerControllerReady = false;
         userServerController.on("ready", function(appname){
-
-          statsObj.status = "MONGO DB CONNECTED";
-          // slackSendMessage(hostname + " | TFE | " + statsObj.status);
-
           userServerControllerReady = true;
           console.log(chalkLog(MODULE_ID_PREFIX + " | " + uscChildName + " READY | " + appname));
-          dbConnectionReady = true;
-
-          resolve(db);
-
         });
+
+        dbConnectionReadyInterval = setInterval(function(){
+
+          if (userServerControllerReady && tweetServerControllerReady) {
+
+            console.log(chalk.green(MODULE_ID_PREFIX + " | MONGO DB READY"));
+
+            clearInterval(dbConnectionReadyInterval);
+            statsObj.status = "MONGO DB CONNECTED";
+            resolve(db);
+          }
+
+        }, 1000);
+
       });
     }
     catch(err){
@@ -407,8 +351,9 @@ function jsonPrint(obj) {
   }
 }
 
-function msToTime(duration) {
+function msToTime(d) {
 
+  let duration = d;
   let sign = 1;
 
   if (duration < 0) {
@@ -430,7 +375,7 @@ function msToTime(duration) {
 }
 
 function getTimeStamp(inputTime) {
-  let currentTimeStamp ;
+  let currentTimeStamp;
   if (inputTime === undefined) {
     currentTimeStamp = moment().format(compactDateTimeFormat);
     return currentTimeStamp;
@@ -449,11 +394,6 @@ function getTimeStamp(inputTime) {
   }
 }
 
-function getElapsed(){
-  statsObj.elapsedMS = moment().valueOf() - startTimeMoment.valueOf();
-  return statsObj.elapsedMS;
-}
-
 function getElapsedTimeStamp(){
   statsObj.elapsedMS = moment().valueOf() - startTimeMoment.valueOf();
   return msToTime(statsObj.elapsedMS);
@@ -462,9 +402,9 @@ function getElapsedTimeStamp(){
 // STATS
 //=========================================================================
 
-let startTimeMoment = moment();
+const startTimeMoment = moment();
 
-let statsObj = {};
+const statsObj = {};
 let statsObjSmall = {};
 
 statsObj.pid = process.pid;
@@ -483,19 +423,19 @@ statsObj.evolve = {};
 statsObj.evolve.options = {};
 
 statsObj.training = {};
-statsObj.training.startTime;
-statsObj.training.testRunId;
-statsObj.training.seedNetworkId;
-statsObj.training.seedNetworkRes;
-statsObj.training.iterations;
+statsObj.training.startTime = moment();
+statsObj.training.testRunId = "";
+statsObj.training.seedNetworkId = false;
+statsObj.training.seedNetworkRes = 0;
+statsObj.training.iterations = 0;
 
-statsObj.inputsId
+statsObj.inputsId = "";
 statsObj.inputsObj = {};
 statsObj.outputs = {};
 
 statsObj.normalization = {};
 
-let statsPickArray = [
+const statsPickArray = [
   "pid", 
   "startTime", 
   "elapsed", 
@@ -523,794 +463,545 @@ async function showStats(options) {
   }
 }
 
-// ==================================================================
-// DROPBOX
-// ==================================================================
-const Dropbox = require("dropbox").Dropbox;
+// // ==================================================================
+// // DROPBOX
+// // ==================================================================
+// const Dropbox = require("dropbox").Dropbox;
 
-configuration.DROPBOX = {};
+// configuration.DROPBOX = {};
 
-configuration.DROPBOX.DROPBOX_WORD_ASSO_ACCESS_TOKEN = process.env.DROPBOX_WORD_ASSO_ACCESS_TOKEN ;
-configuration.DROPBOX.DROPBOX_WORD_ASSO_APP_KEY = process.env.DROPBOX_WORD_ASSO_APP_KEY ;
-configuration.DROPBOX.DROPBOX_WORD_ASSO_APP_SECRET = process.env.DROPBOX_WORD_ASSO_APP_SECRET;
-configuration.DROPBOX.DROPBOX_CONFIG_FILE = process.env.DROPBOX_CONFIG_FILE || MODULE_NAME + "Config.json";
-configuration.DROPBOX.DROPBOX_STATS_FILE = process.env.DROPBOX_STATS_FILE || MODULE_NAME + "Stats.json";
+// configuration.DROPBOX.DROPBOX_WORD_ASSO_ACCESS_TOKEN = process.env.DROPBOX_WORD_ASSO_ACCESS_TOKEN;
+// configuration.DROPBOX.DROPBOX_WORD_ASSO_APP_KEY = process.env.DROPBOX_WORD_ASSO_APP_KEY;
+// configuration.DROPBOX.DROPBOX_WORD_ASSO_APP_SECRET = process.env.DROPBOX_WORD_ASSO_APP_SECRET;
+// configuration.DROPBOX.DROPBOX_CONFIG_FILE = process.env.DROPBOX_CONFIG_FILE || MODULE_NAME + "Config.json";
+// configuration.DROPBOX.DROPBOX_STATS_FILE = process.env.DROPBOX_STATS_FILE || MODULE_NAME + "Stats.json";
 
-const dropboxConfigFolder = "/config/utility";
-const dropboxConfigDefaultFolder = "/config/utility/default";
-const dropboxConfigHostFolder = "/config/utility/" + hostname;
+// const dropboxRemoteClient = new Dropbox({ 
+//   accessToken: configuration.DROPBOX.DROPBOX_WORD_ASSO_ACCESS_TOKEN,
+//   fetch: fetch
+// });
 
-const dropboxConfigDefaultFile = "default_" + configuration.DROPBOX.DROPBOX_CONFIG_FILE;
-const dropboxConfigHostFile = hostname + "_" + configuration.DROPBOX.DROPBOX_CONFIG_FILE;
+// const dropboxLocalClient = { // offline mode
+//   filesListFolder: filesListFolderLocal,
+//   filesUpload: function(){},
+//   filesDownload: function(){},
+//   filesGetMetadata: filesGetMetadataLocal,
+//   filesDelete: function(){}
+// };
 
-let statsFolder = "/stats/" + hostname;
-let statsFile = configuration.DROPBOX.DROPBOX_STATS_FILE;
+// let dropboxClient;
 
-let dropboxRemoteClient = new Dropbox({ 
-  accessToken: configuration.DROPBOX.DROPBOX_WORD_ASSO_ACCESS_TOKEN,
-  fetch: fetch
-});
-
-let dropboxLocalClient = {  // offline mode
-  filesListFolder: filesListFolderLocal,
-  filesUpload: function(){},
-  filesDownload: function(){},
-  filesGetMetadata: filesGetMetadataLocal,
-  filesDelete: function(){}
-};
-
-let dropboxClient;
-
-if (configuration.offlineMode) {
-  dropboxClient = dropboxLocalClient;
-}
-else {
-  dropboxClient = dropboxRemoteClient;
-}
+// if (configuration.offlineMode) {
+//   dropboxClient = dropboxLocalClient;
+// }
+// else {
+//   dropboxClient = dropboxRemoteClient;
+// }
 
 
-function filesListFolderLocal(options){
-  return new Promise(function(resolve, reject) {
+// function filesListFolderLocal(options){
+//   return new Promise(function(resolve, reject) {
 
-    const fullPath = DROPBOX_ROOT_FOLDER + options.path;
+//     const fullPath = DROPBOX_ROOT_FOLDER + options.path;
 
-    fs.readdir(fullPath, function(err, items){
-      if (err) {
-        reject(err);
-      }
-      else {
+//     fs.readdir(fullPath, function(err, items){
+//       if (err) {
+//         reject(err);
+//       }
+//       else {
 
-        let itemArray = [];
+//         const itemArray = [];
 
-        async.each(items, function(item, cb){
+//         async.each(items, function(item, cb){
 
-          itemArray.push(
-            {
-              name: item, 
-              client_modified: false,
-              content_hash: false,
-              path_display: fullPath + "/" + item
-            }
-          );
-          cb();
+//           itemArray.push(
+//             {
+//               name: item, 
+//               client_modified: false,
+//               content_hash: false,
+//               path_display: fullPath + "/" + item
+//             }
+//           );
+//           cb();
 
-        }, function(err){
+//         }, function(err){
 
-          const response = {
-            cursor: false,
-            has_more: false,
-            entries: itemArray
-          };
+//           if (err) {
+//             console.log(chalkError(MODULE_ID_PREFIX
+//               + " | *** FILES LIST FOLDER ERROR: " + err
+//             ));
 
-          resolve(response);
-        });
-        }
-    });
-  });
-}
+//             return reject(err);
+//           }
 
-function filesGetMetadataLocal(options){
+//           const response = {
+//             cursor: false,
+//             has_more: false,
+//             entries: itemArray
+//           };
 
-  return new Promise(function(resolve, reject) {
+//           resolve(response);
+//         });
+//         }
+//     });
+//   });
+// }
 
-    const fullPath = DROPBOX_ROOT_FOLDER + options.path;
+// function filesGetMetadataLocal(options){
 
-    fs.stat(fullPath, function(err, stats){
-      if (err) {
-        reject(err);
-      }
-      else {
-        const response = {
-          client_modified: stats.mtimeMs
-        };
+//   return new Promise(function(resolve, reject) {
+
+//     const fullPath = DROPBOX_ROOT_FOLDER + options.path;
+
+//     fs.stat(fullPath, function(err, stats){
+//       if (err) {
+//         reject(err);
+//       }
+//       else {
+//         const response = {
+//           client_modified: stats.mtimeMs
+//         };
         
-        resolve(response);
-      }
-    });
-  });
-}
+//         resolve(response);
+//       }
+//     });
+//   });
+// }
 
-function loadFile(params) {
+// function loadFile(params) {
 
-  return new Promise(async function(resolve, reject){
+//   return new Promise(async function(resolve, reject){
 
-    let noErrorNotFound = params.noErrorNotFound || false;
+//     const noErrorNotFound = params.noErrorNotFound || false;
 
-    let fullPath = params.folder + "/" + params.file
+//     let fullPath = params.folder + "/" + params.file
 
-    debug(chalkInfo("LOAD FOLDER " + params.folder));
-    debug(chalkInfo("LOAD FILE " + params.file));
-    debug(chalkInfo("FULL PATH " + fullPath));
+//     debug(chalkInfo("LOAD FOLDER " + params.folder));
+//     debug(chalkInfo("LOAD FILE " + params.file));
+//     debug(chalkInfo("FULL PATH " + fullPath));
 
 
-    if (configuration.offlineMode || params.loadLocalFile) {
+//     if (configuration.offlineMode || params.loadLocalFile) {
 
-      fullPath = DROPBOX_ROOT_FOLDER + fullPath;
-      console.log(chalkInfo("OFFLINE_MODE: FULL PATH " + fullPath));
+//       fullPath = DROPBOX_ROOT_FOLDER + fullPath;
+//       console.log(chalkInfo("OFFLINE_MODE: FULL PATH " + fullPath));
 
-      fs.readFile(fullPath, "utf8", function(err, data) {
+//       fs.readFile(fullPath, "utf8", function(err, data) {
 
-        if (err) {
-          console.log(chalkError("fs readFile ERROR: " + err));
-          return reject(err);
-        }
+//         if (err) {
+//           console.log(chalkError("fs readFile ERROR: " + err));
+//           return reject(err);
+//         }
 
-        console.log(chalkInfo(getTimeStamp()
-          + " | LOADING FILE FROM DROPBOX"
-          + " | " + fullPath
-        ));
+//         console.log(chalkInfo(getTimeStamp()
+//           + " | LOADING FILE FROM DROPBOX"
+//           + " | " + fullPath
+//         ));
 
-        if (params.file.match(/\.json$/gi)) {
+//         if (params.file.match(/\.json$/gi)) {
 
-          const fileObj = JSONParse(data);
+//           const fileObj = JSONParse(data);
 
-          if (fileObj.value) {
+//           if (fileObj.value) {
 
-            const fileObjSizeMbytes = sizeof(fileObj)/ONE_MEGABYTE;
+//             const fileObjSizeMbytes = sizeof(fileObj)/ONE_MEGABYTE;
 
-            console.log(chalkInfo(getTimeStamp()
-              + " | LOADED FILE FROM DROPBOX"
-              + " | " + fileObjSizeMbytes.toFixed(2) + " MB"
-              + " | " + fullPath
-            ));
+//             console.log(chalkInfo(getTimeStamp()
+//               + " | LOADED FILE FROM DROPBOX"
+//               + " | " + fileObjSizeMbytes.toFixed(2) + " MB"
+//               + " | " + fullPath
+//             ));
 
-            return resolve(fileObj.value);
-          }
+//             return resolve(fileObj.value);
+//           }
 
-          console.log(chalkError(getTimeStamp()
-            + " | *** LOAD FILE FROM DROPBOX ERROR"
-            + " | " + fullPath
-            + " | " + fileObj.error
-          ));
+//           console.log(chalkError(getTimeStamp()
+//             + " | *** LOAD FILE FROM DROPBOX ERROR"
+//             + " | " + fullPath
+//             + " | " + fileObj.error
+//           ));
 
-          return reject(fileObj.error);
+//           return reject(fileObj.error);
 
-        }
+//         }
 
-        console.log(chalkError(getTimeStamp()
-          + " | ... SKIP LOAD FILE FROM DROPBOX"
-          + " | " + fullPath
-        ));
-        resolve();
+//         console.log(chalkError(getTimeStamp()
+//           + " | ... SKIP LOAD FILE FROM DROPBOX"
+//           + " | " + fullPath
+//         ));
+//         resolve();
 
-      });
+//       });
 
-     }
-    else {
+//      }
+//     else {
 
-      dropboxClient.filesDownload({path: fullPath})
-      .then(function(data) {
+//       dropboxClient.filesDownload({path: fullPath}).
+//       then(function(data) {
 
-        debug(chalkLog(getTimeStamp()
-          + " | LOADING FILE FROM DROPBOX FILE: " + fullPath
-        ));
+//         debug(chalkLog(getTimeStamp()
+//           + " | LOADING FILE FROM DROPBOX FILE: " + fullPath
+//         ));
 
-        if (params.file.match(/\.json$/gi)) {
+//         if (params.file.match(/\.json$/gi)) {
 
-          let payload = data.fileBinary;
+//           const payload = data.fileBinary;
 
-          if (!payload || (payload === undefined)) {
-            return reject(new Error(MODULE_ID_PREFIX + " LOAD FILE PAYLOAD UNDEFINED"));
-          }
+//           if (!payload || (payload === undefined)) {
+//             return reject(new Error(MODULE_ID_PREFIX + " LOAD FILE PAYLOAD UNDEFINED"));
+//           }
 
-          const fileObj = JSONParse(payload);
+//           const fileObj = JSONParse(payload);
 
-          if (fileObj.value) {
-            return resolve(fileObj.value);
-          }
+//           if (fileObj.value) {
+//             return resolve(fileObj.value);
+//           }
 
-          console.log(chalkError(MODULE_ID_PREFIX + " | *** DROPBOX loadFile ERROR: " + fullPath));
-          return reject(fileObj.error);
-        }
-        else {
-          resolve();
-        }
-      })
-      .catch(function(err) {
+//           console.log(chalkError(MODULE_ID_PREFIX + " | *** DROPBOX loadFile ERROR: " + fullPath));
+//           return reject(fileObj.error);
+//         }
+//         else {
+//           resolve();
+//         }
+//       }).
+//       catch(function(err) {
 
-        console.log(chalkError(MODULE_ID_PREFIX + " | *** DROPBOX loadFile ERROR: " + fullPath));
+//         console.log(chalkError(MODULE_ID_PREFIX + " | *** DROPBOX loadFile ERROR: " + fullPath));
         
-        if ((err.status === 409) || (err.status === 404)) {
-          if (noErrorNotFound) {
-            console.log(chalkAlert(MODULE_ID_PREFIX + " | *** DROPBOX READ FILE " + fullPath + " NOT FOUND"));
-            return resolve(new Error("NOT FOUND"));
-          }
-          console.log(chalkAlert(MODULE_ID_PREFIX + " | *** DROPBOX READ FILE " + fullPath + " NOT FOUND ... SKIPPING ..."));
-          return resolve(err);
-        }
+//         if ((err.status === 409) || (err.status === 404)) {
+//           if (noErrorNotFound) {
+//             console.log(chalkAlert(MODULE_ID_PREFIX + " | *** DROPBOX READ FILE " + fullPath + " NOT FOUND"));
+//             return resolve(new Error("NOT FOUND"));
+//           }
+//           console.log(chalkAlert(MODULE_ID_PREFIX + " | *** DROPBOX READ FILE " + fullPath + " NOT FOUND ... SKIPPING ..."));
+//           return resolve(err);
+//         }
         
-        if (err.status === 0) {
-          console.log(chalkError(MODULE_ID_PREFIX + " | *** DROPBOX NO RESPONSE"
-            + " ... NO INTERNET CONNECTION? ... SKIPPING ..."));
-          return resolve(new Error("NO INTERNET"));
-        }
+//         if (err.status === 0) {
+//           console.log(chalkError(MODULE_ID_PREFIX + " | *** DROPBOX NO RESPONSE"
+//             + " ... NO INTERNET CONNECTION? ... SKIPPING ..."));
+//           return resolve(new Error("NO INTERNET"));
+//         }
 
-        reject(error);
+//         reject(err);
 
-      });
-    }
-  });
-}
+//       });
+//     }
+//   });
+// }
 
-function loadFileRetry(params){
+// function loadFileRetry(params){
 
-  return new Promise(async function(resolve, reject){
+//   return new Promise(async function(resolve, reject){
 
-    let resolveOnNotFound = params.resolveOnNotFound || false;
-    let maxRetries = params.maxRetries || 5;
-    let retryNumber;
+//     const resolveOnNotFound = params.resolveOnNotFound || false;
+//     const maxRetries = params.maxRetries || 5;
+//     let retryNumber;
+//     let backOffTime = params.initialBackOffTime || ONE_SECOND;
+//     const path = params.path || params.folder + "/" + params.file;
 
-    for (retryNumber = 0; retryNumber < maxRetries; retryNumber++) {
-      try {
+//     for (retryNumber = 0;retryNumber < maxRetries;retryNumber++) {
+//       try {
         
-        if (retryNumber > 0) { 
-          console.log(chalkAlert(MODULE_ID_PREFIX + " | FILE LOAD RETRY"
-            + " | " + folder + "/" + file
-            + " | " + retryNumber + " OF " + maxRetries
-          )); 
-        }
-
-        const fileObj = await loadFile(params);
-        return resolve(fileObj);
-        break;
-      } 
-      catch(err) {
-      }
-    }
-
-    if (resolveOnNotFound) {
-      console.log(chalkAlert(MODULE_ID_PREFIX + " | resolve FILE LOAD FAILED | RETRY: " + retryNumber + " OF " + maxRetries));
-      return resolve(false);
-    }
-    console.log(chalkError(MODULE_ID_PREFIX + " | reject FILE LOAD FAILED | RETRY: " + retryNumber + " OF " + maxRetries));
-    reject(new Error("FILE LOAD ERROR | RETRIES " + maxRetries));
-
-  });
-}
-
-function getFileMetadata(params) {
-
-  return new Promise(function(resolve, reject){
-
-    const fullPath = params.folder + "/" + params.file;
-    debug(chalkInfo("FOLDER " + params.folder));
-    debug(chalkInfo("FILE " + params.file));
-    debug(chalkInfo("getFileMetadata FULL PATH: " + fullPath));
-
-    if (configuration.offlineMode) {
-      dropboxClient = dropboxLocalClient;
-    }
-    else {
-      dropboxClient = dropboxRemoteClient;
-    }
-
-    dropboxClient.filesGetMetadata({path: fullPath})
-    .then(function(response) {
-      debug(chalkInfo("FILE META\n" + jsonPrint(response)));
-      resolve(response);
-    })
-    .catch(function(err) {
-      console.log(chalkError(MODULE_ID_PREFIX + " | *** DROPBOX getFileMetadata ERROR: " + fullPath));
-
-      if ((err.status === 404) || (err.status === 409)) {
-        console.error(chalkError(MODULE_ID_PREFIX + " | *** DROPBOX READ FILE " + fullPath + " NOT FOUND"));
-      }
-      if (err.status === 0) {
-        console.error(chalkError(MODULE_ID_PREFIX + " | *** DROPBOX NO RESPONSE"));
-      }
-
-      reject(err);
-
-    });
-
-  });
-}
-
-function listDropboxFolder(params){
-
-  return new Promise(function(resolve, reject){
-
-    try{
-
-      statsObj.status = "LIST DROPBOX FOLDER: " + params.folder;
-
-      console.log(chalkNetwork(MODULE_ID_PREFIX + " | LISTING DROPBOX FOLDER | " + params.folder));
-
-      let results = {};
-      results.entries = [];
-
-      let cursor;
-      let more = false;
-      let limit = params.limit || DROPBOX_LIST_FOLDER_LIMIT;
-
-      if (configuration.offlineMode) {
-        dropboxClient = dropboxLocalClient;
-      }
-      else {
-        dropboxClient = dropboxRemoteClient;
-      }
-
-      dropboxClient.filesListFolder({path: params.folder, limit: limit})
-      .then(function(response){
-
-        cursor = response.cursor;
-        more = response.has_more;
-        results.entries = response.entries;
-
-        if (configuration.verbose) {
-          console.log(chalkLog("DROPBOX LIST FOLDER"
-            + " | FOLDER:" + params.folder
-            + " | ENTRIES: " + response.entries.length
-            + " | LIMIT: " + limit
-            + " | MORE: " + more
-          ));
-        }
-
-        async.whilst(
-
-          function() {
-            return more;
-          },
-
-          function(cb){
-
-            setTimeout(function(){
-
-              dropboxClient.filesListFolderContinue({cursor: cursor})
-              .then(function(responseCont){
-
-                cursor = responseCont.cursor;
-                more = responseCont.has_more;
-                results.entries = results.entries.concat(responseCont.entries);
-
-                if (configuration.verbose) {
-                  console.log(chalkLog("DROPBOX LIST FOLDER CONT"
-                    + " | PATH:" + params.folder
-                    + " | ENTRIES: " + responseCont.entries.length + "/" + results.entries.length
-                    + " | LIMIT: " + limit
-                    + " | MORE: " + more
-                  ));
-                }
-
-              })
-              .catch(function(err){
-                console.trace(chalkError("TXX | *** DROPBOX filesListFolderContinue ERROR: ", err));
-                return reject(err);
-              });
-
-              async.setImmediate(function() { cb(); });
-
-            }, 1000);
-          },
-
-          function(err){
-            if (err) {
-              console.log(chalkError("TXX | DROPBOX LIST FOLDERS: " + err + "\n" + jsonPrint(err)));
-              return reject(err);
-            }
-            resolve(results);
-          });
-      })
-      .catch(function(err){
-        console.log(chalkError("TXX | *** DROPBOX FILES LIST FOLDER ERROR: " + err));
-        return reject(err);
-      });
-
-    }
-    catch(err){
-      console.log(chalkError("TXX | *** DROPBOX FILES LIST FOLDER ERROR: " + err));
-      return reject(err);
-    }
-
-  });
-}
-
-function loadConfigFile(params) {
-
-  return new Promise(async function(resolve, reject){
-
-    const fullPath = params.folder + "/" + params.file;
-
-    try {
-
-      if (params.file === dropboxConfigDefaultFile) {
-        prevConfigFileModifiedMoment = moment(prevDefaultConfigFileModifiedMoment);
-      }
-      else {
-        prevConfigFileModifiedMoment = moment(prevHostConfigFileModifiedMoment);
-      }
-
-      if (configuration.offlineMode) {
-        await loadCommandLineArgs();
-        return resolve();
-      }
-
-      try {
-
-        const response = await getFileMetadata({folder: params.folder, file: params.file});
-
-        const fileModifiedMoment = moment(new Date(response.client_modified));
-        
-        if (fileModifiedMoment.isSameOrBefore(prevConfigFileModifiedMoment)){
-
-          console.log(chalkInfo(MODULE_ID_PREFIX + " | CONFIG FILE BEFORE OR EQUAL"
-            + " | " + fullPath
-            + " | PREV: " + prevConfigFileModifiedMoment.format(compactDateTimeFormat)
-            + " | " + fileModifiedMoment.format(compactDateTimeFormat)
-          ));
-          return resolve();
-        }
-
-        console.log(chalkLog(MODULE_ID_PREFIX + " | +++ CONFIG FILE AFTER ... LOADING"
-          + " | " + fullPath
-          + " | PREV: " + prevConfigFileModifiedMoment.format(compactDateTimeFormat)
-          + " | " + fileModifiedMoment.format(compactDateTimeFormat)
-        ));
-
-        prevConfigFileModifiedMoment = moment(fileModifiedMoment);
-
-        if (params.file === dropboxConfigDefaultFile) {
-          prevDefaultConfigFileModifiedMoment = moment(fileModifiedMoment);
-        }
-        else {
-          prevHostConfigFileModifiedMoment = moment(fileModifiedMoment);
-        }
-
-      }
-      catch(err){
-
-      }
-
-
-      const loadedConfigObj = await loadFile({folder: params.folder, file: params.file, noErrorNotFound: true });
-
-      if (loadedConfigObj === undefined) {
-        console.log(chalkError(MODULE_ID_PREFIX + " | *** DROPBOX CONFIG LOAD FILE ERROR | JSON UNDEFINED ??? "));
-        return reject(new Error("JSON UNDEFINED"));
-      }
-
-      if (loadedConfigObj instanceof Error) {
-        console.log(chalkError(MODULE_ID_PREFIX + " | *** DROPBOX CONFIG LOAD FILE ERROR: " + loadedConfigObj));
-      }
-
-      console.log(chalkInfo(MODULE_ID_PREFIX + " | LOADED CONFIG FILE: " + params.file + "\n" + jsonPrint(loadedConfigObj)));
-
-      let newConfiguration = {};
-      newConfiguration.evolve = {};
-
-      if (loadedConfigObj.TEST_MODE !== undefined) {
-        console.log(MODULE_ID_PREFIX + " | LOADED TEST_MODE: " + loadedConfigObj.TEST_MODE);
-        if ((loadedConfigObj.TEST_MODE === true) || (loadedConfigObj.TEST_MODE === "true")) {
-          newConfiguration.testMode = true;
-        }
-        if ((loadedConfigObj.TEST_MODE === false) || (loadedConfigObj.TEST_MODE === "false")) {
-          newConfiguration.testMode = false;
-        }
-      }
-
-      if (loadedConfigObj.QUIT_ON_COMPLETE !== undefined) {
-        console.log(MODULE_ID_PREFIX + " | LOADED QUIT_ON_COMPLETE: " + loadedConfigObj.QUIT_ON_COMPLETE);
-        if ((loadedConfigObj.QUIT_ON_COMPLETE === true) || (loadedConfigObj.QUIT_ON_COMPLETE === "true")) {
-          newConfiguration.quitOnComplete = true;
-        }
-        if ((loadedConfigObj.QUIT_ON_COMPLETE === false) || (loadedConfigObj.QUIT_ON_COMPLETE === "false")) {
-          newConfiguration.quitOnComplete = false;
-        }
-      }
-
-      if (loadedConfigObj.VERBOSE !== undefined) {
-        console.log(MODULE_ID_PREFIX + " | LOADED VERBOSE: " + loadedConfigObj.VERBOSE);
-        if ((loadedConfigObj.VERBOSE === true) || (loadedConfigObj.VERBOSE === "true")) {
-          newConfiguration.verbose = true;
-        }
-        if ((loadedConfigObj.VERBOSE === false) || (loadedConfigObj.VERBOSE === "false")) {
-          newConfiguration.verbose = false;
-        }
-      }
-
-      if (loadedConfigObj.ENABLE_STDIN !== undefined) {
-        console.log(MODULE_ID_PREFIX + " | LOADED ENABLE_STDIN: " + loadedConfigObj.ENABLE_STDIN);
-        newConfiguration.enableStdin = loadedConfigObj.ENABLE_STDIN;
-      }
-
-      if (loadedConfigObj.KEEPALIVE_INTERVAL !== undefined) {
-        console.log(MODULE_ID_PREFIX + " | LOADED KEEPALIVE_INTERVAL: " + loadedConfigObj.KEEPALIVE_INTERVAL);
-        newConfiguration.keepaliveInterval = loadedConfigObj.KEEPALIVE_INTERVAL;
-      }
-
-      resolve(newConfiguration);
-    }
-    catch(err){
-      console.error(chalkError(MODULE_ID_PREFIX + " | ERROR LOAD DROPBOX CONFIG: " + fullPath
-        + "\n" + jsonPrint(err)
-      ));
-      reject(err);
-    }
-
-  });
-}
-
-function loadAllConfigFiles(){
-
-  return new Promise(async function(resolve, reject){
-
-    try {
-
-      statsObj.status = "LOAD CONFIG";
-
-      const defaultConfig = await loadConfigFile({folder: dropboxConfigDefaultFolder, file: dropboxConfigDefaultFile});
-
-      if (defaultConfig) {
-        defaultConfiguration = defaultConfig;
-        console.log(chalkLog(MODULE_ID_PREFIX + " | +++ RELOADED DEFAULT CONFIG " + dropboxConfigDefaultFolder + "/" + dropboxConfigDefaultFile));
-      }
-      
-      const hostConfig = await loadConfigFile({folder: dropboxConfigHostFolder, file: dropboxConfigHostFile});
-
-      if (hostConfig) {
-        hostConfiguration = hostConfig;
-        console.log(chalkLog(MODULE_ID_PREFIX + " | +++ RELOADED HOST CONFIG " + dropboxConfigHostFolder + "/" + dropboxConfigHostFile));
-      }
-      
-      let defaultAndHostConfig = merge(defaultConfiguration, hostConfiguration); // host settings override defaults
-      let tempConfig = merge(configuration, defaultAndHostConfig); // any new settings override existing config
-
-      configuration = tempConfig;
-
-      resolve();
-
-    }
-    catch(err){
-      reject(err);
-    }
-  });
-}
+//         const fileObj = await loadFile(params);
+
+//         if (retryNumber > 0) { 
+//           console.log(chalkAlert(MODULE_ID_PREFIX + " | FILE LOAD RETRY"
+//             + " | " + path
+//             + " | BACKOFF: " + msToTime(backOffTime)
+//             + " | " + retryNumber + " OF " + maxRetries
+//           )); 
+//         }
+
+//         return resolve(fileObj);
+//         break;
+//       } 
+//       catch(err) {
+//         backOffTime *= 1.5;
+//         setTimeout(function(){
+//           console.log(chalkAlert(MODULE_ID_PREFIX + " | FILE LOAD ERROR ... RETRY"
+//             + " | " + path
+//             + " | BACKOFF: " + msToTime(backOffTime)
+//             + " | " + retryNumber + " OF " + maxRetries
+//             + " | ERROR: " + err
+//           )); 
+//         }, backOffTime);
+//       }
+//     }
+
+//     if (resolveOnNotFound) {
+//       console.log(chalkAlert(MODULE_ID_PREFIX + " | resolve FILE LOAD FAILED | RETRY: " + retryNumber + " OF " + maxRetries));
+//       return resolve(false);
+//     }
+//     console.log(chalkError(MODULE_ID_PREFIX + " | reject FILE LOAD FAILED | RETRY: " + retryNumber + " OF " + maxRetries));
+//     reject(new Error("FILE LOAD ERROR | RETRIES " + maxRetries));
+
+//   });
+// }
+
+// function getFileMetadata(params) {
+
+//   return new Promise(function(resolve, reject){
+
+//     const fullPath = params.folder + "/" + params.file;
+//     debug(chalkInfo("FOLDER " + params.folder));
+//     debug(chalkInfo("FILE " + params.file));
+//     debug(chalkInfo("getFileMetadata FULL PATH: " + fullPath));
+
+//     if (configuration.offlineMode) {
+//       dropboxClient = dropboxLocalClient;
+//     }
+//     else {
+//       dropboxClient = dropboxRemoteClient;
+//     }
+
+//     dropboxClient.filesGetMetadata({path: fullPath}).
+//     then(function(response) {
+//       debug(chalkInfo("FILE META\n" + jsonPrint(response)));
+//       resolve(response);
+//     }).
+//     catch(function(err) {
+//       console.log(chalkError(MODULE_ID_PREFIX + " | *** DROPBOX getFileMetadata ERROR: " + fullPath));
+
+//       if ((err.status === 404) || (err.status === 409)) {
+//         console.error(chalkError(MODULE_ID_PREFIX + " | *** DROPBOX READ FILE " + fullPath + " NOT FOUND"));
+//       }
+//       if (err.status === 0) {
+//         console.error(chalkError(MODULE_ID_PREFIX + " | *** DROPBOX NO RESPONSE"));
+//       }
+
+//       reject(err);
+
+//     });
+
+//   });
+// }
 
 
 //=========================================================================
 // FILE SAVE
 //=========================================================================
-let saveFileQueueInterval;
-let saveFileQueue = [];
-let statsUpdateInterval;
+// let saveFileQueueInterval;
+// const saveFileQueue = [];
+// // let statsUpdateInterval;
 
-configuration.saveFileQueueInterval = SAVE_FILE_QUEUE_INTERVAL;
+// configuration.saveFileQueueInterval = SAVE_FILE_QUEUE_INTERVAL;
 
-statsObj.queues.saveFileQueue = {};
-statsObj.queues.saveFileQueue.busy = false;
-statsObj.queues.saveFileQueue.size = 0;
+// statsObj.queues.saveFileQueue = {};
+// statsObj.queues.saveFileQueue.busy = false;
+// statsObj.queues.saveFileQueue.size = 0;
 
 
-let saveCacheTtl = process.env.SAVE_CACHE_DEFAULT_TTL;
+// let saveCacheTtl = process.env.SAVE_CACHE_DEFAULT_TTL;
 
-if (saveCacheTtl === undefined) { saveCacheTtl = SAVE_CACHE_DEFAULT_TTL; }
+// if (saveCacheTtl === undefined) { saveCacheTtl = SAVE_CACHE_DEFAULT_TTL; }
 
-console.log(MODULE_ID_PREFIX + " | SAVE CACHE TTL: " + saveCacheTtl + " SECONDS");
+// console.log(MODULE_ID_PREFIX + " | SAVE CACHE TTL: " + saveCacheTtl + " SECONDS");
 
-let saveCacheCheckPeriod = process.env.SAVE_CACHE_CHECK_PERIOD;
+// let saveCacheCheckPeriod = process.env.SAVE_CACHE_CHECK_PERIOD;
 
-if (saveCacheCheckPeriod === undefined) { saveCacheCheckPeriod = 10; }
+// if (saveCacheCheckPeriod === undefined) { saveCacheCheckPeriod = 10; }
 
-console.log(MODULE_ID_PREFIX + " | SAVE CACHE CHECK PERIOD: " + saveCacheCheckPeriod + " SECONDS");
+// console.log(MODULE_ID_PREFIX + " | SAVE CACHE CHECK PERIOD: " + saveCacheCheckPeriod + " SECONDS");
 
-const saveCache = new NodeCache({
-  stdTTL: saveCacheTtl,
-  checkperiod: saveCacheCheckPeriod
-});
+// const saveCache = new NodeCache({
+//   stdTTL: saveCacheTtl,
+//   checkperiod: saveCacheCheckPeriod
+// });
 
-function saveCacheExpired(file, fileObj) {
-  debug(chalkLog("XXX $ SAVE"
-    + " [" + saveCache.getStats().keys + "]"
-    + " | " + file
-  ));
-  saveFileQueue.push(fileObj);
-  statsObj.queues.saveFileQueue.size = saveFileQueue.length;
-}
+// function saveCacheExpired(file, fileObj) {
+//   debug(chalkLog("XXX $ SAVE"
+//     + " [" + saveCache.getStats().keys + "]"
+//     + " | " + file
+//   ));
+//   saveFileQueue.push(fileObj);
+//   statsObj.queues.saveFileQueue.size = saveFileQueue.length;
+// }
 
-saveCache.on("expired", saveCacheExpired);
+// saveCache.on("expired", saveCacheExpired);
 
-saveCache.on("set", function(file, fileObj) {
-  debug(chalkLog(MODULE_ID_PREFIX + " | $$$ SAVE CACHE"
-    + " [" + saveCache.getStats().keys + "]"
-    + " | " + fileObj.folder + "/" + file
-  ));
-});
+// saveCache.on("set", function(file, fileObj) {
+//   debug(chalkLog(MODULE_ID_PREFIX + " | $$$ SAVE CACHE"
+//     + " [" + saveCache.getStats().keys + "]"
+//     + " | " + fileObj.folder + "/" + file
+//   ));
+// });
 
-function saveFile(params, callback){
+// function saveFile(params, callback){
 
-  let fullPath = params.folder + "/" + params.file;
-  let limit = params.limit || DROPBOX_LIST_FOLDER_LIMIT;
+//   const fullPath = params.folder + "/" + params.file;
+//   const limit = params.limit || DROPBOX_LIST_FOLDER_LIMIT;
 
-  debug(chalkInfo("LOAD FOLDER " + params.folder));
-  debug(chalkInfo("LOAD FILE " + params.file));
-  debug(chalkInfo("FULL PATH " + fullPath));
+//   debug(chalkInfo("LOAD FOLDER " + params.folder));
+//   debug(chalkInfo("LOAD FILE " + params.file));
+//   debug(chalkInfo("FULL PATH " + fullPath));
 
-  let options = {};
+//   const options = {};
 
-  if (params.localFlag) {
+//   if (params.localFlag) {
 
-    const objSizeMBytes = sizeof(params.obj)/ONE_MEGABYTE;
+//     const objSizeMBytes = sizeof(params.obj)/ONE_MEGABYTE;
 
-    showStats();
-    console.log(chalkBlue(MODULE_ID_PREFIX + " | ... SAVING DROPBOX LOCALLY"
-      + " | " + objSizeMBytes.toFixed(3) + " MB"
-      + " | " + fullPath
-    ));
+//     showStats();
+//     console.log(chalkBlue(MODULE_ID_PREFIX + " | ... SAVING DROPBOX LOCALLY"
+//       + " | " + objSizeMBytes.toFixed(3) + " MB"
+//       + " | " + fullPath
+//     ));
 
-    writeJsonFile(fullPath, params.obj, { mode: 0o777 })
-    .then(function() {
+//     writeJsonFile(fullPath, params.obj, { mode: 0o777 }).
+//     then(function() {
 
-      console.log(chalkBlue(MODULE_ID_PREFIX + " | SAVED DROPBOX LOCALLY"
-        + " | " + objSizeMBytes.toFixed(3) + " MB"
-        + " | " + fullPath
-      ));
-      if (callback !== undefined) { return callback(null); }
+//       console.log(chalkBlue(MODULE_ID_PREFIX + " | SAVED DROPBOX LOCALLY"
+//         + " | " + objSizeMBytes.toFixed(3) + " MB"
+//         + " | " + fullPath
+//       ));
+//       if (callback !== undefined) { return callback(null); }
 
-    })
-    .catch(function(error){
-      console.trace(chalkError(MODULE_ID_PREFIX + " | " + moment().format(compactDateTimeFormat) 
-        + " | !!! ERROR DROBOX LOCAL JSON WRITE | FILE: " + fullPath 
-        + " | ERROR: " + error
-        + " | ERROR\n" + jsonPrint(error)
-      ));
-      if (callback !== undefined) { return callback(error); }
-    });
-  }
-  else {
+//     }).
+//     catch(function(error){
+//       console.trace(chalkError(MODULE_ID_PREFIX + " | " + moment().format(compactDateTimeFormat) 
+//         + " | !!! ERROR DROBOX LOCAL JSON WRITE | FILE: " + fullPath 
+//         + " | ERROR: " + error
+//         + " | ERROR\n" + jsonPrint(error)
+//       ));
+//       if (callback !== undefined) { return callback(error); }
+//     });
+//   }
+//   else {
 
-    options.contents = JSON.stringify(params.obj, null, 2);
-    options.autorename = params.autorename || false;
-    options.mode = params.mode || "overwrite";
-    options.path = fullPath;
+//     options.contents = JSON.stringify(params.obj, null, 2);
+//     options.autorename = params.autorename || false;
+//     options.mode = params.mode || "overwrite";
+//     options.path = fullPath;
 
-    const dbFileUpload = function () {
+//     const dbFileUpload = function () {
 
-      dropboxClient.filesUpload(options)
-      .then(function(){
-        debug(chalkLog("SAVED DROPBOX JSON | " + options.path));
-        if (callback !== undefined) { return callback(null); }
-      })
-      .catch(function(error){
-        if (error.status === 413){
-          console.error(chalkError(MODULE_ID_PREFIX + " | " + moment().format(compactDateTimeFormat) 
-            + " | !!! ERROR DROBOX JSON WRITE | FILE: " + fullPath 
-            + " | ERROR: 413"
-            + " | ERROR: FILE TOO LARGE"
-          ));
-          if (callback !== undefined) { return callback(error.error_summary); }
-        }
-        else if (error.status === 429){
-          console.error(chalkError(MODULE_ID_PREFIX + " | " + moment().format(compactDateTimeFormat) 
-            + " | !!! ERROR DROBOX JSON WRITE | FILE: " + fullPath 
-            + " | ERROR: TOO MANY WRITES"
-          ));
-          if (callback !== undefined) { return callback(error.error_summary); }
-        }
-        else if (error.status === 500){
-          console.error(chalkError(MODULE_ID_PREFIX + " | " + moment().format(compactDateTimeFormat) 
-            + " | !!! ERROR DROBOX JSON WRITE | FILE: " + fullPath 
-            + " | ERROR: DROPBOX SERVER ERROR"
-          ));
-          if (callback !== undefined) { return callback(error.error_summary); }
-        }
-        else {
-          console.trace(chalkError(MODULE_ID_PREFIX + " | " + moment().format(compactDateTimeFormat) 
-            + " | !!! ERROR DROBOX JSON WRITE | FILE: " + fullPath 
-            + " | ERROR: " + error
-          ));
-          if (callback !== undefined) { return callback(error); }
-        }
-      });
-    };
+//       dropboxClient.filesUpload(options).
+//       then(function(){
+//         debug(chalkLog("SAVED DROPBOX JSON | " + options.path));
+//         if (callback !== undefined) { return callback(null); }
+//       }).
+//       catch(function(error){
+//         if (error.status === 413){
+//           console.error(chalkError(MODULE_ID_PREFIX + " | " + moment().format(compactDateTimeFormat) 
+//             + " | !!! ERROR DROBOX JSON WRITE | FILE: " + fullPath 
+//             + " | ERROR: 413"
+//             + " | ERROR: FILE TOO LARGE"
+//           ));
+//           if (callback !== undefined) { return callback(error.error_summary); }
+//         }
+//         else if (error.status === 429){
+//           console.error(chalkError(MODULE_ID_PREFIX + " | " + moment().format(compactDateTimeFormat) 
+//             + " | !!! ERROR DROBOX JSON WRITE | FILE: " + fullPath 
+//             + " | ERROR: TOO MANY WRITES"
+//           ));
+//           if (callback !== undefined) { return callback(error.error_summary); }
+//         }
+//         else if (error.status === 500){
+//           console.error(chalkError(MODULE_ID_PREFIX + " | " + moment().format(compactDateTimeFormat) 
+//             + " | !!! ERROR DROBOX JSON WRITE | FILE: " + fullPath 
+//             + " | ERROR: DROPBOX SERVER ERROR"
+//           ));
+//           if (callback !== undefined) { return callback(error.error_summary); }
+//         }
+//         else {
+//           console.trace(chalkError(MODULE_ID_PREFIX + " | " + moment().format(compactDateTimeFormat) 
+//             + " | !!! ERROR DROBOX JSON WRITE | FILE: " + fullPath 
+//             + " | ERROR: " + error
+//           ));
+//           if (callback !== undefined) { return callback(error); }
+//         }
+//       });
+//     };
 
-    if (options.mode === "add") {
+//     if (options.mode === "add") {
 
-      dropboxClient.filesListFolder({path: params.folder, limit: limit})
-      .then(function(response){
+//       dropboxClient.filesListFolder({path: params.folder, limit: limit}).
+//       then(function(response){
 
-        debug(chalkLog("DROPBOX LIST FOLDER"
-          + " | ENTRIES: " + response.entries.length
-          + " | MORE: " + response.has_more
-          + " | PATH:" + options.path
-        ));
+//         debug(chalkLog("DROPBOX LIST FOLDER"
+//           + " | ENTRIES: " + response.entries.length
+//           + " | MORE: " + response.has_more
+//           + " | PATH:" + options.path
+//         ));
 
-        let fileExits = false;
+//         let fileExits = false;
 
-        async.each(response.entries, function(entry, cb){
+//         async.each(response.entries, function(entry, cb){
 
-          console.log(chalkLog(MODULE_ID_PREFIX + " | DROPBOX FILE"
-            + " | " + params.folder
-            + " | LAST MOD: " + moment(new Date(entry.client_modified)).format(compactDateTimeFormat)
-            + " | " + entry.name
-          ));
+//           console.log(chalkLog(MODULE_ID_PREFIX + " | DROPBOX FILE"
+//             + " | " + params.folder
+//             + " | LAST MOD: " + moment(new Date(entry.client_modified)).format(compactDateTimeFormat)
+//             + " | " + entry.name
+//           ));
 
-          if (entry.name === params.file) {
-            fileExits = true;
-          }
+//           if (entry.name === params.file) {
+//             fileExits = true;
+//           }
 
-          cb();
+//           cb();
 
-        }, function(err){
-          if (err) {
-            console.log(chalkError(MODULE_ID_PREFIX + " | *** ERROR DROPBOX SAVE FILE: " + err));
-            if (callback !== undefined) { 
-              return callback(err, null);
-            }
-            return;
-          }
-          if (fileExits) {
-            console.log(chalkAlert(MODULE_ID_PREFIX + " | ... DROPBOX FILE EXISTS ... SKIP SAVE | " + fullPath));
-            if (callback !== undefined) { callback(err, null); }
-          }
-          else {
-            console.log(chalkAlert(MODULE_ID_PREFIX + " | ... DROPBOX DOES NOT FILE EXIST ... SAVING | " + fullPath));
-            dbFileUpload();
-          }
-        });
-      })
-      .catch(function(err){
-        console.log(chalkError(MODULE_ID_PREFIX + " | *** DROPBOX FILES LIST FOLDER ERROR: " + err));
-        console.log(chalkError(MODULE_ID_PREFIX + " | *** DROPBOX FILES LIST FOLDER ERROR\n" + jsonPrint(err)));
-        if (callback !== undefined) { callback(err, null); }
-      });
-    }
-    else {
-      dbFileUpload();
-    }
-  }
-}
+//         }, function(err){
+//           if (err) {
+//             console.log(chalkError(MODULE_ID_PREFIX + " | *** ERROR DROPBOX SAVE FILE: " + err));
+//             if (callback !== undefined) { 
+//               return callback(err, null);
+//             }
+//             return;
+//           }
+//           if (fileExits) {
+//             console.log(chalkAlert(MODULE_ID_PREFIX + " | ... DROPBOX FILE EXISTS ... SKIP SAVE | " + fullPath));
+//             if (callback !== undefined) { callback(err, null); }
+//           }
+//           else {
+//             console.log(chalkAlert(MODULE_ID_PREFIX + " | ... DROPBOX DOES NOT FILE EXIST ... SAVING | " + fullPath));
+//             dbFileUpload();
+//           }
+//         });
+//       }).
+//       catch(function(err){
+//         console.log(chalkError(MODULE_ID_PREFIX + " | *** DROPBOX FILES LIST FOLDER ERROR: " + err));
+//         console.log(chalkError(MODULE_ID_PREFIX + " | *** DROPBOX FILES LIST FOLDER ERROR\n" + jsonPrint(err)));
+//         if (callback !== undefined) { callback(err, null); }
+//       });
+//     }
+//     else {
+//       dbFileUpload();
+//     }
+//   }
+// }
 
-function initSaveFileQueue(cnf) {
+// function initSaveFileQueue(cnf) {
 
-  console.log(chalkLog(MODULE_ID_PREFIX + " | INIT DROPBOX SAVE FILE INTERVAL | " + msToTime(cnf.saveFileQueueInterval)));
+//   console.log(chalkLog(MODULE_ID_PREFIX + " | INIT DROPBOX SAVE FILE INTERVAL | " + msToTime(cnf.saveFileQueueInterval)));
 
-  clearInterval(saveFileQueueInterval);
+//   clearInterval(saveFileQueueInterval);
 
-  saveFileQueueInterval = setInterval(function () {
+//   saveFileQueueInterval = setInterval(function () {
 
-    if (!statsObj.queues.saveFileQueue.busy && saveFileQueue.length > 0) {
+//     if (!statsObj.queues.saveFileQueue.busy && saveFileQueue.length > 0) {
 
-      statsObj.queues.saveFileQueue.busy = true;
+//       statsObj.queues.saveFileQueue.busy = true;
 
-      const saveFileObj = saveFileQueue.shift();
+//       const saveFileObj = saveFileQueue.shift();
 
-      statsObj.queues.saveFileQueue.size = saveFileQueue.length;
+//       statsObj.queues.saveFileQueue.size = saveFileQueue.length;
 
-      saveFile(saveFileObj, function(err) {
-        if (err) {
-          console.log(chalkError(MODULE_ID_PREFIX + " | *** SAVE FILE ERROR ... RETRY | " + saveFileObj.folder + "/" + saveFileObj.file));
-          saveFileQueue.push(saveFileObj);
-          statsObj.queues.saveFileQueue.size = saveFileQueue.length;
-        }
-        else {
-          console.log(chalkLog(MODULE_ID_PREFIX + " | SAVED FILE [Q: " + saveFileQueue.length + "] " + saveFileObj.folder + "/" + saveFileObj.file));
-        }
-        statsObj.queues.saveFileQueue.busy = false;
-      });
+//       saveFile(saveFileObj, function(err) {
+//         if (err) {
+//           console.log(chalkError(MODULE_ID_PREFIX + " | *** SAVE FILE ERROR ... RETRY | " + saveFileObj.folder + "/" + saveFileObj.file));
+//           saveFileQueue.push(saveFileObj);
+//           statsObj.queues.saveFileQueue.size = saveFileQueue.length;
+//         }
+//         else {
+//           console.log(chalkLog(MODULE_ID_PREFIX + " | SAVED FILE [Q: " + saveFileQueue.length + "] " + saveFileObj.folder + "/" + saveFileObj.file));
+//         }
+//         statsObj.queues.saveFileQueue.busy = false;
+//       });
 
-    }
-  }, cnf.saveFileQueueInterval);
-}
+//     }
+//   }, cnf.saveFileQueueInterval);
+// }
 
 
 //=========================================================================
@@ -1318,7 +1009,7 @@ function initSaveFileQueue(cnf) {
 //=========================================================================
 const intervalsSet = new Set();
 
-function clearAllIntervals(params){
+function clearAllIntervals(){
   return new Promise(function(resolve, reject){
     try {
       [...intervalsSet].forEach(function(intervalHandle){
@@ -1335,27 +1026,23 @@ function clearAllIntervals(params){
 //=========================================================================
 // QUIT + EXIT
 //=========================================================================
-const DEFAULT_QUIT_ON_COMPLETE = true;
 
 let quitWaitInterval;
-let quitFlag = false;
 
-function readyToQuit(params) {
-  let flag = true; // replace with function returns true when ready to quit
+function readyToQuit() {
+  const flag = true; // replace with function returns true when ready to quit
   return flag;
 }
 
 async function quit(opts) {
 
-  let options = opts || {};
+  const options = opts || {};
 
   statsObj.elapsed = getElapsedTimeStamp();
   statsObj.timeStamp = getTimeStamp();
   statsObj.status = "QUIT";
 
   const forceQuitFlag = options.force || false;
-
-  quitFlag = true;
 
   fsm.fsm_exit();
 
@@ -1365,7 +1052,7 @@ async function quit(opts) {
 
   showStats(true);
 
-  process.send({op:"QUIT", childId: configuration.childId, data: statsObj});
+  process.send({op: "QUIT", childId: configuration.childId, data: statsObj});
 
   quitWaitInterval = setInterval(async function() {
 
@@ -1375,14 +1062,10 @@ async function quit(opts) {
 
       if (forceQuitFlag) {
         console.log(chalkAlert(MODULE_ID_PREFIX + " | *** FORCE QUIT"
-          + " | SAVE FILE BUSY: " + statsObj.queues.saveFileQueue.busy
-          + " | SAVE FILE Q: " + statsObj.queues.saveFileQueue.size
         ));
       }
       else {
         console.log(chalkBlueBold(MODULE_ID_PREFIX + " | ALL PROCESSES COMPLETE ... QUITTING"
-          + " | SAVE FILE BUSY: " + statsObj.queues.saveFileQueue.busy
-          + " | SAVE FILE Q: " + statsObj.queues.saveFileQueue.size
         ));
       }
 
@@ -1391,7 +1074,7 @@ async function quit(opts) {
     }
 
   }, QUIT_WAIT_INTERVAL);
-};
+}
 
 
 //=========================================================================
@@ -1401,9 +1084,8 @@ function testNetwork(params){
 
   return new Promise(async function(resolve, reject){
 
-    let networkObj = params.networkObj;
-    let testSet = params.testSet;
-    let maxInputHashMap = params.maxInputHashMap;
+    const networkObj = params.networkObj;
+    const maxInputHashMap = params.maxInputHashMap;
 
     console.log(chalkBlue("NNC | TEST NETWORK"
       + " | TEST SET ID: " + params.testSet.meta.testSetId
@@ -1415,16 +1097,16 @@ function testNetwork(params){
     const nw = neataptic.Network.fromJSON(networkObj.network);
 
     let numTested = 0;
-    let numSkipped = 0; 
+    const numSkipped = 0; 
     let numPassed = 0;
     let successRate = 0;
-    let testResultArray = [];
+    const testResultArray = [];
 
-    let convertDatumParams = {};
+    const convertDatumParams = {};
     convertDatumParams.normalization = statsObj.normalization;
     convertDatumParams.maxInputHashMap = maxInputHashMap;
 
-    let shuffledTestData = _.shuffle(params.testSet.data);
+    const shuffledTestData = _.shuffle(params.testSet.data);
 
     async.each(shuffledTestData, async function(datum){
 
@@ -1436,14 +1118,14 @@ function testNetwork(params){
         //  // + "\ndatum\n" + jsonPrint(datum)
         // ));
 
-        let testDatumObj = await convertDatum({datum: datum, inputsObj: networkObj.inputsObj, generateInputRaw: false});
-        let testOutput = await activateNetwork({network: nw, input: testDatumObj.input});
-        let testMaxOutputIndex = await indexOfMax(testOutput);
-        let expectedMaxOutputIndex = await indexOfMax(testDatumObj.output);
+        const testDatumObj = await convertDatum({datum: datum, inputsObj: networkObj.inputsObj, generateInputRaw: false});
+        const testOutput = await activateNetwork({network: nw, input: testDatumObj.input});
+        const testMaxOutputIndex = await indexOfMax(testOutput);
+        const expectedMaxOutputIndex = await indexOfMax(testDatumObj.output);
 
         debug("INDEX OF MAX TEST OUTPUT: " + expectedMaxOutputIndex);
 
-        let passed = (testMaxOutputIndex === expectedMaxOutputIndex);
+        const passed = (testMaxOutputIndex === expectedMaxOutputIndex);
 
         numTested += 1;
 
@@ -1451,7 +1133,7 @@ function testNetwork(params){
 
         successRate = 100 * numPassed/(numTested + numSkipped);
 
-        let currentChalk = passed ? chalkLog : chalkAlert;
+        const currentChalk = passed ? chalkLog : chalkAlert;
 
         testResultArray.push(
           {
@@ -1513,8 +1195,8 @@ function testNetwork(params){
 
 function convertDatum(params){
 
-  let datum = params.datum;
-  let generateInputRaw = params.generateInputRaw;
+  const datum = params.datum;
+  const generateInputRaw = params.generateInputRaw;
 
     // console.log(chalkLog(MODULE_ID_PREFIX
     //  + " | IN: " + params.inputsObj.inputsId
@@ -1528,9 +1210,9 @@ function convertDatum(params){
 
       const inputTypes = Object.keys(params.inputsObj.inputs).sort();
 
-      let mergedHistograms = await mergeHistograms.merge({ histogramA: datum.tweetHistograms, histogramB: datum.profileHistograms });
+      const mergedHistograms = await mergeHistograms.merge({ histogramA: datum.tweetHistograms, histogramB: datum.profileHistograms });
 
-      let convertedDatum = {};
+      const convertedDatum = {};
 
       convertedDatum.screenName = datum.screenName;
       convertedDatum.input = [];
@@ -1637,9 +1319,9 @@ function networkEvolve(params) {
 
   return new Promise(async function(resolve, reject){
 
-    let network = params.network;
-    let trainingSet = params.trainingSet;
-    let options = params.options;
+    const network = params.network;
+    const trainingSet = params.trainingSet;
+    const options = params.options;
 
     let results;
 
@@ -1656,7 +1338,7 @@ function networkEvolve(params) {
     statsObj.evolve.elapsed = moment().valueOf() - statsObj.evolve.startTime;
     statsObj.evolve.results = results;
 
-    let exportedNetwork = network.toJSON();
+    const exportedNetwork = network.toJSON();
 
     const nnInputTypes = Object.keys(params.inputsObj.inputs).sort();
 
@@ -1716,13 +1398,7 @@ function networkEvolve(params) {
 
       debug("... END NETWORK NODE UPDATE: " + statsObj.training.testRunId);
 
-
-      const defaultResults = {
-        error: 0,
-        iterations: 0
-      };
-
-      let networkObj = {};
+      const networkObj = {};
       networkObj.networkId = statsObj.training.testRunId;
       networkObj.seedNetworkId = statsObj.training.seedNetworkId;
       networkObj.seedNetworkRes = statsObj.training.seedNetworkRes;
@@ -1789,13 +1465,11 @@ function networkEvolve(params) {
 }
 
 
-
 function trainingSetPrep(params){
 
   return new Promise(function(resolve, reject){
 
-    let trainingSet = [];
-    let inputRaw = [];
+    const trainingSet = [];
     let generateInputRaw = true;
 
     params.trainingSet.meta.numInputs = params.inputsObj.meta.numInputs;
@@ -1813,7 +1487,7 @@ function trainingSetPrep(params){
     async.eachSeries(shuffledTrainingData, async function(datum){
 
       try {
-        let datumObj = await convertDatum({datum: datum, inputsObj: params.inputsObj, generateInputRaw: generateInputRaw});
+        const datumObj = await convertDatum({datum: datum, inputsObj: params.inputsObj, generateInputRaw: generateInputRaw});
 
         if (datumObj.input.length !== params.inputsObj.meta.numInputs) { 
           console.log(chalkError(MODULE_ID_PREFIX
@@ -1821,7 +1495,7 @@ function trainingSetPrep(params){
             + " | INPUT NUMBER MISMATCH" 
             + " | INPUTS NUM IN: " + params.inputsObj.meta.numInputs
             + " | DATUM NUM IN: " + datumObj.input.length
-          ));q
+          ));
           return (new Error("INPUT NUMBER MISMATCH"));
         }
 
@@ -1837,7 +1511,6 @@ function trainingSetPrep(params){
 
         if (datumObj.inputRaw.length > 0) { 
           generateInputRaw = false;
-          inputRaw = datumObj.inputRaw;
         }
 
         trainingSet.push({ 
@@ -1875,7 +1548,7 @@ function evolve(params){
 
     if (params.architecture === undefined) { params.architecture = "random"; }
 
-    let options = {};
+    const options = {};
 
     if ((params.network !== undefined) && params.networkObj) {
       options.networkObj = params.networkObj;
@@ -1893,7 +1566,7 @@ function evolve(params){
     options.popsize = params.popsize;
     options.growth = params.growth;
 
-    let schedStartTime = moment().valueOf();
+    const schedStartTime = moment().valueOf();
 
     statsObj.evolve.startTime = moment().valueOf();
     statsObj.evolve.elapsed = 0;
@@ -1902,10 +1575,10 @@ function evolve(params){
     options.schedule = {
       function: function(schedParams){
 
-        let elapsedInt = moment().valueOf() - schedStartTime;
-        let iterationRate = elapsedInt/schedParams.iteration;
-        let iterationRateSec = iterationRate/1000.0;
-        let timeToComplete = iterationRate*(params.iterations - schedParams.iteration);
+        const elapsedInt = moment().valueOf() - schedStartTime;
+        const iterationRate = elapsedInt/schedParams.iteration;
+        const iterationRateSec = iterationRate/1000.0;
+        const timeToComplete = iterationRate*(params.iterations - schedParams.iteration);
 
         statsObj.evolve.stats = schedParams;
 
@@ -1971,7 +1644,8 @@ function evolve(params){
           + " | R: " + schedMsToTime(elapsedInt)
           + " | RATE: " + iterationRateSec.toFixed(1) + " s/I"
           + " | ETC: " + schedMsToTime(timeToComplete)
-          + " | ETC: " + moment().add(timeToComplete).format(compactDateTimeFormat)
+          + " | ETC: " + moment().add(timeToComplete).
+format(compactDateTimeFormat)
           + " | I: " + schedParams.iteration + " / " + params.iterations
           + " | F: " + schedParams.fitness.toFixed(5)
           + " | E: " + schedParams.error.toFixed(5)
@@ -2103,8 +1777,7 @@ function evolve(params){
 function activateNetwork(params){
   return new Promise(function(resolve, reject){
     try {
-      let output;
-      output = params.network.activate(params.input);
+      const output = params.network.activate(params.input);
       resolve(output);
     }
     catch(err){
@@ -2201,7 +1874,6 @@ function indexOfMax (arr) {
 const Stately = require("stately.js");
 const FSM_TICK_INTERVAL = ONE_SECOND;
 
-let fsm;
 let fsmTickInterval;
 let fsmPreviousState = "IDLE";
 
@@ -2225,7 +1897,7 @@ function reporter(event, oldState, newState) {
 
 const fsmStates = {
 
-  "RESET":{
+  "RESET": {
 
     onEnter: function(event, oldState, newState) {
 
@@ -2245,7 +1917,7 @@ const fsmStates = {
     "fsm_resetEnd": "IDLE"
   },
 
-  "IDLE":{
+  "IDLE": {
     onEnter: function(event, oldState, newState) {
 
       if (event !== "fsm_tick") {
@@ -2264,14 +1936,14 @@ const fsmStates = {
     "fsm_error": "ERROR"
   },
 
-  "EXIT":{
+  "EXIT": {
     onEnter: function(event, oldState, newState) {
       reporter(event, oldState, newState);
       statsObj.fsmStatus = "EXIT";
     }
   },
 
-  "ERROR":{
+  "ERROR": {
     onEnter: function(event, oldState, newState) {
       reporter(event, oldState, newState);
 
@@ -2281,7 +1953,7 @@ const fsmStates = {
     }
   },
 
-  "INIT":{
+  "INIT": {
     onEnter: async function(event, oldState, newState) {
       if (event !== "fsm_tick") {
         reporter(event, oldState, newState);
@@ -2294,7 +1966,7 @@ const fsmStates = {
           console.log(MODULE_ID_PREFIX + " | *** INIT ERROR: " + err);
           fsm.fsm_error();
         }
-        process.send({op:"STATS", childId: configuration.childId, data: statsObj});
+        process.send({op: "STATS", childId: configuration.childId, data: statsObj});
       }
     },
     fsm_tick: function() {
@@ -2305,12 +1977,12 @@ const fsmStates = {
     "fsm_reset": "RESET"
   },
 
-  "READY":{
+  "READY": {
     onEnter: function(event, oldState, newState) {
       if (event !== "fsm_tick") {
         reporter(event, oldState, newState);
         statsObj.fsmStatus = "READY";
-        process.send({op:"STATS", childId: configuration.childId, data: statsObj});
+        process.send({op: "STATS", childId: configuration.childId, data: statsObj});
       }
     },
     fsm_tick: function() {
@@ -2322,12 +1994,12 @@ const fsmStates = {
     "fsm_config_evolve": "CONFIG_EVOLVE"
   },
 
-  "CONFIG_EVOLVE":{
+  "CONFIG_EVOLVE": {
     onEnter: function(event, oldState, newState) {
       if (event !== "fsm_tick") {
         reporter(event, oldState, newState);
         statsObj.fsmStatus = "CONFIG_EVOLVE";
-        process.send({op:"STATS", childId: configuration.childId, data: statsObj});
+        process.send({op: "STATS", childId: configuration.childId, data: statsObj});
         fsm.fsm_evolve();
       }
     },
@@ -2340,13 +2012,13 @@ const fsmStates = {
     "fsm_evolve": "EVOLVE"
   },
 
-  "EVOLVE":{
+  "EVOLVE": {
     onEnter: async function(event, oldState, newState) {
       if (event !== "fsm_tick") {
 
         reporter(event, oldState, newState);
         statsObj.fsmStatus = "EVOLVE";
-        process.send({op:"STATS", childId: configuration.childId, data: statsObj});
+        process.send({op: "STATS", childId: configuration.childId, data: statsObj});
 
         try {
 
@@ -2374,11 +2046,11 @@ const fsmStates = {
           //   clear: m.clear
           // };
 
-          let networkObj = await evolve(evolveOptions);
+          const networkObj = await evolve(evolveOptions);
 
           networkObj.evolve.options = pick(networkObj.evolve.options, ["clear", "cost", "activation", "growth", "equal", "mutationRate", "popsize", "elitism"]);
 
-          process.send({op:"EVOLVE_COMPLETE", childId: configuration.childId, networkObj: networkObj, statsObj: statsObj});
+          process.send({op: "EVOLVE_COMPLETE", childId: configuration.childId, networkObj: networkObj, statsObj: statsObj});
 
           fsm.fsm_evolve_complete();
 
@@ -2402,7 +2074,7 @@ const fsmStates = {
     "fsm_evolve_complete": "EVOLVE_COMPLETE"
   },
 
-  "EVOLVE_COMPLETE":{
+  "EVOLVE_COMPLETE": {
 
     onEnter: function(event, oldState, newState) {
 
@@ -2412,11 +2084,11 @@ const fsmStates = {
 
         statsObj.fsmStatus = "EVOLVE_COMPLETE";
 
-        process.send({op:"STATS", childId: configuration.childId, data: statsObj});
+        process.send({op: "STATS", childId: configuration.childId, data: statsObj});
 
         if (configuration.quitOnComplete) {
           console.log(chalkBlueBold(MODULE_ID_PREFIX + " | EVOLVE COMPLETE | QUITTING ..."));
-          quit({cause:"QUIT_ON_COMPLETE"});
+          quit({cause: "QUIT_ON_COMPLETE"});
         }
         else {
           console.log(chalkBlueBold(MODULE_ID_PREFIX + " | EVOLVE COMPLETE"));
@@ -2439,7 +2111,7 @@ const fsmStates = {
   },
 };
 
-fsm = Stately.machine(fsmStates);
+const fsm = Stately.machine(fsmStates);
 
 function initFsmTickInterval(interval) {
 
@@ -2464,7 +2136,7 @@ console.log(MODULE_ID_PREFIX + " | =================================");
 
 console.log(chalkBlueBold(
     "\n=======================================================================\n"
-  +    MODULE_ID_PREFIX + " | " + MODULE_ID + " STARTED | " + getTimeStamp()
+  + MODULE_ID_PREFIX + " | " + MODULE_ID + " STARTED | " + getTimeStamp()
   + "\n=======================================================================\n"
 ));
 
@@ -2632,7 +2304,7 @@ process.on("message", function(m) {
 
     case "STATS":
       showStats();
-      process.send({op:"STATS", childId: configuration.childId, data: statsObj});
+      process.send({op: "STATS", childId: configuration.childId, data: statsObj});
     break;
     
     case "QUIT":
@@ -2646,7 +2318,7 @@ process.on("message", function(m) {
           + " | PING ID: " + m.pingId
         ));
       }
-      process.send({op:"PONG", pingId: m.pingId, childId: configuration.childId, data: statsObj});
+      process.send({op: "PONG", pingId: m.pingId, childId: configuration.childId, data: statsObj});
     break;
 
     default:
@@ -2659,7 +2331,7 @@ setTimeout(async function(){
 
   try {
 
-    let cnf = await initConfig(configuration);
+    const cnf = await initConfig(configuration);
     configuration = deepcopy(cnf);
 
     statsObj.status = "START";
@@ -2681,20 +2353,9 @@ setTimeout(async function(){
       await connectDb();
     }
     catch(err){
-      dbConnectionReady = false;
       console.log(chalkError(MODULE_ID_PREFIX + " | *** MONGO DB CONNECT ERROR: " + err + " | QUITTING ***"));
-      quit({cause:"MONGO DB CONNECT ERROR"});
+      quit({cause: "MONGO DB CONNECT ERROR"});
     }
-
-    dbConnectionReadyInterval = setInterval(async function() {
-
-      if (dbConnectionReady) {
-        clearInterval(dbConnectionReadyInterval);        
-      }
-      else {
-        console.log(chalkLog(MODULE_ID_PREFIX + " | ... WAIT DB CONNECTED ..."));
-      }
-    }, 1000);
 
   }
   catch(err){

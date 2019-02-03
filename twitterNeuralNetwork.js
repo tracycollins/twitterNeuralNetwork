@@ -1,6 +1,6 @@
 /*jslint node: true */
 /*jshint sub:true*/
-"use strict";
+
 
 const MODULE_NAME = "twitterNeuralNetwork";
 const MODULE_ID_PREFIX = "TNN";
@@ -43,12 +43,12 @@ let quitOnCompleteFlag = false;
 const DEFAULT_PURGE_MIN = true; // applies only to parent
 const TEST_MODE = false; // applies only to parent
 const CHILD_TEST_MODE = false; // applies only to children
-const GLOBAL_TEST_MODE = false;  // applies to parent and all children
+const GLOBAL_TEST_MODE = false; // applies to parent and all children
 const QUIT_ON_COMPLETE = false;
 
 
-const ONE_SECOND = 1000 ;
-const ONE_MINUTE = ONE_SECOND*60 ;
+const ONE_SECOND = 1000;
+const ONE_MINUTE = ONE_SECOND*60;
 
 const ONE_KILOBYTE = 1024;
 const ONE_MEGABYTE = 1024 * ONE_KILOBYTE;
@@ -64,7 +64,7 @@ const SAVE_CACHE_DEFAULT_TTL = 60;
 const TWITTER_DEFAULT_USER = "altthreecee00";
 
 const DROPBOX_MAX_SAVE_NORMAL = 20 * ONE_MEGABYTE;
-const DROPBOX_LIST_FOLDER_LIMIT = 20;
+const DROPBOX_LIST_FOLDER_LIMIT = 50;
 const DROPBOX_TIMEOUT = 30 * ONE_SECOND;
 
 const compactDateTimeFormat = "YYYYMMDD_HHmmss";
@@ -75,7 +75,7 @@ const IMAGE_QUOTA_TIMEOUT = 60000;
 const DEFAULT_FORCE_INIT_RANDOM_NETWORKS = true;
 const OFFLINE_MODE = false;
 
-let statsObj = {};
+const statsObj = {};
 let statsObjSmall = {};
 let configuration = {};
 
@@ -145,7 +145,7 @@ const chalkInfo = chalk.black;
 
 const EventEmitter = require("eventemitter3");
 
-class ChildEvents extends EventEmitter {};
+class ChildEvents extends EventEmitter {}
 
 const childEvents = new ChildEvents();
 
@@ -158,7 +158,7 @@ const slackChannelFail = "nn-fail";
 const slackChannelPassLocal = "nn-pass-local";
 const slackChannelPassGlobal= "nn-pass-global";
 
-let slackChannel = "nn";
+const slackChannel = "nn";
 let slackText = "";
 const channelsHashMap = new HashMap();
 
@@ -172,7 +172,7 @@ const slack = new Slack(slackOAuthAccessToken);
 let slackRtmClient;
 let slackWebClient;
 
-let slackMessagePrefix = "#" + slackChannel + ":" + hostname + "_" + process.pid;
+const slackMessagePrefix = "#" + slackChannel + ":" + hostname + "_" + process.pid;
 
 function slackSendRtmMessage(msg){
 
@@ -204,7 +204,7 @@ function slackSendWebMessage(msgObj){
       const channel = msgObj.channel || configuration.slackChannel.id;
       const text = msgObj.text || msgObj;
 
-      let message = {
+      const message = {
         token: token, 
         channel: channel,
         text: text
@@ -214,13 +214,13 @@ function slackSendWebMessage(msgObj){
         message.attachments = msgObj.attachments;
       }
 
-      console.log(chalkBlueBold("TNN | SLACK WEB | SEND\n" + jsonPrint(message)));
+      // console.log(chalkBlueBold("TNN | SLACK WEB | SEND\n" + jsonPrint(message)));
 
       if (slackWebClient && slackWebClient !== undefined) {
 
         const sendResponse = await slackWebClient.chat.postMessage(message);
 
-        console.log(chalkLog("TNN | SLACK WEB | >T\n" + jsonPrint(sendResponse)));
+        // console.log(chalkLog("TNN | SLACK WEB | >T\n" + jsonPrint(sendResponse)));
         resolve(sendResponse);
       }
       else {
@@ -289,7 +289,7 @@ function slackMessageHandler(message){
         case "START":
         case "STATS":
         case "TEXT":
-        case "TEXT":        case "FSM INIT":
+        case "TEXT": case "FSM INIT":
         case "UPDATE HISTOGRAMS":
         case "UPDATE NN STATS":
         case "WAIT UPDATE STATS":
@@ -331,10 +331,10 @@ function initSlackWebClient(params){
       slackWebClient = new WebClient(slackRtmToken);
 
       const testResponse = await slackWebClient.api.test();
-      console.log("TNN | SLACK WEB TEST RESPONSE\n" + jsonPrint(testResponse));
+      // console.log("TNN | SLACK WEB TEST RESPONSE\n" + jsonPrint(testResponse));
 
       const botsInfoResponse = await slackWebClient.bots.info();
-      console.log("TNN | SLACK WEB BOTS INFO RESPONSE\n" + jsonPrint(botsInfoResponse));
+      // console.log("TNN | SLACK WEB BOTS INFO RESPONSE\n" + jsonPrint(botsInfoResponse));
 
       const conversationsListResponse = await slackWebClient.conversations.list({token: slackOAuthAccessToken});
 
@@ -346,7 +346,7 @@ function initSlackWebClient(params){
           configuration.slackChannel = channel;
           const conversationsJoinResponse = await slackWebClient.conversations.join({token: slackOAuthAccessToken, channel: configuration.slackChannel.id });
 
-          let message = {
+          const message = {
             token: slackOAuthAccessToken, 
             channel: configuration.slackChannel.id,
             text: "OP"
@@ -364,7 +364,7 @@ function initSlackWebClient(params){
           });
 
           const chatPostMessageResponse = await slackWebClient.chat.postMessage(message);
-          console.log("TNN | SLACK WEB CHAT POST MESSAGE RESPONSE\n" + jsonPrint(chatPostMessageResponse));
+          // console.log("TNN | SLACK WEB CHAT POST MESSAGE RESPONSE\n" + jsonPrint(chatPostMessageResponse));
 
         }
 
@@ -394,20 +394,20 @@ function initSlackRtmClient(params){
 
       const slackInfo = await slackRtmClient.start();
 
-      console.log(chalkInfo("TNN | SLACK RTM | INFO\n" + jsonPrint(slackInfo)));
+      // console.log(chalkInfo("TNN | SLACK RTM | INFO\n" + jsonPrint(slackInfo)));
 
       slackRtmClient.on("slack_event", async function(eventType, event){
         switch (eventType) {
           case "pong":
             debug(chalkLog("TNN | SLACK RTM PONG | " + getTimeStamp() + " | " + event.reply_to));
           break;
-          default: debug(chalkInfo("TNN | SLACK RTM EVENT | " + getTimeStamp() + " | "  + eventType + "\n" + jsonPrint(event)));
+          default: debug(chalkInfo("TNN | SLACK RTM EVENT | " + getTimeStamp() + " | " + eventType + "\n" + jsonPrint(event)));
         }
       });
 
 
       slackRtmClient.on("message", async function(message){
-        if (configuration.verbose)  { console.log(chalkLog("TNN | RTM R<\n" + jsonPrint(message))); }
+        if (configuration.verbose) { console.log(chalkLog("TNN | RTM R<\n" + jsonPrint(message))); }
         debug(`TNN | SLACK RTM MESSAGE | R< | CH: ${message.channel} | USER: ${message.user} | ${message.text}`);
 
         try {
@@ -445,7 +445,7 @@ function initSlackRtmClient(params){
 
 const MODULE_ID = MODULE_ID_PREFIX + "_node_" + hostname;
 
-let startTimeMoment = moment();
+const startTimeMoment = moment();
 
 const DEFAULT_NETWORK_ID_PREFIX = hostname + "_" + getTimeStamp();
 
@@ -508,7 +508,7 @@ const twitterImageParser = require("@threeceelabs/twitter-image-parser");
 
 const DEFAULT_RUN_ID = hostname + "_" + process.pid + "_" + statsObj.startTime;
 
-let initMainReady = false;
+const initMainReady = false;
 let initMainInterval;
 let networkCreateInterval;
 let childPingAllInterval;
@@ -517,12 +517,12 @@ let runOnceFlag = false;
 let allCompleteFlag = false;
 
 const bestRuntimeNetworkFileName = "bestRuntimeNetwork.json";
-let enableCreateChildren = false;
-let tempArchiveDirectory = "temp/archive_" + getTimeStamp();
+const enableCreateChildren = false;
+const tempArchiveDirectory = "temp/archive_" + getTimeStamp();
 
-let categorizedUserHashmap = new HashMap();
+const categorizedUserHashmap = new HashMap();
 
-let categorizedUserHistogram = {};
+const categorizedUserHistogram = {};
 categorizedUserHistogram.left = 0;
 categorizedUserHistogram.right = 0;
 categorizedUserHistogram.neutral = 0;
@@ -586,11 +586,11 @@ const DEFAULT_EVOLVE_MUTATION_RATE = 0.5;
 const DEFAULT_EVOLVE_POPSIZE = { min: 75, max: 125 };
 const DEFAULT_EVOLVE_GROWTH = 0.0001;
 const DEFAULT_EVOLVE_COST = "CROSS_ENTROPY";
-const EVOLVE_MUTATION_RATE_RANGE = { min: 0.35, max: 0.75 } ;
-const EVOLVE_POP_SIZE_RANGE = { min: DEFAULT_EVOLVE_POPSIZE.min, max: DEFAULT_EVOLVE_POPSIZE.max } ;
-const DEFAULT_GROWTH = { min: 0.00005, max: 0.00015 } ;
-const EVOLVE_GROWTH_RANGE = { min: DEFAULT_GROWTH.min, max: DEFAULT_GROWTH.max } ;
-const EVOLVE_ELITISM_RANGE = { min: 5, max: 20 } ;
+const EVOLVE_MUTATION_RATE_RANGE = { min: 0.35, max: 0.75 };
+const EVOLVE_POP_SIZE_RANGE = { min: DEFAULT_EVOLVE_POPSIZE.min, max: DEFAULT_EVOLVE_POPSIZE.max };
+const DEFAULT_GROWTH = { min: 0.00005, max: 0.00015 };
+const EVOLVE_GROWTH_RANGE = { min: DEFAULT_GROWTH.min, max: DEFAULT_GROWTH.max };
+const EVOLVE_ELITISM_RANGE = { min: 5, max: 20 };
 const DEFAULT_EVOLVE_COST_ARRAY = [
   "CROSS_ENTROPY",
   "CROSS_ENTROPY",
@@ -629,34 +629,34 @@ const DEFAULT_TRAIN_MOMENTUM = 0;
 const DEFAULT_TRAIN_RATE_POLICY = "FIXED";
 const DEFAULT_TRAIN_BATCH_SIZE = 1;
 
-let globalhistograms = {};
+const globalhistograms = {};
 
 DEFAULT_INPUT_TYPES.forEach(function(type){
   globalhistograms[type] = {};
 });
 
-let resultsHashmap = {};
-let networkHashMap = new HashMap();
+const resultsHashmap = {};
+const networkHashMap = new HashMap();
 let currentBestNetwork;
-let betterChildSeedNetworkIdSet = new Set();
-let skipLoadNetworkSet = new Set();
+const betterChildSeedNetworkIdSet = new Set();
+const skipLoadNetworkSet = new Set();
 let localNetworkFile;
 let networkIndex = 0;
 let bestNetworkFile;
 
-let inputsHashMap = new HashMap();
-let inputsNetworksHashMap = {};
-let skipLoadInputsSet = new Set();
+const inputsHashMap = new HashMap();
+const inputsNetworksHashMap = {};
+const skipLoadInputsSet = new Set();
 let userMaxInputHashMap = {};
 
-let testObj = {};
+const testObj = {};
 testObj.testRunId = hostname + "_" + statsObj.startTime;
 testObj.results = {};
 testObj.testSet = [];
 
-let trainingSetUsersHashMap = new HashMap();
-let trainingSetHashMap = new HashMap();
-let requiredTrainingSet = new Set();
+const trainingSetUsersHashMap = new HashMap();
+const trainingSetHashMap = new HashMap();
+const requiredTrainingSet = new Set();
 let archive;
 let archiveOutputStream;
 statsObj.trainingSetReady = false;
@@ -727,10 +727,10 @@ if (process.env.TNN_QUIT_ON_COMPLETE !== undefined) {
   console.log(MODULE_ID_PREFIX + " | ENV TNN_QUIT_ON_COMPLETE: " + process.env.TNN_QUIT_ON_COMPLETE);
 
   if (!process.env.TNN_QUIT_ON_COMPLETE || (process.env.TNN_QUIT_ON_COMPLETE === false) || (process.env.TNN_QUIT_ON_COMPLETE === "false")) {
-    configuration.quitOnComplete = false ;
+    configuration.quitOnComplete = false;
   }
   else {
-    configuration.quitOnComplete = true ;
+    configuration.quitOnComplete = true;
   }
 }
 
@@ -758,8 +758,8 @@ configuration.localPurgeMinSuccessRate = (process.env.TNN_LOCAL_PURGE_MIN_SUCCES
 configuration.loadTrainingSetFromFile = false;
 
 configuration.DROPBOX = {};
-configuration.DROPBOX.DROPBOX_WORD_ASSO_ACCESS_TOKEN = process.env.DROPBOX_WORD_ASSO_ACCESS_TOKEN ;
-configuration.DROPBOX.DROPBOX_WORD_ASSO_APP_KEY = process.env.DROPBOX_WORD_ASSO_APP_KEY ;
+configuration.DROPBOX.DROPBOX_WORD_ASSO_ACCESS_TOKEN = process.env.DROPBOX_WORD_ASSO_ACCESS_TOKEN;
+configuration.DROPBOX.DROPBOX_WORD_ASSO_APP_KEY = process.env.DROPBOX_WORD_ASSO_APP_KEY;
 configuration.DROPBOX.DROPBOX_WORD_ASSO_APP_SECRET = process.env.DROPBOX_WORD_ASSO_APP_SECRET;
 configuration.DROPBOX.DROPBOX_TNN_CONFIG_FILE = process.env.DROPBOX_TNN_CONFIG_FILE || "twitterNeuralNetworkConfig.json";
 configuration.DROPBOX.DROPBOX_TNN_STATS_FILE = process.env.DROPBOX_TNN_STATS_FILE || "twitterNeuralNetworkStats.json";
@@ -826,7 +826,7 @@ statsObj.errors.imageParse = {};
 statsObj.errors.users = {};
 statsObj.errors.users.findOne = 0;
 
-let statsPickArray = [
+const statsPickArray = [
   "pid", 
   "startTime", 
   "elapsed", 
@@ -892,7 +892,7 @@ function indexOfMax (arr, callback) {
 
   if (arr.length === 0) {
     console.log(chalkAlert(MODULE_ID_PREFIX + " | indexOfMax: 0 LENG ARRAY: -1"));
-    return callback(-2, arr) ; 
+    return callback(-2, arr); 
   }
 
   if ((arr[0] === arr[1]) && (arr[1] === arr[2])){
@@ -903,7 +903,7 @@ function indexOfMax (arr, callback) {
       + " - " + arr[2].toFixed(2)
     ));
     if (arr[0] === 0) { return callback(-4, arr); }
-    return callback(4, [1,1,1]) ; 
+    return callback(4, [1,1,1]); 
   }
 
   debug(MODULE_ID_PREFIX + " | B4 ARR: " + arr[0].toFixed(2) + " - " + arr[1].toFixed(2) + " - " + arr[2].toFixed(2));
@@ -1024,7 +1024,7 @@ function printResultsHashmap(){
 
   return new Promise(function(resolve, reject){
 
-    let tableArray = [];
+    const tableArray = [];
 
     tableArray.push([
       MODULE_ID_PREFIX + " | NNID",
@@ -1086,7 +1086,7 @@ function printResultsHashmap(){
 
       error = ((networkObj.evolve.results && networkObj.evolve.results !== undefined) 
         && (networkObj.evolve.results.error !== undefined)
-        && networkObj.evolve.results.error)  ? networkObj.evolve.results.error.toFixed(5) : "---";
+        && networkObj.evolve.results.error) ? networkObj.evolve.results.error.toFixed(5) : "---";
 
       successRate = (networkObj.successRate && networkObj.successRate !== undefined) ? networkObj.successRate.toFixed(2) : "---";
       elapsed = (networkObj.evolve.elapsed && networkObj.evolve.elapsed !== undefined) ? networkObj.evolve.elapsed : (moment().valueOf() - networkObj.evolve.startTime);
@@ -1154,7 +1154,7 @@ function printResultsHashmap(){
 
 function printInputsHashMap(){
 
-  let tableArray = [];
+  const tableArray = [];
 
   tableArray.push([
     MODULE_ID_PREFIX + " | INPUTS ID",
@@ -1243,15 +1243,15 @@ function purgeInputs(inputsId, callback){
 function loadNetworkDropboxFile(params){
   return new Promise(async function(resolve, reject){
 
-    let path = params.folder + "/" + params.file;
+    const path = params.folder + "/" + params.file;
 
     try {
 
-      let fileObj = await loadFileRetry({folder: params.folder, file: params.file, includeMetaData: true});
+      const fileObj = await loadFileRetry({folder: params.folder, file: params.file, includeMetaData: true});
 
       let networkObj = fileObj.data;
-      let entry = fileObj.meta;
-      let networkId = params.file.replace(".json", "");
+      const entry = fileObj.meta;
+      const networkId = params.file.replace(".json", "");
 
       networkObj = await validateNetwork({networkId: networkId, networkObj: networkObj});
 
@@ -1307,8 +1307,8 @@ function loadNetworkDropboxFile(params){
         networkHashMap.set(networkObj.networkId, { entry: entry, networkObj: networkObj});
 
         printNetworkObj(MODULE_ID_PREFIX 
-          + " | SAVE LOCAL NETWORK TO GLOBAL"
-          + " | FOLDER: " + params.folder, 
+          + " | LOCAL > GLOBAL"
+          + " | " + params.folder, 
           networkObj, 
           chalkGreen
         );
@@ -1321,7 +1321,7 @@ function loadNetworkDropboxFile(params){
       // NETWORK MISMATCH GLOBAL/LOCAL
       //========================
 
-      let networkHashResult = await checkNetworkHash({entry: entry});
+      const networkHashResult = await checkNetworkHash({entry: entry});
 
       if (networkHashResult === "mismatch"){
         console.log(chalkNetwork(MODULE_ID_PREFIX + " | DROPBOX GLOBAL/LOCAL NETWORK MISMATCH ... DELETING"
@@ -1500,11 +1500,11 @@ function loadInputsDropboxFolder(params){
 
     statsObj.status = "LOAD INPUTS";
 
-    let folder = params.folder || defaultInputsFolder;
+    const folder = params.folder || defaultInputsFolder;
 
     console.log(chalkLog(MODULE_ID_PREFIX + " | LOADING DROPBOX INPUTS FOLDER | " + folder));
 
-    let listDropboxFolderParams = {
+    const listDropboxFolderParams = {
       folder: params.folder,
       limit: DROPBOX_LIST_FOLDER_LIMIT
     };
@@ -1573,7 +1573,7 @@ function loadInputsDropboxFolder(params){
       
       if (inputsHashMap.has(entryInputsId)){
 
-        let curInputsObj = inputsHashMap.get(entryInputsId);
+        const curInputsObj = inputsHashMap.get(entryInputsId);
 
         if ((curInputsObj.entry.content_hash !== entry.content_hash) && (curInputsObj.entry.path_display === entry.path_display)) {
 
@@ -1618,7 +1618,7 @@ function loadInputsDropboxFolder(params){
 
 }
 
-let userWatchPropertyArray = [
+const userWatchPropertyArray = [
   "bannerImageUrl",
   "category", 
   "description",
@@ -1651,11 +1651,11 @@ function userChanged(uOld, uNew){
 function encodeHistogramUrls(params){
   return new Promise(function(resolve, reject){
 
-    let user = params.user;
+    const user = params.user;
 
     async.eachSeries(["profileHistograms", "tweetHistograms"], function(histogram, cb){
 
-      let urls = objectPath.get(user, [histogram, "urls"]);
+      const urls = objectPath.get(user, [histogram, "urls"]);
 
       if (urls) {
 
@@ -1721,7 +1721,7 @@ function updateUserFromTrainingSet(params){
     let user = params.user;
 
     if ((user.userId === undefined) && (user.nodeId === undefined)) { 
-      return reject (new Error("userId and nodeId undefined"));
+      return reject(new Error("userId and nodeId undefined"));
     }
 
     debug(chalkLog("... UPDATING USER FROM TRAINING SET"
@@ -1740,7 +1740,7 @@ function updateUserFromTrainingSet(params){
       return reject(err);
     }
 
-    User.findOne({ nodeId: user.nodeId }).exec(function(err, userDb) {
+    global.globalUser.findOne({ nodeId: user.nodeId }).exec(function(err, userDb) {
       if (err) {
         console.log(chalkError("*** ERROR FIND ONE USER trainingSet: "
           + " | CM: " + printCat(user.category)
@@ -1754,10 +1754,10 @@ function updateUserFromTrainingSet(params){
       
       if (!userDb){
 
-        const newUser = new User(user);
+        const newUser = new global.globalUser(user);
 
-        newUser.save()
-        .then(function(updatedUser){
+        newUser.save().
+        then(function(updatedUser){
 
           console.log(chalkLog(MODULE_ID_PREFIX + " | +++ ADD NET USER FROM TRAINING SET  "
             + " | CM: " + printCat(updatedUser.category)
@@ -1772,8 +1772,8 @@ function updateUserFromTrainingSet(params){
 
           resolve(updatedUser);
 
-        })
-        .catch(function(err){
+        }).
+        catch(function(err){
           console.log(MODULE_ID_PREFIX + " | ERROR: updateUserFromTrainingSet"
             + " | UID: " + user.userId
             + " | @" + user.screenName
@@ -1812,8 +1812,8 @@ function updateUserFromTrainingSet(params){
         userdb.markModified("profileHistograms");
         userdb.markModified("tweetHistograms");
 
-        userDb.save()
-        .then(function(updatedUser){
+        userDb.save().
+        then(function(updatedUser){
 
           console.log(chalkLog("+++ UPDATED USER FROM TRAINING SET  "
             + " | CM: " + printCat(userDb.category)
@@ -1828,8 +1828,8 @@ function updateUserFromTrainingSet(params){
 
           resolve(updatedUser);
 
-        })
-        .catch(function(err){
+        }).
+        catch(function(err){
           console.log(MODULE_ID_PREFIX + " | ERROR: updateUserFromTrainingSet: " + err.message);
           return reject(err);
         });
@@ -1877,9 +1877,9 @@ function updateDbNetwork(params) {
 
     const query = { networkId: networkObj.networkId };
 
-    let update = {};
+    const update = {};
 
-    update["$setOnInsert"] = { 
+    update.$setOnInsert = { 
       seedNetworkId: networkObj.seedNetworkId,
       seedNetworkRes: networkObj.seedNetworkRes,
       network: networkObj.network,
@@ -1893,18 +1893,18 @@ function updateDbNetwork(params) {
       test: networkObj.test
     };
 
-    update["$set"] = { 
+    update.$set = { 
       matchRate: networkObj.matchRate, 
       overallMatchRate: networkObj.overallMatchRate,
     };
 
-    if (incrementTestCycles) { update["$inc"] = { testCycles: 1 }; }
+    if (incrementTestCycles) { update.$inc = { testCycles: 1 }; }
     
     if (testHistoryItem) { 
-      update["$push"] = { testCycleHistory: testHistoryItem };
+      update.$push = { testCycleHistory: testHistoryItem };
     }
     else if (addToTestHistory) {
-      update["$addToSet"] = { testCycleHistory: { $each: networkObj.testCycleHistory } };
+      update.$addToSet = { testCycleHistory: { $each: networkObj.testCycleHistory } };
     }
 
     const options = {
@@ -1913,7 +1913,7 @@ function updateDbNetwork(params) {
       setDefaultsOnInsert: true,
     };
 
-    NeuralNetwork.findOneAndUpdate(query, update, options, function(err, nnDbUpdated){
+    global.globalNeuralNetwork.findOneAndUpdate(query, update, options, function(err, nnDbUpdated){
 
       if (err) {
         console.log(chalkError("*** updateDbNetwork | NETWORK FIND ONE ERROR: " + err));
@@ -1945,7 +1945,7 @@ function listDropboxFolders(params){
     ));
 
     let totalEntries = [];
-    let promiseArray = [];
+    const promiseArray = [];
 
     params.folders.forEach(async function(folder){
 
@@ -1968,16 +1968,16 @@ function listDropboxFolders(params){
 
     });
 
-    Promise.all(promiseArray)
-    .then(function(results){
+    Promise.all(promiseArray).
+    then(function(results){
       results.forEach(function(folderListing){
-        console.log(chalkLog(MODULE_ID_PREFIX + " | RESULTS | ENTRIES: "  + folderListing.entries.length));
+        console.log(chalkLog(MODULE_ID_PREFIX + " | RESULTS | ENTRIES: " + folderListing.entries.length));
         // console.log(chalkLog(MODULE_ID_PREFIX + " | RESULTS | folderListing ENTRY\n"  + jsonPrint(folderListing.entries[0])));
         totalEntries = _.concat(totalEntries, folderListing.entries);
       });
       resolve(totalEntries);
-    })
-    .catch(function(err){
+    }).
+    catch(function(err){
       reject(err);
     });
 
@@ -1993,7 +1993,7 @@ function validateNetwork(params){
       return reject(new Error("params undefined"));
     }
 
-    let networkObj = params.networkObj;
+    const networkObj = params.networkObj;
 
     if (networkObj.networkId !== params.networkId) {
       console.log(chalkError(MODULE_ID_PREFIX + " | *** NETWORK ID MISMATCH"
@@ -2020,7 +2020,7 @@ function validateNetwork(params){
     }
 
     try {
-      let nnObj = networkDefaults(networkObj);
+      const nnObj = networkDefaults(networkObj);
       resolve(nnObj);
     }
     catch(err){
@@ -2042,18 +2042,18 @@ function checkNetworkHash(params){
       return reject(new Error("params undefined"));
     }
 
-    let entry = params.entry;
+    const entry = params.entry;
 
     debug("entry\n" + jsonPrint(entry));
 
     if (entry.name === bestRuntimeNetworkFileName) {
       console.log(chalkInfo(MODULE_ID_PREFIX + " | ... SKIPPING LOAD OF " + entry.name));
-      return ;
+      return;
     }
 
     if (!entry.name.endsWith(".json")) {
       console.log(chalkInfo(MODULE_ID_PREFIX + " | ... SKIPPING LOAD OF " + entry.name));
-      return ;
+      return;
     }
 
     const entryNameArray = entry.name.split(".");
@@ -2064,7 +2064,7 @@ function checkNetworkHash(params){
       return resolve("miss");
     }
 
-    let networkObj = networkHashMap.get(networkId);
+    const networkObj = networkHashMap.get(networkId);
     let oldContentHash = false;
 
     if ((networkObj.entry.path_display === entry.path_display) 
@@ -2125,8 +2125,8 @@ function dropboxFileMove(params){
     const srcPath = params.srcFolder + "/" + params.srcFile;
     const dstPath = params.dstFolder + "/" + params.dstFile;
 
-    dropboxClient.filesMoveV2({from_path: srcPath, to_path: dstPath})
-    .then(function(response){
+    dropboxClient.filesMoveV2({from_path: srcPath, to_path: dstPath}).
+    then(function(response){
       console.log(chalkAlert(MODULE_ID_PREFIX + " | ->- DROPBOX FILE MOVE"
         + " | " + srcPath
         + " > " + dstPath
@@ -2134,8 +2134,8 @@ function dropboxFileMove(params){
       ));
       debug("dropboxClient filesMoveV2 response\n" + jsonPrint(response));
       return resolve();
-    })
-    .catch(function(err){
+    }).
+    catch(function(err){
       if (err.status === 409) {
         console.log(chalkError(MODULE_ID_PREFIX + " | *** ERROR DROPBOX FILE MOVE"
           + " | STATUS: " + err.status
@@ -2177,15 +2177,15 @@ function dropboxFileDelete(params){
 
     const path = params.folder + "/" + params.file;
 
-    dropboxClient.filesDelete({path: path})
-    .then(function(response){
+    dropboxClient.filesDelete({path: path}).
+    then(function(response){
       console.log(chalkError(MODULE_ID_PREFIX + " | XXX DROPBOX FILE DELETE"
         + " | " + path
       ));
       debug("dropboxClient filesDelete response\n" + jsonPrint(response));
       return resolve();
-    })
-    .catch(function(err){
+    }).
+    catch(function(err){
       if (err.status === 409) {
         console.log(chalkError(MODULE_ID_PREFIX + " | *** ERROR DROPBOX FILE DELETE"
           + " | STATUS: " + err.status
@@ -2267,12 +2267,12 @@ function loadBestNetworkDropboxFolders (params){
 
       if (entry.name.toLowerCase() === bestRuntimeNetworkFileName.toLowerCase()) {
         console.log(chalkInfo(MODULE_ID_PREFIX + " | ... SKIPPING LOAD OF " + entry.name));
-        return ;
+        return;
       }
 
       if (!entry.name.endsWith(".json")) {
         console.log(chalkInfo(MODULE_ID_PREFIX + " | ... SKIPPING LOAD OF " + entry.name));
-        return ;
+        return;
       }
 
       const folder = path.dirname(entry.path_display);
@@ -2295,11 +2295,11 @@ function loadBestNetworkDropboxFolders (params){
           + " | FOLDER: " + folder
           + " | " + entry.name
         ));
-        return ;
+        return;
       }
       
       try {
-        let networkObj = await loadNetworkDropboxFile({folder: folder, file: entry.name, purgeMin: params.purgeMin});
+        const networkObj = await loadNetworkDropboxFile({folder: folder, file: entry.name, purgeMin: params.purgeMin});
         if (networkObj) {
           numNetworksLoaded += 1;
         }
@@ -2367,10 +2367,10 @@ function loadSeedNeuralNetwork(params){
 
       if (configuration.verbose){
 
-        sortedHashmap({ sortKey: "networkObj.overallMatchRate", hashmap: networkHashMap, max: 500})
-        .then(function(sortedBestNetworks){
+        sortedHashmap({ sortKey: "networkObj.overallMatchRate", hashmap: networkHashMap, max: 500}).
+        then(function(sortedBestNetworks){
 
-          let tableArray = [];
+          const tableArray = [];
 
           tableArray.push([
             MODULE_ID_PREFIX + " | ",
@@ -2425,8 +2425,8 @@ function loadSeedNeuralNetwork(params){
           if (configuration.verbose) { console.log(t); }
           console.log(MODULE_ID_PREFIX + " | ============================================================================================================================================");
 
-        })
-        .catch(function(err){
+        }).
+        catch(function(err){
           console.trace(chalkError("generateRandomEvolveConfig sortedHashmap ERROR: " + err + "/" + jsonPrint(err)));
           return reject(err);
         });
@@ -2436,10 +2436,10 @@ function loadSeedNeuralNetwork(params){
     }
 
 
-    sortedHashmap({ sortKey: "networkObj.overallMatchRate", hashmap: networkHashMap, max: 500})
-    .then(function(sortedBestNetworks){
+    sortedHashmap({ sortKey: "networkObj.overallMatchRate", hashmap: networkHashMap, max: 500}).
+    then(function(sortedBestNetworks){
 
-      let tableArray = [];
+      const tableArray = [];
 
       tableArray.push([
         MODULE_ID_PREFIX + " | ",
@@ -2498,8 +2498,8 @@ function loadSeedNeuralNetwork(params){
         console.log(MODULE_ID_PREFIX + " | ============================================================================================================================================");
 
       });
-    })
-    .catch(function(err){
+    }).
+    catch(function(err){
       console.trace(chalkError("generateRandomEvolveConfig sortedHashmap ERROR: " + err + "/" + jsonPrint(err)));
       return reject(err);
     });
@@ -2548,7 +2548,7 @@ function unzipUsersToArray(params){
 
         zipfile.on("entry", function(entry) {
           
-          if (/\/$/.test(entry.fileName)) { 
+          if ((/\/$/).test(entry.fileName)) { 
             zipfile.readEntry(); 
           } 
           else {
@@ -2641,7 +2641,7 @@ function unzipUsersToArray(params){
               });
 
               readStream.on("data",function(chunk){
-                let part = chunk.toString();
+                const part = chunk.toString();
                 userString += part;
               });
 
@@ -2742,7 +2742,7 @@ function fileSize(params){
 
     clearInterval(sizeInterval);
 
-    let interval = params.interval || 10*ONE_SECOND;
+    const interval = params.interval || 10*ONE_SECOND;
 
     console.log(chalkLog(MODULE_ID_PREFIX + " | WAIT FILE SIZE: " + params.path + " | EXPECTED SIZE: " + params.size));
 
@@ -2860,7 +2860,7 @@ function loadUsersArchive(params){
   });
 }
 
-let watchOptions = {
+const watchOptions = {
   ignoreDotFiles: true,
   ignoreUnreadableDir: true,
   ignoreNotPermitted: true,
@@ -2918,13 +2918,13 @@ function initCategorizedUserHashmap(params){
 
     // const query = (params.query) ? params.query : { $or: [ { "category": { $nin: [ false, null ] } } , { "categoryAuto": { $nin: [ false, null ] } } ] };
 
-    let p = {};
+    const p = {};
 
     p.skip = 0;
     p.limit = DEFAULT_FIND_CAT_USER_CURSOR_LIMIT;
     p.batchSize = DEFAULT_CURSOR_BATCH_SIZE;
     p.query = { 
-      "category": { "$nin": [ false, null ] } 
+      "category": { "$nin": [false, null] } 
     };
 
     let more = true;
@@ -3024,7 +3024,7 @@ function generateRandomEvolveConfig (params){
 
     statsObj.status = "GENERATE EVOLVE CONFIG";
 
-    let config = {};
+    const config = {};
     config.networkCreateMode = "evolve";
 
     debug(chalkLog(MODULE_ID_PREFIX + " | NETWORK CREATE MODE: " + config.networkCreateMode));
@@ -3188,8 +3188,8 @@ function initNetworkCreate(params){
 
   return new Promise(async function(resolve, reject){
 
-    let childId = params.childId;
-    let networkId = params.networkId;
+    const childId = params.childId;
+    const networkId = params.networkId;
 
     statsObj.status = "INIT NETWORK CREATE";
 
@@ -3202,7 +3202,7 @@ function initNetworkCreate(params){
 
     try {
 
-      let childConf = await generateRandomEvolveConfig(configuration);
+      const childConf = await generateRandomEvolveConfig(configuration);
 
       switch (configuration.networkCreateMode) {
 
@@ -3252,7 +3252,7 @@ function initNetworkCreate(params){
 
           resultsHashmap[messageObj.testRunId] = {};
 
-          let networkCreateObj = {};
+          const networkCreateObj = {};
           networkCreateObj.childId = childId;
           networkCreateObj.status = "EVOLVE";
           networkCreateObj.successRate = 0;
@@ -3313,7 +3313,7 @@ function allComplete(){
       return;
     }
 
-    let index = 0;
+    const index = 0;
 
     async.each(Object.keys(childHashMap), function(childId, cb){
 
@@ -3337,7 +3337,6 @@ function allComplete(){
 
   });
 }
-
 
 
 function printchildHashMap(){
@@ -3445,7 +3444,6 @@ process.on("unhandledRejection", function(err, promise) {
 });
 
 
-
 //=========================================================================
 // CONFIGURATION
 //=========================================================================
@@ -3499,7 +3497,7 @@ function initWatchAllConfigFolders(params){
           const file = fileNameArray[fileNameArray.length-1];
           if (!fileNameArray.includes("archive") && file.endsWith(".json") && !file.startsWith("bestRuntimeNetwork")) {
             console.log(chalkBlue(MODULE_ID_PREFIX + " | +++ NETWORK FILE CREATED: " + f));
-            await delay({period: 30*ONE_SECOND, verbose: true});
+            await delay({period: 30*ONE_SECOND});
             try{
               await loadNetworkDropboxFile({folder: globalBestNetworkFolder, file: file});
             }
@@ -3515,7 +3513,7 @@ function initWatchAllConfigFolders(params){
           const file = fileNameArray[fileNameArray.length-1];
           if (!fileNameArray.includes("archive") && file.endsWith(".json") && !file.startsWith("bestRuntimeNetwork")) {
             console.log(chalkBlue(MODULE_ID_PREFIX + " | -/- NETWORK FILE CHANGED: " + f));
-            await delay({period: 30*ONE_SECOND, verbose: true});
+            await delay({period: 30*ONE_SECOND});
             try{
               await loadNetworkDropboxFile({folder: globalBestNetworkFolder, file: file});
             }
@@ -3550,7 +3548,7 @@ function initWatchAllConfigFolders(params){
           const file = fileNameArray[fileNameArray.length-1];
           if (file.startsWith("inputs_")) {
             console.log(chalkBlue(MODULE_ID_PREFIX + " | +++ INPUTS FILE CREATED: " + f));
-            await delay({period: 30*ONE_SECOND, verbose: true});
+            await delay({period: 30*ONE_SECOND});
             try{
               await loadInputsDropboxFile({folder: defaultInputsFolder, file: file});
             }
@@ -3566,7 +3564,7 @@ function initWatchAllConfigFolders(params){
           const file = fileNameArray[fileNameArray.length-1];
           if (file.startsWith("inputs_")) {
             console.log(chalkBlue(MODULE_ID_PREFIX + " | -/- INPUTS FILE CHANGED: " + f));
-            await delay({period: 30*ONE_SECOND, verbose: true});
+            await delay({period: 30*ONE_SECOND});
             try{
               await loadInputsDropboxFile({folder: defaultInputsFolder, file: file});
             }
@@ -3599,13 +3597,13 @@ function initWatchAllConfigFolders(params){
 
         monitorDefaultConfig.on("created", async function(f, stat){
           if (f.endsWith(dropboxConfigDefaultFile)){
-            await delay({period: 30*ONE_SECOND, verbose: true});
+            await delay({period: 30*ONE_SECOND});
             await loadAllConfigFiles();
             await loadCommandLineArgs();
           }
 
           if (f.endsWith(defaultNetworkInputsConfigFile)){
-            await delay({period: 30*ONE_SECOND, verbose: true});
+            await delay({period: 30*ONE_SECOND});
             await loadNetworkInputsConfig();
           }
 
@@ -3613,13 +3611,13 @@ function initWatchAllConfigFolders(params){
 
         monitorDefaultConfig.on("changed", async function(f, stat){
           if (f.endsWith(dropboxConfigDefaultFile)){
-            await delay({period: 30*ONE_SECOND, verbose: true});
+            await delay({period: 30*ONE_SECOND});
             await loadAllConfigFiles();
             await loadCommandLineArgs();
           }
 
           if (f.endsWith(defaultNetworkInputsConfigFile)){
-            await delay({period: 30*ONE_SECOND, verbose: true});
+            await delay({period: 30*ONE_SECOND});
             await loadNetworkInputsConfig();
           }
 
@@ -3682,8 +3680,8 @@ function initConfig(cnf) {
 
     cnf.processName = process.env.PROCESS_NAME || MODULE_ID;
     cnf.testMode = (process.env.TEST_MODE === "true") ? true : cnf.testMode;
-    cnf.quitOnError = process.env.QUIT_ON_ERROR || false ;
-    cnf.enableStdin = process.env.ENABLE_STDIN || true ;
+    cnf.quitOnError = process.env.QUIT_ON_ERROR || false;
+    cnf.enableStdin = process.env.ENABLE_STDIN || true;
 
     if (process.env.QUIT_ON_COMPLETE === "false") { cnf.quitOnComplete = false; }
     else if ((process.env.QUIT_ON_COMPLETE === true) || (process.env.QUIT_ON_COMPLETE === "true")) {
@@ -3707,11 +3705,11 @@ function initConfig(cnf) {
       
       statsObj.commandLineArgsLoaded = true;
 
-      if (configuration.enableStdin) {  initStdIn(); }
+      if (configuration.enableStdin) { initStdIn(); }
 
       await initStatsUpdate();
 
-      resolve(configuration) ;
+      resolve(configuration);
 
     }
     catch(err){
@@ -3722,42 +3720,35 @@ function initConfig(cnf) {
   });
 }
 
+
 //=========================================================================
 // MONGO DB
 //=========================================================================
 
-global.dbConnection = false;
+global.globalDbConnection = false;
 const mongoose = require("mongoose");
 mongoose.set("useFindAndModify", false);
 
-global.wordAssoDb = require("@threeceelabs/mongoose-twitter");
+const emojiModel = require("@threeceelabs/mongoose-twitter/models/emoji.server.model");
+const hashtagModel = require("@threeceelabs/mongoose-twitter/models/hashtag.server.model");
+const locationModel = require("@threeceelabs/mongoose-twitter/models/location.server.model");
+const mediaModel = require("@threeceelabs/mongoose-twitter/models/media.server.model");
+const neuralNetworkModel = require("@threeceelabs/mongoose-twitter/models/neuralNetwork.server.model");
+const placeModel = require("@threeceelabs/mongoose-twitter/models/place.server.model");
+const tweetModel = require("@threeceelabs/mongoose-twitter/models/tweet.server.model");
+const urlModel = require("@threeceelabs/mongoose-twitter/models/url.server.model");
+const userModel = require("@threeceelabs/mongoose-twitter/models/user.server.model");
+const wordModel = require("@threeceelabs/mongoose-twitter/models/word.server.model");
 
-global.Emoji;
-global.Hashtag;
-global.Location;
-global.Media;
-global.NetworkInputs;
-global.NeuralNetwork;
-global.Place;
-global.Tweet;
-global.Url;
-global.User;
-global.Word;
+global.globalWordAssoDb = require("@threeceelabs/mongoose-twitter");
 
-let dbConnectionReady = false;
-let dbConnectionReadyInterval;
-
-let UserServerController;
+const UserServerController = require("@threeceelabs/user-server-controller");
 let userServerController;
 let userServerControllerReady = false;
 
-let TweetServerController;
+const TweetServerController = require("@threeceelabs/tweet-server-controller");
 let tweetServerController;
 let tweetServerControllerReady = false;
-
-let userDbUpdateQueueInterval;
-let userDbUpdateQueueReadyFlag = true;
-let userDbUpdateQueue = [];
 
 function connectDb(){
 
@@ -3767,69 +3758,48 @@ function connectDb(){
 
       statsObj.status = "CONNECTING MONGO DB";
 
-      wordAssoDb.connect(MODULE_ID + "_" + process.pid, async function(err, db){
+      global.globalWordAssoDb.connect(MODULE_ID + "_" + process.pid, async function(err, db){
 
         if (err) {
           console.log(chalkError(MODULE_ID_PREFIX + " | *** MONGO DB CONNECTION ERROR: " + err));
           statsObj.status = "MONGO CONNECTION ERROR";
-          dbConnectionReady = false;
           quit({cause: "MONGO DB ERROR: " + err});
           return reject(err);
         }
 
         db.on("error", async function(){
           statsObj.status = "MONGO ERROR";
-          console.error.bind(console, MODULE_ID_PREFIX + " | *** MONGO DB CONNECTION ERROR");
           console.log(chalkError(MODULE_ID_PREFIX + " | *** MONGO DB CONNECTION ERROR"));
-          slackSendWebMessage(hostname + " | TNN | " + statsObj.status);
           db.close();
-          dbConnectionReady = false;
           quit({cause: "MONGO DB ERROR: " + err});
         });
 
         db.on("disconnected", async function(){
           statsObj.status = "MONGO DISCONNECTED";
-          console.error.bind(console, MODULE_ID_PREFIX + " | *** MONGO DB DISCONNECTED");
-          slackSendWebMessage(hostname + " | TNN | " + statsObj.status);
           console.log(chalkAlert(MODULE_ID_PREFIX + " | *** MONGO DB DISCONNECTED"));
-          dbConnectionReady = false;
           quit({cause: "MONGO DB DISCONNECTED"});
         });
 
 
-        global.dbConnection = db;
+        global.globalDbConnection = db;
 
         console.log(chalk.green(MODULE_ID_PREFIX + " | MONGOOSE DEFAULT CONNECTION OPEN"));
 
-
-        const emojiModel = require("@threeceelabs/mongoose-twitter/models/emoji.server.model");
-        const hashtagModel = require("@threeceelabs/mongoose-twitter/models/hashtag.server.model");
-        const locationModel = require("@threeceelabs/mongoose-twitter/models/location.server.model");
-        const mediaModel = require("@threeceelabs/mongoose-twitter/models/media.server.model");
-        const neuralNetworkModel = require("@threeceelabs/mongoose-twitter/models/neuralNetwork.server.model");
-        const placeModel = require("@threeceelabs/mongoose-twitter/models/place.server.model");
-        const tweetModel = require("@threeceelabs/mongoose-twitter/models/tweet.server.model");
-        const urlModel = require("@threeceelabs/mongoose-twitter/models/url.server.model");
-        const userModel = require("@threeceelabs/mongoose-twitter/models/user.server.model");
-        const wordModel = require("@threeceelabs/mongoose-twitter/models/word.server.model");
-
-        global.Emoji = global.dbConnection.model("Emoji", emojiModel.EmojiSchema);
-        global.Hashtag = global.dbConnection.model("Hashtag", hashtagModel.HashtagSchema);
-        global.Location = global.dbConnection.model("Location", locationModel.LocationSchema);
-        global.Media = global.dbConnection.model("Media", mediaModel.MediaSchema);
-        global.NeuralNetwork = global.dbConnection.model("NeuralNetwork", neuralNetworkModel.NeuralNetworkSchema);
-        global.Place = global.dbConnection.model("Place", placeModel.PlaceSchema);
-        global.Tweet = global.dbConnection.model("Tweet", tweetModel.TweetSchema);
-        global.Url = global.dbConnection.model("Url", urlModel.UrlSchema);
-        global.User = global.dbConnection.model("User", userModel.UserSchema);
-        global.Word = global.dbConnection.model("Word", wordModel.WordSchema);
+        global.globalEmoji = global.globalDbConnection.model("Emoji", emojiModel.EmojiSchema);
+        global.globalHashtag = global.globalDbConnection.model("Hashtag", hashtagModel.HashtagSchema);
+        global.globalLocation = global.globalDbConnection.model("Location", locationModel.LocationSchema);
+        global.globalMedia = global.globalDbConnection.model("Media", mediaModel.MediaSchema);
+        global.globalNeuralNetwork = global.globalDbConnection.model("NeuralNetwork", neuralNetworkModel.NeuralNetworkSchema);
+        global.globalPlace = global.globalDbConnection.model("Place", placeModel.PlaceSchema);
+        global.globalTweet = global.globalDbConnection.model("Tweet", tweetModel.TweetSchema);
+        global.globalUrl = global.globalDbConnection.model("Url", urlModel.UrlSchema);
+        global.globalUser = global.globalDbConnection.model("User", userModel.UserSchema);
+        global.globalWord = global.globalDbConnection.model("Word", wordModel.WordSchema);
 
         const uscChildName = MODULE_ID_PREFIX + "_USC";
-        UserServerController = require("@threeceelabs/user-server-controller");
         userServerController = new UserServerController(uscChildName);
 
         const tscChildName = MODULE_ID_PREFIX + "_TSC";
-        TweetServerController = require("@threeceelabs/tweet-server-controller");
         tweetServerController = new TweetServerController(tscChildName);
 
         tweetServerController.on("ready", function(appname){
@@ -3842,17 +3812,25 @@ function connectDb(){
           console.trace(chalkError(MODULE_ID_PREFIX + " | *** " + tscChildName + " ERROR | " + err));
         });
 
-        userServerControllerReady = false;
         userServerController.on("ready", function(appname){
-
-          statsObj.status = "MONGO DB CONNECTED";
           userServerControllerReady = true;
           console.log(chalkLog(MODULE_ID_PREFIX + " | " + uscChildName + " READY | " + appname));
-          dbConnectionReady = true;
-
-          resolve(db);
-
         });
+
+        const dbConnectionReadyInterval = setInterval(function(){
+
+          if (userServerControllerReady && tweetServerControllerReady) {
+
+            console.log(chalkGreen(MODULE_ID_PREFIX + " | MONGO DB READY"));
+
+            clearInterval(dbConnectionReadyInterval);
+            statsObj.status = "MONGO DB CONNECTED";
+            resolve(db);
+          }
+
+        }, 1000);
+
+
       });
     }
     catch(err){
@@ -3861,8 +3839,6 @@ function connectDb(){
     }
   });
 }
-
-//=========================================================================
 
 //=========================================================================
 // MISC FUNCTIONS (own module?)
@@ -3899,7 +3875,7 @@ function msToTime(duration) {
 }
 
 function getTimeStamp(inputTime) {
-  let currentTimeStamp ;
+  let currentTimeStamp;
   if (inputTime === undefined) {
     currentTimeStamp = moment().format(compactDateTimeFormat);
     return currentTimeStamp;
@@ -3922,8 +3898,8 @@ function delay(params) {
 
   params = params || {};
 
-  let period = params.period || 10*ONE_SECOND;
-  let verbose = params.verbose || false;
+  const period = params.period || 10*ONE_SECOND;
+  const verbose = params.verbose || false;
 
   return new Promise(function(resolve, reject){
 
@@ -3998,8 +3974,8 @@ function getChildProcesses(params){
     let command;
     let pid;
     let childId;
-    let numChildren = 0;
-    let childPidArray = [];
+    const numChildren = 0;
+    const childPidArray = [];
 
     // DEFAULT_CHILD_ID_PREFIX_XXX=[pid] 
 
@@ -4175,12 +4151,12 @@ function killAll(params){
 
         async.eachSeries(childPidArray, function(childObj, cb){
 
-          killChild({pid: childObj.pid})
-          .then(function(){
+          killChild({pid: childObj.pid}).
+          then(function(){
             console.log(chalkAlert(MODULE_ID_PREFIX + " | KILL ALL | KILLED | PID: " + childObj.pid + " | CH ID: " + childObj.childId));
             cb();
-          })
-          .catch(function(err){
+          }).
+          catch(function(err){
             console.log(chalkError(MODULE_ID_PREFIX + " | *** KILL CHILD ERROR"
               + " | PID: " + childObj.pid
               + " | ERROR: " + err
@@ -4308,8 +4284,8 @@ configuration.dropboxMaxFileUpload = DROPBOX_MAX_FILE_UPLOAD;
 
 configuration.DROPBOX = {};
 
-configuration.DROPBOX.DROPBOX_WORD_ASSO_ACCESS_TOKEN = process.env.DROPBOX_WORD_ASSO_ACCESS_TOKEN ;
-configuration.DROPBOX.DROPBOX_WORD_ASSO_APP_KEY = process.env.DROPBOX_WORD_ASSO_APP_KEY ;
+configuration.DROPBOX.DROPBOX_WORD_ASSO_ACCESS_TOKEN = process.env.DROPBOX_WORD_ASSO_ACCESS_TOKEN;
+configuration.DROPBOX.DROPBOX_WORD_ASSO_APP_KEY = process.env.DROPBOX_WORD_ASSO_APP_KEY;
 configuration.DROPBOX.DROPBOX_WORD_ASSO_APP_SECRET = process.env.DROPBOX_WORD_ASSO_APP_SECRET;
 configuration.DROPBOX.DROPBOX_CONFIG_FILE = process.env.DROPBOX_CONFIG_FILE || MODULE_NAME + "Config.json";
 configuration.DROPBOX.DROPBOX_STATS_FILE = process.env.DROPBOX_STATS_FILE || MODULE_NAME + "Stats.json";
@@ -4323,12 +4299,12 @@ const defaultNetworkInputsConfigFile = "default_networkInputsConfig.json";
 const dropboxConfigDefaultFile = "default_" + configuration.DROPBOX.DROPBOX_CONFIG_FILE;
 const dropboxConfigHostFile = hostname + "_" + configuration.DROPBOX.DROPBOX_CONFIG_FILE;
 
-let childPidFolderLocal = (hostname === "google") 
+const childPidFolderLocal = (hostname === "google") 
   ? DROPBOX_ROOT_FOLDER + "/config/utility/google/children" 
   : DROPBOX_ROOT_FOLDER + "/config/utility/" + hostname + "/children";
 
-let statsFolder = "/stats/" + hostname;
-let statsFile = configuration.DROPBOX.DROPBOX_STATS_FILE;
+const statsFolder = "/stats/" + hostname;
+const statsFile = configuration.DROPBOX.DROPBOX_STATS_FILE;
 
 const defaultInputsFolder = dropboxConfigDefaultFolder + "/inputs";
 const defaultInputsArchiveFolder = dropboxConfigDefaultFolder + "/inputsArchive";
@@ -4339,19 +4315,19 @@ const localTrainingSetFolder = dropboxConfigHostFolder + "/trainingSets";
 const defaultTrainingSetUserArchive = defaultTrainingSetFolder + "/users/users.zip";
 
 const globalBestNetworkFolder = "/config/utility/best/neuralNetworks";
-const localBestNetworkFolder =    "/config/utility/" + hostname + "/neuralNetworks/best";
+const localBestNetworkFolder = "/config/utility/" + hostname + "/neuralNetworks/best";
 const localArchiveNetworkFolder = "/config/utility/" + hostname + "/neuralNetworks/archive";
 
-let globalCategorizedUsersFolder = dropboxConfigDefaultFolder + "/categorizedUsers";
-let categorizedUsersFile = "categorizedUsers_manual.json";
+const globalCategorizedUsersFolder = dropboxConfigDefaultFolder + "/categorizedUsers";
+const categorizedUsersFile = "categorizedUsers_manual.json";
 
 
-let dropboxRemoteClient = new Dropbox({ 
+const dropboxRemoteClient = new Dropbox({ 
   accessToken: configuration.DROPBOX.DROPBOX_WORD_ASSO_ACCESS_TOKEN,
   fetch: fetch
 });
 
-let dropboxLocalClient = {  // offline mode
+const dropboxLocalClient = { // offline mode
   filesListFolder: filesListFolderLocal,
   filesUpload: function(){},
   filesDownload: function(){},
@@ -4380,7 +4356,7 @@ function filesListFolderLocal(options){
       }
       else {
 
-        let itemArray = [];
+        const itemArray = [];
 
         async.each(items, function(item, cb){
 
@@ -4434,7 +4410,7 @@ function loadFile(params) {
 
   return new Promise(async function(resolve, reject){
 
-    let noErrorNotFound = params.noErrorNotFound || false;
+    const noErrorNotFound = params.noErrorNotFound || false;
 
     let fullPath = params.path || params.folder + "/" + params.file;
 
@@ -4499,8 +4475,8 @@ function loadFile(params) {
      }
     else {
 
-      dropboxClient.filesDownload({path: fullPath})
-      .then(function(data) {
+      dropboxClient.filesDownload({path: fullPath}).
+      then(function(data) {
 
         debug(chalkLog(getTimeStamp()
           + " | LOADING FILE FROM DROPBOX FILE: " + fullPath
@@ -4508,7 +4484,7 @@ function loadFile(params) {
 
         if (fullPath.match(/\.json$/gi)) {
 
-          let payload = data.fileBinary;
+          const payload = data.fileBinary;
 
           if (!payload || (payload === undefined)) {
             return reject(new Error(MODULE_ID_PREFIX + " LOAD FILE PAYLOAD UNDEFINED"));
@@ -4527,7 +4503,7 @@ function loadFile(params) {
 
             if (params.includeMetaData) {
 
-              let results = {};
+              const results = {};
 
               results.data = fileObj;
 
@@ -4546,8 +4522,8 @@ function loadFile(params) {
         else {
           resolve();
         }
-      })
-      .catch(function(err) {
+      }).
+      catch(function(err) {
 
         console.log(chalkError(MODULE_ID_PREFIX + " | *** DROPBOX loadFile ERROR: " + fullPath));
         
@@ -4577,14 +4553,14 @@ function loadFileRetry(params){
 
   return new Promise(async function(resolve, reject){
 
-    let includeMetaData = params.includeMetaData || false;
-    let resolveOnNotFound = params.resolveOnNotFound || false;
-    let maxRetries = params.maxRetries || 10;
+    const includeMetaData = params.includeMetaData || false;
+    const resolveOnNotFound = params.resolveOnNotFound || false;
+    const maxRetries = params.maxRetries || 10;
     let retryNumber;
     let backOffTime = params.initialBackOffTime || ONE_SECOND;
-    let path = params.path || params.folder + "/" + params.file;
+    const path = params.path || params.folder + "/" + params.file;
 
-    for (retryNumber = 0; retryNumber < maxRetries; retryNumber++) {
+    for (retryNumber = 0;retryNumber < maxRetries;retryNumber++) {
       try {
         
         const fileObj = await loadFile(params);
@@ -4640,12 +4616,12 @@ function getFileMetadata(params) {
       dropboxClient = dropboxRemoteClient;
     }
 
-    dropboxClient.filesGetMetadata({path: fullPath})
-    .then(function(response) {
+    dropboxClient.filesGetMetadata({path: fullPath}).
+    then(function(response) {
       debug(chalkInfo("FILE META\n" + jsonPrint(response)));
       resolve(response);
-    })
-    .catch(function(err) {
+    }).
+    catch(function(err) {
       console.log(chalkError(MODULE_ID_PREFIX + " | *** DROPBOX getFileMetadata ERROR: " + fullPath));
 
       if ((err.status === 404) || (err.status === 409)) {
@@ -4673,12 +4649,12 @@ function listDropboxFolder(params){
 
       statsObj.status = "LIST DROPBOX FOLDER: " + params.folder;
 
-      let results = {};
+      const results = {};
       results.entries = [];
 
       let cursor;
       let more = false;
-      let limit = params.limit || DROPBOX_LIST_FOLDER_LIMIT;
+      const limit = params.limit || DROPBOX_LIST_FOLDER_LIMIT;
 
       console.log(chalkNetwork(MODULE_ID_PREFIX
         + " | LISTING DROPBOX FOLDER"
@@ -4687,8 +4663,8 @@ function listDropboxFolder(params){
         // + "\n" + jsonPrint(params)
       ));
 
-      dropboxClient.filesListFolder({path: params.folder, limit: limit})
-      .then(function(response){
+      dropboxClient.filesListFolder({path: params.folder, limit: limit}).
+      then(function(response){
 
         cursor = response.cursor;
         more = response.has_more;
@@ -4713,8 +4689,8 @@ function listDropboxFolder(params){
 
             setTimeout(function(){
 
-              dropboxClient.filesListFolderContinue({cursor: cursor})
-              .then(function(responseCont){
+              dropboxClient.filesListFolderContinue({cursor: cursor}).
+              then(function(responseCont){
 
                 cursor = responseCont.cursor;
                 more = responseCont.has_more;
@@ -4729,8 +4705,8 @@ function listDropboxFolder(params){
                   ));
                 }
 
-              })
-              .catch(function(err){
+              }).
+              catch(function(err){
                 console.trace(chalkError(MODULE_ID_PREFIX + " | *** DROPBOX filesListFolderContinue ERROR: ", err));
                 console.trace(chalkError(MODULE_ID_PREFIX + " | *** DROPBOX filesListFolderContinue ERROR: ", jsonPrint(err.tag)));
                 console.trace(chalkError(MODULE_ID_PREFIX + " | *** DROPBOX filesListFolderContinue ERROR: ", err.tag));
@@ -4750,8 +4726,8 @@ function listDropboxFolder(params){
             resolve(results);
           }
         );
-      })
-      .catch(function(err){
+      }).
+      catch(function(err){
         console.log(chalkError(MODULE_ID_PREFIX + " | *** DROPBOX FILES LIST FOLDER ERROR: " + err));
         return reject(err);
       });
@@ -4836,7 +4812,7 @@ function loadConfigFile(params) {
 
       console.log(chalkInfo(MODULE_ID_PREFIX + " | LOADED CONFIG FILE: " + params.file + "\n" + jsonPrint(loadedConfigObj)));
 
-      let newConfiguration = {};
+      const newConfiguration = {};
       newConfiguration.evolve = {};
 
       if (loadedConfigObj.TEST_MODE !== undefined) {
@@ -4965,8 +4941,8 @@ function loadAllConfigFiles(){
         console.log(chalkLog(MODULE_ID_PREFIX + " | +++ RELOADED HOST CONFIG " + dropboxConfigHostFolder + "/" + dropboxConfigHostFile));
       }
       
-      let defaultAndHostConfig = merge(defaultConfiguration, hostConfiguration); // host settings override defaults
-      let tempConfig = merge(configuration, defaultAndHostConfig); // any new settings override existing config
+      const defaultAndHostConfig = merge(defaultConfiguration, hostConfiguration); // host settings override defaults
+      const tempConfig = merge(configuration, defaultAndHostConfig); // any new settings override existing config
 
       configuration = deepcopy(tempConfig);
 
@@ -4984,7 +4960,7 @@ function loadAllConfigFiles(){
 // FILE SAVE
 //=========================================================================
 let saveFileQueueInterval;
-let saveFileQueue = [];
+const saveFileQueue = [];
 let statsUpdateInterval;
 
 configuration.saveFileQueueInterval = SAVE_FILE_QUEUE_INTERVAL;
@@ -5031,15 +5007,15 @@ saveCache.on("set", function(file, fileObj) {
 
 function saveFile(params, callback){
 
-  let fullPath = params.folder + "/" + params.file;
-  let limit = params.limit || DROPBOX_LIST_FOLDER_LIMIT;
-  let localFlag = params.localFlag || false;
+  const fullPath = params.folder + "/" + params.file;
+  const limit = params.limit || DROPBOX_LIST_FOLDER_LIMIT;
+  const localFlag = params.localFlag || false;
 
   debug(chalkInfo("LOAD FOLDER " + params.folder));
   debug(chalkInfo("LOAD FILE " + params.file));
   debug(chalkInfo("FULL PATH " + fullPath));
 
-  let options = {};
+  const options = {};
 
   if (localFlag) {
 
@@ -5047,7 +5023,8 @@ function saveFile(params, callback){
 
     showStats().then(function(){
 
-    }).catch(function(err){
+    }).
+catch(function(err){
       console.log(chalkError(MODULE_ID_PREFIX + " | *** SHOW STATS ERROR"));
     });
 
@@ -5056,8 +5033,8 @@ function saveFile(params, callback){
       + " | " + fullPath
     ));
 
-    writeJsonFile(fullPath, params.obj, { mode: 0o777 })
-    .then(function() {
+    writeJsonFile(fullPath, params.obj, { mode: 0o777 }).
+    then(function() {
 
       console.log(chalkBlue(MODULE_ID_PREFIX + " | SAVED DROPBOX LOCALLY"
         + " | " + objSizeMBytes.toFixed(3) + " MB"
@@ -5065,8 +5042,8 @@ function saveFile(params, callback){
       ));
       if (callback !== undefined) { return callback(null); }
 
-    })
-    .catch(function(error){
+    }).
+    catch(function(error){
       console.trace(chalkError(MODULE_ID_PREFIX + " | " + moment().format(compactDateTimeFormat) 
         + " | !!! ERROR DROBOX LOCAL JSON WRITE | FILE: " + fullPath 
         + " | ERROR: " + error
@@ -5084,12 +5061,12 @@ function saveFile(params, callback){
 
     const dbFileUpload = function () {
 
-      dropboxClient.filesUpload(options)
-      .then(function(){
+      dropboxClient.filesUpload(options).
+      then(function(){
         debug(chalkLog("SAVED DROPBOX JSON | " + options.path));
         if (callback !== undefined) { return callback(null); }
-      })
-      .catch(function(error){
+      }).
+      catch(function(error){
         if (error.status === 413){
           console.log(chalkError(MODULE_ID_PREFIX + " | " + moment().format(compactDateTimeFormat) 
             + " | !!! ERROR DROBOX JSON WRITE | FILE: " + fullPath 
@@ -5126,8 +5103,8 @@ function saveFile(params, callback){
 
     if (options.mode === "add") {
 
-      dropboxClient.filesListFolder({path: params.folder, limit: limit})
-      .then(function(response){
+      dropboxClient.filesListFolder({path: params.folder, limit: limit}).
+      then(function(response){
 
         debug(chalkLog("DROPBOX LIST FOLDER"
           + " | ENTRIES: " + response.entries.length
@@ -5168,8 +5145,8 @@ function saveFile(params, callback){
             dbFileUpload();
           }
         });
-      })
-      .catch(function(err){
+      }).
+      catch(function(err){
         console.log(chalkError(MODULE_ID_PREFIX + " | *** DROPBOX FILES LIST FOLDER ERROR: " + err));
         console.log(chalkError(MODULE_ID_PREFIX + " | *** DROPBOX FILES LIST FOLDER ERROR\n" + jsonPrint(err)));
         if (callback !== undefined) { callback(err, null); }
@@ -5242,7 +5219,7 @@ let quitWaitInterval;
 let quitFlag = false;
 
 function readyToQuit(params) {
-  let flag = true; // replace with function returns true when ready to quit
+  const flag = true; // replace with function returns true when ready to quit
   return flag;
 }
 
@@ -5258,7 +5235,7 @@ async function quit(opts) {
 
   quitFlag = true;
 
-  let options = opts || false;
+  const options = opts || false;
 
   let slackText = "QUIT";
   if (options) {
@@ -5350,7 +5327,7 @@ async function quit(opts) {
 
   }, QUIT_WAIT_INTERVAL);
 
-};
+}
 
 //=========================================================================
 // STDIN
@@ -5483,7 +5460,7 @@ function loadNetworkInputsConfig(params){
 
 function initChildPingAllInterval(params){
 
-  let interval = (params) ? params.interval : configuration.childPingAllInterval;
+  const interval = (params) ? params.interval : configuration.childPingAllInterval;
 
   return new Promise(function(resolve, reject){
 
@@ -5595,7 +5572,7 @@ function reporter(event, oldState, newState) {
 
 const fsmStates = {
 
-  "RESET":{
+  "RESET": {
 
     onEnter: async function(event, oldState, newState) {
 
@@ -5626,11 +5603,11 @@ const fsmStates = {
 
           killAllInProgress = true;
 
-          killAll()
-            .then(function(){
+          killAll().
+            then(function(){
               killAllInProgress = false;
-            })
-            .catch(function(err){
+            }).
+            catch(function(err){
               killAllInProgress = false;
               console.log(chalkError(MODULE_ID_PREFIX + " | KILL ALL CHILD ERROR: " + err));
             });
@@ -5640,8 +5617,8 @@ const fsmStates = {
         checkChildState({checkState: "RESET", noChildrenTrue: true}).then(function(allChildrenReset){
           console.log(chalkTwitter(MODULE_ID_PREFIX + " | ALL CHILDREN RESET: " + allChildrenReset));
           if (!killAllInProgress && allChildrenReset) { fsm.fsm_resetEnd(); }
-        })
-        .catch(function(err){
+        }).
+        catch(function(err){
           console.log(chalkError(MODULE_ID_PREFIX + " | *** ALL CHILDREN RESET ERROR: " + err));
           fsm.fsm_error();
         });
@@ -5651,7 +5628,7 @@ const fsmStates = {
     "fsm_resetEnd": "IDLE"
   },
 
-  "IDLE":{
+  "IDLE": {
     onEnter: function(event, oldState, newState) {
 
       if (event !== "fsm_tick") {
@@ -5661,8 +5638,8 @@ const fsmStates = {
 
         checkChildState({checkState: "IDLE", noChildrenTrue: true}).then(function(allChildrenIdle){
           console.log(chalkTwitter(MODULE_ID_PREFIX + " | ALL CHILDREN IDLE: " + allChildrenIdle));
-        })
-        .catch(function(err){
+        }).
+        catch(function(err){
           console.log(chalkError(MODULE_ID_PREFIX + " | *** ALL CHILDREN IDLE ERROR: " + err));
           fsm.fsm_error();
         });
@@ -5675,8 +5652,8 @@ const fsmStates = {
       checkChildState({checkState: "IDLE", noChildrenTrue: true}).then(function(allChildrenIdle){
         debug("INIT TICK | ALL CHILDREN IDLE: " + allChildrenIdle );
         if (allChildrenIdle) { fsm.fsm_init(); }
-      })
-      .catch(function(err){
+      }).
+      catch(function(err){
         console.log(chalkError(MODULE_ID_PREFIX + " | *** ALL CHILDREN IDLE ERROR: " + err));
         fsm.fsm_error();
       });
@@ -5688,7 +5665,7 @@ const fsmStates = {
     "fsm_error": "ERROR"
   },
 
-  "QUIT":{
+  "QUIT": {
     onEnter: function(event, oldState, newState) {
 
       quitFlag = true;
@@ -5701,7 +5678,7 @@ const fsmStates = {
     }
   },
 
-  "EXIT":{
+  "EXIT": {
     onEnter: function(event, oldState, newState) {
 
       quitFlag = true;
@@ -5714,7 +5691,7 @@ const fsmStates = {
     }
   },
 
-  "ERROR":{
+  "ERROR": {
     onEnter: function(event, oldState, newState) {
 
       quitFlag = true;
@@ -5727,7 +5704,7 @@ const fsmStates = {
     }
   },
 
-  "INIT":{
+  "INIT": {
     onEnter: async function(event, oldState, newState) {
       if (event !== "fsm_tick") {
 
@@ -5754,7 +5731,7 @@ const fsmStates = {
     },
     fsm_tick: function() {
 
-      checkChildState({checkState:"READY", noChildrenTrue: false}).then(function(allChildrenReady){
+      checkChildState({checkState: "READY", noChildrenTrue: false}).then(function(allChildrenReady){
 
         debug("READY INIT"
           + " | ALL CHILDREN READY: " + allChildrenReady
@@ -5762,8 +5739,8 @@ const fsmStates = {
 
         if (maxChildren() && allChildrenReady) { fsm.fsm_ready(); }
 
-      })
-      .catch(function(err){
+      }).
+      catch(function(err){
         console.log(chalkError(MODULE_ID_PREFIX + " | *** ALL CHILDREN READY ERROR: " + err));
         fsm.fsm_error();
       });
@@ -5776,17 +5753,17 @@ const fsmStates = {
     "fsm_reset": "RESET"
   },
 
-  "READY":{
+  "READY": {
     onEnter: function(event, oldState, newState) {
       if (event !== "fsm_tick") {
         reporter(event, oldState, newState);
 
         statsObj.status = "FSM READY";
 
-        checkChildState({checkState:"READY", noChildrenTrue: false}).then(function(allChildrenReady){
+        checkChildState({checkState: "READY", noChildrenTrue: false}).then(function(allChildrenReady){
           console.log(MODULE_ID_PREFIX + " | ALL CHILDREN READY: " + allChildrenReady);
-        })
-        .catch(function(err){
+        }).
+        catch(function(err){
           console.log(chalkError(MODULE_ID_PREFIX + " | *** ALL CHILDREN READY ERROR: " + err));
           fsm.fsm_error();
         });
@@ -5795,8 +5772,8 @@ const fsmStates = {
     },
     fsm_tick: function() {
 
-      checkChildState({checkState:"READY", noChildrenTrue: false})
-      .then(function(allChildrenReady){
+      checkChildState({checkState: "READY", noChildrenTrue: false}).
+      then(function(allChildrenReady){
 
         debug("READY TICK"
           + " | ALL CHILDREN READY: " + allChildrenReady
@@ -5806,8 +5783,8 @@ const fsmStates = {
           fsm.fsm_run();
         }
 
-      })
-      .catch(function(err){
+      }).
+      catch(function(err){
         console.log(chalkError(MODULE_ID_PREFIX + " | *** ALL CHILDREN READY ERROR: " + err));
         fsm.fsm_error();
       });
@@ -5821,7 +5798,7 @@ const fsmStates = {
   },
 
 
-  "RUN":{
+  "RUN": {
     onEnter: async function(event, oldState, newState) {
       if (event !== "fsm_tick") {
         reporter(event, oldState, newState);
@@ -5829,9 +5806,9 @@ const fsmStates = {
 
         try {
 
-          let seedParams = {};
+          const seedParams = {};
 
-          seedParams.purgeMin = configuration.purgeMin || false ;  // use localPurgeMinSuccessRate to delete nn's
+          seedParams.purgeMin = configuration.purgeMin || false; // use localPurgeMinSuccessRate to delete nn's
           seedParams.folders = [globalBestNetworkFolder, localBestNetworkFolder];
 
           if (configuration.seedNetworkId) {
@@ -5860,7 +5837,7 @@ const fsmStates = {
     fsm_tick: function() {
 
       if (configuration.quitOnComplete){
-        checkChildState({checkState:"COMPLETE"}).then(function(allChildrenComplete){
+        checkChildState({checkState: "COMPLETE"}).then(function(allChildrenComplete){
 
           debug("FETCH_END TICK"
             + " | ALL CHILDREN COMPLETE: " + allChildrenComplete
@@ -5872,8 +5849,8 @@ const fsmStates = {
             fsm.fsm_complete();
           }
 
-        })
-        .catch(function(err){
+        }).
+        catch(function(err){
           console.log(chalkError(MODULE_ID_PREFIX + " | *** ALL CHILDREN COMPLETE ERROR: " + err));
           fsm.fsm_error();
         });
@@ -5889,15 +5866,15 @@ const fsmStates = {
 
           createChildrenInProgress = true;
 
-          childCreateAll()
-            .then(function(childIdArray){
+          childCreateAll().
+            then(function(childIdArray){
               console.log(chalkBlue(MODULE_ID_PREFIX + " | CREATED ALL CHILDREN: " + childIdArray.length));
               childIdArray.forEach(async function(childId){
                 await startNetworkCreate({childId: childId});
               });
               createChildrenInProgress = false;
-            })
-            .catch(function(err){
+            }).
+            catch(function(err){
               console.log(chalkError(MODULE_ID_PREFIX + " | *** CREATE ALL CHILDREN ERROR: " + err));
               createChildrenInProgress = false;
               fsm.fsm_error();
@@ -5913,7 +5890,7 @@ const fsmStates = {
     "fsm_complete": "COMPLETE"
   },
 
-  "COMPLETE":{
+  "COMPLETE": {
 
     onEnter: function(event, oldState, newState) {
 
@@ -5924,20 +5901,20 @@ const fsmStates = {
 
         console.log(chalkBlueBold(MODULE_ID_PREFIX + " | FSM COMPLETE | QUITTING ..."));
 
-        quit({cause:"FSM_COMPLETE"});
+        quit({cause: "FSM_COMPLETE"});
       }
 
     },
 
     fsm_tick: function() {
 
-      checkChildState({checkState:"RESET", noChildrenTrue: true}).then(function(allChildrenReset){
+      checkChildState({checkState: "RESET", noChildrenTrue: true}).then(function(allChildrenReset){
         console.log(MODULE_ID_PREFIX + " | RESET TICK"
           + " | ALL CHILDREN RESET: " + allChildrenReset
         );
         if (allChildrenReset) { fsm.fsm_resetEnd(); }
-      })
-      .catch(function(err){
+      }).
+      catch(function(err){
         fsm.fsm_error();
       });
 
@@ -5973,7 +5950,7 @@ function initFsmTickInterval(interval) {
 configuration.reinitializeChildOnClose = false;
 
 const cp = require("child_process");
-let childHashMap = {};
+const childHashMap = {};
 
 function maxChildren(){
   return getNumberOfChildren() >= configuration.maxNumberChildren;
@@ -5989,16 +5966,16 @@ function childCreateAll(params){
 
     params = params || {};
 
-    let childrenCreatedArray = [];
-    let maxNumberChildren = params.maxNumberChildren || configuration.maxNumberChildren;
+    const childrenCreatedArray = [];
+    const maxNumberChildren = params.maxNumberChildren || configuration.maxNumberChildren;
 
-    let interval = params.interval || 5*ONE_SECOND;
+    const interval = params.interval || 5*ONE_SECOND;
     let childIndex = params.childIndex || configuration.childIndex;
 
     let childId = CHILD_PREFIX + "_" + childIndex;
     let childIdShort = CHILD_PREFIX_SHORT + "_" + childIndex;
 
-    let options = {};
+    const options = {};
     options.cwd = configuration.cwd;
     options.env = {};
     options.env = configuration.DROPBOX;
@@ -6007,7 +5984,7 @@ function childCreateAll(params){
     options.env.CHILD_ID_SHORT = childIdShort;
     options.env.NODE_ENV = "production";
 
-    let createParams = {};
+    const createParams = {};
     createParams.args = {};
     createParams.options = {};
     createParams.config = {};
@@ -6037,17 +6014,17 @@ function childCreateAll(params){
           options.env.CHILD_ID = childId;
           options.env.CHILD_ID_SHORT = childIdShort;
 
-          if (configuration.verbose) {console.log("createParams\n" + jsonPrint(createParams));}
+          if (configuration.verbose) { console.log("createParams\n" + jsonPrint(createParams)); }
 
-          childCreate(createParams)
-          .then(function(){
+          childCreate(createParams).
+          then(function(){
             childrenCreatedArray.push(childId);
             childIndex += 1;
             configuration.childIndex = childIndex;
             statsObj.childIndex = childIndex;
             cb();
-          })
-          .catch(function(err){
+          }).
+          catch(function(err){
             console.log(chalkError(MODULE_ID_PREFIX + " | *** ERROR CHILD CREATE ERROR: " + err));
             return cb(err);
           });
@@ -6076,11 +6053,11 @@ function childStatsAll(params){
 
     const now = params.now || false;
 
-    let defaultCommand = {};
+    const defaultCommand = {};
     defaultCommand.op = "STATS";
     defaultCommand.now = now;
 
-    let command = params.command || defaultCommand;
+    const command = params.command || defaultCommand;
 
     try {
       await childSendAll({command: command});
@@ -6106,7 +6083,7 @@ function startNetworkCreate(params){
   return new Promise(async function(resolve, reject){
 
     try {
-      let networkId = getNewNetworkId();
+      const networkId = getNewNetworkId();
 
       console.log(chalkBlue(MODULE_ID_PREFIX + " | START EVOLVE CHILD"
         + " | CHILD: " + params.childId
@@ -6158,11 +6135,11 @@ function childQuitAll(params){
 
     const now = params.now || false;
 
-    let defaultCommand = {};
+    const defaultCommand = {};
     defaultCommand.op = "QUIT";
     defaultCommand.now = now;
 
-    let command = params.command || defaultCommand;
+    const command = params.command || defaultCommand;
 
     try {
       await childSendAll({command: command});
@@ -6186,7 +6163,7 @@ function childSend(params){
 
     statsObj.status = "SEND CHILD | CH ID: " + childId + " | " + command.op;
 
-    if (configuration.verbose) {console.log(chalkLog(MODULE_ID_PREFIX + " | " + statsObj.status));}
+    if (configuration.verbose) { console.log(chalkLog(MODULE_ID_PREFIX + " | " + statsObj.status)); }
 
     if (childHashMap[childId] === undefined || !childHashMap[childId].child || !childHashMap[childId].child.connected) {
       console.log(chalkAlert(MODULE_ID_PREFIX + " | XXX CHILD SEND ABORTED | CHILD NOT CONNECTED OR UNDEFINED | " + childId));
@@ -6212,16 +6189,16 @@ function childSendAll(params){
 
   params = params || {};
 
-  const childId = (params.command) ? params.command.childId : params.childId ;
-  const op = (params.command) ? params.command.op : (params.op) ? params.op : "PING" ;
+  const childId = (params.command) ? params.command.childId : params.childId;
+  const op = (params.command) ? params.command.op : (params.op) ? params.op : "PING";
   const now = params.now || true;
 
-  let defaultCommand = {};
+  const defaultCommand = {};
   defaultCommand.op = op;
   defaultCommand.now = now;
   defaultCommand.pingId = getTimeStamp();
 
-  let command = params.command || defaultCommand;
+  const command = params.command || defaultCommand;
 
   return new Promise(function(resolve, reject){
     try {
@@ -6280,7 +6257,7 @@ function childCreate(params){
   return new Promise(async function(resolve, reject){
 
     params = params || {};
-    let args = params.args || [];
+    const args = params.args || [];
 
     const childId = params.childId;
     const childIdShort = params.childIdShort;
@@ -6290,7 +6267,7 @@ function childCreate(params){
     const verbose = params.verbose || false;
 
     let child = {};
-    let options = {};
+    const options = {};
 
     // console.log("cwd: " + process.cwd());
 
@@ -6329,7 +6306,7 @@ function childCreate(params){
 
         let newNeuralNetwork;
 
-        if (configuration.verbose) {console.log(chalkLog(MODULE_ID_PREFIX + " | <R MSG | CHILD " + childId + " | " + m.op));}
+        if (configuration.verbose) { console.log(chalkLog(MODULE_ID_PREFIX + " | <R MSG | CHILD " + childId + " | " + m.op)); }
 
         switch(m.op) {
 
@@ -6354,7 +6331,8 @@ function childCreate(params){
               + " | R " + msToTime(m.stats.evolveElapsed)
               + " | RATE " + (m.stats.iterationRate/1000.0).toFixed(1)
               + " | ETC " + msToTime(m.stats.timeToComplete)
-              + " | ETC " + moment().add(m.stats.timeToComplete).format(compactDateTimeFormat)
+              + " | ETC " + moment().add(m.stats.timeToComplete).
+format(compactDateTimeFormat)
               + " | I " + m.stats.iteration + "/" + m.stats.totalIterations
             ));
 
@@ -6370,7 +6348,8 @@ function childCreate(params){
             statsObj.networkResults[m.stats.networkId].iteration = m.stats.iteration;
             statsObj.networkResults[m.stats.networkId].totalIterations = m.stats.totalIterations;
             statsObj.networkResults[m.stats.networkId].rate = (m.stats.iterationRate/1000.0).toFixed(1);
-            statsObj.networkResults[m.stats.networkId].timeToComplete = moment().add(m.stats.timeToComplete).format(compactDateTimeFormat);
+            statsObj.networkResults[m.stats.networkId].timeToComplete = moment().add(m.stats.timeToComplete).
+format(compactDateTimeFormat);
             statsObj.networkResults[m.stats.networkId].error = m.stats.error;
             statsObj.networkResults[m.stats.networkId].fitness = m.stats.fitness;
 
@@ -6394,7 +6373,7 @@ function childCreate(params){
             snIdRes = (nn.seedNetworkId !== undefined) ? nn.seedNetworkRes.toFixed(2) : "---";
 
             console.log(chalkBlue("\nTNN ========================================================\n"
-              +   MODULE_ID_PREFIX + " | NETWORK EVOLVE + TEST COMPLETE"
+              + MODULE_ID_PREFIX + " | NETWORK EVOLVE + TEST COMPLETE"
               + "\nTNN |                  " + m.childId
               + "\nTNN | NID:             " + nn.networkId
               + "\nTNN | SR%:             " + nn.test.results.successRate.toFixed(2) + "%"
@@ -6412,13 +6391,13 @@ function childCreate(params){
               + "\nTNN | CONNS:           " + nn.network.connections.length
             ));
 
-            newNeuralNetwork = new NeuralNetwork(nn);
+            newNeuralNetwork = new global.globalNeuralNetwork(nn);
 
             newNeuralNetwork.markModified("overallMatchRate");
 
-            newNeuralNetwork
-            .save()
-            .catch(function(err){
+            newNeuralNetwork.
+            save().
+            catch(function(err){
               console.log(chalkError(MODULE_ID_PREFIX + " | *** ERROR SAVE NN TO DB" 
                 + " | NID: " + nn.networkId
                 + " | " + err.message
@@ -6766,8 +6745,8 @@ function childPing(params){
 
 function checkChildState (params) {
 
-  let checkState = params.checkState;
-  let noChildrenTrue = params.noChildrenTrue || false;
+  const checkState = params.checkState;
+  const noChildrenTrue = params.noChildrenTrue || false;
 
   return new Promise(function(resolve, reject){
 
@@ -6823,12 +6802,12 @@ function childPingAll(params){
 
     const now = params.now || false;
 
-    let defaultCommand = {};
+    const defaultCommand = {};
     defaultCommand.op = "PING";
     defaultCommand.now = now;
     defaultCommand.pingId = getTimeStamp();
 
-    let command = params.command || defaultCommand;
+    const command = params.command || defaultCommand;
 
     try {
       await childSendAll({command: command});
@@ -6856,11 +6835,11 @@ function toggleVerbose(){
 
   console.log(chalkLog(MODULE_ID_PREFIX + " | VERBOSE: " + configuration.verbose));
 
-  childSendAll({op: "VERBOSE", verbose: configuration.verbose})
-  .then(function(){
+  childSendAll({op: "VERBOSE", verbose: configuration.verbose}).
+  then(function(){
 
-  })
-  .catch(function(err){
+  }).
+  catch(function(err){
     console.log(chalkError(MODULE_ID_PREFIX + " | *** ERROR VERBOSE: " + err));
   });
 }
@@ -6925,7 +6904,7 @@ function initStdIn() {
 
 console.log(chalkBlueBold(
     "\n=======================================================================\n"
-  +    MODULE_ID_PREFIX + " | " + MODULE_ID + " STARTED | " + getTimeStamp()
+  + MODULE_ID_PREFIX + " | " + MODULE_ID + " STARTED | " + getTimeStamp()
   + "\n=======================================================================\n"
 ));
 
@@ -6933,7 +6912,7 @@ setTimeout(async function(){
 
   try {
 
-    let cnf = await initConfig(configuration);
+    const cnf = await initConfig(configuration);
     configuration = deepcopy(cnf);
 
     statsObj.status = "START";
@@ -6961,22 +6940,10 @@ setTimeout(async function(){
       initWatch({rootFolder: DROPBOX_ROOT_FOLDER + configuration.userArchiveFolder});
     }
     catch(err){
-      dbConnectionReady = false;
       console.log(chalkError(MODULE_ID_PREFIX + " | *** MONGO DB CONNECT ERROR: " + err + " | QUITTING ***"));
-      quit({cause:"MONGO DB CONNECT ERROR"});
+      quit({cause: "MONGO DB CONNECT ERROR"});
     }
 
-    dbConnectionReadyInterval = setInterval(async function() {
-
-      if (dbConnectionReady) {
-
-        clearInterval(dbConnectionReadyInterval);
-        
-      }
-      else {
-        console.log(chalkLog(MODULE_ID_PREFIX + " | ... WAIT DB CONNECTED ..."));
-      }
-    }, 1000);
 
   }
   catch(err){
