@@ -1493,7 +1493,6 @@ function loadInputsDropboxFile(params){
   });
 }
 
-
 function loadInputsDropboxFolder(params){
 
   return new Promise(async function(resolve, reject){
@@ -1615,7 +1614,6 @@ function loadInputsDropboxFolder(params){
     });
 
   });
-
 }
 
 const userWatchPropertyArray = [
