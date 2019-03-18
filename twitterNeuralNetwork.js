@@ -863,6 +863,19 @@ function networkDefaults(networkObj){
   });
 }
 
+async function printInputsObj(title, inputsObj, format) {
+
+  const chalkFormat = (format !== undefined) ? format : chalkNetwork;
+
+  const numNetworks = (inputsObj.networks !== undefined) ? inputsObj.networks.length : 0;
+
+  console.log(chalkFormat(title
+    + " | NETWORKS: " + numNetworks
+    + " | INPUTS: " + inputsObj.meta.numInputs
+    + " | " + inputsObj.inputsId
+  ));
+}
+
 async function printNetworkObj(title, networkObj, format) {
 
   const chalkFormat = (format !== undefined) ? format : chalkNetwork;
@@ -1240,6 +1253,52 @@ function purgeInputs(inputsId, callback){
   if (callback !== undefined) { callback(); }
 }
 
+function updateDbInputs(params){
+  return new Promise(async function(resolve, reject){
+
+    // exports.NetworkInputsSchema = new Schema({
+    //   inputsId: { type: String, unique: true  },
+    //   meta: { type: mongoose.Schema.Types.Mixed, default: {} },
+    //   inputs: { type: mongoose.Schema.Types.Mixed, default: {} },
+    //   stats: { type: mongoose.Schema.Types.Mixed, default: {} },
+    //   createdAt: { type: Date, default: Date.now() }
+    // });
+
+    const query = { inputsId: params.inputsObj.inputsId };
+
+    const update = {};
+
+    update.$setOnInsert = { 
+      meta: params.inputsObj.meta,
+      inputs: params.inputsObj.inputs
+    };
+
+    if (params.networkId) {
+      update.$addToSet = { networks: params.networkId };
+    }
+
+    const options = {
+      new: true,
+      upsert: true,
+      setDefaultsOnInsert: true,
+    };
+
+
+    global.globalNetworkInputs.findOneAndUpdate(query, update, options, function(err, niDbUpdated){
+
+      if (err) {
+        console.log(chalkError("*** updateDbInputs | INPUTS FIND ONE ERROR: " + err));
+        return reject(err);
+      }
+
+      if (verbose) { printInputsObj(MODULE_ID_PREFIX + " | +++ INPUTS DB UPDATED", niDbUpdated); }
+
+      resolve(niDbUpdated);
+    });
+
+  });
+}
+
 function loadNetworkDropboxFile(params){
   return new Promise(async function(resolve, reject){
 
@@ -1262,6 +1321,8 @@ function loadNetworkDropboxFile(params){
         await purgeNetwork(networkId);
         return resolve(null);
       }
+
+      const inputsObj = await updateDbInputs({inputsObj: networkObj.inputsObj, networkId: networkObj.networkId});
 
       // load only networks using specific inputIds; maybe delete if not in set
       if (!configuration.inputsIdArray.includes(networkObj.inputsId)) {
@@ -1474,19 +1535,28 @@ function loadInputsDropboxFile(params){
       });
     }
 
-    if (inputsHashMap.has(inputsObj.inputsId) && (params.entry === undefined)){
+    let dbInputsObj;
+    try {
+      dbInputsObj = await updateDbInputs({inputsObj: inputsObj});
+    }
+    catch(err){
+      console.log(chalkError(MODULE_ID_PREFIX + " | DB INPUTS UPDATE ERROR: " + err));
+      return reject(err);
+    }
 
-      params.entry = inputsHashMap.get(inputsObj.inputsId).entry;
+    if (inputsHashMap.has(dbInputsObj.inputsId) && (params.entry === undefined)){
+
+      params.entry = inputsHashMap.get(dbInputsObj.inputsId).entry;
 
     }
 
-    inputsHashMap.set(inputsObj.inputsId, {entry: params.entry, inputsObj: inputsObj} );
+    inputsHashMap.set(dbInputsObj.inputsId, {entry: params.entry, inputsObj: dbInputsObj} );
 
-    if (inputsNetworksHashMap[inputsObj.inputsId] === undefined) {
-      inputsNetworksHashMap[inputsObj.inputsId] = new Set();
+    if (inputsNetworksHashMap[dbInputsObj.inputsId] === undefined) {
+      inputsNetworksHashMap[dbInputsObj.inputsId] = new Set();
     }
 
-    console.log(MODULE_ID_PREFIX + " | +++ INPUTS [" + inputsHashMap.size + " IN HM] | " + inputsObj.meta.numInputs + " INPUTS | " + inputsObj.inputsId);
+    console.log(MODULE_ID_PREFIX + " | +++ INPUTS [" + inputsHashMap.size + " IN HM] | " + dbInputsObj.meta.numInputs + " INPUTS | " + dbInputsObj.inputsId);
 
     resolve(inputsObj);
 
@@ -1644,7 +1714,6 @@ function userChanged(uOld, uNew){
     return false;
   });
 }
-
 
 function encodeHistogramUrls(params){
   return new Promise(function(resolve, reject){
@@ -3732,6 +3801,7 @@ const hashtagModel = require("@threeceelabs/mongoose-twitter/models/hashtag.serv
 const locationModel = require("@threeceelabs/mongoose-twitter/models/location.server.model");
 const mediaModel = require("@threeceelabs/mongoose-twitter/models/media.server.model");
 const neuralNetworkModel = require("@threeceelabs/mongoose-twitter/models/neuralNetwork.server.model");
+const networkInputsModel = require("@threeceelabs/mongoose-twitter/models/networkInputs.server.model");
 const placeModel = require("@threeceelabs/mongoose-twitter/models/place.server.model");
 const tweetModel = require("@threeceelabs/mongoose-twitter/models/tweet.server.model");
 const urlModel = require("@threeceelabs/mongoose-twitter/models/url.server.model");
@@ -3788,6 +3858,7 @@ function connectDb(){
         global.globalLocation = global.globalDbConnection.model("Location", locationModel.LocationSchema);
         global.globalMedia = global.globalDbConnection.model("Media", mediaModel.MediaSchema);
         global.globalNeuralNetwork = global.globalDbConnection.model("NeuralNetwork", neuralNetworkModel.NeuralNetworkSchema);
+        global.globalNetworkInputs = global.globalDbConnection.model("NetworkInputs", networkInputsModel.NetworkInputsSchema);
         global.globalPlace = global.globalDbConnection.model("Place", placeModel.PlaceSchema);
         global.globalTweet = global.globalDbConnection.model("Tweet", tweetModel.TweetSchema);
         global.globalUrl = global.globalDbConnection.model("Url", urlModel.UrlSchema);
@@ -5567,7 +5638,6 @@ function reporter(event, oldState, newState) {
   ));
 }
 
-
 const fsmStates = {
 
   "RESET": {
@@ -6356,9 +6426,11 @@ format(compactDateTimeFormat);
           case "EVOLVE_COMPLETE":
 
             let nn;
+            let inputsObj;
 
             try {
               nn = await networkDefaults(m.networkObj);
+              inputsObj = await updateDbInputs({inputsObj: nn.inputsObj, networkId: nn.networkId});
             }
             catch(err){
               console.trace(chalkError("EVOLVE_COMPLETE ERROR: " + err));
