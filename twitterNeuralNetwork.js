@@ -6655,6 +6655,8 @@ format(compactDateTimeFormat)
 
               statsObj.evolveStats.fail += 1;
 
+              localNetworkFile = nn.networkId + ".json";
+
               console.log(chalkLog(MODULE_ID_PREFIX + " | ... SAVING NN FILE TO DROPBOX LOCAL FAIL"
                 + " | " + localFailNetworkFolder + "/" + localNetworkFile
               ));
