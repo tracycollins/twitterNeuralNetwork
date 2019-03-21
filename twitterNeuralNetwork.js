@@ -4385,6 +4385,7 @@ const defaultTrainingSetUserArchive = defaultTrainingSetFolder + "/users/users.z
 
 const globalBestNetworkFolder = "/config/utility/best/neuralNetworks";
 const localBestNetworkFolder = "/config/utility/" + hostname + "/neuralNetworks/best";
+const localFailNetworkFolder = "/config/utility/" + hostname + "/neuralNetworks/fail";
 const localArchiveNetworkFolder = "/config/utility/" + hostname + "/neuralNetworks/archive";
 
 const globalCategorizedUsersFolder = dropboxConfigDefaultFolder + "/categorizedUsers";
@@ -6416,8 +6417,7 @@ format(compactDateTimeFormat)
             statsObj.networkResults[m.stats.networkId].iteration = m.stats.iteration;
             statsObj.networkResults[m.stats.networkId].totalIterations = m.stats.totalIterations;
             statsObj.networkResults[m.stats.networkId].rate = (m.stats.iterationRate/1000.0).toFixed(1);
-            statsObj.networkResults[m.stats.networkId].timeToComplete = moment().add(m.stats.timeToComplete).
-format(compactDateTimeFormat);
+            statsObj.networkResults[m.stats.networkId].timeToComplete = moment().add(m.stats.timeToComplete).format(compactDateTimeFormat);
             statsObj.networkResults[m.stats.networkId].error = m.stats.error;
             statsObj.networkResults[m.stats.networkId].fitness = m.stats.fitness;
 
@@ -6654,6 +6654,12 @@ format(compactDateTimeFormat);
               slackSendWebMessage({ channel: slackChannelFail, text: slackText });
 
               statsObj.evolveStats.fail += 1;
+
+              console.log(chalkLog(MODULE_ID_PREFIX + " | ... SAVING NN FILE TO DROPBOX LOCAL FAIL"
+                + " | " + localFailNetworkFolder + "/" + localNetworkFile
+              ));
+
+              saveFileQueue.push({localFlag: false, folder: localFailNetworkFolder, file: localNetworkFile, obj: nn});
             }
 
             statsObj.evolveStats.results[nn.networkId] = {};
