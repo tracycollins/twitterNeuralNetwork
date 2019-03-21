@@ -6400,8 +6400,7 @@ function childCreate(params){
               + " | R " + msToTime(m.stats.evolveElapsed)
               + " | RATE " + (m.stats.iterationRate/1000.0).toFixed(1)
               + " | ETC " + msToTime(m.stats.timeToComplete)
-              + " | ETC " + moment().add(m.stats.timeToComplete).
-format(compactDateTimeFormat)
+              + " | ETC " + moment().add(m.stats.timeToComplete).format(compactDateTimeFormat)
               + " | I " + m.stats.iteration + "/" + m.stats.totalIterations
             ));
 
