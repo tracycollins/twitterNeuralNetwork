@@ -1279,6 +1279,7 @@ function updateDbInputs(params){
 
     const options = {
       new: true,
+      returnOriginal: false,
       upsert: true,
       setDefaultsOnInsert: true,
     };
@@ -1976,6 +1977,7 @@ function updateDbNetwork(params) {
 
     const options = {
       new: true,
+      returnOriginal: false,
       upsert: true,
       setDefaultsOnInsert: true,
     };
