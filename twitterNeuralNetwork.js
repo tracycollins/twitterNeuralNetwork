@@ -517,6 +517,8 @@ let runOnceFlag = false;
 let allCompleteFlag = false;
 
 const bestRuntimeNetworkFileName = "bestRuntimeNetwork.json";
+
+
 const enableCreateChildren = false;
 const tempArchiveDirectory = "temp/archive_" + getTimeStamp();
 
@@ -3083,9 +3085,7 @@ function initCategorizedUserHashmap(params){
     );
 
   });
-
 }
-
 
 function generateRandomEvolveConfig (params){
 
@@ -3250,7 +3250,6 @@ function generateRandomEvolveConfig (params){
     resolve(config);
 
   });
-
 }
 
 function initNetworkCreate(params){
@@ -3407,7 +3406,6 @@ function allComplete(){
   });
 }
 
-
 function printchildHashMap(){
 
   const childIdArray = Object.keys(childHashMap).sort();
@@ -3544,7 +3542,8 @@ function initWatchAllConfigFolders(params){
     try{
 
       await loadAllConfigFiles();
-      await loadNetworkInputsConfig();
+      await loadBestInputsConfig();
+      // await loadNetworkInputsConfig();
       await loadCommandLineArgs();
 
       const options = {
@@ -3671,23 +3670,24 @@ function initWatchAllConfigFolders(params){
             await loadCommandLineArgs();
           }
 
-          if (f.endsWith(defaultNetworkInputsConfigFile)){
+          if (f.endsWith(defaultBestInputsConfigFile)){
             await delay({period: 30*ONE_SECOND});
-            await loadNetworkInputsConfig();
+            await loadBestInputsConfig();
           }
 
         });
 
         monitorDefaultConfig.on("changed", async function(f, stat){
+
           if (f.endsWith(dropboxConfigDefaultFile)){
             await delay({period: 30*ONE_SECOND});
             await loadAllConfigFiles();
             await loadCommandLineArgs();
           }
 
-          if (f.endsWith(defaultNetworkInputsConfigFile)){
+          if (f.endsWith(defaultBestInputsConfigFile)){
             await delay({period: 30*ONE_SECOND});
-            await loadNetworkInputsConfig();
+            await loadBestInputsConfig();
           }
 
         });
@@ -4366,6 +4366,7 @@ const dropboxConfigDefaultFolder = "/config/utility/default";
 const dropboxConfigHostFolder = "/config/utility/" + hostname;
 
 const defaultNetworkInputsConfigFile = "default_networkInputsConfig.json";
+const defaultBestInputsConfigFile = "default_bestInputsConfig.json"
 
 const dropboxConfigDefaultFile = "default_" + configuration.DROPBOX.DROPBOX_CONFIG_FILE;
 const dropboxConfigHostFile = hostname + "_" + configuration.DROPBOX.DROPBOX_CONFIG_FILE;
@@ -5530,6 +5531,36 @@ function loadNetworkInputsConfig(params){
   });
 }
 
+function loadBestInputsConfig(params){
+
+  return new Promise(async function(resolve, reject){
+
+    statsObj.status = "LOAD BEST NETWORK INPUTS CONFIG";
+
+    console.log(chalkLog(MODULE_ID_PREFIX
+      + " | LOAD BEST NETWORK INPUTS CONFIG FILE: " + dropboxConfigDefaultFolder + "/" + defaultBestInputsConfigFile
+    ));
+
+    let networkInputsObj;
+
+    try{
+      networkInputsObj = await loadFileRetry({folder: dropboxConfigDefaultFolder, file: defaultBestInputsConfigFile});
+
+      configuration.inputsIdArray = networkInputsObj.INPUTS_IDS;
+
+      console.log(chalkNetwork(MODULE_ID_PREFIX + " | LOADED BEST NETWORK INPUTS ARRAY\n" + jsonPrint(configuration.inputsIdArray)));
+      statsObj.networkInputsSetReady = true;
+      resolve();
+    }
+    catch(err){
+      console.log(chalkError(MODULE_ID_PREFIX + " | *** BEST NETWORK INPUTS CONFIG FILE LOAD ERROR: " + err));
+      statsObj.networkInputsSetReady = false;
+      return reject(err);
+    }
+
+  });
+}
+
 function initChildPingAllInterval(params){
 
   const interval = (params) ? params.interval : configuration.childPingAllInterval;
@@ -5890,8 +5921,9 @@ const fsmStates = {
           await initChildPingAllInterval();
           await childStatsAll();
 
-          await loadNetworkInputsConfig();
-          await loadInputsDropboxFolder({folder: defaultInputsFolder});
+          await loadBestInputsConfig();
+          // await loadNetworkInputsConfig();
+          // await loadInputsDropboxFolder({folder: defaultInputsFolder});
           await loadSeedNeuralNetwork(seedParams);
           await loadTrainingSet({folder: configuration.userArchiveFolder, file: configuration.defaultUserArchiveFlagFile});
           await childStartAll();
@@ -6906,7 +6938,6 @@ console.log(MODULE_ID_PREFIX + " | PROCESS ID:    " + process.pid);
 console.log(MODULE_ID_PREFIX + " | RUN ID:        " + statsObj.runId);
 console.log(MODULE_ID_PREFIX + " | PROCESS ARGS   " + util.inspect(process.argv, {showHidden: false, depth: 1}));
 console.log(MODULE_ID_PREFIX + " | =================================");
-
 
 function toggleVerbose(){
 
