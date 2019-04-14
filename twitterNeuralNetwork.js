@@ -119,7 +119,7 @@ const chalkBlue = chalk.blue;
 const chalkGreen = chalk.green;
 const chalkError = chalk.bold.red;
 const chalkAlert = chalk.red;
-const chalkWarn = chalk.red;
+// const chalkWarn = chalk.red;
 const chalkLog = chalk.gray;
 const chalkInfo = chalk.black;
 
@@ -146,8 +146,6 @@ const channelsHashMap = new HashMap();
 const slackOAuthAccessToken = "xoxp-3708084981-3708084993-206468961315-ec62db5792cd55071a51c544acf0da55";
 const slackConversationId = "D65CSAELX"; // wordbot
 const slackRtmToken = "xoxb-209434353623-bNIoT4Dxu1vv8JZNgu7CDliy";
-
-const Slack = require("slack-node");
 
 let slackRtmClient;
 let slackWebClient;
@@ -262,8 +260,7 @@ function slackMessageHandler(message){
         case "SLACK RTM READY":
         case "START":
         case "STATS":
-        case "TEXT":
-        case "TEXT": case "FSM INIT":
+        case "TEXT": 
         case "UPDATE HISTOGRAMS":
         case "UPDATE NN STATS":
         case "WAIT UPDATE STATS":
@@ -295,7 +292,7 @@ function slackMessageHandler(message){
   });
 }
 
-function initSlackWebClient(params){
+function initSlackWebClient(){
 
   return new Promise(async function(resolve, reject){
 
@@ -303,12 +300,6 @@ function initSlackWebClient(params){
 
       const { WebClient } = require("@slack/client");
       slackWebClient = new WebClient(slackRtmToken);
-
-      const testResponse = await slackWebClient.api.test();
-      // console.log("TNN | SLACK WEB TEST RESPONSE\n" + jsonPrint(testResponse));
-
-      const botsInfoResponse = await slackWebClient.bots.info();
-      // console.log("TNN | SLACK WEB BOTS INFO RESPONSE\n" + jsonPrint(botsInfoResponse));
 
       const conversationsListResponse = await slackWebClient.conversations.list({token: slackOAuthAccessToken});
 
@@ -318,7 +309,6 @@ function initSlackWebClient(params){
 
         if (channel.name === slackChannel) {
           configuration.slackChannel = channel;
-          const conversationsJoinResponse = await slackWebClient.conversations.join({token: slackOAuthAccessToken, channel: configuration.slackChannel.id });
 
           const message = {
             token: slackOAuthAccessToken, 
@@ -327,7 +317,6 @@ function initSlackWebClient(params){
           };
 
           message.attachments = [];
-          // message.attachments.push({text: "INIT", fields: [ { title: "SRC", value: hostname + "_" + process.pid }, { title: "DST", value: "ALL" } ]});
           message.attachments.push({
             text: "INIT", 
             fields: [ 
@@ -337,9 +326,7 @@ function initSlackWebClient(params){
             ]
           });
 
-          const chatPostMessageResponse = await slackWebClient.chat.postMessage(message);
-          // console.log("TNN | SLACK WEB CHAT POST MESSAGE RESPONSE\n" + jsonPrint(chatPostMessageResponse));
-
+          await slackWebClient.chat.postMessage(message);
         }
 
         channelsHashMap.set(channel.id, channel);
@@ -357,7 +344,7 @@ function initSlackWebClient(params){
   });
 }
 
-function initSlackRtmClient(params){
+function initSlackRtmClient(){
 
   return new Promise(async function(resolve, reject){
 
@@ -366,9 +353,7 @@ function initSlackRtmClient(params){
       const { RTMClient } = require("@slack/client");
       slackRtmClient = new RTMClient(slackRtmToken);
 
-      const slackInfo = await slackRtmClient.start();
-
-      // console.log(chalkInfo("TNN | SLACK RTM | INFO\n" + jsonPrint(slackInfo)));
+      await slackRtmClient.start();
 
       slackRtmClient.on("slack_event", async function(eventType, event){
         switch (eventType) {
@@ -453,15 +438,12 @@ statsObj.networkResults = {};
 //=========================================================================
 // TNN SPECIFIC
 //=========================================================================
-const ENABLE_INIT_PURGE_LOCAL = true;
 const DEFAULT_LOAD_ALL_INPUTS = false;
 const DEFAULT_ARCHIVE_NOT_IN_INPUTS_ID_ARRAY = true;
 const DEFAULT_DELETE_NOT_IN_INPUTS_ID_ARRAY = false;
-const SMALL_SET_SIZE = 100;
-const SMALL_TEST_SET_SIZE = 20;
 const TEST_MODE_LENGTH = 500;
 const TEST_DROPBOX_NN_LOAD = 10;
-const TEST_DROPBOX_INPUTS_LOAD = 10;
+// const TEST_DROPBOX_INPUTS_LOAD = 10;
 const DEFAULT_CHILD_ID_PREFIX = "tnc_node_";
 
 if (hostname === "google") {
@@ -477,26 +459,16 @@ configuration.childIdPrefix = DEFAULT_CHILD_ID_PREFIX;
 configuration.childIndex = 0;
 
 const neataptic = require("neataptic");
-const twitterTextParser = require("@threeceelabs/twitter-text-parser");
-const twitterImageParser = require("@threeceelabs/twitter-image-parser");
 
 const DEFAULT_RUN_ID = hostname + "_" + process.pid + "_" + statsObj.startTime;
 
-const initMainReady = false;
-let initMainInterval;
-let networkCreateInterval;
 let childPingAllInterval;
 
-let runOnceFlag = false;
-let allCompleteFlag = false;
+// let allCompleteFlag = false;
 
 const bestRuntimeNetworkFileName = "bestRuntimeNetwork.json";
 
-
-const enableCreateChildren = false;
-const tempArchiveDirectory = "temp/archive_" + getTimeStamp();
-
-const categorizedUserHashmap = new HashMap();
+// const categorizedUserHashmap = new HashMap();
 
 const categorizedUserHistogram = {};
 categorizedUserHistogram.left = 0;
@@ -538,7 +510,6 @@ const DEFAULT_SEED_RANDOMIZE_OPTIONS = true;
 const DEFAULT_USE_LOCAL_TRAINING_SETS = false;
 const DEFAULT_MAX_NEURAL_NETWORK_CHILDREN = 1;
 const DEFAULT_TEST_RATIO = 0.20;
-const DEFAULT_NETWORK_CREATE_MODE = "evolve";
 const DEFAULT_ITERATIONS = 10;
 const DEFAULT_SEED_NETWORK_ID = false;
 const DEFAULT_SEED_NETWORK_PROBABILITY = 0.5;
@@ -546,14 +517,12 @@ const DEFAULT_GLOBAL_MIN_SUCCESS_RATE = 80; // percent
 const DEFAULT_LOCAL_MIN_SUCCESS_RATE = 50; // percent
 const DEFAULT_LOCAL_MIN_SUCCESS_RATE_MSE = 40; // Harder to past with cost === MSE
 const DEFAULT_LOCAL_PURGE_MIN_SUCCESS_RATE = 70; // percent
-const DEFAULT_CREATE_TRAINING_SET_ONLY = false;
 const DEFAULT_DISABLE_CREATE_TEST_SET = false;
 const DEFAULT_INIT_MAIN_INTERVAL = process.env.TNN_INIT_MAIN_INTERVAL || 10*ONE_MINUTE;
 
 const DEFAULT_EVOLVE_THREADS = 4;
 const DEFAULT_EVOLVE_ARCHITECTURE = "random";
 const DEFAULT_EVOLVE_BEST_NETWORK = false;
-const DEFAULT_EVOLVE_CLEAR = true;
 const DEFAULT_EVOLVE_ELITISM = 10;
 const DEFAULT_EVOLVE_EQUAL = true;
 const DEFAULT_EVOLVE_ERROR = 0.03;
@@ -633,9 +602,6 @@ testObj.testSet = [];
 
 const trainingSetUsersHashMap = new HashMap();
 const trainingSetHashMap = new HashMap();
-const requiredTrainingSet = new Set();
-let archive;
-let archiveOutputStream;
 statsObj.trainingSetReady = false;
 
 configuration.quitOnComplete = QUIT_ON_COMPLETE;
@@ -857,130 +823,129 @@ async function printInputsObj(title, inputsObj, format) {
   ));
 }
 
-async function printNetworkObj(title, networkObj, format) {
+async function printNetworkObj(title, nObj, format) {
 
   const chalkFormat = (format !== undefined) ? format : chalkNetwork;
 
   try {
-    networkObj = await networkDefaults(networkObj);
+    const networkObj = await networkDefaults(nObj);
+    console.log(chalkFormat(title
+      + " | OAMR: " + networkObj.overallMatchRate.toFixed(2) + "%"
+      + " | MR: " + networkObj.matchRate.toFixed(2) + "%"
+      + " | SR: " + networkObj.successRate.toFixed(2) + "%"
+      + " | CR: " + getTimeStamp(networkObj.createdAt)
+      + " | TC:  " + networkObj.testCycles
+      + " | TCH: " + networkObj.testCycleHistory.length
+      + " | INPUTS: " + networkObj.numInputs
+      + " | IN ID:  " + networkObj.inputsId
+      + " | " + networkObj.networkId
+    ));
   }
   catch(err){
     console.trace(chalkError("printNetworkObj ERROR: " + err + "\nTITLE: " + title));
-    return;
   }
 
-  console.log(chalkFormat(title
-    + " | OAMR: " + networkObj.overallMatchRate.toFixed(2) + "%"
-    + " | MR: " + networkObj.matchRate.toFixed(2) + "%"
-    + " | SR: " + networkObj.successRate.toFixed(2) + "%"
-    + " | CR: " + getTimeStamp(networkObj.createdAt)
-    + " | TC:  " + networkObj.testCycles
-    + " | TCH: " + networkObj.testCycleHistory.length
-    + " | INPUTS: " + networkObj.numInputs
-    + " | IN ID:  " + networkObj.inputsId
-    + " | " + networkObj.networkId
-  ));
 }
 
-function indexOfMax (arr, callback) {
+// function indexOfMax (arr, callback) {
 
-  if (arr.length === 0) {
-    console.log(chalkAlert(MODULE_ID_PREFIX + " | indexOfMax: 0 LENG ARRAY: -1"));
-    return callback(-2, arr); 
-  }
+//   if (arr.length === 0) {
+//     console.log(chalkAlert(MODULE_ID_PREFIX + " | indexOfMax: 0 LENG ARRAY: -1"));
+//     return callback(-2, arr); 
+//   }
 
-  if ((arr[0] === arr[1]) && (arr[1] === arr[2])){
-    debug(chalkInfo(MODULE_ID_PREFIX + " | indexOfMax: ALL EQUAL"));
-    debug(chalkInfo(MODULE_ID_PREFIX + " | ARR" 
-      + " | " + arr[0].toFixed(2) 
-      + " - " + arr[1].toFixed(2) 
-      + " - " + arr[2].toFixed(2)
-    ));
-    if (arr[0] === 0) { return callback(-4, arr); }
-    return callback(4, [1,1,1]); 
-  }
+//   if ((arr[0] === arr[1]) && (arr[1] === arr[2])){
+//     debug(chalkInfo(MODULE_ID_PREFIX + " | indexOfMax: ALL EQUAL"));
+//     debug(chalkInfo(MODULE_ID_PREFIX + " | ARR" 
+//       + " | " + arr[0].toFixed(2) 
+//       + " - " + arr[1].toFixed(2) 
+//       + " - " + arr[2].toFixed(2)
+//     ));
+//     if (arr[0] === 0) { return callback(-4, arr); }
+//     return callback(4, [1,1,1]); 
+//   }
 
-  debug(MODULE_ID_PREFIX + " | B4 ARR: " + arr[0].toFixed(2) + " - " + arr[1].toFixed(2) + " - " + arr[2].toFixed(2));
-  arrayNormalize(arr);
-  debug(MODULE_ID_PREFIX + " | AF ARR: " + arr[0].toFixed(2) + " - " + arr[1].toFixed(2) + " - " + arr[2].toFixed(2));
+//   debug(MODULE_ID_PREFIX + " | B4 ARR: " + arr[0].toFixed(2) + " - " + arr[1].toFixed(2) + " - " + arr[2].toFixed(2));
+//   arrayNormalize(arr);
+//   debug(MODULE_ID_PREFIX + " | AF ARR: " + arr[0].toFixed(2) + " - " + arr[1].toFixed(2) + " - " + arr[2].toFixed(2));
 
-  if (((arr[0] === 1) && (arr[1] === 1)) 
-    || ((arr[0] === 1) && (arr[2] === 1))
-    || ((arr[1] === 1) && (arr[2] === 1))){
+//   if (((arr[0] === 1) && (arr[1] === 1)) 
+//     || ((arr[0] === 1) && (arr[2] === 1))
+//     || ((arr[1] === 1) && (arr[2] === 1))){
 
-    debug(chalkAlert(MODULE_ID_PREFIX + " | indexOfMax: MULTIPLE SET"));
+//     debug(chalkAlert(MODULE_ID_PREFIX + " | indexOfMax: MULTIPLE SET"));
 
-    debug(chalkAlert(MODULE_ID_PREFIX + " | ARR" 
-      + " | " + arr[0].toFixed(2) 
-      + " - " + arr[1].toFixed(2) 
-      + " - " + arr[2].toFixed(2)
-    ));
+//     debug(chalkAlert(MODULE_ID_PREFIX + " | ARR" 
+//       + " | " + arr[0].toFixed(2) 
+//       + " - " + arr[1].toFixed(2) 
+//       + " - " + arr[2].toFixed(2)
+//     ));
 
-    async.eachOf(arr, function(val, index, cb0){
-      if (val < 1) {
-        arr[index] = 0;
-      }
-      cb0(); 
-    }, function(){
-      callback(3, arr); 
-    });
+//     async.eachOf(arr, function(val, index, cb0){
+//       if (val < 1) {
+//         arr[index] = 0;
+//       }
+//       cb0(); 
+//     }, function(){
+//       callback(3, arr); 
+//     });
 
-  }
-  else {
+//   }
+//   else {
 
-    let max = 0;
-    let maxIndex = -1;
+//     let max = 0;
+//     let maxIndex = -1;
 
-    async.eachOfSeries(arr, function(val, index, cb1){
-      if (val > max) {
-        maxIndex = index;
-        max = val;
-      }
-      cb1(); 
-    }, function(){
+//     async.eachOfSeries(arr, function(val, index, cb1){
+//       if (val > max) {
+//         maxIndex = index;
+//         max = val;
+//       }
+//       cb1(); 
+//     }, function(){
 
-      async.eachOf(arr, function(val, index, cb2){
-        if (val < 1) {
-          arr[index] = 0;
-        }
-        cb2(); 
-      }, function(){
-        callback(maxIndex, arr); 
-      });
+//       async.eachOf(arr, function(val, index, cb2){
+//         if (val < 1) {
+//           arr[index] = 0;
+//         }
+//         cb2(); 
+//       }, function(){
+//         callback(maxIndex, arr); 
+//       });
 
-    });
+//     });
 
-  }
-}
+//   }
+// }
 
-const sortedObjectValues = function(params) {
+// const sortedObjectValues = function(params) {
 
-  return new Promise(function(resolve, reject) {
+//   return new Promise(function(resolve, reject) {
 
-    const keys = Object.keys(params.obj);
+//     const keys = Object.keys(params.obj);
 
-    const sortedKeys = keys.sort(function(a,b){
-      const objA = params.obj[a];
-      const objB = params.obj[b];
-      return objB[params.sortKey] - objA[params.sortKey];
-    });
+//     const sortedKeys = keys.sort(function(a,b){
+//       const objA = params.obj[a];
+//       const objB = params.obj[b];
+//       return objB[params.sortKey] - objA[params.sortKey];
+//     });
 
-    if (keys.length !== undefined) {
-      if (sortedKeys !== undefined) { 
-        resolve({sortKey: params.sortKey, sortedKeys: sortedKeys.slice(0,params.max)});
-      }
-      else {
-        resolve({sortKey: params.sortKey, sortedKeys: []});
-      }
+//     if (keys.length !== undefined) {
+//       if (sortedKeys !== undefined) { 
+//         resolve({sortKey: params.sortKey, sortedKeys: sortedKeys.slice(0,params.max)});
+//       }
+//       else {
+//         resolve({sortKey: params.sortKey, sortedKeys: []});
+//       }
 
-    }
-    else {
-      console.error("sortedObjectValues ERROR | params\n" + jsonPrint(params));
-      reject(new Error("sortedObjectValues ERROR | keys.length UNDEFINED"));
-    }
+//     }
+//     else {
+//       console.error("sortedObjectValues ERROR | params\n" + jsonPrint(params));
+//       reject(new Error("sortedObjectValues ERROR | keys.length UNDEFINED"));
+//     }
 
-  });
-};
+//   });
+// };
 
 function sortedHashmap(params) {
 
@@ -989,8 +954,8 @@ function sortedHashmap(params) {
     const keys = params.hashmap.keys();
 
     const sortedKeys = keys.sort(function(a,b){
-      const objA = params.hashmap.get(a);
-      const objB = params.hashmap.get(b);
+      // const objA = params.hashmap.get(a);
+      // const objB = params.hashmap.get(b);
       const objAvalue = dot.pick(params.sortKey, params.hashmap.get(a));
       const objBvalue = dot.pick(params.sortKey, params.hashmap.get(b));
       return objBvalue - objAvalue;
@@ -1146,37 +1111,37 @@ function printResultsHashmap(){
   });
 }
 
-function printInputsHashMap(){
+// function printInputsHashMap(){
 
-  const tableArray = [];
+//   const tableArray = [];
 
-  tableArray.push([
-    MODULE_ID_PREFIX + " | INPUTS ID",
-    "INPTS"
-  ]);
+//   tableArray.push([
+//     MODULE_ID_PREFIX + " | INPUTS ID",
+//     "INPTS"
+//   ]);
 
-  async.each(inputsHashMap.keys(), function(inputsId, cb){
+//   async.each(inputsHashMap.keys(), function(inputsId, cb){
 
-    const inputsObj = inputsHashMap.get(inputsId).inputsObj;
+//     const inputsObj = inputsHashMap.get(inputsId).inputsObj;
 
-    tableArray.push([
-      MODULE_ID_PREFIX + " | " + inputsId,
-      inputsObj.meta.numInputs
-    ]);
+//     tableArray.push([
+//       MODULE_ID_PREFIX + " | " + inputsId,
+//       inputsObj.meta.numInputs
+//     ]);
 
-    async.setImmediate(function() { cb(); });
+//     async.setImmediate(function() { cb(); });
 
-  }, function(){
+//   }, function(){
 
-    const t = table(tableArray, { align: ["l", "r"] });
+//     const t = table(tableArray, { align: ["l", "r"] });
 
-    console.log(chalkBlueBold(MODULE_ID_PREFIX + " | ============================================================================================================================================"));
-    console.log(chalkBlueBold(MODULE_ID_PREFIX + " | INPUTS HASHMAP"));
-    console.log(chalkInfo(t));
-    console.log(chalkBlueBold(MODULE_ID_PREFIX + " | ============================================================================================================================================"));
+//     console.log(chalkBlueBold(MODULE_ID_PREFIX + " | ============================================================================================================================================"));
+//     console.log(chalkBlueBold(MODULE_ID_PREFIX + " | INPUTS HASHMAP"));
+//     console.log(chalkInfo(t));
+//     console.log(chalkBlueBold(MODULE_ID_PREFIX + " | ============================================================================================================================================"));
 
-  });
-}
+//   });
+// }
 
 function purgeNetwork(networkId){
 
@@ -1203,7 +1168,7 @@ function purgeNetwork(networkId){
   });
 }
 
-function purgeInputs(inputsId, callback){
+function purgeInputs(inputsId){
 
   return new Promise(function(resolve, reject){
 
@@ -1230,8 +1195,6 @@ function purgeInputs(inputsId, callback){
 
   });
 
-
-  if (callback !== undefined) { callback(); }
 }
 
 function updateDbInputs(params){
@@ -1304,7 +1267,7 @@ function loadNetworkDropboxFile(params){
         return resolve(null);
       }
 
-      const inputsObj = await updateDbInputs({inputsObj: networkObj.inputsObj, networkId: networkObj.networkId});
+      await updateDbInputs({inputsObj: networkObj.inputsObj, networkId: networkObj.networkId});
 
       // load only networks using specific inputIds; maybe delete if not in set
       if (!configuration.inputsIdArray.includes(networkObj.inputsId)) {
@@ -1545,128 +1508,128 @@ function loadInputsDropboxFile(params){
   });
 }
 
-function loadInputsDropboxFolder(params){
+// function loadInputsDropboxFolder(params){
 
-  return new Promise(async function(resolve, reject){
+//   return new Promise(async function(resolve, reject){
 
-    statsObj.status = "LOAD INPUTS";
+//     statsObj.status = "LOAD INPUTS";
 
-    const folder = params.folder || defaultInputsFolder;
+//     const folder = params.folder || defaultInputsFolder;
 
-    console.log(chalkLog(MODULE_ID_PREFIX + " | LOADING DROPBOX INPUTS FOLDER | " + folder));
+//     console.log(chalkLog(MODULE_ID_PREFIX + " | LOADING DROPBOX INPUTS FOLDER | " + folder));
 
-    const listDropboxFolderParams = {
-      folder: params.folder,
-      limit: DROPBOX_LIST_FOLDER_LIMIT
-    };
+//     const listDropboxFolderParams = {
+//       folder: params.folder,
+//       limit: DROPBOX_LIST_FOLDER_LIMIT
+//     };
 
-    let skippedInputsFiles = 0;
-    let dropboxFolderResults;
+//     let skippedInputsFiles = 0;
+//     let dropboxFolderResults;
 
-    try{
-      dropboxFolderResults = await listDropboxFolder(listDropboxFolderParams);
-    }
-    catch(err){
-      console.log(chalkError(MODULE_ID_PREFIX + " | ERROR LOADING DROPBOX INPUTS FOLDER | " + listDropboxFolderParams.folder + " | " + err));
-      return reject(err);
-    }
+//     try{
+//       dropboxFolderResults = await listDropboxFolder(listDropboxFolderParams);
+//     }
+//     catch(err){
+//       console.log(chalkError(MODULE_ID_PREFIX + " | ERROR LOADING DROPBOX INPUTS FOLDER | " + listDropboxFolderParams.folder + " | " + err));
+//       return reject(err);
+//     }
 
-    console.log(chalkBlue(MODULE_ID_PREFIX + " | DROPBOX LIST INPUTS FOLDER"
-      + " | ENTRIES: " + dropboxFolderResults.entries.length
-      + " | PATH:" + listDropboxFolderParams.folder
-    ));
+//     console.log(chalkBlue(MODULE_ID_PREFIX + " | DROPBOX LIST INPUTS FOLDER"
+//       + " | ENTRIES: " + dropboxFolderResults.entries.length
+//       + " | PATH:" + listDropboxFolderParams.folder
+//     ));
 
-    async.eachSeries(dropboxFolderResults.entries, async function(entry){
+//     async.eachSeries(dropboxFolderResults.entries, async function(entry){
 
-      debug(chalkInfo("entry: " + entry));
+//       debug(chalkInfo("entry: " + entry));
 
-      const entryNameArray = entry.name.split(".");
-      const entryInputsId = entryNameArray[0];
+//       const entryNameArray = entry.name.split(".");
+//       const entryInputsId = entryNameArray[0];
 
-      let inputsObj;
+//       let inputsObj;
 
-      debug(chalkInfo(MODULE_ID_PREFIX + " | DROPBOX INPUTS FILE FOUND"
-        + " | LAST MOD: " + moment(new Date(entry.client_modified)).format(compactDateTimeFormat)
-        + " | INPUTS ID: " + entryInputsId
-        + " | " + entry.name
-      ));
+//       debug(chalkInfo(MODULE_ID_PREFIX + " | DROPBOX INPUTS FILE FOUND"
+//         + " | LAST MOD: " + moment(new Date(entry.client_modified)).format(compactDateTimeFormat)
+//         + " | INPUTS ID: " + entryInputsId
+//         + " | " + entry.name
+//       ));
 
-      if (configuration.testMode && (inputsHashMap.size >= TEST_DROPBOX_INPUTS_LOAD)){
-        if (configuration.verbose) {
-          console.log(chalkInfo(MODULE_ID_PREFIX + " | TEST MODE SKIP LOAD INPUTS SET | " + entryInputsId));
-        }
-        skippedInputsFiles += 1;
-        return;
-      }
+//       if (configuration.testMode && (inputsHashMap.size >= TEST_DROPBOX_INPUTS_LOAD)){
+//         if (configuration.verbose) {
+//           console.log(chalkInfo(MODULE_ID_PREFIX + " | TEST MODE SKIP LOAD INPUTS SET | " + entryInputsId));
+//         }
+//         skippedInputsFiles += 1;
+//         return;
+//       }
       
-      if (skipLoadInputsSet.has(entryInputsId)){
-        if (configuration.verbose) {
-          console.log(chalkInfo(MODULE_ID_PREFIX + " | INPUTS IN SKIP LOAD INPUTS SET ... SKIPPING LOAD OF " + entryInputsId));
-        }
-        skippedInputsFiles += 1;
-        return;
-      }
+//       if (skipLoadInputsSet.has(entryInputsId)){
+//         if (configuration.verbose) {
+//           console.log(chalkInfo(MODULE_ID_PREFIX + " | INPUTS IN SKIP LOAD INPUTS SET ... SKIPPING LOAD OF " + entryInputsId));
+//         }
+//         skippedInputsFiles += 1;
+//         return;
+//       }
       
-      if (!configuration.loadAllInputs && !configuration.inputsIdArray.includes(entryInputsId)){
+//       if (!configuration.loadAllInputs && !configuration.inputsIdArray.includes(entryInputsId)){
 
-        if (configuration.verbose){
-          console.log(chalkInfo(MODULE_ID_PREFIX + " | DROPBOX INPUTS NOT IN INPUTS ID ARRAY ... SKIPPING"
-            + " | " + entryInputsId
-            + " | " + defaultInputsArchiveFolder + "/" + entry.name
-          ));
-        }
+//         if (configuration.verbose){
+//           console.log(chalkInfo(MODULE_ID_PREFIX + " | DROPBOX INPUTS NOT IN INPUTS ID ARRAY ... SKIPPING"
+//             + " | " + entryInputsId
+//             + " | " + defaultInputsArchiveFolder + "/" + entry.name
+//           ));
+//         }
 
-        skipLoadInputsSet.add(entryInputsId);
-        skippedInputsFiles += 1;
+//         skipLoadInputsSet.add(entryInputsId);
+//         skippedInputsFiles += 1;
 
-        return;
-      }
+//         return;
+//       }
       
-      if (inputsHashMap.has(entryInputsId)){
+//       if (inputsHashMap.has(entryInputsId)){
 
-        const curInputsObj = inputsHashMap.get(entryInputsId);
+//         const curInputsObj = inputsHashMap.get(entryInputsId);
 
-        if ((curInputsObj.entry.content_hash !== entry.content_hash) && (curInputsObj.entry.path_display === entry.path_display)) {
+//         if ((curInputsObj.entry.content_hash !== entry.content_hash) && (curInputsObj.entry.path_display === entry.path_display)) {
 
-          console.log(chalkInfo(MODULE_ID_PREFIX + " | DROPBOX INPUTS CONTENT CHANGE"
-            + " | LAST MOD: " + moment(new Date(entry.client_modified)).format(compactDateTimeFormat)
-            + " | " + entry.name
-            // + "\nCUR HASH: " + entry.content_hash
-            // + "\nOLD HASH: " + curInputsObj.entry.content_hash
-          ));
-        }
+//           console.log(chalkInfo(MODULE_ID_PREFIX + " | DROPBOX INPUTS CONTENT CHANGE"
+//             + " | LAST MOD: " + moment(new Date(entry.client_modified)).format(compactDateTimeFormat)
+//             + " | " + entry.name
+//             // + "\nCUR HASH: " + entry.content_hash
+//             // + "\nOLD HASH: " + curInputsObj.entry.content_hash
+//           ));
+//         }
         
-        if ((curInputsObj.entry.content_hash !== entry.content_hash) && (curInputsObj.entry.path_display !== entry.path_display)) {
+//         if ((curInputsObj.entry.content_hash !== entry.content_hash) && (curInputsObj.entry.path_display !== entry.path_display)) {
 
-          console.log(chalkNetwork(MODULE_ID_PREFIX + " | DROPBOX INPUTS CONTENT DIFF IN DIFF FOLDERS"
-            + " | LAST MOD: " + moment(new Date(entry.client_modified)).format(compactDateTimeFormat)
-            // + "\nCUR: " + entry.path_display
-            // + "\nOLD: " + curInputsObj.entry.path_display
-          ));
+//           console.log(chalkNetwork(MODULE_ID_PREFIX + " | DROPBOX INPUTS CONTENT DIFF IN DIFF FOLDERS"
+//             + " | LAST MOD: " + moment(new Date(entry.client_modified)).format(compactDateTimeFormat)
+//             // + "\nCUR: " + entry.path_display
+//             // + "\nOLD: " + curInputsObj.entry.path_display
+//           ));
 
-        }
+//         }
 
-      }
+//       }
 
-      await loadInputsDropboxFile({folder: folder, file: entry.name, entry: entry});
+//       await loadInputsDropboxFile({folder: folder, file: entry.name, entry: entry});
 
-      return;
+//       return;
 
-    }, function(err){
+//     }, function(err){
 
-      if (skippedInputsFiles > 0) {
-        console.log(chalkInfo(MODULE_ID_PREFIX + " | SKIPPED LOAD OF " + skippedInputsFiles + " INPUTS FILES | " + folder));
-      }
+//       if (skippedInputsFiles > 0) {
+//         console.log(chalkInfo(MODULE_ID_PREFIX + " | SKIPPED LOAD OF " + skippedInputsFiles + " INPUTS FILES | " + folder));
+//       }
 
-      if (configuration.verbose) {
-        printInputsHashMap();
-      }
+//       if (configuration.verbose) {
+//         printInputsHashMap();
+//       }
 
-      resolve();
-    });
+//       resolve();
+//     });
 
-  });
-}
+//   });
+// }
 
 const userWatchPropertyArray = [
   "bannerImageUrl",
@@ -1856,10 +1819,10 @@ function updateUserFromTrainingSet(params){
         userDb.url = user.url;
         userDb.verified = user.verified;
 
-        userdb.markModified("category");
-        userdb.markModified("categoryAuto");
-        userdb.markModified("profileHistograms");
-        userdb.markModified("tweetHistograms");
+        userDb.markModified("category");
+        userDb.markModified("categoryAuto");
+        userDb.markModified("profileHistograms");
+        userDb.markModified("tweetHistograms");
 
         userDb.save().
         then(function(updatedUser){
@@ -2275,11 +2238,11 @@ function networkPass(params) {
   return pass;
 }
 
-function loadBestNetworkDropboxFolders (params){
+function loadBestNetworkDropboxFolders (p){
 
   return new Promise(async function(resolve, reject){
 
-    params = params || {};
+    const params = p || {};
 
     // if (configuration.offlineMode) {
     //   dropboxClient = dropboxLocalClient;
@@ -2560,10 +2523,10 @@ function loadSeedNeuralNetwork(params){
 
 }
 
-function activateNetwork(n, input){
-  const output = n.activate(input);
-  return output;
-}
+// function activateNetwork(n, input){
+//   const output = n.activate(input);
+//   return output;
+// }
 
 function unzipUsersToArray(params){
 
@@ -2647,9 +2610,9 @@ function unzipUsersToArray(params){
                     try {
                       dbUser = await updateUserFromTrainingSet({user: fileObj});
                     }
-                    catch(err){
+                    catch(e){
                       console.log(chalkAlert(MODULE_ID_PREFIX
-                        + " | *** ERROR UPDATE USER FROM TRAINING SET ... SKIPPING | " + err 
+                        + " | *** ERROR UPDATE USER FROM TRAINING SET ... SKIPPING | " + e 
                       ));
                     }
 
@@ -2684,9 +2647,9 @@ function unzipUsersToArray(params){
 
                   zipfile.readEntry();
                 }
-                catch (err){
+                catch (e){
                   console.log(chalkError(MODULE_ID_PREFIX + " | *** UNZIP READ STREAM ERROR: " + err));
-                  return reject(err);
+                  return reject(e);
                 }
               });
 
@@ -2721,65 +2684,70 @@ function unzipUsersToArray(params){
   });
 }
 
-function updateTrainingSet(params){
+function updateTrainingSet(){
 
   console.log(chalkBlue(MODULE_ID_PREFIX + " | UPDATE TRAINING SET"));
 
   return new Promise(function(resolve, reject) {
 
-    let tObj = {};
+    try {
+      let tObj = {};
 
-    if (trainingSetHashMap.has(configuration.globalTrainingSetId)) {
-      tObj = trainingSetHashMap.get(configuration.globalTrainingSetId);
-      console.log(chalkInfo(MODULE_ID_PREFIX + " | +++ TRAINING SET HM HIT: " + tObj.trainingSetObj.trainingSetId));
+      if (trainingSetHashMap.has(configuration.globalTrainingSetId)) {
+        tObj = trainingSetHashMap.get(configuration.globalTrainingSetId);
+        console.log(chalkInfo(MODULE_ID_PREFIX + " | +++ TRAINING SET HM HIT: " + tObj.trainingSetObj.trainingSetId));
+      }
+      else {
+
+        console.log(chalkInfo(MODULE_ID_PREFIX + " | --- TRAINING SET HM MISS: " + configuration.globalTrainingSetId + " ... CREATING..."));
+
+        tObj.trainingSetObj = {};
+
+        tObj.trainingSetObj.trainingSetId = configuration.globalTrainingSetId;
+
+        tObj.trainingSetObj.meta = {};
+        tObj.trainingSetObj.meta.numInputs = 0;
+        tObj.trainingSetObj.meta.numOutputs = 3;
+        tObj.trainingSetObj.trainingSet = {};
+        tObj.trainingSetObj.trainingSet.meta = {};
+        tObj.trainingSetObj.trainingSet.meta.numInputs = 0;
+        tObj.trainingSetObj.trainingSet.meta.numOutputs = 3;
+        tObj.trainingSetObj.trainingSet.meta.setSize = 0;
+        tObj.trainingSetObj.trainingSet.data = [];
+
+        tObj.trainingSetObj.testSet = {};
+        tObj.trainingSetObj.testSet.meta = {};
+        tObj.trainingSetObj.testSet.meta.numInputs = 0;
+        tObj.trainingSetObj.testSet.meta.numOutputs = 3;
+        tObj.trainingSetObj.testSet.meta.setSize = 0;
+        tObj.trainingSetObj.testSet.data = [];
+
+        tObj.trainingSetObj.maxInputHashMap = {};
+      }
+
+      const testSetSize = parseInt(configuration.testSetRatio * trainingSetUsersHashMap.size);
+
+      tObj.trainingSetObj.trainingSet.data = trainingSetUsersHashMap.values().slice(testSetSize);
+      tObj.trainingSetObj.trainingSet.meta.setSize = tObj.trainingSetObj.trainingSet.data.length;
+
+      tObj.trainingSetObj.testSet.data = trainingSetUsersHashMap.values().slice(0, testSetSize-1);
+      tObj.trainingSetObj.testSet.meta.setSize = tObj.trainingSetObj.testSet.data.length;
+
+      tObj.trainingSetObj.maxInputHashMap = userMaxInputHashMap;
+
+      console.log(chalkLog(MODULE_ID_PREFIX + " | TRAINING SET"
+        + " | SIZE: " + tObj.trainingSetObj.trainingSet.meta.setSize
+        + " | TEST SIZE: " + tObj.trainingSetObj.testSet.meta.setSize
+      ));
+
+      trainingSetHashMap.set(tObj.trainingSetObj.trainingSetId, tObj);
+
+      resolve();
     }
-    else {
-
-      console.log(chalkInfo(MODULE_ID_PREFIX + " | --- TRAINING SET HM MISS: " + configuration.globalTrainingSetId + " ... CREATING..."));
-
-      tObj.trainingSetObj = {};
-
-      tObj.trainingSetObj.trainingSetId = configuration.globalTrainingSetId;
-
-      tObj.trainingSetObj.meta = {};
-      tObj.trainingSetObj.meta.numInputs = 0;
-      tObj.trainingSetObj.meta.numOutputs = 3;
-      tObj.trainingSetObj.trainingSet = {};
-      tObj.trainingSetObj.trainingSet.meta = {};
-      tObj.trainingSetObj.trainingSet.meta.numInputs = 0;
-      tObj.trainingSetObj.trainingSet.meta.numOutputs = 3;
-      tObj.trainingSetObj.trainingSet.meta.setSize = 0;
-      tObj.trainingSetObj.trainingSet.data = [];
-
-      tObj.trainingSetObj.testSet = {};
-      tObj.trainingSetObj.testSet.meta = {};
-      tObj.trainingSetObj.testSet.meta.numInputs = 0;
-      tObj.trainingSetObj.testSet.meta.numOutputs = 3;
-      tObj.trainingSetObj.testSet.meta.setSize = 0;
-      tObj.trainingSetObj.testSet.data = [];
-
-      tObj.trainingSetObj.maxInputHashMap = {};
+    catch(err){
+      console.log(chalkError(MODULE_ID_PREFIX + " | *** updateTrainingSet ERROR:", err));
+      reject(err);
     }
-
-    const testSetSize = parseInt(configuration.testSetRatio * trainingSetUsersHashMap.size);
-
-    tObj.trainingSetObj.trainingSet.data = trainingSetUsersHashMap.values().slice(testSetSize);
-    tObj.trainingSetObj.trainingSet.meta.setSize = tObj.trainingSetObj.trainingSet.data.length;
-
-    tObj.trainingSetObj.testSet.data = trainingSetUsersHashMap.values().slice(0, testSetSize-1);
-    tObj.trainingSetObj.testSet.meta.setSize = tObj.trainingSetObj.testSet.data.length;
-
-
-    tObj.trainingSetObj.maxInputHashMap = userMaxInputHashMap;
-
-    console.log(chalkLog(MODULE_ID_PREFIX + " | TRAINING SET"
-      + " | SIZE: " + tObj.trainingSetObj.trainingSet.meta.setSize
-      + " | TEST SIZE: " + tObj.trainingSetObj.testSet.meta.setSize
-    ));
-
-    trainingSetHashMap.set(tObj.trainingSetObj.trainingSetId, tObj);
-
-    resolve();
 
   });
 }
@@ -2896,9 +2864,8 @@ function loadUsersArchive(params){
     ));
 
     try {
-      // const fileOpen = await checkFileOpen(params);
       await fileSize(params);
-      const unzipSuccess = await unzipUsersToArray(params);
+      await unzipUsersToArray(params);
       await updateTrainingSet();
       resolve();
     }
@@ -2922,7 +2889,7 @@ function initWatch(params){
 
   watch.createMonitor(params.rootFolder, watchOptions, function (monitor) {
 
-    const loadArchive = async function (f, stat) {
+    const loadArchive = async function (f) {
 
       console.log(chalkInfo(MODULE_ID_PREFIX + " | +++ FILE CREATED or CHANGED | " + getTimeStamp() + " | " + f));
 
@@ -2933,13 +2900,9 @@ function initWatch(params){
         let archiveFlagObj;
 
         try {
-
           archiveFlagObj = await loadFileRetry({folder: configuration.userArchiveFolder, file: configuration.defaultUserArchiveFlagFile});
-
           console.log(chalkLog(MODULE_ID_PREFIX + " | USER ARCHIVE FLAG FILE | FILE: " + archiveFlagObj.file + " | SIZE: " + archiveFlagObj.size));
-
           await loadTrainingSet({folder: configuration.userArchiveFolder, file: archiveFlagObj.file});
-
         }
         catch(err){
           console.log(chalkError(MODULE_ID_PREFIX + " | *** WATCH CHANGE ERROR | " + getTimeStamp() + " | " + err));
@@ -2952,7 +2915,7 @@ function initWatch(params){
 
     monitor.on("changed", loadArchive);
 
-    monitor.on("removed", function (f, stat) {
+    monitor.on("removed", function (f) {
       console.log(chalkInfo(MODULE_ID_PREFIX + " | XXX FILE DELETED | " + getTimeStamp() + " | " + f));
     });
 
@@ -2960,113 +2923,113 @@ function initWatch(params){
   });
 }
 
-function initCategorizedUserHashmap(params){
+// function initCategorizedUserHashmap(params){
 
-  return new Promise(function(resolve, reject){
+//   return new Promise(function(resolve, reject){
 
-    statsObj.status = "INIT CATEGORIZED USER HASHMAP";
+//     statsObj.status = "INIT CATEGORIZED USER HASHMAP";
 
-    // const query = (params.query) ? params.query : { $or: [ { "category": { $nin: [ false, null ] } } , { "categoryAuto": { $nin: [ false, null ] } } ] };
+//     // const query = (params.query) ? params.query : { $or: [ { "category": { $nin: [ false, null ] } } , { "categoryAuto": { $nin: [ false, null ] } } ] };
 
-    const p = {};
+//     const p = {};
 
-    p.skip = 0;
-    p.limit = DEFAULT_FIND_CAT_USER_CURSOR_LIMIT;
-    p.batchSize = DEFAULT_CURSOR_BATCH_SIZE;
-    p.query = { 
-      "category": { "$nin": [false, null] } 
-    };
+//     p.skip = 0;
+//     p.limit = DEFAULT_FIND_CAT_USER_CURSOR_LIMIT;
+//     p.batchSize = DEFAULT_CURSOR_BATCH_SIZE;
+//     p.query = { 
+//       "category": { "$nin": [false, null] } 
+//     };
 
-    let more = true;
-    let totalCount = 0;
-    let totalManual = 0;
-    let totalAuto = 0;
-    let totalMatched = 0;
-    let totalMismatched = 0;
-    let totalMatchRate = 0;
+//     let more = true;
+//     let totalCount = 0;
+//     let totalManual = 0;
+//     let totalAuto = 0;
+//     let totalMatched = 0;
+//     let totalMismatched = 0;
+//     let totalMatchRate = 0;
 
-    async.whilst(
+//     async.whilst(
 
-      function() {
-        return more;
-      },
+//       function() {
+//         return more;
+//       },
 
-      function(cb){
+//       function(cb){
 
-        userServerController.findCategorizedUsersCursor(p, function(err, results){
+//         userServerController.findCategorizedUsersCursor(p, function(err, results){
 
-          if (err) {
-            console.error(chalkError(MODULE_ID_PREFIX + " | ERROR: initCategorizedUserHashmap: " + err));
-            cb(err);
-          }
-          else if (results) {
+//           if (err) {
+//             console.error(chalkError(MODULE_ID_PREFIX + " | ERROR: initCategorizedUserHashmap: " + err));
+//             cb(err);
+//           }
+//           else if (results) {
 
-            more = true;
-            totalCount += results.count;
-            totalManual += results.manual;
-            totalAuto += results.auto;
-            totalMatched += results.matched;
-            totalMismatched += results.mismatched;
+//             more = true;
+//             totalCount += results.count;
+//             totalManual += results.manual;
+//             totalAuto += results.auto;
+//             totalMatched += results.matched;
+//             totalMismatched += results.mismatched;
 
-            totalMatchRate = 100*(totalMatched/totalCount);
+//             totalMatchRate = 100*(totalMatched/totalCount);
 
-            Object.keys(results.obj).forEach(function(nodeId){
-              categorizedUserHashmap.set(nodeId, results.obj[nodeId]);
-            });
+//             Object.keys(results.obj).forEach(function(nodeId){
+//               categorizedUserHashmap.set(nodeId, results.obj[nodeId]);
+//             });
 
-            if (configuration.verbose || (totalCount % 1000 === 0)) {
+//             if (configuration.verbose || (totalCount % 1000 === 0)) {
 
-              console.log(chalkLog(MODULE_ID_PREFIX + " | LOADING CATEGORIZED USERS FROM DB"
-                + " | TOTAL CATEGORIZED: " + totalCount
-                + " | LIMIT: " + p.limit
-                + " | SKIP: " + p.skip
-                + " | " + totalManual + " MAN"
-                + " | " + totalAuto + " AUTO"
-                + " | " + totalMatched + " MATCHED"
-                + " / " + totalMismatched + " MISMATCHED"
-                + " | " + totalMatchRate.toFixed(2) + "% MATCHRATE"
-              ));
+//               console.log(chalkLog(MODULE_ID_PREFIX + " | LOADING CATEGORIZED USERS FROM DB"
+//                 + " | TOTAL CATEGORIZED: " + totalCount
+//                 + " | LIMIT: " + p.limit
+//                 + " | SKIP: " + p.skip
+//                 + " | " + totalManual + " MAN"
+//                 + " | " + totalAuto + " AUTO"
+//                 + " | " + totalMatched + " MATCHED"
+//                 + " / " + totalMismatched + " MISMATCHED"
+//                 + " | " + totalMatchRate.toFixed(2) + "% MATCHRATE"
+//               ));
 
-            }
+//             }
 
-            p.skip += results.count;
+//             p.skip += results.count;
 
-            cb();
-          }
-          else {
+//             cb();
+//           }
+//           else {
 
-            more = false;
+//             more = false;
 
-            console.log(chalkLog(MODULE_ID_PREFIX + " | LOADING CATEGORIZED USERS FROM DB"
-              + " | TOTAL CATEGORIZED: " + totalCount
-              + " | LIMIT: " + p.limit
-              + " | SKIP: " + p.skip
-              + " | " + totalManual + " MAN"
-              + " | " + totalAuto + " AUTO"
-              + " | " + totalMatched + " MATCHED"
-              + " / " + totalMismatched + " MISMATCHED"
-              + " | " + totalMatchRate.toFixed(2) + "% MATCHRATE"
-            ));
+//             console.log(chalkLog(MODULE_ID_PREFIX + " | LOADING CATEGORIZED USERS FROM DB"
+//               + " | TOTAL CATEGORIZED: " + totalCount
+//               + " | LIMIT: " + p.limit
+//               + " | SKIP: " + p.skip
+//               + " | " + totalManual + " MAN"
+//               + " | " + totalAuto + " AUTO"
+//               + " | " + totalMatched + " MATCHED"
+//               + " / " + totalMismatched + " MISMATCHED"
+//               + " | " + totalMatchRate.toFixed(2) + "% MATCHRATE"
+//             ));
 
-            cb();
-          }
+//             cb();
+//           }
 
-        });
-      },
+//         });
+//       },
 
-      function(err){
-        if (err) {
-          console.log(chalkError(MODULE_ID_PREFIX + " | INIT CATEGORIZED USER HASHMAP ERROR: " + err + "\n" + jsonPrint(err)));
-          return reject(err);
-        }
-        resolve();
-      }
-    );
+//       function(err){
+//         if (err) {
+//           console.log(chalkError(MODULE_ID_PREFIX + " | INIT CATEGORIZED USER HASHMAP ERROR: " + err + "\n" + jsonPrint(err)));
+//           return reject(err);
+//         }
+//         resolve();
+//       }
+//     );
 
-  });
-}
+//   });
+// }
 
-function generateRandomEvolveConfig (params){
+function generateRandomEvolveConfig (){
 
   return new Promise(async function(resolve, reject){
 
@@ -3246,6 +3209,7 @@ function initNetworkCreate(params){
     ));
 
     let messageObj;
+    let networkCreateObj = {};
 
     try {
 
@@ -3299,7 +3263,7 @@ function initNetworkCreate(params){
 
           resultsHashmap[messageObj.testRunId] = {};
 
-          const networkCreateObj = {};
+          networkCreateObj = {};
           networkCreateObj.childId = childId;
           networkCreateObj.status = "EVOLVE";
           networkCreateObj.successRate = 0;
@@ -3344,100 +3308,100 @@ function initNetworkCreate(params){
   });
 }
 
-function allComplete(){
+// function allComplete(){
 
-  getChildProcesses(function(err, childArray){
+//   getChildProcesses(function(err, childArray){
 
-    if (Object.keys(childHashMap).length !== 0 ) { 
-      allCompleteFlag = false;
-      console.log(chalkBlue(MODULE_ID_PREFIX + " | allComplete: " + allCompleteFlag + " | NN CHILDREN IN HM: " + jsonPrint(Object.keys(childHashMap))));
-      return;
-    }
+//     if (Object.keys(childHashMap).length !== 0 ) { 
+//       allCompleteFlag = false;
+//       console.log(chalkBlue(MODULE_ID_PREFIX + " | allComplete: " + allCompleteFlag + " | NN CHILDREN IN HM: " + jsonPrint(Object.keys(childHashMap))));
+//       return;
+//     }
 
-    if (childArray.length === 0 ) { 
-      allCompleteFlag = true;
-      console.log(chalkBlue(MODULE_ID_PREFIX + " | allComplete | NO NN CHILDREN PROCESSES"));
-      return;
-    }
+//     if (childArray.length === 0 ) { 
+//       allCompleteFlag = true;
+//       console.log(chalkBlue(MODULE_ID_PREFIX + " | allComplete | NO NN CHILDREN PROCESSES"));
+//       return;
+//     }
 
-    const index = 0;
+//     const index = 0;
 
-    async.each(Object.keys(childHashMap), function(childId, cb){
+//     async.each(Object.keys(childHashMap), function(childId, cb){
 
-      if (configuration.verbose) {
-        console.log(chalkLog(MODULE_ID_PREFIX + " | allComplete"
-          + " | NNC " + childId 
-          + " STATUS: " + childHashMap[childId].status
-        ));
-      }
+//       if (configuration.verbose) {
+//         console.log(chalkLog(MODULE_ID_PREFIX + " | allComplete"
+//           + " | NNC " + childId 
+//           + " STATUS: " + childHashMap[childId].status
+//         ));
+//       }
 
-      if (childHashMap[childId].status === "RUNNING"){
-        allCompleteFlag = false;
-        return cb("RUNNING");
-      }
-      cb();
+//       if (childHashMap[childId].status === "RUNNING"){
+//         allCompleteFlag = false;
+//         return cb("RUNNING");
+//       }
+//       cb();
 
-    }, function(running){
-      if (!running) { allCompleteFlag = true; }
-      return;
-    });
+//     }, function(running){
+//       if (!running) { allCompleteFlag = true; }
+//       return;
+//     });
 
-  });
-}
+//   });
+// }
 
-function printchildHashMap(){
+// function printchildHashMap(){
 
-  const childIdArray = Object.keys(childHashMap).sort();
+//   const childIdArray = Object.keys(childHashMap).sort();
 
-  let chalkValue = chalkLog;
+//   let chalkValue = chalkLog;
 
-  async.eachSeries(childIdArray, function(childId, cb){
+//   async.eachSeries(childIdArray, function(childId, cb){
 
-    switch (childHashMap[childId].status) {
-      case "IDLE":
-        chalkValue = chalk.blue;
-      break;
-      case "NEW":
-        chalkValue = chalk.bold.green;
-      break;
-      case "TEST PASS":
-      case "PASS LOCAL":
-      case "RUNNING":
-        chalkValue = chalk.green;
-      break;
-      case "PASS GLOBAL":
-        chalkValue = chalk.bold.green;
-      break;
-      case "INIT":
-      case "COMPLETE":
-      case "EXIT":
-        chalkValue = chalk.blue;
-      break;
-      case "ERROR":
-        chalkValue = chalkError;
-      break;
-      case "ZOMBIE":
-      case "CLOSE":
-      case "DEAD":
-        chalkValue = chalkAlert;
-      break;
-      default:
-        console.log(chalkWarn("??? UNKNOWN CHILD STATUS: " + childHashMap[childId].status));
-        chalkValue = chalkInfo;
-    }
+//     switch (childHashMap[childId].status) {
+//       case "IDLE":
+//         chalkValue = chalk.blue;
+//       break;
+//       case "NEW":
+//         chalkValue = chalk.bold.green;
+//       break;
+//       case "TEST PASS":
+//       case "PASS LOCAL":
+//       case "RUNNING":
+//         chalkValue = chalk.green;
+//       break;
+//       case "PASS GLOBAL":
+//         chalkValue = chalk.bold.green;
+//       break;
+//       case "INIT":
+//       case "COMPLETE":
+//       case "EXIT":
+//         chalkValue = chalk.blue;
+//       break;
+//       case "ERROR":
+//         chalkValue = chalkError;
+//       break;
+//       case "ZOMBIE":
+//       case "CLOSE":
+//       case "DEAD":
+//         chalkValue = chalkAlert;
+//       break;
+//       default:
+//         console.log(chalkWarn("??? UNKNOWN CHILD STATUS: " + childHashMap[childId].status));
+//         chalkValue = chalkInfo;
+//     }
 
-    console.log(chalkValue(MODULE_ID_PREFIX + " | CHILD HM"
-      + " | CHILD ID: " + childId
-      + " | PID: " + childHashMap[childId].pid
-      + " | STATUS: " + childHashMap[childId].status
-    ));
+//     console.log(chalkValue(MODULE_ID_PREFIX + " | CHILD HM"
+//       + " | CHILD ID: " + childId
+//       + " | PID: " + childHashMap[childId].pid
+//       + " | STATUS: " + childHashMap[childId].status
+//     ));
 
-    cb();
+//     cb();
 
-  }, function(){
+//   }, function(){
 
-  });
-}
+//   });
+// }
 
 //=========================================================================
 //=========================================================================
@@ -3504,10 +3468,10 @@ let hostConfiguration = {}; // host-specific configuration for TNN
 configuration.slackChannel = {};
 
 
-function initWatchAllConfigFolders(params){
+function initWatchAllConfigFolders(p){
   return new Promise(async function(resolve, reject){
 
-    params = params || {};
+    const params = p || {};
 
     console.log(chalkBlue(MODULE_ID_PREFIX + " | INIT WATCH ALL CONFIG FILES\n" + jsonPrint(params)));
 
@@ -3531,7 +3495,7 @@ function initWatchAllConfigFolders(params){
 
         console.log(chalkBlue(MODULE_ID_PREFIX + " | INIT WATCH GLOBAL NETWORKS FOLDER: " + DROPBOX_ROOT_FOLDER + globalBestNetworkFolder));
 
-        monitorNetworks.on("created", async function(f, stat){
+        monitorNetworks.on("created", async function(f){
           const fileNameArray = f.split("/");
           const file = fileNameArray[fileNameArray.length-1];
           if (!fileNameArray.includes("archive") && file.endsWith(".json") && !file.startsWith("bestRuntimeNetwork")) {
@@ -3547,7 +3511,7 @@ function initWatchAllConfigFolders(params){
 
         });
 
-        monitorNetworks.on("changed", async function(f, stat){
+        monitorNetworks.on("changed", async function(f){
           const fileNameArray = f.split("/");
           const file = fileNameArray[fileNameArray.length-1];
           if (!fileNameArray.includes("archive") && file.endsWith(".json") && !file.startsWith("bestRuntimeNetwork")) {
@@ -3563,7 +3527,7 @@ function initWatchAllConfigFolders(params){
         });
 
 
-        monitorNetworks.on("removed", function (f, stat) {
+        monitorNetworks.on("removed", function (f) {
           const fileNameArray = f.split("/");
           const networkId = fileNameArray[fileNameArray.length-1].replace(".json", "");
           console.log(chalkAlert(MODULE_ID_PREFIX + " | XXX NETWORK FILE DELETED | " + getTimeStamp() 
@@ -3582,7 +3546,7 @@ function initWatchAllConfigFolders(params){
 
         console.log(chalkBlue(MODULE_ID_PREFIX + " | INIT WATCH INPUTS CONFIG FOLDER: " + DROPBOX_ROOT_FOLDER + defaultInputsFolder));
 
-        monitorInputs.on("created", async function(f, stat){
+        monitorInputs.on("created", async function(f){
           const fileNameArray = f.split("/");
           const file = fileNameArray[fileNameArray.length-1];
           if (file.startsWith("inputs_")) {
@@ -3598,7 +3562,7 @@ function initWatchAllConfigFolders(params){
 
         });
 
-        monitorInputs.on("changed", async function(f, stat){
+        monitorInputs.on("changed", async function(f){
           const fileNameArray = f.split("/");
           const file = fileNameArray[fileNameArray.length-1];
           if (file.startsWith("inputs_")) {
@@ -3615,7 +3579,7 @@ function initWatchAllConfigFolders(params){
         });
 
 
-        monitorInputs.on("removed", function (f, stat) {
+        monitorInputs.on("removed", function (f) {
           const fileNameArray = f.split("/");
           const inputsId = fileNameArray[fileNameArray.length-1].replace(".json", "");
           console.log(chalkAlert(MODULE_ID_PREFIX + " | XXX INPUTS FILE DELETED | " + getTimeStamp() 
@@ -3634,7 +3598,7 @@ function initWatchAllConfigFolders(params){
 
         console.log(chalkBlue(MODULE_ID_PREFIX + " | INIT WATCH DEFAULT CONFIG FOLDER: " + DROPBOX_ROOT_FOLDER + dropboxConfigDefaultFolder));
 
-        monitorDefaultConfig.on("created", async function(f, stat){
+        monitorDefaultConfig.on("created", async function(f){
           if (f.endsWith(dropboxConfigDefaultFile)){
             await delay({period: 30*ONE_SECOND});
             await loadAllConfigFiles();
@@ -3648,7 +3612,7 @@ function initWatchAllConfigFolders(params){
 
         });
 
-        monitorDefaultConfig.on("changed", async function(f, stat){
+        monitorDefaultConfig.on("changed", async function(f){
 
           if (f.endsWith(dropboxConfigDefaultFile)){
             await delay({period: 30*ONE_SECOND});
@@ -3663,7 +3627,7 @@ function initWatchAllConfigFolders(params){
 
         });
 
-        monitorDefaultConfig.on("removed", function (f, stat) {
+        monitorDefaultConfig.on("removed", function (f) {
           console.log(chalkInfo(MODULE_ID_PREFIX + " | XXX FILE DELETED | " + getTimeStamp() + " | " + f));
         });
       });
@@ -3676,21 +3640,21 @@ function initWatchAllConfigFolders(params){
 
         console.log(chalkBlue(MODULE_ID_PREFIX + " | INIT WATCH HOST CONFIG FOLDER: " + DROPBOX_ROOT_FOLDER + dropboxConfigHostFolder));
 
-        monitorHostConfig.on("created", async function(f, stat){
+        monitorHostConfig.on("created", async function(f){
           if (f.endsWith(dropboxConfigHostFile)){
             await loadAllConfigFiles();
             await loadCommandLineArgs();
           }
         });
 
-        monitorHostConfig.on("changed", async function(f, stat){
+        monitorHostConfig.on("changed", async function(f){
           if (f.endsWith(dropboxConfigHostFile)){
             await loadAllConfigFiles();
             await loadCommandLineArgs();
           }
         });
 
-        monitorHostConfig.on("removed", function (f, stat) {
+        monitorHostConfig.on("removed", function (f) {
           console.log(chalkInfo(MODULE_ID_PREFIX + " | XXX FILE DELETED | " + getTimeStamp() + " | " + f));
         });
       });
@@ -3894,8 +3858,9 @@ function jsonPrint(obj) {
   }
 }
 
-function msToTime(duration) {
+function msToTime(d) {
 
+  let duration = d;
   let sign = 1;
 
   if (duration < 0) {
@@ -3936,42 +3901,48 @@ function getTimeStamp(inputTime) {
   }
 }
 
-function delay(params) {
+function delay(p) {
 
-  params = params || {};
-
+  const params = p || {};
   const period = params.period || 10*ONE_SECOND;
   const verbose = params.verbose || false;
 
   return new Promise(function(resolve, reject){
 
-    if (verbose) {
-      console.log(chalkLog(MODULE_ID_PREFIX + " | +++ DELAY START | NOW: " + getTimeStamp() + " | PERIOD: " + msToTime(period)));
+    try {
+      if (verbose) {
+        console.log(chalkLog(MODULE_ID_PREFIX + " | +++ DELAY START | NOW: " + getTimeStamp() + " | PERIOD: " + msToTime(period)));
+      }
+
+      setTimeout(function(){
+        if (verbose) {
+          console.log(chalkLog(MODULE_ID_PREFIX + " | XXX DELAY END | NOW: " + getTimeStamp() + " | PERIOD: " + msToTime(period)));
+        }
+        resolve();
+      }, period);
+    }
+    catch(err){
+      console.log(chalkError(MODULE_ID_PREFIX + " | *** delay ERROR:", err));
+      reject(err);
     }
 
-    setTimeout(function(){
-      if (verbose) {
-        console.log(chalkLog(MODULE_ID_PREFIX + " | XXX DELAY END | NOW: " + getTimeStamp() + " | PERIOD: " + msToTime(period)));
-      }
-      resolve();
-    }, period);
   });
 
 }
 
-function getElapsed(){
-  statsObj.elapsedMS = moment().valueOf() - startTimeMoment.valueOf();
-  return statsObj.elapsedMS;
-}
+// function getElapsed(){
+//   statsObj.elapsedMS = moment().valueOf() - startTimeMoment.valueOf();
+//   return statsObj.elapsedMS;
+// }
 
 function getElapsedTimeStamp(){
   statsObj.elapsedMS = moment().valueOf() - startTimeMoment.valueOf();
   return msToTime(statsObj.elapsedMS);
 }
 
-function toMegabytes(sizeInBytes) {
-  return sizeInBytes/ONE_MEGABYTE;
-}
+// function toMegabytes(sizeInBytes) {
+//   return sizeInBytes/ONE_MEGABYTE;
+// }
 
 function printCat(c){
   if (c === "left") { return "L"; }
@@ -4009,17 +3980,11 @@ function touchChildPidFile(params){
   });
 }
 
-function getChildProcesses(params){
+function getChildProcesses(){
 
   return new Promise(function(resolve, reject){
 
-    let command;
-    let pid;
-    let childId;
-    const numChildren = 0;
     const childPidArray = [];
-
-    // DEFAULT_CHILD_ID_PREFIX_XXX=[pid] 
 
     shell.mkdir("-p", childPidFolderLocal);
 
@@ -4126,29 +4091,27 @@ function getChildProcesses(params){
   });
 }
 
-function findChildByPid(pid, callback){
+// function findChildByPid(pid, callback){
 
-  let foundChildId = false;
+//   let foundChildId = false;
 
-  async.each(Object.keys(childHashMap), function(nnChildId, cb){
+//   async.each(Object.keys(childHashMap), function(nnChildId, cb){
 
-    if (pid && (childHashMap[nnChildId].pid === pid)){
+//     if (pid && (childHashMap[nnChildId].pid === pid)){
 
-      foundChildId = nnChildId;
+//       foundChildId = nnChildId;
 
-      cb(foundChildId);
+//       cb(foundChildId);
 
-    }
-    else {
-      cb();
-    }
+//     }
+//     else {
+//       cb();
+//     }
 
-  }, function(result){
-    callback(null, foundChildId);
-  });
-
-}
-
+//   }, function(result){
+//     callback(null, foundChildId);
+//   });
+// }
 
 function killChild(params){
 
@@ -4178,7 +4141,7 @@ function killChild(params){
   });
 }
 
-function killAll(params){
+function killAll(){
 
   console.log("KILL ALL");
 
@@ -4279,39 +4242,45 @@ function showStats(options) {
 
 }
 
-function initStatsUpdate(callback) {
+function initStatsUpdate() {
 
   return new Promise(function(resolve, reject){
 
-    console.log(chalkLog(MODULE_ID_PREFIX + " | INIT STATS UPDATE INTERVAL | " + msToTime(configuration.statsUpdateIntervalTime)));
+    try {
 
-
-    statsObj.elapsed = getElapsedTimeStamp();
-    statsObj.timeStamp = getTimeStamp();
-
-    saveFile({localFlag: false, folder: statsFolder, file: statsFile, obj: statsObj});
-
-    clearInterval(statsUpdateInterval);
-
-    statsUpdateInterval = setInterval(async function () {
+      console.log(chalkLog(MODULE_ID_PREFIX + " | INIT STATS UPDATE INTERVAL | " + msToTime(configuration.statsUpdateIntervalTime)));
 
       statsObj.elapsed = getElapsedTimeStamp();
       statsObj.timeStamp = getTimeStamp();
 
-      saveFileQueue.push({localFlag: false, folder: statsFolder, file: statsFile, obj: statsObj});
-      statsObj.queues.saveFileQueue.size = saveFileQueue.length;
+      saveFile({localFlag: false, folder: statsFolder, file: statsFile, obj: statsObj});
 
-      try{
-        await showStats();
-      }
-      catch(err){
-        console.log(chalkError(MODULE_ID_PREFIX + " | *** SHOW STATS ERROR: " + err));
-      }
-      
-    }, configuration.statsUpdateIntervalTime);
+      clearInterval(statsUpdateInterval);
 
-    resolve();
+      statsUpdateInterval = setInterval(async function () {
 
+        statsObj.elapsed = getElapsedTimeStamp();
+        statsObj.timeStamp = getTimeStamp();
+
+        saveFileQueue.push({localFlag: false, folder: statsFolder, file: statsFile, obj: statsObj});
+        statsObj.queues.saveFileQueue.size = saveFileQueue.length;
+
+        try{
+          await showStats();
+        }
+        catch(err){
+          console.log(chalkError(MODULE_ID_PREFIX + " | *** SHOW STATS ERROR: " + err));
+        }
+        
+      }, configuration.statsUpdateIntervalTime);
+
+      resolve();
+
+    }
+    catch(err){
+      console.log(chalkError(MODULE_ID_PREFIX + " | *** initStatsUpdate ERROR:", err));
+      reject(err);
+    }
   });
 }
 
@@ -4332,11 +4301,11 @@ configuration.DROPBOX.DROPBOX_WORD_ASSO_APP_SECRET = process.env.DROPBOX_WORD_AS
 configuration.DROPBOX.DROPBOX_CONFIG_FILE = process.env.DROPBOX_CONFIG_FILE || MODULE_NAME + "Config.json";
 configuration.DROPBOX.DROPBOX_STATS_FILE = process.env.DROPBOX_STATS_FILE || MODULE_NAME + "Stats.json";
 
-const dropboxConfigFolder = "/config/utility";
+// const dropboxConfigFolder = "/config/utility";
 const dropboxConfigDefaultFolder = "/config/utility/default";
 const dropboxConfigHostFolder = "/config/utility/" + hostname;
 
-const defaultNetworkInputsConfigFile = "default_networkInputsConfig.json";
+// const defaultNetworkInputsConfigFile = "default_networkInputsConfig.json";
 const defaultBestInputsConfigFile = "default_bestInputsConfig.json"
 
 const dropboxConfigDefaultFile = "default_" + configuration.DROPBOX.DROPBOX_CONFIG_FILE;
@@ -4350,20 +4319,20 @@ const statsFolder = "/stats/" + hostname;
 const statsFile = configuration.DROPBOX.DROPBOX_STATS_FILE;
 
 const defaultInputsFolder = dropboxConfigDefaultFolder + "/inputs";
-const defaultInputsArchiveFolder = dropboxConfigDefaultFolder + "/inputsArchive";
+// const defaultInputsArchiveFolder = dropboxConfigDefaultFolder + "/inputsArchive";
 
-const defaultTrainingSetFolder = dropboxConfigDefaultFolder + "/trainingSets";
-const localTrainingSetFolder = dropboxConfigHostFolder + "/trainingSets";
+// const defaultTrainingSetFolder = dropboxConfigDefaultFolder + "/trainingSets";
+// const localTrainingSetFolder = dropboxConfigHostFolder + "/trainingSets";
 
-const defaultTrainingSetUserArchive = defaultTrainingSetFolder + "/users/users.zip";
+// const defaultTrainingSetUserArchive = defaultTrainingSetFolder + "/users/users.zip";
 
 const globalBestNetworkFolder = "/config/utility/best/neuralNetworks";
 const localBestNetworkFolder = "/config/utility/" + hostname + "/neuralNetworks/best";
 const localFailNetworkFolder = "/config/utility/" + hostname + "/neuralNetworks/fail";
 const localArchiveNetworkFolder = "/config/utility/" + hostname + "/neuralNetworks/archive";
 
-const globalCategorizedUsersFolder = dropboxConfigDefaultFolder + "/categorizedUsers";
-const categorizedUsersFile = "categorizedUsers_manual.json";
+// const globalCategorizedUsersFolder = dropboxConfigDefaultFolder + "/categorizedUsers";
+// const categorizedUsersFile = "categorizedUsers_manual.json";
 
 
 const dropboxRemoteClient = new Dropbox({ 
@@ -4416,6 +4385,10 @@ function filesListFolderLocal(options){
 
         }, function(err){
 
+          if (err) {
+            console.log(chalkError(MODULE_ID_PREFIX + " | *** filesListFolderLocal ERROR:", err));
+            return reject(err);
+          }
           const response = {
             cursor: false,
             has_more: false,
@@ -4597,7 +4570,7 @@ function loadFileRetry(params){
 
   return new Promise(async function(resolve, reject){
 
-    const includeMetaData = params.includeMetaData || false;
+    // const includeMetaData = params.includeMetaData || false;
     const resolveOnNotFound = params.resolveOnNotFound || false;
     const maxRetries = params.maxRetries || 10;
     let retryNumber;
@@ -5068,8 +5041,8 @@ function saveFile(params, callback){
     showStats().then(function(){
 
     }).
-catch(function(err){
-      console.log(chalkError(MODULE_ID_PREFIX + " | *** SHOW STATS ERROR"));
+    catch(function(err){
+      console.log(chalkError(MODULE_ID_PREFIX + " | *** SHOW STATS ERROR:", err));
     });
 
     console.log(chalkBlue(MODULE_ID_PREFIX + " | ... SAVING DROPBOX LOCALLY"
@@ -5240,7 +5213,7 @@ function initSaveFileQueue(cnf) {
 //=========================================================================
 const intervalsSet = new Set();
 
-function clearAllIntervals(params){
+function clearAllIntervals(){
   return new Promise(function(resolve, reject){
     try {
       [...intervalsSet].forEach(function(intervalHandle){
@@ -5259,10 +5232,10 @@ function clearAllIntervals(params){
 // QUIT + EXIT
 //=========================================================================
 
-let quitWaitInterval;
+// let quitWaitInterval;
 let quitFlag = false;
 
-function readyToQuit(params) {
+function readyToQuit() {
   const flag = true; // replace with function returns true when ready to quit
   return flag;
 }
@@ -5312,9 +5285,9 @@ async function quit(opts) {
     console.log(MODULE_ID_PREFIX + " | QUIT INFO\n" + jsonPrint(options) );
   }
 
-  intervalsSet.add("quitWaitInterval");
+  // intervalsSet.add("quitWaitInterval");
 
-  quitWaitInterval = setInterval(async function() {
+  setInterval(async function() {
 
     if (readyToQuit()) {
 
@@ -5384,7 +5357,7 @@ const cla = require("command-line-args");
 const help = { name: "help", alias: "h", type: Boolean};
 
 const enableStdin = { name: "enableStdin", alias: "S", type: Boolean, defaultValue: true };
-const quitNow = { name: "quitNow", alias: "K", type: Boolean};
+// const quitNow = { name: "quitNow", alias: "K", type: Boolean};
 const quitOnComplete = { name: "quitOnComplete", alias: "q", type: Boolean };
 const quitOnError = { name: "quitOnError", alias: "Q", type: Boolean, defaultValue: true };
 const verbose = { name: "verbose", alias: "v", type: Boolean };
@@ -5401,7 +5374,7 @@ const hiddenLayerSize = { name: "hiddenLayerSize", alias: "H", type: Number};
 const seedNetworkId = { name: "seedNetworkId", alias: "s", type: String };
 const useBestNetwork = { name: "useBestNetwork", alias: "b", type: Boolean };
 const evolveIterations = { name: "evolveIterations", alias: "I", type: Number};
-const targetServer = { name: "targetServer", type: String };
+// const targetServer = { name: "targetServer", type: String };
 
 const optionDefinitions = [
   maxNumberChildren,
@@ -5445,7 +5418,7 @@ statsObj.commandLineConfig = commandLineConfig;
 
 function loadCommandLineArgs(){
 
-  return new Promise(function(resolve, reject){
+  return new Promise(function(resolve){
 
     statsObj.status = "LOAD COMMAND LINE ARGS";
 
@@ -5472,37 +5445,37 @@ function loadCommandLineArgs(){
   });
 }
 
-function loadNetworkInputsConfig(params){
+// function loadNetworkInputsConfig(params){
 
-  return new Promise(async function(resolve, reject){
+//   return new Promise(async function(resolve, reject){
 
-    statsObj.status = "LOAD NETWORK INPUTS CONFIG";
+//     statsObj.status = "LOAD NETWORK INPUTS CONFIG";
 
-    console.log(chalkLog(MODULE_ID_PREFIX
-      + " | LOAD NETWORK INPUTS CONFIG FILE: " + dropboxConfigDefaultFolder + "/" + defaultNetworkInputsConfigFile
-    ));
+//     console.log(chalkLog(MODULE_ID_PREFIX
+//       + " | LOAD NETWORK INPUTS CONFIG FILE: " + dropboxConfigDefaultFolder + "/" + defaultNetworkInputsConfigFile
+//     ));
 
-    let networkInputsObj;
+//     let networkInputsObj;
 
-    try{
-      networkInputsObj = await loadFileRetry({folder: dropboxConfigDefaultFolder, file: defaultNetworkInputsConfigFile});
+//     try{
+//       networkInputsObj = await loadFileRetry({folder: dropboxConfigDefaultFolder, file: defaultNetworkInputsConfigFile});
 
-      configuration.inputsIdArray = networkInputsObj.INPUTS_IDS;
+//       configuration.inputsIdArray = networkInputsObj.INPUTS_IDS;
 
-      console.log(chalkNetwork(MODULE_ID_PREFIX + " | LOADED NETWORK INPUTS ARRAY\n" + jsonPrint(configuration.inputsIdArray)));
-      statsObj.networkInputsSetReady = true;
-      resolve();
-    }
-    catch(err){
-      console.log(chalkError(MODULE_ID_PREFIX + " | *** NETWORK INPUTS CONFIG FILE LOAD ERROR: " + err));
-      statsObj.networkInputsSetReady = false;
-      return reject(err);
-    }
+//       console.log(chalkNetwork(MODULE_ID_PREFIX + " | LOADED NETWORK INPUTS ARRAY\n" + jsonPrint(configuration.inputsIdArray)));
+//       statsObj.networkInputsSetReady = true;
+//       resolve();
+//     }
+//     catch(err){
+//       console.log(chalkError(MODULE_ID_PREFIX + " | *** NETWORK INPUTS CONFIG FILE LOAD ERROR: " + err));
+//       statsObj.networkInputsSetReady = false;
+//       return reject(err);
+//     }
 
-  });
-}
+//   });
+// }
 
-function loadBestInputsConfig(params){
+function loadBestInputsConfig(){
 
   return new Promise(async function(resolve, reject){
 
@@ -5536,7 +5509,7 @@ function initChildPingAllInterval(params){
 
   const interval = (params) ? params.interval : configuration.childPingAllInterval;
 
-  return new Promise(function(resolve, reject){
+  return new Promise(function(resolve){
 
     statsObj.status = "INIT CHILD PING ALL INTERVAL";
 
@@ -5560,7 +5533,7 @@ function initChildPingAllInterval(params){
   });
 }
 
-function loadTrainingSet(params){
+function loadTrainingSet(){
 
   return new Promise(async function(resolve, reject){
 
@@ -5594,7 +5567,7 @@ function loadTrainingSet(params){
         statsObj.loadUsersArchiveBusy = false;
         statsObj.archiveFile = archiveFlagObj.file;
         statsObj.trainingSetReady = true;
-        runOnceFlag = true;
+        // runOnceFlag = true;
         resolve();
       }
       catch(err){
@@ -5619,10 +5592,10 @@ function loadTrainingSet(params){
 const Stately = require("stately.js");
 const FSM_TICK_INTERVAL = ONE_SECOND;
 
-let fsm;
+// let fsm;
 let fsmTickInterval;
 let fsmPreviousState = "RESET";
-let sentAllChildrenCompleteFlag = false;
+// let sentAllChildrenCompleteFlag = false;
 let createChildrenInProgress = false;
 let killAllInProgress = false;
 
@@ -5919,7 +5892,7 @@ const fsmStates = {
 
           if (allChildrenComplete) { 
             console.log(chalkLog(MODULE_ID_PREFIX + " | ALL CHILDREN COMPLETE"));
-            sentAllChildrenCompleteFlag = false;
+            // sentAllChildrenCompleteFlag = false;
             fsm.fsm_complete();
           }
 
@@ -5989,6 +5962,7 @@ const fsmStates = {
         if (allChildrenReset) { fsm.fsm_resetEnd(); }
       }).
       catch(function(err){
+        console.log(chalkError(MODULE_ID_PREFIX + " | *** checkChildState ERROR:", err));
         fsm.fsm_error();
       });
 
@@ -6003,7 +5977,7 @@ const fsmStates = {
   },
 };
 
-fsm = Stately.machine(fsmStates);
+const fsm = Stately.machine(fsmStates);
 
 function initFsmTickInterval(interval) {
 
@@ -6034,14 +6008,14 @@ function getNumberOfChildren(){
   return Object.keys(childHashMap).length;
 }
 
-function childCreateAll(params){
+function childCreateAll(p){
 
   return new Promise(async function(resolve, reject){
 
-    params = params || {};
+    const params = p || {};
 
     const childrenCreatedArray = [];
-    const maxNumberChildren = params.maxNumberChildren || configuration.maxNumberChildren;
+    // const maxNumberChildren = params.maxNumberChildren || configuration.maxNumberChildren;
 
     const interval = params.interval || 5*ONE_SECOND;
     let childIndex = params.childIndex || configuration.childIndex;
@@ -6119,11 +6093,11 @@ function childCreateAll(params){
   });
 }
 
-function childStatsAll(params){
+function childStatsAll(p){
 
   return new Promise(async function(resolve, reject){
 
-    params = params || {};
+    const params = p || {};
 
     const now = params.now || false;
 
@@ -6144,8 +6118,8 @@ function childStatsAll(params){
   });
 }
 
-function getNewNetworkId(params){
-  params = params || {};
+function getNewNetworkId(p){
+  const params = p || {};
   params.prefix = params.prefix || configuration.networkIdPrefix;
   const networkId = params.prefix + "_" + networkIndex;
   networkIndex += 1;
@@ -6173,7 +6147,7 @@ function startNetworkCreate(params){
   });
 }
 
-function childStartAll(params){
+function childStartAll(){
 
   return new Promise(function(resolve, reject){
     try {
@@ -6201,11 +6175,11 @@ function childStartAll(params){
   });
 }
 
-function childQuitAll(params){
+function childQuitAll(p){
 
   return new Promise(async function(resolve, reject){
 
-    params = params || {};
+    const params = p || {};
 
     const now = params.now || false;
 
@@ -6226,9 +6200,9 @@ function childQuitAll(params){
   });
 }
 
-function childSend(params){
+function childSend(p){
 
-  params = params || {};
+  const params = p || {};
 
   return new Promise(function(resolve, reject){
 
@@ -6259,12 +6233,20 @@ function childSend(params){
   });
 }
 
-function childSendAll(params){
+function childSendAll(p){
 
-  params = params || {};
+  const params = p || {};
 
-  const childId = (params.command) ? params.command.childId : params.childId;
-  const op = (params.command) ? params.command.op : (params.op) ? params.op : "PING";
+  // const childId = (params.command) ? params.command.childId : params.childId;
+  let op = "PING";
+
+  if (params.command) {
+    op = params.command.op
+  }
+  else if (params.op) {
+    op = params.op;
+  }
+
   const now = params.now || true;
 
   const defaultCommand = {};
@@ -6290,9 +6272,9 @@ function childSendAll(params){
   });
 }
 
-function childInit(params){
+function childInit(p){
 
-  params = params || {};
+  const params = p || {};
 
   const childId = params.childId;
   const childIdShort = params.childIdShort;
@@ -6326,11 +6308,11 @@ function childInit(params){
   });
 }
 
-function childCreate(params){
+function childCreate(p){
 
   return new Promise(async function(resolve, reject){
 
-    params = params || {};
+    const params = p || {};
     const args = params.args || [];
 
     const childId = params.childId;
@@ -6338,7 +6320,7 @@ function childCreate(params){
     const appPath = params.appPath;
     const env = params.env;
     const config = params.config || {};
-    const verbose = params.verbose || false;
+    // const verbose = params.verbose || false;
 
     let child = {};
     const options = {};
@@ -6432,11 +6414,11 @@ format(compactDateTimeFormat);
           case "EVOLVE_COMPLETE":
 
             let nn;
-            let inputsObj;
+            // let inputsObj;
 
             try {
               nn = await networkDefaults(m.networkObj);
-              inputsObj = await updateDbInputs({inputsObj: nn.inputsObj, networkId: nn.networkId});
+              await updateDbInputs({inputsObj: nn.inputsObj, networkId: nn.networkId});
             }
             catch(err){
               console.trace(chalkError("EVOLVE_COMPLETE ERROR: " + err));
@@ -6739,7 +6721,7 @@ format(compactDateTimeFormat);
         delete childHashMap[childId];
       });
 
-      child.on("exit", function(code, signal){
+      child.on("exit", function(){
         console.log(chalkAlert(MODULE_ID_PREFIX + " | CHILD EXITED | " + childId));
         shell.cd(childPidFolderLocal);
         shell.rm(childPidFile);
@@ -6769,72 +6751,72 @@ format(compactDateTimeFormat);
   });
 }
 
-function childDisable(params){
+// function childDisable(params){
 
-  params = params || {};
+//   params = params || {};
 
-  const childId = params.childId;
-  const config = params.config || {};
-  const verbose = params.verbose || false;
+//   const childId = params.childId;
+//   const config = params.config || {};
+//   const verbose = params.verbose || false;
 
-  statsObj.status = "CHILD DISABLE | CH ID: " + childId;
+//   statsObj.status = "CHILD DISABLE | CH ID: " + childId;
 
-  return new Promise(async function(resolve, reject){
+//   return new Promise(async function(resolve, reject){
 
-    const command = {
-      op: "DISABLE",
-      verbose: verbose,
-      config: config
-    };
+//     const command = {
+//       op: "DISABLE",
+//       verbose: verbose,
+//       config: config
+//     };
 
-    try {
-      const response = await childSend({childId: childId, command: command});
-      resolve(response);
-    }
-    catch(err){
-      console.log(chalkError(MODULE_ID_PREFIX + " | *** CHILD SEND DISABLE ERROR"
-        + " | ERR: " + err
-        + "\nCOMMAND\n" + jsonPrint(command)
-      ));
-      return reject(err);
-    }
+//     try {
+//       const response = await childSend({childId: childId, command: command});
+//       resolve(response);
+//     }
+//     catch(err){
+//       console.log(chalkError(MODULE_ID_PREFIX + " | *** CHILD SEND DISABLE ERROR"
+//         + " | ERR: " + err
+//         + "\nCOMMAND\n" + jsonPrint(command)
+//       ));
+//       return reject(err);
+//     }
 
-  });
-}
+//   });
+// }
 
-function childPing(params){
+// function childPing(params){
 
-  params = params || {};
+//   params = params || {};
 
-  const childId = params.childId;
-  const config = params.config || {};
-  const verbose = params.verbose || false;
+//   const childId = params.childId;
+//   const config = params.config || {};
+//   const verbose = params.verbose || false;
 
-  statsObj.status = "CHILD PING | CH ID: " + childId;
+//   statsObj.status = "CHILD PING | CH ID: " + childId;
 
-  return new Promise(async function(resolve, reject){
+//   return new Promise(async function(resolve, reject){
 
-    const command = {
-      op: "PING",
-      verbose: verbose,
-      pingId: getTimeStamp(),
-      config: config
-    };
+//     const command = {
+//       op: "PING",
+//       verbose: verbose,
+//       pingId: getTimeStamp(),
+//       config: config
+//     };
 
-    try {
-      const response = await childSend({childId: childId, command: command});
-      resolve(response);
-    }
-    catch(err){
-      console.log(chalkError(MODULE_ID_PREFIX + " | *** CHILD SEND " + op + " ERROR"
-        + " | ERR: " + err
-        + "\nCOMMAND\n" + jsonPrint(command)
-      ));
-      return reject(err);
-    }
+//     try {
+//       const response = await childSend({childId: childId, command: command});
+//       resolve(response);
+//     }
+//     catch(err){
+//       console.log(chalkError(MODULE_ID_PREFIX + " | *** CHILD SEND " + op + " ERROR"
+//         + " | ERR: " + err
+//         + "\nCOMMAND\n" + jsonPrint(command)
+//       ));
+//       return reject(err);
+//     }
 
-  });
-}
+//   });
+// }
 
 function checkChildState (params) {
 
@@ -6887,11 +6869,11 @@ function checkChildState (params) {
   });
 }
 
-function childPingAll(params){
+function childPingAll(p){
 
   return new Promise(async function(resolve, reject){
 
-    params = params || {};
+    const params = p || {};
 
     const now = params.now || false;
 
