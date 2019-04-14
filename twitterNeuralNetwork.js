@@ -37,12 +37,8 @@ else {
   DROPBOX_ROOT_FOLDER = "/Users/tc/Dropbox/Apps/wordAssociation";
 }
 
-let quitOnCompleteFlag = false;
-
-
 const DEFAULT_PURGE_MIN = true; // applies only to parent
 const TEST_MODE = false; // applies only to parent
-const CHILD_TEST_MODE = false; // applies only to children
 const GLOBAL_TEST_MODE = false; // applies to parent and all children
 const QUIT_ON_COMPLETE = false;
 
@@ -54,25 +50,16 @@ const ONE_KILOBYTE = 1024;
 const ONE_MEGABYTE = 1024 * ONE_KILOBYTE;
 
 const SAVE_FILE_QUEUE_INTERVAL = 5*ONE_SECOND;
-const KEEPALIVE_INTERVAL = ONE_MINUTE;
 const QUIT_WAIT_INTERVAL = 5*ONE_SECOND;
 const STATS_UPDATE_INTERVAL = ONE_MINUTE;
 const DEFAULT_CHILD_PING_INTERVAL = ONE_MINUTE;
 
 const SAVE_CACHE_DEFAULT_TTL = 60;
 
-const TWITTER_DEFAULT_USER = "altthreecee00";
-
-const DROPBOX_MAX_SAVE_NORMAL = 20 * ONE_MEGABYTE;
 const DROPBOX_LIST_FOLDER_LIMIT = 50;
-const DROPBOX_TIMEOUT = 30 * ONE_SECOND;
 
 const compactDateTimeFormat = "YYYYMMDD_HHmmss";
 
-const NUM_RANDOM_NETWORKS = 100;
-const IMAGE_QUOTA_TIMEOUT = 60000;
-
-const DEFAULT_FORCE_INIT_RANDOM_NETWORKS = true;
 const OFFLINE_MODE = false;
 
 const statsObj = {};
@@ -97,14 +84,11 @@ const touch = require("touch");
 const kill = require("tree-kill");
 const dot = require("dot-object");
 const _ = require("lodash");
-const defaults = require("object.defaults");
 const treeify = require("treeify");
 const objectPath = require("object-path");
 const fetch = require("isomorphic-fetch"); // or another library of choice.
 const NodeCache = require("node-cache");
 const merge = require("deepmerge");
-const MergeHistograms = require("@threeceelabs/mergehistograms");
-const mergeHistograms = new MergeHistograms();
 const table = require("text-table");
 const randomItem = require("random-item");
 const randomFloat = require("random-float");
@@ -113,7 +97,6 @@ const yauzl = require("yauzl");
 const validUrl = require("valid-url");
 const atob = require("atob");
 const btoa = require("btoa");
-const https = require("follow-redirects").https;
 
 const writeJsonFile = require("write-json-file");
 const sizeof = require("object-sizeof");
@@ -129,11 +112,9 @@ const omit = require("object.omit");
 const omitDeep = require("omit-deep-lodash");
 
 const chalk = require("chalk");
-const chalkConnect = chalk.green;
 const chalkNetwork = chalk.blue;
 const chalkBlueBold = chalk.blue.bold;
 const chalkTwitter = chalk.blue;
-const chalkTwitterBold = chalk.bold.blue;
 const chalkBlue = chalk.blue;
 const chalkGreen = chalk.green;
 const chalkError = chalk.bold.red;
@@ -167,12 +148,9 @@ const slackConversationId = "D65CSAELX"; // wordbot
 const slackRtmToken = "xoxb-209434353623-bNIoT4Dxu1vv8JZNgu7CDliy";
 
 const Slack = require("slack-node");
-const slack = new Slack(slackOAuthAccessToken);
 
 let slackRtmClient;
 let slackWebClient;
-
-const slackMessagePrefix = "#" + slackChannel + ":" + hostname + "_" + process.pid;
 
 function slackSendRtmMessage(msg){
 
@@ -250,10 +228,6 @@ function slackMessageHandler(message){
       const text = message.text.trim();
       const textArray = text.split("|");
 
-      // console.log(chalkAlert("textArray: " + textArray));
-
-      const sourceHost = (textArray[0]) ? textArray[0].trim() : "NONE";
-      const sourceApp = (textArray[1]) ? textArray[1].trim() : "NONE";
       const sourceMessage = (textArray[2]) ? textArray[2].trim() : "NONE";
 
       switch (sourceMessage) {
@@ -570,6 +544,7 @@ const DEFAULT_SEED_NETWORK_ID = false;
 const DEFAULT_SEED_NETWORK_PROBABILITY = 0.5;
 const DEFAULT_GLOBAL_MIN_SUCCESS_RATE = 80; // percent
 const DEFAULT_LOCAL_MIN_SUCCESS_RATE = 50; // percent
+const DEFAULT_LOCAL_MIN_SUCCESS_RATE_MSE = 40; // Harder to past with cost === MSE
 const DEFAULT_LOCAL_PURGE_MIN_SUCCESS_RATE = 70; // percent
 const DEFAULT_CREATE_TRAINING_SET_ONLY = false;
 const DEFAULT_DISABLE_CREATE_TEST_SET = false;
@@ -751,6 +726,10 @@ configuration.globalMinSuccessRate = (process.env.TNN_GLOBAL_MIN_SUCCESS_RATE !=
 configuration.localMinSuccessRate = (process.env.TNN_LOCAL_MIN_SUCCESS_RATE !== undefined) 
   ? process.env.TNN_LOCAL_MIN_SUCCESS_RATE 
   : DEFAULT_LOCAL_MIN_SUCCESS_RATE;
+
+configuration.localMinSuccessRateMSE = (process.env.TNN_LOCAL_MIN_SUCCESS_RATE_MSE !== undefined) 
+  ? process.env.TNN_LOCAL_MIN_SUCCESS_RATE_MSE
+  : DEFAULT_LOCAL_MIN_SUCCESS_RATE_MSE;
 
 // delete local nn's at start that are below  
 configuration.localPurgeMinSuccessRate = (process.env.TNN_LOCAL_PURGE_MIN_SUCCESS_RATE !== undefined) 
@@ -3522,15 +3501,8 @@ let prevConfigFileModifiedMoment = moment("2010-01-01");
 let defaultConfiguration = {}; // general configuration for TNN
 let hostConfiguration = {}; // host-specific configuration for TNN
 
-// configuration.testMode = TEST_MODE;
-// configuration.globalTestMode = GLOBAL_TEST_MODE;
-// configuration.statsUpdateIntervalTime = STATS_UPDATE_INTERVAL;
-// configuration.verbose = false;
-
 configuration.slackChannel = {};
 
-// configuration.keepaliveInterval = KEEPALIVE_INTERVAL;
-// configuration.quitOnComplete = QUIT_ON_COMPLETE;
 
 function initWatchAllConfigFolders(params){
   return new Promise(async function(resolve, reject){
@@ -3543,7 +3515,6 @@ function initWatchAllConfigFolders(params){
 
       await loadAllConfigFiles();
       await loadBestInputsConfig();
-      // await loadNetworkInputsConfig();
       await loadCommandLineArgs();
 
       const options = {
@@ -4933,11 +4904,6 @@ function loadConfigFile(params) {
         newConfiguration.enableStdin = loadedConfigObj.ENABLE_STDIN;
       }
 
-      if (loadedConfigObj.KEEPALIVE_INTERVAL !== undefined) {
-        console.log(MODULE_ID_PREFIX + " | LOADED KEEPALIVE_INTERVAL: " + loadedConfigObj.KEEPALIVE_INTERVAL);
-        newConfiguration.keepaliveInterval = loadedConfigObj.KEEPALIVE_INTERVAL;
-      }
-
       if (loadedConfigObj.TNN_MAX_NEURAL_NETWORK_CHILDREN !== undefined){
         console.log(MODULE_ID_PREFIX + " | LOADED TNN_MAX_NEURAL_NETWORK_CHILDREN: " + loadedConfigObj.TNN_MAX_NEURAL_NETWORK_CHILDREN);
         newConfiguration.maxNumberChildren = loadedConfigObj.TNN_MAX_NEURAL_NETWORK_CHILDREN;
@@ -4956,6 +4922,11 @@ function loadConfigFile(params) {
       if (loadedConfigObj.TNN_LOCAL_MIN_SUCCESS_RATE !== undefined){
         console.log(MODULE_ID_PREFIX + " | LOADED TNN_LOCAL_MIN_SUCCESS_RATE: " + loadedConfigObj.TNN_LOCAL_MIN_SUCCESS_RATE);
         newConfiguration.localMinSuccessRate = loadedConfigObj.TNN_LOCAL_MIN_SUCCESS_RATE;
+      }
+
+      if (loadedConfigObj.TNN_LOCAL_MIN_SUCCESS_RATE_MSE !== undefined){
+        console.log(MODULE_ID_PREFIX + " | LOADED TNN_LOCAL_MIN_SUCCESS_RATE_MSE: " + loadedConfigObj.TNN_LOCAL_MIN_SUCCESS_RATE_MSE);
+        newConfiguration.localMinSuccessRateMSE = loadedConfigObj.TNN_LOCAL_MIN_SUCCESS_RATE_MSE;
       }
 
       if (loadedConfigObj.TNN_LOCAL_PURGE_MIN_SUCCESS_RATE !== undefined){
@@ -6434,7 +6405,8 @@ function childCreate(params){
               + " | R " + msToTime(m.stats.evolveElapsed)
               + " | RATE " + (m.stats.iterationRate/1000.0).toFixed(1)
               + " | ETC " + msToTime(m.stats.timeToComplete)
-              + " | ETC " + moment().add(m.stats.timeToComplete).format(compactDateTimeFormat)
+              + " | ETC " + moment().add(m.stats.timeToComplete).
+format(compactDateTimeFormat)
               + " | I " + m.stats.iteration + "/" + m.stats.totalIterations
             ));
 
@@ -6450,7 +6422,8 @@ function childCreate(params){
             statsObj.networkResults[m.stats.networkId].iteration = m.stats.iteration;
             statsObj.networkResults[m.stats.networkId].totalIterations = m.stats.totalIterations;
             statsObj.networkResults[m.stats.networkId].rate = (m.stats.iterationRate/1000.0).toFixed(1);
-            statsObj.networkResults[m.stats.networkId].timeToComplete = moment().add(m.stats.timeToComplete).format(compactDateTimeFormat);
+            statsObj.networkResults[m.stats.networkId].timeToComplete = moment().add(m.stats.timeToComplete).
+format(compactDateTimeFormat);
             statsObj.networkResults[m.stats.networkId].error = m.stats.error;
             statsObj.networkResults[m.stats.networkId].fitness = m.stats.fitness;
 
@@ -6556,6 +6529,7 @@ function childCreate(params){
             else if (
               (nn.seedNetworkId && (nn.test.results.successRate > nn.seedNetworkRes)) // better than seed nn
               || (!nn.seedNetworkId && (nn.test.results.successRate >= configuration.localMinSuccessRate)) // no seed but better than local min
+              || (!nn.seedNetworkId && (nn.evolve.options.cost === "MSE") && (nn.test.results.successRate >= configuration.localMinSuccessRateMSE)) // no seed but better than local min
               || (nn.test.results.successRate >= configuration.globalMinSuccessRate) // better than global min
               ) { 
 
@@ -6591,7 +6565,11 @@ function childCreate(params){
                 ));
               }
               // no seed but better than localMinSuccessRate, so act like better child and start parent/child chain
-              else if (!nn.seedNetworkId && (nn.test.results.successRate >= configuration.localMinSuccessRate)) {
+              else if (
+                   (!nn.seedNetworkId && (nn.test.results.successRate >= configuration.localMinSuccessRate))
+                || (!nn.seedNetworkId && (nn.evolve.options.cost === "MSE") && (nn.test.results.successRate >= configuration.localMinSuccessRateMSE))
+                )
+              {
 
                 betterChildSeedNetworkIdSet.add(nn.networkId);
 
@@ -6643,7 +6621,11 @@ function childCreate(params){
 
                 saveFileQueue.push({localFlag: false, folder: globalBestNetworkFolder, file: bestNetworkFile, obj: nn});
               }
-              else if (nn.test.results.successRate >= configuration.localMinSuccessRate) {
+              else if (
+                   (nn.test.results.successRate >= configuration.localMinSuccessRate)
+                || ((nn.evolve.options.cost === "MSE") && (nn.test.results.successRate >= configuration.localMinSuccessRateMSE))
+                )
+              {
 
                 localNetworkFile = nn.networkId + ".json";
 
@@ -6994,11 +6976,6 @@ function initStdIn() {
 
       case "V":
         toggleVerbose();
-      break;
-
-      case "x":
-        quitOnCompleteFlag = true;
-        console.log(chalkLog(MODULE_ID_PREFIX + " | STDIN | QUIT ON COMPLETE FLAG SET"));
       break;
 
       default:
