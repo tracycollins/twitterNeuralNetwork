@@ -488,7 +488,8 @@ statsObj.normalization.magnitude.min = 0;
 statsObj.normalization.magnitude.max = -Infinity;
 
 const DEFAULT_INPUT_TYPES = [
-  "emoji", 
+  "emoji",
+  "friends",
   "hashtags",  
   "images", 
   "locations", 
@@ -502,7 +503,6 @@ const DEFAULT_INPUT_TYPES = [
 ];
 
 DEFAULT_INPUT_TYPES.sort();
-
 
 const GLOBAL_TRAINING_SET_ID = "globalTrainingSet";
 
