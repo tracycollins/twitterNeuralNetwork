@@ -2310,9 +2310,11 @@ function unzipUsersToArray(params){
 
               entryNumber += 1;
 
-              console.log(chalkInfo("TNN | --> UNZIP USERS ENTRY [" + entryNumber + "]"
-                + " | " + entry.fileName
-              ));
+              if (configuration.verbose || (entryNumber % 1000 === 0)) {
+                console.log(chalkInfo("TNN | --> UNZIP USERS ENTRY [" + entryNumber + "]"
+                  + " | " + entry.fileName
+                ));
+              }
 
               if (err) {
                 return reject(err);
