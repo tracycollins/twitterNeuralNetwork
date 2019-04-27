@@ -844,108 +844,7 @@ async function printNetworkObj(title, nObj, format) {
   catch(err){
     console.trace(chalkError("printNetworkObj ERROR: " + err + "\nTITLE: " + title));
   }
-
 }
-
-// function indexOfMax (arr, callback) {
-
-//   if (arr.length === 0) {
-//     console.log(chalkAlert(MODULE_ID_PREFIX + " | indexOfMax: 0 LENG ARRAY: -1"));
-//     return callback(-2, arr); 
-//   }
-
-//   if ((arr[0] === arr[1]) && (arr[1] === arr[2])){
-//     debug(chalkInfo(MODULE_ID_PREFIX + " | indexOfMax: ALL EQUAL"));
-//     debug(chalkInfo(MODULE_ID_PREFIX + " | ARR" 
-//       + " | " + arr[0].toFixed(2) 
-//       + " - " + arr[1].toFixed(2) 
-//       + " - " + arr[2].toFixed(2)
-//     ));
-//     if (arr[0] === 0) { return callback(-4, arr); }
-//     return callback(4, [1,1,1]); 
-//   }
-
-//   debug(MODULE_ID_PREFIX + " | B4 ARR: " + arr[0].toFixed(2) + " - " + arr[1].toFixed(2) + " - " + arr[2].toFixed(2));
-//   arrayNormalize(arr);
-//   debug(MODULE_ID_PREFIX + " | AF ARR: " + arr[0].toFixed(2) + " - " + arr[1].toFixed(2) + " - " + arr[2].toFixed(2));
-
-//   if (((arr[0] === 1) && (arr[1] === 1)) 
-//     || ((arr[0] === 1) && (arr[2] === 1))
-//     || ((arr[1] === 1) && (arr[2] === 1))){
-
-//     debug(chalkAlert(MODULE_ID_PREFIX + " | indexOfMax: MULTIPLE SET"));
-
-//     debug(chalkAlert(MODULE_ID_PREFIX + " | ARR" 
-//       + " | " + arr[0].toFixed(2) 
-//       + " - " + arr[1].toFixed(2) 
-//       + " - " + arr[2].toFixed(2)
-//     ));
-
-//     async.eachOf(arr, function(val, index, cb0){
-//       if (val < 1) {
-//         arr[index] = 0;
-//       }
-//       cb0(); 
-//     }, function(){
-//       callback(3, arr); 
-//     });
-
-//   }
-//   else {
-
-//     let max = 0;
-//     let maxIndex = -1;
-
-//     async.eachOfSeries(arr, function(val, index, cb1){
-//       if (val > max) {
-//         maxIndex = index;
-//         max = val;
-//       }
-//       cb1(); 
-//     }, function(){
-
-//       async.eachOf(arr, function(val, index, cb2){
-//         if (val < 1) {
-//           arr[index] = 0;
-//         }
-//         cb2(); 
-//       }, function(){
-//         callback(maxIndex, arr); 
-//       });
-
-//     });
-
-//   }
-// }
-
-// const sortedObjectValues = function(params) {
-
-//   return new Promise(function(resolve, reject) {
-
-//     const keys = Object.keys(params.obj);
-
-//     const sortedKeys = keys.sort(function(a,b){
-//       const objA = params.obj[a];
-//       const objB = params.obj[b];
-//       return objB[params.sortKey] - objA[params.sortKey];
-//     });
-
-//     if (keys.length !== undefined) {
-//       if (sortedKeys !== undefined) { 
-//         resolve({sortKey: params.sortKey, sortedKeys: sortedKeys.slice(0,params.max)});
-//       }
-//       else {
-//         resolve({sortKey: params.sortKey, sortedKeys: []});
-//       }
-
-//     }
-//     else {
-//       console.error("sortedObjectValues ERROR | params\n" + jsonPrint(params));
-//       reject(new Error("sortedObjectValues ERROR | keys.length UNDEFINED"));
-//     }
-
-//   });
-// };
 
 function sortedHashmap(params) {
 
@@ -1110,38 +1009,6 @@ function printResultsHashmap(){
 
   });
 }
-
-// function printInputsHashMap(){
-
-//   const tableArray = [];
-
-//   tableArray.push([
-//     MODULE_ID_PREFIX + " | INPUTS ID",
-//     "INPTS"
-//   ]);
-
-//   async.each(inputsHashMap.keys(), function(inputsId, cb){
-
-//     const inputsObj = inputsHashMap.get(inputsId).inputsObj;
-
-//     tableArray.push([
-//       MODULE_ID_PREFIX + " | " + inputsId,
-//       inputsObj.meta.numInputs
-//     ]);
-
-//     async.setImmediate(function() { cb(); });
-
-//   }, function(){
-
-//     const t = table(tableArray, { align: ["l", "r"] });
-
-//     console.log(chalkBlueBold(MODULE_ID_PREFIX + " | ============================================================================================================================================"));
-//     console.log(chalkBlueBold(MODULE_ID_PREFIX + " | INPUTS HASHMAP"));
-//     console.log(chalkInfo(t));
-//     console.log(chalkBlueBold(MODULE_ID_PREFIX + " | ============================================================================================================================================"));
-
-//   });
-// }
 
 function purgeNetwork(networkId){
 
@@ -2397,13 +2264,8 @@ function loadSeedNeuralNetwork(params){
     resolve(numNetworksLoaded);
     
   });
-
 }
 
-// function activateNetwork(n, input){
-//   const output = n.activate(input);
-//   return output;
-// }
 
 function unzipUsersToArray(params){
 
@@ -2412,6 +2274,8 @@ function unzipUsersToArray(params){
   return new Promise(async function(resolve, reject) {
 
     try {
+
+      let entryNumber = 0;
 
       yauzl.open(params.path, {lazyEntries: true}, function(err, zipfile) {
 
@@ -2443,6 +2307,12 @@ function unzipUsersToArray(params){
           } 
           else {
             zipfile.openReadStream(entry, async function(err, readStream) {
+
+              entryNumber += 1;
+
+              console.log(chalkInfo("TNN | --> UNZIP USERS ENTRY [" + entryNumber + "]"
+                + " | " + entry.fileName
+              ));
 
               if (err) {
                 return reject(err);
@@ -2800,112 +2670,6 @@ function initWatch(params){
   });
 }
 
-// function initCategorizedUserHashmap(params){
-
-//   return new Promise(function(resolve, reject){
-
-//     statsObj.status = "INIT CATEGORIZED USER HASHMAP";
-
-//     // const query = (params.query) ? params.query : { $or: [ { "category": { $nin: [ false, null ] } } , { "categoryAuto": { $nin: [ false, null ] } } ] };
-
-//     const p = {};
-
-//     p.skip = 0;
-//     p.limit = DEFAULT_FIND_CAT_USER_CURSOR_LIMIT;
-//     p.batchSize = DEFAULT_CURSOR_BATCH_SIZE;
-//     p.query = { 
-//       "category": { "$nin": [false, null] } 
-//     };
-
-//     let more = true;
-//     let totalCount = 0;
-//     let totalManual = 0;
-//     let totalAuto = 0;
-//     let totalMatched = 0;
-//     let totalMismatched = 0;
-//     let totalMatchRate = 0;
-
-//     async.whilst(
-
-//       function() {
-//         return more;
-//       },
-
-//       function(cb){
-
-//         userServerController.findCategorizedUsersCursor(p, function(err, results){
-
-//           if (err) {
-//             console.error(chalkError(MODULE_ID_PREFIX + " | ERROR: initCategorizedUserHashmap: " + err));
-//             cb(err);
-//           }
-//           else if (results) {
-
-//             more = true;
-//             totalCount += results.count;
-//             totalManual += results.manual;
-//             totalAuto += results.auto;
-//             totalMatched += results.matched;
-//             totalMismatched += results.mismatched;
-
-//             totalMatchRate = 100*(totalMatched/totalCount);
-
-//             Object.keys(results.obj).forEach(function(nodeId){
-//               categorizedUserHashmap.set(nodeId, results.obj[nodeId]);
-//             });
-
-//             if (configuration.verbose || (totalCount % 1000 === 0)) {
-
-//               console.log(chalkLog(MODULE_ID_PREFIX + " | LOADING CATEGORIZED USERS FROM DB"
-//                 + " | TOTAL CATEGORIZED: " + totalCount
-//                 + " | LIMIT: " + p.limit
-//                 + " | SKIP: " + p.skip
-//                 + " | " + totalManual + " MAN"
-//                 + " | " + totalAuto + " AUTO"
-//                 + " | " + totalMatched + " MATCHED"
-//                 + " / " + totalMismatched + " MISMATCHED"
-//                 + " | " + totalMatchRate.toFixed(2) + "% MATCHRATE"
-//               ));
-
-//             }
-
-//             p.skip += results.count;
-
-//             cb();
-//           }
-//           else {
-
-//             more = false;
-
-//             console.log(chalkLog(MODULE_ID_PREFIX + " | LOADING CATEGORIZED USERS FROM DB"
-//               + " | TOTAL CATEGORIZED: " + totalCount
-//               + " | LIMIT: " + p.limit
-//               + " | SKIP: " + p.skip
-//               + " | " + totalManual + " MAN"
-//               + " | " + totalAuto + " AUTO"
-//               + " | " + totalMatched + " MATCHED"
-//               + " / " + totalMismatched + " MISMATCHED"
-//               + " | " + totalMatchRate.toFixed(2) + "% MATCHRATE"
-//             ));
-
-//             cb();
-//           }
-
-//         });
-//       },
-
-//       function(err){
-//         if (err) {
-//           console.log(chalkError(MODULE_ID_PREFIX + " | INIT CATEGORIZED USER HASHMAP ERROR: " + err + "\n" + jsonPrint(err)));
-//           return reject(err);
-//         }
-//         resolve();
-//       }
-//     );
-
-//   });
-// }
-
 function generateRandomEvolveConfig (){
 
   return new Promise(async function(resolve, reject){
@@ -3185,101 +2949,6 @@ function initNetworkCreate(params){
   });
 }
 
-// function allComplete(){
-
-//   getChildProcesses(function(err, childArray){
-
-//     if (Object.keys(childHashMap).length !== 0 ) { 
-//       allCompleteFlag = false;
-//       console.log(chalkBlue(MODULE_ID_PREFIX + " | allComplete: " + allCompleteFlag + " | NN CHILDREN IN HM: " + jsonPrint(Object.keys(childHashMap))));
-//       return;
-//     }
-
-//     if (childArray.length === 0 ) { 
-//       allCompleteFlag = true;
-//       console.log(chalkBlue(MODULE_ID_PREFIX + " | allComplete | NO NN CHILDREN PROCESSES"));
-//       return;
-//     }
-
-//     const index = 0;
-
-//     async.each(Object.keys(childHashMap), function(childId, cb){
-
-//       if (configuration.verbose) {
-//         console.log(chalkLog(MODULE_ID_PREFIX + " | allComplete"
-//           + " | NNC " + childId 
-//           + " STATUS: " + childHashMap[childId].status
-//         ));
-//       }
-
-//       if (childHashMap[childId].status === "RUNNING"){
-//         allCompleteFlag = false;
-//         return cb("RUNNING");
-//       }
-//       cb();
-
-//     }, function(running){
-//       if (!running) { allCompleteFlag = true; }
-//       return;
-//     });
-
-//   });
-// }
-
-// function printchildHashMap(){
-
-//   const childIdArray = Object.keys(childHashMap).sort();
-
-//   let chalkValue = chalkLog;
-
-//   async.eachSeries(childIdArray, function(childId, cb){
-
-//     switch (childHashMap[childId].status) {
-//       case "IDLE":
-//         chalkValue = chalk.blue;
-//       break;
-//       case "NEW":
-//         chalkValue = chalk.bold.green;
-//       break;
-//       case "TEST PASS":
-//       case "PASS LOCAL":
-//       case "RUNNING":
-//         chalkValue = chalk.green;
-//       break;
-//       case "PASS GLOBAL":
-//         chalkValue = chalk.bold.green;
-//       break;
-//       case "INIT":
-//       case "COMPLETE":
-//       case "EXIT":
-//         chalkValue = chalk.blue;
-//       break;
-//       case "ERROR":
-//         chalkValue = chalkError;
-//       break;
-//       case "ZOMBIE":
-//       case "CLOSE":
-//       case "DEAD":
-//         chalkValue = chalkAlert;
-//       break;
-//       default:
-//         console.log(chalkWarn("??? UNKNOWN CHILD STATUS: " + childHashMap[childId].status));
-//         chalkValue = chalkInfo;
-//     }
-
-//     console.log(chalkValue(MODULE_ID_PREFIX + " | CHILD HM"
-//       + " | CHILD ID: " + childId
-//       + " | PID: " + childHashMap[childId].pid
-//       + " | STATUS: " + childHashMap[childId].status
-//     ));
-
-//     cb();
-
-//   }, function(){
-
-//   });
-// }
-
 //=========================================================================
 //=========================================================================
 //const MODULE_ID = MODULE_ID_PREFIX + "_node_" + hostname;
@@ -3355,7 +3024,8 @@ function initWatchAllConfigFolders(p){
     try{
 
       await loadAllConfigFiles();
-      await loadBestInputsConfig();
+      await loadNetworkInputsConfig({file: defaultBestInputsConfigFile});
+      await loadNetworkInputsConfig({file: defaultNetworkInputsConfigFile});
       await loadCommandLineArgs();
 
       const options = {
@@ -3451,7 +3121,6 @@ function initWatchAllConfigFolders(p){
             catch(err){
               console.log(chalkBlue(MODULE_ID_PREFIX + " | *** LOAD INPUTS FILE CHANGED ERROR | " + f + ": " + err));
             }
-            await loadInputsDropboxFile({folder: defaultInputsFolder, file: file});
           }
         });
 
@@ -3484,7 +3153,12 @@ function initWatchAllConfigFolders(p){
 
           if (f.endsWith(defaultBestInputsConfigFile)){
             await delay({period: 30*ONE_SECOND});
-            await loadBestInputsConfig();
+            await loadNetworkInputsConfig({file: defaultBestInputsConfigFile});
+          }
+
+          if (f.endsWith(defaultNetworkInputsConfigFile)){
+            await delay({period: 30*ONE_SECOND});
+            await loadNetworkInputsConfig({file: defaultNetworkInputsConfigFile});
           }
 
         });
@@ -3499,7 +3173,12 @@ function initWatchAllConfigFolders(p){
 
           if (f.endsWith(defaultBestInputsConfigFile)){
             await delay({period: 30*ONE_SECOND});
-            await loadBestInputsConfig();
+            await loadNetworkInputsConfig({file: defaultBestInputsConfigFile});
+          }
+
+          if (f.endsWith(defaultNetworkInputsConfigFile)){
+            await delay({period: 30*ONE_SECOND});
+            await loadNetworkInputsConfig({file: defaultNetworkInputsConfigFile});
           }
 
         });
@@ -4182,7 +3861,7 @@ configuration.DROPBOX.DROPBOX_STATS_FILE = process.env.DROPBOX_STATS_FILE || MOD
 const dropboxConfigDefaultFolder = "/config/utility/default";
 const dropboxConfigHostFolder = "/config/utility/" + hostname;
 
-// const defaultNetworkInputsConfigFile = "default_networkInputsConfig.json";
+const defaultNetworkInputsConfigFile = "default_networkInputsConfig.json";
 const defaultBestInputsConfigFile = "default_bestInputsConfig.json"
 
 const dropboxConfigDefaultFile = "default_" + configuration.DROPBOX.DROPBOX_CONFIG_FILE;
@@ -4580,7 +4259,6 @@ function listDropboxFolder(params){
           },
 
           function(cb){
-
             setTimeout(function(){
 
               dropboxClient.filesListFolderContinue({cursor: cursor}).
@@ -4608,7 +4286,6 @@ function listDropboxFolder(params){
               });
 
               async.setImmediate(function() { cb(); });
-
             }, 1000);
           },
 
@@ -5251,7 +4928,6 @@ const hiddenLayerSize = { name: "hiddenLayerSize", alias: "H", type: Number};
 const seedNetworkId = { name: "seedNetworkId", alias: "s", type: String };
 const useBestNetwork = { name: "useBestNetwork", alias: "b", type: Boolean };
 const evolveIterations = { name: "evolveIterations", alias: "I", type: Number};
-// const targetServer = { name: "targetServer", type: String };
 
 const optionDefinitions = [
   maxNumberChildren,
@@ -5322,29 +4998,35 @@ function loadCommandLineArgs(){
   });
 }
 
-function loadBestInputsConfig(){
+function loadNetworkInputsConfig(params){
 
   return new Promise(async function(resolve, reject){
 
-    statsObj.status = "LOAD BEST NETWORK INPUTS CONFIG";
+    statsObj.status = "LOAD NETWORK INPUTS CONFIG";
 
     console.log(chalkLog(MODULE_ID_PREFIX
-      + " | LOAD BEST NETWORK INPUTS CONFIG FILE: " + dropboxConfigDefaultFolder + "/" + defaultBestInputsConfigFile
+      + " | LOAD NETWORK INPUTS CONFIG FILE: " + dropboxConfigDefaultFolder + "/" + params.file
     ));
 
     let networkInputsObj;
 
-    try{
-      networkInputsObj = await loadFileRetry({folder: dropboxConfigDefaultFolder, file: defaultBestInputsConfigFile});
+    try {
 
-      configuration.inputsIdArray = networkInputsObj.INPUTS_IDS;
+      networkInputsObj = await loadFileRetry({folder: dropboxConfigDefaultFolder, file: params.file});
 
-      console.log(chalkNetwork(MODULE_ID_PREFIX + " | LOADED BEST NETWORK INPUTS ARRAY\n" + jsonPrint(configuration.inputsIdArray)));
+      configuration.inputsIdArray = _.union(configuration.inputsIdArray, networkInputsObj.INPUTS_IDS);
+
+      console.log(chalkNetwork(MODULE_ID_PREFIX + " | LOADED NETWORK INPUTS ARRAY"
+        + " | " + networkInputsObj.INPUTS_IDS.length + " ITEMS IN FILE"
+        + " | " + configuration.inputsIdArray.length + " TOTAL ITEMS IN ARRAY"
+        // + "\n" + jsonPrint(configuration.inputsIdArray)
+      ));
+
       statsObj.networkInputsSetReady = true;
       resolve();
     }
     catch(err){
-      console.log(chalkError(MODULE_ID_PREFIX + " | *** BEST NETWORK INPUTS CONFIG FILE LOAD ERROR: " + err));
+      console.log(chalkError(MODULE_ID_PREFIX + " | *** NETWORK INPUTS CONFIG FILE LOAD ERROR: " + err));
       statsObj.networkInputsSetReady = false;
       return reject(err);
     }
@@ -5439,10 +5121,8 @@ function loadTrainingSet(){
 const Stately = require("stately.js");
 const FSM_TICK_INTERVAL = ONE_SECOND;
 
-// let fsm;
 let fsmTickInterval;
 let fsmPreviousState = "RESET";
-// let sentAllChildrenCompleteFlag = false;
 let createChildrenInProgress = false;
 let killAllInProgress = false;
 
@@ -5712,9 +5392,8 @@ const fsmStates = {
           await initChildPingAllInterval();
           await childStatsAll();
 
-          await loadBestInputsConfig();
-          // await loadNetworkInputsConfig();
-          // await loadInputsDropboxFolder({folder: defaultInputsFolder});
+          await loadNetworkInputsConfig({file: defaultBestInputsConfigFile});
+          await loadNetworkInputsConfig({file: defaultNetworkInputsConfigFile});
           await loadSeedNeuralNetwork(seedParams);
           await loadTrainingSet({folder: configuration.userArchiveFolder, file: configuration.defaultUserArchiveFlagFile});
           await childStartAll();
@@ -5836,8 +5515,6 @@ function initFsmTickInterval(interval) {
     fsm.fsm_tick();
   }, FSM_TICK_INTERVAL);
 }
-
-// reporter("NEW", "NEW", fsm.getMachineState());
 
 //=========================================================================
 // CHILD PROCESS
@@ -6167,15 +5844,11 @@ function childCreate(p){
     const appPath = params.appPath;
     const env = params.env;
     const config = params.config || {};
-    // const verbose = params.verbose || false;
 
     let child = {};
     const options = {};
 
-    // console.log("cwd: " + process.cwd());
-
     options.cwd = params.cwd || configuration.cwd;
-
 
     statsObj.status = "CHILD CREATE | CH ID: " + childId + " | APP: " + appPath;
 
@@ -6234,8 +5907,7 @@ function childCreate(p){
               + " | R " + msToTime(m.stats.evolveElapsed)
               + " | RATE " + (m.stats.iterationRate/1000.0).toFixed(1)
               + " | ETC " + msToTime(m.stats.timeToComplete)
-              + " | ETC " + moment().add(m.stats.timeToComplete).
-format(compactDateTimeFormat)
+              + " | ETC " + moment().add(m.stats.timeToComplete).format(compactDateTimeFormat)
               + " | I " + m.stats.iteration + "/" + m.stats.totalIterations
             ));
 
@@ -6251,8 +5923,7 @@ format(compactDateTimeFormat)
             statsObj.networkResults[m.stats.networkId].iteration = m.stats.iteration;
             statsObj.networkResults[m.stats.networkId].totalIterations = m.stats.totalIterations;
             statsObj.networkResults[m.stats.networkId].rate = (m.stats.iterationRate/1000.0).toFixed(1);
-            statsObj.networkResults[m.stats.networkId].timeToComplete = moment().add(m.stats.timeToComplete).
-format(compactDateTimeFormat);
+            statsObj.networkResults[m.stats.networkId].timeToComplete = moment().add(m.stats.timeToComplete).format(compactDateTimeFormat);
             statsObj.networkResults[m.stats.networkId].error = m.stats.error;
             statsObj.networkResults[m.stats.networkId].fitness = m.stats.fitness;
 
@@ -6261,7 +5932,6 @@ format(compactDateTimeFormat);
           case "EVOLVE_COMPLETE":
 
             let nn;
-            // let inputsObj;
 
             try {
               nn = await networkDefaults(m.networkObj);
@@ -6350,8 +6020,6 @@ format(compactDateTimeFormat);
               ));
 
               resultsHashmap[nn.networkId].status = "FAIL";
-
-              // saveFileQueue.push({localFlag: false, folder: statsFolder, file: statsFile, obj: statsObj});
 
               printNetworkObj(MODULE_ID_PREFIX + " | " + nn.networkId, nn);
             }
@@ -6775,7 +6443,7 @@ setTimeout(async function(){
     console.log(chalkBlueBold(
         "\n--------------------------------------------------------"
       + "\n" + MODULE_ID_PREFIX + " | " + configuration.processName 
-      + "\nCONFIGURATION\n" + jsonPrint(configuration)
+      // + "\nCONFIGURATION\n" + jsonPrint(configuration)
       + "--------------------------------------------------------"
     ));
 
