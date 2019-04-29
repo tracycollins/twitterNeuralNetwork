@@ -1340,7 +1340,7 @@ function loadInputsDropboxFile(params){
 
     if (dbInputsObj.networks.length === 0){
       inputsNoNetworksSet.add(dbInputsObj.inputsId);
-      console.log(chalkInfo(MODULE_ID_PREFIX 
+      console.log(chalkBlueBold(MODULE_ID_PREFIX 
         + " | +++ NO NETWORKS INPUTS [" + inputsNoNetworksSet.size + " IN HM]"
         + " | " + dbInputsObj.meta.numInputs
         + " INPUTS | " + dbInputsObj.inputsId
@@ -2800,9 +2800,17 @@ function generateRandomEvolveConfig (){
 
     if (inputsNoNetworksSet.size > 0){
       config.seedInputsId = randomItem([...inputsNoNetworksSet]);
+      console.log(chalkBlueBold(MODULE_ID_PREFIX
+        + " | NO NETWORKS RANDOM INPUT [" + inputsNoNetworksSet.size + "]"
+        + " | " + config.seedInputsId
+      ));
     }
     else {
       config.seedInputsId = randomItem(inputsHashMapKeys);
+      console.log(chalkLog(MODULE_ID_PREFIX
+        + " | RANDOM INPUT [" + inputsHashMapKeys.length + "]"
+        + " | " + config.seedInputsId
+      ));
     }
 
     config.iterations = configuration.evolve.iterations;
