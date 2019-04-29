@@ -102,7 +102,6 @@ const writeJsonFile = require("write-json-file");
 const sizeof = require("object-sizeof");
 
 const fs = require("fs");
-// const JSONParse = require("json-parse-safe");
 const JSONParse = require("safe-json-parse");
 const debug = require("debug")("TNN");
 const util = require("util");
@@ -119,15 +118,12 @@ const chalkBlue = chalk.blue;
 const chalkGreen = chalk.green;
 const chalkError = chalk.bold.red;
 const chalkAlert = chalk.red;
-// const chalkWarn = chalk.red;
 const chalkLog = chalk.gray;
 const chalkInfo = chalk.black;
 
 
 const EventEmitter = require("eventemitter3");
-
 class ChildEvents extends EventEmitter {}
-
 const childEvents = new ChildEvents();
 
 
@@ -464,11 +460,7 @@ const DEFAULT_RUN_ID = hostname + "_" + process.pid + "_" + statsObj.startTime;
 
 let childPingAllInterval;
 
-// let allCompleteFlag = false;
-
 const bestRuntimeNetworkFileName = "bestRuntimeNetwork.json";
-
-// const categorizedUserHashmap = new HashMap();
 
 const categorizedUserHistogram = {};
 categorizedUserHistogram.left = 0;
@@ -586,6 +578,7 @@ const networkHashMap = new HashMap();
 let currentBestNetwork;
 const betterChildSeedNetworkIdSet = new Set();
 const skipLoadNetworkSet = new Set();
+const inputsNoNetworksSet = new Set();
 let localNetworkFile;
 let networkIndex = 0;
 let bestNetworkFile;
@@ -680,28 +673,21 @@ if (process.env.TNN_QUIT_ON_COMPLETE !== undefined) {
 configuration.costArray = (process.env.TNN_EVOLVE_COST_ARRAY !== undefined) 
   ? process.env.TNN_EVOLVE_COST_ARRAY 
   : DEFAULT_EVOLVE_COST_ARRAY;
-
 configuration.activationArray = (process.env.TNN_EVOLVE_MOD_ACTIVATION_ARRAY !== undefined) 
   ? process.env.TNN_EVOLVE_MOD_ACTIVATION_ARRAY 
   : DEFAULT_EVOLVE_MOD_ACTIVATION_ARRAY;
-
 configuration.globalMinSuccessRate = (process.env.TNN_GLOBAL_MIN_SUCCESS_RATE !== undefined) 
   ? process.env.TNN_GLOBAL_MIN_SUCCESS_RATE 
   : DEFAULT_GLOBAL_MIN_SUCCESS_RATE;
-
 configuration.localMinSuccessRate = (process.env.TNN_LOCAL_MIN_SUCCESS_RATE !== undefined) 
   ? process.env.TNN_LOCAL_MIN_SUCCESS_RATE 
   : DEFAULT_LOCAL_MIN_SUCCESS_RATE;
-
 configuration.localMinSuccessRateMSE = (process.env.TNN_LOCAL_MIN_SUCCESS_RATE_MSE !== undefined) 
   ? process.env.TNN_LOCAL_MIN_SUCCESS_RATE_MSE
   : DEFAULT_LOCAL_MIN_SUCCESS_RATE_MSE;
-
-// delete local nn's at start that are below  
 configuration.localPurgeMinSuccessRate = (process.env.TNN_LOCAL_PURGE_MIN_SUCCESS_RATE !== undefined) 
   ? process.env.TNN_LOCAL_PURGE_MIN_SUCCESS_RATE 
   : DEFAULT_LOCAL_PURGE_MIN_SUCCESS_RATE;
-
 configuration.loadTrainingSetFromFile = false;
 
 configuration.DROPBOX = {};
@@ -1043,6 +1029,7 @@ function purgeInputs(inputsId){
       if (!configuration.inputsIdArray.includes(inputsId)){
         console.log(chalkInfo(MODULE_ID_PREFIX + " | XXX PURGE INPUTS: " + inputsId));
         inputsHashMap.delete(inputsId);
+        inputsNoNetworksSet.delete(inputsId);
         skipLoadInputsSet.add(inputsId);
       }
       else {
@@ -1061,7 +1048,6 @@ function purgeInputs(inputsId){
     }
 
   });
-
 }
 
 function updateDbInputs(params){
@@ -1086,6 +1072,7 @@ function updateDbInputs(params){
 
     if (params.networkId) {
       update.$addToSet = { networks: params.networkId };
+      inputsNoNetworksSet.delete(params.networkId);
     }
 
     const options = {
@@ -1112,6 +1099,7 @@ function updateDbInputs(params){
 }
 
 function loadNetworkDropboxFile(params){
+
   return new Promise(async function(resolve, reject){
 
     const path = params.folder + "/" + params.file;
@@ -1134,9 +1122,8 @@ function loadNetworkDropboxFile(params){
         return resolve(null);
       }
 
-      await updateDbInputs({inputsObj: networkObj.inputsObj, networkId: networkObj.networkId});
+      const dbInputsObj = await updateDbInputs({inputsObj: networkObj.inputsObj, networkId: networkObj.networkId});
 
-      // load only networks using specific inputIds; maybe delete if not in set
       if (!configuration.inputsIdArray.includes(networkObj.inputsId)) {
 
         if (configuration.archiveNotInInputsIdArray && path.toLowerCase().includes(localBestNetworkFolder.toLowerCase())){
@@ -1227,22 +1214,14 @@ function loadNetworkDropboxFile(params){
         // UPDATE INPUTS HASHMAP
         //========================
 
-        let inObj = {};
+        const inObj = {};
 
-        if (inputsHashMap.has(networkObj.inputsId)) {
-          inObj = inputsHashMap.get(networkObj.inputsId);
-          inObj.inputsObj = networkObj.inputsObj;
-          inObj.entry.content_hash = false;
-          inObj.entry.client_modified = moment();
-        }
-        else {
-          inObj.inputsObj = {};
-          inObj.inputsObj = networkObj.inputsObj;
-          inObj.entry = {};
-          inObj.entry.name = networkObj.inputsId + ".json";
-          inObj.entry.content_hash = false;
-          inObj.entry.client_modified = moment();
-        }
+        inObj.inputsObj = {};
+        inObj.inputsObj = dbInputsObj;
+        inObj.entry = {};
+        inObj.entry.name = dbInputsObj.inputsId + ".json";
+        inObj.entry.content_hash = false;
+        inObj.entry.client_modified = moment();
 
         inputsHashMap.set(networkObj.inputsId, inObj);
 
@@ -1284,10 +1263,6 @@ function loadNetworkDropboxFile(params){
 
       if (((hostname === PRIMARY_HOST) && (params.folder.toLowerCase() === globalBestNetworkFolder.toLowerCase()))
         || ((hostname !== PRIMARY_HOST) && (params.folder.toLowerCase() === localBestNetworkFolder.toLowerCase())) ) {
-
-          // const localBestNetworkFolder =    "/config/utility/" + hostname + "/neuralNetworks/best";
-
-          // /config/utility/macpro2/neuralnetworks/best
 
         printNetworkObj(
           MODULE_ID_PREFIX 
@@ -1348,6 +1323,7 @@ function loadInputsDropboxFile(params){
     }
 
     let dbInputsObj;
+
     try {
       dbInputsObj = await updateDbInputs({inputsObj: inputsObj});
     }
@@ -1357,18 +1333,32 @@ function loadInputsDropboxFile(params){
     }
 
     if (inputsHashMap.has(dbInputsObj.inputsId) && (params.entry === undefined)){
-
       params.entry = inputsHashMap.get(dbInputsObj.inputsId).entry;
-
     }
 
     inputsHashMap.set(dbInputsObj.inputsId, {entry: params.entry, inputsObj: dbInputsObj} );
+
+    if (dbInputsObj.networks.length === 0){
+      inputsNoNetworksSet.add(dbInputsObj.inputsId);
+      console.log(chalkInfo(MODULE_ID_PREFIX 
+        + " | +++ NO NETWORKS INPUTS [" + inputsNoNetworksSet.size + " IN HM]"
+        + " | " + dbInputsObj.meta.numInputs
+        + " INPUTS | " + dbInputsObj.inputsId
+      ));
+    }
+    else {
+      inputsNoNetworksSet.delete(dbInputsObj.inputsId);
+    }
 
     if (inputsNetworksHashMap[dbInputsObj.inputsId] === undefined) {
       inputsNetworksHashMap[dbInputsObj.inputsId] = new Set();
     }
 
-    console.log(MODULE_ID_PREFIX + " | +++ INPUTS [" + inputsHashMap.size + " IN HM] | " + dbInputsObj.meta.numInputs + " INPUTS | " + dbInputsObj.inputsId);
+    console.log(chalkInfo(MODULE_ID_PREFIX
+      + " | +++ INPUTS [" + inputsHashMap.size + " IN HM]"
+      + " | " + dbInputsObj.meta.numInputs + " INPUTS"
+      + " | " + dbInputsObj.inputsId
+    ));
 
     resolve(inputsObj);
 
@@ -1612,7 +1602,6 @@ function updateUserFromTrainingSet(params){
     });
 
   });
-
 }
 
 function updateDbNetwork(params) {
@@ -1706,9 +1695,9 @@ function listDropboxFolders(params){
 
     params.folders.forEach(async function(folder){
 
-    console.log(chalkNetwork(MODULE_ID_PREFIX + " | ... GETTING DROPBOX FOLDERS ENTRIES"
-      + " | FOLDER: " + folder
-    ));
+      console.log(chalkNetwork(MODULE_ID_PREFIX + " | ... GETTING DROPBOX FOLDERS ENTRIES"
+        + " | FOLDER: " + folder
+      ));
 
       const listDropboxFolderParams = {
         folder: folder,
@@ -1789,7 +1778,6 @@ function validateNetwork(params){
   });
 }
 
-
 function checkNetworkHash(params){
 
   return new Promise(function(resolve, reject){
@@ -1869,7 +1857,6 @@ function checkNetworkHash(params){
 
   });
 }
-
 
 function dropboxFileMove(params){
 
@@ -2086,6 +2073,88 @@ function loadBestNetworkDropboxFolders (p){
   });
 }
 
+function loadInputsDropboxFolders (p){
+
+  return new Promise(async function(resolve, reject){
+
+    const params = p || {};
+
+    let numInputsLoaded = 0;
+    let dropboxFoldersEntries;
+
+    console.log(chalkNetwork(MODULE_ID_PREFIX + " | ... LOADING DROPBOX INPUTS FOLDERS"
+      + " | " + params.folders.length + " FOLDERS"
+      + "\n" + jsonPrint(params.folders)
+    ));
+
+    try {
+      dropboxFoldersEntries = await listDropboxFolders(params);
+    }
+    catch(err){
+      return reject(err);
+    }
+
+    if (configuration.testMode) {
+      dropboxFoldersEntries = _.shuffle(dropboxFoldersEntries);
+    }
+
+    async.eachSeries(dropboxFoldersEntries, async function(entry){
+
+      if (!entry.name.endsWith(".json")) {
+        console.log(chalkInfo(MODULE_ID_PREFIX + " | ... SKIPPING LOAD OF " + entry.name));
+        return;
+      }
+
+      const folder = path.dirname(entry.path_display);
+
+      const entryNameArray = entry.name.split(".");
+      const inputsId = entryNameArray[0];
+
+      if (configuration.verbose) {
+        console.log(chalkInfo(MODULE_ID_PREFIX + " | DROPBOX INPUTS FOUND"
+          + " | LAST MOD: " + moment(new Date(entry.client_modified)).format(compactDateTimeFormat)
+          + " | " + inputsId
+          + " | FOLDER: " + folder
+          + " | " + entry.name
+        ));
+      }
+
+      if (!configuration.inputsIdArray.includes(inputsId)){
+        console.log(chalkInfo(MODULE_ID_PREFIX + " | --- SKIP INPUTS ... NOT IN INPUTS ARRAY"
+          + " | " + inputsId
+          + " | FOLDER: " + folder
+          + " | " + entry.name
+        ));
+        return;
+      }
+      
+      try {
+        const inputsObj = await loadInputsDropboxFile({folder: folder, file: entry.name, purgeMin: params.purgeMin});
+        if (inputsObj) {
+          numInputsLoaded += 1;
+        }
+        return;
+      }
+      catch (err){
+        console.log(chalkError(MODULE_ID_PREFIX + " | *** LOAD INPUTS DROPBOX ENTRY ERROR: " + err
+          + " | " + inputsId
+          + " | FOLDER: " + folder
+          + " | " + entry.name
+        ));
+        return err;
+      }
+
+    }, function(err){
+      if (err) { 
+        console.log(chalkError(MODULE_ID_PREFIX + " | *** ERROR LOAD INPUTS FOLDERS: " + err)); 
+        return reject(err);
+      }
+      resolve(numInputsLoaded);
+    });
+
+  });
+}
+
 function loadSeedNeuralNetwork(params){
 
   return new Promise(async function(resolve, reject){
@@ -2265,7 +2334,6 @@ function loadSeedNeuralNetwork(params){
     
   });
 }
-
 
 function unzipUsersToArray(params){
 
@@ -2730,7 +2798,12 @@ function generateRandomEvolveConfig (){
     console.log(chalkLog(MODULE_ID_PREFIX + " | inputsHashMapKeys: " + inputsHashMapKeys.length));
     debug(chalkLog(MODULE_ID_PREFIX + " | inputsHashMapKeys: " + inputsHashMapKeys));
 
-    config.seedInputsId = randomItem(inputsHashMapKeys);
+    if (inputsNoNetworksSet.size > 0){
+      config.seedInputsId = randomItem([...inputsNoNetworksSet]);
+    }
+    else {
+      config.seedInputsId = randomItem(inputsHashMapKeys);
+    }
 
     config.iterations = configuration.evolve.iterations;
     config.threads = configuration.evolve.threads;
@@ -3485,22 +3558,12 @@ function delay(p) {
     }
 
   });
-
 }
-
-// function getElapsed(){
-//   statsObj.elapsedMS = moment().valueOf() - startTimeMoment.valueOf();
-//   return statsObj.elapsedMS;
-// }
 
 function getElapsedTimeStamp(){
   statsObj.elapsedMS = moment().valueOf() - startTimeMoment.valueOf();
   return msToTime(statsObj.elapsedMS);
 }
-
-// function toMegabytes(sizeInBytes) {
-//   return sizeInBytes/ONE_MEGABYTE;
-// }
 
 function printCat(c){
   if (c === "left") { return "L"; }
@@ -3649,28 +3712,6 @@ function getChildProcesses(){
   });
 }
 
-// function findChildByPid(pid, callback){
-
-//   let foundChildId = false;
-
-//   async.each(Object.keys(childHashMap), function(nnChildId, cb){
-
-//     if (pid && (childHashMap[nnChildId].pid === pid)){
-
-//       foundChildId = nnChildId;
-
-//       cb(foundChildId);
-
-//     }
-//     else {
-//       cb();
-//     }
-
-//   }, function(result){
-//     callback(null, foundChildId);
-//   });
-// }
-
 function killChild(params){
 
   return new Promise(function(resolve, reject){
@@ -3797,7 +3838,6 @@ function showStats(options) {
     }
 
   });
-
 }
 
 function initStatsUpdate() {
@@ -3878,10 +3918,8 @@ const statsFile = configuration.DROPBOX.DROPBOX_STATS_FILE;
 
 const defaultInputsFolder = dropboxConfigDefaultFolder + "/inputs";
 // const defaultInputsArchiveFolder = dropboxConfigDefaultFolder + "/inputsArchive";
-
 // const defaultTrainingSetFolder = dropboxConfigDefaultFolder + "/trainingSets";
 // const localTrainingSetFolder = dropboxConfigHostFolder + "/trainingSets";
-
 // const defaultTrainingSetUserArchive = defaultTrainingSetFolder + "/users/users.zip";
 
 const globalBestNetworkFolder = "/config/utility/best/neuralNetworks";
@@ -4913,7 +4951,6 @@ const cla = require("command-line-args");
 const help = { name: "help", alias: "h", type: Boolean};
 
 const enableStdin = { name: "enableStdin", alias: "S", type: Boolean, defaultValue: true };
-// const quitNow = { name: "quitNow", alias: "K", type: Boolean};
 const quitOnComplete = { name: "quitOnComplete", alias: "q", type: Boolean };
 const quitOnError = { name: "quitOnError", alias: "Q", type: Boolean, defaultValue: true };
 const verbose = { name: "verbose", alias: "v", type: Boolean };
@@ -5287,12 +5324,6 @@ const fsmStates = {
 
         statsObj.status = "FSM INIT";
 
-        // const childId = params.childId;
-        // const appPath = params.appPath;
-        // const env = params.env;
-        // const config = params.config || {};
-        // const verbose = params.verbose || false;
-
         try {
           await childCreateAll();
           console.log(chalkBlue(MODULE_ID_PREFIX + " | CREATED ALL CHILDREN: " + Object.keys(childHashMap).length));
@@ -5397,6 +5428,7 @@ const fsmStates = {
           await loadNetworkInputsConfig({file: defaultBestInputsConfigFile});
           await loadNetworkInputsConfig({file: defaultNetworkInputsConfigFile});
           await loadSeedNeuralNetwork(seedParams);
+          await loadInputsDropboxFolders({folders: [defaultInputsFolder]});
           await loadTrainingSet({folder: configuration.userArchiveFolder, file: configuration.defaultUserArchiveFlagFile});
           await childStartAll();
 
@@ -6345,14 +6377,6 @@ function childPingAll(p){
   });
 }
 
-console.log(MODULE_ID_PREFIX + " | =================================");
-console.log(MODULE_ID_PREFIX + " | HOST:          " + hostname);
-console.log(MODULE_ID_PREFIX + " | PROCESS TITLE: " + process.title);
-console.log(MODULE_ID_PREFIX + " | PROCESS ID:    " + process.pid);
-console.log(MODULE_ID_PREFIX + " | RUN ID:        " + statsObj.runId);
-console.log(MODULE_ID_PREFIX + " | PROCESS ARGS   " + util.inspect(process.argv, {showHidden: false, depth: 1}));
-console.log(MODULE_ID_PREFIX + " | =================================");
-
 function toggleVerbose(){
 
   configuration.verbose = !configuration.verbose;
@@ -6426,6 +6450,14 @@ console.log(chalkBlueBold(
   + MODULE_ID_PREFIX + " | " + MODULE_ID + " STARTED | " + getTimeStamp()
   + "\n=======================================================================\n"
 ));
+
+console.log(MODULE_ID_PREFIX + " | =================================");
+console.log(MODULE_ID_PREFIX + " | HOST:          " + hostname);
+console.log(MODULE_ID_PREFIX + " | PROCESS TITLE: " + process.title);
+console.log(MODULE_ID_PREFIX + " | PROCESS ID:    " + process.pid);
+console.log(MODULE_ID_PREFIX + " | RUN ID:        " + statsObj.runId);
+console.log(MODULE_ID_PREFIX + " | PROCESS ARGS   " + util.inspect(process.argv, {showHidden: false, depth: 1}));
+console.log(MODULE_ID_PREFIX + " | =================================");
 
 setTimeout(async function(){
 
