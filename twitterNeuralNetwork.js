@@ -579,6 +579,7 @@ let currentBestNetwork;
 const betterChildSeedNetworkIdSet = new Set();
 const skipLoadNetworkSet = new Set();
 const inputsNoNetworksSet = new Set();
+const inputsFailedSet = new Set();
 let localNetworkFile;
 let networkIndex = 0;
 let bestNetworkFile;
@@ -1073,7 +1074,8 @@ function updateDbInputs(params){
 
     if (params.networkId) {
       update.$addToSet = { networks: params.networkId };
-      inputsNoNetworksSet.delete(params.networkId);
+      inputsNoNetworksSet.delete(params.inputsObj.inputsId);
+      inputsFailedSet.delete(params.inputsObj.inputsId)
     }
 
     const options = {
@@ -1872,7 +1874,7 @@ function dropboxFileMove(params){
 
     dropboxClient.filesMoveV2({from_path: srcPath, to_path: dstPath}).
     then(function(response){
-      console.log(chalkAlert(MODULE_ID_PREFIX + " | ->- DROPBOX FILE MOVE"
+      console.log(chalkLog(MODULE_ID_PREFIX + " | ->- DROPBOX FILE MOVE"
         + " | " + srcPath
         + " > " + dstPath
         // + " | RESPONSE\n" + jsonPrint(response)
@@ -1890,7 +1892,7 @@ function dropboxFileMove(params){
         ));
       }
       else if (err.status === 429) {
-        console.log(chalkError(MODULE_ID_PREFIX + " | *** MOVE ERROR: XXX NN"
+        console.log(chalkError(MODULE_ID_PREFIX + " | *** MOVE ERROR:"
           + " | STATUS: " + err.status
           + " | " + srcPath
           + " > " + dstPath
@@ -1898,12 +1900,12 @@ function dropboxFileMove(params){
         ));
       }
       else {
-        console.log(chalkError(MODULE_ID_PREFIX + " | *** MOVE ERROR: XXX NN"
+        console.log(chalkError(MODULE_ID_PREFIX + " | *** MOVE ERROR:"
           + " | STATUS: " + err.status
           + " | " + srcPath
           + " > " + dstPath
           + " | SUMMARY: " + err.response.statusText
-          + "\n" + jsonPrint(err)
+          // + "\n" + jsonPrint(err)
         ));
       }
       return reject(err);
@@ -2121,12 +2123,25 @@ function loadInputsDropboxFolders (p){
       }
 
       if (!configuration.inputsIdArray.includes(inputsId)){
-        console.log(chalkInfo(MODULE_ID_PREFIX + " | --- SKIP INPUTS ... NOT IN INPUTS ARRAY"
+        console.log(chalkInfo(MODULE_ID_PREFIX + " | --- ARCHIVE INPUTS ... NOT IN INPUTS ARRAY"
           + " | " + inputsId
           + " | FOLDER: " + folder
           + " | " + entry.name
         ));
-        return;
+        try{
+          await dropboxFileMove({srcFolder: folder, srcFile: entry.name, dstFolder: globalArchiveInputsFolder, dstFile: entry.name});
+          return;
+        }
+        catch(err){
+          if (err.status === 429) {
+            setTimeout(function(){
+              return;
+            }, 5000);
+          }
+          else {
+            return;
+          }
+        }
       }
       
       try {
@@ -2800,11 +2815,31 @@ function generateRandomEvolveConfig (){
     debug(chalkLog(MODULE_ID_PREFIX + " | inputsHashMapKeys: " + inputsHashMapKeys));
 
     if (inputsNoNetworksSet.size > 0){
-      config.seedInputsId = randomItem([...inputsNoNetworksSet]);
-      console.log(chalkBlueBold(MODULE_ID_PREFIX
-        + " | NO NETWORKS RANDOM INPUT [" + inputsNoNetworksSet.size + "]"
-        + " | " + config.seedInputsId
-      ));
+
+      // config.seedInputsId = randomItem([...inputsNoNetworksSet]);
+      const noNetworksInputsIdArray = [...inputsNoNetworksSet].sort();
+      const failedInputsIdArray = [...inputsFailedSet];
+      let availableInputsIdArray = _.difference(noNetworksInputsIdArray, failedInputsIdArray);
+
+      console.log(chalkLog(MODULE_ID_PREFIX + " | AVAILABLE NO NETWORKS INPUTS: " + availableInputsIdArray.length));
+
+      if (availableInputsIdArray.length > 0){
+        availableInputsIdArray.sort();
+        config.seedInputsId = availableInputsIdArray.pop(); // most recent input
+        console.log(chalkBlueBold(MODULE_ID_PREFIX
+          + " | NO NETWORKS RANDOM INPUT"
+          + " | INPUT NO NETWORKS SET: " + inputsNoNetworksSet.size
+          + " | AVAIL NO NETWORKS INPUTS: " + availableInputsIdArray.length
+          + " | " + config.seedInputsId
+        ));
+      }
+      else {
+        config.seedInputsId = randomItem(inputsHashMapKeys);
+        console.log(chalkLog(MODULE_ID_PREFIX
+          + " | RANDOM INPUT [" + inputsHashMapKeys.length + "]"
+          + " | " + config.seedInputsId
+        ));
+      }
     }
     else {
       config.seedInputsId = randomItem(inputsHashMapKeys);
@@ -3212,9 +3247,9 @@ function initWatchAllConfigFolders(p){
         monitorInputs.on("removed", function (f) {
           const fileNameArray = f.split("/");
           const inputsId = fileNameArray[fileNameArray.length-1].replace(".json", "");
-          console.log(chalkAlert(MODULE_ID_PREFIX + " | XXX INPUTS FILE DELETED | " + getTimeStamp() 
+          console.log(chalkLog(MODULE_ID_PREFIX + " | XXX INPUTS FILE DELETED | " + getTimeStamp() 
             + " | " + inputsId 
-            + "\n" + f
+            + " | " + f
           ));
           inputsHashMap.delete(inputsId);
         });
@@ -3932,6 +3967,7 @@ const defaultInputsFolder = dropboxConfigDefaultFolder + "/inputs";
 // const defaultTrainingSetUserArchive = defaultTrainingSetFolder + "/users/users.zip";
 
 const globalBestNetworkFolder = "/config/utility/best/neuralNetworks";
+const globalArchiveInputsFolder = "/config/utility/default/inputsArchive";
 const localBestNetworkFolder = "/config/utility/" + hostname + "/neuralNetworks/best";
 const localFailNetworkFolder = "/config/utility/" + hostname + "/neuralNetworks/fail";
 const localArchiveNetworkFolder = "/config/utility/" + hostname + "/neuralNetworks/archive";
@@ -6150,6 +6186,8 @@ function childCreate(p){
 
                 let noNetworksInputsFlag = false;
 
+                inputsFailedSet.delete(nn.inputsId);
+
                 if (inputsNoNetworksSet.has(nn.inputsId)) {
                   noNetworksInputsFlag = true;
                   console.log(chalkBlueBold("TNN | GLOBAL BEST | NO NETWORKS INPUTS"
@@ -6188,6 +6226,8 @@ function childCreate(p){
 
                 resultsHashmap[nn.networkId].status = "PASS LOCAL";
 
+                inputsFailedSet.delete(nn.inputsId);
+
                 statsObj.evolveStats.passLocal += 1;
 
                 slackText = "\n*LOCAL BEST | " + nn.test.results.successRate.toFixed(2) + "%*";
@@ -6211,6 +6251,18 @@ function childCreate(p){
               ));
 
               resultsHashmap[nn.networkId].status = "FAIL";
+
+              if (
+                   ((nn.evolve.options.cost !== "MSE") && (nn.test.results.successRate < configuration.localMinSuccessRate))
+                || ((nn.evolve.options.cost === "MSE") && (nn.test.results.successRate < configuration.localMinSuccessRateMSE))
+                )
+              {
+                inputsFailedSet.add(nn.inputsId);
+                console.log(chalkInfo(MODULE_ID_PREFIX + " | +++ FAILED INPUTS ID TO SET"
+                  + " [" + inputsFailedSet.size + "]"
+                  + " | " + nn.inputsId
+                ));
+              }
 
               slackText = "\n*-FAIL-*";
               slackText = slackText + "\n*" + nn.test.results.successRate.toFixed(2) + "%*";
