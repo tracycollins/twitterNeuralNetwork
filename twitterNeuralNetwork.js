@@ -742,6 +742,7 @@ statsObj.evolveStats.total = 0;
 statsObj.evolveStats.passLocal = 0;
 statsObj.evolveStats.passGlobal = 0;
 statsObj.evolveStats.fail = 0;
+statsObj.evolveStats.noNetworksInputs = [];
 
 statsObj.users = {};
 statsObj.users.imageParse = {};
@@ -1341,7 +1342,7 @@ function loadInputsDropboxFile(params){
     if (dbInputsObj.networks.length === 0){
       inputsNoNetworksSet.add(dbInputsObj.inputsId);
       console.log(chalkBlueBold(MODULE_ID_PREFIX 
-        + " | +++ NO NETWORKS INPUTS [" + inputsNoNetworksSet.size + " IN HM]"
+        + " | +++ NO NETWORKS INPUTS [" + inputsNoNetworksSet.size + " IN SET]"
         + " | " + dbInputsObj.meta.numInputs
         + " INPUTS | " + dbInputsObj.inputsId
       ));
@@ -6147,10 +6148,23 @@ function childCreate(p){
 
                 statsObj.evolveStats.passGlobal += 1;
 
+                let noNetworksInputsFlag = false;
+
+                if (inputsNoNetworksSet.has(nn.inputsId)) {
+                  noNetworksInputsFlag = true;
+                  console.log(chalkBlueBold("TNN | GLOBAL BEST | NO NETWORKS INPUTS"
+                    + " | " + nn.networkId
+                    + " | INPUTS: " + nn.inputsId
+                  ));
+                  statsObj.evolveStats.noNetworksInputs.push(nn.inputsId);
+                  inputsNoNetworksSet.delete(nn.inputsId);
+                }
+
                 slackText = "\n*GLOBAL BEST | " + nn.test.results.successRate.toFixed(2) + "%*";
                 slackText = slackText + "\n              " + nn.networkId;
                 slackText = slackText + "\nIN:           " + nn.inputsId;
                 slackText = slackText + "\nINPUTS:       " + nn.network.input;
+                slackText = slackText + "\nINPUTS NO NNs: " + noNetworksInputsFlag;
                 slackText = slackText + "\nBETTER CHILD: " + nn.betterChild;
                 slackText = slackText + "\nELAPSED:      " + msToTime(nn.evolve.elapsed);
 
