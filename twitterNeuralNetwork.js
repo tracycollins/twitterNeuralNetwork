@@ -2814,7 +2814,7 @@ function generateRandomEvolveConfig (){
     console.log(chalkLog(MODULE_ID_PREFIX + " | inputsHashMapKeys: " + inputsHashMapKeys.length));
     debug(chalkLog(MODULE_ID_PREFIX + " | inputsHashMapKeys: " + inputsHashMapKeys));
 
-    if (inputsNoNetworksSet.size > 0){
+    if (!config.seedNetworkId && (inputsNoNetworksSet.size > 0)){
 
       // config.seedInputsId = randomItem([...inputsNoNetworksSet]);
       const noNetworksInputsIdArray = [...inputsNoNetworksSet].sort();
