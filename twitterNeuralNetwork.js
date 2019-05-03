@@ -521,11 +521,12 @@ const DEFAULT_EVOLVE_ERROR = 0.03;
 const DEFAULT_EVOLVE_LOG = 1;
 const DEFAULT_EVOLVE_MUTATION = neataptic.methods.mutation.FFW;
 const DEFAULT_EVOLVE_MUTATION_RATE = 0.5;
-const DEFAULT_EVOLVE_POPSIZE = { min: 50, max: 50 };
+// const DEFAULT_EVOLVE_POPSIZE = { min: 50, max: 50 };
+const DEFAULT_EVOLVE_POPSIZE = 50;
 const DEFAULT_EVOLVE_GROWTH = 0.0001;
 const DEFAULT_EVOLVE_COST = "CROSS_ENTROPY";
 const EVOLVE_MUTATION_RATE_RANGE = { min: 0.35, max: 0.75 };
-const EVOLVE_POP_SIZE_RANGE = { min: DEFAULT_EVOLVE_POPSIZE.min, max: DEFAULT_EVOLVE_POPSIZE.max };
+// const EVOLVE_POP_SIZE_RANGE = { min: DEFAULT_EVOLVE_POPSIZE.min, max: DEFAULT_EVOLVE_POPSIZE.max };
 const DEFAULT_GROWTH = { min: 0.00005, max: 0.00015 };
 const EVOLVE_GROWTH_RANGE = { min: DEFAULT_GROWTH.min, max: DEFAULT_GROWTH.max };
 const EVOLVE_ELITISM_RANGE = { min: 5, max: 20 };
@@ -2860,7 +2861,7 @@ function generateRandomEvolveConfig (){
     config.equal = true;
     config.error = configuration.evolve.error;
     config.mutationRate = randomFloat(EVOLVE_MUTATION_RATE_RANGE.min, EVOLVE_MUTATION_RATE_RANGE.max);
-    config.popsize = randomInt(EVOLVE_POP_SIZE_RANGE.min, EVOLVE_POP_SIZE_RANGE.max);
+    config.popsize = configuration.evolve.popsize;
     config.growth = randomFloat(EVOLVE_GROWTH_RANGE.min, EVOLVE_GROWTH_RANGE.max);
     config.elitism = randomInt(EVOLVE_ELITISM_RANGE.min, EVOLVE_ELITISM_RANGE.max);
 
@@ -2885,7 +2886,7 @@ function generateRandomEvolveConfig (){
         config.equal = randomItem([config.equal, networkObj.evolve.options.equal]);
         config.error = randomItem([config.error, networkObj.evolve.options.error]);
         config.mutationRate = randomItem([config.mutationRate, networkObj.evolve.options.mutationRate]);
-        config.popsize = randomItem([config.popsize, networkObj.evolve.options.popsize]);
+        // config.popsize = randomItem([config.popsize, networkObj.evolve.options.popsize]);
         config.growth = randomItem([config.growth, networkObj.evolve.options.growth]);
         config.elitism = randomItem([config.elitism, networkObj.evolve.options.elitism]);
       }
@@ -2895,7 +2896,7 @@ function generateRandomEvolveConfig (){
         config.equal = networkObj.evolve.options.equal;
         config.error = networkObj.evolve.options.error;
         config.mutationRate = networkObj.evolve.options.mutationRate;
-        config.popsize = networkObj.evolve.options.popsize;
+        // config.popsize = networkObj.evolve.options.popsize;
         config.growth = networkObj.evolve.options.growth;
         config.elitism = networkObj.evolve.options.elitism;
       }
