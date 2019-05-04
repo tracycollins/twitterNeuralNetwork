@@ -595,7 +595,11 @@ testObj.testRunId = hostname + "_" + statsObj.startTime;
 testObj.results = {};
 testObj.testSet = [];
 
-const trainingSetUsersHashMap = new HashMap();
+const trainingSetUsersHashMap = {};
+trainingSetUsersHashMap.left = new HashMap();
+trainingSetUsersHashMap.neutral = new HashMap();
+trainingSetUsersHashMap.right = new HashMap();
+
 const trainingSetHashMap = new HashMap();
 statsObj.trainingSetReady = false;
 
@@ -2362,6 +2366,10 @@ function unzipUsersToArray(params){
 
       let entryNumber = 0;
 
+      trainingSetUsersHashMap.left.clear();
+      trainingSetUsersHashMap.neutral.clear();
+      trainingSetUsersHashMap.right.clear();
+
       yauzl.open(params.path, {lazyEntries: true}, function(err, zipfile) {
 
         if (err) {
@@ -2429,7 +2437,11 @@ function unzipUsersToArray(params){
 
                     hmHit = MODULE_ID_PREFIX + " | --> UNZIP";
 
-                    if (trainingSetUsersHashMap.has(fileObj.userId)) {
+                    if ( trainingSetUsersHashMap.left.has(fileObj.userId)
+                      || trainingSetUsersHashMap.neutral.has(fileObj.userId) 
+                      || trainingSetUsersHashMap.right.has(fileObj.userId)
+                      ) 
+                    {
                       hmHit = MODULE_ID_PREFIX + " | **> UNZIP";
                       statsObj.users.zipHashMapHit += 1;
                     }
@@ -2454,12 +2466,14 @@ function unzipUsersToArray(params){
                       && ((dbUser.category === "left") || (dbUser.category === "right") || (dbUser.category === "neutral"))
                       ) {
 
-                      trainingSetUsersHashMap.set(dbUser.nodeId, dbUser);
+                      trainingSetUsersHashMap[dbUser.category].set(dbUser.nodeId, dbUser);
 
                       if (configuration.verbose || (statsObj.users.unzipped % 1000 === 0)) {
 
                         console.log(chalkLog(hmHit
-                          + " | " + trainingSetUsersHashMap.size + " USERS IN HM"
+                          + " | USERS - L: " + trainingSetUsersHashMap.left.size
+                          + " N: " + trainingSetUsersHashMap.neutral.size
+                          + " R: " + trainingSetUsersHashMap.right.size
                           + " [ ZipHM: " + statsObj.users.zipHashMapMiss 
                           + " MISS / " + statsObj.users.zipHashMapHit 
                           + " HIT (" + percent.toFixed(2) + "%) ]"
@@ -2493,7 +2507,7 @@ function unzipUsersToArray(params){
               });
 
               readStream.on("close", async function(){
-                console.log(chalkInfo(MODULE_ID_PREFIX + " | UNZIP STREAM CLOSED | TRAINING SET USERS HM SIZE: " + trainingSetUsersHashMap.size));
+                console.log(chalkInfo(MODULE_ID_PREFIX + " | UNZIP STREAM CLOSED"));
                 resolve();
               });
 
@@ -2559,24 +2573,39 @@ function updateTrainingSet(){
         tObj.trainingSetObj.maxInputHashMap = {};
       }
 
-      const testSetSize = parseInt(configuration.testSetRatio * trainingSetUsersHashMap.size);
+      async.eachSeries(["left", "neutral", "right"], function(category, cb){
 
-      tObj.trainingSetObj.trainingSet.data = trainingSetUsersHashMap.values().slice(testSetSize);
-      tObj.trainingSetObj.trainingSet.meta.setSize = tObj.trainingSetObj.trainingSet.data.length;
+        const trainingSetSize = parseInt((1 - configuration.testSetRatio) * trainingSetUsersHashMap[category].size);
+        const testSetSize = parseInt(configuration.testSetRatio * trainingSetUsersHashMap[category].size);
 
-      tObj.trainingSetObj.testSet.data = trainingSetUsersHashMap.values().slice(0, testSetSize-1);
-      tObj.trainingSetObj.testSet.meta.setSize = tObj.trainingSetObj.testSet.data.length;
+        console.log(chalkLog(MODULE_ID_PREFIX + " | TRAINING SET | " + category.toUpperCase()
+          + " | SIZE: " + trainingSetSize
+          + " | TEST SIZE: " + testSetSize
+        ));
 
-      tObj.trainingSetObj.maxInputHashMap = userMaxInputHashMap;
+        tObj.trainingSetObj.trainingSet.data = tObj.trainingSetObj.trainingSet.data.concat(trainingSetUsersHashMap[category].values().slice(testSetSize));
+        tObj.trainingSetObj.testSet.data = tObj.trainingSetObj.testSet.data.concat(trainingSetUsersHashMap[category].values().slice(0, testSetSize-1));
 
-      console.log(chalkLog(MODULE_ID_PREFIX + " | TRAINING SET"
-        + " | SIZE: " + tObj.trainingSetObj.trainingSet.meta.setSize
-        + " | TEST SIZE: " + tObj.trainingSetObj.testSet.meta.setSize
-      ));
+        cb();
 
-      trainingSetHashMap.set(tObj.trainingSetObj.trainingSetId, tObj);
+      }, function(err){
 
-      resolve();
+        tObj.trainingSetObj.trainingSet.meta.setSize = tObj.trainingSetObj.trainingSet.data.length;
+        tObj.trainingSetObj.testSet.meta.setSize = tObj.trainingSetObj.testSet.data.length;
+
+        tObj.trainingSetObj.maxInputHashMap = userMaxInputHashMap;
+
+        trainingSetHashMap.set(tObj.trainingSetObj.trainingSetId, tObj);
+
+        console.log(chalkLog(MODULE_ID_PREFIX + " | TRAINING SET"
+          + " | SIZE: " + tObj.trainingSetObj.trainingSet.meta.setSize
+          + " | TEST SIZE: " + tObj.trainingSetObj.testSet.meta.setSize
+        ));
+
+        resolve();
+
+      });
+
     }
     catch(err){
       console.log(chalkError(MODULE_ID_PREFIX + " | *** updateTrainingSet ERROR:", err));
