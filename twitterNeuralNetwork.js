@@ -808,9 +808,14 @@ async function printInputsObj(title, inputsObj, format) {
   const chalkFormat = (format !== undefined) ? format : chalkNetwork;
 
   const numNetworks = (inputsObj.networks !== undefined) ? inputsObj.networks.length : 0;
+  const numFails = (inputsObj.failNetworks !== undefined) ? inputsObj.failNetworks.length : 0;
+  const totalAttempts = numNetworks + numFails;
+  const percentSuccess = (totalAttempts > 0) ? numNetworks/totalAttempts : 0;
 
   console.log(chalkFormat(title
     + " | NETWORKS: " + numNetworks
+    + " | FAILS: " + numFails
+    + " | SUCCESS: " + percentSuccess.toFixed(2) + "%"
     + " | INPUTS: " + inputsObj.meta.numInputs
     + " | " + inputsObj.inputsId
   ));
@@ -1081,6 +1086,11 @@ function updateDbInputs(params){
       update.$addToSet = { networks: params.networkId };
       inputsNoNetworksSet.delete(params.inputsObj.inputsId);
       inputsFailedSet.delete(params.inputsObj.inputsId)
+    }
+
+    if (params.failNetworkId) {
+      update.$addToSet = { failNetworks: params.failNetworkId };
+      inputsFailedSet.add(params.inputsObj.inputsId)
     }
 
     const options = {
@@ -6044,7 +6054,7 @@ function childCreate(p){
 
             try {
               nn = await networkDefaults(m.networkObj);
-              await updateDbInputs({inputsObj: nn.inputsObj, networkId: nn.networkId});
+              // await updateDbInputs({inputsObj: nn.inputsObj, networkId: nn.networkId});
             }
             catch(err){
               console.trace(chalkError("EVOLVE_COMPLETE ERROR: " + err));
@@ -6140,6 +6150,7 @@ function childCreate(p){
               ) { 
 
               // It's a Keeper!!
+              await updateDbInputs({inputsObj: nn.inputsObj, networkId: nn.networkId});
 
               bestNetworkFile = nn.networkId + ".json";
 
@@ -6287,6 +6298,7 @@ function childCreate(p){
                 || ((nn.evolve.options.cost === "MSE") && (nn.test.results.successRate < configuration.localMinSuccessRateMSE))
                 )
               {
+                await updateDbInputs({inputsObj: nn.inputsObj, failNetworkId: nn.networkId});
                 inputsFailedSet.add(nn.inputsId);
                 console.log(chalkInfo(MODULE_ID_PREFIX + " | +++ FAILED INPUTS ID TO SET"
                   + " [" + inputsFailedSet.size + "]"
