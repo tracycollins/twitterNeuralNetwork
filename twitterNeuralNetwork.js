@@ -629,9 +629,7 @@ configuration.useLocalNetworksOnly = false;
 configuration.networkCreateIntervalTime = 15000;
 configuration.enableSeedNetwork = true;
 
-configuration.randomizeSeedOptions = (process.env.TNN_SEED_RANDOMIZE_OPTIONS !== undefined) 
-  ? process.env.TNN_SEED_RANDOMIZE_OPTIONS 
-  : DEFAULT_SEED_RANDOMIZE_OPTIONS;
+configuration.randomizeSeedOptions = DEFAULT_SEED_RANDOMIZE_OPTIONS;
 
 configuration.seedNetworkProbability = DEFAULT_SEED_NETWORK_PROBABILITY;
 
@@ -673,6 +671,18 @@ if (process.env.TNN_QUIT_ON_COMPLETE !== undefined) {
   }
   else {
     configuration.quitOnComplete = true;
+  }
+}
+
+if (process.env.TNN_SEED_RANDOMIZE_OPTIONS !== undefined) {
+
+  console.log(MODULE_ID_PREFIX + " | ENV TNN_SEED_RANDOMIZE_OPTIONS: " + process.env.TNN_SEED_RANDOMIZE_OPTIONS);
+
+  if (!process.env.TNN_SEED_RANDOMIZE_OPTIONS || (process.env.TNN_SEED_RANDOMIZE_OPTIONS === false) || (process.env.TNN_SEED_RANDOMIZE_OPTIONS === "false")) {
+    configuration.randomizeSeedOptions = false;
+  }
+  else {
+    configuration.randomizeSeedOptions = true;
   }
 }
 
