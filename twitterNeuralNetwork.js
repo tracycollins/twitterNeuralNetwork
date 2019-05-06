@@ -820,7 +820,7 @@ async function printInputsObj(title, inputsObj, format) {
   const numNetworks = (inputsObj.networks !== undefined) ? inputsObj.networks.length : 0;
   const numFails = (inputsObj.failNetworks !== undefined) ? inputsObj.failNetworks.length : 0;
   const totalAttempts = numNetworks + numFails;
-  const percentSuccess = (totalAttempts > 0) ? numNetworks/totalAttempts : 0;
+  const percentSuccess = (totalAttempts > 0) ? 100*(numNetworks/totalAttempts) : 0;
 
   console.log(chalkFormat(title
     + " | NETWORKS: " + numNetworks
