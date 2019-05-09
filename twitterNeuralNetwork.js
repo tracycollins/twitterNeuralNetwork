@@ -53,9 +53,7 @@ const SAVE_FILE_QUEUE_INTERVAL = 5*ONE_SECOND;
 const QUIT_WAIT_INTERVAL = 5*ONE_SECOND;
 const STATS_UPDATE_INTERVAL = ONE_MINUTE;
 const DEFAULT_CHILD_PING_INTERVAL = ONE_MINUTE;
-
 const SAVE_CACHE_DEFAULT_TTL = 60;
-
 const DROPBOX_LIST_FOLDER_LIMIT = 50;
 
 const compactDateTimeFormat = "YYYYMMDD_HHmmss";
@@ -2922,30 +2920,30 @@ function generateRandomEvolveConfig (){
       const networkObj = networkHashMap.get(config.seedNetworkId).networkObj;
 
       config.networkObj = networkObj;
-
       config.architecture = "loadedNetwork";
       config.inputsId = networkObj.inputsId;
       config.inputsObj = {};
       config.inputsObj = networkObj.inputsObj;
+
       console.log(MODULE_ID_PREFIX + " | SEED INPUTS | " + networkObj.inputsId);
 
       if (configuration.randomizeSeedOptions) {
         console.log(chalkLog(MODULE_ID_PREFIX + " | RANDOMIZE SEED NETWORK OPTIONS | " + config.seedNetworkId));
         config.cost = randomItem([config.cost, networkObj.evolve.options.cost]);
+        config.clear = randomItem([config.clear, networkObj.evolve.options.clear]);
         config.equal = randomItem([config.equal, networkObj.evolve.options.equal]);
         config.error = randomItem([config.error, networkObj.evolve.options.error]);
         config.mutationRate = randomItem([config.mutationRate, networkObj.evolve.options.mutationRate]);
-        // config.popsize = randomItem([config.popsize, networkObj.evolve.options.popsize]);
         config.growth = randomItem([config.growth, networkObj.evolve.options.growth]);
         config.elitism = randomItem([config.elitism, networkObj.evolve.options.elitism]);
       }
       else {
         console.log(chalkLog(MODULE_ID_PREFIX + " | USE SEED NETWORK OPTIONS | " + config.seedNetworkId));
         config.cost = networkObj.evolve.options.cost;
+        config.clear = networkObj.evolve.options.clear;
         config.equal = networkObj.evolve.options.equal;
         config.error = networkObj.evolve.options.error;
         config.mutationRate = networkObj.evolve.options.mutationRate;
-        // config.popsize = networkObj.evolve.options.popsize;
         config.growth = networkObj.evolve.options.growth;
         config.elitism = networkObj.evolve.options.elitism;
       }
