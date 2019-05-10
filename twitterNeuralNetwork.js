@@ -897,6 +897,7 @@ function printResultsHashmap(){
       "SEED",
       "RES %",
       "INPTS",
+      "ACTVTN",
       "CLEAR",
       "COST",
       "GRWTH",
@@ -924,6 +925,7 @@ function printResultsHashmap(){
       }
       
       if (networkObj.evolve === undefined) {
+        networkObj.evolve.options.activation = "---";
         networkObj.evolve.options.clear = "---";
         networkObj.evolve.options.cost = "---";
         networkObj.evolve.options.growth = "---";
@@ -962,6 +964,7 @@ function printResultsHashmap(){
         seedNetworkId,
         snIdRes,
         networkObj.numInputs,
+        networkObj.evolve.options.activation,
         networkObj.evolve.options.clear,
         networkObj.evolve.options.cost,
         networkObj.evolve.options.growth.toFixed(8),
@@ -987,7 +990,7 @@ function printResultsHashmap(){
       statsObj.networkResults[networkId].betterChild = betterChild;
       statsObj.networkResults[networkId].seedNetworkId = seedNetworkId;
       statsObj.networkResults[networkId].snIdRes = snIdRes;
-      statsObj.networkResults[networkId].networkObj.evolve.options = pick(networkObj.evolve.options, ["clear", "cost", "growth", "equal", "mutationRate", "popsize", "elitism"]);
+      statsObj.networkResults[networkId].networkObj.evolve.options = pick(networkObj.evolve.options, ["activation", "clear", "cost", "growth", "equal", "mutationRate", "popsize", "elitism"]);
       statsObj.networkResults[networkId].startTime = getTimeStamp(networkObj.evolve.startTime);
       statsObj.networkResults[networkId].elapsed = msToTime(elapsed);
       statsObj.networkResults[networkId].iterations = iterations;
@@ -1002,7 +1005,7 @@ function printResultsHashmap(){
         return reject(err);
       }
 
-      const t = table(tableArray, { align: ["l", "l", "l", "l", "l", "r", "l", "l", "l", "l", "r", "r", "r", "l", "l", "r", "r", "r"] });
+      const t = table(tableArray, { align: ["l", "l", "l", "l", "l", "r", "l", "l", "l", "l", "l", "r", "r", "r", "l", "l", "r", "r", "r"] });
 
       console.log(chalkLog(MODULE_ID_PREFIX + " | === NETWORK RESULTS ========================================================================================================================"));
       console.log(chalkLog(t));
@@ -3091,7 +3094,7 @@ function initNetworkCreate(params){
           networkCreateObj.evolve.endTime = moment().valueOf();
           networkCreateObj.evolve.complete = false;
           networkCreateObj.evolve.options = {};
-          networkCreateObj.evolve.options = pick(childConf, ["clear", "cost", "growth", "equal", "mutationRate", "popsize", "elitism"]);
+          networkCreateObj.evolve.options = pick(childConf, ["activation", "clear", "cost", "growth", "equal", "mutationRate", "popsize", "elitism"]);
 
           resultsHashmap[messageObj.testRunId] = networkCreateObj;
 
