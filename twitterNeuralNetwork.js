@@ -2929,23 +2929,25 @@ function generateRandomEvolveConfig (){
 
       if (configuration.randomizeSeedOptions) {
         console.log(chalkLog(MODULE_ID_PREFIX + " | RANDOMIZE SEED NETWORK OPTIONS | " + config.seedNetworkId));
-        config.cost = randomItem([config.cost, networkObj.evolve.options.cost]);
+        config.activation = randomItem([config.activation, networkObj.evolve.options.activation]);
         config.clear = randomItem([config.clear, networkObj.evolve.options.clear]);
+        config.cost = randomItem([config.cost, networkObj.evolve.options.cost]);
+        config.elitism = randomItem([config.elitism, networkObj.evolve.options.elitism]);
         config.equal = randomItem([config.equal, networkObj.evolve.options.equal]);
         config.error = randomItem([config.error, networkObj.evolve.options.error]);
-        config.mutationRate = randomItem([config.mutationRate, networkObj.evolve.options.mutationRate]);
         config.growth = randomItem([config.growth, networkObj.evolve.options.growth]);
-        config.elitism = randomItem([config.elitism, networkObj.evolve.options.elitism]);
+        config.mutationRate = randomItem([config.mutationRate, networkObj.evolve.options.mutationRate]);
       }
       else {
         console.log(chalkLog(MODULE_ID_PREFIX + " | USE SEED NETWORK OPTIONS | " + config.seedNetworkId));
-        config.cost = networkObj.evolve.options.cost;
+        config.activation = networkObj.evolve.options.activation;
         config.clear = networkObj.evolve.options.clear;
+        config.cost = networkObj.evolve.options.cost;
+        config.elitism = networkObj.evolve.options.elitism;
         config.equal = networkObj.evolve.options.equal;
         config.error = networkObj.evolve.options.error;
-        config.mutationRate = networkObj.evolve.options.mutationRate;
         config.growth = networkObj.evolve.options.growth;
-        config.elitism = networkObj.evolve.options.elitism;
+        config.mutationRate = networkObj.evolve.options.mutationRate;
       }
     }
     else {
