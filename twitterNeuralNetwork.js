@@ -3060,6 +3060,7 @@ function initNetworkCreate(params){
             + "\n" + MODULE_ID_PREFIX + " | OUTPUTS:      " + messageObj.trainingSet.meta.numOutputs
             + "\n" + MODULE_ID_PREFIX + " | TRAINING SET: " + messageObj.trainingSet.meta.setSize
             + "\n" + MODULE_ID_PREFIX + " | TEST SET:     " + messageObj.testSet.data.length
+            + "\n" + MODULE_ID_PREFIX + " | ACTIVATION:   " + messageObj.activation
             + "\n" + MODULE_ID_PREFIX + " | COST:         " + messageObj.cost
             + "\n" + MODULE_ID_PREFIX + " | ITERATIONS:   " + messageObj.iterations
           ));
