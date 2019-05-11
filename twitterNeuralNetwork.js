@@ -530,9 +530,6 @@ const EVOLVE_GROWTH_RANGE = { min: DEFAULT_GROWTH.min, max: DEFAULT_GROWTH.max }
 const EVOLVE_ELITISM_RANGE = { min: 5, max: 20 };
 const DEFAULT_EVOLVE_COST_ARRAY = [
   "CROSS_ENTROPY",
-  "CROSS_ENTROPY",
-  "CROSS_ENTROPY",
-  "CROSS_ENTROPY",
   "MSE"
 ];
 const DEFAULT_EVOLVE_MOD_ACTIVATION_ARRAY = [
@@ -4578,6 +4575,11 @@ function loadConfigFile(params) {
       if (loadedConfigObj.TNN_SEED_NETWORK_PROBABILITY !== undefined){
         console.log(MODULE_ID_PREFIX + " | LOADED TNN_SEED_NETWORK_PROBABILITY: " + loadedConfigObj.TNN_SEED_NETWORK_PROBABILITY);
         newConfiguration.seedNetworkProbability = loadedConfigObj.TNN_SEED_NETWORK_PROBABILITY;
+      }
+
+      if (loadedConfigObj.TNN_EVOLVE_COST_ARRAY !== undefined){
+        console.log(MODULE_ID_PREFIX + " | LOADED TNN_EVOLVE_COST_ARRAY: " + loadedConfigObj.TNN_EVOLVE_COST_ARRAY);
+        newConfiguration.costArray = loadedConfigObj.TNN_EVOLVE_COST_ARRAY;
       }
 
       if (loadedConfigObj.TNN_GLOBAL_MIN_SUCCESS_RATE !== undefined){
