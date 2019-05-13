@@ -6,10 +6,11 @@
   "dependencies": {
     "@davvo/drbx": "^2.1.0",
     "@google-cloud/vision": "^0.25.0",
+    "@liquid-carrot/carrot": "^0.2.9",
     "@slack/client": "^5.0.1",
     "@threeceelabs/histogram-parser": "^1.0.20",
     "@threeceelabs/mergehistograms": "^1.0.2",
-    "@threeceelabs/mongoose-twitter": "^1.0.226",
+    "@threeceelabs/mongoose-twitter": "^1.0.227",
     "@threeceelabs/tweet-server-controller": "^1.0.450",
     "@threeceelabs/twitter-image-parser": "^1.0.65",
     "@threeceelabs/twitter-text-parser": "^1.0.83",

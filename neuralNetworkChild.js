@@ -5,7 +5,9 @@
 const MODULE_NAME = "tncChild";
 const MODULE_ID_PREFIX = "TNC";
 
+const DEFAULT_NETWORK_TECHNOLOGY = "neataptic";
 const DEFAULT_QUIT_ON_COMPLETE = false;
+const DEFAULT_INPUTS_BINARY_MODE = false;
 
 const os = require("os");
 let hostname = os.hostname();
@@ -30,16 +32,6 @@ console.log("HOST NAME:    " + hostname);
 console.log("=========================================");
 console.log("=========================================");
 
-// let DROPBOX_ROOT_FOLDER;
-
-// if (hostname === "google") {
-//   DROPBOX_ROOT_FOLDER = "/home/tc/Dropbox/Apps/wordAssociation";
-// }
-// else {
-//   DROPBOX_ROOT_FOLDER = "/Users/tc/Dropbox/Apps/wordAssociation";
-// }
-
-const DEFAULT_INPUTS_BINARY_MODE = false;
 
 const TEST_MODE = false; // applies only to parent
 
@@ -55,7 +47,9 @@ const compactDateTimeFormat = "YYYYMMDD_HHmmss";
 // MODULE REQUIRES
 //=========================================================================
 const neataptic = require("neataptic");
+const carrot = require("@liquid-carrot/carrot");
 
+let networkTech;
 let network;
 
 const _ = require("lodash");
@@ -154,9 +148,9 @@ process.on("unhandledRejection", function(err, promise) {
 
 let configuration = {};
 
+configuration.networkTechnology = DEFAULT_NETWORK_TECHNOLOGY;
 configuration.inputsBinaryMode = DEFAULT_INPUTS_BINARY_MODE;
 configuration.testMode = TEST_MODE;
-// configuration.statsUpdateIntervalTime = STATS_UPDATE_INTERVAL;
 
 configuration.slackChannel = {};
 
@@ -486,8 +480,6 @@ function clearAllIntervals(){
 // QUIT + EXIT
 //=========================================================================
 
-let quitWaitInterval;
-
 function readyToQuit() {
   const flag = true; // replace with function returns true when ready to quit
   return flag;
@@ -513,7 +505,7 @@ async function quit(opts) {
 
   process.send({op: "QUIT", childId: configuration.childId, data: statsObj});
 
-  quitWaitInterval = setInterval(async function() {
+  setInterval(async function() {
 
     if (readyToQuit()) {
 
@@ -553,7 +545,7 @@ function testNetwork(params){
       + " | " + params.testSet.data.length + " TEST DATA LENGTH"
     ));
 
-    const nw = neataptic.Network.fromJSON(networkObj.network);
+    const nw = networkTech.Network.fromJSON(networkObj.network);
 
     let numTested = 0;
     const numSkipped = 0; 
@@ -570,12 +562,6 @@ function testNetwork(params){
     async.each(shuffledTestData, async function(datum){
 
       try {
-
-        // console.log(chalkLog(MODULE_ID_PREFIX
-        //  + " | IN: " + networkObj.inputsObj.inputsId
-        //  + " | @" + datum.screenName
-        //  // + "\ndatum\n" + jsonPrint(datum)
-        // ));
 
         const testDatumObj = await convertDatum({datum: datum, inputsObj: networkObj.inputsObj, generateInputRaw: false});
         const testOutput = await activateNetwork({network: nw, input: testDatumObj.input});
@@ -786,6 +772,7 @@ function networkEvolve(params) {
       results = await network.evolve(trainingSet, options);
     }
     catch(err){
+      console.log(chalkError("TNC | *** EVOLVE ERROR: " + err));
       return reject(err);
     }
 
@@ -1003,6 +990,18 @@ function evolve(params){
     debug("evolve params.network\n" + jsonPrint(params.network));
 
     if (params.architecture === undefined) { params.architecture = "random"; }
+    if (params.networkTechnology === undefined) { params.networkTechnology = configuration.networkTechnology; }
+
+    switch (params.networkTechnology) {
+      case "neataptic":
+        networkTech = neataptic;
+      break;
+      case "carrot":
+        networkTech = carrot;
+      break;
+      default:
+        networkTech = neataptic;
+    }
 
     const options = {};
 
@@ -1012,15 +1011,17 @@ function evolve(params){
       debug(chalkAlert("NNC | START NETWORK DEFINED: " + options.networkObj.networkId));
     }
 
+    options.iterations = params.iterations;
+    options.error = params.error;
+    options.growth = params.growth;
     options.threads = params.threads;
     options.elitism = params.elitism;
     options.equal = params.equal;
-    options.error = params.error;
-    options.iterations = params.iterations;
-    options.mutation = neataptic.methods.mutation.FFW;
+    // options.mutation = neataptic.methods.mutation.FFW;
+    // options.mutation = carrot.methods.mutation.FFW;
+    options.mutation = networkTech.methods.mutation.FFW;
     options.mutationRate = params.mutationRate;
     options.popsize = params.popsize;
-    options.growth = params.growth;
 
     const schedStartTime = moment().valueOf();
 
@@ -1037,32 +1038,6 @@ function evolve(params){
         const timeToComplete = iterationRate*(params.iterations - schedParams.iteration);
 
         statsObj.evolve.stats = schedParams;
-
-      // evolveOptions = {
-      //   runId: m.testRunId,
-      //   threads: m.threads,
-      //   architecture: m.architecture,
-      //   seedNetworkId: m.seedNetworkId,
-      //   seedNetworkRes: m.seedNetworkRes,
-      //   inputsId: m.inputsId,
-      //   inputsObj: m.inputsObj,
-      //   outputs: m.outputs,
-      //   trainingSet: m.trainingSet,
-      //   testSet: m.testSet,
-      //   mutation: m.mutation,
-      //   equal: m.equal,
-      //   popsize: m.popsize,
-      //   elitism: m.elitism,
-      //   log: m.log,
-      //   error: m.error,
-      //   iterations: m.iterations,
-      //   mutationRate: m.mutationRate,
-      //   cost: m.cost,
-      //   activation: m.activation,
-      //   growth: m.growth,
-      //   clear: m.clear
-      // };
-
         const sObj = {
           networkId: params.runId,
           numInputs: params.inputsObj.meta.numInputs,
@@ -1133,12 +1108,16 @@ function evolve(params){
               
         case "cost":
           console.log("NNC" + " | " + configuration.childId + " | EVOLVE OPTION | " + key + ": " + params[key]);
-          options.cost = neataptic.methods.cost[params[key]];
+          // options.cost = neataptic.methods.cost[params[key]];
+          // options.cost = carrot.methods.cost[params[key]];
+          options.cost = networkTech.methods.cost[params[key]];
         break;
 
         case "activation":
           console.log("NNC" + " | " + configuration.childId + " | EVOLVE OPTION | " + key + ": " + params[key]);
-          options.activation = neataptic.methods.activation[params[key]];
+          // options.activation = neataptic.methods.activation[params[key]];
+          // options.activation = carrot.methods.activation[params[key]];
+          options.activation = networkTech.methods.activation[params[key]];
         break;
 
         default:
@@ -1160,7 +1139,9 @@ function evolve(params){
 
         case "loadedNetwork":
 
-          network = neataptic.Network.fromJSON(options.networkObj.network);
+          // network = neataptic.Network.fromJSON(options.networkObj.network);
+          // network = carrot.Network.fromJSON(options.networkObj.network);
+          network = networkTech.Network.fromJSON(options.networkObj.network);
 
           console.log("NNC"
             + " | " + configuration.childId
@@ -1179,7 +1160,9 @@ function evolve(params){
             + " | HIDDEN LAYER NODES: " + params.hiddenLayerSize
           );
 
-          network = new neataptic.architect.Perceptron(
+          // network = new neataptic.architect.Perceptron(
+          // network = new carrot.architect.Perceptron(
+          network = new networkTech.architect.Perceptron(
             params.trainingSet.meta.numInputs, 
             params.hiddenLayerSize,
             params.trainingSet.meta.numOutputs
@@ -1196,7 +1179,9 @@ function evolve(params){
             + " | OUTPUTS: " + params.trainingSet.meta.numOutputs
           );
 
-          network = new neataptic.Network(
+          // network = new neataptic.Network(
+          // network = new carrot.Network(
+          network = new networkTech.Network(
             params.inputsObj.meta.numInputs, 
             3
           );
@@ -1223,6 +1208,7 @@ function evolve(params){
           return resolve(networkObj);
         }
         catch(err){
+          console.log(chalkError("TNC | *** EVOLVE ERROR: " + err));
           return reject(err);
         }
 
@@ -1479,33 +1465,12 @@ const fsmStates = {
 
         try {
 
-          // evolveOptions = {
-          //   runId: m.testRunId,
-          //   threads: m.threads,
-          //   architecture: m.architecture,
-          //   seedNetworkId: m.seedNetworkId,
-          //   seedNetworkRes: m.seedNetworkRes,
-          //   inputsId: m.inputsId,
-          //   inputsObj: m.inputsObj,
-          //   outputs: m.outputs,
-          //   trainingSet: m.trainingSet,
-          //   testSet: m.testSet,
-          //   mutation: m.mutation,
-          //   equal: m.equal,
-          //   popsize: m.popsize,
-          //   elitism: m.elitism,
-          //   log: m.log,
-          //   error: m.error,
-          //   iterations: m.iterations,
-          //   mutationRate: m.mutationRate,
-          //   cost: m.cost,
-          //   growth: m.growth,
-          //   clear: m.clear
-          // };
-
           const networkObj = await evolve(evolveOptions);
 
-          networkObj.evolve.options = pick(networkObj.evolve.options, ["clear", "cost", "activation", "growth", "equal", "mutationRate", "popsize", "elitism"]);
+          networkObj.evolve.options = pick(
+            networkObj.evolve.options, 
+            ["clear", "cost", "activation", "growth", "equal", "mutationRate", "popsize", "elitism"]
+          );
 
           process.send({op: "EVOLVE_COMPLETE", childId: configuration.childId, networkObj: networkObj, statsObj: statsObj});
 
@@ -1660,6 +1625,7 @@ process.on("message", function(m) {
       evolveOptions = {
         runId: m.testRunId,
         threads: m.threads,
+        networkTechnology: m.networkTechnology,
         architecture: m.architecture,
         seedNetworkId: m.seedNetworkId,
         seedNetworkRes: m.seedNetworkRes,
@@ -1685,6 +1651,7 @@ process.on("message", function(m) {
       statsObj.evolve.options = {};
 
       statsObj.evolve.options = {
+        networkTechnology: m.networkTechnology,
         threads: m.threads,
         seedNetworkId: m.seedNetworkId,
         seedNetworkRes: m.seedNetworkRes,
@@ -1711,6 +1678,7 @@ process.on("message", function(m) {
         console.log(chalkBlueBold(MODULE_ID_PREFIX + " | EVOLVE | " + getTimeStamp()
           + " | " + configuration.childId
           + " | " + m.testRunId
+          + " | TECH: " + m.networkTechnology
           + "\n SEED: " + m.seedNetworkId
           + " | SEED RES %: " + m.seedNetworkRes.toFixed(2)
           + "\n THREADs: " + m.threads
@@ -1723,6 +1691,7 @@ process.on("message", function(m) {
         console.log(chalkBlueBold(MODULE_ID_PREFIX + " | EVOLVE | " + getTimeStamp()
           + " | " + configuration.childId
           + " | " + m.testRunId
+          + " | TECH: " + m.networkTechnology
           + "\n SEED: " + "---"
           + " | SEED RES %: " + "---"
           + "\n THREADs: " + m.threads
@@ -1740,21 +1709,6 @@ process.on("message", function(m) {
         + " | CHILD ID: " + m.childId
       ));
       configuration.childId = m.childId;
-
-      // evolve(evolveOptions, function(err, networkObj){
-
-      //   networkObj.evolve.options = pick(networkObj.evolve.options, ["clear", "cost", "growth", "equal", "mutationRate", "popsize", "elitism"]);
-
-      //   if (err) {
-      //     console.error(chalkError("NNC | EVOLVE ERROR: " + err));
-      //     console.trace("NNC | EVOLVE ERROR");
-      //     process.send({op: "ERROR", childId: configuration.childId, error: err});
-      //     showStats();
-      //   }
-      //   else {
-      //     process.send({op:"EVOLVE_COMPLETE", childId: configuration.childId, networkObj: networkObj, statsObj: statsObj});
-      //   }
-      // });
 
       fsm.fsm_evolve();
     break;

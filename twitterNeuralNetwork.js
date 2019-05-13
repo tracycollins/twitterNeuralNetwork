@@ -37,6 +37,9 @@ else {
   DROPBOX_ROOT_FOLDER = "/Users/tc/Dropbox/Apps/wordAssociation";
 }
 
+const DEFAULT_NETWORK_TECHNOLOGY = "neataptic";
+const DEFAULT_ENABLE_RANDOM_NETWORK_TECHNOLOGY = true;
+
 const DEFAULT_PURGE_MIN = true; // applies only to parent
 const TEST_MODE = false; // applies only to parent
 const GLOBAL_TEST_MODE = false; // applies to parent and all children
@@ -66,6 +69,8 @@ let configuration = {};
 
 configuration.offlineMode = OFFLINE_MODE;
 configuration.primaryHost = PRIMARY_HOST;
+configuration.networkTechnology = DEFAULT_NETWORK_TECHNOLOGY;
+configuration.enableRandomTechnology = DEFAULT_ENABLE_RANDOM_NETWORK_TECHNOLOGY;
 configuration.purgeMin = DEFAULT_PURGE_MIN;
 configuration.testMode = TEST_MODE;
 configuration.globalTestMode = GLOBAL_TEST_MODE;
@@ -437,7 +442,6 @@ const DEFAULT_ARCHIVE_NOT_IN_INPUTS_ID_ARRAY = true;
 const DEFAULT_DELETE_NOT_IN_INPUTS_ID_ARRAY = false;
 const TEST_MODE_LENGTH = 500;
 const TEST_DROPBOX_NN_LOAD = 10;
-// const TEST_DROPBOX_INPUTS_LOAD = 10;
 const DEFAULT_CHILD_ID_PREFIX = "tnc_node_";
 
 if (hostname === "google") {
@@ -453,6 +457,8 @@ configuration.childIdPrefix = DEFAULT_CHILD_ID_PREFIX;
 configuration.childIndex = 0;
 
 const neataptic = require("neataptic");
+const carrot = require("@liquid-carrot/carrot");
+let networkTech = neataptic;
 
 const DEFAULT_RUN_ID = hostname + "_" + process.pid + "_" + statsObj.startTime;
 
@@ -517,14 +523,12 @@ const DEFAULT_EVOLVE_ELITISM = 10;
 const DEFAULT_EVOLVE_EQUAL = true;
 const DEFAULT_EVOLVE_ERROR = 0.03;
 const DEFAULT_EVOLVE_LOG = 1;
-const DEFAULT_EVOLVE_MUTATION = neataptic.methods.mutation.FFW;
+const DEFAULT_EVOLVE_MUTATION = networkTech.methods.mutation.FFW;
 const DEFAULT_EVOLVE_MUTATION_RATE = 0.5;
-// const DEFAULT_EVOLVE_POPSIZE = { min: 50, max: 50 };
 const DEFAULT_EVOLVE_POPSIZE = 50;
 const DEFAULT_EVOLVE_GROWTH = 0.0001;
 const DEFAULT_EVOLVE_COST = "CROSS_ENTROPY";
 const EVOLVE_MUTATION_RATE_RANGE = { min: 0.35, max: 0.75 };
-// const EVOLVE_POP_SIZE_RANGE = { min: DEFAULT_EVOLVE_POPSIZE.min, max: DEFAULT_EVOLVE_POPSIZE.max };
 const DEFAULT_GROWTH = { min: 0.00005, max: 0.00015 };
 const EVOLVE_GROWTH_RANGE = { min: DEFAULT_GROWTH.min, max: DEFAULT_GROWTH.max };
 const EVOLVE_ELITISM_RANGE = { min: 5, max: 20 };
@@ -797,6 +801,7 @@ function networkDefaults(networkObj){
       return reject(new Error("networkDefaults ERROR: networkObj UNDEFINED"));
     }
 
+    if (networkObj.networkTechnology === undefined) { networkObj.networkTechnology = "neataptic"; }
     if (networkObj.betterChild === undefined) { networkObj.betterChild = false; }
     if (networkObj.testCycles === undefined) { networkObj.testCycles = 0; }
     if (networkObj.testCycleHistory === undefined) { networkObj.testCycleHistory = []; }
@@ -1651,6 +1656,7 @@ function updateDbNetwork(params) {
     const update = {};
 
     update.$setOnInsert = { 
+      networkTechnology: networkObj.networkTechnology,
       seedNetworkId: networkObj.seedNetworkId,
       seedNetworkRes: networkObj.seedNetworkRes,
       network: networkObj.network,
@@ -1773,7 +1779,6 @@ function validateNetwork(params){
         + " | " + params.networkId
       ));
       return resolve();
-      // return reject(new Error("NETWORK ID MISMATCH"));
     }
 
     if (networkObj.numInputs === undefined) {
@@ -1781,14 +1786,12 @@ function validateNetwork(params){
         + " | " + networkObj.networkId
       ));
       return resolve();
-      // return reject(new Error("NETWORK NUMBER OF INPUTS UNDEFINED"));
     }
 
     if (networkObj.inputsId === undefined) {
       console.log(chalkError(MODULE_ID_PREFIX + " | *** NETWORK INPUTS ID UNDEFINED"
         + " | " + networkObj.networkId));
       return resolve();
-      // return reject(new Error("NETWORK INPUTS ID UNDEFINED"));
     }
 
     try {
@@ -2862,9 +2865,12 @@ function generateRandomEvolveConfig (){
     console.log(chalkLog(MODULE_ID_PREFIX + " | inputsHashMapKeys: " + inputsHashMapKeys.length));
     debug(chalkLog(MODULE_ID_PREFIX + " | inputsHashMapKeys: " + inputsHashMapKeys));
 
+    // ------------------------------------------
+    // GENERATE RANDOM NETWORK IF NO SEED NETWORK
+    // ------------------------------------------
+
     if (!config.seedNetworkId && (inputsNoNetworksSet.size > 0)){
 
-      // config.seedInputsId = randomItem([...inputsNoNetworksSet]);
       const noNetworksInputsIdArray = [...inputsNoNetworksSet].sort();
       const failedInputsIdArray = [...inputsFailedSet];
       let availableInputsIdArray = _.difference(noNetworksInputsIdArray, failedInputsIdArray);
@@ -2954,6 +2960,8 @@ function generateRandomEvolveConfig (){
       if (inputsHashMap.has(config.seedInputsId)) {
         config.inputsObj = {};
         config.inputsObj = inputsHashMap.get(config.seedInputsId).inputsObj;
+        config.networkTechnology = (configuration.enableRandomTechnology) ? randomItem(["neataptic", "carrot"]) : configuration.networkTechnology;
+        console.log(chalkAlert(MODULE_ID_PREFIX + " | NETWORK TECHNOLOGY: " + config.networkTechnology));
         config.architecture = "random";
         config.inputsId = config.seedInputsId;
         debug(MODULE_ID_PREFIX + " | RANDOM ARCH | SEED INPUTS: " + config.seedInputsId);
@@ -4522,6 +4530,21 @@ function loadConfigFile(params) {
       const newConfiguration = {};
       newConfiguration.evolve = {};
 
+      if (loadedConfigObj.TNN_NETWORK_TECHNOLOGY !== undefined) {
+        console.log(MODULE_ID_PREFIX + " | LOADED TNN_NETWORK_TECHNOLOGY: " + loadedConfigObj.TNN_NETWORK_TECHNOLOGY);
+        newConfiguration.networkTechnology = loadedConfigObj.TNN_NETWORK_TECHNOLOGY;
+      }
+
+      if (loadedConfigObj.TNN_ENABLE_RANDOM_NETWORK_TECHNOLOGY !== undefined) {
+        console.log(MODULE_ID_PREFIX + " | LOADED TNN_ENABLE_RANDOM_NETWORK_TECHNOLOGY: " + loadedConfigObj.TNN_ENABLE_RANDOM_NETWORK_TECHNOLOGY);
+        if ((loadedConfigObj.TNN_ENABLE_RANDOM_NETWORK_TECHNOLOGY === true) || (loadedConfigObj.TNN_ENABLE_RANDOM_NETWORK_TECHNOLOGY === "true")) {
+          newConfiguration.enableRandomTechnology = true;
+        }
+        if ((loadedConfigObj.TNN_ENABLE_RANDOM_NETWORK_TECHNOLOGY === false) || (loadedConfigObj.TNN_ENABLE_RANDOM_NETWORK_TECHNOLOGY === "false")) {
+          newConfiguration.enableRandomTechnology = false;
+        }
+      }
+
       if (loadedConfigObj.TEST_MODE !== undefined) {
         console.log(MODULE_ID_PREFIX + " | LOADED TEST_MODE: " + loadedConfigObj.TEST_MODE);
         if ((loadedConfigObj.TEST_MODE === true) || (loadedConfigObj.TEST_MODE === "true")) {
@@ -4617,7 +4640,6 @@ function loadConfigFile(params) {
         if (newConfiguration.evolve === undefined) { newConfiguration.evolve = {}; }
         newConfiguration.evolve.iterations = loadedConfigObj.TNN_EVOLVE_ITERATIONS;
       }
-
 
       resolve(newConfiguration);
     }
