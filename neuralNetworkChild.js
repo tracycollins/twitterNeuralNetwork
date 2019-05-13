@@ -976,7 +976,7 @@ function trainingSetPrep(params){
         });
 
         if (configuration.verbose || (dataConverted % 1000 === 0)){
-          console.log(chalkLog("TNC | DATA CONVERTED: " + dataConverted));
+          console.log(chalkLog("TNC | DATA CONVERTED: " + dataConverted + "/" + params.trainingSet.data.length));
         }
 
         return;
