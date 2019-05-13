@@ -1403,6 +1403,7 @@ const userWatchPropertyArray = [
   "expandedUrl",
   "followersCount", 
   "following", 
+  "friends", 
   "friendsCount", 
   "isTopTerm",
   "lastTweetId",
@@ -1418,7 +1419,15 @@ const userWatchPropertyArray = [
 
 function userChanged(uOld, uNew){
   userWatchPropertyArray.forEach(function(prop){
-    if (uOld[prop] !== uNew[prop]){
+    if (prop === "friends"){
+      if ((!uOld.friends || uOld.friends === undefined) && uNew.friends) {
+        return true;
+      }
+      if (uOld.friends && uNew.friends && (uOld.friends.length !== uNew.friends.length)) {
+        return true;
+      }
+    }
+    else if (uOld[prop] !== uNew[prop]){
       return true;
     }
     return false;
@@ -2028,6 +2037,7 @@ function loadBestNetworkDropboxFolders (p){
 
     if (configuration.testMode) {
       dropboxFoldersEntries = _.shuffle(dropboxFoldersEntries);
+      dropboxFoldersEntries.length = 10;
     }
 
     async.eachSeries(dropboxFoldersEntries, async function(entry){
@@ -2125,6 +2135,7 @@ function loadInputsDropboxFolders (p){
 
     if (configuration.testMode) {
       dropboxFoldersEntries = _.shuffle(dropboxFoldersEntries);
+      dropboxFoldersEntries.length = 10;
     }
 
     async.eachSeries(dropboxFoldersEntries, async function(entry){

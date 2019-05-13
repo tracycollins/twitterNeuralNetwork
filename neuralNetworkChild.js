@@ -642,12 +642,6 @@ function convertDatum(params){
   const datum = params.datum;
   const generateInputRaw = params.generateInputRaw;
 
-    // console.log(chalkLog(MODULE_ID_PREFIX
-    //  + " | IN: " + params.inputsObj.inputsId
-    //  + " | @" + datum.screenName
-    //  // + "\ndatum\n" + jsonPrint(datum)
-    // ));
-
   return new Promise(async function(resolve, reject){
 
     try {
@@ -707,7 +701,23 @@ function convertDatum(params){
               cb1();
             });
           }
-          else if (mergedHistograms[inputType] && (mergedHistograms[inputType] !== undefined) && (mergedHistograms[inputType][inputName] !== undefined)){
+          else if (inputType === "friends"){
+            if ((datum.friends !== undefined) && (datum.friends.length > 0) && (datum.friends.includes(inputName))){
+              convertedDatum.input.push(1);
+              console.log(chalkLog("TNC | +++ FRIEND INPUT | @" + datum.screenName + " | " + inputName));
+            }
+            else {
+              convertedDatum.input.push(0);
+            }
+            async.setImmediate(function() {
+              cb1();
+            });
+          }
+          else if (
+            mergedHistograms[inputType] 
+            && (mergedHistograms[inputType] !== undefined) 
+            && (mergedHistograms[inputType][inputName] !== undefined)
+          ){
 
             if (configuration.inputsBinaryMode) {
               convertedDatum.input.push(1);
@@ -915,6 +925,8 @@ function trainingSetPrep(params){
     const trainingSet = [];
     let generateInputRaw = true;
 
+    let dataConverted = 0;
+
     params.trainingSet.meta.numInputs = params.inputsObj.meta.numInputs;
     params.testSet.meta.numInputs = params.inputsObj.meta.numInputs;
 
@@ -931,6 +943,8 @@ function trainingSetPrep(params){
 
       try {
         const datumObj = await convertDatum({datum: datum, inputsObj: params.inputsObj, generateInputRaw: generateInputRaw});
+
+        dataConverted += 1;
 
         if (datumObj.input.length !== params.inputsObj.meta.numInputs) { 
           console.log(chalkError(MODULE_ID_PREFIX
@@ -960,6 +974,10 @@ function trainingSetPrep(params){
           input: datumObj.input, 
           output: datumObj.output
         });
+
+        if (configuration.verbose || (dataConverted % 100 === 0)){
+          console.log(chalkLog("TNC | DATA CONVERTED: " + dataConverted));
+        }
 
         return;
       }
@@ -1575,6 +1593,13 @@ process.on("message", function(m) {
       fsm.fsm_reset();
     break;
 
+    case "VERBOSE":
+      console.log(chalkInfo(MODULE_ID_PREFIX + " | VERBOSE"
+        + " | CHILD ID: " + m.childId
+      ));
+      configuration.verbose = m.verbose;
+    break;
+
     case "INIT":
       console.log(chalkInfo(MODULE_ID_PREFIX + " | INIT"
         + " | CHILD ID: " + m.childId
@@ -1701,7 +1726,6 @@ process.on("message", function(m) {
       }
 
       fsm.fsm_config_evolve();
-
     break;
 
     case "EVOLVE":
