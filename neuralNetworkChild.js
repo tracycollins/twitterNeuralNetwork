@@ -975,7 +975,7 @@ function trainingSetPrep(params){
           output: datumObj.output
         });
 
-        if (configuration.verbose || (dataConverted % 100 === 0)){
+        if (configuration.verbose || (dataConverted % 1000 === 0)){
           console.log(chalkLog("TNC | DATA CONVERTED: " + dataConverted));
         }
 
