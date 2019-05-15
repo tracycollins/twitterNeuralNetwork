@@ -11,6 +11,7 @@ const DEFAULT_INPUTS_BINARY_MODE = false;
 
 const os = require("os");
 let hostname = os.hostname();
+hostname = hostname.replace(/.tld/g, ""); // amtrak wifi
 hostname = hostname.replace(/.local/g, "");
 hostname = hostname.replace(/.home/g, "");
 hostname = hostname.replace(/.at.net/g, "");
@@ -704,7 +705,7 @@ function convertDatum(params){
           else if (inputType === "friends"){
             if ((datum.friends !== undefined) && (datum.friends.length > 0) && (datum.friends.includes(inputName))){
               convertedDatum.input.push(1);
-              console.log(chalkLog("TNC | +++ FRIEND INPUT | @" + datum.screenName + " | " + inputName));
+              debug(chalkLog("TNC | +++ FRIEND INPUT | @" + datum.screenName + " | " + inputName));
             }
             else {
               convertedDatum.input.push(0);

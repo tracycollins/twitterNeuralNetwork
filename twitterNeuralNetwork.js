@@ -11,6 +11,7 @@ const metricsRate = "5MinuteRate";
 
 const os = require("os");
 let hostname = os.hostname();
+hostname = hostname.replace(/.tld/g, ""); // amtrak wifi
 hostname = hostname.replace(/.local/g, "");
 hostname = hostname.replace(/.home/g, "");
 hostname = hostname.replace(/.at.net/g, "");
@@ -1423,6 +1424,7 @@ const userWatchPropertyArray = [
 ];
 
 function userChanged(uOld, uNew){
+
   userWatchPropertyArray.forEach(function(prop){
     if (prop === "friends"){
       if ((!uOld.friends || uOld.friends === undefined) && uNew.friends) {
@@ -1435,8 +1437,9 @@ function userChanged(uOld, uNew){
     else if (uOld[prop] !== uNew[prop]){
       return true;
     }
-    return false;
   });
+
+  return false;
 }
 
 function encodeHistogramUrls(params){
@@ -1572,8 +1575,6 @@ function updateUserFromTrainingSet(params){
           );
           resolve();
         });
-
-
       }
       else if (userChanged(user, userDb)) {
 
@@ -2401,11 +2402,16 @@ function unzipUsersToArray(params){
 
     try {
 
-      let entryNumber = 0;
-
       trainingSetUsersHashMap.left.clear();
       trainingSetUsersHashMap.neutral.clear();
       trainingSetUsersHashMap.right.clear();
+
+      let entryNumber = 0;
+      let percent = 0;
+
+      statsObj.users.zipHashMapHit = 0;
+      statsObj.users.zipHashMapMiss = 0;
+      statsObj.users.unzipped = 0;
 
       yauzl.open(params.path, {lazyEntries: true}, function(err, zipfile) {
 
@@ -2451,22 +2457,17 @@ function unzipUsersToArray(params){
               }
 
               let userString = "";
-              let percent = 0;
-
-              statsObj.users.zipHashMapHit = 0;
-              statsObj.users.zipHashMapMiss = 0;
-              statsObj.users.unzipped = 0;
 
               readStream.on("end", async function() {
 
                 try {
-                  const fileObj = JSON.parse(userString);
+                  const userObj = JSON.parse(userString);
 
                   if (entry.fileName.endsWith("maxInputHashMap.json")) {
 
                     console.log(chalkLog(MODULE_ID_PREFIX + " | UNZIPPED MAX INPUT"));
 
-                    userMaxInputHashMap = fileObj.maxInputHashMap;
+                    userMaxInputHashMap = userObj.maxInputHashMap;
                   }
                   else {
 
@@ -2474,9 +2475,9 @@ function unzipUsersToArray(params){
 
                     hmHit = MODULE_ID_PREFIX + " | --> UNZIP";
 
-                    if ( trainingSetUsersHashMap.left.has(fileObj.userId)
-                      || trainingSetUsersHashMap.neutral.has(fileObj.userId) 
-                      || trainingSetUsersHashMap.right.has(fileObj.userId)
+                    if ( trainingSetUsersHashMap.left.has(userObj.userId)
+                      || trainingSetUsersHashMap.neutral.has(userObj.userId) 
+                      || trainingSetUsersHashMap.right.has(userObj.userId)
                       ) 
                     {
                       hmHit = MODULE_ID_PREFIX + " | **> UNZIP";
@@ -2491,7 +2492,7 @@ function unzipUsersToArray(params){
                     let dbUser;
 
                     try {
-                      dbUser = await updateUserFromTrainingSet({user: fileObj});
+                      dbUser = await updateUserFromTrainingSet({user: userObj});
                     }
                     catch(e){
                       console.log(chalkAlert(MODULE_ID_PREFIX
@@ -2499,7 +2500,8 @@ function unzipUsersToArray(params){
                       ));
                     }
 
-                    if (dbUser && dbUser !== undefined 
+                    if (dbUser 
+                      && (dbUser !== undefined) 
                       && ((dbUser.category === "left") || (dbUser.category === "right") || (dbUser.category === "neutral"))
                       ) {
 
@@ -2522,7 +2524,7 @@ function unzipUsersToArray(params){
                           + " | FLWRs: " + dbUser.followersCount
                           + " | FRNDs: " + dbUser.friendsCount
                           + " | CAT M: " + dbUser.category + " A: " + dbUser.categoryAuto
-                          // + "\n" + jsonPrint(fileObj)
+                          // + "\n" + jsonPrint(userObj)
                         ));
                       }
 
