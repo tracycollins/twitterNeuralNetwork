@@ -57,7 +57,7 @@ const ONE_MEGABYTE = 1024 * ONE_KILOBYTE;
 
 const SAVE_FILE_QUEUE_INTERVAL = 5*ONE_SECOND;
 const QUIT_WAIT_INTERVAL = 5*ONE_SECOND;
-const STATS_UPDATE_INTERVAL = ONE_MINUTE;
+const STATS_UPDATE_INTERVAL = 5*ONE_MINUTE;
 const DEFAULT_CHILD_PING_INTERVAL = ONE_MINUTE;
 const SAVE_CACHE_DEFAULT_TTL = 60;
 const DROPBOX_LIST_FOLDER_LIMIT = 50;
@@ -1508,6 +1508,13 @@ function encodeHistogramUrls(params){
   });
 }
 
+const updateUserOptions = {
+  new: true,
+  returnOriginal: false,
+  upsert: true,
+  setDefaultsOnInsert: true
+};
+
 function updateUserFromTrainingSet(params){
 
   return new Promise(async function(resolve, reject){
@@ -1533,103 +1540,23 @@ function updateUserFromTrainingSet(params){
     if (user.userId && (user.nodeId === undefined)) { user.nodeId = user.userId; }
 
     try {
-      user = await encodeHistogramUrls({user: user});
-      let userDb = await global.globalUser.findOne({ nodeId: user.nodeId }).lean();
+      // user = await encodeHistogramUrls({user: user});
+      const updatedUser = await global.globalUser.findOneAndUpdate({nodeId: user.nodeId}, user, updateUserOptions);
 
-      if (!userDb){
-
-        const newUser = new global.globalUser(user);
-
-        newUser.save().
-        then(function(updatedUser){
-
-          console.log(chalkLog(MODULE_ID_PREFIX + " | +++ ADD NET USER FROM TRAINING SET  "
-            + " | CM: " + printCat(updatedUser.category)
-            + " | CA: " + printCat(updatedUser.categoryAuto)
-            + " | UID: " + updatedUser.userId
-            + " | @" + updatedUser.screenName
-            + " | 3CF: " + updatedUser.threeceeFollowing
-            + " | Ts: " + updatedUser.statusesCount
-            + " | FLWRs: " + updatedUser.followersCount
-            + " | FRNDS: " + updatedUser.friendsCount
-          ));
-
-          resolve(updatedUser);
-
-        }).
-        catch(function(err){
-          console.log(MODULE_ID_PREFIX + " | ERROR: updateUserFromTrainingSet"
-            + " | UID: " + user.userId
-            + " | @" + user.screenName
-            + " ERROR: " + err.message
-          );
-          resolve();
-        });
+      if (configuration.verbose) {
+        console.log(chalkLog(MODULE_ID_PREFIX + " | DB USER UPDATE FROM TRAINING SET  "
+          + " | CM: " + printCat(updatedUser.category)
+          + " | CA: " + printCat(updatedUser.categoryAuto)
+          + " | UID: " + updatedUser.userId
+          + " | @" + updatedUser.screenName
+          + " | 3CF: " + updatedUser.threeceeFollowing
+          + " | Ts: " + updatedUser.statusesCount
+          + " | FLWRs: " + updatedUser.followersCount
+          + " | FRNDS: " + updatedUser.friendsCount
+        ));
       }
-      else if (userChanged(user, userDb)) {
-        userDb.bannerImageUrl = user.bannerImageUrl;
-        userDb.category = user.category;
-        userDb.categoryAuto = user.categoryAuto;
-        userDb.description = user.description;
-        userDb.expandedUrl = user.expandedUrl;
-        userDb.followersCount = user.followersCount;
-        userDb.following = user.following;
-        userDb.friends = user.friends;
-        userDb.friendsCount = user.friendsCount;
-        userDb.mentions = user.mentions;
-        userDb.name = user.name;
-        userDb.profileHistograms = user.profileHistograms;
-        userDb.profileUrl = user.profileUrl;
-        userDb.screenName = user.screenName;
-        userDb.statusesCount = user.statusesCount;
-        userDb.status = user.status;
-        userDb.threeceeFollowing = user.threeceeFollowing;
-        userDb.tweetHistograms = user.tweetHistograms;
-        userDb.url = user.url;
-        userDb.verified = user.verified;
 
-        userDb.markModified("category");
-        userDb.markModified("categoryAuto");
-        userDb.markModified("profileHistograms");
-        userDb.markModified("tweetHistograms");
-
-        userDb.save().
-        then(function(updatedUser){
-
-          console.log(chalkLog("+++ UPDATED USER FROM TRAINING SET  "
-            + " | CM: " + printCat(userDb.category)
-            + " | CA: " + printCat(userDb.categoryAuto)
-            + " | UID: " + userDb.userId
-            + " | @" + userDb.screenName
-            + " | 3CF: " + userDb.threeceeFollowing
-            + " | Ts: " + userDb.statusesCount
-            + " | FLWRs: " + userDb.followersCount
-            + " | FRNDS: " + userDb.friendsCount
-          ));
-
-          resolve(updatedUser);
-
-        }).
-        catch(function(err){
-          console.log(MODULE_ID_PREFIX + " | ERROR: updateUserFromTrainingSet: " + err.message);
-          return reject(err);
-        });
-      }
-      else {
-        if (configuration.verbose) {
-          console.log(chalkLog(MODULE_ID_PREFIX + " | --- NO UPDATE USER FROM TRAINING SET"
-            + " | CM: " + printCat(userDb.category)
-            + " | CA: " + printCat(userDb.categoryAuto)
-            + " | UID: " + userDb.userId
-            + " | @" + userDb.screenName
-            + " | 3CF: " + userDb.threeceeFollowing
-            + " | Ts: " + userDb.statusesCount
-            + " | FLWRs: " + userDb.followersCount
-            + " | FRNDS: " + userDb.friendsCount
-          ));
-        }
-        resolve(userDb);
-      }
+      resolve(updatedUser);
 
     }
     catch(err){
@@ -1699,7 +1626,7 @@ function updateDbNetwork(params) {
       new: true,
       returnOriginal: false,
       upsert: true,
-      setDefaultsOnInsert: true,
+      setDefaultsOnInsert: true
     };
 
     global.globalNeuralNetwork.findOneAndUpdate(query, update, options, function(err, nnDbUpdated){
@@ -1720,13 +1647,6 @@ function updateDbNetwork(params) {
 function listDropboxFolders(params){
 
   return new Promise(function(resolve, reject){
-
-    // if (configuration.offlineMode) {
-    //   dropboxClient = dropboxLocalClient;
-    // }
-    // else {
-    //   dropboxClient = dropboxRemoteClient;
-    // }
 
     console.log(chalkNetwork(MODULE_ID_PREFIX + " | ... GETTING DROPBOX FOLDERS ENTRIES"
       + " | " + params.folders.length + " FOLDERS"
@@ -2403,7 +2323,6 @@ function unzipUsersToArray(params){
       trainingSetUsersHashMap.right.clear();
 
       let entryNumber = 0;
-      let percent = 0;
 
       statsObj.users.zipHashMapHit = 0;
       statsObj.users.zipHashMapMiss = 0;
@@ -2441,13 +2360,7 @@ function unzipUsersToArray(params){
             zipfile.openReadStream(entry, async function(err, readStream) {
 
               entryNumber += 1;
-
-              if (configuration.verbose || (entryNumber % 1000 === 0)) {
-                console.log(chalkInfo("TNN | --> UNZIP USERS ENTRY [" + entryNumber + "]"
-                  + " | " + entry.fileName
-                ));
-              }
-
+              
               if (err) {
                 console.log(chalkError("TNN | *** UNZIP USERS ENTRY ERROR [" + entryNumber + "]: " + err));
                 return reject(err);
@@ -2470,7 +2383,7 @@ function unzipUsersToArray(params){
 
                     statsObj.users.unzipped += 1;
 
-                    hmHit = MODULE_ID_PREFIX + " | --> UNZIP";
+                    hmHit = MODULE_ID_PREFIX + " | UNZIP";
 
                     if ( trainingSetUsersHashMap.left.has(userObj.userId)
                       || trainingSetUsersHashMap.neutral.has(userObj.userId) 
@@ -2478,69 +2391,40 @@ function unzipUsersToArray(params){
                       ) 
                     {
                       hmHit = MODULE_ID_PREFIX + " | **> UNZIP";
-                      statsObj.users.zipHashMapHit += 1;
-                    }
-                    else {
-                      statsObj.users.zipHashMapMiss += 1;
                     }
 
-                    percent = 100*(statsObj.users.zipHashMapHit/statsObj.users.unzipped);
+                    if ((userObj.category === "left") || (userObj.category === "right") || (userObj.category === "neutral")) {
 
-                    let dbUser;
-
-                    try {
-                      dbUser = await updateUserFromTrainingSet({user: userObj});
-                    }
-                    catch(e){
-                      console.log(chalkAlert(MODULE_ID_PREFIX
-                        + " | *** ERROR UPDATE USER FROM TRAINING SET ... SKIPPING | " + e 
-                      ));
-                    }
-
-                    if (dbUser 
-                      && (dbUser !== undefined) 
-                      && ((dbUser.category === "left") || (dbUser.category === "right") || (dbUser.category === "neutral"))
-                      ) {
-
-                      trainingSetUsersHashMap[dbUser.category].set(dbUser.nodeId, dbUser);
+                      trainingSetUsersHashMap[userObj.category].set(userObj.nodeId, userObj);
 
                       if (configuration.verbose || (statsObj.users.unzipped % 1000 === 0)) {
 
                         console.log(chalkLog(hmHit
-                          + " | USERS - L: " + trainingSetUsersHashMap.left.size
+                          + " [" + statsObj.users.unzipped + "]"
+                          + " USERS - L: " + trainingSetUsersHashMap.left.size
                           + " N: " + trainingSetUsersHashMap.neutral.size
                           + " R: " + trainingSetUsersHashMap.right.size
-                          + " [ ZipHM: " + statsObj.users.zipHashMapMiss 
-                          + " MISS / " + statsObj.users.zipHashMapHit 
-                          + " HIT (" + percent.toFixed(2) + "%) ]"
-                          + " | " + statsObj.users.unzipped + " UNZPD ]"
-                          + " 3C: " + dbUser.threeceeFollowing
-                          + " | " + dbUser.userId
-                          + " | @" + dbUser.screenName
-                          + " | " + dbUser.name
-                          + " | FLWRs: " + dbUser.followersCount
-                          + " | FRNDs: " + dbUser.friendsCount
-                          + " | CAT M: " + dbUser.category + " A: " + dbUser.categoryAuto
-                          // + "\n" + jsonPrint(userObj)
+                          + " | " + userObj.userId
+                          + " | @" + userObj.screenName
+                          + " | " + userObj.name
+                          + " | FLWRs: " + userObj.followersCount
+                          + " | FRNDs: " + userObj.friendsCount
+                          + " | CAT M: " + userObj.category + " A: " + userObj.categoryAuto
                         ));
                       }
                     }
                     else{
                       console.log(chalkAlert(MODULE_ID_PREFIX + " | ??? UNCAT UNZIPPED USER"
-                        + " | USERS - L: " + trainingSetUsersHashMap.left.size
+                        + " [" + statsObj.users.unzipped + "]"
+                        + " USERS - L: " + trainingSetUsersHashMap.left.size
                         + " N: " + trainingSetUsersHashMap.neutral.size
                         + " R: " + trainingSetUsersHashMap.right.size
-                        + " [ ZipHM: " + statsObj.users.zipHashMapMiss 
-                        + " MISS / " + statsObj.users.zipHashMapHit 
-                        + " HIT (" + percent.toFixed(2) + "%) ]"
-                        + " | " + statsObj.users.unzipped + " UNZPD ]"
-                        + " 3C: " + dbUser.threeceeFollowing
-                        + " | " + dbUser.userId
-                        + " | @" + dbUser.screenName
-                        + " | " + dbUser.name
-                        + " | FLWRs: " + dbUser.followersCount
-                        + " | FRNDs: " + dbUser.friendsCount
-                        + " | CAT M: " + dbUser.category + " A: " + dbUser.categoryAuto
+                        + " | " + userObj.userId
+                        + " | @" + userObj.screenName
+                        + " | " + userObj.name
+                        + " | FLWRs: " + userObj.followersCount
+                        + " | FRNDs: " + userObj.friendsCount
+                        + " | CAT M: " + userObj.category + " A: " + userObj.categoryAuto
                       ));                      
                     }
 
