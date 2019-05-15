@@ -1048,6 +1048,7 @@ function evolve(params){
     statsObj.evolve.stats = {};
 
     options.schedule = {
+
       function: function(schedParams){
 
         const elapsedInt = moment().valueOf() - schedStartTime;
@@ -1056,6 +1057,7 @@ function evolve(params){
         const timeToComplete = iterationRate*(params.iterations - schedParams.iteration);
 
         statsObj.evolve.stats = schedParams;
+
         const sObj = {
           networkId: params.runId,
           numInputs: params.inputsObj.meta.numInputs,

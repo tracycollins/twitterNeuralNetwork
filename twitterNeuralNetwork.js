@@ -7,6 +7,8 @@ const MODULE_ID_PREFIX = "TNN";
 const CHILD_PREFIX = "tnc_node";
 const CHILD_PREFIX_SHORT = "CH";
 
+const metricsRate = "5MinuteRate";
+
 const os = require("os");
 let hostname = os.hostname();
 hostname = hostname.replace(/.local/g, "");
@@ -112,6 +114,9 @@ const deepcopy = require("deep-copy");
 const async = require("async");
 const omit = require("object.omit");
 const omitDeep = require("omit-deep-lodash");
+
+const Measured = require("measured-core");
+const evolveIterationMeter = new Measured.Meter({rateUnit: 60000});
 
 const chalk = require("chalk");
 const chalkNetwork = chalk.blue;
@@ -2796,7 +2801,11 @@ function initWatch(params){
 
         try {
           archiveFlagObj = await loadFileRetry({folder: configuration.userArchiveFolder, file: configuration.defaultUserArchiveFlagFile});
-          console.log(chalkLog(MODULE_ID_PREFIX + " | USER ARCHIVE FLAG FILE | FILE: " + archiveFlagObj.file + " | SIZE: " + archiveFlagObj.size));
+          console.log(chalkLog(MODULE_ID_PREFIX + " | USER ARCHIVE FLAG FILE"
+            + " | " + archiveFlagObj.file 
+            + " | SIZE: " + archiveFlagObj.size
+            + "\nHISTOGRAM\n" + jsonPrint(archiveFlagObj.histogram)
+          ));
           await loadTrainingSet({folder: configuration.userArchiveFolder, file: archiveFlagObj.file});
         }
         catch(err){
@@ -6000,6 +6009,10 @@ function childInit(p){
   });
 }
 
+let evolveIterationDelta = 0;
+let evolveIterationPrevious = moment();
+let timeToCompleteInstant = 0;
+
 function childCreate(p){
 
   return new Promise(async function(resolve, reject){
@@ -6061,6 +6074,19 @@ function childCreate(p){
 
           case "EVOLVE_SCHEDULE":
 
+            evolveIterationMeter.mark();
+
+            // statsObj.iterationsPerMin = parseInt(globalNodeMeter.toJSON()[metricsRate]);
+
+            // console.log(chalkLog(MODULE_ID_PREFIX
+            //   + " | METER\n" + jsonPrint(evolveIterationMeter.toJSON())
+            // ));
+
+            // evolveIterationDelta = moment().valueOf() - evolveIterationPrevious;
+            // evolveIterationPrevious = moment().valueOf();
+
+            timeToCompleteInstant = (m.stats.totalIterations - m.stats.iteration) * evolveIterationDelta;
+
             _.set(resultsHashmap[m.stats.networkId], 'evolve.results.iterations', m.stats.iteration);
             
             console.log(chalkLog(MODULE_ID_PREFIX 
@@ -6076,6 +6102,9 @@ function childCreate(p){
               + " | RATE " + (m.stats.iterationRate/1000.0).toFixed(1)
               + " | ETC " + msToTime(m.stats.timeToComplete)
               + " | ETC " + moment().add(m.stats.timeToComplete).format(compactDateTimeFormat)
+              // + " | RATE INST " + (evolveIterationDelta/1000.0).toFixed(1)
+              // + " | ETC INST " + msToTime(timeToCompleteInstant)
+              // + " | ETC INST " + moment().add(timeToCompleteInstant).format(compactDateTimeFormat)
               + " | I " + m.stats.iteration + "/" + m.stats.totalIterations
             ));
 
@@ -6381,6 +6410,8 @@ function childCreate(p){
             printNetworkObj(MODULE_ID_PREFIX + " | " + nn.networkId, nn);
 
             printResultsHashmap();
+
+            evolveIterationMeter.reset();
 
             if (!configuration.quitOnComplete){
               try{

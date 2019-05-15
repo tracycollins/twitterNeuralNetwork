@@ -6,7 +6,7 @@
   "dependencies": {
     "@davvo/drbx": "^2.1.0",
     "@google-cloud/vision": "^1.0.0",
-    "@liquid-carrot/carrot": "^0.2.9",
+    "@liquid-carrot/carrot": "^0.2.10",
     "@slack/client": "^5.0.1",
     "@threeceelabs/histogram-parser": "^1.0.20",
     "@threeceelabs/mergehistograms": "^1.0.2",
@@ -46,6 +46,8 @@
     "keyword-extractor": "0.0.16",
     "lockfile": "^1.0.4",
     "lodash": "^4.17.11",
+    "measured": "^1.1.0",
+    "measured-core": "^1.41.0",
     "mentions-regex": "^2.0.3",
     "moment": "^2.24.0",
     "mongoose": "^5.5.8",
