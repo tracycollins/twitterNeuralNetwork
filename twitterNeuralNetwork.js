@@ -1529,23 +1529,8 @@ function updateUserFromTrainingSet(params){
 
     try {
       user = await encodeHistogramUrls({user: user});
-    }
-    catch(err){
-      return reject(err);
-    }
+      let userDb = await global.globalUser.findOne({ nodeId: user.nodeId }).lean();
 
-    global.globalUser.findOne({ nodeId: user.nodeId }).exec(function(err, userDb) {
-      if (err) {
-        console.log(chalkError("*** ERROR FIND ONE USER trainingSet: "
-          + " | CM: " + printCat(user.category)
-          + " | CA: " + printCat(user.categoryAuto)
-          + " | UID: " + user.userId
-          + " | @" + user.screenName
-          + " | ERROR: " + err
-        ));
-        return reject(err);
-      }
-      
       if (!userDb){
 
         const newUser = new global.globalUser(user);
@@ -1577,7 +1562,6 @@ function updateUserFromTrainingSet(params){
         });
       }
       else if (userChanged(user, userDb)) {
-
         userDb.bannerImageUrl = user.bannerImageUrl;
         userDb.category = user.category;
         userDb.categoryAuto = user.categoryAuto;
@@ -1625,10 +1609,8 @@ function updateUserFromTrainingSet(params){
           console.log(MODULE_ID_PREFIX + " | ERROR: updateUserFromTrainingSet: " + err.message);
           return reject(err);
         });
-
       }
       else {
-
         if (configuration.verbose) {
           console.log(chalkLog(MODULE_ID_PREFIX + " | --- NO UPDATE USER FROM TRAINING SET"
             + " | CM: " + printCat(userDb.category)
@@ -1641,11 +1623,20 @@ function updateUserFromTrainingSet(params){
             + " | FRNDS: " + userDb.friendsCount
           ));
         }
-
         resolve(userDb);
-
       }
-    });
+
+    }
+    catch(err){
+      console.log(chalkError("*** ERROR updateUserFromTrainingSet: "
+        + " | CM: " + printCat(user.category)
+        + " | CA: " + printCat(user.categoryAuto)
+        + " | UID: " + user.userId
+        + " | @" + user.screenName
+        + " | ERROR: " + err
+      ));
+      return reject(err);
+    }
 
   });
 }
@@ -2453,6 +2444,7 @@ function unzipUsersToArray(params){
               }
 
               if (err) {
+                console.log(chalkError("TNN | *** UNZIP USERS ENTRY ERROR [" + entryNumber + "]: " + err));
                 return reject(err);
               }
 
@@ -2528,6 +2520,24 @@ function unzipUsersToArray(params){
                         ));
                       }
 
+                    }
+                    else{
+                      console.log(chalkAlert(MODULE_ID_PREFIX + " | ??? UNCAT UNZIPPED USER"
+                        + " | USERS - L: " + trainingSetUsersHashMap.left.size
+                        + " N: " + trainingSetUsersHashMap.neutral.size
+                        + " R: " + trainingSetUsersHashMap.right.size
+                        + " [ ZipHM: " + statsObj.users.zipHashMapMiss 
+                        + " MISS / " + statsObj.users.zipHashMapHit 
+                        + " HIT (" + percent.toFixed(2) + "%) ]"
+                        + " | " + statsObj.users.unzipped + " UNZPD ]"
+                        + " 3C: " + dbUser.threeceeFollowing
+                        + " | " + dbUser.userId
+                        + " | @" + dbUser.screenName
+                        + " | " + dbUser.name
+                        + " | FLWRs: " + dbUser.followersCount
+                        + " | FRNDs: " + dbUser.friendsCount
+                        + " | CAT M: " + dbUser.category + " A: " + dbUser.categoryAuto
+                      ));                      
                     }
 
                   }
