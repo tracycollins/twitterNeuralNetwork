@@ -1518,6 +1518,11 @@ function updateUserFromTrainingSet(params){
       return reject(new Error("userId and nodeId undefined"));
     }
 
+    if (!user.category || (user.category === undefined)) { 
+      console.log(chalkAlert(MODULE_ID_PREFIX + " | USER CATEGORY FALSE or UNDEFINED\n" + jsonPrint(user)));
+      return reject(new Error("USER CATEGORY FALSE or UNDEFINED"));
+    }
+
     debug(chalkLog("... UPDATING USER FROM TRAINING SET"
       + " | CM: " + printCat(user.category)
       + " | CA: " + printCat(user.categoryAuto)
@@ -2519,7 +2524,6 @@ function unzipUsersToArray(params){
                           // + "\n" + jsonPrint(userObj)
                         ));
                       }
-
                     }
                     else{
                       console.log(chalkAlert(MODULE_ID_PREFIX + " | ??? UNCAT UNZIPPED USER"
