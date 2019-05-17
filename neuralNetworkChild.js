@@ -1,14 +1,5 @@
  /*jslint node: true */
 /*jshint sub:true*/
-
-
-const MODULE_NAME = "tncChild";
-const MODULE_ID_PREFIX = "TNC";
-
-const DEFAULT_NETWORK_TECHNOLOGY = "neataptic";
-const DEFAULT_QUIT_ON_COMPLETE = false;
-const DEFAULT_INPUTS_BINARY_MODE = false;
-
 const os = require("os");
 let hostname = os.hostname();
 hostname = hostname.replace(/.tld/g, ""); // amtrak wifi
@@ -18,6 +9,33 @@ hostname = hostname.replace(/.at.net/g, "");
 hostname = hostname.replace(/.fios-router.home/g, "");
 hostname = hostname.replace(/word0-instance-1/g, "google");
 hostname = hostname.replace(/word/g, "google");
+
+const MODULE_NAME = "tncChild";
+const MODULE_ID_PREFIX = "TNC";
+
+const DEFAULT_TEST_RATIO = 0.20;
+const DEFAULT_NETWORK_TECHNOLOGY = "neataptic";
+const DEFAULT_QUIT_ON_COMPLETE = false;
+const DEFAULT_INPUTS_BINARY_MODE = false;
+const TEST_MODE_LENGTH = 500;
+
+const TEST_MODE = false; // applies only to parent
+
+const ONE_SECOND = 1000;
+const ONE_MINUTE = ONE_SECOND*60;
+
+const ONE_KILOBYTE = 1024;
+const ONE_MEGABYTE = 1024 * ONE_KILOBYTE;
+
+const DROPBOX_MAX_FILE_UPLOAD = 140 * ONE_MEGABYTE; // bytes
+
+const fs = require("fs");
+const JSONParse = require("safe-json-parse");
+const sizeof = require("object-sizeof");
+const HashMap = require("hashmap").HashMap;
+const Dropbox = require("dropbox").Dropbox;
+const yauzl = require("yauzl");
+const fetch = require("isomorphic-fetch"); // or another library of choice.
 
 const MODULE_ID = MODULE_ID_PREFIX + "_" + hostname;
 
@@ -33,16 +51,19 @@ console.log("HOST NAME:    " + hostname);
 console.log("=========================================");
 console.log("=========================================");
 
-
-const TEST_MODE = false; // applies only to parent
-
-const ONE_SECOND = 1000;
-const ONE_MINUTE = ONE_SECOND*60;
-
 const KEEPALIVE_INTERVAL = ONE_MINUTE;
 const QUIT_WAIT_INTERVAL = ONE_SECOND;
 
 const compactDateTimeFormat = "YYYYMMDD_HHmmss";
+
+let DROPBOX_ROOT_FOLDER;
+
+if (hostname === "google") {
+  DROPBOX_ROOT_FOLDER = "/home/tc/Dropbox/Apps/wordAssociation";
+}
+else {
+  DROPBOX_ROOT_FOLDER = "/Users/tc/Dropbox/Apps/wordAssociation";
+}
 
 //=========================================================================
 // MODULE REQUIRES
@@ -52,6 +73,7 @@ const carrot = require("@liquid-carrot/carrot");
 
 let networkTech;
 let network;
+let networkObj = {};
 
 const _ = require("lodash");
 const moment = require("moment");
@@ -70,6 +92,7 @@ const chalk = require("chalk");
 const chalkNetwork = chalk.blue;
 const chalkBlueBold = chalk.blue.bold;
 const chalkBlue = chalk.blue;
+const chalkGreen = chalk.green;
 const chalkError = chalk.bold.red;
 const chalkAlert = chalk.red;
 const chalkLog = chalk.gray;
@@ -78,7 +101,61 @@ const chalkInfo = chalk.black;
 //=========================================================================
 // HOST
 //=========================================================================
+let preppedTrainingSet = [];
+let trainingSetObj = {};
+let testSetObj = {};
 
+//=========================================================================
+// STATS
+//=========================================================================
+
+const startTimeMoment = moment();
+
+const statsObj = {};
+
+statsObj.archiveFile = "";
+
+statsObj.trainingSetReady = false;
+
+let statsObjSmall = {};
+
+statsObj.users = {};
+
+statsObj.pid = process.pid;
+statsObj.runId = MODULE_ID.toLowerCase() + "_" + getTimeStamp();
+
+statsObj.hostname = hostname;
+statsObj.startTime = getTimeStamp();
+statsObj.elapsedMS = 0;
+statsObj.elapsed = getElapsedTimeStamp();
+
+statsObj.status = "START";
+
+statsObj.queues = {};
+
+statsObj.evolve = {};
+statsObj.evolve.options = {};
+
+statsObj.training = {};
+statsObj.training.startTime = moment();
+statsObj.training.testRunId = "";
+statsObj.training.seedNetworkId = false;
+statsObj.training.seedNetworkRes = 0;
+statsObj.training.iterations = 0;
+
+statsObj.inputsId = "";
+statsObj.inputsObj = {};
+statsObj.outputs = {};
+
+statsObj.normalization = {};
+
+const statsPickArray = [
+  "pid", 
+  "startTime", 
+  "elapsed", 
+  "elapsedMS", 
+  "status"
+];
 
 //=========================================================================
 // PROCESS EVENT HANDLERS
@@ -147,16 +224,141 @@ process.on("unhandledRejection", function(err, promise) {
 // CONFIGURATION
 //=========================================================================
 
+function filesListFolderLocal(options){
+  return new Promise(function(resolve, reject) {
+
+    const fullPath = DROPBOX_ROOT_FOLDER + options.path;
+
+    fs.readdir(fullPath, function(err, items){
+      if (err) {
+        reject(err);
+      }
+      else {
+
+        const itemArray = [];
+
+        async.each(items, function(item, cb){
+
+          itemArray.push(
+            {
+              name: item, 
+              client_modified: false,
+              content_hash: false,
+              path_display: fullPath + "/" + item
+            }
+          );
+          cb();
+
+        }, function(err){
+
+          if (err) {
+            console.log(chalkError(MODULE_ID_PREFIX + " | *** filesListFolderLocal ERROR:", err));
+            return reject(err);
+          }
+          const response = {
+            cursor: false,
+            has_more: false,
+            entries: itemArray
+          };
+
+          resolve(response);
+        });
+        }
+    });
+  });
+}
+
+function filesGetMetadataLocal(options){
+
+  return new Promise(function(resolve, reject) {
+
+    const fullPath = DROPBOX_ROOT_FOLDER + options.path;
+
+    fs.stat(fullPath, function(err, stats){
+      if (err) {
+        reject(err);
+      }
+      else {
+        const response = {
+          client_modified: stats.mtimeMs
+        };
+        
+        resolve(response);
+      }
+    });
+  });
+}
+
 let configuration = {};
 
+configuration.offlineMode = false;
 configuration.networkTechnology = DEFAULT_NETWORK_TECHNOLOGY;
 configuration.inputsBinaryMode = DEFAULT_INPUTS_BINARY_MODE;
 configuration.testMode = TEST_MODE;
+
+configuration.testSetRatio = DEFAULT_TEST_RATIO;
+
+configuration.dropboxMaxFileUpload = DROPBOX_MAX_FILE_UPLOAD;
+
+configuration.DROPBOX = {};
+configuration.DROPBOX.DROPBOX_WORD_ASSO_ACCESS_TOKEN = process.env.DROPBOX_WORD_ASSO_ACCESS_TOKEN;
+configuration.DROPBOX.DROPBOX_WORD_ASSO_APP_KEY = process.env.DROPBOX_WORD_ASSO_APP_KEY;
+configuration.DROPBOX.DROPBOX_WORD_ASSO_APP_SECRET = process.env.DROPBOX_WORD_ASSO_APP_SECRET;
+
+const DROPBOX_CONFIG_FOLDER = "/config/utility";
+const DROPBOX_CONFIG_DEFAULT_FOLDER = DROPBOX_CONFIG_FOLDER + "/default";
+const DROPBOX_CONFIG_HOST_FOLDER = DROPBOX_CONFIG_FOLDER + "/" + hostname;
+
+configuration.local = {};
+configuration.local.trainingSetsFolder = DROPBOX_CONFIG_HOST_FOLDER + "/trainingSets";
+configuration.local.userArchiveFolder = DROPBOX_CONFIG_HOST_FOLDER + "/trainingSets/users";
+
+configuration.default = {};
+configuration.default.trainingSetsFolder = DROPBOX_CONFIG_DEFAULT_FOLDER + "/trainingSets";
+configuration.default.userArchiveFolder = DROPBOX_CONFIG_DEFAULT_FOLDER + "/trainingSets/users";
+
+configuration.trainingSetsFolder = configuration[HOST].trainingSetsFolder;
+configuration.archiveFileUploadCompleteFlagFolder = configuration[HOST].trainingSetsFolder + "/users";
+
+configuration.userArchiveFolder = configuration.default.userArchiveFolder;
+
+configuration.defaultUserArchiveFlagFile = "usersZipUploadComplete.json";
+configuration.trainingSetFile = "trainingSet.json";
+configuration.requiredTrainingSetFile = "requiredTrainingSet.txt";
 
 configuration.slackChannel = {};
 
 configuration.keepaliveInterval = KEEPALIVE_INTERVAL;
 configuration.quitOnComplete = DEFAULT_QUIT_ON_COMPLETE;
+
+let dropboxClient;
+
+const dropboxRemoteClient = new Dropbox({ 
+  accessToken: configuration.DROPBOX.DROPBOX_WORD_ASSO_ACCESS_TOKEN,
+  fetch: fetch
+});
+
+const dropboxLocalClient = { // offline mode
+  filesListFolder: filesListFolderLocal,
+  filesUpload: function(){},
+  filesDownload: function(){},
+  filesGetMetadata: filesGetMetadataLocal,
+  filesDelete: function(){}
+};
+
+if (configuration.offlineMode) {
+  dropboxClient = dropboxLocalClient;
+}
+else {
+  dropboxClient = dropboxRemoteClient;
+}
+
+let userMaxInputHashMap = {};
+
+const trainingSetUsersHashMap = {};
+trainingSetUsersHashMap.left = new HashMap();
+trainingSetUsersHashMap.neutral = new HashMap();
+trainingSetUsersHashMap.right = new HashMap();
 
 let maxInputHashMap = {};
 
@@ -393,50 +595,7 @@ function getElapsedTimeStamp(){
   statsObj.elapsedMS = moment().valueOf() - startTimeMoment.valueOf();
   return msToTime(statsObj.elapsedMS);
 }
-//=========================================================================
-// STATS
-//=========================================================================
 
-const startTimeMoment = moment();
-
-const statsObj = {};
-let statsObjSmall = {};
-
-statsObj.pid = process.pid;
-statsObj.runId = MODULE_ID.toLowerCase() + "_" + getTimeStamp();
-
-statsObj.hostname = hostname;
-statsObj.startTime = getTimeStamp();
-statsObj.elapsedMS = 0;
-statsObj.elapsed = getElapsedTimeStamp();
-
-statsObj.status = "START";
-
-statsObj.queues = {};
-
-statsObj.evolve = {};
-statsObj.evolve.options = {};
-
-statsObj.training = {};
-statsObj.training.startTime = moment();
-statsObj.training.testRunId = "";
-statsObj.training.seedNetworkId = false;
-statsObj.training.seedNetworkRes = 0;
-statsObj.training.iterations = 0;
-
-statsObj.inputsId = "";
-statsObj.inputsObj = {};
-statsObj.outputs = {};
-
-statsObj.normalization = {};
-
-const statsPickArray = [
-  "pid", 
-  "startTime", 
-  "elapsed", 
-  "elapsedMS", 
-  "status"
-];
 
 async function showStats(options) {
 
@@ -532,18 +691,615 @@ async function quit(opts) {
 //=========================================================================
 // EVOLVE
 //=========================================================================
-function testNetwork(params){
+function loadFile(params) {
 
   return new Promise(async function(resolve, reject){
 
-    const networkObj = params.networkObj;
-    const maxInputHashMap = params.maxInputHashMap;
+    const noErrorNotFound = params.noErrorNotFound || false;
+
+    let fullPath = params.path || params.folder + "/" + params.file;
+
+    debug(chalkInfo("LOAD PATH " + params.path));
+    debug(chalkInfo("LOAD FOLDER " + params.folder));
+    debug(chalkInfo("LOAD FILE " + params.file));
+    debug(chalkInfo("FULL PATH " + fullPath));
+
+
+    if (configuration.offlineMode || params.loadLocalFile) {
+
+      fullPath = DROPBOX_ROOT_FOLDER + fullPath;
+      console.log(chalkInfo("OFFLINE_MODE: FULL PATH " + fullPath));
+
+      fs.readFile(fullPath, "utf8", function(err, data) {
+
+        if (err) {
+          console.log(chalkError("fs readFile ERROR: " + err));
+          return reject(err);
+        }
+
+        console.log(chalkInfo(getTimeStamp()
+          + " | LOADING FILE FROM DROPBOX"
+          + " | " + fullPath
+        ));
+
+        if (fullPath.match(/\.json$/gi)) {
+
+          JSONParse(data, function(err, fileObj){
+            if (err) {
+              console.log(chalkError(getTimeStamp()
+                + " | *** LOAD FILE FROM DROPBOX ERROR"
+                + " | " + fullPath
+                + " | " + err
+              ));
+
+              return reject(err);
+            }
+
+            const fileObjSizeMbytes = sizeof(fileObj)/ONE_MEGABYTE;
+
+            console.log(chalkInfo(getTimeStamp()
+              + " | LOADED FILE FROM DROPBOX"
+              + " | " + fileObjSizeMbytes.toFixed(2) + " MB"
+              + " | " + fullPath
+            ));
+
+            return resolve(fileObj);
+
+          });
+
+        }
+
+        console.log(chalkError(getTimeStamp()
+          + " | ... SKIP LOAD FILE FROM DROPBOX"
+          + " | " + fullPath
+        ));
+        resolve();
+
+      });
+
+     }
+    else {
+
+      dropboxClient.filesDownload({path: fullPath}).
+      then(function(data) {
+
+        debug(chalkLog(getTimeStamp()
+          + " | LOADING FILE FROM DROPBOX FILE: " + fullPath
+        ));
+
+        if (fullPath.match(/\.json$/gi)) {
+
+          const payload = data.fileBinary;
+
+          if (!payload || (payload === undefined)) {
+            return reject(new Error(MODULE_ID_PREFIX + " LOAD FILE PAYLOAD UNDEFINED"));
+          }
+
+          JSONParse(payload, function(err, fileObj){
+            if (err) {
+              console.log(chalkError(getTimeStamp()
+                + " | *** LOAD FILE FROM DROPBOX ERROR"
+                + " | " + fullPath
+                + " | " + err
+              ));
+
+              return reject(err);
+            }
+
+            if (params.includeMetaData) {
+
+              const results = {};
+
+              results.data = fileObj;
+
+              results.meta = {};
+              delete data.fileBinary;
+              results.meta = data;
+
+              return resolve(results);
+
+            }
+            return resolve(fileObj);
+
+          });
+
+        }
+        else {
+          resolve();
+        }
+      }).
+      catch(function(err) {
+
+        console.log(chalkError(MODULE_ID_PREFIX + " | *** DROPBOX loadFile ERROR: " + fullPath));
+        
+        if ((err.status === 409) || (err.status === 404)) {
+          if (noErrorNotFound) {
+            console.log(chalkAlert(MODULE_ID_PREFIX + " | *** DROPBOX READ FILE " + fullPath + " NOT FOUND"));
+            return resolve(new Error("NOT FOUND"));
+          }
+          console.log(chalkAlert(MODULE_ID_PREFIX + " | *** DROPBOX READ FILE " + fullPath + " NOT FOUND ... SKIPPING ..."));
+          return resolve(err);
+        }
+        
+        if (err.status === 0) {
+          console.log(chalkError(MODULE_ID_PREFIX + " | *** DROPBOX NO RESPONSE"
+            + " ... NO INTERNET CONNECTION? ... SKIPPING ..."));
+          return resolve(new Error("NO INTERNET"));
+        }
+
+        reject(err);
+
+      });
+    }
+  });
+}
+
+function loadFileRetry(params){
+
+  return new Promise(async function(resolve, reject){
+
+    // const includeMetaData = params.includeMetaData || false;
+    const resolveOnNotFound = params.resolveOnNotFound || false;
+    const maxRetries = params.maxRetries || 10;
+    let retryNumber;
+    let backOffTime = params.initialBackOffTime || ONE_SECOND;
+    const path = params.path || params.folder + "/" + params.file;
+
+    for (retryNumber = 0;retryNumber < maxRetries;retryNumber++) {
+      try {
+        
+        const fileObj = await loadFile(params);
+
+        if (retryNumber > 0) { 
+          console.log(chalkAlert(MODULE_ID_PREFIX + " | FILE LOAD RETRY"
+            + " | " + path
+            + " | BACKOFF: " + msToTime(backOffTime)
+            + " | " + retryNumber + " OF " + maxRetries
+          )); 
+        }
+
+        return resolve(fileObj);
+        break;
+      } 
+      catch(err) {
+        backOffTime *= 2;
+        setTimeout(function(){
+          console.log(chalkAlert(MODULE_ID_PREFIX + " | FILE LOAD ERROR ... RETRY"
+            + " | " + path
+            + " | BACKOFF: " + msToTime(backOffTime)
+            + " | " + retryNumber + " OF " + maxRetries
+            + " | ERROR: " + err
+          )); 
+        }, backOffTime);
+      }
+    }
+
+    if (resolveOnNotFound) {
+      console.log(chalkAlert(MODULE_ID_PREFIX + " | resolve FILE LOAD FAILED | RETRY: " + retryNumber + " OF " + maxRetries));
+      return resolve(false);
+    }
+    console.log(chalkError(MODULE_ID_PREFIX + " | reject FILE LOAD FAILED | RETRY: " + retryNumber + " OF " + maxRetries));
+    reject(new Error("FILE LOAD ERROR | RETRIES " + maxRetries));
+
+  });
+}
+
+function unzipUsersToArray(params){
+
+  console.log(chalkBlue(MODULE_ID_PREFIX + " | UNZIP USERS TO TRAINING SET: " + params.path));
+
+  return new Promise(async function(resolve, reject) {
+
+    try {
+
+      trainingSetUsersHashMap.left.clear();
+      trainingSetUsersHashMap.neutral.clear();
+      trainingSetUsersHashMap.right.clear();
+
+      let entryNumber = 0;
+
+      statsObj.users.zipHashMapHit = 0;
+      statsObj.users.zipHashMapMiss = 0;
+      statsObj.users.unzipped = 0;
+
+      yauzl.open(params.path, {lazyEntries: true}, function(err, zipfile) {
+
+        if (err) {
+          return reject(err);
+        }
+
+        zipfile.on("error", async function(err) {
+          console.log(chalkError(MODULE_ID_PREFIX + " | *** UNZIP ERROR: " + err));
+          reject(err);
+        });
+
+        zipfile.on("close", async function() {
+          console.log(chalkLog(MODULE_ID_PREFIX + " | UNZIP CLOSE"));
+          resolve(true);
+        });
+
+        zipfile.on("end", async function() {
+          console.log(chalkLog(MODULE_ID_PREFIX + " | UNZIP END"));
+          resolve(true);
+        });
+
+        let hmHit = MODULE_ID_PREFIX + " | --> UNZIP";
+
+        zipfile.on("entry", function(entry) {
+          
+          if ((/\/$/).test(entry.fileName)) { 
+            zipfile.readEntry(); 
+          } 
+          else {
+            zipfile.openReadStream(entry, async function(err, readStream) {
+
+              entryNumber += 1;
+              
+              if (err) {
+                console.log(chalkError("TNN | *** UNZIP USERS ENTRY ERROR [" + entryNumber + "]: " + err));
+                return reject(err);
+              }
+
+              let userString = "";
+
+              readStream.on("end", async function() {
+
+                try {
+                  const userObj = JSON.parse(userString);
+
+                  if (entry.fileName.endsWith("maxInputHashMap.json")) {
+
+                    console.log(chalkLog(MODULE_ID_PREFIX + " | UNZIPPED MAX INPUT"));
+
+                    userMaxInputHashMap = userObj.maxInputHashMap;
+                  }
+                  else {
+
+                    statsObj.users.unzipped += 1;
+
+                    hmHit = MODULE_ID_PREFIX + " | UNZIP";
+
+                    if ( trainingSetUsersHashMap.left.has(userObj.userId)
+                      || trainingSetUsersHashMap.neutral.has(userObj.userId) 
+                      || trainingSetUsersHashMap.right.has(userObj.userId)
+                      ) 
+                    {
+                      hmHit = MODULE_ID_PREFIX + " | **> UNZIP";
+                    }
+
+                    if ((userObj.category === "left") || (userObj.category === "right") || (userObj.category === "neutral")) {
+
+                      trainingSetUsersHashMap[userObj.category].set(userObj.nodeId, userObj);
+
+                      if (configuration.verbose || (statsObj.users.unzipped % 1000 === 0)) {
+
+                        console.log(chalkLog(hmHit
+                          + " [" + statsObj.users.unzipped + "]"
+                          + " USERS - L: " + trainingSetUsersHashMap.left.size
+                          + " N: " + trainingSetUsersHashMap.neutral.size
+                          + " R: " + trainingSetUsersHashMap.right.size
+                          + " | " + userObj.userId
+                          + " | @" + userObj.screenName
+                          + " | " + userObj.name
+                          + " | FLWRs: " + userObj.followersCount
+                          + " | FRNDs: " + userObj.friendsCount
+                          + " | CAT M: " + userObj.category + " A: " + userObj.categoryAuto
+                        ));
+                      }
+                    }
+                    else{
+                      console.log(chalkAlert(MODULE_ID_PREFIX + " | ??? UNCAT UNZIPPED USER"
+                        + " [" + statsObj.users.unzipped + "]"
+                        + " USERS - L: " + trainingSetUsersHashMap.left.size
+                        + " N: " + trainingSetUsersHashMap.neutral.size
+                        + " R: " + trainingSetUsersHashMap.right.size
+                        + " | " + userObj.userId
+                        + " | @" + userObj.screenName
+                        + " | " + userObj.name
+                        + " | FLWRs: " + userObj.followersCount
+                        + " | FRNDs: " + userObj.friendsCount
+                        + " | CAT M: " + userObj.category + " A: " + userObj.categoryAuto
+                      ));                      
+                    }
+
+                  }
+
+                  zipfile.readEntry();
+                }
+                catch (e){
+                  console.log(chalkError(MODULE_ID_PREFIX + " | *** UNZIP READ STREAM ERROR: " + err));
+                  return reject(e);
+                }
+              });
+
+              readStream.on("data",function(chunk){
+                const part = chunk.toString();
+                userString += part;
+              });
+
+              readStream.on("close", async function(){
+                console.log(chalkInfo(MODULE_ID_PREFIX + " | UNZIP STREAM CLOSED"));
+                resolve();
+              });
+
+              readStream.on("error",async function(err){
+                console.log(chalkError(MODULE_ID_PREFIX + " | *** UNZIP READ STREAM ERROR EVENT: " + err));
+                reject(err);
+              });
+            });
+          }
+        });
+
+        zipfile.readEntry();
+
+      });
+
+    }
+    catch(err){
+      console.error(chalkError(MODULE_ID_PREFIX + " | *** USER ARCHIVE READ ERROR: " + err));
+      return reject(new Error("USER ARCHIVE READ ERROR"));
+    }
+
+  });
+}
+
+function updateTrainingSet(){
+
+  console.log(chalkBlue(MODULE_ID_PREFIX + " | UPDATE TRAINING SET"));
+
+  return new Promise(function(resolve, reject) {
+
+    try {
+
+      trainingSetObj = {};
+      trainingSetObj.meta = {};
+      trainingSetObj.meta.numInputs = 0;
+      trainingSetObj.meta.numOutputs = 3;
+      trainingSetObj.meta.setSize = 0;
+      trainingSetObj.data = [];
+
+      testSetObj = {};
+      testSetObj.meta = {};
+      testSetObj.meta.numInputs = 0;
+      testSetObj.meta.numOutputs = 3;
+      testSetObj.meta.setSize = 0;
+      testSetObj.data = [];
+
+      maxInputHashMap = {};
+
+      async.eachSeries(["left", "neutral", "right"], function(category, cb){
+
+        const trainingSetSize = parseInt((1 - configuration.testSetRatio) * trainingSetUsersHashMap[category].size);
+        const testSetSize = parseInt(configuration.testSetRatio * trainingSetUsersHashMap[category].size);
+
+        console.log(chalkLog(MODULE_ID_PREFIX + " | TRAINING SET | " + category.toUpperCase()
+          + " | SIZE: " + trainingSetSize
+          + " | TEST SIZE: " + testSetSize
+        ));
+
+        trainingSetObj.data = trainingSetObj.data.concat(trainingSetUsersHashMap[category].values().slice(testSetSize));
+        testSetObj.data = testSetObj.data.concat(trainingSetUsersHashMap[category].values().slice(0, testSetSize-1));
+
+        cb();
+
+      }, function(err){
+
+        if (err) {
+          console.log(chalkError(MODULE_ID_PREFIX + " | *** UPDATE TRAINING SET ERROR: " + err));
+          return reject(err);
+        }
+
+        trainingSetObj.meta.setSize = trainingSetObj.data.length;
+        testSetObj.meta.setSize = testSetObj.data.length;
+
+        maxInputHashMap = userMaxInputHashMap;
+
+        console.log(chalkLog(MODULE_ID_PREFIX + " | TRAINING SET"
+          + " | SIZE: " + trainingSetObj.meta.setSize
+          + " | TEST SIZE: " + testSetObj.meta.setSize
+        ));
+
+        resolve();
+
+      });
+
+    }
+    catch(err){
+      console.log(chalkError(MODULE_ID_PREFIX + " | *** updateTrainingSet ERROR:", err));
+      reject(err);
+    }
+
+  });
+}
+
+let sizeInterval;
+
+function fileSize(params){
+
+  return new Promise(async function(resolve, reject){
+
+    clearInterval(sizeInterval);
+
+    const interval = params.interval || 10*ONE_SECOND;
+
+    console.log(chalkLog(MODULE_ID_PREFIX + " | WAIT FILE SIZE: " + params.path + " | EXPECTED SIZE: " + params.size));
+
+    let stats;
+    let size = 0;
+    let prevSize = 0;
+
+
+    let exists = fs.existsSync(params.path);
+
+    if (exists) {
+
+      try {
+        stats = fs.statSync(params.path);
+        size = stats.size;
+        prevSize = stats.size;
+
+        if (params.size && (size === params.size)) {
+          console.log(chalkGreen(MODULE_ID_PREFIX + " | FILE SIZE EXPECTED | " + getTimeStamp()
+            + " | EXISTS: " + exists
+            + " | CUR: " + size
+            + " | EXPECTED: " + params.size
+            + " | " + params.path
+          ));
+          return resolve();
+        }
+      }
+      catch(err){
+        return reject(err);
+      }
+
+    }
+    else {
+      console.log(chalkAlert(MODULE_ID_PREFIX + " | ??? FILE SIZE | NON-EXISTENT FILE | " + getTimeStamp()
+        + " | EXISTS: " + exists
+        + " | EXPECTED: " + params.size
+        + " | " + params.path
+      ));
+    }
+
+
+    sizeInterval = setInterval(async function(){
+
+      console.log(chalkInfo(MODULE_ID_PREFIX + " | FILE SIZE | " + getTimeStamp()
+        + " | EXISTS: " + exists
+        + " | CUR: " + size
+        + " | PREV: " + prevSize
+        + " | EXPECTED: " + params.size
+        + " | " + params.path
+      ));
+
+      exists = fs.existsSync(params.path);
+
+      if (exists) {
+        fs.stat(params.path, function(err, stats){
+
+          if (err) {
+            return reject(err);
+          }
+
+          prevSize = size;
+          size = stats.size;
+
+          if ((size > 0) && ((params.size && (size === params.size)) || (size === prevSize))) {
+
+            clearInterval(sizeInterval);
+
+            console.log(chalkGreen(MODULE_ID_PREFIX + " | FILE SIZE STABLE | " + getTimeStamp()
+              + " | EXISTS: " + exists
+              + " | CUR: " + size
+              + " | PREV: " + prevSize
+              + " | EXPECTED: " + params.size
+              + " | " + params.path
+            ));
+
+            resolve();
+          }
+        });
+      }
+
+    }, interval);
+
+  });
+}
+
+function loadUsersArchive(params){
+
+  return new Promise(async function(resolve, reject){
+
+    const defaultUserArchiveFolder = DROPBOX_ROOT_FOLDER + configuration.userArchiveFolder;
+
+    params.folder = params.folder || defaultUserArchiveFolder;
+    params.path = (params.path !== undefined) ? params.path : params.folder + "/" + params.file;
+
+    console.log(chalkLog(MODULE_ID_PREFIX 
+      + " | LOADING USERS ARCHIVE"
+      + " | " + getTimeStamp() 
+      + "\n PATH:   " + params.path
+      + "\n FOLDER: " + params.folder
+      + "\n FILE:   " + params.file
+    ));
+
+    try {
+      await fileSize(params);
+      await unzipUsersToArray(params);
+      await updateTrainingSet();
+      resolve();
+    }
+    catch(err){
+      console.log(chalkError(MODULE_ID_PREFIX + " | *** LOAD USERS ARCHIVE ERROR | " + getTimeStamp() + " | " + err));
+      reject(err);
+    }
+
+  });
+}
+
+function loadTrainingSet(){
+
+  return new Promise(async function(resolve, reject){
+
+    statsObj.status = "LOAD TRAINING SET";
+
+    console.log(chalkLog(MODULE_ID_PREFIX
+      + " | LOAD ARCHIVE FLAG FILE: " + configuration.userArchiveFolder + "/" + configuration.defaultUserArchiveFlagFile
+    ));
+
+    let archiveFlagObj;
+
+    try{
+      archiveFlagObj = await loadFileRetry({folder: configuration.userArchiveFolder, file: configuration.defaultUserArchiveFlagFile});
+      console.log(chalkNetwork(MODULE_ID_PREFIX + " | USERS ARCHIVE FLAG FILE\n" + jsonPrint(archiveFlagObj)));
+    }
+    catch(err){
+      console.log(chalkError(MODULE_ID_PREFIX + " | *** USERS ARCHIVE FLAG FILE LOAD ERROR: " + err));
+      statsObj.loadUsersArchiveBusy = false;
+      statsObj.trainingSetReady = false;
+      return reject(err);
+    }
+
+
+    console.log(chalkLog(MODULE_ID_PREFIX + " | USER ARCHIVE FILE | FILE: " + archiveFlagObj.file + " | SIZE: " + archiveFlagObj.size));
+
+    if (archiveFlagObj.file !== statsObj.archiveFile) {
+
+      statsObj.trainingSetReady = false;
+
+      try {
+        await loadUsersArchive({file: archiveFlagObj.file, size: archiveFlagObj.size});
+        statsObj.archiveModified = getTimeStamp();
+        statsObj.loadUsersArchiveBusy = false;
+        statsObj.archiveFile = archiveFlagObj.file;
+        statsObj.trainingSetReady = true;
+        resolve();
+      }
+      catch(err){
+        statsObj.loadUsersArchiveBusy = false;
+        statsObj.trainingSetReady = false;
+        return reject(err);
+      }
+    }
+    else {
+      console.log(chalkLog(MODULE_ID_PREFIX + " | USERS ARCHIVE SAME ... SKIPPING | " + archiveFlagObj.path));
+      statsObj.loadUsersArchiveBusy = false;
+      statsObj.trainingSetReady = true;
+      resolve();
+    }
+
+  });
+}
+
+
+function testNetwork(){
+
+  return new Promise(async function(resolve, reject){
 
     console.log(chalkBlue("NNC | TEST NETWORK"
-      + " | TEST SET ID: " + params.testSet.meta.testSetId
       + " | NETWORK ID: " + networkObj.networkId
-      + " | " + params.testSet.meta.setSize + " TEST META DATA POINTS"
-      + " | " + params.testSet.data.length + " TEST DATA LENGTH"
+      + " | " + testSetObj.meta.setSize + " TEST META DATA POINTS"
+      + " | " + testSetObj.data.length + " TEST DATA LENGTH"
     ));
 
     const nw = networkTech.Network.fromJSON(networkObj.network);
@@ -558,7 +1314,7 @@ function testNetwork(params){
     convertDatumParams.normalization = statsObj.normalization;
     convertDatumParams.maxInputHashMap = maxInputHashMap;
 
-    const shuffledTestData = _.shuffle(params.testSet.data);
+    const shuffledTestData = _.shuffle(testSetObj.data);
 
     async.each(shuffledTestData, async function(datum){
 
@@ -591,17 +1347,19 @@ function testNetwork(params){
           }
         );
 
-        debug(currentChalk("TEST RESULT: " + passed 
-          + " | " + successRate.toFixed(2) + "%"
-          + " | " + testOutput[0]
-          + " " + testOutput[1]
-          + " " + testOutput[2]
-          + " | TMOI: " + testMaxOutputIndex
-          + " | " + testDatumObj.output[0]
-          + " " + testDatumObj.output[1]
-          + " " + testDatumObj.output[2]
-          + " | EMOI: " + expectedMaxOutputIndex
-        ));
+        if ((configuration.testMode || configuration.verbose) && (numTested % 100 === 0)){
+          console.log(currentChalk(MODULE_ID_PREFIX + " | TEST RESULT: " + passed 
+            + " | " + successRate.toFixed(2) + "%"
+            + " | " + testOutput[0]
+            + " " + testOutput[1]
+            + " " + testOutput[2]
+            + " | TMOI: " + testMaxOutputIndex
+            + " | " + testDatumObj.output[0]
+            + " " + testDatumObj.output[1]
+            + " " + testDatumObj.output[2]
+            + " | EMOI: " + expectedMaxOutputIndex
+          ));
+        }
 
         return;
 
@@ -620,12 +1378,14 @@ function testNetwork(params){
       }
 
       const testResults = { 
-        testSetId: params.testSet.meta.testSetId, 
-        numTests: params.testSet.meta.setSize, 
+        testSetId: testSetObj.meta.testSetId, 
+        numTests: testSetObj.meta.setSize, 
         numSkipped: numSkipped, 
         numPassed: numPassed, 
         successRate: successRate
       };
+
+      console.log(chalkNetwork(MODULE_ID_PREFIX + " | TEST COMPLETE"));
 
       debug(chalkNetwork(MODULE_ID_PREFIX
         + " | TEST RESULTS\n" + jsonPrint(testResults)
@@ -773,14 +1533,18 @@ function networkEvolve(params) {
 
   return new Promise(async function(resolve, reject){
 
+    console.log(chalkBlueBold("TNC | >>> START NETWORK EVOLVE"
+      + " | " + getTimeStamp()
+      + " | NNID: " + statsObj.training.testRunId
+    ));
+
     const network = params.network;
-    const trainingSet = params.trainingSet;
     const options = params.options;
 
     let results;
 
     try {
-      results = await network.evolve(trainingSet, options);
+      results = await network.evolve(preppedTrainingSet, options);
     }
     catch(err){
       console.log(chalkError("TNC | *** EVOLVE ERROR: " + err));
@@ -853,7 +1617,7 @@ function networkEvolve(params) {
 
       debug("... END NETWORK NODE UPDATE: " + statsObj.training.testRunId);
 
-      const networkObj = {};
+      networkObj = {};
       networkObj.networkId = statsObj.training.testRunId;
       networkObj.seedNetworkId = statsObj.training.seedNetworkId;
       networkObj.seedNetworkRes = statsObj.training.seedNetworkRes;
@@ -918,27 +1682,26 @@ function networkEvolve(params) {
 
   });
 }
-
 function trainingSetPrep(params){
 
   return new Promise(function(resolve, reject){
 
-    const trainingSet = [];
+    preppedTrainingSet = [];
     let generateInputRaw = true;
 
     let dataConverted = 0;
 
-    params.trainingSet.meta.numInputs = params.inputsObj.meta.numInputs;
-    params.testSet.meta.numInputs = params.inputsObj.meta.numInputs;
+    trainingSetObj.meta.numInputs = params.inputsObj.meta.numInputs;
+    testSetObj.meta.numInputs = params.inputsObj.meta.numInputs;
 
-    console.log(chalkLog(MODULE_ID_PREFIX
+    console.log(chalkBlue(MODULE_ID_PREFIX
       + " | TRAINING SET PREP"
-      + " | DATA LENGTH: " + params.trainingSet.data.length
+      + " | DATA LENGTH: " + trainingSetObj.data.length
       + " | INPUTS NUM IN: " + params.inputsObj.meta.numInputs
-      + "\nTRAINING SET META\n" + jsonPrint(params.trainingSet.meta)
+      + "\nTRAINING SET META\n" + jsonPrint(trainingSetObj.meta)
     ));
 
-    const shuffledTrainingData = _.shuffle(params.trainingSet.data);
+    const shuffledTrainingData = _.shuffle(trainingSetObj.data);
 
     async.eachSeries(shuffledTrainingData, async function(datum){
 
@@ -971,13 +1734,13 @@ function trainingSetPrep(params){
           generateInputRaw = false;
         }
 
-        trainingSet.push({ 
+        preppedTrainingSet.push({ 
           input: datumObj.input, 
           output: datumObj.output
         });
 
         if (configuration.verbose || (dataConverted % 1000 === 0)){
-          console.log(chalkLog("TNC | DATA CONVERTED: " + dataConverted + "/" + params.trainingSet.data.length));
+          console.log(chalkLog("TNC | DATA CONVERTED: " + dataConverted + "/" + trainingSetObj.data.length));
         }
 
         return;
@@ -995,7 +1758,9 @@ function trainingSetPrep(params){
         return reject(err);
       }
 
-      resolve(trainingSet);
+      console.log(chalkBlue("TNC | TRAINING SET PREP COMPLETE | TRAINING SET LENGTH: " + preppedTrainingSet.length));
+
+      resolve();
 
     });
 
@@ -1036,8 +1801,6 @@ function evolve(params){
     options.threads = params.threads;
     options.elitism = params.elitism;
     options.equal = params.equal;
-    // options.mutation = neataptic.methods.mutation.FFW;
-    // options.mutation = carrot.methods.mutation.FFW;
     options.mutation = networkTech.methods.mutation.FFW;
     options.mutationRate = params.mutationRate;
     options.popsize = params.popsize;
@@ -1142,7 +1905,7 @@ function evolve(params){
         break;
 
         default:
-          if ((key !== "log") && (key !== "trainingSet")){
+          if (key !== "log"){
             console.log("NNC" + " | " + configuration.childId + " | EVOLVE OPTION | " + key + ": " + params[key]);
             options[key] = params[key];
           }
@@ -1160,8 +1923,6 @@ function evolve(params){
 
         case "loadedNetwork":
 
-          // network = neataptic.Network.fromJSON(options.networkObj.network);
-          // network = carrot.Network.fromJSON(options.networkObj.network);
           network = networkTech.Network.fromJSON(options.networkObj.network);
 
           console.log("NNC"
@@ -1181,12 +1942,10 @@ function evolve(params){
             + " | HIDDEN LAYER NODES: " + params.hiddenLayerSize
           );
 
-          // network = new neataptic.architect.Perceptron(
-          // network = new carrot.architect.Perceptron(
           network = new networkTech.architect.Perceptron(
-            params.trainingSet.meta.numInputs, 
+            trainingSetObj.meta.numInputs, 
             params.hiddenLayerSize,
-            params.trainingSet.meta.numOutputs
+            trainingSetObj.meta.numOutputs
           );
 
         break;
@@ -1197,11 +1956,9 @@ function evolve(params){
             + " | " + configuration.childId
             + " | " + params.architecture.toUpperCase()
             + " | INPUTS: " + params.inputsObj.meta.numInputs
-            + " | OUTPUTS: " + params.trainingSet.meta.numOutputs
+            + " | OUTPUTS: " + trainingSetObj.meta.numOutputs
           );
 
-          // network = new neataptic.Network(
-          // network = new carrot.Network(
           network = new networkTech.Network(
             params.inputsObj.meta.numInputs, 
             3
@@ -1213,13 +1970,14 @@ function evolve(params){
         params.options = options; // network evolve options
 
         try {
-          params.trainingSet = await trainingSetPrep(params);
+          
+          await trainingSetPrep(params);
 
           networkObj = await networkEvolve(params);
 
           params.networkObj = networkObj;
 
-          testResults = await testNetwork(params);
+          testResults = await testNetwork();
 
           networkObj.successRate = testResults.successRate;
           networkObj.test = {};
@@ -1459,11 +2217,28 @@ const fsmStates = {
   },
 
   "CONFIG_EVOLVE": {
-    onEnter: function(event, oldState, newState) {
+    onEnter: async function(event, oldState, newState) {
+
       if (event !== "fsm_tick") {
+
         reporter(event, oldState, newState);
         statsObj.fsmStatus = "CONFIG_EVOLVE";
         process.send({op: "STATS", childId: configuration.childId, data: statsObj});
+
+        if (!statsObj.trainingSetReady) {
+          await loadTrainingSet();
+        }
+        else {
+          console.log(chalkLog(MODULE_ID_PREFIX + " | --- TRAINING SET UNCHANGED ... SKIP LOAD"));
+        }
+
+        if (configuration.testMode) {
+          trainingSetObj.data.length = Math.min(trainingSetObj.data.length, TEST_MODE_LENGTH);
+          testSetObj.data.length = parseInt(configuration.testSetRatio * trainingSetObj.data.length);
+          trainingSetObj.meta.setSize = trainingSetObj.data.length;
+          testSetObj.meta.setSize = testSetObj.data.length;
+        }
+
         fsm.fsm_evolve();
       }
     },
@@ -1501,8 +2276,8 @@ const fsmStates = {
         catch(err){
           console.log(chalkError(MODULE_ID_PREFIX + " | *** EVOLVE ERROR: " + err));
           console.log(chalkError(MODULE_ID_PREFIX + " | *** EVOLVE ERROR\ninputsObj\n" + jsonPrint(evolveOptions.inputsObj.meta)));
-          console.log(chalkError(MODULE_ID_PREFIX + " | *** EVOLVE ERROR\ntrainingSet\n" + jsonPrint(evolveOptions.trainingSet.meta)));
-          console.log(chalkError(MODULE_ID_PREFIX + " | *** EVOLVE ERROR\ntestSet\n" + jsonPrint(evolveOptions.testSet.meta)));
+          console.log(chalkError(MODULE_ID_PREFIX + " | *** EVOLVE ERROR\ntrainingSet\n" + jsonPrint(evolveOptions.trainingSetObj.meta)));
+          console.log(chalkError(MODULE_ID_PREFIX + " | *** EVOLVE ERROR\ntestSet\n" + jsonPrint(evolveOptions.testSetObj.meta)));
           fsm.fsm_error();
         }
 
@@ -1634,7 +2409,6 @@ process.on("message", function(m) {
 
       maxInputHashMap = m.maxInputHashMap;
 
-
       statsObj.training.startTime = moment().valueOf();
       statsObj.training.testRunId = m.testRunId;
       statsObj.training.seedNetworkId = m.seedNetworkId;
@@ -1660,8 +2434,8 @@ process.on("message", function(m) {
         inputsId: m.inputsId,
         inputsObj: m.inputsObj,
         outputs: m.outputs,
-        trainingSet: m.trainingSet,
-        testSet: m.testSet,
+        // trainingSet: m.trainingSet,
+        // testSetObj: m.testSetObj,
         mutation: m.mutation,
         equal: m.equal,
         popsize: m.popsize,
@@ -1711,7 +2485,7 @@ process.on("message", function(m) {
           + " | SEED RES %: " + m.seedNetworkRes.toFixed(2)
           + "\n THREADs: " + m.threads
           + "\n NET: " + m.networkObj.networkId + " | " + m.networkObj.successRate.toFixed(2) + "%"
-          + "\n TRAINING SET: " + m.trainingSet.meta.setSize
+          // + "\n TRAINING SET: " + m.trainingSet.meta.setSize
           + " | ITRS: " + statsObj.training.iterations
         ));
       }
@@ -1723,7 +2497,7 @@ process.on("message", function(m) {
           + "\n SEED: " + "---"
           + " | SEED RES %: " + "---"
           + "\n THREADs: " + m.threads
-          + "\n TRAINING SET: " + m.trainingSet.meta.setSize
+          // + "\n TRAINING SET: " + m.trainingSet.meta.setSize
           + " | ITRS: " + statsObj.training.iterations
         ));
       }

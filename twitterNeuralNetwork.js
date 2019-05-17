@@ -2477,38 +2477,28 @@ function updateTrainingSet(){
 
     try {
       let tObj = {};
+      tObj.trainingSetObj = {};
 
-      if (trainingSetHashMap.has(configuration.globalTrainingSetId)) {
-        tObj = trainingSetHashMap.get(configuration.globalTrainingSetId);
-        console.log(chalkInfo(MODULE_ID_PREFIX + " | +++ TRAINING SET HM HIT: " + tObj.trainingSetObj.trainingSetId));
-      }
-      else {
+      tObj.trainingSetObj.trainingSetId = configuration.globalTrainingSetId;
 
-        console.log(chalkInfo(MODULE_ID_PREFIX + " | --- TRAINING SET HM MISS: " + configuration.globalTrainingSetId + " ... CREATING..."));
+      tObj.trainingSetObj.meta = {};
+      tObj.trainingSetObj.meta.numInputs = 0;
+      tObj.trainingSetObj.meta.numOutputs = 3;
+      tObj.trainingSetObj.trainingSet = {};
+      tObj.trainingSetObj.trainingSet.meta = {};
+      tObj.trainingSetObj.trainingSet.meta.numInputs = 0;
+      tObj.trainingSetObj.trainingSet.meta.numOutputs = 3;
+      tObj.trainingSetObj.trainingSet.meta.setSize = 0;
+      tObj.trainingSetObj.trainingSet.data = [];
 
-        tObj.trainingSetObj = {};
+      tObj.trainingSetObj.testSet = {};
+      tObj.trainingSetObj.testSet.meta = {};
+      tObj.trainingSetObj.testSet.meta.numInputs = 0;
+      tObj.trainingSetObj.testSet.meta.numOutputs = 3;
+      tObj.trainingSetObj.testSet.meta.setSize = 0;
+      tObj.trainingSetObj.testSet.data = [];
 
-        tObj.trainingSetObj.trainingSetId = configuration.globalTrainingSetId;
-
-        tObj.trainingSetObj.meta = {};
-        tObj.trainingSetObj.meta.numInputs = 0;
-        tObj.trainingSetObj.meta.numOutputs = 3;
-        tObj.trainingSetObj.trainingSet = {};
-        tObj.trainingSetObj.trainingSet.meta = {};
-        tObj.trainingSetObj.trainingSet.meta.numInputs = 0;
-        tObj.trainingSetObj.trainingSet.meta.numOutputs = 3;
-        tObj.trainingSetObj.trainingSet.meta.setSize = 0;
-        tObj.trainingSetObj.trainingSet.data = [];
-
-        tObj.trainingSetObj.testSet = {};
-        tObj.trainingSetObj.testSet.meta = {};
-        tObj.trainingSetObj.testSet.meta.numInputs = 0;
-        tObj.trainingSetObj.testSet.meta.numOutputs = 3;
-        tObj.trainingSetObj.testSet.meta.setSize = 0;
-        tObj.trainingSetObj.testSet.data = [];
-
-        tObj.trainingSetObj.maxInputHashMap = {};
-      }
+      tObj.trainingSetObj.maxInputHashMap = {};
 
       async.eachSeries(["left", "neutral", "right"], function(category, cb){
 
@@ -2706,7 +2696,7 @@ function initWatch(params){
             + " | SIZE: " + archiveFlagObj.size
             + "\nHISTOGRAM\n" + jsonPrint(archiveFlagObj.histogram)
           ));
-          await loadTrainingSet({folder: configuration.userArchiveFolder, file: archiveFlagObj.file});
+          // await loadTrainingSet({folder: configuration.userArchiveFolder, file: archiveFlagObj.file});
         }
         catch(err){
           console.log(chalkError(MODULE_ID_PREFIX + " | *** WATCH CHANGE ERROR | " + getTimeStamp() + " | " + err));
@@ -2892,40 +2882,40 @@ function generateRandomEvolveConfig (){
       }
     }
 
-    let tObj = {};
+    // let tObj = {};
 
-    console.log(chalkLog(MODULE_ID_PREFIX + " | LOAD GLOBAL TRAINING SET FROM HASHMAP: " + configuration.globalTrainingSetId));
+    // console.log(chalkLog(MODULE_ID_PREFIX + " | LOAD GLOBAL TRAINING SET FROM HASHMAP: " + configuration.globalTrainingSetId));
 
-    if (!trainingSetHashMap.has(configuration.globalTrainingSetId)) {
-      console.log(chalkError(MODULE_ID_PREFIX + " | *** TRAINING SET NOT IN HASHMAP: " + configuration.globalTrainingSetId));
-      return reject(new Error("TRAINING SET NOT IN HASHMAP: " + configuration.globalTrainingSetId));
-    }
+    // if (!trainingSetHashMap.has(configuration.globalTrainingSetId)) {
+    //   console.log(chalkError(MODULE_ID_PREFIX + " | *** TRAINING SET NOT IN HASHMAP: " + configuration.globalTrainingSetId));
+    //   return reject(new Error("TRAINING SET NOT IN HASHMAP: " + configuration.globalTrainingSetId));
+    // }
 
-    tObj = trainingSetHashMap.get(configuration.globalTrainingSetId);
+    // tObj = trainingSetHashMap.get(configuration.globalTrainingSetId);
 
-    console.log(chalkLog(MODULE_ID_PREFIX + " | USING TRAINING SET: " + tObj.trainingSetObj.trainingSetId));
+    // console.log(chalkLog(MODULE_ID_PREFIX + " | USING TRAINING SET: " + tObj.trainingSetObj.trainingSetId));
 
-    if (configuration.testMode) {
-      tObj.trainingSetObj.trainingSet.data.length = Math.min(tObj.trainingSetObj.trainingSet.data.length, TEST_MODE_LENGTH);
-      tObj.trainingSetObj.testSet.data.length = parseInt(configuration.testSetRatio * tObj.trainingSetObj.trainingSet.data.length);
-      tObj.trainingSetObj.trainingSet.meta.setSize = tObj.trainingSetObj.trainingSet.data.length;
-      tObj.trainingSetObj.testSet.meta.setSize = tObj.trainingSetObj.testSet.data.length;
-    }
+    // if (configuration.testMode) {
+    //   tObj.trainingSetObj.trainingSet.data.length = Math.min(tObj.trainingSetObj.trainingSet.data.length, TEST_MODE_LENGTH);
+    //   tObj.trainingSetObj.testSet.data.length = parseInt(configuration.testSetRatio * tObj.trainingSetObj.trainingSet.data.length);
+    //   tObj.trainingSetObj.trainingSet.meta.setSize = tObj.trainingSetObj.trainingSet.data.length;
+    //   tObj.trainingSetObj.testSet.meta.setSize = tObj.trainingSetObj.testSet.data.length;
+    // }
 
-    config.trainingSetId = tObj.trainingSetObj.trainingSetId;
-    config.trainingSet = {};
-    config.trainingSet.maxInputHashMap = {};
-    config.trainingSet.maxInputHashMap = tObj.trainingSetObj.maxInputHashMap;
-    config.trainingSet.meta = {};
-    config.trainingSet.meta = tObj.trainingSetObj.trainingSet.meta;
-    config.trainingSet.data = [];
-    config.trainingSet.data = _.shuffle(tObj.trainingSetObj.trainingSet.data);
-    config.testSet = {};
-    config.testSet = tObj.trainingSetObj.testSet;
+    // config.trainingSetId = tObj.trainingSetObj.trainingSetId;
+    // config.trainingSet = {};
+    // config.trainingSet.maxInputHashMap = {};
+    // config.trainingSet.maxInputHashMap = tObj.trainingSetObj.maxInputHashMap;
+    // config.trainingSet.meta = {};
+    // config.trainingSet.meta = tObj.trainingSetObj.trainingSet.meta;
+    // config.trainingSet.data = [];
+    // config.trainingSet.data = _.shuffle(tObj.trainingSetObj.trainingSet.data);
+    // config.testSet = {};
+    // config.testSet = tObj.trainingSetObj.testSet;
 
-    if (config.testSet.meta.testSetId === undefined) { 
-      config.testSet.meta.testSetId = tObj.trainingSetObj.trainingSetId + "_" + DEFAULT_RUN_ID + "_" + getTimeStamp();
-    }
+    // if (config.testSet.meta.testSetId === undefined) { 
+    //   config.testSet.meta.testSetId = tObj.trainingSetObj.trainingSetId + "_" + DEFAULT_RUN_ID + "_" + getTimeStamp();
+    // }
 
     resolve(config);
 
@@ -2982,9 +2972,6 @@ function initNetworkCreate(params){
             + "\n" + MODULE_ID_PREFIX + " | ARCHITECTURE: " + messageObj.architecture
             + "\n" + MODULE_ID_PREFIX + " | INPUTS ID:    " + messageObj.inputsId
             + "\n" + MODULE_ID_PREFIX + " | INPUTS:       " + messageObj.inputsObj.meta.numInputs
-            + "\n" + MODULE_ID_PREFIX + " | OUTPUTS:      " + messageObj.trainingSet.meta.numOutputs
-            + "\n" + MODULE_ID_PREFIX + " | TRAINING SET: " + messageObj.trainingSet.meta.setSize
-            + "\n" + MODULE_ID_PREFIX + " | TEST SET:     " + messageObj.testSet.data.length
             + "\n" + MODULE_ID_PREFIX + " | ACTIVATION:   " + messageObj.activation
             + "\n" + MODULE_ID_PREFIX + " | COST:         " + messageObj.cost
             + "\n" + MODULE_ID_PREFIX + " | ITERATIONS:   " + messageObj.iterations
@@ -3024,10 +3011,7 @@ function initNetworkCreate(params){
 
           resultsHashmap[messageObj.testRunId] = networkCreateObj;
 
-          // saveFileQueue.push({localFlag: false, folder: statsFolder, file: statsFile, obj: statsObj});
-
           await printResultsHashmap();
-
           await childSend({command: messageObj});
 
           resolve();
@@ -3040,7 +3024,7 @@ function initNetworkCreate(params){
       }
     }
     catch(err){
-      console.log(chalkError("INIT CREATE NETWORK ERROR: " + err));
+      console.log(chalkError(MODULE_ID_PREFIX + " | INIT CREATE NETWORK ERROR: " + err));
       return reject(err);
     }
 
@@ -5144,58 +5128,58 @@ function initChildPingAllInterval(params){
   });
 }
 
-function loadTrainingSet(){
+// function loadTrainingSet(){
 
-  return new Promise(async function(resolve, reject){
+//   return new Promise(async function(resolve, reject){
 
-    statsObj.status = "LOAD TRAINING SET";
+//     statsObj.status = "LOAD TRAINING SET";
 
-    console.log(chalkLog(MODULE_ID_PREFIX
-      + " | LOAD ARCHIVE FLAG FILE: " + configuration.userArchiveFolder + "/" + configuration.defaultUserArchiveFlagFile
-    ));
+//     console.log(chalkLog(MODULE_ID_PREFIX
+//       + " | LOAD ARCHIVE FLAG FILE: " + configuration.userArchiveFolder + "/" + configuration.defaultUserArchiveFlagFile
+//     ));
 
-    let archiveFlagObj;
+//     let archiveFlagObj;
 
-    try{
-      archiveFlagObj = await loadFileRetry({folder: configuration.userArchiveFolder, file: configuration.defaultUserArchiveFlagFile});
-      console.log(chalkNetwork(MODULE_ID_PREFIX + " | USERS ARCHIVE FLAG FILE\n" + jsonPrint(archiveFlagObj)));
-    }
-    catch(err){
-      console.log(chalkError(MODULE_ID_PREFIX + " | *** USERS ARCHIVE FLAG FILE LOAD ERROR: " + err));
-      statsObj.loadUsersArchiveBusy = false;
-      statsObj.trainingSetReady = false;
-      return reject(err);
-    }
+//     try{
+//       archiveFlagObj = await loadFileRetry({folder: configuration.userArchiveFolder, file: configuration.defaultUserArchiveFlagFile});
+//       console.log(chalkNetwork(MODULE_ID_PREFIX + " | USERS ARCHIVE FLAG FILE\n" + jsonPrint(archiveFlagObj)));
+//     }
+//     catch(err){
+//       console.log(chalkError(MODULE_ID_PREFIX + " | *** USERS ARCHIVE FLAG FILE LOAD ERROR: " + err));
+//       statsObj.loadUsersArchiveBusy = false;
+//       statsObj.trainingSetReady = false;
+//       return reject(err);
+//     }
 
 
-    console.log(chalkLog(MODULE_ID_PREFIX + " | USER ARCHIVE FILE | FILE: " + archiveFlagObj.file + " | SIZE: " + archiveFlagObj.size));
+//     console.log(chalkLog(MODULE_ID_PREFIX + " | USER ARCHIVE FILE | FILE: " + archiveFlagObj.file + " | SIZE: " + archiveFlagObj.size));
 
-    if (archiveFlagObj.file !== statsObj.archiveFile) {
+//     if (archiveFlagObj.file !== statsObj.archiveFile) {
 
-      try {
-        await loadUsersArchive({file: archiveFlagObj.file, size: archiveFlagObj.size});
-        statsObj.archiveModified = getTimeStamp();
-        statsObj.loadUsersArchiveBusy = false;
-        statsObj.archiveFile = archiveFlagObj.file;
-        statsObj.trainingSetReady = true;
-        // runOnceFlag = true;
-        resolve();
-      }
-      catch(err){
-        statsObj.loadUsersArchiveBusy = false;
-        statsObj.trainingSetReady = false;
-        return reject(err);
-      }
-    }
-    else {
-      console.log(chalkLog(MODULE_ID_PREFIX + " | USERS ARCHIVE SAME ... SKIPPING | " + archiveFlagObj.path));
-      statsObj.loadUsersArchiveBusy = false;
-      statsObj.trainingSetReady = true;
-      resolve();
-    }
+//       try {
+//         await loadUsersArchive({file: archiveFlagObj.file, size: archiveFlagObj.size});
+//         statsObj.archiveModified = getTimeStamp();
+//         statsObj.loadUsersArchiveBusy = false;
+//         statsObj.archiveFile = archiveFlagObj.file;
+//         statsObj.trainingSetReady = true;
+//         // runOnceFlag = true;
+//         resolve();
+//       }
+//       catch(err){
+//         statsObj.loadUsersArchiveBusy = false;
+//         statsObj.trainingSetReady = false;
+//         return reject(err);
+//       }
+//     }
+//     else {
+//       console.log(chalkLog(MODULE_ID_PREFIX + " | USERS ARCHIVE SAME ... SKIPPING | " + archiveFlagObj.path));
+//       statsObj.loadUsersArchiveBusy = false;
+//       statsObj.trainingSetReady = true;
+//       resolve();
+//     }
 
-  });
-}
+//   });
+// }
 
 //=========================================================================
 // FSM
@@ -5472,7 +5456,7 @@ const fsmStates = {
           await loadNetworkInputsConfig({file: defaultNetworkInputsConfigFile});
           await loadSeedNeuralNetwork(seedParams);
           await loadInputsDropboxFolders({folders: [defaultInputsFolder]});
-          await loadTrainingSet({folder: configuration.userArchiveFolder, file: configuration.defaultUserArchiveFlagFile});
+          // await loadTrainingSet({folder: configuration.userArchiveFolder, file: configuration.defaultUserArchiveFlagFile});
           await childStartAll();
 
         }
