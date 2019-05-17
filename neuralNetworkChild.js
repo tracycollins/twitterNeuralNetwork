@@ -1298,7 +1298,6 @@ function testNetwork(){
 
     console.log(chalkBlue("NNC | TEST NETWORK"
       + " | NETWORK ID: " + networkObj.networkId
-      + " | " + testSetObj.meta.setSize + " TEST META DATA POINTS"
       + " | " + testSetObj.data.length + " TEST DATA LENGTH"
     ));
 
