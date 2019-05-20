@@ -4307,9 +4307,7 @@ function listDropboxFolder(params){
 
         async.whilst(
 
-          function test(cbTest) {
-            cbTest(null, more);
-          },
+          function test(cbTest) { cbTest(null, more); },
 
           function(cb){
             setTimeout(function(){
