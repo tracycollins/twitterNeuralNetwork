@@ -2885,41 +2885,6 @@ function generateRandomEvolveConfig (){
       }
     }
 
-    // let tObj = {};
-
-    // console.log(chalkLog(MODULE_ID_PREFIX + " | LOAD GLOBAL TRAINING SET FROM HASHMAP: " + configuration.globalTrainingSetId));
-
-    // if (!trainingSetHashMap.has(configuration.globalTrainingSetId)) {
-    //   console.log(chalkError(MODULE_ID_PREFIX + " | *** TRAINING SET NOT IN HASHMAP: " + configuration.globalTrainingSetId));
-    //   return reject(new Error("TRAINING SET NOT IN HASHMAP: " + configuration.globalTrainingSetId));
-    // }
-
-    // tObj = trainingSetHashMap.get(configuration.globalTrainingSetId);
-
-    // console.log(chalkLog(MODULE_ID_PREFIX + " | USING TRAINING SET: " + tObj.trainingSetObj.trainingSetId));
-
-    // if (configuration.testMode) {
-    //   tObj.trainingSetObj.trainingSet.data.length = Math.min(tObj.trainingSetObj.trainingSet.data.length, TEST_MODE_LENGTH);
-    //   tObj.trainingSetObj.testSet.data.length = parseInt(configuration.testSetRatio * tObj.trainingSetObj.trainingSet.data.length);
-    //   tObj.trainingSetObj.trainingSet.meta.setSize = tObj.trainingSetObj.trainingSet.data.length;
-    //   tObj.trainingSetObj.testSet.meta.setSize = tObj.trainingSetObj.testSet.data.length;
-    // }
-
-    // config.trainingSetId = tObj.trainingSetObj.trainingSetId;
-    // config.trainingSet = {};
-    // config.trainingSet.maxInputHashMap = {};
-    // config.trainingSet.maxInputHashMap = tObj.trainingSetObj.maxInputHashMap;
-    // config.trainingSet.meta = {};
-    // config.trainingSet.meta = tObj.trainingSetObj.trainingSet.meta;
-    // config.trainingSet.data = [];
-    // config.trainingSet.data = _.shuffle(tObj.trainingSetObj.trainingSet.data);
-    // config.testSet = {};
-    // config.testSet = tObj.trainingSetObj.testSet;
-
-    // if (config.testSet.meta.testSetId === undefined) { 
-    //   config.testSet.meta.testSetId = tObj.trainingSetObj.trainingSetId + "_" + DEFAULT_RUN_ID + "_" + getTimeStamp();
-    // }
-
     resolve(config);
 
   });
