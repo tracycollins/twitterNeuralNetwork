@@ -1766,9 +1766,13 @@ function trainingSetPrep(params){
   });
 }
 
-function evolve(params){
+function evolve(p){
 
   return new Promise(function(resolve, reject){
+
+    let params = {};
+    params = p;
+    params.schedStartTime = moment().valueOf();
 
     debug("evolve params.network\n" + jsonPrint(params.network));
 
@@ -1804,71 +1808,69 @@ function evolve(params){
     options.mutationRate = params.mutationRate;
     options.popsize = params.popsize;
 
-    const schedStartTime = moment().valueOf();
-
     statsObj.evolve.startTime = moment().valueOf();
     statsObj.evolve.elapsed = 0;
     statsObj.evolve.stats = {};
 
-    options.schedule = {
+    // options.schedule = {
 
-      function: function(schedParams){
+    //   function: function(schedParams){
 
-        const elapsedInt = moment().valueOf() - schedStartTime;
-        const iterationRate = elapsedInt/schedParams.iteration;
-        const iterationRateSec = iterationRate/1000.0;
-        const timeToComplete = iterationRate*(params.iterations - schedParams.iteration);
+    //     const elapsedInt = moment().valueOf() - params.schedStartTime;
+    //     const iterationRate = elapsedInt/schedParams.iteration;
+    //     const iterationRateSec = iterationRate/1000.0;
+    //     const timeToComplete = iterationRate*(params.iterations - schedParams.iteration);
 
-        statsObj.evolve.stats = schedParams;
+    //     statsObj.evolve.stats = schedParams;
 
-        const sObj = {
-          networkId: params.runId,
-          numInputs: params.inputsObj.meta.numInputs,
-          inputsId: params.inputsId,
-          evolveStart: schedStartTime,
-          evolveElapsed: elapsedInt,
-          totalIterations: params.iterations,
-          iteration: schedParams.iteration,
-          iterationRate: iterationRate,
-          timeToComplete: timeToComplete,
-          error: schedParams.error.toFixed(5) || "---",
-          fitness: schedParams.fitness.toFixed(5) || "---"
-        };
+    //     const sObj = {
+    //       networkId: params.runId,
+    //       numInputs: params.inputsObj.meta.numInputs,
+    //       inputsId: params.inputsId,
+    //       evolveStart: params.schedStartTime,
+    //       evolveElapsed: elapsedInt,
+    //       totalIterations: params.iterations,
+    //       iteration: schedParams.iteration,
+    //       iterationRate: iterationRate,
+    //       timeToComplete: timeToComplete,
+    //       error: schedParams.error.toFixed(5) || "---",
+    //       fitness: schedParams.fitness.toFixed(5) || "---"
+    //     };
 
-        process.send({op: "EVOLVE_SCHEDULE", childId: configuration.childId, childIdShort: configuration.childIdShort, stats: sObj});
+    //     process.send({op: "EVOLVE_SCHEDULE", childId: configuration.childId, childIdShort: configuration.childIdShort, stats: sObj});
 
-        function schedMsToTime(duration) {
-          let seconds = parseInt((duration / 1000) % 60);
-          let minutes = parseInt((duration / (1000 * 60)) % 60);
-          let hours = parseInt((duration / (1000 * 60 * 60)) % 24);
-          let days = parseInt(duration / (1000 * 60 * 60 * 24));
+    //     function schedMsToTime(duration) {
+    //       let seconds = parseInt((duration / 1000) % 60);
+    //       let minutes = parseInt((duration / (1000 * 60)) % 60);
+    //       let hours = parseInt((duration / (1000 * 60 * 60)) % 24);
+    //       let days = parseInt(duration / (1000 * 60 * 60 * 24));
 
-          days = (days < 10) ? "0" + days : days;
-          hours = (hours < 10) ? "0" + hours : hours;
-          minutes = (minutes < 10) ? "0" + minutes : minutes;
-          seconds = (seconds < 10) ? "0" + seconds : seconds;
+    //       days = (days < 10) ? "0" + days : days;
+    //       hours = (hours < 10) ? "0" + hours : hours;
+    //       minutes = (minutes < 10) ? "0" + minutes : minutes;
+    //       seconds = (seconds < 10) ? "0" + seconds : seconds;
 
-          return days + ":" + hours + ":" + minutes + ":" + seconds;
-        }
+    //       return days + ":" + hours + ":" + minutes + ":" + seconds;
+    //     }
 
-        debug("NNC | EVOLVE"
-          + " | " + configuration.childId
-          + " | IN: " + params.inputsObj.meta.numInputs
-          + " | S: " + moment(schedStartTime).format(compactDateTimeFormat)
-          + " | R: " + schedMsToTime(elapsedInt)
-          + " | RATE: " + iterationRateSec.toFixed(1) + " s/I"
-          + " | ETC: " + schedMsToTime(timeToComplete)
-          + " | ETC: " + moment().add(timeToComplete).
+    //     debug("NNC | EVOLVE"
+    //       + " | " + configuration.childId
+    //       + " | IN: " + params.inputsObj.meta.numInputs
+    //       + " | S: " + moment(params.schedStartTime).format(compactDateTimeFormat)
+    //       + " | R: " + schedMsToTime(elapsedInt)
+    //       + " | RATE: " + iterationRateSec.toFixed(1) + " s/I"
+    //       + " | ETC: " + schedMsToTime(timeToComplete)
+    //       + " | ETC: " + moment().add(timeToComplete).
   
-        format(compactDateTimeFormat)
-          + " | I: " + schedParams.iteration + " / " + params.iterations
-          + " | F: " + schedParams.fitness.toFixed(5)
-          + " | E: " + schedParams.error.toFixed(5)
-        );
-      },
+    //     format(compactDateTimeFormat)
+    //       + " | I: " + schedParams.iteration + " / " + params.iterations
+    //       + " | F: " + schedParams.fitness.toFixed(5)
+    //       + " | E: " + schedParams.error.toFixed(5)
+    //     );
+    //   },
       
-      iterations: params.log
-    };
+    //   iterations: params.log
+    // };
 
     async.each(Object.keys(params), function(key, cb){
 
@@ -1966,11 +1968,75 @@ function evolve(params){
         }
 
         params.network = network; // network evolve options
-        params.options = options; // network evolve options
+        // params.options = options; // network evolve options
 
         try {
           
           await trainingSetPrep(params);
+
+          params.schedStartTime = moment().valueOf();
+
+          options.schedule = {
+
+            function: function(schedParams){
+
+              const elapsedInt = moment().valueOf() - params.schedStartTime;
+              const iterationRate = elapsedInt/schedParams.iteration;
+              const iterationRateSec = iterationRate/1000.0;
+              const timeToComplete = iterationRate*(params.iterations - schedParams.iteration);
+
+              statsObj.evolve.stats = schedParams;
+
+              const sObj = {
+                networkId: params.runId,
+                numInputs: params.inputsObj.meta.numInputs,
+                inputsId: params.inputsId,
+                evolveStart: params.schedStartTime,
+                evolveElapsed: elapsedInt,
+                totalIterations: params.iterations,
+                iteration: schedParams.iteration,
+                iterationRate: iterationRate,
+                timeToComplete: timeToComplete,
+                error: schedParams.error.toFixed(5) || "---",
+                fitness: schedParams.fitness.toFixed(5) || "---"
+              };
+
+              process.send({op: "EVOLVE_SCHEDULE", childId: configuration.childId, childIdShort: configuration.childIdShort, stats: sObj});
+
+              function schedMsToTime(duration) {
+                let seconds = parseInt((duration / 1000) % 60);
+                let minutes = parseInt((duration / (1000 * 60)) % 60);
+                let hours = parseInt((duration / (1000 * 60 * 60)) % 24);
+                let days = parseInt(duration / (1000 * 60 * 60 * 24));
+
+                days = (days < 10) ? "0" + days : days;
+                hours = (hours < 10) ? "0" + hours : hours;
+                minutes = (minutes < 10) ? "0" + minutes : minutes;
+                seconds = (seconds < 10) ? "0" + seconds : seconds;
+
+                return days + ":" + hours + ":" + minutes + ":" + seconds;
+              }
+
+              debug("NNC | EVOLVE"
+                + " | " + configuration.childId
+                + " | IN: " + params.inputsObj.meta.numInputs
+                + " | S: " + moment(params.schedStartTime).format(compactDateTimeFormat)
+                + " | R: " + schedMsToTime(elapsedInt)
+                + " | RATE: " + iterationRateSec.toFixed(1) + " s/I"
+                + " | ETC: " + schedMsToTime(timeToComplete)
+                + " | ETC: " + moment().add(timeToComplete).
+        
+              format(compactDateTimeFormat)
+                + " | I: " + schedParams.iteration + " / " + params.iterations
+                + " | F: " + schedParams.fitness.toFixed(5)
+                + " | E: " + schedParams.error.toFixed(5)
+              );
+            },
+            
+            iterations: params.log
+          };
+
+          params.options = options; // network evolve options
 
           networkObj = await networkEvolve(params);
 
