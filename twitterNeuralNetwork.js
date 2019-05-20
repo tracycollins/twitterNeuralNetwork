@@ -5639,7 +5639,6 @@ function childCreateAll(p){
     async.whilst(
 
       function test(cbTest) {
-        // return !maxChildren();
         cbTest(null, !maxChildren());
       },
 
