@@ -191,7 +191,6 @@ process.on("disconnect", function(code, signal) {
     + " | " + `SIGNAL: ${signal}`
   ));
   process.exit(1);
-  // quit({cause: "PARENT DISCONNECT"});
 });
 
 process.on("SIGHUP", function(code, signal) {
@@ -983,6 +982,7 @@ function unzipUsersToArray(params){
                           + " | " + userObj.name
                           + " | FLWRs: " + userObj.followersCount
                           + " | FRNDs: " + userObj.friendsCount
+                          + " | FRNDs DB: " + userObj.friends.length
                           + " | CAT M: " + userObj.category + " A: " + userObj.categoryAuto
                         ));
                       }
@@ -1005,6 +1005,7 @@ function unzipUsersToArray(params){
                   }
 
                   zipfile.readEntry();
+
                 }
                 catch (e){
                   console.log(chalkError(MODULE_ID_PREFIX + " | *** UNZIP READ STREAM ERROR: " + err));
@@ -1346,7 +1347,7 @@ function testNetwork(){
           }
         );
 
-        if ((configuration.testMode || configuration.verbose) && (numTested % 100 === 0)){
+        if ((configuration.testMode && (numTested % 100 === 0)) || configuration.verbose){
           console.log(currentChalk(MODULE_ID_PREFIX + " | TEST RESULT: " + passed 
             + " | " + successRate.toFixed(2) + "%"
             + " | " + testOutput[0]
@@ -1833,15 +1834,11 @@ function evolve(p){
               
         case "cost":
           console.log("NNC" + " | " + configuration.childId + " | EVOLVE OPTION | " + key + ": " + params[key]);
-          // options.cost = neataptic.methods.cost[params[key]];
-          // options.cost = carrot.methods.cost[params[key]];
           options.cost = networkTech.methods.cost[params[key]];
         break;
 
         case "activation":
           console.log("NNC" + " | " + configuration.childId + " | EVOLVE OPTION | " + key + ": " + params[key]);
-          // options.activation = neataptic.methods.activation[params[key]];
-          // options.activation = carrot.methods.activation[params[key]];
           options.activation = networkTech.methods.activation[params[key]];
         break;
 
@@ -1908,7 +1905,6 @@ function evolve(p){
         }
 
         params.network = network; // network evolve options
-        // params.options = options; // network evolve options
 
         try {
           
@@ -1922,7 +1918,6 @@ function evolve(p){
 
               const elapsedInt = moment().valueOf() - params.schedStartTime;
               const iterationRate = elapsedInt/schedParams.iteration;
-              const iterationRateSec = iterationRate/1000.0;
               const timeToComplete = iterationRate*(params.iterations - schedParams.iteration);
 
               statsObj.evolve.stats = schedParams;
@@ -2382,9 +2377,8 @@ process.on("message", function(m) {
     break;
 
     case "INIT":
-      console.log(chalkInfo(MODULE_ID_PREFIX + " | INIT"
-        + " | CHILD ID: " + m.childId
-      ));
+      if (m.testMode !== undefined) { configuration.testMode = m.testMode; }
+      if (m.verbose !== undefined) { configuration.verbose = m.verbose; }
       configuration.childId = m.childId;
       configuration.childIdShort = m.childIdShort;
       statsObj.childId = m.childId;
@@ -2392,6 +2386,12 @@ process.on("message", function(m) {
       process.title = m.childId;
       process.name = m.childId;
       configuration.inputsBinaryMode = m.inputsBinaryMode || DEFAULT_INPUTS_BINARY_MODE;
+
+      console.log(chalkInfo(MODULE_ID_PREFIX + " | INIT"
+        + " | CHILD ID: " + m.childId
+        + " | TEST MODE: " + configuration.testMode
+      ));
+
       fsm.fsm_init();
     break;
 
@@ -2437,8 +2437,6 @@ process.on("message", function(m) {
         inputsId: m.inputsId,
         inputsObj: m.inputsObj,
         outputs: m.outputs,
-        // trainingSet: m.trainingSet,
-        // testSetObj: m.testSetObj,
         mutation: m.mutation,
         equal: m.equal,
         popsize: m.popsize,
@@ -2488,7 +2486,6 @@ process.on("message", function(m) {
           + " | SEED RES %: " + m.seedNetworkRes.toFixed(2)
           + "\n THREADs: " + m.threads
           + "\n NET: " + m.networkObj.networkId + " | " + m.networkObj.successRate.toFixed(2) + "%"
-          // + "\n TRAINING SET: " + m.trainingSet.meta.setSize
           + " | ITRS: " + statsObj.training.iterations
         ));
       }
@@ -2500,7 +2497,6 @@ process.on("message", function(m) {
           + "\n SEED: " + "---"
           + " | SEED RES %: " + "---"
           + "\n THREADs: " + m.threads
-          // + "\n TRAINING SET: " + m.trainingSet.meta.setSize
           + " | ITRS: " + statsObj.training.iterations
         ));
       }

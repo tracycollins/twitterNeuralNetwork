@@ -542,23 +542,28 @@ const DEFAULT_GROWTH = { min: 0.00005, max: 0.00015 };
 const EVOLVE_GROWTH_RANGE = { min: DEFAULT_GROWTH.min, max: DEFAULT_GROWTH.max };
 const EVOLVE_ELITISM_RANGE = { min: 5, max: 20 };
 const DEFAULT_EVOLVE_COST_ARRAY = [
+  "BINARY",
   "CROSS_ENTROPY",
+  "HINGE",
+  "MAE",
+  "MAPE",
   "MSE"
 ];
 const DEFAULT_EVOLVE_MOD_ACTIVATION_ARRAY = [
-  "LOGISTIC",
-  "TANH",
-  "RELU",
-  "IDENTITY",
-  "STEP",
-  "SOFTSIGN",
-  "SINUSOID",
-  "GAUSSIAN",
+  "ABSOLUTE",
   "BENT_IDENTITY",
   "BIPOLAR",
   "BIPOLAR_SIGMOID",
+  "GAUSSIAN",
   "HARD_TANH",
-  "ABSOLUTE"
+  "IDENTITY",
+  "LOGISTIC",
+  "RELU",
+  "SELU",
+  "SINUSOID",
+  "SOFTSIGN",
+  "STEP",
+  "TANH"
 ];
 
 const DEFAULT_TRAIN_THREADS = 1;
@@ -4552,6 +4557,8 @@ function loadAllConfigFiles(){
 
       configuration = deepcopy(tempConfig);
 
+      configuration.costArray = _.uniq(configuration.costArray);
+
       resolve();
 
     }
@@ -5835,6 +5842,7 @@ function childInit(p){
   const childIdShort = params.childIdShort;
   const config = params.config || {};
   const verbose = params.verbose || false;
+  const testMode = params.testMode || false;
 
   statsObj.status = "INIT CHILD | CH ID: " + childId;
 
@@ -5844,6 +5852,7 @@ function childInit(p){
       op: "INIT",
       childId: childId,
       childIdShort: childIdShort,
+      testMode: testMode,
       verbose: verbose,
       config: config
     };
@@ -6311,7 +6320,13 @@ function childCreate(p){
 
       childHashMap[childId].child = child;
 
-      const initResponse = await childInit({childId: childId, childIdShort: childIdShort, config: config});
+      const initResponse = await childInit({
+        childId: childId, 
+        childIdShort: childIdShort, 
+        config: config, 
+        testMode: configuration.testMode,
+        verbose: configuration.verbose
+      });
 
       const childPidFile = await touchChildPidFile({ childId: childId, pid: child.pid });
 
