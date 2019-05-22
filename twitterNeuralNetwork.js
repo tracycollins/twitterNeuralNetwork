@@ -41,7 +41,7 @@ else {
 }
 
 const DEFAULT_NETWORK_TECHNOLOGY = "neataptic";
-const DEFAULT_ENABLE_RANDOM_NETWORK_TECHNOLOGY = true;
+const DEFAULT_ENABLE_RANDOM_NETWORK_TECHNOLOGY = false;
 
 const DEFAULT_PURGE_MIN = true; // applies only to parent
 const TEST_MODE = false; // applies only to parent
@@ -908,19 +908,20 @@ function printResultsHashmap(){
 
     tableArray.push([
       MODULE_ID_PREFIX + " | NNID",
+      "TECH",
       "STATUS",
-      "BETTER CH",
+      "BETTER",
       "SEED",
       "RES %",
-      "INPTS",
+      "INPUT ID",
       "ACTVTN",
       "CLEAR",
       "COST",
       "GRWTH",
       "EQUAL",
-      "M RATE",
+      "MRATE",
       "POP",
-      "ELITE",
+      "ELT",
       "START",
       "ELPSD",
       "ITRNS",
@@ -951,6 +952,7 @@ function printResultsHashmap(){
         networkObj.evolve.options.elitism = "---";
       }
 
+      let networkTechnology = "neataptic";
       let status = "";
       let snIdRes = "";
       let iterations = "";
@@ -960,6 +962,7 @@ function printResultsHashmap(){
       let betterChild = "";
       let seedNetworkId = "";
 
+      networkTechnology = (networkObj.networkTechnology && networkObj.networkTechnology !== undefined) ? networkObj.networkTechnology : "UNKNOWN";
       status = (networkObj.status && networkObj.status !== undefined) ? networkObj.status : "UNKNOWN";
       snIdRes = (networkObj.seedNetworkId && networkObj.seedNetworkId !== undefined) ? networkObj.seedNetworkRes.toFixed(2) : "---";
       betterChild = (networkObj.betterChild && networkObj.betterChild !== undefined) ? networkObj.betterChild : "---";
@@ -975,11 +978,12 @@ function printResultsHashmap(){
 
       tableArray.push([
         MODULE_ID_PREFIX + " | " + networkId,
+        networkTechnology,
         status,
         betterChild,
         seedNetworkId,
         snIdRes,
-        networkObj.numInputs,
+        networkObj.inputsId,
         networkObj.evolve.options.activation,
         networkObj.evolve.options.clear,
         networkObj.evolve.options.cost,
@@ -1021,7 +1025,7 @@ function printResultsHashmap(){
         return reject(err);
       }
 
-      const t = table(tableArray, { align: ["l", "l", "l", "l", "l", "r", "l", "l", "l", "l", "l", "r", "r", "r", "l", "l", "r", "r", "r"] });
+      const t = table(tableArray, { align: ["l", "l", "l", "l", "l", "l", "l", "l", "l", "l", "l", "l", "r", "r", "r", "l", "l", "r", "r", "r"] });
 
       console.log(chalkLog(MODULE_ID_PREFIX + " | === NETWORK RESULTS ========================================================================================================================"));
       console.log(chalkLog(t));
@@ -2731,8 +2735,12 @@ function generateRandomEvolveConfig (){
 
     statsObj.status = "GENERATE EVOLVE CONFIG";
 
+    console.log(chalkAlert(MODULE_ID_PREFIX + " | GENERATE RANDOM EVOLVE CONFIG"));
+
     const config = {};
     config.networkCreateMode = "evolve";
+    config.networkTechnology = (configuration.enableRandomTechnology) ? randomItem(["neataptic", "carrot"]) : configuration.networkTechnology;
+    console.log(chalkAlert(MODULE_ID_PREFIX + " | NETWORK TECHNOLOGY: " + config.networkTechnology));
 
     debug(chalkLog(MODULE_ID_PREFIX + " | NETWORK CREATE MODE: " + config.networkCreateMode));
 
@@ -2878,8 +2886,8 @@ function generateRandomEvolveConfig (){
       if (inputsHashMap.has(config.seedInputsId)) {
         config.inputsObj = {};
         config.inputsObj = inputsHashMap.get(config.seedInputsId).inputsObj;
-        config.networkTechnology = (configuration.enableRandomTechnology) ? randomItem(["neataptic", "carrot"]) : configuration.networkTechnology;
-        console.log(chalkAlert(MODULE_ID_PREFIX + " | NETWORK TECHNOLOGY: " + config.networkTechnology));
+        // config.networkTechnology = (configuration.enableRandomTechnology) ? randomItem(["neataptic", "carrot"]) : configuration.networkTechnology;
+        // console.log(chalkAlert(MODULE_ID_PREFIX + " | NETWORK TECHNOLOGY: " + config.networkTechnology));
         config.architecture = "random";
         config.inputsId = config.seedInputsId;
         debug(MODULE_ID_PREFIX + " | RANDOM ARCH | SEED INPUTS: " + config.seedInputsId);
@@ -2942,6 +2950,7 @@ function initNetworkCreate(params){
 
           console.log(chalkBlue(
                      MODULE_ID_PREFIX + " | NN ID:        " + networkId
+            + "\n" + MODULE_ID_PREFIX + " | TECHNOLOGY:   " + messageObj.networkTechnology
             + "\n" + MODULE_ID_PREFIX + " | ARCHITECTURE: " + messageObj.architecture
             + "\n" + MODULE_ID_PREFIX + " | INPUTS ID:    " + messageObj.inputsId
             + "\n" + MODULE_ID_PREFIX + " | INPUTS:       " + messageObj.inputsObj.meta.numInputs
@@ -2969,7 +2978,7 @@ function initNetworkCreate(params){
           networkCreateObj.matchRate = 0;
           networkCreateObj.overallMatchRate = 0;
           networkCreateObj.networkId = messageObj.testRunId;
-          networkCreateObj.networkId = messageObj.testRunId;
+          networkCreateObj.networkTechnology = messageObj.networkTechnology;
           networkCreateObj.betterChild = false;
           networkCreateObj.seedNetworkId = messageObj.seedNetworkId;
           networkCreateObj.seedNetworkRes = messageObj.seedNetworkRes;
@@ -5959,7 +5968,7 @@ function childCreate(p){
             console.log(chalkLog(MODULE_ID_PREFIX 
               + " | " + m.childIdShort 
               + " | " + m.stats.networkId
-              + " | IN " + m.stats.numInputs
+              // + " | IN " + m.stats.numInputs
               + " " + m.stats.inputsId
               // + " | F: " + m.stats.fitness
               // + " | E: " + m.stats.error
