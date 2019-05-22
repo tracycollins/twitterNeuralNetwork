@@ -973,7 +973,7 @@ function printResultsHashmap(){
         && (networkObj.evolve.results.error !== undefined)
         && networkObj.evolve.results.error) ? networkObj.evolve.results.error.toFixed(5) : "---";
 
-      successRate = (networkObj.successRate && networkObj.successRate !== undefined) ? networkObj.successRate.toFixed(2) : "---";
+      successRate = ((networkObj.successRate || (networkObj.successRate === 0)) && networkObj.successRate !== undefined) ? networkObj.successRate.toFixed(2) : "---";
       elapsed = (networkObj.evolve.elapsed && networkObj.evolve.elapsed !== undefined) ? networkObj.evolve.elapsed : (moment().valueOf() - networkObj.evolve.startTime);
 
       tableArray.push([
@@ -6241,8 +6241,8 @@ function childCreate(p){
             else {
               console.log(chalkInfo(MODULE_ID_PREFIX + " | XXX | NOT SAVING NN GLOBAL DROPBOX ... LESS THAN GLOBAL MIN SUCCESS *OR* NOT BETTER THAN SEED"
                 + " | " + nn.networkId
-                + " | " + nn.successRate.toFixed(2) + "%"
-                + " | " + configuration.globalMinSuccessRate.toFixed(2) + "%"
+                + " | SUCCESS: " + nn.successRate.toFixed(2) + "%"
+                + " | GLOBAL SUCCESS: " + configuration.globalMinSuccessRate.toFixed(2) + "%"
               ));
 
               resultsHashmap[nn.networkId].status = "FAIL";
