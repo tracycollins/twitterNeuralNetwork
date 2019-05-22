@@ -5969,7 +5969,7 @@ function childCreate(p){
               + " | " + m.childIdShort 
               + " | " + m.stats.networkId
               // + " | IN " + m.stats.numInputs
-              + " " + m.stats.inputsId
+              + " | " + m.stats.inputsId
               // + " | F: " + m.stats.fitness
               // + " | E: " + m.stats.error
               + " | S " + moment(m.stats.evolveStart).format(compactDateTimeFormat)
