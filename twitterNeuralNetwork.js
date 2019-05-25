@@ -449,7 +449,6 @@ statsObj.networkResults = {};
 const DEFAULT_LOAD_ALL_INPUTS = false;
 const DEFAULT_ARCHIVE_NOT_IN_INPUTS_ID_ARRAY = true;
 const DEFAULT_DELETE_NOT_IN_INPUTS_ID_ARRAY = false;
-// const TEST_MODE_LENGTH = 500;
 const TEST_DROPBOX_NN_LOAD = 10;
 const DEFAULT_CHILD_ID_PREFIX = "tnc_node_";
 
@@ -466,10 +465,8 @@ configuration.childIdPrefix = DEFAULT_CHILD_ID_PREFIX;
 configuration.childIndex = 0;
 
 const neataptic = require("neataptic");
-// const carrot = require("@liquid-carrot/carrot");
 const networkTech = neataptic;
 
-// const DEFAULT_RUN_ID = hostname + "_" + process.pid + "_" + statsObj.startTime;
 
 let childPingAllInterval;
 
@@ -601,7 +598,6 @@ let bestNetworkFile;
 const inputsHashMap = new HashMap();
 const inputsNetworksHashMap = {};
 const skipLoadInputsSet = new Set();
-// let userMaxInputHashMap = {};
 
 const testObj = {};
 testObj.testRunId = hostname + "_" + statsObj.startTime;
@@ -613,7 +609,6 @@ trainingSetUsersHashMap.left = new HashMap();
 trainingSetUsersHashMap.neutral = new HashMap();
 trainingSetUsersHashMap.right = new HashMap();
 
-// const trainingSetHashMap = new HashMap();
 statsObj.trainingSetReady = false;
 
 configuration.quitOnComplete = QUIT_ON_COMPLETE;
@@ -876,8 +871,6 @@ function sortedHashmap(params) {
     const keys = params.hashmap.keys();
 
     const sortedKeys = keys.sort(function(a,b){
-      // const objA = params.hashmap.get(a);
-      // const objB = params.hashmap.get(b);
       const objAvalue = dot.pick(params.sortKey, params.hashmap.get(a));
       const objBvalue = dot.pick(params.sortKey, params.hashmap.get(b));
       return objBvalue - objAvalue;
@@ -1032,8 +1025,6 @@ function printResultsHashmap(){
       console.log(chalkLog(t));
       console.log(chalkLog(MODULE_ID_PREFIX + " | ============================================================================================================================================"));
 
-      // statsObj.networkResults = t;
-
       resolve();
     });
 
@@ -1096,14 +1087,6 @@ function purgeInputs(inputsId){
 
 function updateDbInputs(params){
   return new Promise(async function(resolve, reject){
-
-    // exports.NetworkInputsSchema = new Schema({
-    //   inputsId: { type: String, unique: true  },
-    //   meta: { type: mongoose.Schema.Types.Mixed, default: {} },
-    //   inputs: { type: mongoose.Schema.Types.Mixed, default: {} },
-    //   stats: { type: mongoose.Schema.Types.Mixed, default: {} },
-    //   createdAt: { type: Date, default: Date.now() }
-    // });
 
     const query = { inputsId: params.inputsObj.inputsId };
 
@@ -1415,177 +1398,6 @@ function loadInputsDropboxFile(params){
   });
 }
 
-// const userWatchPropertyArray = [
-//   "bannerImageUrl",
-//   "category", 
-//   "description",
-//   "expandedUrl",
-//   "followersCount", 
-//   "following", 
-//   "friends", 
-//   "friendsCount", 
-//   "isTopTerm",
-//   "lastTweetId",
-//   "location",
-//   "profileUrl",
-//   "quotedStatusId",
-//   "statusesCount",
-//   "statusId",
-//   "threeceeFollowing",
-//   "url",
-//   "verified"
-// ];
-
-// function userChanged(uOld, uNew){
-
-//   userWatchPropertyArray.forEach(function(prop){
-//     if (prop === "friends"){
-//       if ((!uOld.friends || uOld.friends === undefined) && uNew.friends) {
-//         return true;
-//       }
-//       if (uOld.friends && uNew.friends && (uOld.friends.length !== uNew.friends.length)) {
-//         return true;
-//       }
-//     }
-//     else if (uOld[prop] !== uNew[prop]){
-//       return true;
-//     }
-//   });
-
-//   return false;
-// }
-
-// function encodeHistogramUrls(params){
-//   return new Promise(function(resolve, reject){
-
-//     const user = params.user;
-
-//     async.eachSeries(["profileHistograms", "tweetHistograms"], function(histogram, cb){
-
-//       const urls = objectPath.get(user, [histogram, "urls"]);
-
-//       if (urls) {
-
-//         debug("URLS\n" + jsonPrint(urls));
-
-//         async.eachSeries(Object.keys(urls), async function(url){
-
-//           if (validUrl.isUri(url)){
-//             const urlB64 = btoa(url);
-//             debug(chalkAlert("HISTOGRAM " + histogram + ".urls | " + url + " -> " + urlB64));
-//             urls[urlB64] = urls[url];
-//             delete urls[url];
-//             return;
-//           }
-
-//           if (url === "url") {
-//             debug(chalkAlert("HISTOGRAM " + histogram + ".urls | XXX URL: " + url));
-//             delete urls[url];
-//             return;
-//           }
-
-//           if (validUrl.isUri(atob(url))) {
-//             debug(chalkGreen("HISTOGRAM " + histogram + ".urls | IS B64: " + url));
-//             return;
-//           }
-
-//           debug(chalkAlert("HISTOGRAM " + histogram + ".urls |  XXX NOT URL NOR B64: " + url));
-//           delete urls[url];
-//           return;
-
-//         }, function(err){
-//           if (err) {
-//             console.log(chalkError(MODULE_ID_PREFIX + " | *** ENCODE HISTOGRAM URL ERROR: " + err));
-//             return cb(err);
-//           }
-//           // if (Object.keys(urls).length > 0){
-//           //   console.log("CONVERTED URLS\n" + jsonPrint(urls));
-//           // }
-//           user[histogram].urls = urls;
-//           cb();
-//         });
-
-//       }
-//       else {
-//         cb();
-//       }
-
-//     }, function(err){
-//       if (err) {
-//         console.log(chalkError(MODULE_ID_PREFIX + " | *** ENCODE HISTOGRAM URL ERROR: " + err));
-//         return reject(err);
-//       }
-//       resolve(user);
-//     });
-
-//   });
-// }
-
-// const updateUserOptions = {
-//   new: true,
-//   returnOriginal: false,
-//   upsert: true,
-//   setDefaultsOnInsert: true
-// };
-
-// function updateUserFromTrainingSet(params){
-
-//   return new Promise(async function(resolve, reject){
-
-//     let user = params.user;
-
-//     if ((user.userId === undefined) && (user.nodeId === undefined)) { 
-//       return reject(new Error("userId and nodeId undefined"));
-//     }
-
-//     if (!user.category || (user.category === undefined)) { 
-//       console.log(chalkAlert(MODULE_ID_PREFIX + " | USER CATEGORY FALSE or UNDEFINED\n" + jsonPrint(user)));
-//       return reject(new Error("USER CATEGORY FALSE or UNDEFINED"));
-//     }
-
-//     debug(chalkLog("... UPDATING USER FROM TRAINING SET"
-//       + " | CM: " + printCat(user.category)
-//       + " | CA: " + printCat(user.categoryAuto)
-//       + " | @" + user.screenName
-//     ));
-
-//     if (user.nodeId && (user.userId === undefined)) { user.userId = user.nodeId; }
-//     if (user.userId && (user.nodeId === undefined)) { user.nodeId = user.userId; }
-
-//     try {
-//       // user = await encodeHistogramUrls({user: user});
-//       const updatedUser = await global.globalUser.findOneAndUpdate({nodeId: user.nodeId}, user, updateUserOptions);
-
-//       if (configuration.verbose) {
-//         console.log(chalkLog(MODULE_ID_PREFIX + " | DB USER UPDATE FROM TRAINING SET  "
-//           + " | CM: " + printCat(updatedUser.category)
-//           + " | CA: " + printCat(updatedUser.categoryAuto)
-//           + " | UID: " + updatedUser.userId
-//           + " | @" + updatedUser.screenName
-//           + " | 3CF: " + updatedUser.threeceeFollowing
-//           + " | Ts: " + updatedUser.statusesCount
-//           + " | FLWRs: " + updatedUser.followersCount
-//           + " | FRNDS: " + updatedUser.friendsCount
-//         ));
-//       }
-
-//       resolve(updatedUser);
-
-//     }
-//     catch(err){
-//       console.log(chalkError("*** ERROR updateUserFromTrainingSet: "
-//         + " | CM: " + printCat(user.category)
-//         + " | CA: " + printCat(user.categoryAuto)
-//         + " | UID: " + user.userId
-//         + " | @" + user.screenName
-//         + " | ERROR: " + err
-//       ));
-//       return reject(err);
-//     }
-
-//   });
-// }
-
 function updateDbNetwork(params) {
 
   return new Promise(function(resolve, reject){
@@ -1778,7 +1590,6 @@ function checkNetworkHash(params){
     const networkId = entryNameArray[0];
 
     if (!networkHashMap.has(networkId)){
-      // console.log(chalkInfo(MODULE_ID_PREFIX + " | ... NOT IN HASH " + entry.name));
       return resolve("miss");
     }
 
@@ -1807,10 +1618,6 @@ function checkNetworkHash(params){
 
       console.log(chalkNetwork(MODULE_ID_PREFIX + " | DROPBOX NETWORK CONTENT DIFF IN DIFF params.folders"
         + " | LAST MOD: " + moment(new Date(entry.client_modified)).format(compactDateTimeFormat)
-        // + "\nCUR: " + entry.path_display
-        // + " | " + entry.content_hash
-        // + "\nOLD: " + networkObj.entry.path_display
-        // + " | " + networkObj.entry.content_hash
       ));
 
       return resolve("mismatch");
@@ -1821,8 +1628,6 @@ function checkNetworkHash(params){
       console.log(chalkLog(MODULE_ID_PREFIX + " | DROPBOX NETWORK CONTENT SAME  "
         + " | " + entry.name
         + " | LAST MOD: " + moment(new Date(entry.client_modified)).format(compactDateTimeFormat)
-        // + "\nCUR HASH: " + entry.content_hash
-        // + "\nOLD HASH: " + oldContentHash
       ));
     }
 
@@ -1847,7 +1652,6 @@ function dropboxFileMove(params){
       console.log(chalkLog(MODULE_ID_PREFIX + " | ->- DROPBOX FILE MOVE"
         + " | " + srcPath
         + " > " + dstPath
-        // + " | RESPONSE\n" + jsonPrint(response)
       ));
       debug("dropboxClient filesMoveV2 response\n" + jsonPrint(response));
       return resolve();
@@ -1875,7 +1679,6 @@ function dropboxFileMove(params){
           + " | " + srcPath
           + " > " + dstPath
           + " | SUMMARY: " + err.response.statusText
-          // + "\n" + jsonPrint(err)
         ));
       }
       return reject(err);
@@ -1948,13 +1751,6 @@ function loadBestNetworkDropboxFolders (p){
 
     const params = p || {};
 
-    // if (configuration.offlineMode) {
-    //   dropboxClient = dropboxLocalClient;
-    // }
-    // else {
-    //   dropboxClient = dropboxRemoteClient;
-    // }
-
     let numNetworksLoaded = 0;
     let dropboxFoldersEntries;
 
@@ -1980,8 +1776,6 @@ function loadBestNetworkDropboxFolders (p){
       if (configuration.testMode && (numNetworksLoaded >= TEST_DROPBOX_NN_LOAD)) {
         return "TEST_MODE";
       }
-
-      // console.log("entry.path_display: " + entry.path_display);
 
       if (entry.name.toLowerCase() === bestRuntimeNetworkFileName.toLowerCase()) {
         console.log(chalkInfo(MODULE_ID_PREFIX + " | ... SKIPPING LOAD OF " + entry.name));
@@ -2176,7 +1970,6 @@ function loadSeedNeuralNetwork(params){
       return reject(err);
     }
 
-
     if (numNetworksLoaded === 0){
 
       if (configuration.verbose){
@@ -2323,363 +2116,6 @@ function loadSeedNeuralNetwork(params){
   });
 }
 
-// function unzipUsersToArray(params){
-
-//   console.log(chalkBlue(MODULE_ID_PREFIX + " | UNZIP USERS TO TRAINING SET: " + params.path));
-
-//   return new Promise(async function(resolve, reject) {
-
-//     try {
-
-//       trainingSetUsersHashMap.left.clear();
-//       trainingSetUsersHashMap.neutral.clear();
-//       trainingSetUsersHashMap.right.clear();
-
-//       let entryNumber = 0;
-
-//       statsObj.users.zipHashMapHit = 0;
-//       statsObj.users.zipHashMapMiss = 0;
-//       statsObj.users.unzipped = 0;
-
-//       yauzl.open(params.path, {lazyEntries: true}, function(err, zipfile) {
-
-//         if (err) {
-//           return reject(err);
-//         }
-
-//         zipfile.on("error", async function(err) {
-//           console.log(chalkError(MODULE_ID_PREFIX + " | *** UNZIP ERROR: " + err));
-//           reject(err);
-//         });
-
-//         zipfile.on("close", async function() {
-//           console.log(chalkLog(MODULE_ID_PREFIX + " | UNZIP CLOSE"));
-//           resolve(true);
-//         });
-
-//         zipfile.on("end", async function() {
-//           console.log(chalkLog(MODULE_ID_PREFIX + " | UNZIP END"));
-//           resolve(true);
-//         });
-
-//         let hmHit = MODULE_ID_PREFIX + " | --> UNZIP";
-
-//         zipfile.on("entry", function(entry) {
-          
-//           if ((/\/$/).test(entry.fileName)) { 
-//             zipfile.readEntry(); 
-//           } 
-//           else {
-//             zipfile.openReadStream(entry, async function(err, readStream) {
-
-//               entryNumber += 1;
-              
-//               if (err) {
-//                 console.log(chalkError("TNN | *** UNZIP USERS ENTRY ERROR [" + entryNumber + "]: " + err));
-//                 return reject(err);
-//               }
-
-//               let userString = "";
-
-//               readStream.on("end", async function() {
-
-//                 try {
-//                   const userObj = JSON.parse(userString);
-
-//                   if (entry.fileName.endsWith("maxInputHashMap.json")) {
-
-//                     console.log(chalkLog(MODULE_ID_PREFIX + " | UNZIPPED MAX INPUT"));
-
-//                     userMaxInputHashMap = userObj.maxInputHashMap;
-//                   }
-//                   else {
-
-//                     statsObj.users.unzipped += 1;
-
-//                     hmHit = MODULE_ID_PREFIX + " | UNZIP";
-
-//                     if ( trainingSetUsersHashMap.left.has(userObj.userId)
-//                       || trainingSetUsersHashMap.neutral.has(userObj.userId) 
-//                       || trainingSetUsersHashMap.right.has(userObj.userId)
-//                       ) 
-//                     {
-//                       hmHit = MODULE_ID_PREFIX + " | **> UNZIP";
-//                     }
-
-//                     if ((userObj.category === "left") || (userObj.category === "right") || (userObj.category === "neutral")) {
-
-//                       trainingSetUsersHashMap[userObj.category].set(userObj.nodeId, userObj);
-
-//                       if (configuration.verbose || (statsObj.users.unzipped % 1000 === 0)) {
-
-//                         console.log(chalkLog(hmHit
-//                           + " [" + statsObj.users.unzipped + "]"
-//                           + " USERS - L: " + trainingSetUsersHashMap.left.size
-//                           + " N: " + trainingSetUsersHashMap.neutral.size
-//                           + " R: " + trainingSetUsersHashMap.right.size
-//                           + " | " + userObj.userId
-//                           + " | @" + userObj.screenName
-//                           + " | " + userObj.name
-//                           + " | FLWRs: " + userObj.followersCount
-//                           + " | FRNDs: " + userObj.friendsCount
-//                           + " | CAT M: " + userObj.category + " A: " + userObj.categoryAuto
-//                         ));
-//                       }
-//                     }
-//                     else{
-//                       console.log(chalkAlert(MODULE_ID_PREFIX + " | ??? UNCAT UNZIPPED USER"
-//                         + " [" + statsObj.users.unzipped + "]"
-//                         + " USERS - L: " + trainingSetUsersHashMap.left.size
-//                         + " N: " + trainingSetUsersHashMap.neutral.size
-//                         + " R: " + trainingSetUsersHashMap.right.size
-//                         + " | " + userObj.userId
-//                         + " | @" + userObj.screenName
-//                         + " | " + userObj.name
-//                         + " | FLWRs: " + userObj.followersCount
-//                         + " | FRNDs: " + userObj.friendsCount
-//                         + " | CAT M: " + userObj.category + " A: " + userObj.categoryAuto
-//                       ));                      
-//                     }
-
-//                   }
-
-//                   zipfile.readEntry();
-//                 }
-//                 catch (e){
-//                   console.log(chalkError(MODULE_ID_PREFIX + " | *** UNZIP READ STREAM ERROR: " + err));
-//                   return reject(e);
-//                 }
-//               });
-
-//               readStream.on("data",function(chunk){
-//                 const part = chunk.toString();
-//                 userString += part;
-//               });
-
-//               readStream.on("close", async function(){
-//                 console.log(chalkInfo(MODULE_ID_PREFIX + " | UNZIP STREAM CLOSED"));
-//                 resolve();
-//               });
-
-//               readStream.on("error",async function(err){
-//                 console.log(chalkError(MODULE_ID_PREFIX + " | *** UNZIP READ STREAM ERROR EVENT: " + err));
-//                 reject(err);
-//               });
-//             });
-//           }
-//         });
-
-//         zipfile.readEntry();
-
-//       });
-
-//     }
-//     catch(err){
-//       console.error(chalkError(MODULE_ID_PREFIX + " | *** USER ARCHIVE READ ERROR: " + err));
-//       return reject(new Error("USER ARCHIVE READ ERROR"));
-//     }
-
-//   });
-// }
-
-// function updateTrainingSet(){
-
-//   console.log(chalkBlue(MODULE_ID_PREFIX + " | UPDATE TRAINING SET"));
-
-//   return new Promise(function(resolve, reject) {
-
-//     try {
-//       let tObj = {};
-//       tObj.trainingSetObj = {};
-
-//       tObj.trainingSetObj.trainingSetId = configuration.globalTrainingSetId;
-
-//       tObj.trainingSetObj.meta = {};
-//       tObj.trainingSetObj.meta.numInputs = 0;
-//       tObj.trainingSetObj.meta.numOutputs = 3;
-//       tObj.trainingSetObj.trainingSet = {};
-//       tObj.trainingSetObj.trainingSet.meta = {};
-//       tObj.trainingSetObj.trainingSet.meta.numInputs = 0;
-//       tObj.trainingSetObj.trainingSet.meta.numOutputs = 3;
-//       tObj.trainingSetObj.trainingSet.meta.setSize = 0;
-//       tObj.trainingSetObj.trainingSet.data = [];
-
-//       tObj.trainingSetObj.testSet = {};
-//       tObj.trainingSetObj.testSet.meta = {};
-//       tObj.trainingSetObj.testSet.meta.numInputs = 0;
-//       tObj.trainingSetObj.testSet.meta.numOutputs = 3;
-//       tObj.trainingSetObj.testSet.meta.setSize = 0;
-//       tObj.trainingSetObj.testSet.data = [];
-
-//       tObj.trainingSetObj.maxInputHashMap = {};
-
-//       async.eachSeries(["left", "neutral", "right"], function(category, cb){
-
-//         const trainingSetSize = parseInt((1 - configuration.testSetRatio) * trainingSetUsersHashMap[category].size);
-//         const testSetSize = parseInt(configuration.testSetRatio * trainingSetUsersHashMap[category].size);
-
-//         console.log(chalkLog(MODULE_ID_PREFIX + " | TRAINING SET | " + category.toUpperCase()
-//           + " | SIZE: " + trainingSetSize
-//           + " | TEST SIZE: " + testSetSize
-//         ));
-
-//         tObj.trainingSetObj.trainingSet.data = tObj.trainingSetObj.trainingSet.data.concat(trainingSetUsersHashMap[category].values().slice(testSetSize));
-//         tObj.trainingSetObj.testSet.data = tObj.trainingSetObj.testSet.data.concat(trainingSetUsersHashMap[category].values().slice(0, testSetSize-1));
-
-//         cb();
-
-//       }, function(err){
-
-//         tObj.trainingSetObj.trainingSet.meta.setSize = tObj.trainingSetObj.trainingSet.data.length;
-//         tObj.trainingSetObj.testSet.meta.setSize = tObj.trainingSetObj.testSet.data.length;
-
-//         tObj.trainingSetObj.maxInputHashMap = userMaxInputHashMap;
-
-//         trainingSetHashMap.set(tObj.trainingSetObj.trainingSetId, tObj);
-
-//         console.log(chalkLog(MODULE_ID_PREFIX + " | TRAINING SET"
-//           + " | SIZE: " + tObj.trainingSetObj.trainingSet.meta.setSize
-//           + " | TEST SIZE: " + tObj.trainingSetObj.testSet.meta.setSize
-//         ));
-
-//         resolve();
-
-//       });
-
-//     }
-//     catch(err){
-//       console.log(chalkError(MODULE_ID_PREFIX + " | *** updateTrainingSet ERROR:", err));
-//       reject(err);
-//     }
-
-//   });
-// }
-
-// let sizeInterval;
-
-// function fileSize(params){
-
-//   return new Promise(async function(resolve, reject){
-
-//     clearInterval(sizeInterval);
-
-//     const interval = params.interval || 10*ONE_SECOND;
-
-//     console.log(chalkLog(MODULE_ID_PREFIX + " | WAIT FILE SIZE: " + params.path + " | EXPECTED SIZE: " + params.size));
-
-//     let stats;
-//     let size = 0;
-//     let prevSize = 0;
-
-
-//     let exists = fs.existsSync(params.path);
-
-//     if (exists) {
-
-//       try {
-//         stats = fs.statSync(params.path);
-//         size = stats.size;
-//         prevSize = stats.size;
-
-//         if (params.size && (size === params.size)) {
-//           console.log(chalkGreen(MODULE_ID_PREFIX + " | FILE SIZE EXPECTED | " + getTimeStamp()
-//             + " | EXISTS: " + exists
-//             + " | CUR: " + size
-//             + " | EXPECTED: " + params.size
-//             + " | " + params.path
-//           ));
-//           return resolve();
-//         }
-//       }
-//       catch(err){
-//         return reject(err);
-//       }
-
-//     }
-//     else {
-//       console.log(chalkAlert(MODULE_ID_PREFIX + " | ??? FILE SIZE | NON-EXISTENT FILE | " + getTimeStamp()
-//         + " | EXISTS: " + exists
-//         + " | EXPECTED: " + params.size
-//         + " | " + params.path
-//       ));
-//     }
-
-
-//     sizeInterval = setInterval(async function(){
-
-//       console.log(chalkInfo(MODULE_ID_PREFIX + " | FILE SIZE | " + getTimeStamp()
-//         + " | EXISTS: " + exists
-//         + " | CUR: " + size
-//         + " | PREV: " + prevSize
-//         + " | EXPECTED: " + params.size
-//         + " | " + params.path
-//       ));
-
-//       exists = fs.existsSync(params.path);
-
-//       if (exists) {
-//         fs.stat(params.path, function(err, stats){
-
-//           if (err) {
-//             return reject(err);
-//           }
-
-//           prevSize = size;
-//           size = stats.size;
-
-//           if ((size > 0) && ((params.size && (size === params.size)) || (size === prevSize))) {
-
-//             clearInterval(sizeInterval);
-
-//             console.log(chalkGreen(MODULE_ID_PREFIX + " | FILE SIZE STABLE | " + getTimeStamp()
-//               + " | EXISTS: " + exists
-//               + " | CUR: " + size
-//               + " | PREV: " + prevSize
-//               + " | EXPECTED: " + params.size
-//               + " | " + params.path
-//             ));
-
-//             resolve();
-//           }
-//         });
-//       }
-
-//     }, interval);
-
-//   });
-// }
-
-// function loadUsersArchive(params){
-
-//   return new Promise(async function(resolve, reject){
-
-//     const defaultUserArchiveFolder = DROPBOX_ROOT_FOLDER + configuration.userArchiveFolder;
-
-//     params.folder = params.folder || defaultUserArchiveFolder;
-//     params.path = (params.path !== undefined) ? params.path : params.folder + "/" + params.file;
-
-//     console.log(chalkLog(MODULE_ID_PREFIX 
-//       + " | LOADING USERS ARCHIVE"
-//       + " | " + getTimeStamp() 
-//       + "\n PATH:   " + params.path
-//       + "\n FOLDER: " + params.folder
-//       + "\n FILE:   " + params.file
-//     ));
-
-//     try {
-//       await fileSize(params);
-//       await unzipUsersToArray(params);
-//       await updateTrainingSet();
-//       resolve();
-//     }
-//     catch(err){
-//       console.log(chalkError(MODULE_ID_PREFIX + " | *** LOAD USERS ARCHIVE ERROR | " + getTimeStamp() + " | " + err));
-//       reject(err);
-//     }
-
-//   });
-// }
-
 const watchOptions = {
   ignoreDotFiles: true,
   ignoreUnreadableDir: true,
@@ -2709,7 +2145,6 @@ function initWatch(params){
             + " | SIZE: " + archiveFlagObj.size
             + "\nHISTOGRAM\n" + jsonPrint(archiveFlagObj.histogram)
           ));
-          // await loadTrainingSet({folder: configuration.userArchiveFolder, file: archiveFlagObj.file});
         }
         catch(err){
           console.log(chalkError(MODULE_ID_PREFIX + " | *** WATCH CHANGE ERROR | " + getTimeStamp() + " | " + err));
@@ -2726,7 +2161,6 @@ function initWatch(params){
       console.log(chalkInfo(MODULE_ID_PREFIX + " | XXX FILE DELETED | " + getTimeStamp() + " | " + f));
     });
 
-    // monitor.stop(); // Stop watching
   });
 }
 
@@ -3457,7 +2891,6 @@ function connectDb(){
 
         }, 1000);
 
-
       });
     }
     catch(err){
@@ -3555,16 +2988,6 @@ function getElapsedTimeStamp(){
   return msToTime(statsObj.elapsedMS);
 }
 
-// function printCat(c){
-//   if (c === "left") { return "L"; }
-//   if (c === "neutral") { return "N"; }
-//   if (c === "right") { return "R"; }
-//   if (c === "positive") { return "+"; }
-//   if (c === "negative") { return "-"; }
-//   if (c === "none") { return "0"; }
-//   return ".";
-// }
-
 function touchChildPidFile(params){
 
   return new Promise(function(resolve, reject){
@@ -3608,7 +3031,6 @@ function getChildProcesses(){
 
       console.log("SHELL: childPidFileName: " + childPidFileName);
 
-      // wa_node_child_dbu=46633
       const childPidStringArray = childPidFileName.split("=");
 
       const childId = childPidStringArray[0];
@@ -3629,7 +3051,7 @@ function getChildProcesses(){
       }
 
       if ((childHashMap[childId] !== undefined) && (childHashMap[childId].pid === childPid)) {
-        // cool kid
+
         childPidArray.push({ pid: childPid, childId: childId});
 
         console.log(chalkInfo(MODULE_ID_PREFIX + " | FOUND CHILD"
@@ -3663,7 +3085,6 @@ function getChildProcesses(){
         console.log(chalkAlert(MODULE_ID_PREFIX + " | *** CHILD ZOMBIE"
           + " | " + childId
           + " | TERMINATING ..."
-          // + "\nchildHashMap[childId]" + jsonPrint(childHashMap[childId])
         ));
 
         kill(childPid, function(err){
@@ -3889,7 +3310,6 @@ configuration.DROPBOX.DROPBOX_WORD_ASSO_APP_SECRET = process.env.DROPBOX_WORD_AS
 configuration.DROPBOX.DROPBOX_CONFIG_FILE = process.env.DROPBOX_CONFIG_FILE || MODULE_NAME + "Config.json";
 configuration.DROPBOX.DROPBOX_STATS_FILE = process.env.DROPBOX_STATS_FILE || MODULE_NAME + "Stats.json";
 
-// const dropboxConfigFolder = "/config/utility";
 const dropboxConfigDefaultFolder = "/config/utility/default";
 const dropboxConfigHostFolder = "/config/utility/" + hostname;
 
@@ -3907,20 +3327,12 @@ const statsFolder = "/stats/" + hostname;
 const statsFile = configuration.DROPBOX.DROPBOX_STATS_FILE;
 
 const defaultInputsFolder = dropboxConfigDefaultFolder + "/inputs";
-// const defaultInputsArchiveFolder = dropboxConfigDefaultFolder + "/inputsArchive";
-// const defaultTrainingSetFolder = dropboxConfigDefaultFolder + "/trainingSets";
-// const localTrainingSetFolder = dropboxConfigHostFolder + "/trainingSets";
-// const defaultTrainingSetUserArchive = defaultTrainingSetFolder + "/users/users.zip";
 
 const globalBestNetworkFolder = "/config/utility/best/neuralNetworks";
 const globalArchiveInputsFolder = "/config/utility/default/inputsArchive";
 const localBestNetworkFolder = "/config/utility/" + hostname + "/neuralNetworks/best";
 const localFailNetworkFolder = "/config/utility/" + hostname + "/neuralNetworks/fail";
 const localArchiveNetworkFolder = "/config/utility/" + hostname + "/neuralNetworks/archive";
-
-// const globalCategorizedUsersFolder = dropboxConfigDefaultFolder + "/categorizedUsers";
-// const categorizedUsersFile = "categorizedUsers_manual.json";
-
 
 const dropboxRemoteClient = new Dropbox({ 
   accessToken: configuration.DROPBOX.DROPBOX_WORD_ASSO_ACCESS_TOKEN,
@@ -4209,10 +3621,6 @@ function getFileMetadata(params) {
 
     const fullPath = params.folder + "/" + params.file;
 
-    // console.log(chalkInfo("FOLDER " + params.folder));
-    // console.log(chalkInfo("FILE " + params.file));
-    // console.log(chalkInfo("getFileMetadata FULL PATH: " + fullPath));
-
     if (configuration.offlineMode) {
       dropboxClient = dropboxLocalClient;
     }
@@ -4264,7 +3672,6 @@ function listDropboxFolder(params){
         + " | LISTING DROPBOX FOLDER"
         + " | LIMIT: " + limit
         + " | " + params.folder
-        // + "\n" + jsonPrint(params)
       ));
 
       dropboxClient.filesListFolder({path: params.folder, limit: limit}).
@@ -4889,8 +4296,6 @@ async function quit(opts) {
     console.log(MODULE_ID_PREFIX + " | QUIT INFO\n" + jsonPrint(options) );
   }
 
-  // intervalsSet.add("quitWaitInterval");
-
   setInterval(async function() {
 
     if (readyToQuit()) {
@@ -5110,59 +4515,6 @@ function initChildPingAllInterval(params){
 
   });
 }
-
-// function loadTrainingSet(){
-
-//   return new Promise(async function(resolve, reject){
-
-//     statsObj.status = "LOAD TRAINING SET";
-
-//     console.log(chalkLog(MODULE_ID_PREFIX
-//       + " | LOAD ARCHIVE FLAG FILE: " + configuration.userArchiveFolder + "/" + configuration.defaultUserArchiveFlagFile
-//     ));
-
-//     let archiveFlagObj;
-
-//     try{
-//       archiveFlagObj = await loadFileRetry({folder: configuration.userArchiveFolder, file: configuration.defaultUserArchiveFlagFile});
-//       console.log(chalkNetwork(MODULE_ID_PREFIX + " | USERS ARCHIVE FLAG FILE\n" + jsonPrint(archiveFlagObj)));
-//     }
-//     catch(err){
-//       console.log(chalkError(MODULE_ID_PREFIX + " | *** USERS ARCHIVE FLAG FILE LOAD ERROR: " + err));
-//       statsObj.loadUsersArchiveBusy = false;
-//       statsObj.trainingSetReady = false;
-//       return reject(err);
-//     }
-
-
-//     console.log(chalkLog(MODULE_ID_PREFIX + " | USER ARCHIVE FILE | FILE: " + archiveFlagObj.file + " | SIZE: " + archiveFlagObj.size));
-
-//     if (archiveFlagObj.file !== statsObj.archiveFile) {
-
-//       try {
-//         await loadUsersArchive({file: archiveFlagObj.file, size: archiveFlagObj.size});
-//         statsObj.archiveModified = getTimeStamp();
-//         statsObj.loadUsersArchiveBusy = false;
-//         statsObj.archiveFile = archiveFlagObj.file;
-//         statsObj.trainingSetReady = true;
-//         // runOnceFlag = true;
-//         resolve();
-//       }
-//       catch(err){
-//         statsObj.loadUsersArchiveBusy = false;
-//         statsObj.trainingSetReady = false;
-//         return reject(err);
-//       }
-//     }
-//     else {
-//       console.log(chalkLog(MODULE_ID_PREFIX + " | USERS ARCHIVE SAME ... SKIPPING | " + archiveFlagObj.path));
-//       statsObj.loadUsersArchiveBusy = false;
-//       statsObj.trainingSetReady = true;
-//       resolve();
-//     }
-
-//   });
-// }
 
 //=========================================================================
 // FSM
@@ -5439,15 +4791,12 @@ const fsmStates = {
           await loadNetworkInputsConfig({file: defaultNetworkInputsConfigFile});
           await loadSeedNeuralNetwork(seedParams);
           await loadInputsDropboxFolders({folders: [defaultInputsFolder]});
-          // await loadTrainingSet({folder: configuration.userArchiveFolder, file: configuration.defaultUserArchiveFlagFile});
           await childStartAll();
 
         }
         catch(err){
           console.trace(chalkError(MODULE_ID_PREFIX + " | *** RUN ERROR: " + err));
         }
-
-        // console.log(MODULE_ID_PREFIX + " | RUN | onEnter | " + event);
       }
 
     },
@@ -5807,7 +5156,6 @@ function childSendAll(p){
 
   const params = p || {};
 
-  // const childId = (params.command) ? params.command.childId : params.childId;
   let op = "PING";
 
   if (params.command) {
@@ -5880,10 +5228,6 @@ function childInit(p){
   });
 }
 
-// let evolveIterationDelta = 0;
-// let evolveIterationPrevious = moment();
-// let timeToCompleteInstant = 0;
-
 function childCreate(p){
 
   return new Promise(async function(resolve, reject){
@@ -5951,35 +5295,18 @@ function childCreate(p){
 
             evolveIterationMeter.mark();
 
-            // statsObj.iterationsPerMin = parseInt(globalNodeMeter.toJSON()[metricsRate]);
-
-            // console.log(chalkLog(MODULE_ID_PREFIX
-            //   + " | METER\n" + jsonPrint(evolveIterationMeter.toJSON())
-            // ));
-
-            // evolveIterationDelta = moment().valueOf() - evolveIterationPrevious;
-            // evolveIterationPrevious = moment().valueOf();
-
-            // timeToCompleteInstant = (m.stats.totalIterations - m.stats.iteration) * evolveIterationDelta;
-
             _.set(resultsHashmap[m.stats.networkId], 'evolve.results.iterations', m.stats.iteration);
             
             console.log(chalkLog(MODULE_ID_PREFIX 
               + " | " + m.childIdShort 
               + " | " + m.stats.networkId
-              // + " | IN " + m.stats.numInputs
               + " | " + m.stats.inputsId
-              // + " | F: " + m.stats.fitness
-              // + " | E: " + m.stats.error
               + " | S " + moment(m.stats.evolveStart).format(compactDateTimeFormat)
               + " | N " + moment().format(compactDateTimeFormat)
               + " | R " + msToTime(m.stats.evolveElapsed)
               + " | RATE " + (m.stats.iterationRate/1000.0).toFixed(1)
               + " | ETC " + msToTime(m.stats.timeToComplete)
               + " | ETC " + moment().add(m.stats.timeToComplete).format(compactDateTimeFormat)
-              // + " | RATE INST " + (evolveIterationDelta/1000.0).toFixed(1)
-              // + " | ETC INST " + msToTime(timeToCompleteInstant)
-              // + " | ETC INST " + moment().add(timeToCompleteInstant).format(compactDateTimeFormat)
               + " | I " + m.stats.iteration + "/" + m.stats.totalIterations
             ));
 
@@ -6479,9 +5806,6 @@ function initStdIn() {
   stdin.setEncoding( "utf8" );
   stdin.on( "data", async function( key ) {
     switch (key) {
-      // case "\u0003":
-      //   process.exit();
-      // break;
       case "a":
         abortCursor = true;
         console.log(chalkLog(MODULE_ID_PREFIX + " | STDIN | ABORT: " + abortCursor));
@@ -6554,14 +5878,11 @@ setTimeout(async function(){
     console.log(chalkBlueBold(
         "\n--------------------------------------------------------"
       + "\n" + MODULE_ID_PREFIX + " | " + configuration.processName 
-      // + "\nCONFIGURATION\n" + jsonPrint(configuration)
       + "--------------------------------------------------------"
     ));
 
     initSlackRtmClient();
     initSlackWebClient();
-
-    // initFsmTickInterval(FSM_TICK_INTERVAL);
 
     try {
       await connectDb();
@@ -6578,7 +5899,6 @@ setTimeout(async function(){
   catch(err){
     console.log(chalkError(MODULE_ID_PREFIX + " | **** INIT CONFIG ERROR *****\n" + jsonPrint(err)));
     if (err.code !== 404) {
-      // console.log(MODULE_ID_PREFIX + " | err.status: " + err.status);
       quit({cause: "INIT CONFIG ERROR"});
     }
   }
