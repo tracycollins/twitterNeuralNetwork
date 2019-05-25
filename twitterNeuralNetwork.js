@@ -852,6 +852,7 @@ async function printNetworkObj(title, nObj, format) {
   try {
     const networkObj = await networkDefaults(nObj);
     console.log(chalkFormat(title
+      + " | TECH: " + networkObj.networkTechnology
       + " | OAMR: " + networkObj.overallMatchRate.toFixed(2) + "%"
       + " | MR: " + networkObj.matchRate.toFixed(2) + "%"
       + " | SR: " + networkObj.successRate.toFixed(2) + "%"
@@ -952,7 +953,7 @@ function printResultsHashmap(){
         networkObj.evolve.options.elitism = "---";
       }
 
-      let networkTechnology = "neataptic";
+      let networkTechnology = "";
       let status = "";
       let snIdRes = "";
       let iterations = "";
@@ -2886,8 +2887,6 @@ function generateRandomEvolveConfig (){
       if (inputsHashMap.has(config.seedInputsId)) {
         config.inputsObj = {};
         config.inputsObj = inputsHashMap.get(config.seedInputsId).inputsObj;
-        // config.networkTechnology = (configuration.enableRandomTechnology) ? randomItem(["neataptic", "carrot"]) : configuration.networkTechnology;
-        // console.log(chalkAlert(MODULE_ID_PREFIX + " | NETWORK TECHNOLOGY: " + config.networkTechnology));
         config.architecture = "random";
         config.inputsId = config.seedInputsId;
         debug(MODULE_ID_PREFIX + " | RANDOM ARCH | SEED INPUTS: " + config.seedInputsId);
@@ -6008,7 +6007,6 @@ function childCreate(p){
 
             try {
               nn = await networkDefaults(m.networkObj);
-              // await updateDbInputs({inputsObj: nn.inputsObj, networkId: nn.networkId});
             }
             catch(err){
               console.trace(chalkError("EVOLVE_COMPLETE ERROR: " + err));
@@ -6024,6 +6022,7 @@ function childCreate(p){
               + MODULE_ID_PREFIX + " | NETWORK EVOLVE + TEST COMPLETE"
               + "\nTNN |                  " + m.childId
               + "\nTNN | NID:             " + nn.networkId
+              + "\nTNN | TECH:            " + nn.networkTechnology
               + "\nTNN | SR%:             " + nn.test.results.successRate.toFixed(2) + "%"
               + "\nTNN | TEST [PASS/SET]: " + nn.test.results.numPassed + "/" + nn.test.results.numTests
               + "\nTNN | SEED:            " + snId
