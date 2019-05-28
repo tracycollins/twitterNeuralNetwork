@@ -13,6 +13,7 @@ hostname = hostname.replace(/word/g, "google");
 const MODULE_NAME = "tncChild";
 const MODULE_ID_PREFIX = "TNC";
 
+const DEFAULT_UPDATE_USER_DB = true;
 const DEFAULT_TEST_RATIO = 0.20;
 const DEFAULT_NETWORK_TECHNOLOGY = "neataptic";
 const DEFAULT_QUIT_ON_COMPLETE = false;
@@ -290,6 +291,7 @@ function filesGetMetadataLocal(options){
 
 let configuration = {};
 
+configuration.updateUserDb = DEFAULT_UPDATE_USER_DB;
 configuration.offlineMode = false;
 configuration.networkTechnology = DEFAULT_NETWORK_TECHNOLOGY;
 configuration.inputsBinaryMode = DEFAULT_INPUTS_BINARY_MODE;
@@ -986,6 +988,13 @@ function unzipUsersToArray(params){
                           + " | CAT M: " + userObj.category + " A: " + userObj.categoryAuto
                         ));
                       }
+
+                      if (configuration.updateUserDb) {
+                        await userServerController.findOneUserV2({user: userObj, mergeHistograms: false, noInc: true});
+                      }
+
+                      zipfile.readEntry();
+
                     }
                     else{
                       console.log(chalkAlert(MODULE_ID_PREFIX + " | ??? UNCAT UNZIPPED USER"
@@ -1000,11 +1009,14 @@ function unzipUsersToArray(params){
                         + " | FRNDs: " + userObj.friendsCount
                         + " | CAT M: " + userObj.category + " A: " + userObj.categoryAuto
                       ));                      
+
+                      zipfile.readEntry();
+
                     }
+
 
                   }
 
-                  zipfile.readEntry();
 
                 }
                 catch (e){
