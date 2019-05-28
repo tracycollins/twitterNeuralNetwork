@@ -13,7 +13,7 @@ hostname = hostname.replace(/word/g, "google");
 const MODULE_NAME = "tncChild";
 const MODULE_ID_PREFIX = "TNC";
 
-const DEFAULT_UPDATE_USER_DB = true;
+const DEFAULT_UPDATE_USER_DB = false;
 const DEFAULT_TEST_RATIO = 0.20;
 const DEFAULT_NETWORK_TECHNOLOGY = "neataptic";
 const DEFAULT_QUIT_ON_COMPLETE = false;
