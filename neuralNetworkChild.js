@@ -327,8 +327,6 @@ configuration.defaultUserArchiveFlagFile = "usersZipUploadComplete.json";
 configuration.trainingSetFile = "trainingSet.json";
 configuration.requiredTrainingSetFile = "requiredTrainingSet.txt";
 
-configuration.slackChannel = {};
-
 configuration.keepaliveInterval = KEEPALIVE_INTERVAL;
 configuration.quitOnComplete = DEFAULT_QUIT_ON_COMPLETE;
 
@@ -474,7 +472,6 @@ function connectDb(){
         db.on("disconnected", async function(){
           statsObj.status = "MONGO DISCONNECTED";
           console.error.bind(console, MODULE_ID_PREFIX + " | *** MONGO DB DISCONNECTED");
-          // slackSendMessage(hostname + " | TFE | " + statsObj.status);
           console.log(chalkAlert(MODULE_ID_PREFIX + " | *** MONGO DB DISCONNECTED"));
           quit({cause: "MONGO DB DISCONNECTED"});
         });

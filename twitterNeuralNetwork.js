@@ -7,8 +7,6 @@ const MODULE_ID_PREFIX = "TNN";
 const CHILD_PREFIX = "tnc_node";
 const CHILD_PREFIX_SHORT = "CH";
 
-// const metricsRate = "5MinuteRate";
-
 const os = require("os");
 let hostname = os.hostname();
 hostname = hostname.replace(/.tld/g, ""); // amtrak wifi
@@ -198,13 +196,8 @@ function slackSendWebMessage(msgObj){
         message.attachments = msgObj.attachments;
       }
 
-      // console.log(chalkBlueBold("TNN | SLACK WEB | SEND\n" + jsonPrint(message)));
-
       if (slackWebClient && slackWebClient !== undefined) {
-
         const sendResponse = await slackWebClient.chat.postMessage(message);
-
-        // console.log(chalkLog("TNN | SLACK WEB | >T\n" + jsonPrint(sendResponse)));
         resolve(sendResponse);
       }
       else {
@@ -410,10 +403,9 @@ function initSlackRtmClient(){
 // HOST
 //=========================================================================
 
-const MODULE_ID = MODULE_ID_PREFIX + "_node_" + hostname;
-
 const startTimeMoment = moment();
 
+const MODULE_ID = MODULE_ID_PREFIX + "_node_" + hostname;
 const DEFAULT_NETWORK_ID_PREFIX = hostname + "_" + getTimeStamp();
 
 configuration.networkIdPrefix = DEFAULT_NETWORK_ID_PREFIX;
@@ -2509,7 +2501,6 @@ let defaultConfiguration = {}; // general configuration for TNN
 let hostConfiguration = {}; // host-specific configuration for TNN
 
 configuration.slackChannel = {};
-
 
 function initWatchAllConfigFolders(p){
   return new Promise(async function(resolve, reject){
