@@ -953,6 +953,8 @@ function unzipUsersToArray(params){
                     console.log(chalkLog(MODULE_ID_PREFIX + " | UNZIPPED MAX INPUT"));
 
                     userMaxInputHashMap = userObj.maxInputHashMap;
+
+                    zipfile.readEntry();
                   }
                   else {
 
@@ -1013,11 +1015,7 @@ function unzipUsersToArray(params){
                       zipfile.readEntry();
 
                     }
-
-
                   }
-
-
                 }
                 catch (e){
                   console.log(chalkError(MODULE_ID_PREFIX + " | *** UNZIP READ STREAM ERROR: " + err));
