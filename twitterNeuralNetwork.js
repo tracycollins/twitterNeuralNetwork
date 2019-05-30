@@ -1362,7 +1362,7 @@ function loadInputsDropboxFile(params){
     inputsHashMap.set(dbInputsObj.inputsId, {entry: params.entry, inputsObj: dbInputsObj} );
 
     if ((dbInputsObj.networks.length === 0) 
-      && ((dbInputsObj.failNetworks === undefined) || (dbInputsObj.failNetworks === 0))){
+      && ((dbInputsObj.failNetworks === undefined) || (dbInputsObj.failNetworks.length === 0))){
       inputsNoNetworksSet.add(dbInputsObj.inputsId);
       console.log(chalkBlueBold(MODULE_ID_PREFIX 
         + " | +++ NO NETWORKS INPUTS [" + inputsNoNetworksSet.size + " IN SET]"
