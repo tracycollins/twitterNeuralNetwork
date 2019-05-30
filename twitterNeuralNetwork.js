@@ -46,7 +46,6 @@ const TEST_MODE = false; // applies only to parent
 const GLOBAL_TEST_MODE = false; // applies to parent and all children
 const QUIT_ON_COMPLETE = false;
 
-
 const ONE_SECOND = 1000;
 const ONE_MINUTE = ONE_SECOND*60;
 
@@ -432,7 +431,6 @@ statsObj.authenticated = false;
 statsObj.maxChildrenCreated = false; 
 
 statsObj.queues = {};
-
 statsObj.networkResults = {};
 
 //=========================================================================
@@ -5413,12 +5411,12 @@ function childCreate(p){
 
               printNetworkObj(MODULE_ID_PREFIX + " | " + nn.networkId, nn);
             }
-            else if (
-              (nn.seedNetworkId && (nn.test.results.successRate > nn.seedNetworkRes)) // better than seed nn
+            else if ((nn.test.results.successRate < 100) && 
+              ((nn.seedNetworkId && (nn.test.results.successRate > nn.seedNetworkRes)) // better than seed nn
               || (!nn.seedNetworkId && (nn.test.results.successRate >= configuration.localMinSuccessRate)) // no seed but better than local min
               || (!nn.seedNetworkId && (nn.evolve.options.cost === "MSE") && (nn.test.results.successRate >= configuration.localMinSuccessRateMSE)) // no seed but better than local min
               || (nn.test.results.successRate >= configuration.globalMinSuccessRate) // better than global min
-              ) { 
+              )) { 
 
               // It's a Keeper!!
               await updateDbInputs({inputsObj: nn.inputsObj, networkId: nn.networkId});
@@ -5438,7 +5436,7 @@ function childCreate(p){
               );
 
               // Add to nn child better than parent array
-              if (nn.seedNetworkId && (nn.test.results.successRate > nn.seedNetworkRes)) {
+              if (nn.seedNetworkId && (nn.test.results.successRate < 100) && (nn.test.results.successRate > nn.seedNetworkRes)) {
 
                 betterChildSeedNetworkIdSet.add(nn.networkId);
 
@@ -5454,8 +5452,8 @@ function childCreate(p){
               }
               // no seed but better than localMinSuccessRate, so act like better child and start parent/child chain
               else if (
-                   (!nn.seedNetworkId && (nn.test.results.successRate >= configuration.localMinSuccessRate))
-                || (!nn.seedNetworkId && (nn.evolve.options.cost === "MSE") && (nn.test.results.successRate >= configuration.localMinSuccessRateMSE))
+                   (!nn.seedNetworkId && (nn.test.results.successRate < 100) && (nn.test.results.successRate >= configuration.localMinSuccessRate))
+                || (!nn.seedNetworkId && (nn.evolve.options.cost === "MSE") && (nn.test.results.successRate < 100) && (nn.test.results.successRate >= configuration.localMinSuccessRateMSE))
                 )
               {
 
@@ -5486,7 +5484,8 @@ function childCreate(p){
                 + " | " + inputsNetworksHashMap[nn.inputsId].size + " NETWORKS"
               ));
 
-              if (nn.test.results.successRate >= configuration.globalMinSuccessRate) {
+              if ((nn.test.results.successRate < 100) 
+                && (nn.test.results.successRate >= configuration.globalMinSuccessRate)) {
 
                 console.log(chalkInfo(MODULE_ID_PREFIX + " | ### SAVING NN FILE TO DROPBOX GLOBAL BEST"
                   + " | " + globalBestNetworkFolder + "/" + bestNetworkFile
@@ -5525,7 +5524,7 @@ function childCreate(p){
                 saveFileQueue.push({localFlag: false, folder: globalBestNetworkFolder, file: bestNetworkFile, obj: nn});
               }
               else if (
-                   (nn.test.results.successRate >= configuration.localMinSuccessRate)
+                   (nn.test.results.successRate < 100) && (nn.test.results.successRate >= configuration.localMinSuccessRate)
                 || ((nn.evolve.options.cost === "MSE") && (nn.test.results.successRate >= configuration.localMinSuccessRateMSE))
                 )
               {
