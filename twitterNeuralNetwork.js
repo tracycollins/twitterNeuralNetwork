@@ -1653,7 +1653,7 @@ function dropboxFileMove(params){
           + " | STATUS: " + err.status
           + " | " + srcPath
           + " > " + dstPath
-          + " | DOES NOT EXIST"
+          + " | DEST EXISTS"
         ));
       }
       else if (err.status === 429) {
@@ -1886,6 +1886,8 @@ function loadInputsDropboxFolders (p){
           + " | " + entry.name
         ));
         try{
+          // delete dst file first cuz no way to overwrite; only auto_rename
+          await dropboxFileDelete({folder: globalArchiveInputsFolder, file: entry.name});
           await dropboxFileMove({srcFolder: folder, srcFile: entry.name, dstFolder: globalArchiveInputsFolder, dstFile: entry.name});
           return;
         }
