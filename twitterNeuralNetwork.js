@@ -515,19 +515,21 @@ const DEFAULT_INIT_MAIN_INTERVAL = process.env.TNN_INIT_MAIN_INTERVAL || 10*ONE_
 const DEFAULT_EVOLVE_THREADS = 4;
 const DEFAULT_EVOLVE_ARCHITECTURE = "random";
 const DEFAULT_EVOLVE_BEST_NETWORK = false;
-const DEFAULT_EVOLVE_ELITISM = 10;
+const DEFAULT_EVOLVE_ELITISM = 1;
 const DEFAULT_EVOLVE_EQUAL = true;
 const DEFAULT_EVOLVE_ERROR = 0.03;
 const DEFAULT_EVOLVE_LOG = 1;
 const DEFAULT_EVOLVE_MUTATION = networkTech.methods.mutation.FFW;
-const DEFAULT_EVOLVE_MUTATION_RATE = 0.5;
+const DEFAULT_EVOLVE_MUTATION_RATE = 0.3;
+const DEFAULT_EVOLVE_MUTATION_EFFICIENT = true; // carrot only efficientMutation
 const DEFAULT_EVOLVE_POPSIZE = 50;
 const DEFAULT_EVOLVE_GROWTH = 0.0001;
+const DEFAULT_EVOLVE_CLEAR = false;
 const DEFAULT_EVOLVE_COST = "CROSS_ENTROPY";
 const EVOLVE_MUTATION_RATE_RANGE = { min: 0.35, max: 0.75 };
 const DEFAULT_GROWTH = { min: 0.00005, max: 0.00015 };
 const EVOLVE_GROWTH_RANGE = { min: DEFAULT_GROWTH.min, max: DEFAULT_GROWTH.max };
-const EVOLVE_ELITISM_RANGE = { min: 5, max: 20 };
+const EVOLVE_ELITISM_RANGE = { min: 1, max: 5 };
 const DEFAULT_EVOLVE_COST_ARRAY = [
   "BINARY",
   "CROSS_ENTROPY",
@@ -727,6 +729,7 @@ configuration.evolve.iterations = DEFAULT_ITERATIONS;
 configuration.evolve.log = DEFAULT_EVOLVE_LOG;
 configuration.evolve.mutation = DEFAULT_EVOLVE_MUTATION;
 configuration.evolve.mutationRate = DEFAULT_EVOLVE_MUTATION_RATE;
+configuration.evolve.efficientMutation = DEFAULT_EVOLVE_MUTATION_EFFICIENT;
 configuration.evolve.popsize = DEFAULT_EVOLVE_POPSIZE;
 configuration.evolve.growth = DEFAULT_EVOLVE_GROWTH;
 configuration.evolve.cost = DEFAULT_EVOLVE_COST;
@@ -904,6 +907,7 @@ function printResultsHashmap(){
       "GRWTH",
       "EQUAL",
       "MRATE",
+      "MEFCT",
       "POP",
       "ELT",
       "START",
@@ -932,6 +936,7 @@ function printResultsHashmap(){
         networkObj.evolve.options.growth = "---";
         networkObj.evolve.options.equal = "---";
         networkObj.evolve.options.mutationRate = "---";
+        networkObj.evolve.options.efficientMutation = "---";
         networkObj.evolve.options.popsize = "---";
         networkObj.evolve.options.elitism = "---";
       }
@@ -939,6 +944,7 @@ function printResultsHashmap(){
       let networkTechnology = "";
       let status = "";
       let snIdRes = "";
+      let effMut = "";
       let iterations = "";
       let error = "";
       let successRate = "";
@@ -957,6 +963,14 @@ function printResultsHashmap(){
         && (networkObj.evolve.results.error !== undefined)
         && networkObj.evolve.results.error) ? networkObj.evolve.results.error.toFixed(5) : "---";
 
+      effMut = (
+        networkObj.evolve.effMut 
+        && (networkObj.evolve.effMut !== undefined) 
+        && networkObj.evolve.results.effMut 
+        && (networkObj.evolve.results.effMut !== undefined)
+      )
+        ? networkObj.evolve.results.effMut : false;
+
       successRate = ((networkObj.successRate || (networkObj.successRate === 0)) && networkObj.successRate !== undefined) ? networkObj.successRate.toFixed(2) : "---";
       elapsed = (networkObj.evolve.elapsed && networkObj.evolve.elapsed !== undefined) ? networkObj.evolve.elapsed : (moment().valueOf() - networkObj.evolve.startTime);
 
@@ -974,6 +988,7 @@ function printResultsHashmap(){
         networkObj.evolve.options.growth.toFixed(8),
         networkObj.evolve.options.equal,
         networkObj.evolve.options.mutationRate.toFixed(3),
+        networkObj.evolve.options.efficientMutation,
         networkObj.evolve.options.popsize,
         networkObj.evolve.options.elitism,
         getTimeStamp(networkObj.evolve.startTime),
@@ -994,7 +1009,10 @@ function printResultsHashmap(){
       statsObj.networkResults[networkId].betterChild = betterChild;
       statsObj.networkResults[networkId].seedNetworkId = seedNetworkId;
       statsObj.networkResults[networkId].snIdRes = snIdRes;
-      statsObj.networkResults[networkId].networkObj.evolve.options = pick(networkObj.evolve.options, ["activation", "clear", "cost", "growth", "equal", "mutationRate", "popsize", "elitism"]);
+      statsObj.networkResults[networkId].networkObj.evolve.options = pick(
+        networkObj.evolve.options, 
+        ["activation", "clear", "cost", "growth", "equal", "mutationRate", "efficientMutation", "popsize", "elitism"]
+      );
       statsObj.networkResults[networkId].startTime = getTimeStamp(networkObj.evolve.startTime);
       statsObj.networkResults[networkId].elapsed = msToTime(elapsed);
       statsObj.networkResults[networkId].iterations = iterations;
@@ -1009,7 +1027,9 @@ function printResultsHashmap(){
         return reject(err);
       }
 
-      const t = table(tableArray, { align: ["l", "l", "l", "l", "l", "l", "l", "l", "l", "l", "l", "l", "r", "r", "r", "l", "l", "r", "r", "r"] });
+      const t = table(tableArray, { 
+        align: ["l", "l", "l", "l", "l", "l", "l", "l", "l", "l", "l", "l", "r", "l", "r", "r", "l", "l", "r", "r", "r"] 
+      });
 
       console.log(chalkLog(MODULE_ID_PREFIX + " | === NETWORK RESULTS ========================================================================================================================"));
       console.log(chalkLog(t));
@@ -2268,6 +2288,8 @@ function generateRandomEvolveConfig (){
     config.equal = true;
     config.error = configuration.evolve.error;
     config.mutationRate = randomFloat(EVOLVE_MUTATION_RATE_RANGE.min, EVOLVE_MUTATION_RATE_RANGE.max);
+    // config.efficientMutation = randomItem([true, false]);
+    config.efficientMutation = configuration.evolve.efficientMutation;
     config.popsize = configuration.evolve.popsize;
     config.growth = randomFloat(EVOLVE_GROWTH_RANGE.min, EVOLVE_GROWTH_RANGE.max);
     config.elitism = randomInt(EVOLVE_ELITISM_RANGE.min, EVOLVE_ELITISM_RANGE.max);
@@ -2297,6 +2319,7 @@ function generateRandomEvolveConfig (){
         config.error = randomItem([config.error, networkObj.evolve.options.error]);
         config.growth = randomItem([config.growth, networkObj.evolve.options.growth]);
         config.mutationRate = randomItem([config.mutationRate, networkObj.evolve.options.mutationRate]);
+        // config.efficientMutation = randomItem([config.efficientMutation, networkObj.evolve.options.efficientMutation]);
       }
       else {
         console.log(chalkLog(MODULE_ID_PREFIX + " | USE SEED NETWORK OPTIONS | " + config.seedNetworkId));
@@ -2308,6 +2331,7 @@ function generateRandomEvolveConfig (){
         config.error = networkObj.evolve.options.error;
         config.growth = networkObj.evolve.options.growth;
         config.mutationRate = networkObj.evolve.options.mutationRate;
+        // config.efficientMutation = networkObj.evolve.options.efficientMutation;
       }
     }
     else {
@@ -2380,6 +2404,7 @@ function initNetworkCreate(params){
             + "\n" + MODULE_ID_PREFIX + " | ARCHITECTURE: " + messageObj.architecture
             + "\n" + MODULE_ID_PREFIX + " | INPUTS ID:    " + messageObj.inputsId
             + "\n" + MODULE_ID_PREFIX + " | INPUTS:       " + messageObj.inputsObj.meta.numInputs
+            + "\n" + MODULE_ID_PREFIX + " | EFF MUTATION: " + messageObj.efficientMutation
             + "\n" + MODULE_ID_PREFIX + " | ACTIVATION:   " + messageObj.activation
             + "\n" + MODULE_ID_PREFIX + " | COST:         " + messageObj.cost
             + "\n" + MODULE_ID_PREFIX + " | ITERATIONS:   " + messageObj.iterations
@@ -2415,7 +2440,7 @@ function initNetworkCreate(params){
           networkCreateObj.evolve.endTime = moment().valueOf();
           networkCreateObj.evolve.complete = false;
           networkCreateObj.evolve.options = {};
-          networkCreateObj.evolve.options = pick(childConf, ["activation", "clear", "cost", "growth", "equal", "mutationRate", "popsize", "elitism"]);
+          networkCreateObj.evolve.options = pick(childConf, ["activation", "clear", "cost", "growth", "equal", "mutationRate", "efficientMutation", "popsize", "elitism"]);
 
           resultsHashmap[messageObj.testRunId] = networkCreateObj;
 

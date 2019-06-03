@@ -1646,6 +1646,7 @@ function networkEvolve(params) {
       networkObj.evolve.results = {};
       networkObj.evolve.results = results;
       networkObj.evolve.results.error = ((results.error !== undefined) && results.error && (results.error < Infinity)) ? results.error : 0;
+      networkObj.evolve.results.efficientMutation = ((results.efficientMutation !== undefined) && results.efficientMutation) ? results.efficientMutation : false;
       networkObj.evolve.options = {};
       networkObj.evolve.options = params;
       networkObj.evolve.elapsed = statsObj.evolve.elapsed;
@@ -1817,6 +1818,7 @@ function evolve(p){
     options.equal = params.equal;
     options.mutation = networkTech.methods.mutation.FFW;
     options.mutationRate = params.mutationRate;
+    options.efficientMutation = params.efficientMutation;
     options.popsize = params.popsize;
 
     statsObj.evolve.startTime = moment().valueOf();
@@ -2244,7 +2246,7 @@ const fsmStates = {
 
           networkObj.evolve.options = pick(
             networkObj.evolve.options, 
-            ["clear", "cost", "activation", "growth", "equal", "mutationRate", "popsize", "elitism"]
+            ["clear", "cost", "activation", "growth", "equal", "mutationRate", "efficientMutation", "popsize", "elitism"]
           );
 
           process.send({op: "EVOLVE_COMPLETE", childId: configuration.childId, networkObj: networkObj, statsObj: statsObj});
@@ -2426,6 +2428,7 @@ process.on("message", function(m) {
         error: m.error,
         iterations: m.iterations,
         mutationRate: m.mutationRate,
+        efficientMutation: m.efficientMutation,
         cost: m.cost,
         activation: m.activation,
         growth: m.growth,
@@ -2442,6 +2445,7 @@ process.on("message", function(m) {
         architecture: m.architecture,
         mutation: m.mutation,
         mutationRate: m.mutationRate,
+        efficientMutation: m.efficientMutation,
         equal: m.equal,
         cost: m.cost,
         activation: m.activation,
