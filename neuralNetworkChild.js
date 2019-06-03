@@ -409,7 +409,70 @@ function initConfig(cnf) {
 function init(){
   return new Promise(async function(resolve){
     statsObj.status = "INIT";
-    resolve();
+
+
+    let { Network, methods } = require("@liquid-carrot/carrot");
+
+    async function execute () {
+
+      console.log(chalkBlueBold("TNC | TEST | CARROT TECH XOR"));
+
+      const network = new Network(2,1);
+
+       // XOR dataset
+      const trainingSet = [
+        { input: [0,0], output: [0] },
+        { input: [0,1], output: [1] },
+        { input: [1,0], output: [1] },
+        { input: [1,1], output: [0] }
+      ];
+
+      try {
+
+        await network.evolve(trainingSet, {
+          mutation: methods.mutation.FFW,
+          equal: true,
+          error: 0.05,
+          elitism: 5,
+          mutationRate: 0.5
+        });
+
+        let out = network.activate([0,0]); // 0.2413
+        if (out > 0.5) { 
+          return reject(new Error("XOR test fail"));
+        }
+        console.log(chalkGreen("TNC | XOR | 0 0 > " + out));
+
+        out = network.activate([0,1]); // 1.0000
+        if (out < 0.5) { 
+          return reject(new Error("XOR test fail"));
+        }
+        console.log(chalkGreen("TNC | XOR | 0 1 > " + out));
+
+        out = network.activate([1,0]); // 0.7663
+        if (out < 0.5) { 
+          return reject(new Error("XOR test fail"));
+        }
+        console.log(chalkGreen("TNC | XOR | 1 0 > " + out));
+
+        out = network.activate([1,1]); // -0.008
+        if (out > 0.5) { 
+          return reject(new Error("XOR test fail"));
+        }
+        console.log(chalkGreen("TNC | XOR | 1 1 > " + out));
+
+        resolve();
+
+       }
+       catch(err){
+        console.log(chalkError("TNC | *** INIT | TEST | CARROR TECH XOR TEST: " + err));
+        return reject(err);
+       }
+
+    }
+
+    execute();
+
   });
 }
 
@@ -1299,7 +1362,6 @@ function loadTrainingSet(){
   });
 }
 
-
 function testNetwork(){
 
   return new Promise(async function(resolve, reject){
@@ -1693,6 +1755,7 @@ function networkEvolve(params) {
 
   });
 }
+
 function trainingSetPrep(params){
 
   return new Promise(function(resolve, reject){
