@@ -5,7 +5,7 @@
   "main": "twitterNeuralNetwork.js",
   "dependencies": {
     "@davvo/drbx": "^2.1.0",
-    "@google-cloud/vision": "^1.0.0",
+    "@google-cloud/vision": "^1.1.0",
     "@liquid-carrot/carrot": "^0.2.21",
     "@slack/client": "^5.0.1",
     "@threeceelabs/histogram-parser": "^1.0.20",
@@ -50,7 +50,7 @@
     "measured-core": "^1.48.0",
     "mentions-regex": "^2.0.3",
     "moment": "^2.24.0",
-    "mongoose": "^5.5.12",
+    "mongoose": "^5.5.13",
     "mongoose-paginate": "^5.0.3",
     "neataptic": "^1.4.7",
     "node-cache": "^4.2.0",
