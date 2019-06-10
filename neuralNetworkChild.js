@@ -461,6 +461,10 @@ function init(){
         }
         console.log(chalkGreen("TNC | XOR | 1 1 > " + out));
 
+        const netJson = network.toJSON();
+
+        console.log(chalkLog("TNC | TEST XOR NETWORK\n" + jsonPrint(netJson)));
+
         resolve();
 
        }
@@ -1873,16 +1877,20 @@ function evolve(p){
       debug(chalkAlert("NNC | START NETWORK DEFINED: " + options.networkObj.networkId));
     }
 
-    options.iterations = params.iterations;
-    options.error = params.error;
-    options.growth = params.growth;
-    options.threads = params.threads;
+    options.clear = params.clear;
+    options.efficientMutation = params.efficientMutation;
     options.elitism = params.elitism;
     options.equal = params.equal;
+    options.error = params.error;
+    options.fitnessPopulation = params.fitnessPopulation;
+    options.growth = params.growth;
+    options.iterations = params.iterations;
     options.mutation = networkTech.methods.mutation.FFW;
+    options.mutationAmount = params.mutationAmount;
     options.mutationRate = params.mutationRate;
-    options.efficientMutation = params.efficientMutation;
     options.popsize = params.popsize;
+    options.provenance = params.provenance;
+    options.threads = params.threads;
 
     statsObj.evolve.startTime = moment().valueOf();
     statsObj.evolve.elapsed = 0;
@@ -2309,7 +2317,7 @@ const fsmStates = {
 
           networkObj.evolve.options = pick(
             networkObj.evolve.options, 
-            ["clear", "cost", "activation", "growth", "equal", "mutationRate", "efficientMutation", "popsize", "elitism"]
+            ["clear", "cost", "activation", "growth", "equal", "mutation", "mutationRate", "mutationAmount", "efficientMutation", "popsize", "elitism", "provenance", "fitnessPopulation", "error" ]
           );
 
           process.send({op: "EVOLVE_COMPLETE", childId: configuration.childId, networkObj: networkObj, statsObj: statsObj});
@@ -2474,51 +2482,57 @@ process.on("message", function(m) {
       statsObj.normalization = m.normalization;
 
       evolveOptions = {
-        runId: m.testRunId,
-        threads: m.threads,
-        networkTechnology: m.networkTechnology,
+        activation: m.activation,
         architecture: m.architecture,
-        seedNetworkId: m.seedNetworkId,
-        seedNetworkRes: m.seedNetworkRes,
+        clear: m.clear,
+        cost: m.cost,
+        efficientMutation: m.efficientMutation,
+        elitism: m.elitism,
+        equal: m.equal,
+        error: m.error,
+        fitnessPopulation: m.fitnessPopulation,
+        growth: m.growth,
         inputsId: m.inputsId,
         inputsObj: m.inputsObj,
-        outputs: m.outputs,
-        mutation: m.mutation,
-        equal: m.equal,
-        popsize: m.popsize,
-        elitism: m.elitism,
-        log: m.log,
-        error: m.error,
         iterations: m.iterations,
+        log: m.log,
+        mutation: m.mutation,
+        mutationAmount: m.mutationAmount,
         mutationRate: m.mutationRate,
-        efficientMutation: m.efficientMutation,
-        cost: m.cost,
-        activation: m.activation,
-        growth: m.growth,
-        clear: m.clear
+        networkTechnology: m.networkTechnology,
+        outputs: m.outputs,
+        popsize: m.popsize,
+        provenance: m.provenance,
+        runId: m.testRunId,
+        seedNetworkId: m.seedNetworkId,
+        seedNetworkRes: m.seedNetworkRes,
+        threads: m.threads
       };
 
       statsObj.evolve.options = {};
 
       statsObj.evolve.options = {
+        activation: m.activation,
+        architecture: m.architecture,
+        clear: m.clear,
+        cost: m.cost,
+        efficientMutation: m.efficientMutation,
+        elitism: m.elitism,
+        equal: m.equal,
+        error: m.error,
+        fitnessPopulation: m.fitnessPopulation,
+        growth: m.growth,
+        iterations: m.iterations,
+        log: m.log,
+        mutation: m.mutation,
+        mutationAmount: m.mutationAmount,
+        mutationRate: m.mutationRate,
         networkTechnology: m.networkTechnology,
-        threads: m.threads,
+        popsize: m.popsize,
+        provenance: m.provenance,
         seedNetworkId: m.seedNetworkId,
         seedNetworkRes: m.seedNetworkRes,
-        architecture: m.architecture,
-        mutation: m.mutation,
-        mutationRate: m.mutationRate,
-        efficientMutation: m.efficientMutation,
-        equal: m.equal,
-        cost: m.cost,
-        activation: m.activation,
-        clear: m.clear,
-        error: m.error,
-        popsize: m.popsize,
-        growth: m.growth,
-        elitism: m.elitism,
-        iterations: m.iterations,
-        log: m.log
+        threads: m.threads
       };
 
       if (m.networkObj && (m.networkObj !== undefined)) {

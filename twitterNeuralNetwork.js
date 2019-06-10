@@ -2277,22 +2277,23 @@ function generateRandomEvolveConfig (){
       ));
     }
 
-    config.iterations = configuration.evolve.iterations;
-    config.threads = configuration.evolve.threads;
-    config.log = configuration.evolve.log;
-    config.mutation = DEFAULT_EVOLVE_MUTATION;
-
     config.activation = randomItem(configuration.activationArray);
-    config.cost = randomItem(configuration.costArray);
     config.clear = randomItem([true, false]);
+    config.cost = randomItem(configuration.costArray);
+    config.efficientMutation = configuration.evolve.efficientMutation;
+    config.elitism = randomInt(EVOLVE_ELITISM_RANGE.min, EVOLVE_ELITISM_RANGE.max);
     config.equal = true;
     config.error = configuration.evolve.error;
-    config.mutationRate = randomFloat(EVOLVE_MUTATION_RATE_RANGE.min, EVOLVE_MUTATION_RATE_RANGE.max);
-    // config.efficientMutation = randomItem([true, false]);
-    config.efficientMutation = configuration.evolve.efficientMutation;
-    config.popsize = configuration.evolve.popsize;
+    config.fitnessPopulation = false;
     config.growth = randomFloat(EVOLVE_GROWTH_RANGE.min, EVOLVE_GROWTH_RANGE.max);
-    config.elitism = randomInt(EVOLVE_ELITISM_RANGE.min, EVOLVE_ELITISM_RANGE.max);
+    config.iterations = configuration.evolve.iterations;
+    config.log = configuration.evolve.log;
+    config.mutation = DEFAULT_EVOLVE_MUTATION;
+    config.mutationAmount = 1;
+    config.mutationRate = randomFloat(EVOLVE_MUTATION_RATE_RANGE.min, EVOLVE_MUTATION_RATE_RANGE.max);
+    config.popsize = configuration.evolve.popsize;
+    config.provenance = 0;
+    config.threads = configuration.evolve.threads;
 
     if (configuration.enableSeedNetwork && config.seedNetworkId && networkHashMap.has(config.seedNetworkId)) {
 
