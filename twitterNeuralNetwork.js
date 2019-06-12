@@ -2542,6 +2542,7 @@ function initWatchAllConfigFolders(p){
       await loadAllConfigFiles();
       await loadNetworkInputsConfig({file: defaultBestInputsConfigFile});
       await loadNetworkInputsConfig({file: defaultNetworkInputsConfigFile});
+      await loadNetworkInputsConfig({file: defaultUnionInputsConfigFile});
       await loadCommandLineArgs();
 
       const options = {
@@ -2677,6 +2678,11 @@ function initWatchAllConfigFolders(p){
             await loadNetworkInputsConfig({file: defaultNetworkInputsConfigFile});
           }
 
+          if (f.endsWith(defaultUnionInputsConfigFile)){
+            await delay({period: 30*ONE_SECOND});
+            await loadNetworkInputsConfig({file: defaultUnionInputsConfigFile});
+          }
+
         });
 
         monitorDefaultConfig.on("changed", async function(f){
@@ -2695,6 +2701,11 @@ function initWatchAllConfigFolders(p){
           if (f.endsWith(defaultNetworkInputsConfigFile)){
             await delay({period: 30*ONE_SECOND});
             await loadNetworkInputsConfig({file: defaultNetworkInputsConfigFile});
+          }
+
+          if (f.endsWith(defaultUnionInputsConfigFile)){
+            await delay({period: 30*ONE_SECOND});
+            await loadNetworkInputsConfig({file: defaultUnionInputsConfigFile});
           }
 
         });
@@ -3334,6 +3345,7 @@ const dropboxConfigHostFolder = "/config/utility/" + hostname;
 
 const defaultNetworkInputsConfigFile = "default_networkInputsConfig.json";
 const defaultBestInputsConfigFile = "default_bestInputsConfig.json"
+const defaultUnionInputsConfigFile = "default_unionInputsConfig.json";
 
 const dropboxConfigDefaultFile = "default_" + configuration.DROPBOX.DROPBOX_CONFIG_FILE;
 const dropboxConfigHostFile = hostname + "_" + configuration.DROPBOX.DROPBOX_CONFIG_FILE;
@@ -4808,6 +4820,7 @@ const fsmStates = {
 
           await loadNetworkInputsConfig({file: defaultBestInputsConfigFile});
           await loadNetworkInputsConfig({file: defaultNetworkInputsConfigFile});
+          await loadNetworkInputsConfig({file: defaultUnionInputsConfigFile});
           await loadSeedNeuralNetwork(seedParams);
           await loadInputsDropboxFolders({folders: [defaultInputsFolder]});
           await childStartAll();
