@@ -1723,6 +1723,9 @@ function dropboxFileDelete(params){
           + " | PATH: " + path
           + " | DOES NOT EXIST"
         ));
+        if (params.noErrorNotFound) {
+          return resolve();
+        }
       }
       else if (err.status === 429) {
         console.log(chalkError(MODULE_ID_PREFIX + " | *** DELETE ERROR: XXX NN"
@@ -1908,7 +1911,7 @@ function loadInputsDropboxFolders (p){
         ));
         try{
           // delete dst file first cuz no way to overwrite; only auto_rename
-          await dropboxFileDelete({folder: globalArchiveInputsFolder, file: entry.name});
+          await dropboxFileDelete({folder: globalArchiveInputsFolder, file: entry.name, noErrorNotFound: true});
           await dropboxFileMove({srcFolder: folder, srcFile: entry.name, dstFolder: globalArchiveInputsFolder, dstFile: entry.name});
           return;
         }
