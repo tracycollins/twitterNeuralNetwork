@@ -4411,10 +4411,11 @@ const quitOnError = { name: "quitOnError", alias: "Q", type: Boolean, defaultVal
 const verbose = { name: "verbose", alias: "v", type: Boolean };
 const testMode = { name: "testMode", alias: "X", type: Boolean};
 
+const threads = { name: "threads", alias: "t", type: Number};
 const maxNumberChildren = { name: "maxNumberChildren", alias: "N", type: Number};
 const useLocalTrainingSets = { name: "useLocalTrainingSets", alias: "L", type: Boolean};
 const loadAllInputs = { name: "loadAllInputs", type: Boolean};
-const loadTrainingSetFromFile = { name: "loadTrainingSetFromFile", alias: "t", type: Boolean};
+const loadTrainingSetFromFile = { name: "loadTrainingSetFromFile", alias: "F", type: Boolean};
 const inputsId = { name: "inputsId", alias: "i", type: String};
 const trainingSetFile = { name: "trainingSetFile", alias: "T", type: String};
 const networkCreateMode = { name: "networkCreateMode", alias: "n", type: String, defaultValue: "evolve" };
@@ -4424,6 +4425,7 @@ const useBestNetwork = { name: "useBestNetwork", alias: "b", type: Boolean };
 const evolveIterations = { name: "evolveIterations", alias: "I", type: Number};
 
 const optionDefinitions = [
+  threads,
   maxNumberChildren,
   useLocalTrainingSets,
   loadAllInputs,
@@ -4473,7 +4475,11 @@ function loadCommandLineArgs(){
 
     async.each(commandLineConfigKeys, function(arg, cb){
 
-      if (arg === "evolveIterations"){
+      if (arg === "threads"){
+        configuration.evolve.threads = commandLineConfig[arg];
+        console.log(MODULE_ID_PREFIX + " | --> COMMAND LINE CONFIG | " + arg + ": " + configuration.evolve.iterations);
+      }
+      else if (arg === "evolveIterations"){
         configuration.evolve.iterations = commandLineConfig[arg];
         console.log(MODULE_ID_PREFIX + " | --> COMMAND LINE CONFIG | " + arg + ": " + configuration.evolve.iterations);
       }
@@ -5348,6 +5354,8 @@ function childCreate(p){
               + " | RATE " + (m.stats.iterationRate/1000.0).toFixed(1)
               + " | ETC " + msToTime(m.stats.timeToComplete)
               + " | ETC " + moment().add(m.stats.timeToComplete).format(compactDateTimeFormat)
+              + " | ERR " + m.stats.error
+              + " | FIT " + m.stats.fitness
               + " | I " + m.stats.iteration + "/" + m.stats.totalIterations
             ));
 
