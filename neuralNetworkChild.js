@@ -14,7 +14,7 @@ const MODULE_NAME = "tncChild";
 const MODULE_ID_PREFIX = "TNC";
 
 const DEFAULT_UPDATE_USER_DB = false;
-const DEFAULT_TEST_RATIO = 0.20;
+const DEFAULT_TEST_RATIO = 0.33;
 const DEFAULT_NETWORK_TECHNOLOGY = "neataptic";
 const DEFAULT_QUIT_ON_COMPLETE = false;
 const DEFAULT_INPUTS_BINARY_MODE = false;
@@ -411,13 +411,13 @@ function init(){
     statsObj.status = "INIT";
 
 
-    let { Network, methods } = require("@liquid-carrot/carrot");
+    let { Network, architect, methods } = require("@liquid-carrot/carrot");
 
     async function execute () {
 
       console.log(chalkBlueBold("TNC | TEST | CARROT TECH XOR"));
 
-      const network = new Network(2,1);
+      const network = new architect.Perceptron(2,3,1);
 
        // XOR dataset
       const trainingSet = [
@@ -1775,7 +1775,7 @@ function trainingSetPrep(params){
     console.log(chalkBlue(MODULE_ID_PREFIX
       + " | TRAINING SET PREP"
       + " | DATA LENGTH: " + trainingSetObj.data.length
-      + " | INPUTS NUM IN: " + params.inputsObj.meta.numInputs
+      + " | INPUTS: " + params.inputsObj.meta.numInputs
       + "\nTRAINING SET META\n" + jsonPrint(trainingSetObj.meta)
     ));
 
@@ -1855,7 +1855,7 @@ function evolve(p){
 
     debug("evolve params.network\n" + jsonPrint(params.network));
 
-    if (params.architecture === undefined) { params.architecture = "random"; }
+    if (params.architecture === undefined) { params.architecture = "perceptron"; }
     if (params.networkTechnology === undefined) { params.networkTechnology = configuration.networkTechnology; }
 
     switch (params.networkTechnology) {
@@ -1956,17 +1956,20 @@ function evolve(p){
 
         case "perceptron":
 
-          console.log("NNC | EVOLVE ARCH"
+          console.log("NNC"
             + " | " + configuration.childId
-            + " | " + params.architecture
+            + " | " + params.architecture.toUpperCase()
+            + " | IN: " + params.inputsObj.meta.numInputs 
+            + " | OUT: " + trainingSetObj.meta.numOutputs
             + " | HIDDEN LAYER NODES: " + params.hiddenLayerSize
           );
 
           network = new networkTech.architect.Perceptron(
-            trainingSetObj.meta.numInputs, 
+            params.inputsObj.meta.numInputs, 
             params.hiddenLayerSize,
-            trainingSetObj.meta.numOutputs
+            3
           );
+
         break;
 
         default:
@@ -2317,7 +2320,7 @@ const fsmStates = {
 
           networkObj.evolve.options = pick(
             networkObj.evolve.options, 
-            ["clear", "cost", "activation", "growth", "equal", "mutation", "mutationRate", "mutationAmount", "efficientMutation", "popsize", "elitism", "provenance", "fitnessPopulation", "error" ]
+            [ "hiddenLayerSize", "clear", "cost", "activation", "growth", "equal", "mutation", "mutationRate", "mutationAmount", "efficientMutation", "popsize", "elitism", "provenance", "fitnessPopulation", "error" ]
           );
 
           process.send({op: "EVOLVE_COMPLETE", childId: configuration.childId, networkObj: networkObj, statsObj: statsObj});
@@ -2328,8 +2331,8 @@ const fsmStates = {
         catch(err){
           console.log(chalkError(MODULE_ID_PREFIX + " | *** EVOLVE ERROR: " + err));
           console.log(chalkError(MODULE_ID_PREFIX + " | *** EVOLVE ERROR\ninputsObj\n" + jsonPrint(evolveOptions.inputsObj.meta)));
-          console.log(chalkError(MODULE_ID_PREFIX + " | *** EVOLVE ERROR\ntrainingSet\n" + jsonPrint(evolveOptions.trainingSetObj.meta)));
-          console.log(chalkError(MODULE_ID_PREFIX + " | *** EVOLVE ERROR\ntestSet\n" + jsonPrint(evolveOptions.testSetObj.meta)));
+          console.log(chalkError(MODULE_ID_PREFIX + " | *** EVOLVE ERROR\ntrainingSet\n" + jsonPrint(trainingSetObj.meta)));
+          console.log(chalkError(MODULE_ID_PREFIX + " | *** EVOLVE ERROR\ntestSet\n" + jsonPrint(testSetObj.meta)));
           fsm.fsm_error();
         }
 
@@ -2431,8 +2434,11 @@ process.on("message", function(m) {
     break;
 
     case "INIT":
+
       if (m.testMode !== undefined) { configuration.testMode = m.testMode; }
       if (m.verbose !== undefined) { configuration.verbose = m.verbose; }
+      if (m.testSetRatio !== undefined) { configuration.testSetRatio = m.testSetRatio; }
+
       configuration.childId = m.childId;
       configuration.childIdShort = m.childIdShort;
       statsObj.childId = m.childId;
@@ -2444,6 +2450,7 @@ process.on("message", function(m) {
       console.log(chalkInfo(MODULE_ID_PREFIX + " | INIT"
         + " | CHILD ID: " + m.childId
         + " | TEST MODE: " + configuration.testMode
+        + " | TEST SET RATIO: " + configuration.testSetRatio
       ));
 
       fsm.fsm_init();
@@ -2458,8 +2465,11 @@ process.on("message", function(m) {
 
     case "CONFIG_EVOLVE":
 
+      if (m.testSetRatio !== undefined) { configuration.testSetRatio = m.testSetRatio; }
+
       console.log(chalkInfo(MODULE_ID_PREFIX + " | CONFIG_EVOLVE"
         + " | CHILD ID: " + m.childId
+        + " | TEST SET RATIO: " + configuration.testSetRatio
       ));
 
       configuration.childId = m.childId;
@@ -2484,6 +2494,7 @@ process.on("message", function(m) {
       evolveOptions = {
         activation: m.activation,
         architecture: m.architecture,
+        hiddenLayerSize: m.hiddenLayerSize,
         clear: m.clear,
         cost: m.cost,
         efficientMutation: m.efficientMutation,
@@ -2514,6 +2525,7 @@ process.on("message", function(m) {
       statsObj.evolve.options = {
         activation: m.activation,
         architecture: m.architecture,
+        hiddenLayerSize: m.hiddenLayerSize,
         clear: m.clear,
         cost: m.cost,
         efficientMutation: m.efficientMutation,
@@ -2544,6 +2556,7 @@ process.on("message", function(m) {
           + " | " + configuration.childId
           + " | " + m.testRunId
           + " | TECH: " + m.networkTechnology
+          + " | HIDDEN: " + m.hiddenLayerSize
           + "\n SEED: " + m.seedNetworkId
           + " | SEED RES %: " + m.seedNetworkRes.toFixed(2)
           + "\n THREADs: " + m.threads
@@ -2556,6 +2569,7 @@ process.on("message", function(m) {
           + " | " + configuration.childId
           + " | " + m.testRunId
           + " | TECH: " + m.networkTechnology
+          + " | HIDDEN: " + m.hiddenLayerSize
           + "\n SEED: " + "---"
           + " | SEED RES %: " + "---"
           + "\n THREADs: " + m.threads

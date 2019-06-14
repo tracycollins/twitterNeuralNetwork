@@ -513,7 +513,8 @@ const DEFAULT_DISABLE_CREATE_TEST_SET = false;
 const DEFAULT_INIT_MAIN_INTERVAL = process.env.TNN_INIT_MAIN_INTERVAL || 10*ONE_MINUTE;
 
 const DEFAULT_EVOLVE_THREADS = 4;
-const DEFAULT_EVOLVE_ARCHITECTURE = "random";
+const DEFAULT_EVOLVE_ARCHITECTURE = "perceptron";
+const DEFAULT_EVOLVE_HIDDEN_LAYER_SIZE = 10;
 const DEFAULT_EVOLVE_BEST_NETWORK = false;
 const DEFAULT_EVOLVE_ELITISM = 1;
 const DEFAULT_EVOLVE_EQUAL = true;
@@ -524,7 +525,7 @@ const DEFAULT_EVOLVE_MUTATION_RATE = 0.3;
 const DEFAULT_EVOLVE_MUTATION_EFFICIENT = true; // carrot only efficientMutation
 const DEFAULT_EVOLVE_POPSIZE = 50;
 const DEFAULT_EVOLVE_GROWTH = 0.0001;
-const DEFAULT_EVOLVE_CLEAR = false;
+// const DEFAULT_EVOLVE_CLEAR = false;
 const DEFAULT_EVOLVE_COST = "CROSS_ENTROPY";
 const EVOLVE_MUTATION_RATE_RANGE = { min: 0.35, max: 0.75 };
 const DEFAULT_GROWTH = { min: 0.00005, max: 0.00015 };
@@ -555,20 +556,20 @@ const DEFAULT_EVOLVE_MOD_ACTIVATION_ARRAY = [
   "TANH"
 ];
 
-const DEFAULT_TRAIN_THREADS = 1;
-const DEFAULT_TRAIN_ARCHITECTURE = "perceptron";
-const DEFAULT_TRAIN_BEST_NETWORK = false;
-const DEFAULT_TRAIN_HIDDEN_LAYER_SIZE = 10;
-const DEFAULT_TRAIN_LOG = 1;
-const DEFAULT_TRAIN_ERROR = 0.01;
-const DEFAULT_TRAIN_COST = "MSE";
-const DEFAULT_TRAIN_RATE = 0.3;
-const DEFAULT_TRAIN_DROPOUT = 0;
-const DEFAULT_TRAIN_SHUFFLE = false;
-const DEFAULT_TRAIN_CLEAR = true;
-const DEFAULT_TRAIN_MOMENTUM = 0;
-const DEFAULT_TRAIN_RATE_POLICY = "FIXED";
-const DEFAULT_TRAIN_BATCH_SIZE = 1;
+// const DEFAULT_TRAIN_THREADS = 1;
+// const DEFAULT_TRAIN_ARCHITECTURE = "perceptron";
+// const DEFAULT_TRAIN_BEST_NETWORK = false;
+// const DEFAULT_TRAIN_HIDDEN_LAYER_SIZE = 10;
+// const DEFAULT_TRAIN_LOG = 1;
+// const DEFAULT_TRAIN_ERROR = 0.01;
+// const DEFAULT_TRAIN_COST = "MSE";
+// const DEFAULT_TRAIN_RATE = 0.3;
+// const DEFAULT_TRAIN_DROPOUT = 0;
+// const DEFAULT_TRAIN_SHUFFLE = false;
+// const DEFAULT_TRAIN_CLEAR = true;
+// const DEFAULT_TRAIN_MOMENTUM = 0;
+// const DEFAULT_TRAIN_RATE_POLICY = "FIXED";
+// const DEFAULT_TRAIN_BATCH_SIZE = 1;
 
 const globalhistograms = {};
 
@@ -721,6 +722,7 @@ configuration.evolve.useBestNetwork = DEFAULT_EVOLVE_BEST_NETWORK;
 configuration.evolve.networkId = DEFAULT_SEED_NETWORK_ID;
 configuration.evolve.threads = DEFAULT_EVOLVE_THREADS;
 configuration.evolve.architecture = DEFAULT_EVOLVE_ARCHITECTURE;
+configuration.evolve.hiddenLayerSize = DEFAULT_EVOLVE_HIDDEN_LAYER_SIZE;
 configuration.evolve.networkObj = null;
 configuration.evolve.elitism = DEFAULT_EVOLVE_ELITISM;
 configuration.evolve.equal = DEFAULT_EVOLVE_EQUAL;
@@ -734,24 +736,24 @@ configuration.evolve.popsize = DEFAULT_EVOLVE_POPSIZE;
 configuration.evolve.growth = DEFAULT_EVOLVE_GROWTH;
 configuration.evolve.cost = DEFAULT_EVOLVE_COST;
 
-configuration.train = {};
-configuration.train.threads = DEFAULT_TRAIN_THREADS;
-configuration.train.architecture = DEFAULT_TRAIN_ARCHITECTURE;
-configuration.train.hiddenLayerSize = DEFAULT_TRAIN_HIDDEN_LAYER_SIZE;
-configuration.train.useBestNetwork = DEFAULT_TRAIN_BEST_NETWORK;
-configuration.train.networkObj = null;
-configuration.train.networkId = DEFAULT_SEED_NETWORK_ID;
-configuration.train.log = DEFAULT_TRAIN_LOG;
-configuration.train.error = DEFAULT_TRAIN_ERROR;
-configuration.train.cost = DEFAULT_TRAIN_COST;
-configuration.train.rate = DEFAULT_TRAIN_RATE;
-configuration.train.dropout = DEFAULT_TRAIN_DROPOUT;
-configuration.train.shuffle = DEFAULT_TRAIN_SHUFFLE;
-configuration.train.iterations = DEFAULT_ITERATIONS;
-configuration.train.clear = DEFAULT_TRAIN_CLEAR;
-configuration.train.momentum = DEFAULT_TRAIN_MOMENTUM;
-configuration.train.ratePolicy = DEFAULT_TRAIN_RATE_POLICY;
-configuration.train.batchSize = DEFAULT_TRAIN_BATCH_SIZE;
+// configuration.train = {};
+// configuration.train.threads = DEFAULT_TRAIN_THREADS;
+// configuration.train.architecture = DEFAULT_TRAIN_ARCHITECTURE;
+// configuration.train.hiddenLayerSize = DEFAULT_TRAIN_HIDDEN_LAYER_SIZE;
+// configuration.train.useBestNetwork = DEFAULT_TRAIN_BEST_NETWORK;
+// configuration.train.networkObj = null;
+// configuration.train.networkId = DEFAULT_SEED_NETWORK_ID;
+// configuration.train.log = DEFAULT_TRAIN_LOG;
+// configuration.train.error = DEFAULT_TRAIN_ERROR;
+// configuration.train.cost = DEFAULT_TRAIN_COST;
+// configuration.train.rate = DEFAULT_TRAIN_RATE;
+// configuration.train.dropout = DEFAULT_TRAIN_DROPOUT;
+// configuration.train.shuffle = DEFAULT_TRAIN_SHUFFLE;
+// configuration.train.iterations = DEFAULT_ITERATIONS;
+// configuration.train.clear = DEFAULT_TRAIN_CLEAR;
+// configuration.train.momentum = DEFAULT_TRAIN_MOMENTUM;
+// configuration.train.ratePolicy = DEFAULT_TRAIN_RATE_POLICY;
+// configuration.train.batchSize = DEFAULT_TRAIN_BATCH_SIZE;
 
 statsObj.evolveStats = {};
 statsObj.evolveStats.results = {};
@@ -944,7 +946,7 @@ function printResultsHashmap(){
       let networkTechnology = "";
       let status = "";
       let snIdRes = "";
-      let effMut = "";
+      // let effMut = "";
       let iterations = "";
       let error = "";
       let successRate = "";
@@ -963,13 +965,13 @@ function printResultsHashmap(){
         && (networkObj.evolve.results.error !== undefined)
         && networkObj.evolve.results.error) ? networkObj.evolve.results.error.toFixed(5) : "---";
 
-      effMut = (
-        networkObj.evolve.effMut 
-        && (networkObj.evolve.effMut !== undefined) 
-        && networkObj.evolve.results.effMut 
-        && (networkObj.evolve.results.effMut !== undefined)
-      )
-        ? networkObj.evolve.results.effMut : false;
+      // effMut = (
+      //   networkObj.evolve.effMut 
+      //   && (networkObj.evolve.effMut !== undefined) 
+      //   && networkObj.evolve.results.effMut 
+      //   && (networkObj.evolve.results.effMut !== undefined)
+      // )
+      //   ? networkObj.evolve.results.effMut : false;
 
       successRate = ((networkObj.successRate || (networkObj.successRate === 0)) && networkObj.successRate !== undefined) ? networkObj.successRate.toFixed(2) : "---";
       elapsed = (networkObj.evolve.elapsed && networkObj.evolve.elapsed !== undefined) ? networkObj.evolve.elapsed : (moment().valueOf() - networkObj.evolve.startTime);
@@ -2343,12 +2345,14 @@ function generateRandomEvolveConfig (){
       if (inputsHashMap.has(config.seedInputsId)) {
         config.inputsObj = {};
         config.inputsObj = inputsHashMap.get(config.seedInputsId).inputsObj;
-        config.architecture = "random";
+        config.architecture = "perceptron";
+        // config.hiddenLayerSize = configuration.evolve.hiddenLayerSize;
+        config.hiddenLayerSize = parseInt((0.67 * config.inputsObj.meta.numInputs) + 3);
         config.inputsId = config.seedInputsId;
-        debug(MODULE_ID_PREFIX + " | RANDOM ARCH | SEED INPUTS: " + config.seedInputsId);
+        debug(MODULE_ID_PREFIX + " | PERCEPTRON ARCH | SEED INPUTS: " + config.seedInputsId);
       }
       else {
-        console.log("TNN *** ERROR *** | RANDOM ARCH | seedInputsId " + config.seedInputsId + " NOT IN inputsHashMap");
+        console.log("TNN *** ERROR *** | PERCEPTRON ARCH | seedInputsId " + config.seedInputsId + " NOT IN inputsHashMap");
         return reject(new Error(config.seedInputsId + " NOT IN inputsHashMap"));
       }
     }
@@ -2404,15 +2408,16 @@ function initNetworkCreate(params){
           console.log(chalkBlue("\nTNN | START NETWORK EVOLVE"));
 
           console.log(chalkBlue(
-                     MODULE_ID_PREFIX + " | NN ID:        " + networkId
-            + "\n" + MODULE_ID_PREFIX + " | TECHNOLOGY:   " + messageObj.networkTechnology
-            + "\n" + MODULE_ID_PREFIX + " | ARCHITECTURE: " + messageObj.architecture
-            + "\n" + MODULE_ID_PREFIX + " | INPUTS ID:    " + messageObj.inputsId
-            + "\n" + MODULE_ID_PREFIX + " | INPUTS:       " + messageObj.inputsObj.meta.numInputs
-            + "\n" + MODULE_ID_PREFIX + " | EFF MUTATION: " + messageObj.efficientMutation
-            + "\n" + MODULE_ID_PREFIX + " | ACTIVATION:   " + messageObj.activation
-            + "\n" + MODULE_ID_PREFIX + " | COST:         " + messageObj.cost
-            + "\n" + MODULE_ID_PREFIX + " | ITERATIONS:   " + messageObj.iterations
+                     MODULE_ID_PREFIX + " | NN ID:             " + networkId
+            + "\n" + MODULE_ID_PREFIX + " | TECHNOLOGY:        " + messageObj.networkTechnology
+            + "\n" + MODULE_ID_PREFIX + " | ARCHITECTURE:      " + messageObj.architecture
+            + "\n" + MODULE_ID_PREFIX + " | INPUTS ID:         " + messageObj.inputsId
+            + "\n" + MODULE_ID_PREFIX + " | INPUTS:            " + messageObj.inputsObj.meta.numInputs
+            + "\n" + MODULE_ID_PREFIX + " | HIDDEN LAYER SIZE: " + messageObj.hiddenLayerSize
+            + "\n" + MODULE_ID_PREFIX + " | EFF MUTATION:      " + messageObj.efficientMutation
+            + "\n" + MODULE_ID_PREFIX + " | ACTIVATION:        " + messageObj.activation
+            + "\n" + MODULE_ID_PREFIX + " | COST:              " + messageObj.cost
+            + "\n" + MODULE_ID_PREFIX + " | ITERATIONS:        " + messageObj.iterations
           ));
 
           if (messageObj.seedNetworkId) {
@@ -2435,6 +2440,7 @@ function initNetworkCreate(params){
           networkCreateObj.overallMatchRate = 0;
           networkCreateObj.networkId = messageObj.testRunId;
           networkCreateObj.networkTechnology = messageObj.networkTechnology;
+          networkCreateObj.hiddenLayerSize = messageObj.hiddenLayerSize;
           networkCreateObj.betterChild = false;
           networkCreateObj.seedNetworkId = messageObj.seedNetworkId;
           networkCreateObj.seedNetworkRes = messageObj.seedNetworkRes;
