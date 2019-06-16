@@ -1563,6 +1563,12 @@ function validateNetwork(params){
       return resolve();
     }
 
+    if (networkObj.inputsObj === undefined) {
+      console.log(chalkError(MODULE_ID_PREFIX + " | *** NETWORK INPUTS OBJ UNDEFINED"
+        + " | " + networkObj.networkId));
+      return resolve();
+    }
+
     try {
       const nnObj = networkDefaults(networkObj);
       resolve(nnObj);
