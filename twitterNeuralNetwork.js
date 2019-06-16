@@ -1120,12 +1120,15 @@ function updateDbInputs(params){
 
     const update = {};
 
-    update.$set = { 
+    update.$setOnInsert = { 
       meta: params.inputsObj.meta,
       inputs: params.inputsObj.inputs,
     };
 
     if (params.networkId) {
+
+      console.log("params.networkId: " + params.networkId);
+
       if (update.$addToSet === undefined) { update.$addToSet = {}; }
       // update.$addToSet = { networks: params.networkId };
       update.$addToSet["networks"] = params.networkId;
@@ -1134,6 +1137,9 @@ function updateDbInputs(params){
     }
 
     if (params.failNetworkId) {
+
+      console.log("params.failNetworkId: " + params.failNetworkId);
+
       if (update.$addToSet === undefined) { update.$addToSet = {}; }
       // update.$addToSet = { failNetworks: params.failNetworkId };
       update.$addToSet["failNetworks"] = params.failNetworkId;
@@ -1144,7 +1150,8 @@ function updateDbInputs(params){
       new: true,
       returnOriginal: false,
       upsert: true,
-      setDefaultsOnInsert: true
+      setDefaultsOnInsert: true,
+      runValidators: true
     };
 
 
