@@ -1118,6 +1118,7 @@ function updateDbInputs(params){
     };
 
     if (params.networkId) {
+      if (update.$addToSet === undefined) { update.$addToSet = {}; }
       // update.$addToSet = { networks: params.networkId };
       update.$addToSet["networks"] = params.networkId;
       inputsNoNetworksSet.delete(params.inputsObj.inputsId);
@@ -1125,6 +1126,7 @@ function updateDbInputs(params){
     }
 
     if (params.failNetworkId) {
+      if (update.$addToSet === undefined) { update.$addToSet = {}; }
       // update.$addToSet = { failNetworks: params.failNetworkId };
       update.$addToSet["failNetworks"] = params.failNetworkId;
       inputsFailedSet.add(params.inputsObj.inputsId)
