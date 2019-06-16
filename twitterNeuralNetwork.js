@@ -1151,11 +1151,13 @@ function updateDbInputs(params){
     global.globalNetworkInputs.findOneAndUpdate(query, update, options, function(err, niDbUpdated){
 
       if (err) {
+
         console.log(chalkError("*** updateDbInputs | INPUTS FIND ONE ERROR: " + err
           + "\nINPUTS ID: " + params.inputsObj.inputsId
           + "\nUPDATE addToSet\n" + jsonPrint(update.$addToSet)
           // + "\nOPTIONS\n" + jsonPrint(options)
         ));
+        console.log(err);
         return reject(err);
       }
 
