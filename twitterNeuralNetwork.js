@@ -1097,8 +1097,11 @@ function purgeInputs(inputsId){
   });
 }
 
-function updateDbInputs(params){
+function updateDbInputs(p){
+
   return new Promise(async function(resolve, reject){
+
+    let params = p || {};
 
     if (!params.inputsObj || params.inputsObj === undefined) {
       return reject(new Error("undefined params.inputsObj"));
@@ -1118,61 +1121,104 @@ function updateDbInputs(params){
 
     const query = { inputsId: params.inputsObj.inputsId };
 
-    const update = {};
+    try{
 
-    update.$setOnInsert = { 
-      meta: params.inputsObj.meta,
-      inputs: params.inputsObj.inputs,
-      networks: [params.networkId],
-      failNetworks: [params.failNetworkId]
-    };
+      const inputsObj = await global.globalNetworkInputs.findOne(query);
 
-    if (params.networkId) {
+      if (inputsObj) {
+        if (params.networkId && !inputsObj.networks.includes(params.networkId)) {
+          inputsObj.networks.push(params.networkId);
+        }
+        if (params.failNetworkId && !inputsObj.failNetworks.includes(params.failNetworkId)) {
+          inputsObj.failNetworks.push(params.failNetworkId);
+        }
 
-      console.log("params.networkId: " + params.networkId);
+        const niDbUpdated = await inputsObj.save();
 
-      if (update.$addToSet === undefined) { update.$addToSet = {}; }
-      // update.$addToSet = { networks: params.networkId };
-      update.$addToSet["networks"] = params.networkId;
-      inputsNoNetworksSet.delete(params.inputsObj.inputsId);
-      inputsFailedSet.delete(params.inputsObj.inputsId);
-    }
+        if (verbose) { printInputsObj(MODULE_ID_PREFIX + " | +++ INPUTS DB UPDATED", niDbUpdated); }
 
-    if (params.failNetworkId) {
+        return resolve(niDbUpdated);
+      }
+      else{
 
-      console.log("params.failNetworkId: " + params.failNetworkId);
+        if (params.networkId && !params.inputsObj.networks.includes(params.networkId)) {
+          params.inputsObj.networks.push(params.networkId);
+        }
+        if (params.failNetworkId && !params.inputsObj.failNetworks.includes(params.failNetworkId)) {
+          params.inputsObj.failNetworks.push(params.failNetworkId);
+        }
 
-      if (update.$addToSet === undefined) { update.$addToSet = {}; }
-      // update.$addToSet = { failNetworks: params.failNetworkId };
-      update.$addToSet["failNetworks"] = params.failNetworkId;
-      inputsFailedSet.add(params.inputsObj.inputsId);
-    }
+        const niDbUpdated = new global.globalNetworkInputs(params.inputsObj);
 
-    const options = {
-      new: true,
-      returnOriginal: false,
-      upsert: true,
-      setDefaultsOnInsert: true
-    };
+        if (verbose) { printInputsObj(MODULE_ID_PREFIX + " | +++ INPUTS DB UPDATED", niDbUpdated); }
 
-
-    global.globalNetworkInputs.findOneAndUpdate(query, update, options, function(err, niDbUpdated){
-
-      if (err) {
-
-        console.log(chalkError("*** updateDbInputs | INPUTS FIND ONE ERROR: " + err
-          + "\nINPUTS ID: " + params.inputsObj.inputsId
-          + "\nUPDATE addToSet\n" + jsonPrint(update.$addToSet)
-          // + "\nOPTIONS\n" + jsonPrint(options)
-        ));
-        console.log(err);
-        return reject(err);
+        return resolve(niDbUpdated);
       }
 
-      if (verbose) { printInputsObj(MODULE_ID_PREFIX + " | +++ INPUTS DB UPDATED", niDbUpdated); }
+    }
+    catch(e){
+      console.log(chalkError("*** updateDbInputs | INPUTS FIND ONE ERROR: " + err
+        + "\nINPUTS ID: " + params.inputsObj.inputsId
+      ));
+      console.log(err);
+      return reject(err);
+    }
 
-      resolve(niDbUpdated);
-    });
+    // const update = {};
+
+    // update.$setOnInsert = { 
+    //   meta: params.inputsObj.meta,
+    //   inputs: params.inputsObj.inputs,
+    //   networks: [params.networkId],
+    //   failNetworks: [params.failNetworkId]
+    // };
+
+    // if (params.networkId) {
+
+    //   console.log("params.networkId: " + params.networkId);
+
+    //   if (update.$addToSet === undefined) { update.$addToSet = {}; }
+    //   // update.$addToSet = { networks: params.networkId };
+    //   update.$addToSet["networks"] = params.networkId;
+    //   inputsNoNetworksSet.delete(params.inputsObj.inputsId);
+    //   inputsFailedSet.delete(params.inputsObj.inputsId);
+    // }
+
+    // if (params.failNetworkId) {
+
+    //   console.log("params.failNetworkId: " + params.failNetworkId);
+
+    //   if (update.$addToSet === undefined) { update.$addToSet = {}; }
+    //   // update.$addToSet = { failNetworks: params.failNetworkId };
+    //   update.$addToSet["failNetworks"] = params.failNetworkId;
+    //   inputsFailedSet.add(params.inputsObj.inputsId);
+    // }
+
+    // const options = {
+    //   new: true,
+    //   returnOriginal: false,
+    //   upsert: true,
+    //   setDefaultsOnInsert: true
+    // };
+
+
+    // global.globalNetworkInputs.findOneAndUpdate(query, update, options, function(err, niDbUpdated){
+
+    //   if (err) {
+
+    //     console.log(chalkError("*** updateDbInputs | INPUTS FIND ONE ERROR: " + err
+    //       + "\nINPUTS ID: " + params.inputsObj.inputsId
+    //       + "\nUPDATE addToSet\n" + jsonPrint(update.$addToSet)
+    //       // + "\nOPTIONS\n" + jsonPrint(options)
+    //     ));
+    //     console.log(err);
+    //     return reject(err);
+    //   }
+
+    //   if (verbose) { printInputsObj(MODULE_ID_PREFIX + " | +++ INPUTS DB UPDATED", niDbUpdated); }
+
+    //   resolve(niDbUpdated);
+    // });
 
   });
 }
