@@ -1122,7 +1122,9 @@ function updateDbInputs(params){
 
     update.$setOnInsert = { 
       meta: params.inputsObj.meta,
-      inputs: params.inputsObj.inputs
+      inputs: params.inputsObj.inputs,
+      networks: [params.networkId],
+      failNetworks: [params.failNetworkId]
     };
 
     if (params.networkId) {
