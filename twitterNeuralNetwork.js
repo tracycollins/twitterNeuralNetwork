@@ -1122,28 +1122,31 @@ function updateDbInputs(params){
       // update.$addToSet = { networks: params.networkId };
       update.$addToSet["networks"] = params.networkId;
       inputsNoNetworksSet.delete(params.inputsObj.inputsId);
-      inputsFailedSet.delete(params.inputsObj.inputsId)
+      inputsFailedSet.delete(params.inputsObj.inputsId);
     }
 
     if (params.failNetworkId) {
       if (update.$addToSet === undefined) { update.$addToSet = {}; }
       // update.$addToSet = { failNetworks: params.failNetworkId };
       update.$addToSet["failNetworks"] = params.failNetworkId;
-      inputsFailedSet.add(params.inputsObj.inputsId)
+      inputsFailedSet.add(params.inputsObj.inputsId);
     }
 
     const options = {
       new: true,
       returnOriginal: false,
       upsert: true,
-      setDefaultsOnInsert: true,
+      setDefaultsOnInsert: true
     };
 
 
     global.globalNetworkInputs.findOneAndUpdate(query, update, options, function(err, niDbUpdated){
 
       if (err) {
-        console.log(chalkError("*** updateDbInputs | INPUTS FIND ONE ERROR: " + err));
+        console.log(chalkError("*** updateDbInputs | INPUTS FIND ONE ERROR: " + err
+          + "\nUPDATE\n" + jsonPrint(update)
+          + "\nOPTIONS\n" + jsonPrint(options)
+        ));
         return reject(err);
       }
 
