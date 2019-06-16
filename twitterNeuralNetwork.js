@@ -1108,6 +1108,14 @@ function updateDbInputs(params){
       return reject(new Error("undefined params.inputsObj.inputsId"));
     }
 
+    if (!params.inputsObj.meta || params.inputsObj.meta === undefined) {
+      return reject(new Error("undefined params.inputsObj.meta"));
+    }
+
+    if (!params.inputsObj.inputs || params.inputsObj.inputs === undefined) {
+      return reject(new Error("undefined params.inputsObj.inputs"));
+    }
+
     const query = { inputsId: params.inputsObj.inputsId };
 
     const update = {};
@@ -1144,8 +1152,8 @@ function updateDbInputs(params){
 
       if (err) {
         console.log(chalkError("*** updateDbInputs | INPUTS FIND ONE ERROR: " + err
-          + "\nUPDATE\n" + jsonPrint(update)
-          + "\nOPTIONS\n" + jsonPrint(options)
+          + "\nUPDATE addToSet\n" + jsonPrint(update.$addToSet)
+          // + "\nOPTIONS\n" + jsonPrint(options)
         ));
         return reject(err);
       }
