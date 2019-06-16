@@ -1129,11 +1129,11 @@ function updateDbInputs(params){
 
       console.log("params.networkId: " + params.networkId);
 
-      if (update.$addToSet === undefined) { update.$addToSet = {}; }
-      // update.$addToSet = { networks: params.networkId };
-      update.$addToSet["networks"] = params.networkId;
-      inputsNoNetworksSet.delete(params.inputsObj.inputsId);
-      inputsFailedSet.delete(params.inputsObj.inputsId);
+      // if (update.$addToSet === undefined) { update.$addToSet = {}; }
+      // // update.$addToSet = { networks: params.networkId };
+      // update.$addToSet["networks"] = params.networkId;
+      // inputsNoNetworksSet.delete(params.inputsObj.inputsId);
+      // inputsFailedSet.delete(params.inputsObj.inputsId);
     }
 
     if (params.failNetworkId) {
