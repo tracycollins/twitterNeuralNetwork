@@ -801,7 +801,7 @@ function networkDefaults(networkObj){
   return new Promise(function(resolve, reject){
 
     if (!networkObj || networkObj === undefined) {
-      console.log(chalkError("networkDefaults ERROR: networkObj UNDEFINED"));
+      console.trace(chalkError("networkDefaults ERROR: networkObj UNDEFINED"));
       return reject(new Error("networkDefaults ERROR: networkObj UNDEFINED"));
     }
 
@@ -1100,6 +1100,14 @@ function purgeInputs(inputsId){
 function updateDbInputs(params){
   return new Promise(async function(resolve, reject){
 
+    if (!params.inputsObj || params.inputsObj === undefined) {
+      return reject(new Error("undefined params.inputsObj"));
+    }
+
+    if (!params.inputsObj.inputsId || params.inputsObj.inputsId === undefined) {
+      return reject(new Error("undefined params.inputsObj.inputsId"));
+    }
+
     const query = { inputsId: params.inputsObj.inputsId };
 
     const update = {};
@@ -1110,13 +1118,15 @@ function updateDbInputs(params){
     };
 
     if (params.networkId) {
-      update.$addToSet = { networks: params.networkId };
+      // update.$addToSet = { networks: params.networkId };
+      update.$addToSet["networks"] = params.networkId;
       inputsNoNetworksSet.delete(params.inputsObj.inputsId);
       inputsFailedSet.delete(params.inputsObj.inputsId)
     }
 
     if (params.failNetworkId) {
-      update.$addToSet = { failNetworks: params.failNetworkId };
+      // update.$addToSet = { failNetworks: params.failNetworkId };
+      update.$addToSet["failNetworks"] = params.failNetworkId;
       inputsFailedSet.add(params.inputsObj.inputsId)
     }
 
