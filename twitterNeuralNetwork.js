@@ -1120,11 +1120,9 @@ function updateDbInputs(params){
 
     const update = {};
 
-    update.$setOnInsert = { 
+    update.$set = { 
       meta: params.inputsObj.meta,
       inputs: params.inputsObj.inputs,
-      networks: [params.networkId],
-      failNetworks: [params.failNetworkId]
     };
 
     if (params.networkId) {
