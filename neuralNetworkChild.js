@@ -1421,7 +1421,7 @@ function testNetwork(){
         );
 
         if ((configuration.testMode && (numTested % 100 === 0)) || configuration.verbose){
-          console.log(currentChalk(MODULE_ID_PREFIX + " | TEST RESULT: " + passed 
+          console.log(currentChalk(MODULE_ID_PREFIX + " | TEST RESULT: " + passed + "/" + numTested
             + " | " + successRate.toFixed(2) + "%"
             + " | " + testOutput[0]
             + " " + testOutput[1]
@@ -1458,7 +1458,10 @@ function testNetwork(){
         successRate: successRate
       };
 
-      console.log(chalkNetwork(MODULE_ID_PREFIX + " | TEST COMPLETE"));
+      console.log(chalkAlert(MODULE_ID_PREFIX + " | TEST COMPLETE"
+        + " | " + numPassed + "/" + testSetObj.meta.setSize
+        + " | " + successRate.toFixed(2) + "%"
+      ));
 
       debug(chalkNetwork(MODULE_ID_PREFIX
         + " | TEST RESULTS\n" + jsonPrint(testResults)
@@ -2469,6 +2472,7 @@ process.on("message", function(m) {
 
       console.log(chalkInfo(MODULE_ID_PREFIX + " | CONFIG_EVOLVE"
         + " | CHILD ID: " + m.childId
+        + " | NETWORK TECH: " + m.networkTechnology
         + " | TEST SET RATIO: " + configuration.testSetRatio
       ));
 

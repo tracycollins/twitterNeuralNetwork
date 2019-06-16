@@ -2467,7 +2467,7 @@ function initNetworkCreate(params){
 
     try {
 
-      const childConf = await generateRandomEvolveConfig(configuration);
+      const childConf = await generateRandomEvolveConfig();
 
       switch (configuration.networkCreateMode) {
 
