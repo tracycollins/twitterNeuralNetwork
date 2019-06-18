@@ -1157,68 +1157,12 @@ function updateDbInputs(p){
 
     }
     catch(e){
-      console.log(chalkError("*** updateDbInputs | INPUTS FIND ONE ERROR: " + err
+      console.log(chalkError("*** updateDbInputs | INPUTS FIND ONE ERROR: " + e
         + "\nINPUTS ID: " + params.inputsObj.inputsId
       ));
-      console.log(err);
-      return reject(err);
+      console.log(e);
+      return reject(e);
     }
-
-    // const update = {};
-
-    // update.$setOnInsert = { 
-    //   meta: params.inputsObj.meta,
-    //   inputs: params.inputsObj.inputs,
-    //   networks: [params.networkId],
-    //   failNetworks: [params.failNetworkId]
-    // };
-
-    // if (params.networkId) {
-
-    //   console.log("params.networkId: " + params.networkId);
-
-    //   if (update.$addToSet === undefined) { update.$addToSet = {}; }
-    //   // update.$addToSet = { networks: params.networkId };
-    //   update.$addToSet["networks"] = params.networkId;
-    //   inputsNoNetworksSet.delete(params.inputsObj.inputsId);
-    //   inputsFailedSet.delete(params.inputsObj.inputsId);
-    // }
-
-    // if (params.failNetworkId) {
-
-    //   console.log("params.failNetworkId: " + params.failNetworkId);
-
-    //   if (update.$addToSet === undefined) { update.$addToSet = {}; }
-    //   // update.$addToSet = { failNetworks: params.failNetworkId };
-    //   update.$addToSet["failNetworks"] = params.failNetworkId;
-    //   inputsFailedSet.add(params.inputsObj.inputsId);
-    // }
-
-    // const options = {
-    //   new: true,
-    //   returnOriginal: false,
-    //   upsert: true,
-    //   setDefaultsOnInsert: true
-    // };
-
-
-    // global.globalNetworkInputs.findOneAndUpdate(query, update, options, function(err, niDbUpdated){
-
-    //   if (err) {
-
-    //     console.log(chalkError("*** updateDbInputs | INPUTS FIND ONE ERROR: " + err
-    //       + "\nINPUTS ID: " + params.inputsObj.inputsId
-    //       + "\nUPDATE addToSet\n" + jsonPrint(update.$addToSet)
-    //       // + "\nOPTIONS\n" + jsonPrint(options)
-    //     ));
-    //     console.log(err);
-    //     return reject(err);
-    //   }
-
-    //   if (verbose) { printInputsObj(MODULE_ID_PREFIX + " | +++ INPUTS DB UPDATED", niDbUpdated); }
-
-    //   resolve(niDbUpdated);
-    // });
 
   });
 }
