@@ -1126,6 +1126,15 @@ function updateDbInputs(p){
       const inputsObj = await global.globalNetworkInputs.findOne(query);
 
       if (inputsObj) {
+
+        if (inputsObj.networks === undefined) {
+          inputsObj.networks = [];
+        }
+
+        if (inputsObj.failNetworks === undefined) {
+          inputsObj.failNetworks = [];
+        }
+
         if (params.networkId && !inputsObj.networks.includes(params.networkId)) {
           inputsObj.networks.push(params.networkId);
         }
@@ -1140,6 +1149,14 @@ function updateDbInputs(p){
         return resolve(niDbUpdated);
       }
       else{
+
+        if (params.inputsObj.networks === undefined) {
+          params.inputsObj.networks = [];
+        }
+
+        if (params.inputsObj.failNetworks === undefined) {
+          params.inputsObj.failNetworks = [];
+        }
 
         if (params.networkId && !params.inputsObj.networks.includes(params.networkId)) {
           params.inputsObj.networks.push(params.networkId);
