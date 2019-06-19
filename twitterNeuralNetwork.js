@@ -5773,7 +5773,7 @@ function childCreate(p){
         shell.cd(childPidFolderLocal);
         shell.rm(childPidFile);
 
-        if (childHashMap[childId].currentNetworkId) {
+        if ((childHashMap[childId] !== undefined) && childHashMap[childId].currentNetworkId) {
           resultsHashmap[childHashMap[childId].currentNetworkId].status = "CHILD CLOSED";
         }
 
@@ -5788,7 +5788,7 @@ function childCreate(p){
         shell.cd(childPidFolderLocal);
         shell.rm(childPidFile);
 
-        if (childHashMap[childId].currentNetworkId) {
+        if ((childHashMap[childId] !== undefined) && childHashMap[childId].currentNetworkId) {
           resultsHashmap[childHashMap[childId].currentNetworkId].status = "CHILD EXIT";
         }
 
