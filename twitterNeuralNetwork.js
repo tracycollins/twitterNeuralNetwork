@@ -5146,6 +5146,8 @@ function startNetworkCreate(params){
     try {
       const networkId = getNewNetworkId();
 
+      childHashMap[childId].currentNetworkId = networkId;
+
       console.log(chalkBlue(MODULE_ID_PREFIX + " | START EVOLVE CHILD"
         + " | CHILD: " + params.childId
         + " | NETWORK ID: " + networkId
@@ -5228,7 +5230,6 @@ function childSend(p){
 
     if (childHashMap[childId] === undefined || !childHashMap[childId].child || !childHashMap[childId].child.connected) {
       console.log(chalkAlert(MODULE_ID_PREFIX + " | XXX CHILD SEND ABORTED | CHILD NOT CONNECTED OR UNDEFINED | " + childId));
-    // if (childHashMap[childId] === undefined || childHashMap[childId].child === undefined) {
       return reject(new Error("CHILD NOT CONNECTED OR UNDEFINED: " + childId));
     }
 
@@ -5363,6 +5364,7 @@ function childCreate(p){
 
       childHashMap[childId] = {};
       childHashMap[childId].status = "NEW";
+      childHashMap[childId].currentNetworkId = false;
       childHashMap[childId].messageQueue = [];
 
       child = cp.fork(appPath, args, options);
@@ -5765,17 +5767,33 @@ function childCreate(p){
       childHashMap[childId].childPidFile = childPidFile;
 
       child.on("close", function(){
+
         console.log(chalkAlert(MODULE_ID_PREFIX + " | CHILD CLOSED | " + childId));
+
         shell.cd(childPidFolderLocal);
         shell.rm(childPidFile);
+
+        if (childHashMap[childId].currentNetworkId) {
+          resultsHashmap[childHashMap[childId].currentNetworkId].status = "CHILD CLOSED";
+        }
+
         delete childHashMap[childId];
+
       });
 
       child.on("exit", function(){
+
         console.log(chalkAlert(MODULE_ID_PREFIX + " | CHILD EXITED | " + childId));
+
         shell.cd(childPidFolderLocal);
         shell.rm(childPidFile);
+
+        if (childHashMap[childId].currentNetworkId) {
+          resultsHashmap[childHashMap[childId].currentNetworkId].status = "CHILD EXIT";
+        }
+
         delete childHashMap[childId];
+
       });
 
       if (quitFlag) {
