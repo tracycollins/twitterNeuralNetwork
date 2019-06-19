@@ -5146,7 +5146,7 @@ function startNetworkCreate(params){
     try {
       const networkId = getNewNetworkId();
 
-      childHashMap[childId].currentNetworkId = networkId;
+      childHashMap[params.childId].currentNetworkId = networkId;
 
       console.log(chalkBlue(MODULE_ID_PREFIX + " | START EVOLVE CHILD"
         + " | CHILD: " + params.childId
