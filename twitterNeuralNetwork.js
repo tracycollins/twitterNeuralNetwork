@@ -2355,9 +2355,8 @@ function generateRandomEvolveConfig (){
           const inputsObj = await global.globalNetworkInputs.findOne({inputsId: config.seedInputsId});
 
           if (!inputsObj) {
-            console.log(chalkError("TNN | *** LOAD INPUTS ERROR"
+            console.log(chalkError("TNN | *** LOAD INPUTS ERROR | NOT FOUND"
               + " | INPUTS ID: " + config.seedInputsId
-              + " | ERROR: " + err
             ));
             return reject(new Error(config.seedInputsId + " NOT IN inputsSet"));
           }
