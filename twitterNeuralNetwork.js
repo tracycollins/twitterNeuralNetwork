@@ -5453,14 +5453,16 @@ function childCreate(p){
 
             newNeuralNetwork.markModified("overallMatchRate");
 
-            newNeuralNetwork.
-            save().
-            catch(function(err){
-              console.log(chalkError(MODULE_ID_PREFIX + " | *** ERROR SAVE NN TO DB" 
-                + " | NID: " + nn.networkId
-                + " | " + err.message
-              ));
-            });
+            await newNeuralNetwork.save();
+
+            // newNeuralNetwork.
+            // save().
+            // catch(function(err){
+            //   console.log(chalkError(MODULE_ID_PREFIX + " | *** ERROR SAVE NN TO DB" 
+            //     + " | NID: " + nn.networkId
+            //     + " | " + err.message
+            //   ));
+            // });
 
             resultsHashmap[nn.networkId] = {};
             resultsHashmap[nn.networkId] = omit(nn, ["network", "inputs", "outputs", "inputsObj"]);
