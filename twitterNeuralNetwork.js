@@ -1262,7 +1262,7 @@ function loadNetworkDropboxFile(params){
 
         networkIdSet.add(networkObj.networkId);
 
-        printNetworkObj(MODULE_ID_PREFIX + " | +++ NN HASH MAP [" + networkIdSet.size + " IN HM]", networkObj);
+        printNetworkObj(MODULE_ID_PREFIX + " | +++ NN SET [" + networkIdSet.size + " IN SET]", networkObj);
 
         if (!currentBestNetwork || (networkObj.overallMatchRate > currentBestNetwork.overallMatchRate)) {
           currentBestNetwork = networkObj;
@@ -1282,7 +1282,6 @@ function loadNetworkDropboxFile(params){
         inObj.entry.content_hash = false;
         inObj.entry.client_modified = moment();
 
-        // inputsHashMap.set(networkObj.inputsId, inObj);
         inputsSet.add(networkObj.inputsId);
 
         if (inputsNetworksHashMap[networkObj.inputsId] === undefined) {
@@ -2350,11 +2349,18 @@ function generateRandomEvolveConfig (){
 
         config.inputsObj = {};
 
-        config.inputsObj = await global.globalNetworkInputs.findOne({inputsId: config.seedInputsId});
+        try{
+          config.inputsObj = await global.globalNetworkInputs.findOne({inputsId: config.seedInputsId});
+        }
+        catch(err){
+          console.log(chalkError("TNN | *** LOAD INPUTS ERROR"
+            + " | INPUTS ID: " + config.seedInputsId
+            + " | ERROR: " + err
+          ));
+          return reject(new Error(config.seedInputsId + " NOT IN inputsSet"));
+        }
 
         config.inputsObj = config.inputsObj.toObject();
-
-        // config.inputsObj = inputsHashMap.get(config.seedInputsId).inputsObj;
 
         config.architecture = "perceptron";
         // config.hiddenLayerSize = configuration.evolve.hiddenLayerSize;
@@ -2363,7 +2369,7 @@ function generateRandomEvolveConfig (){
         debug(MODULE_ID_PREFIX + " | PERCEPTRON ARCH | SEED INPUTS: " + config.seedInputsId);
       }
       else {
-        console.log("TNN *** ERROR *** | PERCEPTRON ARCH | seedInputsId " + config.seedInputsId + " NOT IN inputsSet");
+        console.log("TNN | *** ERROR *** | PERCEPTRON ARCH | seedInputsId " + config.seedInputsId + " NOT IN inputsSet");
         return reject(new Error(config.seedInputsId + " NOT IN inputsSet"));
       }
     }
@@ -4831,25 +4837,15 @@ const fsmStates = {
 
         try {
 
-          const seedParams = {};
-
-          seedParams.purgeMin = configuration.purgeMin || false; // use localPurgeMinSuccessRate to delete nn's
-          // seedParams.folders = [globalBestNetworkFolder, localBestNetworkFolder];
-          seedParams.folders = [globalBestNetworkFolder];
-
-          if (configuration.seedNetworkId) {
-            seedParams.networkId = configuration.seedNetworkId;
-          }
-          console.log("seedParams\n" + jsonPrint(seedParams));
-
           await initChildPingAllInterval();
           await childStatsAll();
 
           await loadNetworkInputsConfig({file: defaultBestInputsConfigFile});
           await loadNetworkInputsConfig({file: defaultNetworkInputsConfigFile});
           await loadNetworkInputsConfig({file: defaultUnionInputsConfigFile});
-          await loadBestNetworkDropboxFolders({folders: [globalBestNetworkFolder]});
+          await loadBestNetworkDropboxFolders({folders: [globalBestNetworkFolder, localBestNetworkFolder]});
           await loadInputsDropboxFolders({folders: [defaultInputsFolder]});
+
           await childStartAll();
 
         }
