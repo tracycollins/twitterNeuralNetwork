@@ -2362,6 +2362,8 @@ function generateRandomEvolveConfig (){
             return reject(new Error(config.seedInputsId + " NOT IN inputsSet"));
           }
 
+          config.inputsObj = inputsObj.toObject();
+
         }
         catch(err){
           console.log(chalkError("TNN | *** LOAD INPUTS ERROR"
@@ -2370,8 +2372,6 @@ function generateRandomEvolveConfig (){
           ));
           return reject(new Error(config.seedInputsId + " NOT IN inputsSet"));
         }
-
-        config.inputsObj = inputsObj.toObject();
 
         config.architecture = "perceptron";
         // config.hiddenLayerSize = configuration.evolve.hiddenLayerSize;
