@@ -5451,13 +5451,13 @@ function childCreate(p){
 
             let objSize = sizeof(nn)/ONE_MEGABYTE;
 
-            console.log(chalkError(MODULE_ID_PREFIX + " | NN SIZE: " + objSize.toFixed(2); 
+            console.log(chalkError(MODULE_ID_PREFIX + " | NN SIZE: " + objSize.toFixed(2))); 
 
             newNeuralNetwork = new global.globalNeuralNetwork(nn);
 
             objSize = sizeof(newNeuralNetwork)/ONE_MEGABYTE;
 
-            console.log(chalkError(MODULE_ID_PREFIX + " | newNeuralNetwork SIZE: " + objSize.toFixed(2); 
+            console.log(chalkError(MODULE_ID_PREFIX + " | newNeuralNetwork SIZE: " + objSize.toFixed(2))); 
 
             newNeuralNetwork.markModified("overallMatchRate");
 
