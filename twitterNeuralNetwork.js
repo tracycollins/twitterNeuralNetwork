@@ -2347,10 +2347,21 @@ function generateRandomEvolveConfig (){
     else {
       if (inputsSet.has(config.seedInputsId)) {
 
+        console.log(chalkLog(MODULE_ID_PREFIX + " | USE SEED INPUTS ID | " + config.seedInputsId));
+
         config.inputsObj = {};
 
         try{
-          config.inputsObj = await global.globalNetworkInputs.findOne({inputsId: config.seedInputsId});
+          const inputsObj = await global.globalNetworkInputs.findOne({inputsId: config.seedInputsId});
+
+          if (!inputsObj) {
+            console.log(chalkError("TNN | *** LOAD INPUTS ERROR"
+              + " | INPUTS ID: " + config.seedInputsId
+              + " | ERROR: " + err
+            ));
+            return reject(new Error(config.seedInputsId + " NOT IN inputsSet"));
+          }
+
         }
         catch(err){
           console.log(chalkError("TNN | *** LOAD INPUTS ERROR"
@@ -2360,7 +2371,7 @@ function generateRandomEvolveConfig (){
           return reject(new Error(config.seedInputsId + " NOT IN inputsSet"));
         }
 
-        config.inputsObj = config.inputsObj.toObject();
+        config.inputsObj = inputsObj.toObject();
 
         config.architecture = "perceptron";
         // config.hiddenLayerSize = configuration.evolve.hiddenLayerSize;
