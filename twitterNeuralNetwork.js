@@ -1138,7 +1138,9 @@ function updateDbInputs(p){
           params.inputsObj.failNetworks.push(params.failNetworkId);
         }
 
-        const niDbUpdated = new global.globalNetworkInputs(params.inputsObj);
+        const ni = new global.globalNetworkInputs(params.inputsObj);
+
+        const niDbUpdated = await ni.save();
 
         if (verbose) { printInputsObj(MODULE_ID_PREFIX + " | +++ INPUTS DB UPDATED", niDbUpdated); }
 
@@ -2308,8 +2310,21 @@ function generateRandomEvolveConfig (){
 
       console.log(MODULE_ID_PREFIX + " | SEED NETWORK | " + config.seedNetworkId);
 
-      const dbNetworkObj = await global.globalNeuralNetwork.findOne({ networkId: config.seedNetworkId });
-      const networkObj = dbNetworkObj.toObject();
+      let networkObj = {};
+
+      try{
+        const dbNetworkObj = await global.globalNeuralNetwork.findOne({ networkId: config.seedNetworkId });
+        if (!dbNetworkObj) {
+          console.log(chalkError(MODULE_ID_PREFIX + " | *** DB FIND NN ERROR | " + config.seedNetworkId));
+          return reject(new Error("NN not found: " + networkObj.inputsId))
+        }
+
+        networkObj = dbNetworkObj.toObject();
+      }
+      catch(err){
+        console.log(chalkError(MODULE_ID_PREFIX + " | *** DB FIND NN ERROR | " + config.seedNetworkId));
+        return reject(new Error("NN not found: " + networkObj.inputsId))
+      }
 
       config.networkObj = networkObj;
       config.architecture = "loadedNetwork";
