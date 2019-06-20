@@ -1716,8 +1716,14 @@ function networkEvolve(params) {
       networkObj.evolve.results = results;
       networkObj.evolve.results.error = ((results.error !== undefined) && results.error && (results.error < Infinity)) ? results.error : 0;
       networkObj.evolve.results.efficientMutation = ((results.efficientMutation !== undefined) && results.efficientMutation) ? results.efficientMutation : false;
+
       networkObj.evolve.options = {};
-      networkObj.evolve.options = params;
+
+      networkObj.evolve.options = pick(
+        params, 
+        [ "hiddenLayerSize", "clear", "cost", "activation", "growth", "equal", "mutation", "mutationRate", "mutationAmount", "efficientMutation", "popsize", "elitism", "provenance", "fitnessPopulation", "error" ]
+      );
+
       networkObj.evolve.elapsed = statsObj.evolve.elapsed;
       networkObj.evolve.startTime = statsObj.evolve.startTime;
       networkObj.evolve.endTime = statsObj.evolve.endTime;
@@ -1940,6 +1946,7 @@ function evolve(p){
     }, async function(){
 
       network = {};
+
       let networkObj;
       let testResults;
 
