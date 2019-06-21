@@ -1966,19 +1966,36 @@ function evolve(p){
 
         case "perceptron":
 
-          console.log("NNC"
-            + " | " + configuration.childId
-            + " | " + params.architecture.toUpperCase()
-            + " | IN: " + params.inputsObj.meta.numInputs 
-            + " | OUT: " + trainingSetObj.meta.numOutputs
-            + " | HIDDEN LAYER NODES: " + params.hiddenLayerSize
-          );
+          if (networkTech === "carrot"){
+            network = new networkTech.architect.Perceptron(
+              params.inputsObj.meta.numInputs, 
+              params.hiddenLayerSize,
+              3
+            );
 
-          network = new networkTech.architect.Perceptron(
-            params.inputsObj.meta.numInputs, 
-            params.hiddenLayerSize,
-            3
-          );
+            console.log("NNC"
+              + " | " + configuration.childId
+              + " | " + params.architecture.toUpperCase()
+              + " | IN: " + params.inputsObj.meta.numInputs 
+              + " | OUT: " + trainingSetObj.meta.numOutputs
+              + " | HIDDEN LAYER NODES: " + params.hiddenLayerSize
+            );
+
+          }
+          else{
+            network = new networkTech.architect.Perceptron(
+              params.inputsObj.meta.numInputs, 
+              3
+            );
+
+            console.log("NNC"
+              + " | " + configuration.childId
+              + " | " + params.architecture.toUpperCase()
+              + " | IN: " + params.inputsObj.meta.numInputs 
+              + " | OUT: " + trainingSetObj.meta.numOutputs
+            );
+
+          }
 
         break;
 
