@@ -509,7 +509,7 @@ const DEFAULT_INIT_MAIN_INTERVAL = process.env.TNN_INIT_MAIN_INTERVAL || 10*ONE_
 
 const DEFAULT_EVOLVE_THREADS = 4;
 const DEFAULT_EVOLVE_ARCHITECTURE = "perceptron";
-const DEFAULT_EVOLVE_HIDDEN_LAYER_SIZE = 10;
+const DEFAULT_EVOLVE_INPUTS_TO_HIDDEN_LAYER_SIZE_RATIO = 0.33;
 const DEFAULT_EVOLVE_BEST_NETWORK = false;
 const DEFAULT_EVOLVE_ELITISM = 1;
 const DEFAULT_EVOLVE_EQUAL = true;
@@ -659,24 +659,34 @@ if (process.env.TNN_SEED_RANDOMIZE_OPTIONS !== undefined) {
   }
 }
 
+configuration.inputsToHiddenLayerSizeRatio = (process.env.TNN_EVOLVE_INPUTS_TO_HIDDEN_LAYER_SIZE_RATIO !== undefined) 
+  ? process.env.TNN_EVOLVE_INPUTS_TO_HIDDEN_LAYER_SIZE_RATIO 
+  : DEFAULT_EVOLVE_INPUTS_TO_HIDDEN_LAYER_SIZE_RATIO;
+
 configuration.costArray = (process.env.TNN_EVOLVE_COST_ARRAY !== undefined) 
   ? process.env.TNN_EVOLVE_COST_ARRAY 
   : DEFAULT_EVOLVE_COST_ARRAY;
+
 configuration.activationArray = (process.env.TNN_EVOLVE_MOD_ACTIVATION_ARRAY !== undefined) 
   ? process.env.TNN_EVOLVE_MOD_ACTIVATION_ARRAY 
   : DEFAULT_EVOLVE_MOD_ACTIVATION_ARRAY;
+
 configuration.globalMinSuccessRate = (process.env.TNN_GLOBAL_MIN_SUCCESS_RATE !== undefined) 
   ? process.env.TNN_GLOBAL_MIN_SUCCESS_RATE 
   : DEFAULT_GLOBAL_MIN_SUCCESS_RATE;
+
 configuration.localMinSuccessRate = (process.env.TNN_LOCAL_MIN_SUCCESS_RATE !== undefined) 
   ? process.env.TNN_LOCAL_MIN_SUCCESS_RATE 
   : DEFAULT_LOCAL_MIN_SUCCESS_RATE;
+
 configuration.localMinSuccessRateMSE = (process.env.TNN_LOCAL_MIN_SUCCESS_RATE_MSE !== undefined) 
   ? process.env.TNN_LOCAL_MIN_SUCCESS_RATE_MSE
   : DEFAULT_LOCAL_MIN_SUCCESS_RATE_MSE;
+
 configuration.localPurgeMinSuccessRate = (process.env.TNN_LOCAL_PURGE_MIN_SUCCESS_RATE !== undefined) 
   ? process.env.TNN_LOCAL_PURGE_MIN_SUCCESS_RATE 
   : DEFAULT_LOCAL_PURGE_MIN_SUCCESS_RATE;
+
 configuration.loadTrainingSetFromFile = false;
 
 configuration.DROPBOX = {};
@@ -694,7 +704,6 @@ configuration.evolve.useBestNetwork = DEFAULT_EVOLVE_BEST_NETWORK;
 configuration.evolve.networkId = DEFAULT_SEED_NETWORK_ID;
 configuration.evolve.threads = DEFAULT_EVOLVE_THREADS;
 configuration.evolve.architecture = DEFAULT_EVOLVE_ARCHITECTURE;
-configuration.evolve.hiddenLayerSize = DEFAULT_EVOLVE_HIDDEN_LAYER_SIZE;
 configuration.evolve.networkObj = null;
 configuration.evolve.elitism = DEFAULT_EVOLVE_ELITISM;
 configuration.evolve.equal = DEFAULT_EVOLVE_EQUAL;
@@ -2368,8 +2377,7 @@ function generateRandomEvolveConfig (){
         }
 
         config.architecture = "perceptron";
-        // config.hiddenLayerSize = configuration.evolve.hiddenLayerSize;
-        config.hiddenLayerSize = parseInt((0.67 * config.inputsObj.meta.numInputs) + 3);
+        config.hiddenLayerSize = parseInt((configuration.inputsToHiddenLayerSizeRatio * config.inputsObj.meta.numInputs) + 3);
         config.inputsId = config.seedInputsId;
         debug(MODULE_ID_PREFIX + " | PERCEPTRON ARCH | SEED INPUTS: " + config.seedInputsId);
       }
