@@ -597,7 +597,6 @@ configuration.saveFileQueueInterval = SAVE_FILE_QUEUE_INTERVAL;
 configuration.useLocalTrainingSets = DEFAULT_USE_LOCAL_TRAINING_SETS;
 configuration.loadAllInputs = DEFAULT_LOAD_ALL_INPUTS;
 
-configuration.forceBannerImageAnalysis = false;
 configuration.interruptFlag = false;
 configuration.useLocalNetworksOnly = false;
 configuration.networkCreateIntervalTime = 15000;
@@ -708,25 +707,6 @@ configuration.evolve.efficientMutation = DEFAULT_EVOLVE_MUTATION_EFFICIENT;
 configuration.evolve.popsize = DEFAULT_EVOLVE_POPSIZE;
 configuration.evolve.growth = DEFAULT_EVOLVE_GROWTH;
 configuration.evolve.cost = DEFAULT_EVOLVE_COST;
-
-// configuration.train = {};
-// configuration.train.threads = DEFAULT_TRAIN_THREADS;
-// configuration.train.architecture = DEFAULT_TRAIN_ARCHITECTURE;
-// configuration.train.hiddenLayerSize = DEFAULT_TRAIN_HIDDEN_LAYER_SIZE;
-// configuration.train.useBestNetwork = DEFAULT_TRAIN_BEST_NETWORK;
-// configuration.train.networkObj = null;
-// configuration.train.networkId = DEFAULT_SEED_NETWORK_ID;
-// configuration.train.log = DEFAULT_TRAIN_LOG;
-// configuration.train.error = DEFAULT_TRAIN_ERROR;
-// configuration.train.cost = DEFAULT_TRAIN_COST;
-// configuration.train.rate = DEFAULT_TRAIN_RATE;
-// configuration.train.dropout = DEFAULT_TRAIN_DROPOUT;
-// configuration.train.shuffle = DEFAULT_TRAIN_SHUFFLE;
-// configuration.train.iterations = DEFAULT_ITERATIONS;
-// configuration.train.clear = DEFAULT_TRAIN_CLEAR;
-// configuration.train.momentum = DEFAULT_TRAIN_MOMENTUM;
-// configuration.train.ratePolicy = DEFAULT_TRAIN_RATE_POLICY;
-// configuration.train.batchSize = DEFAULT_TRAIN_BATCH_SIZE;
 
 statsObj.evolveStats = {};
 statsObj.evolveStats.results = {};
