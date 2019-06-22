@@ -1958,6 +1958,7 @@ function evolve(p){
 
           console.log("NNC"
             + " | " + configuration.childId
+            + " | " + options.networkObj.networkTechnology
             + " | EVOLVE ARCH | LOADED: " + options.networkObj.networkId
             + " | IN: " + options.networkObj.network.input
             + " | OUT: " + options.networkObj.network.output
@@ -1975,6 +1976,7 @@ function evolve(p){
 
             console.log("NNC"
               + " | " + configuration.childId
+              + " | " + networkTech
               + " | " + params.architecture.toUpperCase()
               + " | IN: " + params.inputsObj.meta.numInputs 
               + " | OUT: " + trainingSetObj.meta.numOutputs
@@ -1983,13 +1985,14 @@ function evolve(p){
 
           }
           else{
-            network = new networkTech.architect.Perceptron(
+            network = new networkTech.Network(
               params.inputsObj.meta.numInputs, 
               3
             );
 
             console.log("NNC"
               + " | " + configuration.childId
+              + " | " + networkTech
               + " | " + params.architecture.toUpperCase()
               + " | IN: " + params.inputsObj.meta.numInputs 
               + " | OUT: " + trainingSetObj.meta.numOutputs
