@@ -407,11 +407,11 @@ function initConfig(cnf) {
 }
 
 function init(){
-  return new Promise(async function(resolve){
+  return new Promise(async function(resolve, reject){
     statsObj.status = "INIT";
 
 
-    let { Network, architect, methods } = require("@liquid-carrot/carrot");
+    const { Network, architect, methods } = require("@liquid-carrot/carrot");
 
     async function execute () {
 
@@ -1721,7 +1721,7 @@ function networkEvolve(params) {
 
       networkObj.evolve.options = pick(
         params, 
-        [ "hiddenLayerSize", "clear", "cost", "activation", "growth", "equal", "mutation", "mutationRate", "mutationAmount", "efficientMutation", "popsize", "elitism", "provenance", "fitnessPopulation", "error" ]
+        ["hiddenLayerSize", "clear", "cost", "activation", "growth", "equal", "mutation", "mutationRate", "mutationAmount", "efficientMutation", "popsize", "elitism", "provenance", "fitnessPopulation", "error"]
       );
 
       networkObj.evolve.elapsed = statsObj.evolve.elapsed;
@@ -2347,7 +2347,7 @@ const fsmStates = {
 
           networkObj.evolve.options = pick(
             networkObj.evolve.options, 
-            [ "hiddenLayerSize", "clear", "cost", "activation", "growth", "equal", "mutation", "mutationRate", "mutationAmount", "efficientMutation", "popsize", "elitism", "provenance", "fitnessPopulation", "error" ]
+            ["hiddenLayerSize", "clear", "cost", "activation", "growth", "equal", "mutation", "mutationRate", "mutationAmount", "efficientMutation", "popsize", "elitism", "provenance", "fitnessPopulation", "error"]
           );
 
           process.send({op: "EVOLVE_COMPLETE", childId: configuration.childId, networkObj: networkObj, statsObj: statsObj});
