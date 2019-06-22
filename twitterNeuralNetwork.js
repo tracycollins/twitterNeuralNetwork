@@ -5867,7 +5867,7 @@ function toggleVerbose(){
 
   console.log(chalkLog(MODULE_ID_PREFIX + " | VERBOSE: " + configuration.verbose));
 
-  childSendAll({op: "VERBOSE", verbose: configuration.verbose}).
+  childSendAll({command: {op: "VERBOSE", verbose: configuration.verbose}}).
   then(function(){
 
   }).

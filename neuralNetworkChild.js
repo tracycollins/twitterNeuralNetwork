@@ -70,7 +70,8 @@ else {
 // MODULE REQUIRES
 //=========================================================================
 const neataptic = require("neataptic");
-const carrot = require("@liquid-carrot/carrot");
+// const carrot = require("@liquid-carrot/carrot");
+const carrot = require("./js/carrot");
 
 let networkTech;
 let network;
@@ -410,8 +411,7 @@ function init(){
   return new Promise(async function(resolve, reject){
     statsObj.status = "INIT";
 
-
-    const { Network, architect, methods } = require("@liquid-carrot/carrot");
+    const { Network, architect, methods } = require("./js/carrot");
 
     async function execute () {
 
@@ -1164,6 +1164,9 @@ function updateTrainingSet(){
           return reject(err);
         }
 
+        trainingSetObj.data = _.shuffle(trainingSetObj.data);
+        testSetObj.data = _.shuffle(testSetObj.data);
+
         trainingSetObj.meta.setSize = trainingSetObj.data.length;
         testSetObj.meta.setSize = testSetObj.data.length;
 
@@ -1370,18 +1373,11 @@ function testNetwork(){
 
   return new Promise(async function(resolve, reject){
 
-    console.log(chalkBlue("NNC | TEST NETWORK"
-      + " | NETWORK ID: " + networkObj.networkId
-      + " | " + testSetObj.data.length + " TEST DATA LENGTH"
-    ));
-
     const nw = networkTech.Network.fromJSON(networkObj.network);
 
     let numTested = 0;
-    const numSkipped = 0; 
     let numPassed = 0;
     let successRate = 0;
-    const testResultArray = [];
 
     const convertDatumParams = {};
     convertDatumParams.normalization = statsObj.normalization;
@@ -1389,7 +1385,12 @@ function testNetwork(){
 
     const shuffledTestData = _.shuffle(testSetObj.data);
 
-    async.each(shuffledTestData, async function(datum){
+    console.log(chalkBlue("NNC | TEST NETWORK"
+      + " | NETWORK ID: " + networkObj.networkId
+      + " | " + shuffledTestData.length + " TEST DATA LENGTH"
+    ));
+
+    async.eachSeries(shuffledTestData, async function(datum){
 
       try {
 
@@ -1406,26 +1407,16 @@ function testNetwork(){
 
         numPassed = passed ? numPassed+1 : numPassed;
 
-        successRate = 100 * numPassed/(numTested + numSkipped);
+        successRate = 100 * numPassed/numTested;
 
         const currentChalk = passed ? chalkLog : chalkAlert;
 
-        testResultArray.push(
-          {
-            P: passed,
-            EO: testDatumObj.output,
-            EOI: expectedMaxOutputIndex,
-            TO: testOutput, 
-            TOI: testMaxOutputIndex
-          }
-        );
-
         if ((configuration.testMode && (numTested % 100 === 0)) || configuration.verbose){
-          console.log(currentChalk(MODULE_ID_PREFIX + " | TEST RESULT: " + passed + "/" + numTested
+          console.log(currentChalk(MODULE_ID_PREFIX + " | TEST RESULT: " + numPassed + "/" + numTested
             + " | " + successRate.toFixed(2) + "%"
-            + " | " + testOutput[0]
-            + " " + testOutput[1]
-            + " " + testOutput[2]
+            + " | " + testOutput[0].toFixed(6)
+            + " " + testOutput[1].toFixed(6)
+            + " " + testOutput[2].toFixed(6)
             + " | TMOI: " + testMaxOutputIndex
             + " | " + testDatumObj.output[0]
             + " " + testDatumObj.output[1]
@@ -1452,8 +1443,7 @@ function testNetwork(){
 
       const testResults = { 
         testSetId: testSetObj.meta.testSetId, 
-        numTests: testSetObj.meta.setSize, 
-        numSkipped: numSkipped, 
+        numTests: numTested, 
         numPassed: numPassed, 
         successRate: successRate
       };
@@ -2098,79 +2088,103 @@ function indexOfMax (arr) {
 
   return new Promise(function(resolve, reject){
 
-    try {
-      if (arr.length === 0) {
-        debug(chalkAlert("NNC | indexOfMax: 0 LENG ARRAY: -1"));
-        return resolve(-2); 
-      }
-
-      if ((arr[0] === arr[1]) && (arr[1] === arr[2])){
-        debug(chalkAlert("NNT | indexOfMax: ALL EQUAL"));
-        debug(chalkAlert("NNT | ARR" 
-          + " | " + arr[0].toFixed(2) 
-          + " - " + arr[1].toFixed(2) 
-          + " - " + arr[2].toFixed(2)
-        ));
-        if (arr[0] === 0) { 
-          return resolve(-4); 
-        }
-        return resolve(4); 
-      }
-
-      debug("NNT | B4 ARR: " + arr[0].toFixed(2) + " - " + arr[1].toFixed(2) + " - " + arr[2].toFixed(2));
-      arrayNormalize(arr);
-      debug("NNT | AF ARR: " + arr[0].toFixed(2) + " - " + arr[1].toFixed(2) + " - " + arr[2].toFixed(2));
-
-      if (((arr[0] === 1) && (arr[1] === 1)) 
-        || ((arr[0] === 1) && (arr[2] === 1))
-        || ((arr[1] === 1) && (arr[2] === 1))){
-
-        debug(chalkAlert("NNT | indexOfMax: MULTIPLE SET"));
-
-        debug(chalkAlert("NNT | ARR" 
-          + " | " + arr[0].toFixed(2) 
-          + " - " + arr[1].toFixed(2) 
-          + " - " + arr[2].toFixed(2)
-        ));
-
-        async.eachOf(arr, function(val, index, cb0){
-          if (val < 1) {
-            arr[index] = 0;
-          }
-          cb0(); 
-        }, function(){
-          resolve(3); 
-        });
-
-      }
-      else {
-
-        let max = 0;
-        let maxIndex = -1;
-
-        async.eachOfSeries(arr, function(val, index, cb1){
-          if (val > max) {
-            maxIndex = index;
-            max = val;
-          }
-          cb1(); 
-        }, function(){
-
-          async.eachOf(arr, function(val, index, cb2){
-            if (val < 1) {
-              arr[index] = 0;
-            }
-            cb2(); 
-          }, function(){
-            resolve(maxIndex); 
-          });
-
-        });
-      }
+    if ((arr[0] === arr[1]) && (arr[0] === 1)){
+      return resolve(-1);
     }
-    catch(err){
-      return reject(err);
+
+    if ((arr[0] === arr[2]) && (arr[0] === 1)){
+      return resolve(-1);
     }
+
+    if ((arr[1] === arr[2]) && (arr[1] === 1)){
+      return resolve(-1);
+    }
+
+    if ((arr[0] === arr[1]) && (arr[0] === arr[2]) && (arr[1] === arr[2])){
+      return resolve(-1);
+    }
+
+    if ((arr[0] < 0.5) && (arr[1] < 0.5) && (arr[2] < 0.5)){
+      return resolve(-1);
+    }
+
+    const indexOfMaxValue = arr.indexOf(Math.max(...arr));
+
+    resolve(indexOfMaxValue);
+
+    // try {
+    //   if (arr.length === 0) {
+    //     debug(chalkAlert("NNC | indexOfMax: 0 LENG ARRAY: -1"));
+    //     return resolve(-2); 
+    //   }
+
+    //   if ((arr[0] === arr[1]) && (arr[1] === arr[2])){
+    //     debug(chalkAlert("NNT | indexOfMax: ALL EQUAL"));
+    //     debug(chalkAlert("NNT | ARR" 
+    //       + " | " + arr[0].toFixed(2) 
+    //       + " - " + arr[1].toFixed(2) 
+    //       + " - " + arr[2].toFixed(2)
+    //     ));
+    //     if (arr[0] === 0) { 
+    //       return resolve(-4); 
+    //     }
+    //     return resolve(4); 
+    //   }
+
+    //   debug("NNT | B4 ARR: " + arr[0].toFixed(2) + " - " + arr[1].toFixed(2) + " - " + arr[2].toFixed(2));
+    //   arrayNormalize(arr);
+    //   debug("NNT | AF ARR: " + arr[0].toFixed(2) + " - " + arr[1].toFixed(2) + " - " + arr[2].toFixed(2));
+
+    //   if (((arr[0] === 1) && (arr[1] === 1)) 
+    //     || ((arr[0] === 1) && (arr[2] === 1))
+    //     || ((arr[1] === 1) && (arr[2] === 1))){
+
+    //     debug(chalkAlert("NNT | indexOfMax: MULTIPLE SET"));
+
+    //     debug(chalkAlert("NNT | ARR" 
+    //       + " | " + arr[0].toFixed(2) 
+    //       + " - " + arr[1].toFixed(2) 
+    //       + " - " + arr[2].toFixed(2)
+    //     ));
+
+    //     async.eachOf(arr, function(val, index, cb0){
+    //       if (val < 1) {
+    //         arr[index] = 0;
+    //       }
+    //       cb0(); 
+    //     }, function(){
+    //       resolve(3); 
+    //     });
+
+    //   }
+    //   else {
+
+    //     let max = 0;
+    //     let maxIndex = -1;
+
+    //     async.eachOfSeries(arr, function(val, index, cb1){
+    //       if (val > max) {
+    //         maxIndex = index;
+    //         max = val;
+    //       }
+    //       cb1(); 
+    //     }, function(){
+
+    //       async.eachOf(arr, function(val, index, cb2){
+    //         if (val < 1) {
+    //           arr[index] = 0;
+    //         }
+    //         cb2(); 
+    //       }, function(){
+    //         resolve(maxIndex); 
+    //       });
+
+    //     });
+    //   }
+    // }
+    // catch(err){
+    //   return reject(err);
+    // }
 
   });
 }
@@ -2318,6 +2332,7 @@ const fsmStates = {
         }
 
         if (configuration.testMode) {
+          trainingSetObj.data = _.shuffle(trainingSetObj.data);
           trainingSetObj.data.length = Math.min(trainingSetObj.data.length, TEST_MODE_LENGTH);
           testSetObj.data.length = parseInt(configuration.testSetRatio * trainingSetObj.data.length);
           trainingSetObj.meta.setSize = trainingSetObj.data.length;
@@ -2459,6 +2474,8 @@ process.on("message", function(m) {
     case "VERBOSE":
       console.log(chalkInfo(MODULE_ID_PREFIX + " | VERBOSE"
         + " | CHILD ID: " + m.childId
+        + " | VERBOSE: " + m.verbose
+        + "\n" + jsonPrint(m)
       ));
       configuration.verbose = m.verbose;
     break;
