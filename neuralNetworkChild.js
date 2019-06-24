@@ -70,8 +70,8 @@ else {
 // MODULE REQUIRES
 //=========================================================================
 const neataptic = require("neataptic");
-// const carrot = require("@liquid-carrot/carrot");
-const carrot = require("./js/carrot");
+const carrot = require("@liquid-carrot/carrot");
+// const carrot = require("./js/carrot");
 
 let networkTech;
 let network;
@@ -411,7 +411,7 @@ function init(){
   return new Promise(async function(resolve, reject){
     statsObj.status = "INIT";
 
-    const { Network, architect, methods } = require("./js/carrot");
+    const { Network, architect, methods } = require("@liquid-carrot/carrot");
 
     async function execute () {
 
