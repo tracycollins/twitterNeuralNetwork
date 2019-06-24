@@ -3651,6 +3651,15 @@ function loadFileRetry(params){
         
         const fileObj = await loadFile(params);
 
+        if (retryNumber >= maxRetries) { 
+          console.log(chalkError(MODULE_ID_PREFIX + " | FILE LOAD RETRY"
+            + " | " + path
+            + " | BACKOFF: " + msToTime(backOffTime)
+            + " | " + retryNumber + " OF " + maxRetries
+          ));
+          return reject(new Error("FILE LOAD ERROR | RETRIES " + maxRetries));
+        }
+
         if (retryNumber > 0) { 
           console.log(chalkAlert(MODULE_ID_PREFIX + " | FILE LOAD RETRY"
             + " | " + path
