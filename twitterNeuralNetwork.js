@@ -5768,6 +5768,8 @@ function childCreate(p){
 
         delete childHashMap[childId];
 
+        quit({cause: "CHILD EXIT", force: true});
+
       });
 
       if (quitFlag) {
