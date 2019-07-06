@@ -83,7 +83,7 @@
     "tree-kill": "^1.2.1",
     "treeify": "^1.1.0",
     "unzip": "^0.1.11",
-    "util": "^0.12.0",
+    "util": "^0.12.1",
     "valid-url": "^1.0.9",
     "watch": "^1.0.2",
     "write-json-file": "^4.1.1",
