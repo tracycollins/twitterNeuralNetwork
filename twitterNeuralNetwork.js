@@ -67,6 +67,7 @@ const statsObj = {};
 let statsObjSmall = {};
 let configuration = {};
 
+configuration.previousChildConfig = false;
 configuration.offlineMode = OFFLINE_MODE;
 configuration.primaryHost = PRIMARY_HOST;
 configuration.networkTechnology = DEFAULT_NETWORK_TECHNOLOGY;
@@ -1964,193 +1965,6 @@ function loadInputsDropboxFolders (p){
   });
 }
 
-// function loadSeedNeuralNetwork(params){
-
-//   return new Promise(async function(resolve, reject){
-
-//     statsObj.status = "LOAD NEURAL NETWORKS";
-
-//     console.log(chalkNetwork(MODULE_ID_PREFIX + " | LOADING SEED NETWORKS FROM DROPBOX ..."));
-
-//     let numNetworksLoaded = 0;
-
-//     try{
-//       numNetworksLoaded = await loadBestNetworkDropboxFolders(params);
-//       console.log(chalkBlueBold(MODULE_ID_PREFIX + " | LOADED " + numNetworksLoaded + " NETWORKS"));
-//       printNetworkObj(MODULE_ID_PREFIX + " | BEST NETWORK", currentBestNetwork, chalkBlueBold);
-//       resolve(numNetworksLoaded);
-//     }
-//     catch(err){
-//       if (err.status === 429) {
-//         console.log(chalkError(MODULE_ID_PREFIX + " | LOAD DROPBOX NETWORKS ERR"
-//           + " | FOLDERS: " + params.folders
-//           + " | STATUS: " + err.status
-//           + " | TOO MANY REQUESTS"
-//         ));
-//       }
-//       else {
-//         console.log(chalkError(MODULE_ID_PREFIX + " | LOAD DROPBOX NETWORKS ERR"
-//           + " | FOLDERS: " + params.folders
-//           + " | STATUS: " + err.status
-//           + " | ERROR: " + err
-//         ));
-//       }
-//       reject(err);
-//     }
-
-
-//     // if (numNetworksLoaded === 0){
-
-//     //   if (configuration.verbose){
-
-//     //     sortedHashmap({ sortKey: "networkObj.overallMatchRate", hashmap: networkHashMap, max: 500}).
-//     //     then(function(sortedBestNetworks){
-
-//     //       const tableArray = [];
-
-//     //       tableArray.push([
-//     //         MODULE_ID_PREFIX + " | ",
-//     //         "TC",
-//     //         "TCH",
-//     //         "OAMR %",
-//     //         "MR %",
-//     //         "SR %",
-//     //         "INPUTS",
-//     //         "INPUTS ID",
-//     //         "NNID"
-//     //       ]);
-
-//     //       sortedBestNetworks.sortedKeys.forEach(function(networkId){
-
-//     //         if (networkHashMap.has(networkId)) {
-
-//     //           // const nn = networkHashMap.get(networkId).networkObj;
-
-//     //           const dbNetworkObj = await global.globalNeuralNetwork.findOne({ networkId: networkId });
-//     //           const nn = dbNetworkObj.toObject();
-
-//     //           if ((nn.overallMatchRate === undefined) || (nn.matchRate === undefined) || (nn.successRate === undefined)) {
-//     //             console.log(chalkAlert("BEST NETWORK UNDEFINED RATE"
-//     //               + " | " + networkId
-//     //               + " | OAMR: " + nn.overallMatchRate
-//     //               + " | MR: " + nn.matchRate
-//     //               + " | SR: " + nn.successRate
-//     //             ));
-//     //           }
-
-//     //           tableArray.push([
-//     //             MODULE_ID_PREFIX + " | ",
-//     //             nn.testCycles,
-//     //             nn.testCycleHistory.length,
-//     //             nn.overallMatchRate.toFixed(2),
-//     //             nn.matchRate.toFixed(2),
-//     //             nn.successRate.toFixed(2),
-//     //             nn.numInputs,
-//     //             nn.inputsId,
-//     //             networkId
-//     //           ]);
-//     //         }
-//     //         else {
-//     //           console.log(chalkAlert("BEST NETWORK NOT IN HASHMAP??"
-//     //             + " | " + networkId
-//     //           ));
-//     //         }
-//     //       });
-
-//     //       const t = table(tableArray, { align: ["l", "r", "r", "r", "r", "r", "r", "l", "l"] });
-
-//     //       console.log(MODULE_ID_PREFIX + " | ============================================================================================================================================");
-//     //       console.log(chalkLog(MODULE_ID_PREFIX + " | ... NO BEST NETWORKS CHANGED / LOADED | NNs IN HM: " + sortedBestNetworks.sortedKeys.length));
-//     //       if (configuration.verbose) { console.log(t); }
-//     //       console.log(MODULE_ID_PREFIX + " | ============================================================================================================================================");
-
-//     //     }).
-//     //     catch(function(err){
-//     //       console.trace(chalkError("generateRandomEvolveConfig sortedHashmap ERROR: " + err + "/" + jsonPrint(err)));
-//     //       return reject(err);
-//     //     });
-//     //   }
-
-//     //   return resolve(numNetworksLoaded);
-//     // }
-
-
-//     // sortedHashmap({ sortKey: "networkObj.overallMatchRate", hashmap: networkHashMap, max: 500}).
-//     // then(function(sortedBestNetworks){
-
-//     //   const tableArray = [];
-
-//     //   tableArray.push([
-//     //     MODULE_ID_PREFIX + " | ",
-//     //     "TCs",
-//     //     "TCH",
-//     //     "OAMR %",
-//     //     "MR %",
-//     //     "SR %",
-//     //     "INPUTS",
-//     //     "INPUTS ID",
-//     //     "NNID"
-//     //   ]);
-
-//     //   let nn;
-
-//     //   async.eachSeries(sortedBestNetworks.sortedKeys, function(networkId, cb){
-
-//     //     if (networkHashMap.has(networkId)) {
-
-//     //       // nn = networkHashMap.get(networkId).networkObj;
-
-//     //       const dbNetworkObj = await global.globalNeuralNetwork.findOne({ networkId: networkId });
-//     //       nn = dbNetworkObj.toObject();
-
-//     //       if ((nn.overallMatchRate === undefined) || (nn.matchRate === undefined) || (nn.successRate === undefined)) {
-//     //         console.log(chalkAlert("BEST NETWORK UNDEFINED RATE"
-//     //           + " | " + networkId
-//     //           + " | OAMR: " + nn.overallMatchRate
-//     //           + " | MR: " + nn.matchRate
-//     //           + " | SR: " + nn.successRate
-//     //         ));
-//     //       }
-
-//     //       tableArray.push([
-//     //         MODULE_ID_PREFIX + " | ",
-//     //         nn.testCycles,
-//     //         nn.testCycleHistory.length,
-//     //         nn.overallMatchRate.toFixed(2),
-//     //         nn.matchRate.toFixed(2),
-//     //         nn.successRate.toFixed(2),
-//     //         nn.numInputs,
-//     //         nn.inputsId,
-//     //         networkId
-//     //       ]);
-
-//     //       async.setImmediate(function() { cb(); });
-//     //     }
-//     //     else {
-//     //       async.setImmediate(function() { cb(); });
-//     //     }
-
-//     //   }, function(){
-
-//     //     const t = table(tableArray, { align: ["l", "r", "r", "r", "r", "r", "r", "l", "l"] });
-
-//     //     console.log(MODULE_ID_PREFIX + " | ============================================================================================================================================");
-//     //     console.log(chalkInfo(MODULE_ID_PREFIX + " | +++ BEST NETWORKS CHANGED / LOADED | NNs IN HM: " + sortedBestNetworks.sortedKeys.length));
-//     //     console.log(t);
-//     //     console.log(MODULE_ID_PREFIX + " | ============================================================================================================================================");
-
-//     //   });
-//     // }).
-//     // catch(function(err){
-//     //   console.trace(chalkError("generateRandomEvolveConfig sortedHashmap ERROR: " + err + "/" + jsonPrint(err)));
-//     //   return reject(err);
-//     // });
-
-//     // resolve(numNetworksLoaded);
-    
-//   });
-// }
-
 const watchOptions = {
   ignoreDotFiles: true,
   ignoreUnreadableDir: true,
@@ -2398,20 +2212,43 @@ function initNetworkCreate(params){
 
     const childId = params.childId;
     const networkId = params.networkId;
+    const compareTechFlag = params.compareTechFlag;
 
     statsObj.status = "INIT NETWORK CREATE";
 
     console.log(chalkLog(MODULE_ID_PREFIX + " | INIT NETWORK CREATE"
       + " | CHILD " + childId
       + " | NNC ID: " + networkId
+      + " | COMPARE TECH: " + compareTechFlag
     ));
 
     let messageObj;
     let networkCreateObj = {};
 
+    let childConf;
+
     try {
 
-      const childConf = await generateRandomEvolveConfig();
+      if (compareTechFlag && configuration.previousChildConfig) {
+
+        console.log(chalkAlert("TNN | PREV CHILD CONF TECH: " + configuration.previousChildConfig.networkTechnology));
+
+        childConf = configuration.previousChildConfig;
+
+        if (configuration.previousChildConfig.networkTechnology === "neataptic") {
+          childConf.networkTechnology = "carrot";
+        }
+        else {
+          childConf.networkTechnology = "neataptic";
+        }
+
+        configuration.previousChildConfig = false;
+      }
+      else {
+        childConf = await generateRandomEvolveConfig();
+        configuration.previousChildConfig = childConf;
+      }
+
 
       switch (configuration.networkCreateMode) {
 
@@ -4913,7 +4750,7 @@ const fsmStates = {
             then(function(childIdArray){
               console.log(chalkBlue(MODULE_ID_PREFIX + " | CREATED ALL CHILDREN: " + childIdArray.length));
               childIdArray.forEach(async function(childId){
-                await startNetworkCreate({childId: childId});
+                await startNetworkCreate({childId: childId, compareTechFlag: true});
               });
               createChildrenInProgress = false;
             }).
@@ -5011,7 +4848,6 @@ function childCreateAll(p){
     const params = p || {};
 
     const childrenCreatedArray = [];
-    // const maxNumberChildren = params.maxNumberChildren || configuration.maxNumberChildren;
 
     const interval = params.interval || 5*ONE_SECOND;
     let childIndex = params.childIndex || configuration.childIndex;
@@ -5136,7 +4972,9 @@ function startNetworkCreate(params){
         + " | NETWORK ID: " + networkId
       ));
 
-      await initNetworkCreate({childId: params.childId, networkId: networkId});
+      await initNetworkCreate({childId: params.childId, networkId: networkId, compareTechFlag: params.compareTechFlag});
+
+      resolve();
     }
     catch(err){
       return reject(err);
@@ -5148,24 +4986,29 @@ function startNetworkCreate(params){
 function childStartAll(){
 
   return new Promise(function(resolve, reject){
+
     try {
 
       console.log(chalkBlue(MODULE_ID_PREFIX + " | START EVOLVE ALL CHILDREN: " + Object.keys(childHashMap).length));
 
-      Object.keys(childHashMap).forEach(async function(childId) {
+      async.eachSeries(Object.keys(childHashMap), async function(childId) {
 
         if (childHashMap[childId] !== undefined){
           try {
-            await startNetworkCreate({childId: childId});
+            await startNetworkCreate({childId: childId, compareTechFlag: true});
+            return;
           }
           catch(err){
-            return reject(err);
+            return err;
           }
-         }
+        }
 
+        return;
+
+      }, function(err){
+        resolve();
       });
 
-      resolve();
     }
     catch(err){
       return reject(err);
@@ -5690,7 +5533,7 @@ function childCreate(p){
 
             if (!configuration.quitOnComplete){
               try{
-                await startNetworkCreate({childId: childId});
+                await startNetworkCreate({childId: childId, compareTechFlag: true});
               }
               catch(err){
                 console.log(chalkError(MODULE_ID_PREFIX 
