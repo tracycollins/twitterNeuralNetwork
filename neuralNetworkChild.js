@@ -71,7 +71,6 @@ else {
 //=========================================================================
 const neataptic = require("neataptic");
 const carrot = require("@liquid-carrot/carrot");
-// const carrot = require("./js/carrot");
 
 let networkTech;
 let network;
