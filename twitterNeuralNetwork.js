@@ -1082,6 +1082,14 @@ function updateDbInputs(p){
       return reject(new Error("undefined params.inputsObj.inputs"));
     }
 
+    if (params.inputsObj.networks === undefined) {
+      params.inputsObj.networks = [];
+    }
+
+    if (params.inputsObj.failNetworks === undefined) {
+      params.inputsObj.failNetworks = [];
+    }
+
     const query = { inputsId: params.inputsObj.inputsId };
 
     try{
@@ -1098,12 +1106,16 @@ function updateDbInputs(p){
           inputsObj.failNetworks = [];
         }
 
-        if (params.networkId && !inputsObj.networks.includes(params.networkId)) {
-          inputsObj.networks.push(params.networkId);
+        if (params.networkId) {
+          inputsObj.networks = _.union(params.networkId, inputsObj.networks);
         }
-        if (params.failNetworkId && !inputsObj.failNetworks.includes(params.failNetworkId)) {
-          inputsObj.failNetworks.push(params.failNetworkId);
+
+        if (params.failNetworkId) {
+          inputsObj.failNetworks = _.union(params.failNetworkId, inputsObj.failNetworks);
         }
+
+        inputsObj.networks = _.union(params.inputsObj.networks, inputsObj.networks);
+        inputsObj.failNetworks = _.union(params.inputsObj.failNetworks, inputsObj.failNetworks);
 
         const niDbUpdated = await inputsObj.save();
 
@@ -1112,14 +1124,6 @@ function updateDbInputs(p){
         return resolve(niDbUpdated);
       }
       else{
-
-        if (params.inputsObj.networks === undefined) {
-          params.inputsObj.networks = [];
-        }
-
-        if (params.inputsObj.failNetworks === undefined) {
-          params.inputsObj.failNetworks = [];
-        }
 
         if (params.networkId && !params.inputsObj.networks.includes(params.networkId)) {
           params.inputsObj.networks.push(params.networkId);
