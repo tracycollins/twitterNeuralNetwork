@@ -459,6 +459,7 @@ let childPingAllInterval;
 const bestRuntimeNetworkFileName = "bestRuntimeNetwork.json";
 
 const categorizedUserHistogram = {};
+
 categorizedUserHistogram.left = 0;
 categorizedUserHistogram.right = 0;
 categorizedUserHistogram.neutral = 0;
@@ -469,11 +470,14 @@ categorizedUserHistogram.none = 0;
 statsObj.normalization = {};
 statsObj.normalization.score = {};
 statsObj.normalization.magnitude = {};
+statsObj.normalization.comp = {};
 
 statsObj.normalization.score.min = 1.0;
 statsObj.normalization.score.max = -1.0;
 statsObj.normalization.magnitude.min = 0;
 statsObj.normalization.magnitude.max = -Infinity;
+statsObj.normalization.comp.min = Infinity;
+statsObj.normalization.comp.max = -Infinity;
 
 const DEFAULT_INPUT_TYPES = [
   "emoji",

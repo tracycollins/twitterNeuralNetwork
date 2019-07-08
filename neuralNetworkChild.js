@@ -148,8 +148,6 @@ statsObj.inputsId = "";
 statsObj.inputsObj = {};
 statsObj.outputs = {};
 
-statsObj.normalization = {};
-
 const statsPickArray = [
   "pid", 
   "startTime", 
@@ -353,13 +351,16 @@ else {
 }
 
 let userMaxInputHashMap = {};
+let userNormalization = {};
+
+let maxInputHashMap = {};
+let normalization = {};
 
 const trainingSetUsersHashMap = {};
 trainingSetUsersHashMap.left = new HashMap();
 trainingSetUsersHashMap.neutral = new HashMap();
 trainingSetUsersHashMap.right = new HashMap();
 
-let maxInputHashMap = {};
 
 let evolveOptions = {};
 
@@ -1016,6 +1017,7 @@ function unzipUsersToArray(params){
                     console.log(chalkLog(MODULE_ID_PREFIX + " | UNZIPPED MAX INPUT"));
 
                     userMaxInputHashMap = userObj.maxInputHashMap;
+                    userNormalization = userObj.normalization;
 
                     zipfile.readEntry();
                   }
@@ -1170,6 +1172,15 @@ function updateTrainingSet(){
         testSetObj.meta.setSize = testSetObj.data.length;
 
         maxInputHashMap = userMaxInputHashMap;
+        normalization = userNormalization;
+
+        console.log(chalkLog(MODULE_ID_PREFIX + " | maxInputHashMap"
+          + "\n" + jsonPrint(Object.keys(maxInputHashMap))
+        ));
+
+        console.log(chalkLog(MODULE_ID_PREFIX + " | NORMALIZATION"
+          + "\n" + jsonPrint(normalization)
+        ));
 
         console.log(chalkLog(MODULE_ID_PREFIX + " | TRAINING SET"
           + " | SIZE: " + trainingSetObj.meta.setSize
@@ -1379,7 +1390,7 @@ function testNetwork(){
     let successRate = 0;
 
     const convertDatumParams = {};
-    convertDatumParams.normalization = statsObj.normalization;
+    convertDatumParams.normalization = normalization;
     convertDatumParams.maxInputHashMap = maxInputHashMap;
 
     const shuffledTestData = _.shuffle(testSetObj.data);
@@ -1468,7 +1479,7 @@ function convertDatum(params){
   const datum = params.datum;
   const generateInputRaw = params.generateInputRaw;
 
-  const compRange = statsObj.normalization.comp.max - statsObj.normalization.comp.min;
+  const compRange = normalization.comp.max - normalization.comp.min;
 
   return new Promise(async function(resolve, reject){
 
@@ -1545,8 +1556,8 @@ function convertDatum(params){
                   inputValue = 0.5*(mergedHistograms.sentiment.score + 1);
                 break;
                 case "magnitude": // range = 0,+Infinity
-                  if (statsObj.normalization.magnitude.max > 0){
-                    inputValue = mergedHistograms.sentiment.magnitude/statsObj.normalization.magnitude.max;
+                  if (normalization.magnitude.max > 0){
+                    inputValue = mergedHistograms.sentiment.magnitude/normalization.magnitude.max;
                   }
                   else {
                     console.log(chalkAlert("TNC | ??? NORMALIZATION MAGNITUDE MAX === 0 | @" + datum.screenName));
@@ -1555,7 +1566,7 @@ function convertDatum(params){
                 break;
                 case "comp":  // range = -Infinity,+Infinity
                   if (compRange > 0){
-                    inputValue = (mergedHistograms.sentiment.comp - statsObj.normalization.comp.min)/compRange;
+                    inputValue = (mergedHistograms.sentiment.comp - normalization.comp.min)/compRange;
                   }
                   else{
                     console.log(chalkAlert("TNC | ??? NORMALIZATION COMP RANGE === 0 | @" + datum.screenName));
@@ -2561,8 +2572,6 @@ process.on("message", function(m) {
 
       configuration.childId = m.childId;
 
-      maxInputHashMap = m.maxInputHashMap;
-
       statsObj.training.startTime = moment().valueOf();
       statsObj.training.testRunId = m.testRunId;
       statsObj.training.seedNetworkId = m.seedNetworkId;
@@ -2574,9 +2583,6 @@ process.on("message", function(m) {
       statsObj.inputsObj = m.inputsObj;
       statsObj.outputs = {};
       statsObj.outputs = m.outputs;
-
-      statsObj.normalization = {};
-      statsObj.normalization = m.normalization;
 
       evolveOptions = {
         activation: m.activation,
