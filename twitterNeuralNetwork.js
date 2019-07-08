@@ -558,16 +558,20 @@ DEFAULT_INPUT_TYPES.forEach(function(type){
   globalhistograms[type] = {};
 });
 
-const resultsHashmap = {};
-const networkIdSet = new Set();
-let currentBestNetwork;
-const betterChildSeedNetworkIdSet = new Set();
-const skipLoadNetworkSet = new Set();
-const inputsNoNetworksSet = new Set();
-const inputsFailedSet = new Set();
 let localNetworkFile;
 let networkIndex = 0;
 let bestNetworkFile;
+
+const resultsHashmap = {};
+let currentBestNetwork;
+
+const networkIdSet = new Set();
+const betterChildSeedNetworkIdSet = new Set();
+const skipLoadNetworkSet = new Set();
+
+const inputsIdHashMap = {};
+const inputsNoNetworksSet = new Set();
+const inputsFailedSet = new Set();
 
 const inputsSet = new Set();
 const inputsNetworksHashMap = {};
@@ -1041,6 +1045,7 @@ function purgeInputs(inputsId){
         inputsSet.delete(inputsId);
         inputsNoNetworksSet.delete(inputsId);
         skipLoadInputsSet.add(inputsId);
+        delete inputsIdHashMap[inputsId];
       }
       else {
         console.log(chalkInfo(MODULE_ID_PREFIX + " | ** NO XXX PURGE INPUTS ... IN CONFIGURATION INPUTS ID ARRAY" 
@@ -1221,6 +1226,9 @@ function loadNetworkDropboxFile(params){
 
         networkIdSet.add(networkObj.networkId);
 
+        if (inputsIdHashMap[networkObj.inputsId] === undefined) { inputsIdHashMap[networkObj.inputsId] = new Set(); }
+        inputsIdHashMap[networkObj.inputsId].add(networkObj.networkId);
+
         printNetworkObj(MODULE_ID_PREFIX 
           + " | LOCAL > GLOBAL"
           + " | " + params.folder, 
@@ -1257,6 +1265,9 @@ function loadNetworkDropboxFile(params){
       if (passed) {
 
         networkIdSet.add(networkObj.networkId);
+
+        if (inputsIdHashMap[networkObj.inputsId] === undefined) { inputsIdHashMap[networkObj.inputsId] = new Set(); }
+        inputsIdHashMap[networkObj.inputsId].add(networkObj.networkId);
 
         printNetworkObj(MODULE_ID_PREFIX + " | +++ NN SET [" + networkIdSet.size + " IN SET]", networkObj);
 
@@ -1307,6 +1318,10 @@ function loadNetworkDropboxFile(params){
           }
 
           networkIdSet.add(nnDb.networkId);
+
+          if (inputsIdHashMap[nnDb.inputsId] === undefined) { inputsIdHashMap[nnDb.inputsId] = new Set(); }
+          inputsIdHashMap[nnDb.inputsId].add(nnDb.networkId);
+
         }
 
         return resolve(nnDb);
@@ -1386,10 +1401,6 @@ function loadInputsDropboxFile(params){
       console.log(chalkError(MODULE_ID_PREFIX + " | DB INPUTS UPDATE ERROR: " + err));
       return reject(err);
     }
-
-    // if (inputsSet.has(dbInputsObj.inputsId) && (params.entry === undefined)){
-    //   params.entry = inputsHashMap.get(dbInputsObj.inputsId).entry;
-    // }
 
     inputsSet.add(dbInputsObj.inputsId);
 
@@ -2017,24 +2028,16 @@ function initWatch(params){
   });
 }
 
-function generateRandomEvolveConfig (){
+function generateSeedInputsNetworkId(params){
 
   return new Promise(async function(resolve, reject){
 
-    statsObj.status = "GENERATE EVOLVE CONFIG";
-
-    console.log(chalkAlert(MODULE_ID_PREFIX + " | GENERATE RANDOM EVOLVE CONFIG"));
-
-    const config = {};
-    config.networkCreateMode = "evolve";
-    config.networkTechnology = (configuration.enableRandomTechnology) ? randomItem(["neataptic", "carrot"]) : configuration.networkTechnology;
-    console.log(chalkAlert(MODULE_ID_PREFIX + " | NETWORK TECHNOLOGY: " + config.networkTechnology));
-
-    debug(chalkLog(MODULE_ID_PREFIX + " | NETWORK CREATE MODE: " + config.networkCreateMode));
+    const config = params.config || {};
 
     //
     // if available use better child as seed nn
     //
+
     if (betterChildSeedNetworkIdSet.size > 0) {
 
       config.seedNetworkId = betterChildSeedNetworkIdSet.keys().next().value;
@@ -2045,54 +2048,89 @@ function generateRandomEvolveConfig (){
       console.log(chalkBlueBold(MODULE_ID_PREFIX + " | USING BETTER CHILD SEED"
         + " [" + betterChildSeedNetworkIdSet.size + "] SEED: " + config.seedNetworkId
       ));
-    }
-    else {
-      config.seedNetworkId = (Math.random() <= configuration.seedNetworkProbability) ? randomItem([...networkIdSet]) : false;
-      config.isBetterChildSeed = false;
+
+      return resolve(config);
     }
     
-    // seedInputsId only used if seedNetworkId == false
+    //
+    // no better children, so try an input set with no networks
+    //
+    
+    const noNetworksInputsIdArray = [...inputsNoNetworksSet].sort();
+    const failedInputsIdArray = [...inputsFailedSet];
+    const availableInputsIdArray = _.difference(noNetworksInputsIdArray, failedInputsIdArray);
 
-    // const inputsHashMapKeys = inputsHashMap.keys();
-
-    console.log(chalkLog(MODULE_ID_PREFIX + " | inputsSet SIZE: " + inputsSet.size));
-
-    // ------------------------------------------
-    // GENERATE RANDOM NETWORK IF NO SEED NETWORK
-    // ------------------------------------------
-
-    if (!config.seedNetworkId && (inputsNoNetworksSet.size > 0)){
-
-      const noNetworksInputsIdArray = [...inputsNoNetworksSet].sort();
-      const failedInputsIdArray = [...inputsFailedSet];
-      const availableInputsIdArray = _.difference(noNetworksInputsIdArray, failedInputsIdArray);
+    if (availableInputsIdArray.size > 0) {
 
       console.log(chalkLog(MODULE_ID_PREFIX + " | AVAILABLE NO NETWORKS INPUTS: " + availableInputsIdArray.length));
 
-      if (availableInputsIdArray.length > 0){
-        availableInputsIdArray.sort();
-        config.seedInputsId = availableInputsIdArray.pop(); // most recent input
-        console.log(chalkBlueBold(MODULE_ID_PREFIX
-          + " | NO NETWORKS RANDOM INPUT"
-          + " | INPUT NO NETWORKS SET: " + inputsNoNetworksSet.size
-          + " | AVAIL NO NETWORKS INPUTS: " + availableInputsIdArray.length
-          + " | " + config.seedInputsId
-        ));
-      }
-      else {
-        config.seedInputsId = randomItem([...inputsSet]);
-        console.log(chalkLog(MODULE_ID_PREFIX
-          + " | RANDOM INPUT [" + inputsSet.size + "]"
-          + " | " + config.seedInputsId
-        ));
-      }
-    }
-    else {
-      config.seedInputsId = randomItem([...inputsSet]);
-      console.log(chalkLog(MODULE_ID_PREFIX
-        + " | RANDOM INPUT [" + inputsSet.size + "]"
+      availableInputsIdArray.sort();
+
+      config.seedInputsId = availableInputsIdArray.pop(); // most recent input
+
+      console.log(chalkBlueBold(MODULE_ID_PREFIX
+        + " | NO NETWORKS RANDOM INPUT"
+        + " | INPUT NO NETWORKS SET: " + inputsNoNetworksSet.size
+        + " | AVAIL NO NETWORKS INPUTS: " + availableInputsIdArray.length
         + " | " + config.seedInputsId
       ));
+
+      return resolve(config);
+    }
+
+    //
+    // no input set with no networks, so maybe random network
+    //
+    
+    const useRandomNetwork = (Math.random() <= configuration.seedNetworkProbability);
+
+    if (useRandomNetwork && (Object.keys(inputsIdHashMap).length > 0)) {
+
+      const randomInputsId = randomItem(Object.keys(inputsIdHashMap));
+      const randomNetworkIdSet = inputsIdHashMap[randomInputsId];
+      const randomNetworkId = randomItem([...randomNetworkIdSet]);
+
+      config.seedNetworkId = randomNetworkId;
+      config.isBetterChildSeed = false;
+      return resolve(config);
+    }
+
+    //
+    // no random network, so random inputSet
+    //
+    
+    config.seedInputsId = randomItem([...inputsSet]);
+
+    console.log(chalkLog(MODULE_ID_PREFIX
+      + " | RANDOM INPUT [" + inputsSet.size + "]"
+      + " | " + config.seedInputsId
+    ));
+
+    resolve(config);
+
+  });
+}
+
+function generateRandomEvolveConfig (){
+
+  return new Promise(async function(resolve, reject){
+
+    statsObj.status = "GENERATE EVOLVE CONFIG";
+
+    console.log(chalkAlert(MODULE_ID_PREFIX + " | GENERATE RANDOM EVOLVE CONFIG"));
+
+    let config = {};
+    config.networkCreateMode = "evolve";
+    config.networkTechnology = (configuration.enableRandomTechnology) ? randomItem(["neataptic", "carrot"]) : configuration.networkTechnology;
+    console.log(chalkAlert(MODULE_ID_PREFIX + " | NETWORK TECHNOLOGY: " + config.networkTechnology));
+
+    debug(chalkLog(MODULE_ID_PREFIX + " | NETWORK CREATE MODE: " + config.networkCreateMode));
+
+    try{
+      config = await generateSeedInputsNetworkId({config: config});
+    }
+    catch(e){
+      return reject(e);
     }
 
     config.activation = randomItem(configuration.activationArray);
@@ -5347,6 +5385,9 @@ function childCreate(p){
               bestNetworkFile = nn.networkId + ".json";
 
               networkIdSet.add(nn.networkId);
+
+              if (inputsIdHashMap[nn.inputsId] === undefined) { inputsIdHashMap[nn.inputsId] = new Set(); }
+              inputsIdHashMap[nn.inputsId].add(nn.networkId);
 
               // Add to nn child better than parent array
               if (nn.seedNetworkId && (nn.test.results.successRate < 100) && (nn.test.results.successRate > nn.seedNetworkRes)) {

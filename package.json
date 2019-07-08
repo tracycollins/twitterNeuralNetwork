@@ -11,7 +11,7 @@
     "@threeceelabs/histogram-parser": "^1.0.20",
     "@threeceelabs/mergehistograms": "^1.0.2",
     "@threeceelabs/mongoose-twitter": "^1.0.254",
-    "@threeceelabs/tweet-server-controller": "^1.0.453",
+    "@threeceelabs/tweet-server-controller": "^1.0.454",
     "@threeceelabs/twitter-image-parser": "^1.0.76",
     "@threeceelabs/twitter-text-parser": "^1.0.83",
     "@threeceelabs/user-server-controller": "^1.0.458",
