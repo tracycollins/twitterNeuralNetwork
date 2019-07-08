@@ -1468,6 +1468,8 @@ function convertDatum(params){
   const datum = params.datum;
   const generateInputRaw = params.generateInputRaw;
 
+  const compRange = statsObj.normalization.comp.max - statsObj.normalization.comp.min;
+
   return new Promise(async function(resolve, reject){
 
     try {
@@ -1514,18 +1516,56 @@ function convertDatum(params){
           }
 
           if (inputType === "sentiment") {
-            if (datum.languageAnalysis === undefined) {
-              convertedDatum.input.push(0);
+
+            if (
+              mergedHistograms.sentiment 
+              && (mergedHistograms.sentiment !== undefined) 
+              && (mergedHistograms.sentiment[inputName] !== undefined)
+            ){
+
+              // "normalization": {
+              //   "score": {
+              //     "min": -0.8999999761581421,
+              //     "max": 1
+              //   },
+              //   "comp": {
+              //     "min": -264.00000011920923,
+              //     "max": 308.00000143051136
+              //   },
+              //   "magnitude": {
+              //     "min": 0,
+              //     "max": 4.400000095367432
+              //   }
+              // }
+
+              let inputValue;
+
+              switch (inputName) {
+                case "score": // range = 0,1
+                  inputValue = 0.5*(mergedHistograms.sentiment.score + 1);
+                break;
+                case "magnitude": // range = 0,+Infinity
+                  if (statsObj.normalization.magnitude.max > 0){
+                    inputValue = mergedHistograms.sentiment.magnitude/statsObj.normalization.magnitude.max;
+                  }
+                  else {
+                    console.log(chalkAlert("TNC | ??? NORMALIZATION MAGNITUDE MAX === 0 | @" + datum.screenName));
+                    inputValue = 0;
+                  }
+                break;
+                case "comp":  // range = -Infinity,+Infinity
+                  if (compRange > 0){
+                    inputValue = (mergedHistograms.sentiment.comp - statsObj.normalization.comp.min)/compRange;
+                  }
+                  else{
+                    console.log(chalkAlert("TNC | ??? NORMALIZATION COMP RANGE === 0 | @" + datum.screenName));
+                    inputValue = 0;
+                  }
+                break;
+              }
+
+              convertedDatum.input.push(inputValue);
             }
-            else if (datum.languageAnalysis[inputName] === undefined) {
-              convertedDatum.input.push(0);
-            }
-            else {
-              convertedDatum.input.push(datum.languageAnalysis[inputName]);
-            }
-            async.setImmediate(function() {
-              cb1();
-            });
           }
           else if (inputType === "friends"){
             if ((datum.friends !== undefined) && (datum.friends.length > 0) && (datum.friends.includes(inputName))){
