@@ -1552,7 +1552,7 @@ function convertDatum(params){
               let inputValue;
 
               switch (inputName) {
-                case "score": // range = 0,1
+                case "score": // range = -1,1
                   inputValue = 0.5*(mergedHistograms.sentiment.score + 1);
                 break;
                 case "magnitude": // range = 0,+Infinity
