@@ -1115,12 +1115,12 @@ function updateDbInputs(p){
           inputsObj.failNetworks = [];
         }
 
-        if (params.networkId) {
-          inputsObj.networks = _.union(params.networkId, inputsObj.networks);
+        if (params.networkId && !inputsObj.networks.includes(params.networkId)) {
+          inputsObj.networks.push(params.networkId);
         }
 
-        if (params.failNetworkId) {
-          inputsObj.failNetworks = _.union(params.failNetworkId, inputsObj.failNetworks);
+        if (params.failNetworkId && !inputsObj.networks.includes(params.failNetworkId)) {
+          inputsObj.failNetworks.push(params.failNetworkId);
         }
 
         inputsObj.networks = _.union(params.inputsObj.networks, inputsObj.networks);
