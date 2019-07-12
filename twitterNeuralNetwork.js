@@ -957,7 +957,7 @@ function printResultsHashmap(){
         betterChild,
         seedNetworkId,
         snIdRes,
-        networkObj.hiddenLayerSize,
+        hiddenLayerSize,
         networkObj.inputsId,
         networkObj.evolve.options.activation,
         networkObj.evolve.options.clear,
