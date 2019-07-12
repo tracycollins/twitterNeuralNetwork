@@ -2008,11 +2008,20 @@ function evolve(p){
         case "perceptron":
 
           if (networkTech === "carrot"){
-            network = new networkTech.architect.Perceptron(
-              params.inputsObj.meta.numInputs, 
-              params.hiddenLayerSize,
-              3
-            );
+
+            if (params.hiddenLayerSize && (params.hiddenLayerSize > 0)){
+              network = new networkTech.architect.Perceptron(
+                params.inputsObj.meta.numInputs, 
+                params.hiddenLayerSize,
+                3
+              );
+            }
+            else{
+              network = new networkTech.Network(
+                params.inputsObj.meta.numInputs, 
+                3
+              );
+            }
 
             console.log("NNC"
               + " | " + configuration.childId

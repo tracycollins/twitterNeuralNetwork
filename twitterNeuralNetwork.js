@@ -873,6 +873,7 @@ function printResultsHashmap(){
       "BETTER",
       "SEED",
       "RES %",
+      "HIDNLR",
       "INPUT ID",
       "ACTVTN",
       "CLEAR",
@@ -923,12 +924,14 @@ function printResultsHashmap(){
       let successRate = "";
       let elapsed = "";
       let betterChild = "";
+      let hiddenLayerSize = "";
       let seedNetworkId = "";
 
       networkTechnology = (networkObj.networkTechnology && networkObj.networkTechnology !== undefined) ? networkObj.networkTechnology : "UNKNOWN";
       status = (networkObj.status && networkObj.status !== undefined) ? networkObj.status : "UNKNOWN";
       snIdRes = (networkObj.seedNetworkId && networkObj.seedNetworkId !== undefined) ? networkObj.seedNetworkRes.toFixed(2) : "---";
       betterChild = (networkObj.betterChild && networkObj.betterChild !== undefined) ? networkObj.betterChild : "---";
+      hiddenLayerSize = (networkObj.hiddenLayerSize && networkObj.hiddenLayerSize !== undefined) ? networkObj.hiddenLayerSize : "---";
       seedNetworkId = (networkObj.seedNetworkId && networkObj.seedNetworkId !== undefined) ? networkObj.seedNetworkId : "---";
       iterations = (networkObj.evolve.results && networkObj.evolve.results !== undefined) ? networkObj.evolve.results.iterations : "---";
 
@@ -954,6 +957,7 @@ function printResultsHashmap(){
         betterChild,
         seedNetworkId,
         snIdRes,
+        networkObj.hiddenLayerSize,
         networkObj.inputsId,
         networkObj.evolve.options.activation,
         networkObj.evolve.options.clear,
@@ -982,6 +986,7 @@ function printResultsHashmap(){
       statsObj.networkResults[networkId].betterChild = betterChild;
       statsObj.networkResults[networkId].seedNetworkId = seedNetworkId;
       statsObj.networkResults[networkId].snIdRes = snIdRes;
+      statsObj.networkResults[networkId].hiddenLayerSize = hiddenLayerSize;
       statsObj.networkResults[networkId].networkObj.evolve.options = pick(
         networkObj.evolve.options, 
         ["activation", "clear", "cost", "growth", "equal", "mutationRate", "efficientMutation", "popsize", "elitism"]
@@ -1001,7 +1006,7 @@ function printResultsHashmap(){
       }
 
       const t = table(tableArray, { 
-        align: ["l", "l", "l", "l", "l", "l", "l", "l", "l", "l", "l", "l", "r", "l", "r", "r", "l", "l", "r", "r", "r"] 
+        align: ["l", "l", "l", "l", "l", "l", "r", "l", "l", "l", "l", "l", "l", "r", "l", "r", "r", "l", "l", "r", "r", "r"] 
       });
 
       console.log(chalkLog(MODULE_ID_PREFIX + " | === NETWORK RESULTS ========================================================================================================================"));
@@ -2115,6 +2120,22 @@ function generateSeedInputsNetworkId(params){
   });
 }
 
+function calculateHiddenLayerSize(params){
+  return new Promise(async function(resolve, reject){
+
+    const networkObj = params.networkObj;
+
+    let hiddenLayerSize = 0;
+
+    networkObj.network.nodes.forEach(function(node){
+      if (node.type === "hidden") { hiddenLayerSize += 1; }
+    });
+
+    resolve(hiddenLayerSize);
+
+  });
+}
+
 function generateRandomEvolveConfig (){
 
   return new Promise(async function(resolve, reject){
@@ -2157,7 +2178,6 @@ function generateRandomEvolveConfig (){
 
     if (configuration.enableSeedNetwork && config.seedNetworkId && networkIdSet.has(config.seedNetworkId)) {
 
-      console.log(MODULE_ID_PREFIX + " | SEED NETWORK | " + config.seedNetworkId);
 
       let networkObj = {};
 
@@ -2169,6 +2189,14 @@ function generateRandomEvolveConfig (){
         }
 
         networkObj = dbNetworkObj.toObject();
+
+        if (!networkObj.hiddenLayerSize || (networkObj.hiddenLayerSize === undefined)){
+          config.hiddenLayerSize = await calculateHiddenLayerSize(networkObj);
+          networkObj.hiddenLayerSize = config.hiddenLayerSize;
+        }
+        else{
+          config.hiddenLayerSize = networkObj.hiddenLayerSize;
+        }
       }
       catch(err){
         console.log(chalkError(MODULE_ID_PREFIX + " | *** DB FIND NN ERROR | " + config.seedNetworkId));
@@ -2180,6 +2208,10 @@ function generateRandomEvolveConfig (){
       config.inputsId = networkObj.inputsId;
       config.inputsObj = {};
       config.inputsObj = networkObj.inputsObj;
+
+
+      console.log(MODULE_ID_PREFIX + " | SEED NETWORK: " + config.networkObj.networkId);
+      console.log(MODULE_ID_PREFIX + " | HIDDEN NODES: " + networkObj.hiddenLayerSize);
 
       console.log(MODULE_ID_PREFIX + " | SEED INPUTS | " + networkObj.inputsId);
 
@@ -2237,8 +2269,12 @@ function generateRandomEvolveConfig (){
         }
 
         config.architecture = "perceptron";
+
         config.hiddenLayerSize = parseInt((configuration.inputsToHiddenLayerSizeRatio * config.inputsObj.meta.numInputs) + 3);
+        config.hiddenLayerSize = randomItem([0,config.hiddenLayerSize]);
+
         config.inputsId = config.seedInputsId;
+
         debug(MODULE_ID_PREFIX + " | PERCEPTRON ARCH | SEED INPUTS: " + config.seedInputsId);
       }
       else {
