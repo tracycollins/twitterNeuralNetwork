@@ -2191,7 +2191,7 @@ function generateRandomEvolveConfig (){
         networkObj = dbNetworkObj.toObject();
 
         if (!networkObj.hiddenLayerSize || (networkObj.hiddenLayerSize === undefined)){
-          config.hiddenLayerSize = await calculateHiddenLayerSize(networkObj);
+          config.hiddenLayerSize = await calculateHiddenLayerSize({networkObj: networkObj});
           networkObj.hiddenLayerSize = config.hiddenLayerSize;
         }
         else{
@@ -5348,6 +5348,7 @@ function childCreate(p){
               + "\nTNN | ERROR:           " + m.statsObj.evolve.results.error
               + "\nTNN | INPUTS ID:       " + nn.inputsId
               + "\nTNN | INPUTS:          " + nn.network.input
+              + "\nTNN | HIDDEN:          " + nn.network.hiddenLayerSize
               + "\nTNN | OUTPUTS:         " + nn.network.output
               + "\nTNN | DROPOUT:         " + nn.network.dropout
               + "\nTNN | NODES:           " + nn.network.nodes.length

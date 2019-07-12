@@ -18,6 +18,7 @@ const DEFAULT_TEST_RATIO = 0.33;
 const DEFAULT_NETWORK_TECHNOLOGY = "neataptic";
 const DEFAULT_QUIT_ON_COMPLETE = false;
 const DEFAULT_INPUTS_BINARY_MODE = false;
+const DEFAULT_NEATAPTIC_HIDDEN_LAYER_SIZE = 9;
 const TEST_MODE_LENGTH = 500;
 
 const TEST_MODE = false; // applies only to parent
@@ -292,6 +293,7 @@ let configuration = {};
 configuration.updateUserDb = DEFAULT_UPDATE_USER_DB;
 configuration.offlineMode = false;
 configuration.networkTechnology = DEFAULT_NETWORK_TECHNOLOGY;
+configuration.neatapticHiddenLayerSize = DEFAULT_NEATAPTIC_HIDDEN_LAYER_SIZE;
 configuration.inputsBinaryMode = DEFAULT_INPUTS_BINARY_MODE;
 configuration.testMode = TEST_MODE;
 
@@ -1738,6 +1740,7 @@ function networkEvolve(params) {
       networkObj.networkTechnology = params.networkTechnology;
       networkObj.seedNetworkId = statsObj.training.seedNetworkId;
       networkObj.seedNetworkRes = statsObj.training.seedNetworkRes;
+      networkObj.hiddenLayerSize = params.hiddenLayerSize;
       networkObj.networkCreateMode = "evolve";
       networkObj.successRate = 0;
       networkObj.matchRate = 0;
@@ -2017,6 +2020,36 @@ function evolve(p){
               );
             }
             else{
+              params.architecture = "random";
+              network = new networkTech.Network(
+                params.inputsObj.meta.numInputs, 
+                3
+              );
+            }
+
+            console.log("NNC"
+              + " | " + configuration.childId
+              + " | " + params.networkTechnology.toUpperCase()
+              + " | " + params.architecture.toUpperCase()
+              + " | IN: " + params.inputsObj.meta.numInputs 
+              + " | OUT: " + trainingSetObj.meta.numOutputs
+              + " | HIDDEN LAYER NODES: " + params.hiddenLayerSize
+            );
+          }
+          else{
+
+            if (params.hiddenLayerSize && (params.hiddenLayerSize > 0)){
+
+              params.hiddenLayerSize = Math.min(configuration.neatapticHiddenLayerSize, params.hiddenLayerSize);
+
+              network = new networkTech.architect.Perceptron(
+                params.inputsObj.meta.numInputs, 
+                params.hiddenLayerSize,
+                3
+              );
+            }
+            else{
+              params.architecture = "random";
               network = new networkTech.Network(
                 params.inputsObj.meta.numInputs, 
                 3
@@ -2033,21 +2066,6 @@ function evolve(p){
             );
 
           }
-          else{
-            network = new networkTech.Network(
-              params.inputsObj.meta.numInputs, 
-              3
-            );
-
-            console.log("NNC"
-              + " | " + configuration.childId
-              + " | " + params.networkTechnology.toUpperCase()
-              + " | " + params.architecture.toUpperCase()
-              + " | IN: " + params.inputsObj.meta.numInputs 
-              + " | OUT: " + trainingSetObj.meta.numOutputs
-            );
-
-          }
 
         break;
 
@@ -2061,6 +2079,7 @@ function evolve(p){
             + " | OUTPUTS: " + trainingSetObj.meta.numOutputs
           );
 
+          params.architecture = "random";
           network = new networkTech.Network(
             params.inputsObj.meta.numInputs, 
             3
