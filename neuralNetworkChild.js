@@ -1998,7 +1998,7 @@ function evolve(p){
 
           console.log("NNC"
             + " | " + configuration.childId
-            + " | " + options.networkObj.networkTechnology
+            + " | " + options.networkObj.networkTechnology.toUpperCase()
             + " | EVOLVE ARCH | LOADED: " + options.networkObj.networkId
             + " | IN: " + options.networkObj.network.input
             + " | OUT: " + options.networkObj.network.output
@@ -2025,7 +2025,7 @@ function evolve(p){
 
             console.log("NNC"
               + " | " + configuration.childId
-              + " | " + networkTech
+              + " | " + params.networkTechnology.toUpperCase()
               + " | " + params.architecture.toUpperCase()
               + " | IN: " + params.inputsObj.meta.numInputs 
               + " | OUT: " + trainingSetObj.meta.numOutputs
@@ -2041,7 +2041,7 @@ function evolve(p){
 
             console.log("NNC"
               + " | " + configuration.childId
-              + " | " + networkTech
+              + " | " + params.networkTechnology.toUpperCase()
               + " | " + params.architecture.toUpperCase()
               + " | IN: " + params.inputsObj.meta.numInputs 
               + " | OUT: " + trainingSetObj.meta.numOutputs
@@ -2055,6 +2055,7 @@ function evolve(p){
 
           console.log("NNC | EVOLVE ARCH"
             + " | " + configuration.childId
+            + " | " + params.networkTechnology.toUpperCase()
             + " | " + params.architecture.toUpperCase()
             + " | INPUTS: " + params.inputsObj.meta.numInputs
             + " | OUTPUTS: " + trainingSetObj.meta.numOutputs
