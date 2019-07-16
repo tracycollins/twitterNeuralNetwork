@@ -436,7 +436,7 @@ function init(){
           equal: true,
           error: 0.05,
           elitism: 5,
-          mutationRate: 0.5
+          mutation_rate: 0.5
         });
 
         let out = network.activate([0,0]); // 0.2413
@@ -1930,18 +1930,20 @@ function evolve(p){
     }
 
     options.clear = params.clear;
-    options.efficientMutation = params.efficientMutation;
+    options.efficientMutation = params.efficientMutation; // carrot
     options.elitism = params.elitism;
     options.equal = params.equal;
     options.error = params.error;
-    options.fitnessPopulation = params.fitnessPopulation;
+    options.fitness_population = params.fitnessPopulation; // carrot
     options.growth = params.growth;
     options.iterations = params.iterations;
     options.mutation = networkTech.methods.mutation.FFW;
     options.mutationAmount = params.mutationAmount;
-    options.mutationRate = params.mutationRate;
+    options.mutation_amount = params.mutationAmount; // carrot
+    options.mutationRate = params.mutationRate; 
+    options.mutation_rate = params.mutationRate; // carrot
     options.popsize = params.popsize;
-    options.provenance = params.provenance;
+    options.provenance = params.provenance; // carrot
     options.threads = params.threads;
 
     statsObj.evolve.startTime = moment().valueOf();
