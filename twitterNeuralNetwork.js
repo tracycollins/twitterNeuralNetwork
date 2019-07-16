@@ -2311,7 +2311,7 @@ function initNetworkCreate(params){
 
     try {
 
-      if (compareTechFlag && configuration.previousChildConfig) {
+      if (compareTechFlag && configuration.previousChildConfig && configuration.enableRandomTechnology) {
 
         console.log(chalkAlert("TNN | PREV CHILD CONF TECH: " + configuration.previousChildConfig.networkTechnology));
 
