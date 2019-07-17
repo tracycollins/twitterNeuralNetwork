@@ -2043,6 +2043,7 @@ function evolve(p){
             if (params.hiddenLayerSize && (params.hiddenLayerSize > 0)){
 
               params.hiddenLayerSize = Math.min(configuration.neatapticHiddenLayerSize, params.hiddenLayerSize);
+              params.hiddenLayerSize = Math.max(params.hiddenLayerSize, trainingSetObj.meta.numOutputs);
 
               network = new networkTech.architect.Perceptron(
                 params.inputsObj.meta.numInputs, 
@@ -2443,6 +2444,7 @@ const fsmStates = {
         try {
 
           const networkObj = await evolve(evolveOptions);
+          networkObj.hiddenLayerSize = networkObj.evolve.options.hiddenLayerSize;
 
           networkObj.evolve.options = pick(
             networkObj.evolve.options, 
