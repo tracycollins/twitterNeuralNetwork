@@ -83,7 +83,7 @@ const pick = require("object.pick");
 const treeify = require("treeify");
 const MergeHistograms = require("@threeceelabs/mergehistograms");
 const mergeHistograms = new MergeHistograms();
-const arrayNormalize = require("array-normalize");
+// const arrayNormalize = require("array-normalize");
 
 const debug = require("debug")("tfe");
 const util = require("util");
@@ -413,13 +413,14 @@ function init(){
   return new Promise(async function(resolve, reject){
     statsObj.status = "INIT";
 
-    const { Network, architect, methods } = require("@liquid-carrot/carrot");
+    // const { Network, architect, methods } = require("@liquid-carrot/carrot");
+    // const carrot = require("@liquid-carrot/carrot");
 
     async function execute () {
 
       console.log(chalkBlueBold("TNC | TEST | CARROT TECH XOR"));
 
-      const network = new architect.Perceptron(2,3,1);
+      const network = new carrot.architect.Perceptron(2,3,1);
 
        // XOR dataset
       const trainingSet = [
@@ -432,7 +433,7 @@ function init(){
       try {
 
         await network.evolve(trainingSet, {
-          mutation: methods.mutation.FFW,
+          mutation: carrot.methods.mutation.FFW,
           equal: true,
           error: 0.05,
           elitism: 5,
@@ -1566,7 +1567,7 @@ function convertDatum(params){
                     inputValue = 0;
                   }
                 break;
-                case "comp":  // range = -Infinity,+Infinity
+                case "comp": // range = -Infinity,+Infinity
                   if (compRange > 0){
                     inputValue = (mergedHistograms.sentiment.comp - normalization.comp.min)/compRange;
                   }
@@ -1575,9 +1576,16 @@ function convertDatum(params){
                     inputValue = 0;
                   }
                 break;
+
+                default:
+                  console.log(chalkError("TNC | *** UNKNOWN INPUT NAME NORMALIZATION: " + inputName));
               }
 
               convertedDatum.input.push(inputValue);
+
+              async.setImmediate(function() {
+                cb1();
+              });
             }
           }
           else if (inputType === "friends"){
@@ -1869,7 +1877,7 @@ function trainingSetPrep(params){
           output: datumObj.output
         });
 
-        if (configuration.verbose || (dataConverted % 1000 === 0)){
+        if (configuration.verbose || (dataConverted % 1000 === 0) || configuration.testMode && (dataConverted % 100 === 0)){
           console.log(chalkLog("TNC | DATA CONVERTED: " + dataConverted + "/" + trainingSetObj.data.length));
         }
 
@@ -2169,6 +2177,11 @@ function activateNetwork(params){
 function indexOfMax (arr) {
 
   return new Promise(function(resolve, reject){
+
+    if (arr.length !== 3) {
+      console.log(chalkError("TNC | *** INDEX OF MAX INPUT !== 3: arr " + jsonPrint(arr)));
+      return reject(new Error("INPUT ARRAY LENGTH !== 3"));
+    }
 
     if ((arr[0] === arr[1]) && (arr[0] === 1)){
       return resolve(-1);
