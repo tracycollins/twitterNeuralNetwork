@@ -1688,6 +1688,7 @@ function loadBestNetworkDropboxFolders (p){
     .then(function(dbEntries){
 
       let dropboxFoldersEntries = dbEntries;
+      
       if (configuration.testMode) {
         dropboxFoldersEntries = _.shuffle(dbEntries);
         dropboxFoldersEntries.length = 10;
@@ -1789,7 +1790,7 @@ function loadInputsDropboxFolders (p){
         dropboxFoldersEntries.length = 10;
       }
 
-      async.eachSeries(dbEntries, function(entry, cb){
+      async.eachSeries(dropboxFoldersEntries, function(entry, cb){
 
         if (!entry.name.endsWith(".json")) {
           console.log(chalkInfo(MODULE_ID_PREFIX + " | ... SKIPPING LOAD OF " + entry.name));
@@ -5656,7 +5657,11 @@ setTimeout(async function(){
     initSaveFileQueue(cnf);
 
     if (configuration.testMode) {
+      configuration.trainingSetFile = "trainingSet_test.json";
+      configuration.defaultUserArchiveFlagFile = "usersZipUploadComplete_test.json";
       console.log(chalkAlert(MODULE_ID_PREFIX + " | TEST MODE"));
+      console.log(chalkAlert(MODULE_ID_PREFIX + " | trainingSetFile:            " + configuration.trainingSetFile));
+      console.log(chalkAlert(MODULE_ID_PREFIX + " | defaultUserArchiveFlagFile: " + configuration.defaultUserArchiveFlagFile));
     }
 
     console.log(chalkBlueBold(

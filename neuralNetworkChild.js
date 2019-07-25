@@ -1005,7 +1005,7 @@ function unzipUsersToArray(params){
                 try {
                   const userObj = JSON.parse(userString);
 
-                  if (entry.fileName.endsWith("maxInputHashMap.json")) {
+                  if (entry.fileName.includes("maxInputHashMap")) {
 
                     console.log(chalkLog(MODULE_ID_PREFIX + " | UNZIPPED MAX INPUT"));
 
@@ -1162,13 +1162,17 @@ function updateTrainingSet(){
         trainingSetObj.meta.setSize = trainingSetObj.data.length;
         testSetObj.meta.setSize = testSetObj.data.length;
 
-        console.log(chalkLog(MODULE_ID_PREFIX + " | maxInputHashMap"
-          + "\n" + jsonPrint(Object.keys(nnTools.getMaxInputHashMap()))
-        ));
+        if (nnTools.getMaxInputHashMap()) {
+          console.log(chalkLog(MODULE_ID_PREFIX + " | maxInputHashMap"
+            + "\n" + jsonPrint(Object.keys(nnTools.getMaxInputHashMap()))
+          ));
+        }
 
-        console.log(chalkLog(MODULE_ID_PREFIX + " | NORMALIZATION"
-          + "\n" + jsonPrint(nnTools.getNormalization())
-        ));
+        if (nnTools.getNormalization()) {
+          console.log(chalkLog(MODULE_ID_PREFIX + " | NORMALIZATION"
+            + "\n" + jsonPrint(nnTools.getNormalization())
+          ));
+        }
 
         console.log(chalkLog(MODULE_ID_PREFIX + " | TRAINING SET"
           + " | SIZE: " + trainingSetObj.meta.setSize
@@ -1286,6 +1290,12 @@ async function loadUsersArchive(params){
 
   const defaultUserArchiveFolder = DROPBOX_ROOT_FOLDER + configuration.userArchiveFolder;
 
+  let file = params.file;
+
+  if (configuration.testMode) {
+    file.replace(/users\.zip/, "users_test.zip");
+  }
+
   params.folder = params.folder || defaultUserArchiveFolder;
   params.path = (params.path !== undefined) ? params.path : params.folder + "/" + params.file;
 
@@ -1360,28 +1370,18 @@ async function loadTrainingSet(){
   }
 }
 
-function testNetwork(){
-
+function testNetworkData(params){
   return new Promise(function(resolve, reject){
 
+    const testData = params.testData;
     let numTested = 0;
     let numPassed = 0;
     let successRate = 0;
 
-    const shuffledTestData = _.shuffle(testSetObj.data);
+    async.eachSeries(testData, function(datum, cb){
 
-    console.log(chalkBlue("NNC | TEST NETWORK"
-      + " | NETWORK ID: " + networkObj.networkId
-      + " | " + shuffledTestData.length + " TEST DATA LENGTH"
-    ));
-
-    async.eachSeries(shuffledTestData, async function(datum){
-
-      try {
-
-        await nnTools.loadNetwork({networkObj: networkObj});
-        await nnTools.setPrimaryNeuralNetwork(networkObj.networkId);
-        const testOutput = await nnTools.activateSingleNetwork({networkId: networkObj.networkId, user: datum, verbose: configuration.verbose});
+      nnTools.activateSingleNetwork({networkId: networkObj.networkId, user: datum, verbose: configuration.verbose})
+      .then(function(testOutput){
 
         const passed = (testOutput.categoryAuto === datum.category);
 
@@ -1399,15 +1399,11 @@ function testNetwork(){
           ));
         }
 
-        return;
-
-      }
-      catch(err){
-        console.trace(chalkError(MODULE_ID_PREFIX
-          + " | *** TEST ERROR: " + err
-        ));
-        return err;
-      }
+        cb();
+      })
+      .catch(function(err){
+        return cb(err);
+      });
 
     }, function(err){
 
@@ -1438,164 +1434,183 @@ function testNetwork(){
   });
 }
 
+async function testNetwork(){
 
-async function networkEvolve(params) {
+  const shuffledTestData = _.shuffle(testSetObj.data);
 
-  console.log(chalkBlueBold("TNC | >>> START NETWORK EVOLVE"
-    + " | " + getTimeStamp()
-    + " | NNID: " + statsObj.training.testRunId
+  console.log(chalkBlue("NNC | TEST NETWORK"
+    + " | NETWORK ID: " + networkObj.networkId
+    + " | " + shuffledTestData.length + " TEST DATA LENGTH"
   ));
 
-  const network = params.network;
-  const options = params.options;
+  await nnTools.loadNetwork({networkObj: networkObj});
+  await nnTools.setPrimaryNeuralNetwork(networkObj.networkId);
+  const results = await testNetworkData({testData: shuffledTestData});
+  return results;
+}
 
-  let results;
 
-  try {
-    results = await network.evolve(preppedTrainingSet, options);
-  }
-  catch(err){
-    console.log(chalkError("TNC | *** EVOLVE ERROR: " + err));
-    throw err;
-  }
+function networkEvolve(params) {
 
-  results.threads = options.threads;
+  return new Promise(function(resolve, reject){
 
-  statsObj.evolve.endTime = moment().valueOf();
-  statsObj.evolve.elapsed = moment().valueOf() - statsObj.evolve.startTime;
-  statsObj.evolve.results = results;
-
-  const exportedNetwork = network.toJSON();
-
-  const nnInputTypes = Object.keys(params.inputsObj.inputs).sort();
-
-  let nodeIndex = 0; // 
-
-  async.eachSeries(nnInputTypes, function(inputType, cb0){
-
-    const typeInputArray = params.inputsObj.inputs[inputType].sort();
-
-    async.eachSeries(typeInputArray, function(inputName, cb1){
-
-      debug("IN [" + nodeIndex + "]: " + inputName);
-
-      if (exportedNetwork.nodes[nodeIndex].type !== "input") {
-        console.log(chalkError("NNC | NOT INPUT ERROR " + nodeIndex + " | " + inputName));
-        return cb1("NN NOT INPUT NODE ERROR");
-      }
-
-      exportedNetwork.nodes[nodeIndex].name = inputName;
-      exportedNetwork.nodes[nodeIndex].inputType = inputType;
-      nodeIndex += 1;
-
-      cb1();
-
-    }, function(err){
-
-      if (err) {
-        return cb0(err);
-      }
-
-      debug("... END NN NODE NAME TYPE: " + inputType);
-      cb0();
-
-    });
-  }, function(err){
-
-    if (err) {
-      throw err;
-    }
-
-    nodeIndex = exportedNetwork.nodes.length - exportedNetwork.output;
-    debug("OUTPUT INDEX START " + nodeIndex);
-
-    if (exportedNetwork.nodes[nodeIndex].type !== "output") {
-      console.log(chalkError("NNC | NOT OUTPUT ERROR " 
-        + nodeIndex 
-        + "\n" + jsonPrint(exportedNetwork.nodes[nodeIndex])
-      ));
-    }
-
-    exportedNetwork.nodes[nodeIndex].name = "left";
-    nodeIndex += 1;
-    exportedNetwork.nodes[nodeIndex].name = "neutral";
-    nodeIndex += 1;
-    exportedNetwork.nodes[nodeIndex].name = "right";
-
-    debug("... END NETWORK NODE UPDATE: " + statsObj.training.testRunId);
-
-    networkObj = {};
-    networkObj.networkId = statsObj.training.testRunId;
-    networkObj.networkTechnology = params.networkTechnology;
-    networkObj.seedNetworkId = statsObj.training.seedNetworkId;
-    networkObj.seedNetworkRes = statsObj.training.seedNetworkRes;
-    networkObj.hiddenLayerSize = params.hiddenLayerSize;
-    networkObj.networkCreateMode = "evolve";
-    networkObj.successRate = 0;
-    networkObj.matchRate = 0;
-    networkObj.testRunId = statsObj.training.testRunId;
-    networkObj.network = {};
-    networkObj.network = exportedNetwork;
-    networkObj.numInputs = exportedNetwork.input;
-    networkObj.numOutputs = exportedNetwork.output;
-    networkObj.inputsId = params.inputsId;
-    networkObj.inputsObj = {};
-    networkObj.inputsObj = params.inputsObj;
-    networkObj.outputs = {};
-    networkObj.outputs = options.outputs;
-    networkObj.evolve = {};
-    networkObj.evolve.results = {};
-    networkObj.evolve.results = results;
-    networkObj.evolve.results.error = ((results.error !== undefined) && results.error && (results.error < Infinity)) ? results.error : 0;
-    networkObj.evolve.results.efficientMutation = ((results.efficientMutation !== undefined) && results.efficientMutation) ? results.efficientMutation : false;
-
-    networkObj.evolve.options = {};
-
-    networkObj.evolve.options = pick(
-      params, 
-      ["hiddenLayerSize", "clear", "cost", "activation", "growth", "equal", "mutation", "mutationRate", "mutationAmount", "efficientMutation", "popsize", "elitism", "provenance", "fitnessPopulation", "error"]
-    );
-
-    networkObj.evolve.elapsed = statsObj.evolve.elapsed;
-    networkObj.evolve.startTime = statsObj.evolve.startTime;
-    networkObj.evolve.endTime = statsObj.evolve.endTime;
-
-    if (((results.error === 0) || (results.error > options.error)) && (results.iterations < options.iterations)) {
-
-      statsObj.evolve.results.earlyComplete = true;
-      networkObj.evolve.results.earlyComplete = true;
-
-      console.log(chalkError("NNC | EVOLVE COMPLETE EARLY???"
-        + " | " + configuration.childId
-        + " | " + getTimeStamp()
-        + " | " + "TECH: " + networkObj.networkTechnology
-        + " | " + "TIME: " + results.time
-        + " | " + "THREADS: " + results.threads
-        + " | " + "ITERATIONS: " + results.iterations
-        + " | " + "ERROR: " + results.error
-        + " | " + "ELAPSED: " + msToTime(statsObj.evolve.elapsed)
-      ));
-
-      throw new Error("EVOLVE EARLY COMPLETE");
-
-    }
-
-    console.log(chalkBlueBold("=======================================================\n"
-      + MODULE_ID_PREFIX
-      + " | EVOLVE COMPLETE"
-      + " | " + configuration.childId
+    console.log(chalkBlueBold("TNC | >>> START NETWORK EVOLVE"
       + " | " + getTimeStamp()
-      + " | " + "TECH: " + networkObj.networkTechnology
-      + " | " + "TIME: " + results.time
-      + " | " + "THREADS: " + results.threads
-      + " | " + "ITERATIONS: " + results.iterations
-      + " | " + "ERROR: " + results.error
-      + " | " + "ELAPSED: " + msToTime(statsObj.evolve.elapsed)
-      + "\n======================================================="
+      + " | NNID: " + statsObj.training.testRunId
     ));
 
-    return networkObj;
+    const network = params.network;
+    const options = params.options;
+
+    network.evolve(preppedTrainingSet, options)
+    .then(function(results){
+
+      results.threads = options.threads;
+
+      statsObj.evolve.endTime = moment().valueOf();
+      statsObj.evolve.elapsed = moment().valueOf() - statsObj.evolve.startTime;
+      statsObj.evolve.results = results;
+
+      const exportedNetwork = network.toJSON();
+
+      const nnInputTypes = Object.keys(params.inputsObj.inputs).sort();
+
+      let nodeIndex = 0; // 
+
+      async.eachSeries(nnInputTypes, function(inputType, cb0){
+
+        const typeInputArray = params.inputsObj.inputs[inputType].sort();
+
+        async.eachSeries(typeInputArray, function(inputName, cb1){
+
+          debug("IN [" + nodeIndex + "]: " + inputName);
+
+          if (exportedNetwork.nodes[nodeIndex].type !== "input") {
+            console.log(chalkError("NNC | NOT INPUT ERROR " + nodeIndex + " | " + inputName));
+            return cb1("NN NOT INPUT NODE ERROR");
+          }
+
+          exportedNetwork.nodes[nodeIndex].name = inputName;
+          exportedNetwork.nodes[nodeIndex].inputType = inputType;
+          nodeIndex += 1;
+
+          cb1();
+
+        }, function(err){
+
+          if (err) {
+            return cb0(err);
+          }
+
+          debug("... END NN NODE NAME TYPE: " + inputType);
+          cb0();
+
+        });
+
+      }, function(err){
+
+        if (err) {
+          throw err;
+        }
+
+        nodeIndex = exportedNetwork.nodes.length - exportedNetwork.output;
+        debug("OUTPUT INDEX START " + nodeIndex);
+
+        if (exportedNetwork.nodes[nodeIndex].type !== "output") {
+          console.log(chalkError("NNC | NOT OUTPUT ERROR " 
+            + nodeIndex 
+            + "\n" + jsonPrint(exportedNetwork.nodes[nodeIndex])
+          ));
+        }
+
+        exportedNetwork.nodes[nodeIndex].name = "left";
+        nodeIndex += 1;
+        exportedNetwork.nodes[nodeIndex].name = "neutral";
+        nodeIndex += 1;
+        exportedNetwork.nodes[nodeIndex].name = "right";
+
+        debug("... END NETWORK NODE UPDATE: " + statsObj.training.testRunId);
+
+        networkObj = {};
+        networkObj.networkId = statsObj.training.testRunId;
+        networkObj.networkTechnology = params.networkTechnology;
+        networkObj.seedNetworkId = statsObj.training.seedNetworkId;
+        networkObj.seedNetworkRes = statsObj.training.seedNetworkRes;
+        networkObj.hiddenLayerSize = params.hiddenLayerSize;
+        networkObj.networkCreateMode = "evolve";
+        networkObj.successRate = 0;
+        networkObj.matchRate = 0;
+        networkObj.testRunId = statsObj.training.testRunId;
+        networkObj.network = {};
+        networkObj.network = exportedNetwork;
+        networkObj.numInputs = exportedNetwork.input;
+        networkObj.numOutputs = exportedNetwork.output;
+        networkObj.inputsId = params.inputsId;
+        networkObj.inputsObj = {};
+        networkObj.inputsObj = params.inputsObj;
+        networkObj.outputs = {};
+        networkObj.outputs = options.outputs;
+        networkObj.evolve = {};
+        networkObj.evolve.results = {};
+        networkObj.evolve.results = results;
+        networkObj.evolve.results.error = ((results.error !== undefined) && results.error && (results.error < Infinity)) ? results.error : 0;
+        networkObj.evolve.results.efficientMutation = ((results.efficientMutation !== undefined) && results.efficientMutation) ? results.efficientMutation : false;
+
+        networkObj.evolve.options = {};
+
+        networkObj.evolve.options = pick(
+          params, 
+          ["hiddenLayerSize", "clear", "cost", "activation", "growth", "equal", "mutation", "mutationRate", "mutationAmount", "efficientMutation", "popsize", "elitism", "provenance", "fitnessPopulation", "error"]
+        );
+
+        networkObj.evolve.elapsed = statsObj.evolve.elapsed;
+        networkObj.evolve.startTime = statsObj.evolve.startTime;
+        networkObj.evolve.endTime = statsObj.evolve.endTime;
+
+        if (((results.error === 0) || (results.error > options.error)) && (results.iterations < options.iterations)) {
+
+          statsObj.evolve.results.earlyComplete = true;
+          networkObj.evolve.results.earlyComplete = true;
+
+          console.log(chalkError("NNC | EVOLVE COMPLETE EARLY???"
+            + " | " + configuration.childId
+            + " | " + getTimeStamp()
+            + " | " + "TECH: " + networkObj.networkTechnology
+            + " | " + "TIME: " + results.time
+            + " | " + "THREADS: " + results.threads
+            + " | " + "ITERATIONS: " + results.iterations
+            + " | " + "ERROR: " + results.error
+            + " | " + "ELAPSED: " + msToTime(statsObj.evolve.elapsed)
+          ));
+
+          return reject(new Error("EVOLVE EARLY COMPLETE"));
+
+        }
+
+        console.log(chalkBlueBold("=======================================================\n"
+          + MODULE_ID_PREFIX
+          + " | EVOLVE COMPLETE"
+          + " | " + configuration.childId
+          + " | " + getTimeStamp()
+          + " | " + "TECH: " + networkObj.networkTechnology
+          + " | " + "TIME: " + results.time
+          + " | " + "THREADS: " + results.threads
+          + " | " + "ITERATIONS: " + results.iterations
+          + " | " + "ERROR: " + results.error
+          + " | " + "ELAPSED: " + msToTime(statsObj.evolve.elapsed)
+          + "\n======================================================="
+        ));
+
+        resolve(networkObj);
+
+      });
+    })
+    .catch(function(err){
+      return reject(err);
+    });
+
   });
+
 }
 
 function trainingSetPrep(params){
@@ -1621,40 +1636,48 @@ function trainingSetPrep(params){
     async.eachSeries(shuffledTrainingData, function(datum, cb){
 
       try {
-        const datumObj = await tcUtils.convertDatumOneNetwork({primaryInputsFlag: true, datum: datum});
+        // const datumObj = await tcUtils.convertDatumOneNetwork({primaryInputsFlag: true, datum: datum});
+        tcUtils.convertDatumOneNetwork({primaryInputsFlag: true, datum: datum})
+        .then(function(datumObj){
 
-        dataConverted += 1;
+          dataConverted += 1;
 
-        if (datumObj.input.length !== params.inputsObj.meta.numInputs) { 
-          console.log(chalkError(MODULE_ID_PREFIX
-            + " | *** ERROR TRAINING SET PREP ERROR" 
-            + " | INPUT NUMBER MISMATCH" 
-            + " | INPUTS NUM IN: " + params.inputsObj.meta.numInputs
-            + " | DATUM NUM IN: " + datumObj.input.length
-          ));
-          return cb(new Error("INPUT NUMBER MISMATCH"));
-        }
+          if (datumObj.input.length !== params.inputsObj.meta.numInputs) { 
+            console.log(chalkError(MODULE_ID_PREFIX
+              + " | *** ERROR TRAINING SET PREP ERROR" 
+              + " | INPUT NUMBER MISMATCH" 
+              + " | INPUTS NUM IN: " + params.inputsObj.meta.numInputs
+              + " | DATUM NUM IN: " + datumObj.input.length
+            ));
+            return cb(new Error("INPUT NUMBER MISMATCH"));
+          }
 
-        if (datumObj.output.length !== 3) { 
-          console.log(chalkError(MODULE_ID_PREFIX
-            + " | *** ERROR TRAINING SET PREP ERROR" 
-            + " | OUTPUT NUMBER MISMATCH" 
-            + " | INPUTS NUM IN: " + params.inputsObj.meta.numOutputs
-            + " | DATUM NUM IN: " + datumObj.output.length
-          ));
-          return cb(new Error("INPUT NUMBER MISMATCH"));
-        }
+          if (datumObj.output.length !== 3) { 
+            console.log(chalkError(MODULE_ID_PREFIX
+              + " | *** ERROR TRAINING SET PREP ERROR" 
+              + " | OUTPUT NUMBER MISMATCH" 
+              + " | INPUTS NUM IN: " + params.inputsObj.meta.numOutputs
+              + " | DATUM NUM IN: " + datumObj.output.length
+            ));
+            return cb(new Error("INPUT NUMBER MISMATCH"));
+          }
 
-        preppedTrainingSet.push({ 
-          input: datumObj.input, 
-          output: datumObj.output
+          preppedTrainingSet.push({ 
+            input: datumObj.input, 
+            output: datumObj.output
+          });
+
+          if (configuration.verbose || (dataConverted % 1000 === 0) || configuration.testMode && (dataConverted % 100 === 0)){
+            console.log(chalkLog("TNC | DATA CONVERTED: " + dataConverted + "/" + trainingSetObj.data.length));
+          }
+
+          cb();
+
+        })
+        .catch(function(err){
+          cb (err);
         });
 
-        if (configuration.verbose || (dataConverted % 1000 === 0) || configuration.testMode && (dataConverted % 100 === 0)){
-          console.log(chalkLog("TNC | DATA CONVERTED: " + dataConverted + "/" + trainingSetObj.data.length));
-        }
-
-        cb();
       }
       catch(err){
         console.log(chalkError(MODULE_ID_PREFIX
@@ -1914,8 +1937,6 @@ function evolve(p){
 
         networkObj = await networkEvolve(params);
 
-        params.networkObj = networkObj;
-
         testResults = await testNetwork();
 
         networkObj.successRate = testResults.successRate;
@@ -1926,7 +1947,7 @@ function evolve(p){
         return resolve(networkObj);
       }
       catch(err){
-        console.log(chalkError("TNC | *** EVOLVE ERROR: " + err));
+        console.log(chalkError("NNC | *** EVOLVE ERROR: " + err));
         return reject(err);
       }
 
@@ -2122,6 +2143,7 @@ const fsmStates = {
         }
         catch(err){
           console.log(chalkError(MODULE_ID_PREFIX + " | *** EVOLVE ERROR: " + err));
+          console.log(chalkError(MODULE_ID_PREFIX + " | *** EVOLVE ERROR\nnetworkObj.meta\n" + jsonPrint(networkObj.meta)));
           console.log(chalkError(MODULE_ID_PREFIX + " | *** EVOLVE ERROR\ninputsObj\n" + jsonPrint(evolveOptions.inputsObj.meta)));
           console.log(chalkError(MODULE_ID_PREFIX + " | *** EVOLVE ERROR\ntrainingSet\n" + jsonPrint(trainingSetObj.meta)));
           console.log(chalkError(MODULE_ID_PREFIX + " | *** EVOLVE ERROR\ntestSet\n" + jsonPrint(testSetObj.meta)));
@@ -2246,6 +2268,14 @@ process.on("message", function(m) {
         + " | TEST MODE: " + configuration.testMode
         + " | TEST SET RATIO: " + configuration.testSetRatio
       ));
+
+      // if (configuration.testMode) {
+      //   configuration.trainingSetFile = "trainingSet_test.json";
+      //   configuration.defaultUserArchiveFlagFile = "usersZipUploadComplete_test.json";
+      //   console.log(chalkAlert(MODULE_ID_PREFIX + " | TEST MODE"));
+      //   console.log(chalkAlert(MODULE_ID_PREFIX + " | trainingSetFile:            " + configuration.trainingSetFile));
+      //   console.log(chalkAlert(MODULE_ID_PREFIX + " | defaultUserArchiveFlagFile: " + configuration.defaultUserArchiveFlagFile));
+      // }
 
       fsm.fsm_init();
     break;
@@ -2414,7 +2444,11 @@ setTimeout(async function(){
     statsObj.status = "START";
 
     if (configuration.testMode) {
+      configuration.trainingSetFile = "trainingSet_test.json";
+      configuration.defaultUserArchiveFlagFile = "usersZipUploadComplete_test.json";
       console.log(chalkAlert(MODULE_ID_PREFIX + " | TEST MODE"));
+      console.log(chalkAlert(MODULE_ID_PREFIX + " | trainingSetFile:            " + configuration.trainingSetFile));
+      console.log(chalkAlert(MODULE_ID_PREFIX + " | defaultUserArchiveFlagFile: " + configuration.defaultUserArchiveFlagFile));
     }
 
     console.log(chalkBlueBold(
