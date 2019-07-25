@@ -1380,6 +1380,7 @@ function testNetwork(){
       try {
 
         await nnTools.loadNetwork({networkObj: networkObj});
+        await nnTools.setPrimaryNeuralNetwork(networkObj.networkId);
         const testOutput = await nnTools.activateSingleNetwork({networkId: networkObj.networkId, user: datum, verbose: configuration.verbose});
 
         const passed = (testOutput.categoryAuto === datum.category);
@@ -1608,7 +1609,6 @@ function trainingSetPrep(params){
     trainingSetObj.meta.numInputs = params.inputsObj.meta.numInputs;
     testSetObj.meta.numInputs = params.inputsObj.meta.numInputs;
 
-
     console.log(chalkBlue(MODULE_ID_PREFIX
       + " | TRAINING SET PREP"
       + " | DATA LENGTH: " + trainingSetObj.data.length
@@ -1618,7 +1618,7 @@ function trainingSetPrep(params){
 
     const shuffledTrainingData = _.shuffle(trainingSetObj.data);
 
-    async.eachSeries(shuffledTrainingData, async function(datum){
+    async.eachSeries(shuffledTrainingData, function(datum, cb){
 
       try {
         const datumObj = await tcUtils.convertDatumOneNetwork({primaryInputsFlag: true, datum: datum});
@@ -1632,7 +1632,7 @@ function trainingSetPrep(params){
             + " | INPUTS NUM IN: " + params.inputsObj.meta.numInputs
             + " | DATUM NUM IN: " + datumObj.input.length
           ));
-          return (new Error("INPUT NUMBER MISMATCH"));
+          return cb(new Error("INPUT NUMBER MISMATCH"));
         }
 
         if (datumObj.output.length !== 3) { 
@@ -1642,7 +1642,7 @@ function trainingSetPrep(params){
             + " | INPUTS NUM IN: " + params.inputsObj.meta.numOutputs
             + " | DATUM NUM IN: " + datumObj.output.length
           ));
-          return (new Error("INPUT NUMBER MISMATCH"));
+          return cb(new Error("INPUT NUMBER MISMATCH"));
         }
 
         preppedTrainingSet.push({ 
@@ -1654,13 +1654,13 @@ function trainingSetPrep(params){
           console.log(chalkLog("TNC | DATA CONVERTED: " + dataConverted + "/" + trainingSetObj.data.length));
         }
 
-        return;
+        cb();
       }
       catch(err){
         console.log(chalkError(MODULE_ID_PREFIX
           + " | *** ERROR TRAINING SET PREP: " + err 
         ));
-        return err;
+        return cb(err);
       }
 
     }, function(err){
@@ -1873,7 +1873,8 @@ function evolve(p){
       params.network = network; // network evolve options
 
       try {
-        
+        await tcUtils.loadInputs({inputsObj: params.inputsObj});
+        await tcUtils.setPrimaryInputs({inputsId: params.inputsObj.inputsId});
         await trainingSetPrep(params);
 
         params.schedStartTime = moment().valueOf();
@@ -2429,7 +2430,7 @@ setTimeout(async function(){
       await connectDb();
     }
     catch(err){
-      console.log(chalkError(MODULE_ID_PREFIX + " | *** MONGO DB CONNECT ERROR: " + err + " | QUITTING ***"));
+      console.log(chalkError(MODULE_ID_PREFIX + " | *** MONGO DB CONNECTION ERROR: " + err + " | QUITTING ***"));
       quit({cause: "MONGO DB CONNECT ERROR"});
     }
 

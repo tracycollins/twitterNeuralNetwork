@@ -1671,184 +1671,200 @@ function networkPass(params) {
   return pass;
 }
 
-async function loadBestNetworkDropboxFolders (p){
+function loadBestNetworkDropboxFolders (p){
 
-  const params = p || {};
+  return new Promise(function(resolve, reject){
 
-  let numNetworksLoaded = 0;
-  let dropboxFoldersEntries;
+    const params = p || {};
 
-  console.log(chalkNetwork(MODULE_ID_PREFIX + " | ... LOADING DROPBOX NETWORK FOLDERS"
-    + " | " + params.folders.length + " FOLDERS"
-    + "\n" + jsonPrint(params.folders)
-  ));
+    let numNetworksLoaded = 0;
 
-  dropboxFoldersEntries = await listDropboxFolders(params);
+    console.log(chalkNetwork(MODULE_ID_PREFIX + " | ... LOADING DROPBOX NETWORK FOLDERS"
+      + " | " + params.folders.length + " FOLDERS"
+      + "\n" + jsonPrint(params.folders)
+    ));
 
-  if (configuration.testMode) {
-    dropboxFoldersEntries = _.shuffle(dropboxFoldersEntries);
-    dropboxFoldersEntries.length = 10;
-  }
+    listDropboxFolders(params)
+    .then(function(dbEntries){
 
-  async.eachSeries(dropboxFoldersEntries, function(entry, cb){
-
-    if (configuration.testMode && (numNetworksLoaded >= TEST_DROPBOX_NN_LOAD)) {
-      return cb("TEST_MODE");
-    }
-
-    if (entry.name.toLowerCase() === bestRuntimeNetworkFileName.toLowerCase()) {
-      console.log(chalkInfo(MODULE_ID_PREFIX + " | ... SKIPPING LOAD OF " + entry.name));
-      return cb();
-    }
-
-    if (!entry.name.endsWith(".json")) {
-      console.log(chalkInfo(MODULE_ID_PREFIX + " | ... SKIPPING LOAD OF " + entry.name));
-      return cb();
-    }
-
-    const folder = path.dirname(entry.path_display);
-
-    const entryNameArray = entry.name.split(".");
-    const networkId = entryNameArray[0];
-
-    if (configuration.verbose) {
-      console.log(chalkInfo(MODULE_ID_PREFIX + " | DROPBOX NETWORK FOUND"
-        + " | LAST MOD: " + moment(new Date(entry.client_modified)).format(compactDateTimeFormat)
-        + " | " + networkId
-        + " | FOLDER: " + folder
-        + " | " + entry.name
-      ));
-    }
-
-    if (skipLoadNetworkSet.has(networkId)){
-      console.log(chalkInfo(MODULE_ID_PREFIX + " | DROPBOX NETWORK IN SKIP SET | SKIPPING ..."
-        + " | " + networkId
-        + " | FOLDER: " + folder
-        + " | " + entry.name
-      ));
-      return cb();
-    }
-    
-    loadNetworkDropboxFile({folder: folder, file: entry.name, purgeMin: params.purgeMin}).
-    then(function(networkObj){
-      if (networkObj) {
-        numNetworksLoaded += 1;
+      let dropboxFoldersEntries = dbEntries;
+      if (configuration.testMode) {
+        dropboxFoldersEntries = _.shuffle(dbEntries);
+        dropboxFoldersEntries.length = 10;
       }
-      cb();
-    }).
-    catch(function(err){
-      console.log(chalkError(MODULE_ID_PREFIX + " | *** LOAD NETWORK DROPBOX ENTRY ERROR: " + err
-        + " | " + networkId
-        + " | FOLDER: " + folder
-        + " | " + entry.name
-      ));
-      cb(err);
+
+      async.eachSeries(dropboxFoldersEntries, function(entry, cb){
+
+        if (configuration.testMode && (numNetworksLoaded >= TEST_DROPBOX_NN_LOAD)) {
+          return cb("TEST_MODE");
+        }
+
+        if (entry.name.toLowerCase() === bestRuntimeNetworkFileName.toLowerCase()) {
+          console.log(chalkInfo(MODULE_ID_PREFIX + " | ... SKIPPING LOAD OF " + entry.name));
+          return cb();
+        }
+
+        if (!entry.name.endsWith(".json")) {
+          console.log(chalkInfo(MODULE_ID_PREFIX + " | ... SKIPPING LOAD OF " + entry.name));
+          return cb();
+        }
+
+        const folder = path.dirname(entry.path_display);
+
+        const entryNameArray = entry.name.split(".");
+        const networkId = entryNameArray[0];
+
+        if (configuration.verbose) {
+          console.log(chalkInfo(MODULE_ID_PREFIX + " | DROPBOX NETWORK FOUND"
+            + " | LAST MOD: " + moment(new Date(entry.client_modified)).format(compactDateTimeFormat)
+            + " | " + networkId
+            + " | FOLDER: " + folder
+            + " | " + entry.name
+          ));
+        }
+
+        if (skipLoadNetworkSet.has(networkId)){
+          console.log(chalkInfo(MODULE_ID_PREFIX + " | DROPBOX NETWORK IN SKIP SET | SKIPPING ..."
+            + " | " + networkId
+            + " | FOLDER: " + folder
+            + " | " + entry.name
+          ));
+          return cb();
+        }
+        
+        loadNetworkDropboxFile({folder: folder, file: entry.name, purgeMin: params.purgeMin}).
+        then(function(networkObj){
+          if (networkObj) {
+            numNetworksLoaded += 1;
+          }
+          cb();
+        }).
+        catch(function(err){
+          console.log(chalkError(MODULE_ID_PREFIX + " | *** LOAD NETWORK DROPBOX ENTRY ERROR: " + err
+            + " | " + networkId
+            + " | FOLDER: " + folder
+            + " | " + entry.name
+          ));
+          cb(err);
+        });
+      }, function(err){
+        if (err) { 
+          if (err == "TEST_MODE") {
+            console.log(chalkInfo(MODULE_ID_PREFIX + " | !!! TEST MODE | LOADED " + numNetworksLoaded + " NNs"));
+            resolve(numNetworksLoaded);
+          }
+          console.log(chalkError(MODULE_ID_PREFIX + " | *** ERROR LOAD DROPBOX FOLDERS: " + err)); 
+          return reject(err);
+        }
+        return resolve(numNetworksLoaded);
+      });
+    })
+    .catch(function(err){
+      return reject(err);
     });
 
-
-  }, function(err){
-    if (err) { 
-      if (err == "TEST_MODE") {
-        console.log(chalkInfo(MODULE_ID_PREFIX + " | !!! TEST MODE | LOADED " + numNetworksLoaded + " NNs"));
-        return numNetworksLoaded;
-      }
-      console.log(chalkError(MODULE_ID_PREFIX + " | *** ERROR LOAD DROPBOX FOLDERS: " + err)); 
-      throw err;
-    }
-    return numNetworksLoaded;
   });
 }
 
-async function loadInputsDropboxFolders (p){
+function loadInputsDropboxFolders (p){
 
-  const params = p || {};
+  return new Promise(function(resolve, reject){
 
-  let numInputsLoaded = 0;
-  let dropboxFoldersEntries;
+    const params = p || {};
 
-  console.log(chalkNetwork(MODULE_ID_PREFIX + " | ... LOADING DROPBOX INPUTS FOLDERS"
-    + " | " + params.folders.length + " FOLDERS"
-    + "\n" + jsonPrint(params.folders)
-  ));
+    let numInputsLoaded = 0;
 
-  dropboxFoldersEntries = await listDropboxFolders(params);
+    console.log(chalkNetwork(MODULE_ID_PREFIX + " | ... LOADING DROPBOX INPUTS FOLDERS"
+      + " | " + params.folders.length + " FOLDERS"
+      + "\n" + jsonPrint(params.folders)
+    ));
 
-  if (configuration.testMode) {
-    dropboxFoldersEntries = _.shuffle(dropboxFoldersEntries);
-    dropboxFoldersEntries.length = 10;
-  }
+    // dropboxFoldersEntries = await listDropboxFolders(params);
+    listDropboxFolders(params)
+    .then(function(dbEntries){
 
-  async.eachSeries(dropboxFoldersEntries, function(entry, cb){
-
-    if (!entry.name.endsWith(".json")) {
-      console.log(chalkInfo(MODULE_ID_PREFIX + " | ... SKIPPING LOAD OF " + entry.name));
-      return cb();
-    }
-
-    const folder = path.dirname(entry.path_display);
-
-    const entryNameArray = entry.name.split(".");
-    const inputsId = entryNameArray[0];
-
-    if (configuration.verbose) {
-      console.log(chalkInfo(MODULE_ID_PREFIX + " | DROPBOX INPUTS FOUND"
-        + " | LAST MOD: " + moment(new Date(entry.client_modified)).format(compactDateTimeFormat)
-        + " | " + inputsId
-        + " | FOLDER: " + folder
-        + " | " + entry.name
-      ));
-    }
-
-    if (!configuration.inputsIdArray.includes(inputsId)){
-      console.log(chalkInfo(MODULE_ID_PREFIX + " | --- ARCHIVE INPUTS ... NOT IN INPUTS ARRAY"
-        + " | " + inputsId
-        + " | FOLDER: " + folder
-        + " | " + entry.name
-      ));
-
-      dropboxFileDelete({folder: globalArchiveInputsFolder, file: entry.name, noErrorNotFound: true}).
-      then(function(){
-        dropboxFileMove({srcFolder: folder, srcFile: entry.name, dstFolder: globalArchiveInputsFolder, dstFile: entry.name}).
-        then(function(){
-          return cb();
-        })
-      }).
-      catch(function(err){
-        if (err.status === 429) {
-          setTimeout(function(){
-            return cb();
-          }, 5000);
-        }
-        else {
-          return cb(err);
-        }
-      });
-    }
-    
-    loadInputsDropboxFile({folder: folder, file: entry.name, purgeMin: params.purgeMin}).
-    then(function(inputsObj){
-      if (inputsObj) {
-        numInputsLoaded += 1;
+      let dropboxFoldersEntries = dbEntries;
+      if (configuration.testMode) {
+        dropboxFoldersEntries = _.shuffle(dbEntries);
+        dropboxFoldersEntries.length = 10;
       }
-      return cb();
-    }).
-    catch(function(err){
-      console.log(chalkError(MODULE_ID_PREFIX + " | *** LOAD INPUTS DROPBOX ENTRY ERROR: " + err
-        + " | " + inputsId
-        + " | FOLDER: " + folder
-        + " | " + entry.name
-      ));
-      return cb(err);
+
+      async.eachSeries(dbEntries, function(entry, cb){
+
+        if (!entry.name.endsWith(".json")) {
+          console.log(chalkInfo(MODULE_ID_PREFIX + " | ... SKIPPING LOAD OF " + entry.name));
+          return cb();
+        }
+
+        const folder = path.dirname(entry.path_display);
+
+        const entryNameArray = entry.name.split(".");
+        const inputsId = entryNameArray[0];
+
+        if (configuration.verbose) {
+          console.log(chalkInfo(MODULE_ID_PREFIX + " | DROPBOX INPUTS FOUND"
+            + " | LAST MOD: " + moment(new Date(entry.client_modified)).format(compactDateTimeFormat)
+            + " | " + inputsId
+            + " | FOLDER: " + folder
+            + " | " + entry.name
+          ));
+        }
+
+        if (!configuration.inputsIdArray.includes(inputsId)){
+          console.log(chalkInfo(MODULE_ID_PREFIX + " | --- ARCHIVE INPUTS ... NOT IN INPUTS ARRAY"
+            + " | " + inputsId
+            + " | FOLDER: " + folder
+            + " | " + entry.name
+          ));
+
+          dropboxFileDelete({folder: globalArchiveInputsFolder, file: entry.name, noErrorNotFound: true}).
+          then(function(){
+            dropboxFileMove({srcFolder: folder, srcFile: entry.name, dstFolder: globalArchiveInputsFolder, dstFile: entry.name}).
+            then(function(){
+              return cb();
+            })
+          }).
+          catch(function(err){
+            if (err.status === 429) {
+              setTimeout(function(){
+                return cb();
+              }, 5000);
+            }
+            else {
+              return cb(err);
+            }
+          });
+        }
+        
+        loadInputsDropboxFile({folder: folder, file: entry.name, purgeMin: params.purgeMin}).
+        then(function(inputsObj){
+          if (inputsObj) {
+            numInputsLoaded += 1;
+          }
+          return cb();
+        }).
+        catch(function(err){
+          console.log(chalkError(MODULE_ID_PREFIX + " | *** LOAD INPUTS DROPBOX ENTRY ERROR: " + err
+            + " | " + inputsId
+            + " | FOLDER: " + folder
+            + " | " + entry.name
+          ));
+          return cb(err);
+        });
+
+      }, function(err){
+        if (err) { 
+          console.log(chalkError(MODULE_ID_PREFIX + " | *** ERROR LOAD INPUTS FOLDERS: " + err)); 
+          return reject(err);
+        }
+        resolve(numInputsLoaded);
+      });
+    })
+    .catch(function(err){
+      return reject(err);
     });
 
-  }, function(err){
-    if (err) { 
-      console.log(chalkError(MODULE_ID_PREFIX + " | *** ERROR LOAD INPUTS FOLDERS: " + err)); 
-      throw err;
-    }
-    return numInputsLoaded;
   });
-
 }
 
 const watchOptions = {
@@ -1901,7 +1917,7 @@ function initWatch(params){
 
 function generateSeedInputsNetworkId(params){
 
-  return new Promise(function(resolve){
+  return new Promise(function(resolve, reject){
 
     const config = params.config || {};
 
@@ -1970,6 +1986,12 @@ function generateSeedInputsNetworkId(params){
     // no random network, so random inputSet
     //
     
+    if (inputsSet.size === 0) {
+      console.log(chalkError(MODULE_ID_PREFIX
+        + " | *** EMPTY INPUTS SET [" + inputsSet.size + "]"
+      ));
+      return reject(new Error("EMPTY INPUTS SET"));
+    }
     config.seedInputsId = randomItem([...inputsSet]);
 
     console.log(chalkLog(MODULE_ID_PREFIX
