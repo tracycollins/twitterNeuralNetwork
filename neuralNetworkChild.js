@@ -432,7 +432,7 @@ async function init(){
       await network.evolve(trainingSet, {
         mutation: carrot.methods.mutation.FFW,
         equal: true,
-        error: 0.05,
+        error: 0.03,
         elitism: 5,
         mutation_rate: 0.5
       });
@@ -459,6 +459,7 @@ async function init(){
       if (out > 0.5) { 
         throw new Error("XOR test fail");
       }
+
       console.log(chalkGreen("TNC | XOR | 1 1 > " + out));
 
       const netJson = network.toJSON();
