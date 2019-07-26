@@ -784,36 +784,6 @@ async function printNetworkObj(title, nObj, format) {
   }
 }
 
-// function sortedHashmap(params) {
-
-//   return new Promise(function(resolve, reject) {
-
-//     const keys = params.hashmap.keys();
-
-//     const sortedKeys = keys.sort(function(a,b){
-//       const objAvalue = dot.pick(params.sortKey, params.hashmap.get(a));
-//       const objBvalue = dot.pick(params.sortKey, params.hashmap.get(b));
-//       return objBvalue - objAvalue;
-//     });
-
-//     if (keys !== undefined) {
-//       if (sortedKeys !== undefined) { 
-//         resolve({sortKey: params.sortKey, sortedKeys: sortedKeys.slice(0,params.max)});
-//       }
-//       else {
-//         console.log(chalkAlert("sortedHashmap NO SORTED KEYS? | SORT KEY: " + params.sortKey + " | KEYS: " + keys.length + " | SORTED KEYS: " + sortedKeys.length));
-//         resolve({sortKey: params.sortKey, sortedKeys: []});
-//       }
-
-//     }
-//     else {
-//       console.error("sortedHashmap ERROR | params\n" + jsonPrint(params));
-//       reject(new Error("sortedHashmap ERROR | keys UNDEFINED"));
-//     }
-
-//   });
-// }
-
 function printResultsHashmap(){
 
   return new Promise(function(resolve, reject){
