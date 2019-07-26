@@ -1149,6 +1149,8 @@ async function loadNetworkDropboxFile(params){
 
     const dbInputsObj = await updateDbInputs({inputsObj: networkObj.inputsObj, networkId: networkObj.networkId});
 
+    const inputsObj = dbInputsObj.toObject();
+
     if (!configuration.inputsIdArray.includes(networkObj.inputsId)) {
 
       if (configuration.archiveNotInInputsIdArray && path.toLowerCase().includes(localBestNetworkFolder.toLowerCase())){
@@ -1248,9 +1250,9 @@ async function loadNetworkDropboxFile(params){
       const inObj = {};
 
       inObj.inputsObj = {};
-      inObj.inputsObj = dbInputsObj;
+      inObj.inputsObj = inputsObj;
       inObj.entry = {};
-      inObj.entry.name = dbInputsObj.inputsId + ".json";
+      inObj.entry.name = inputsObj.inputsId + ".json";
       inObj.entry.content_hash = false;
       inObj.entry.client_modified = moment();
 
@@ -1453,7 +1455,10 @@ async function updateDbNetwork(params) {
 
     if (verbose) { printNetworkObj(MODULE_ID_PREFIX + " | +++ NN DB UPDATED", nnDbUpdated); }
 
-    return nnDbUpdated;
+    const nnObj = deepcopy(nnDbUpdated.toObject());
+    delete nnObj._id;
+
+    return nnObj;
   });
 
 }
@@ -1547,6 +1552,9 @@ function validateNetwork(params){
 
     try {
       const nnObj = networkDefaults(networkObj);
+      
+      delete nnObj._id;
+
       resolve(nnObj);
     }
     catch(err){
@@ -1688,7 +1696,7 @@ function loadBestNetworkDropboxFolders (p){
     .then(function(dbEntries){
 
       let dropboxFoldersEntries = dbEntries;
-      
+
       if (configuration.testMode) {
         dropboxFoldersEntries = _.shuffle(dbEntries);
         dropboxFoldersEntries.length = 10;
@@ -2028,6 +2036,7 @@ async function generateRandomEvolveConfig (){
   console.log(chalkAlert(MODULE_ID_PREFIX + " | GENERATE RANDOM EVOLVE CONFIG"));
 
   let config = {};
+
   config.networkCreateMode = "evolve";
   config.networkTechnology = (configuration.enableRandomTechnology) ? randomItem(["neataptic", "carrot"]) : configuration.networkTechnology;
   console.log(chalkAlert(MODULE_ID_PREFIX + " | NETWORK TECHNOLOGY: " + config.networkTechnology));
@@ -2060,12 +2069,14 @@ async function generateRandomEvolveConfig (){
 
     try{
       const dbNetworkObj = await global.globalNeuralNetwork.findOne({ networkId: config.seedNetworkId });
+
       if (!dbNetworkObj) {
         console.log(chalkError(MODULE_ID_PREFIX + " | *** DB FIND NN ERROR | " + config.seedNetworkId));
         throw new Error("NN not found: " + networkObj.inputsId);
       }
 
-      networkObj = dbNetworkObj.toObject();
+      networkObj = deepcopy(dbNetworkObj.toObject());
+      delete networkObj._id;
 
       if (!networkObj.hiddenLayerSize || (networkObj.hiddenLayerSize === undefined)){
         config.hiddenLayerSize = await calculateHiddenLayerSize({networkObj: networkObj});
@@ -2080,16 +2091,15 @@ async function generateRandomEvolveConfig (){
       throw new Error("NN not found: " + networkObj.inputsId);
     }
 
-    config.networkObj = networkObj;
+    config.networkObj = deepcopy(networkObj);
     config.architecture = "loadedNetwork";
     config.inputsId = networkObj.inputsId;
     config.inputsObj = {};
-    config.inputsObj = networkObj.inputsObj;
+    config.inputsObj = deepcopy(networkObj.inputsObj);
 
 
     console.log(MODULE_ID_PREFIX + " | SEED NETWORK: " + config.networkObj.networkId);
     console.log(MODULE_ID_PREFIX + " | HIDDEN NODES: " + networkObj.hiddenLayerSize);
-
     console.log(MODULE_ID_PREFIX + " | SEED INPUTS | " + networkObj.inputsId);
 
     if (configuration.randomizeSeedOptions) {
@@ -4853,8 +4863,6 @@ function childStartAll(){
 
   return new Promise(function(resolve, reject){
 
-    try {
-
       console.log(chalkBlue(MODULE_ID_PREFIX + " | START EVOLVE ALL CHILDREN: " + Object.keys(childHashMap).length));
 
       async.eachSeries(Object.keys(childHashMap), async function(childId) {
@@ -4879,10 +4887,6 @@ function childStartAll(){
         resolve();
       });
 
-    }
-    catch(err){
-      return reject(err);
-    }
   });
 }
 
@@ -5084,8 +5088,7 @@ async function childCreate(p){
             + " | R " + msToTime(m.stats.evolveElapsed)
             + " | RATE " + (m.stats.iterationRate/1000.0).toFixed(1)
             + " | ETC " + msToTime(m.stats.timeToComplete)
-            + " | ETC " + moment().add(m.stats.timeToComplete).
-format(compactDateTimeFormat)
+            + " | ETC " + moment().add(m.stats.timeToComplete).format(compactDateTimeFormat)
             + " | ERR " + m.stats.error
             + " | FIT " + m.stats.fitness
             + " | I " + m.stats.iteration + "/" + m.stats.totalIterations
@@ -5103,8 +5106,7 @@ format(compactDateTimeFormat)
           statsObj.networkResults[m.stats.networkId].iteration = m.stats.iteration;
           statsObj.networkResults[m.stats.networkId].totalIterations = m.stats.totalIterations;
           statsObj.networkResults[m.stats.networkId].rate = (m.stats.iterationRate/1000.0).toFixed(1);
-          statsObj.networkResults[m.stats.networkId].timeToComplete = moment().add(m.stats.timeToComplete).
-format(compactDateTimeFormat);
+          statsObj.networkResults[m.stats.networkId].timeToComplete = moment().add(m.stats.timeToComplete).format(compactDateTimeFormat);
           statsObj.networkResults[m.stats.networkId].error = m.stats.error;
           statsObj.networkResults[m.stats.networkId].fitness = m.stats.fitness;
 
@@ -5209,6 +5211,14 @@ format(compactDateTimeFormat);
               )) { 
 
               // It's a Keeper!!
+
+              if (!nn.inputsObj || nn.inputsObj === undefined) {
+                console.log(chalkAlert(MODULE_ID_PREFIX + " | *** nn.inputsObj UNDEFINED"
+                  + " | NN ID: " + nn.networkId
+                  + " | IN ID: " + nn.inputsId
+                ));
+                inputsIdHashMap
+              }
               await updateDbInputs({inputsObj: nn.inputsObj, networkId: nn.networkId});
 
               bestNetworkFile = nn.networkId + ".json";
@@ -5383,7 +5393,7 @@ format(compactDateTimeFormat);
 
             printNetworkObj(MODULE_ID_PREFIX + " | " + nn.networkId, nn);
 
-            printResultsHashmap();
+            await printResultsHashmap();
 
             evolveIterationMeter.reset();
 

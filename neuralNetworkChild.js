@@ -79,8 +79,8 @@ else {
 const neataptic = require("neataptic");
 const carrot = require("@liquid-carrot/carrot");
 
-let networkTech;
-let network;
+let networkTech = (DEFAULT_NETWORK_TECHNOLOGY === "neataptic") ? neataptic : carrot;
+// let network;
 let networkObj = {};
 
 const _ = require("lodash");
@@ -413,66 +413,59 @@ async function init(){
 
   statsObj.status = "INIT";
 
-  async function execute () {
+  console.log(chalkBlueBold("TNC | TEST | CARROT TECH XOR")); 
 
-    console.log(chalkBlueBold("TNC | TEST | CARROT TECH XOR"));
+  const network = new networkTech.Network(2,1);
 
-    const network = new carrot.architect.Perceptron(2,3,1);
+   // XOR dataset
+  const trainingSet = [
+    { input: [0,0], output: [0] },
+    { input: [0,1], output: [1] },
+    { input: [1,0], output: [1] },
+    { input: [1,1], output: [0] }
+  ];
 
-     // XOR dataset
-    const trainingSet = [
-      { input: [0,0], output: [0] },
-      { input: [0,1], output: [1] },
-      { input: [1,0], output: [1] },
-      { input: [1,1], output: [0] }
-    ];
+  await network.evolve(trainingSet, {
+    mutation: networkTech.methods.mutation.FFW,
+    equal: true,
+    error: 0.01,
+    elitism: 5,
+    mutation_rate: 0.25
+  });
 
-    await network.evolve(trainingSet, {
-      mutation: carrot.methods.mutation.FFW,
-      equal: true,
-      error: 0.03,
-      elitism: 5,
-      mutation_rate: 0.5
-    });
+  let out = network.activate([0,0]); // 0.2413
+  if (out > 0.5) { 
+    console.log(chalkError("TNC | *** XOR TEST FAIL | IN 0,0 | EXPECTED 0 : OUTPUT: " + out));
+    return(new Error("XOR test fail"));
+  }
+  console.log(chalkGreen("TNC | XOR | [0, 0] --> " + out));
 
-    let out = network.activate([0,0]); // 0.2413
-    if (out > 0.5) { 
-      console.log(chalkError("TNC | *** XOR TEST FAIL | EXPECTED 0 : OUTPUT: " + out));
-      return(new Error("XOR test fail"));
-    }
-    console.log(chalkGreen("TNC | XOR | 0 0 > " + out));
+  out = network.activate([0,1]); // 1.0000
+  if (out < 0.5) { 
+    console.log(chalkError("TNC | *** XOR TEST FAIL | IN 0,1 | EXPECTED 1 : OUTPUT: " + out));
+    return(new Error("XOR test fail"));
+  }
+  console.log(chalkGreen("TNC | XOR | [0, 1] --> " + out));
 
-    out = network.activate([0,1]); // 1.0000
-    if (out < 0.5) { 
-      console.log(chalkError("TNC | *** XOR TEST FAIL | EXPECTED 1 : OUTPUT: " + out));
-      return(new Error("XOR test fail"));
-    }
-    console.log(chalkGreen("TNC | XOR | 0 1 > " + out));
+  out = network.activate([1,0]); // 0.7663
+  if (out < 0.5) { 
+    console.log(chalkError("TNC | *** XOR TEST FAIL | IN 1,0 | EXPECTED 1 : OUTPUT: " + out));
+    return(new Error("XOR test fail"));
+  }
+  console.log(chalkGreen("TNC | XOR | [1, 0] --> " + out));
 
-    out = network.activate([1,0]); // 0.7663
-    if (out < 0.5) { 
-      console.log(chalkError("TNC | *** XOR TEST FAIL | EXPECTED 1 : OUTPUT: " + out));
-      return(new Error("XOR test fail"));
-    }
-    console.log(chalkGreen("TNC | XOR | 1 0 > " + out));
-
-    out = network.activate([1,1]); // -0.008
-    if (out > 0.5) { 
-      console.log(chalkError("TNC | *** XOR TEST FAIL | EXPECTED 0 : OUTPUT: " + out));
-      return(new Error("XOR test fail"));
-    }
-
-    console.log(chalkGreen("TNC | XOR | 1 1 > " + out));
-
-    const netJson = network.toJSON();
-
-    console.log(chalkLog("TNC | TEST XOR NETWORK\n" + jsonPrint(netJson)));
-
-    return;
-
+  out = network.activate([1,1]); // -0.008
+  if (out > 0.5) { 
+    console.log(chalkError("TNC | *** XOR TEST FAIL | IN 1,1 | EXPECTED 0 : OUTPUT: " + out));
+    return(new Error("XOR test fail"));
   }
 
-  execute();
+  console.log(chalkGreen("TNC | XOR | [1, 1] --> " + out));
+
+  const netJson = network.toJSON();
+
+  console.log(chalkLog("TNC | TEST XOR NETWORK\n" + jsonPrint(netJson)));
+
   return;
 }
 
@@ -1291,18 +1284,18 @@ async function loadUsersArchive(params){
   let file = params.file;
 
   if (configuration.testMode) {
-    file.replace(/users\.zip/, "users_test.zip");
+    file = file.replace(/users\.zip/, "users_test.zip");
   }
 
   params.folder = params.folder || defaultUserArchiveFolder;
-  params.path = (params.path !== undefined) ? params.path : params.folder + "/" + params.file;
+  params.path = (params.path !== undefined) ? params.path : params.folder + "/" + file;
 
   console.log(chalkLog(MODULE_ID_PREFIX 
     + " | LOADING USERS ARCHIVE"
     + " | " + getTimeStamp() 
     + "\n PATH:   " + params.path
     + "\n FOLDER: " + params.folder
-    + "\n FILE:   " + params.file
+    + "\n FILE:   " + file
   ));
 
   try {
@@ -1457,8 +1450,37 @@ function networkEvolve(params) {
       + " | NNID: " + statsObj.training.testRunId
     ));
 
-    const network = params.network;
+    let nn = params.network;
     const options = params.options;
+    let network = {};
+
+    if (nn.evolve === undefined) {
+
+      console.log(chalkAlert("TNC | !!! NETWORK EVOLVE UNDEFINED | CONVERT FROM JSON"
+        + " | NNID: " + statsObj.training.testRunId
+      ));
+
+      if (nn.input_size === undefined) { nn.input_size = nn.input; }
+      if (nn.output_size === undefined) { nn.output_size = nn.output; }
+      if (nn.input_nodes === undefined) { nn.input_nodes = []; }
+      if (nn.output_nodes === undefined) { nn.output_nodes = []; }
+
+      nn.nodes.forEach(function(node){
+        switch (node.type) {
+          case "input":
+            nn.input_nodes.push(node.index);
+          break;
+          case "oputput":
+            nn.output_nodes.push(node.index);
+          break;
+        }
+      });
+
+      network = networkTech.Network.fromJSON(nn);
+    }
+    else {
+      network = nn;
+    }
 
     network.evolve(preppedTrainingSet, options)
     .then(function(results){
@@ -1483,13 +1505,54 @@ function networkEvolve(params) {
 
           debug("IN [" + nodeIndex + "]: " + inputName);
 
-          if (exportedNetwork.nodes[nodeIndex].type !== "input") {
-            console.log(chalkError("NNC | NOT INPUT ERROR " + nodeIndex + " | " + inputName));
-            return cb1("NN NOT INPUT NODE ERROR");
+          if (params.networkTechnology === "neataptic") {
+            if (exportedNetwork.nodes[nodeIndex].type !== "input") {
+              console.log(chalkError("NNC | NOT INPUT ERROR" 
+                + " | TECH: " + params.networkTechnology 
+                + " | NODE INDEX: " + nodeIndex 
+                + " | INPUT NAME: " + inputName 
+                + "\nexportedNetwork.nodes[nodeIndex]\n" + jsonPrint(exportedNetwork.nodes[nodeIndex])
+              ));
+              return cb1("NN NOT INPUT NODE ERROR");
+            }
+
+            exportedNetwork.nodes[nodeIndex].name = inputName;
+            exportedNetwork.nodes[nodeIndex].inputType = inputType;
+
+          }
+          else { 
+            // carrot
+            // const json = {
+            //   nodes: [],
+            //   connections: [],
+            //   input_nodes: [],
+            //   output_nodes: [],
+            //   input_size: this.input_size,
+            //   output_size: this.output_size,
+            //   dropout: this.dropout,
+            //   // backward compatibility
+            //   input: this.input_size,
+            //   output: this.output_size,
+            // };
+            const inputNodeIdex = exportedNetwork.input_nodes[nodeIndex];
+
+            // if (exportedNetwork.nodes[inputNodeIdex].type !== "input") {
+
+            //   console.log(chalkError("NNC | NOT INPUT ERROR" 
+            //     + " | TECH: " + params.networkTechnology 
+            //     + " | NODE INDEX: " + nodeIndex 
+            //     + " | INPUT NAME: " + inputName 
+            //     + "\nexportedNetwork.nodes[inputNodeIdex]\n" + jsonPrint(exportedNetwork.nodes[inputNodeIdex])
+            //   ));
+
+            //   return cb1("NN NOT INPUT NODE ERROR");
+            // }
+
+            exportedNetwork.nodes[inputNodeIdex].type = "input";
+            exportedNetwork.nodes[inputNodeIdex].name = inputName;
+            exportedNetwork.nodes[inputNodeIdex].inputType = inputType;
           }
 
-          exportedNetwork.nodes[nodeIndex].name = inputName;
-          exportedNetwork.nodes[nodeIndex].inputType = inputType;
           nodeIndex += 1;
 
           cb1();
@@ -1511,21 +1574,45 @@ function networkEvolve(params) {
           throw err;
         }
 
-        nodeIndex = exportedNetwork.nodes.length - exportedNetwork.output;
-        debug("OUTPUT INDEX START " + nodeIndex);
+        if (params.networkTechnology === "neataptic") {
 
-        if (exportedNetwork.nodes[nodeIndex].type !== "output") {
-          console.log(chalkError("NNC | NOT OUTPUT ERROR " 
-            + nodeIndex 
-            + "\n" + jsonPrint(exportedNetwork.nodes[nodeIndex])
-          ));
+          nodeIndex = exportedNetwork.nodes.length - exportedNetwork.output;
+          debug("OUTPUT INDEX START " + nodeIndex);
+
+          if (exportedNetwork.nodes[nodeIndex].type !== "output") {
+            console.log(chalkError("NNC | NOT OUTPUT ERROR " 
+              + nodeIndex 
+              + "\n" + jsonPrint(exportedNetwork.nodes[nodeIndex])
+            ));
+            throw new Error("OUTPUT NODE INDEX MISMATCH?");
+          }
+
+          exportedNetwork.nodes[nodeIndex].name = "left";
+          nodeIndex += 1;
+          exportedNetwork.nodes[nodeIndex].name = "neutral";
+          nodeIndex += 1;
+          exportedNetwork.nodes[nodeIndex].name = "right";
         }
+        else{
+          nodeIndex = 0;
+          const outputNodeIdex = exportedNetwork.output_nodes[nodeIndex];
+          // if (exportedNetwork.nodes[outputNodeIdex].type !== "output") {
+          //   console.log(chalkError("NNC | NOT OUTPUT ERROR " 
+          //     + nodeIndex 
+          //     + "\n" + jsonPrint(exportedNetwork.nodes[outputNodeIdex])
+          //   ));
+          //   throw new Error("OUTPUT NODE TYPE MISMATCH?");
+          // }
 
-        exportedNetwork.nodes[nodeIndex].name = "left";
-        nodeIndex += 1;
-        exportedNetwork.nodes[nodeIndex].name = "neutral";
-        nodeIndex += 1;
-        exportedNetwork.nodes[nodeIndex].name = "right";
+          exportedNetwork.nodes[outputNodeIdex].type = "output";
+          exportedNetwork.nodes[outputNodeIdex].name = "left";
+          nodeIndex += 1;
+          exportedNetwork.nodes[outputNodeIdex].type = "output";
+          exportedNetwork.nodes[outputNodeIdex].name = "neutral";
+          nodeIndex += 1;
+          exportedNetwork.nodes[outputNodeIdex].type = "output";
+          exportedNetwork.nodes[outputNodeIdex].name = "right";
+        }
 
         debug("... END NETWORK NODE UPDATE: " + statsObj.training.testRunId);
 
@@ -1558,7 +1645,23 @@ function networkEvolve(params) {
 
         networkObj.evolve.options = pick(
           params, 
-          ["hiddenLayerSize", "clear", "cost", "activation", "growth", "equal", "mutation", "mutationRate", "mutationAmount", "efficientMutation", "popsize", "elitism", "provenance", "fitnessPopulation", "error"]
+          [
+            "hiddenLayerSize", 
+            "clear", 
+            "cost", 
+            "activation", 
+            "growth", 
+            "equal", 
+            "mutation", 
+            "mutationRate", 
+            "mutationAmount", 
+            "efficientMutation", 
+            "popsize", 
+            "elitism", 
+            "provenance", 
+            "fitnessPopulation", 
+            "error"
+          ]
         );
 
         networkObj.evolve.elapsed = statsObj.evolve.elapsed;
@@ -1707,10 +1810,19 @@ function evolve(p){
     params = p;
     params.schedStartTime = moment().valueOf();
 
+    const options = {};
+
     debug("evolve params.network\n" + jsonPrint(params.network));
 
-    if (params.architecture === undefined) { params.architecture = "perceptron"; }
-    if (params.networkTechnology === undefined) { params.networkTechnology = configuration.networkTechnology; }
+    if ((params.networkObj !== undefined) && params.networkObj) {
+      options.networkObj = deepcopy(params.networkObj);
+      params.architecture = "loadedNetwork";
+      params.networkTechnology = (params.networkObj.networkTechnology) ? params.networkObj.networkTechnology : "neataptic";
+      debug(chalkAlert("NNC | START NETWORK DEFINED: " + options.networkObj.networkId));
+    }
+
+    if (!params.architecture || params.architecture === undefined) { params.architecture = "perceptron"; }
+    if (!params.networkTechnology || params.networkTechnology === undefined) { params.networkTechnology = configuration.networkTechnology; }
 
     switch (params.networkTechnology) {
       case "neataptic":
@@ -1723,13 +1835,7 @@ function evolve(p){
         networkTech = neataptic;
     }
 
-    const options = {};
 
-    if ((params.network !== undefined) && params.networkObj) {
-      options.networkObj = params.networkObj;
-      params.architecture = "loadedNetwork";
-      debug(chalkAlert("NNC | START NETWORK DEFINED: " + options.networkObj.networkId));
-    }
 
     options.clear = params.clear;
     options.efficientMutation = params.efficientMutation; // carrot
@@ -1758,12 +1864,13 @@ function evolve(p){
 
       switch (key) {
 
-        case "network":
+        case "networkObj":
           console.log("NNC"
             + " | " + configuration.childId
             + " | EVOLVE OPTION"
-            + " | " + key + ": " + params[key].networkId 
-            + " | " + params[key].successRate.toFixed(2) + "%"
+            + " | NN ID: " + key + ": " + params[key].networkId 
+            + " | IN: " + params[key].inputsId
+            + " | SR: " + params[key].successRate.toFixed(2) + "%"
           );
         break;
 
@@ -1792,8 +1899,7 @@ function evolve(p){
 
     }, async function(){
 
-      network = {};
-
+      let network;
       let networkObj;
       let testResults;
 
@@ -1801,13 +1907,27 @@ function evolve(p){
 
         case "loadedNetwork":
 
-          network = networkTech.Network.fromJSON(options.networkObj.network);
+          try{
+            network = networkTech.Network.fromJSON(options.networkObj.network);
+          }
+          catch(err){
+            network = deepcopy(options.networkObj.network);
+          }
+
+          // if (typeof options.networkObj.network.toJSON === "function") { 
+          //   console.log(chalkAlert("NNC | ... NETWORK NOT JSON | " + options.networkObj.networkId));
+          //   network = options.networkObj.network;
+          // }
+          // else {
+          //   console.log(chalkAlert("NNC | >>> NETWORK FROM JSON | " + options.networkObj.networkId));
+          //   network = networkTech.Network.fromJSON(options.networkObj.network);
+          // }
 
           console.log("NNC"
             + " | " + configuration.childId
             + " | " + options.networkObj.networkTechnology.toUpperCase()
             + " | EVOLVE ARCH | LOADED: " + options.networkObj.networkId
-            + " | IN: " + options.networkObj.network.input
+            + " | IN: " + options.networkObj.numInputs
             + " | OUT: " + options.networkObj.network.output
           );
         break;
@@ -1942,6 +2062,10 @@ function evolve(p){
         networkObj.test.results = {};
         networkObj.test.results = testResults;
 
+        if (!networkObj.inputsObj || networkObj.inputsObj === undefined) {
+          networkObj.inputsObj = params.inputsObj;
+        }
+
         return resolve(networkObj);
       }
       catch(err){
@@ -2035,7 +2159,7 @@ const fsmStates = {
 
       statsObj.fsmStatus = "ERROR";
 
-      quit("FSM ERROR");
+      quit({cause: "FSM ERROR"});
     }
   },
 
@@ -2131,7 +2255,23 @@ const fsmStates = {
 
           networkObj.evolve.options = pick(
             networkObj.evolve.options, 
-            ["hiddenLayerSize", "clear", "cost", "activation", "growth", "equal", "mutation", "mutationRate", "mutationAmount", "efficientMutation", "popsize", "elitism", "provenance", "fitnessPopulation", "error"]
+            [
+              "hiddenLayerSize", 
+              "clear", 
+              "cost", 
+              "activation", 
+              "growth", 
+              "equal", 
+              "mutation", 
+              "mutationRate", 
+              "mutationAmount", 
+              "efficientMutation", 
+              "popsize", 
+              "elitism", 
+              "provenance", 
+              "fitnessPopulation", 
+              "error"
+            ]
           );
 
           process.send({op: "EVOLVE_COMPLETE", childId: configuration.childId, networkObj: networkObj, statsObj: statsObj});
