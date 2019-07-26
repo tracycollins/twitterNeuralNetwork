@@ -427,52 +427,49 @@ async function init(){
       { input: [1,1], output: [0] }
     ];
 
-    try {
+    await network.evolve(trainingSet, {
+      mutation: carrot.methods.mutation.FFW,
+      equal: true,
+      error: 0.03,
+      elitism: 5,
+      mutation_rate: 0.5
+    });
 
-      await network.evolve(trainingSet, {
-        mutation: carrot.methods.mutation.FFW,
-        equal: true,
-        error: 0.03,
-        elitism: 5,
-        mutation_rate: 0.5
-      });
+    let out = network.activate([0,0]); // 0.2413
+    if (out > 0.5) { 
+      console.log(chalkError("TNC | *** XOR TEST FAIL | EXPECTED 0 : OUTPUT: " + out));
+      return(new Error("XOR test fail"));
+    }
+    console.log(chalkGreen("TNC | XOR | 0 0 > " + out));
 
-      let out = network.activate([0,0]); // 0.2413
-      if (out > 0.5) { 
-        throw new Error("XOR test fail");
-      }
-      console.log(chalkGreen("TNC | XOR | 0 0 > " + out));
+    out = network.activate([0,1]); // 1.0000
+    if (out < 0.5) { 
+      console.log(chalkError("TNC | *** XOR TEST FAIL | EXPECTED 1 : OUTPUT: " + out));
+      return(new Error("XOR test fail"));
+    }
+    console.log(chalkGreen("TNC | XOR | 0 1 > " + out));
 
-      out = network.activate([0,1]); // 1.0000
-      if (out < 0.5) { 
-        throw new Error("XOR test fail");
-      }
-      console.log(chalkGreen("TNC | XOR | 0 1 > " + out));
+    out = network.activate([1,0]); // 0.7663
+    if (out < 0.5) { 
+      console.log(chalkError("TNC | *** XOR TEST FAIL | EXPECTED 1 : OUTPUT: " + out));
+      return(new Error("XOR test fail"));
+    }
+    console.log(chalkGreen("TNC | XOR | 1 0 > " + out));
 
-      out = network.activate([1,0]); // 0.7663
-      if (out < 0.5) { 
-        throw new Error("XOR test fail");
-      }
-      console.log(chalkGreen("TNC | XOR | 1 0 > " + out));
+    out = network.activate([1,1]); // -0.008
+    if (out > 0.5) { 
+      console.log(chalkError("TNC | *** XOR TEST FAIL | EXPECTED 0 : OUTPUT: " + out));
+      return(new Error("XOR test fail"));
+    }
 
-      out = network.activate([1,1]); // -0.008
-      if (out > 0.5) { 
-        throw new Error("XOR test fail");
-      }
+    console.log(chalkGreen("TNC | XOR | 1 1 > " + out));
 
-      console.log(chalkGreen("TNC | XOR | 1 1 > " + out));
+    const netJson = network.toJSON();
 
-      const netJson = network.toJSON();
+    console.log(chalkLog("TNC | TEST XOR NETWORK\n" + jsonPrint(netJson)));
 
-      console.log(chalkLog("TNC | TEST XOR NETWORK\n" + jsonPrint(netJson)));
+    return;
 
-      return;
-
-     }
-     catch(err){
-      console.log(chalkError("TNC | *** INIT | TEST | CARROR TECH XOR TEST: " + err));
-      throw err;
-     }
   }
 
   execute();
