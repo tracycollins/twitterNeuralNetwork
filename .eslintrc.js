@@ -10,6 +10,7 @@ module.exports = {
         "sourceType": "module"
     },
     "rules": {
+        "require-atomic-updates": "off",
         "no-console": "off",
         "accessor-pairs": "error",
         "array-bracket-spacing": [
@@ -43,7 +44,7 @@ module.exports = {
         "consistent-this": "error",
         "curly": "off",
         "default-case": "error",
-        "dot-location": "error",
+        "dot-location": "off",
         "dot-notation": [
             "error",
             {
@@ -52,10 +53,7 @@ module.exports = {
         ],
         "eol-last": "error",
         "eqeqeq": "off",
-        "func-names": [
-            "error",
-            "never"
-        ],
+        "func-names": "off",
         "func-style": "off",
         "generator-star-spacing": "error",
         "global-require": "error",
@@ -86,7 +84,7 @@ module.exports = {
         "new-parens": "error",
         "newline-after-var": "off",
         "newline-before-return": "off",
-        "newline-per-chained-call": "error",
+        "newline-per-chained-call": "off",
         "no-alert": "error",
         "no-array-constructor": "error",
         "no-bitwise": "error",
@@ -158,7 +156,7 @@ module.exports = {
         "no-trailing-spaces": "off",
         "no-undef-init": "error",
         // "no-undefined": "error",
-        "no-underscore-dangle": "error",
+        "no-underscore-dangle": "off",
         "no-unmodified-loop-condition": "error",
         "no-unneeded-ternary": "error",
         "no-unused-expressions": "error",

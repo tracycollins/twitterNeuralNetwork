@@ -1,5 +1,6 @@
  /*jslint node: true */
 /*jshint sub:true*/
+
 const os = require("os");
 let hostname = os.hostname();
 hostname = hostname.replace(/.tld/g, ""); // amtrak wifi
@@ -12,24 +13,18 @@ hostname = hostname.replace(/word/g, "google");
 
 const MODULE_NAME = "tncChild";
 const MODULE_ID_PREFIX = "TNC";
-
-const DEFAULT_UPDATE_USER_DB = false;
-const DEFAULT_TEST_RATIO = 0.33;
 const DEFAULT_NETWORK_TECHNOLOGY = "neataptic";
-const DEFAULT_QUIT_ON_COMPLETE = false;
 const DEFAULT_INPUTS_BINARY_MODE = false;
-const DEFAULT_NEATAPTIC_HIDDEN_LAYER_SIZE = 9;
 const TEST_MODE_LENGTH = 500;
 
-const TEST_MODE = false; // applies only to parent
-
 const ONE_SECOND = 1000;
-const ONE_MINUTE = ONE_SECOND*60;
 
-const ONE_KILOBYTE = 1024;
-const ONE_MEGABYTE = 1024 * ONE_KILOBYTE;
+const DEFAULT_TEST_RATIO = 0.20;
 
-const DROPBOX_MAX_FILE_UPLOAD = 140 * ONE_MEGABYTE; // bytes
+let configuration = {};
+configuration.testSetRatio = DEFAULT_TEST_RATIO;
+configuration.inputsBinaryMode = DEFAULT_INPUTS_BINARY_MODE;
+configuration.neatapticHiddenLayerSize = 9;
 
 const ThreeceeUtilities = require("@threeceelabs/threecee-utilities");
 const tcUtils = new ThreeceeUtilities("NNC_TCU");
@@ -38,12 +33,9 @@ const NeuralNetworkTools = require("@threeceelabs/neural-network-tools");
 const nnTools = new NeuralNetworkTools("NNC_NNT");
 
 const fs = require("fs");
-const JSONParse = require("safe-json-parse");
-const sizeof = require("object-sizeof");
+const empty = require("is-empty");
 const HashMap = require("hashmap").HashMap;
-const Dropbox = require("dropbox").Dropbox;
 const yauzl = require("yauzl");
-const fetch = require("isomorphic-fetch"); // or another library of choice.
 
 const MODULE_ID = MODULE_ID_PREFIX + "_" + hostname;
 
@@ -59,19 +51,9 @@ console.log("HOST NAME:    " + hostname);
 console.log("=========================================");
 console.log("=========================================");
 
-const KEEPALIVE_INTERVAL = ONE_MINUTE;
 const QUIT_WAIT_INTERVAL = ONE_SECOND;
 
 const compactDateTimeFormat = "YYYYMMDD_HHmmss";
-
-let DROPBOX_ROOT_FOLDER;
-
-if (hostname === "google") {
-  DROPBOX_ROOT_FOLDER = "/home/tc/Dropbox/Apps/wordAssociation";
-}
-else {
-  DROPBOX_ROOT_FOLDER = "/Users/tc/Dropbox/Apps/wordAssociation";
-}
 
 //=========================================================================
 // MODULE REQUIRES
@@ -80,17 +62,12 @@ const neataptic = require("neataptic");
 const carrot = require("@liquid-carrot/carrot");
 
 let networkTech = (DEFAULT_NETWORK_TECHNOLOGY === "neataptic") ? neataptic : carrot;
-// let network;
 let networkObj = {};
 
 const _ = require("lodash");
 const moment = require("moment");
 const pick = require("object.pick");
 const treeify = require("treeify");
-// const MergeHistograms = require("@threeceelabs/mergehistograms");
-// const mergeHistograms = new MergeHistograms();
-// const arrayNormalize = require("array-normalize");
-
 const debug = require("debug")("tfe");
 const util = require("util");
 const deepcopy = require("deep-copy");
@@ -225,144 +202,10 @@ process.on("unhandledRejection", function(err, promise) {
   process.exit(1);
 });
 
-//=========================================================================
-// CONFIGURATION
-//=========================================================================
-
-function filesListFolderLocal(options){
-  return new Promise(function(resolve, reject) {
-
-    const fullPath = DROPBOX_ROOT_FOLDER + options.path;
-
-    fs.readdir(fullPath, function(err, items){
-      if (err) {
-        reject(err);
-      }
-      else {
-
-        const itemArray = [];
-
-        async.each(items, function(item, cb){
-
-          itemArray.push(
-            {
-              name: item, 
-              client_modified: false,
-              content_hash: false,
-              path_display: fullPath + "/" + item
-            }
-          );
-          cb();
-
-        }, function(err){
-
-          if (err) {
-            console.log(chalkError(MODULE_ID_PREFIX + " | *** filesListFolderLocal ERROR:", err));
-            return reject(err);
-          }
-          const response = {
-            cursor: false,
-            has_more: false,
-            entries: itemArray
-          };
-
-          resolve(response);
-        });
-        }
-    });
-  });
-}
-
-function filesGetMetadataLocal(options){
-
-  return new Promise(function(resolve, reject) {
-
-    const fullPath = DROPBOX_ROOT_FOLDER + options.path;
-
-    fs.stat(fullPath, function(err, stats){
-      if (err) {
-        reject(err);
-      }
-      else {
-        const response = {
-          client_modified: stats.mtimeMs
-        };
-        
-        resolve(response);
-      }
-    });
-  });
-}
-
-let configuration = {};
-
-configuration.updateUserDb = DEFAULT_UPDATE_USER_DB;
-configuration.offlineMode = false;
-configuration.networkTechnology = DEFAULT_NETWORK_TECHNOLOGY;
-configuration.neatapticHiddenLayerSize = DEFAULT_NEATAPTIC_HIDDEN_LAYER_SIZE;
-configuration.inputsBinaryMode = DEFAULT_INPUTS_BINARY_MODE;
-configuration.testMode = TEST_MODE;
-
-configuration.testSetRatio = DEFAULT_TEST_RATIO;
-
-configuration.dropboxMaxFileUpload = DROPBOX_MAX_FILE_UPLOAD;
-
-configuration.DROPBOX = {};
-configuration.DROPBOX.DROPBOX_WORD_ASSO_ACCESS_TOKEN = process.env.DROPBOX_WORD_ASSO_ACCESS_TOKEN;
-configuration.DROPBOX.DROPBOX_WORD_ASSO_APP_KEY = process.env.DROPBOX_WORD_ASSO_APP_KEY;
-configuration.DROPBOX.DROPBOX_WORD_ASSO_APP_SECRET = process.env.DROPBOX_WORD_ASSO_APP_SECRET;
-
-const DROPBOX_CONFIG_FOLDER = "/config/utility";
-const DROPBOX_CONFIG_DEFAULT_FOLDER = DROPBOX_CONFIG_FOLDER + "/default";
-const DROPBOX_CONFIG_HOST_FOLDER = DROPBOX_CONFIG_FOLDER + "/" + hostname;
-
-configuration.local = {};
-configuration.local.trainingSetsFolder = DROPBOX_CONFIG_HOST_FOLDER + "/trainingSets";
-configuration.local.userArchiveFolder = DROPBOX_CONFIG_HOST_FOLDER + "/trainingSets/users";
-
-configuration.default = {};
-configuration.default.trainingSetsFolder = DROPBOX_CONFIG_DEFAULT_FOLDER + "/trainingSets";
-configuration.default.userArchiveFolder = DROPBOX_CONFIG_DEFAULT_FOLDER + "/trainingSets/users";
-
-configuration.trainingSetsFolder = configuration[HOST].trainingSetsFolder;
-configuration.archiveFileUploadCompleteFlagFolder = configuration[HOST].trainingSetsFolder + "/users";
-
-configuration.userArchiveFolder = configuration.default.userArchiveFolder;
-
-configuration.defaultUserArchiveFlagFile = "usersZipUploadComplete.json";
-configuration.trainingSetFile = "trainingSet.json";
-configuration.requiredTrainingSetFile = "requiredTrainingSet.txt";
-
-configuration.keepaliveInterval = KEEPALIVE_INTERVAL;
-configuration.quitOnComplete = DEFAULT_QUIT_ON_COMPLETE;
-
-let dropboxClient;
-
-const dropboxRemoteClient = new Dropbox({ 
-  accessToken: configuration.DROPBOX.DROPBOX_WORD_ASSO_ACCESS_TOKEN,
-  fetch: fetch
-});
-
-const dropboxLocalClient = { // offline mode
-  filesListFolder: filesListFolderLocal,
-  filesUpload: function(){},
-  filesDownload: function(){},
-  filesGetMetadata: filesGetMetadataLocal,
-  filesDelete: function(){}
-};
-
-if (configuration.offlineMode) {
-  dropboxClient = dropboxLocalClient;
-}
-else {
-  dropboxClient = dropboxRemoteClient;
-}
-
 const trainingSetUsersHashMap = {};
 trainingSetUsersHashMap.left = new HashMap();
 trainingSetUsersHashMap.neutral = new HashMap();
 trainingSetUsersHashMap.right = new HashMap();
-
 
 let evolveOptions = {};
 
@@ -387,18 +230,18 @@ function initConfig(cnf) {
 
     try {
 
-      const configArgs = Object.keys(configuration);
+      const configArgs = Object.keys(cnf);
 
       configArgs.forEach(function(arg){
-        if (_.isObject(configuration[arg])) {
-          console.log(MODULE_ID_PREFIX + " | _FINAL CONFIG | " + arg + "\n" + jsonPrint(configuration[arg]));
+        if (_.isObject(cnf[arg])) {
+          console.log(MODULE_ID_PREFIX + " | _FINAL CONFIG | " + arg + "\n" + jsonPrint(cnf[arg]));
         }
         else {
-          console.log(MODULE_ID_PREFIX + " | _FINAL CONFIG | " + arg + ": " + configuration[arg]);
+          console.log(MODULE_ID_PREFIX + " | _FINAL CONFIG | " + arg + ": " + cnf[arg]);
         }
       });
       
-      resolve(configuration);
+      resolve(cnf);
 
     }
     catch(err){
@@ -627,7 +470,7 @@ function msToTime(d) {
 
 function getTimeStamp(inputTime) {
   let currentTimeStamp;
-  if (inputTime === undefined) {
+  if(empty(inputTime)) {
     currentTimeStamp = moment().format(compactDateTimeFormat);
     return currentTimeStamp;
   }
@@ -649,7 +492,6 @@ function getElapsedTimeStamp(){
   statsObj.elapsedMS = moment().valueOf() - startTimeMoment.valueOf();
   return msToTime(statsObj.elapsedMS);
 }
-
 
 async function showStats(options) {
 
@@ -745,193 +587,6 @@ async function quit(opts) {
 //=========================================================================
 // EVOLVE
 //=========================================================================
-function loadFile(params) {
-
-  return new Promise(function(resolve, reject){
-
-    const noErrorNotFound = params.noErrorNotFound || false;
-
-    let fullPath = params.path || params.folder + "/" + params.file;
-
-    debug(chalkInfo("LOAD PATH " + params.path));
-    debug(chalkInfo("LOAD FOLDER " + params.folder));
-    debug(chalkInfo("LOAD FILE " + params.file));
-    debug(chalkInfo("FULL PATH " + fullPath));
-
-
-    if (configuration.offlineMode || params.loadLocalFile) {
-
-      fullPath = DROPBOX_ROOT_FOLDER + fullPath;
-      console.log(chalkInfo("OFFLINE_MODE: FULL PATH " + fullPath));
-
-      fs.readFile(fullPath, "utf8", function(err, data) {
-
-        if (err) {
-          console.log(chalkError("fs readFile ERROR: " + err));
-          return reject(err);
-        }
-
-        console.log(chalkInfo(getTimeStamp()
-          + " | LOADING FILE FROM DROPBOX"
-          + " | " + fullPath
-        ));
-
-        if (fullPath.match(/\.json$/gi)) {
-
-          JSONParse(data, function(err, fileObj){
-            if (err) {
-              console.log(chalkError(getTimeStamp()
-                + " | *** LOAD FILE FROM DROPBOX ERROR"
-                + " | " + fullPath
-                + " | " + err
-              ));
-
-              return reject(err);
-            }
-
-            const fileObjSizeMbytes = sizeof(fileObj)/ONE_MEGABYTE;
-
-            console.log(chalkInfo(getTimeStamp()
-              + " | LOADED FILE FROM DROPBOX"
-              + " | " + fileObjSizeMbytes.toFixed(2) + " MB"
-              + " | " + fullPath
-            ));
-
-            return resolve(fileObj);
-
-          });
-
-        }
-
-        console.log(chalkError(getTimeStamp()
-          + " | ... SKIP LOAD FILE FROM DROPBOX"
-          + " | " + fullPath
-        ));
-        resolve();
-
-      });
-
-     }
-    else {
-
-      dropboxClient.filesDownload({path: fullPath}).
-      then(function(data) {
-
-        debug(chalkLog(getTimeStamp()
-          + " | LOADING FILE FROM DROPBOX FILE: " + fullPath
-        ));
-
-        if (fullPath.match(/\.json$/gi)) {
-
-          const payload = data.fileBinary;
-
-          if (!payload || (payload === undefined)) {
-            return reject(new Error(MODULE_ID_PREFIX + " LOAD FILE PAYLOAD UNDEFINED"));
-          }
-
-          JSONParse(payload, function(err, fileObj){
-            if (err) {
-              console.log(chalkError(getTimeStamp()
-                + " | *** LOAD FILE FROM DROPBOX ERROR"
-                + " | " + fullPath
-                + " | " + err
-              ));
-
-              return reject(err);
-            }
-
-            if (params.includeMetaData) {
-
-              const results = {};
-
-              results.data = fileObj;
-
-              results.meta = {};
-              delete data.fileBinary;
-              results.meta = data;
-
-              return resolve(results);
-
-            }
-            return resolve(fileObj);
-
-          });
-
-        }
-        else {
-          resolve();
-        }
-      }).
-      catch(function(err) {
-
-        console.log(chalkError(MODULE_ID_PREFIX + " | *** DROPBOX loadFile ERROR: " + fullPath));
-        
-        if ((err.status === 409) || (err.status === 404)) {
-          if (noErrorNotFound) {
-            console.log(chalkAlert(MODULE_ID_PREFIX + " | *** DROPBOX READ FILE " + fullPath + " NOT FOUND"));
-            return resolve(new Error("NOT FOUND"));
-          }
-          console.log(chalkAlert(MODULE_ID_PREFIX + " | *** DROPBOX READ FILE " + fullPath + " NOT FOUND ... SKIPPING ..."));
-          return resolve(err);
-        }
-        
-        if (err.status === 0) {
-          console.log(chalkError(MODULE_ID_PREFIX + " | *** DROPBOX NO RESPONSE"
-            + " ... NO INTERNET CONNECTION? ... SKIPPING ..."));
-          return resolve(new Error("NO INTERNET"));
-        }
-
-        reject(err);
-
-      });
-    }
-  });
-}
-
-async function loadFileRetry(params){
-
-  const resolveOnNotFound = params.resolveOnNotFound || false;
-  const maxRetries = params.maxRetries || 10;
-  let retryNumber;
-  let backOffTime = params.initialBackOffTime || ONE_SECOND;
-  const path = params.path || params.folder + "/" + params.file;
-
-  for (retryNumber = 0;retryNumber < maxRetries;retryNumber++) {
-    try {
-      
-      const fileObj = await loadFile(params);
-
-      if (retryNumber > 0) { 
-        console.log(chalkAlert(MODULE_ID_PREFIX + " | FILE LOAD RETRY"
-          + " | " + path
-          + " | BACKOFF: " + msToTime(backOffTime)
-          + " | " + retryNumber + " OF " + maxRetries
-        )); 
-      }
-
-      return fileObj;
-    } 
-    catch(err) {
-      backOffTime *= 2;
-      setTimeout(function(){
-        console.log(chalkAlert(MODULE_ID_PREFIX + " | FILE LOAD ERROR ... RETRY"
-          + " | " + path
-          + " | BACKOFF: " + msToTime(backOffTime)
-          + " | " + retryNumber + " OF " + maxRetries
-          + " | ERROR: " + err
-        )); 
-      }, backOffTime);
-    }
-  }
-
-  if (resolveOnNotFound) {
-    console.log(chalkAlert(MODULE_ID_PREFIX + " | resolve FILE LOAD FAILED | RETRY: " + retryNumber + " OF " + maxRetries));
-    return false;
-  }
-  console.log(chalkError(MODULE_ID_PREFIX + " | reject FILE LOAD FAILED | RETRY: " + retryNumber + " OF " + maxRetries));
-  throw new Error("FILE LOAD ERROR | RETRIES " + maxRetries);
-
-}
 
 function unzipUsersToArray(params){
 
@@ -1279,7 +934,7 @@ function fileSize(params){
 
 async function loadUsersArchive(params){
 
-  const defaultUserArchiveFolder = DROPBOX_ROOT_FOLDER + configuration.userArchiveFolder;
+  // const defaultUserArchiveFolder = path.join(DROPBOX_ROOT_FOLDER, configuration.userArchiveFolder);
 
   let file = params.file;
 
@@ -1287,7 +942,7 @@ async function loadUsersArchive(params){
     file = file.replace(/users\.zip/, "users_test.zip");
   }
 
-  params.folder = params.folder || defaultUserArchiveFolder;
+  params.folder = params.folder || configuration.userArchiveFolder;
   params.path = (params.path !== undefined) ? params.path : params.folder + "/" + file;
 
   console.log(chalkLog(MODULE_ID_PREFIX 
@@ -1322,7 +977,7 @@ async function loadTrainingSet(){
   let archiveFlagObj;
 
   try{
-    archiveFlagObj = await loadFileRetry({folder: configuration.userArchiveFolder, file: configuration.defaultUserArchiveFlagFile});
+    archiveFlagObj = await tcUtils.loadFileRetry({folder: configuration.userArchiveFolder, file: configuration.defaultUserArchiveFlagFile});
     console.log(chalkNetwork(MODULE_ID_PREFIX + " | USERS ARCHIVE FLAG FILE\n" + jsonPrint(archiveFlagObj)));
   }
   catch(err){
@@ -1371,8 +1026,8 @@ function testNetworkData(params){
 
     async.eachSeries(testData, function(datum, cb){
 
-      nnTools.activateSingleNetwork({networkId: networkObj.networkId, user: datum, verbose: configuration.verbose})
-      .then(function(testOutput){
+      nnTools.activateSingleNetwork({networkId: networkObj.networkId, user: datum, verbose: configuration.verbose}).
+      then(function(testOutput){
 
         const passed = (testOutput.categoryAuto === datum.category);
 
@@ -1391,8 +1046,8 @@ function testNetworkData(params){
         }
 
         cb();
-      })
-      .catch(function(err){
+      }).
+      catch(function(err){
         return cb(err);
       });
 
@@ -1450,20 +1105,20 @@ function networkEvolve(params) {
       + " | NNID: " + statsObj.training.testRunId
     ));
 
-    let nn = params.network;
+    const nn = params.network;
     const options = params.options;
     let network = {};
 
-    if (nn.evolve === undefined) {
+    if(empty(nn.evolve)) {
 
       console.log(chalkAlert("TNC | !!! NETWORK EVOLVE UNDEFINED | CONVERT FROM JSON"
         + " | NNID: " + statsObj.training.testRunId
       ));
 
-      if (nn.input_size === undefined) { nn.input_size = nn.input; }
-      if (nn.output_size === undefined) { nn.output_size = nn.output; }
-      if (nn.input_nodes === undefined) { nn.input_nodes = []; }
-      if (nn.output_nodes === undefined) { nn.output_nodes = []; }
+      if(empty(nn.input_size)) { nn.input_size = nn.input; }
+      if(empty(nn.output_size)) { nn.output_size = nn.output; }
+      if(empty(nn.input_nodes)) { nn.input_nodes = []; }
+      if(empty(nn.output_nodes)) { nn.output_nodes = []; }
 
       nn.nodes.forEach(function(node){
         switch (node.type) {
@@ -1473,6 +1128,8 @@ function networkEvolve(params) {
           case "oputput":
             nn.output_nodes.push(node.index);
           break;
+          default:
+            console.log(chalkLog("TNC | ??? NN NODE TYPE: " + node.type));
         }
       });
 
@@ -1482,8 +1139,8 @@ function networkEvolve(params) {
       network = nn;
     }
 
-    network.evolve(preppedTrainingSet, options)
-    .then(function(results){
+    network.evolve(preppedTrainingSet, options).
+    then(function(results){
 
       results.threads = options.threads;
 
@@ -1705,8 +1362,8 @@ function networkEvolve(params) {
         resolve(networkObj);
 
       });
-    })
-    .catch(function(err){
+    }).
+    catch(function(err){
       return reject(err);
     });
 
@@ -1738,8 +1395,8 @@ function trainingSetPrep(params){
 
       try {
         // const datumObj = await tcUtils.convertDatumOneNetwork({primaryInputsFlag: true, datum: datum});
-        tcUtils.convertDatumOneNetwork({primaryInputsFlag: true, datum: datum})
-        .then(function(datumObj){
+        tcUtils.convertDatumOneNetwork({primaryInputsFlag: true, datum: datum}).
+        then(function(datumObj){
 
           dataConverted += 1;
 
@@ -1774,9 +1431,9 @@ function trainingSetPrep(params){
 
           cb();
 
-        })
-        .catch(function(err){
-          cb (err);
+        }).
+        catch(function(err){
+          cb(err);
         });
 
       }
@@ -1821,8 +1478,8 @@ function evolve(p){
       debug(chalkAlert("NNC | START NETWORK DEFINED: " + options.networkObj.networkId));
     }
 
-    if (!params.architecture || params.architecture === undefined) { params.architecture = "perceptron"; }
-    if (!params.networkTechnology || params.networkTechnology === undefined) { params.networkTechnology = configuration.networkTechnology; }
+    if (empty(params.architecture)) { params.architecture = "perceptron"; }
+    if (empty(params.networkTechnology)) { params.networkTechnology = configuration.networkTechnology; }
 
     switch (params.networkTechnology) {
       case "neataptic":
@@ -1834,7 +1491,6 @@ function evolve(p){
       default:
         networkTech = neataptic;
     }
-
 
 
     options.clear = params.clear;
@@ -2062,7 +1718,7 @@ function evolve(p){
         networkObj.test.results = {};
         networkObj.test.results = testResults;
 
-        if (!networkObj.inputsObj || networkObj.inputsObj === undefined) {
+        if (empty(networkObj.inputsObj)) {
           networkObj.inputsObj = params.inputsObj;
         }
 
@@ -2389,31 +2045,29 @@ process.on("message", function(m) {
 
     case "INIT":
 
+      console.log(chalkInfo(MODULE_ID_PREFIX + " | INIT"
+        + " | CHILD ID: " + m.childId
+      ));
+
+      console.log(configuration);
+
+      configuration = _.assign(configuration, m.configuration);
+
       if (m.testMode !== undefined) { configuration.testMode = m.testMode; }
       if (m.verbose !== undefined) { configuration.verbose = m.verbose; }
       if (m.testSetRatio !== undefined) { configuration.testSetRatio = m.testSetRatio; }
+      if (m.inputsBinaryMode !== undefined) { 
+        configuration.inputsBinaryMode = m.inputsBinaryMode;
+      }
 
       configuration.childId = m.childId;
       configuration.childIdShort = m.childIdShort;
+
       statsObj.childId = m.childId;
       statsObj.childIdShort = m.childIdShort;
+
       process.title = m.childId;
       process.name = m.childId;
-      configuration.inputsBinaryMode = m.inputsBinaryMode || DEFAULT_INPUTS_BINARY_MODE;
-
-      console.log(chalkInfo(MODULE_ID_PREFIX + " | INIT"
-        + " | CHILD ID: " + m.childId
-        + " | TEST MODE: " + configuration.testMode
-        + " | TEST SET RATIO: " + configuration.testSetRatio
-      ));
-
-      // if (configuration.testMode) {
-      //   configuration.trainingSetFile = "trainingSet_test.json";
-      //   configuration.defaultUserArchiveFlagFile = "usersZipUploadComplete_test.json";
-      //   console.log(chalkAlert(MODULE_ID_PREFIX + " | TEST MODE"));
-      //   console.log(chalkAlert(MODULE_ID_PREFIX + " | trainingSetFile:            " + configuration.trainingSetFile));
-      //   console.log(chalkAlert(MODULE_ID_PREFIX + " | defaultUserArchiveFlagFile: " + configuration.defaultUserArchiveFlagFile));
-      // }
 
       fsm.fsm_init();
     break;
