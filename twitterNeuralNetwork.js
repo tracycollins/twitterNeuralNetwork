@@ -598,7 +598,7 @@ const configHostFile = hostname + "_" + configuration.DROPBOX.DROPBOX_CONFIG_FIL
 
 const childPidFolderLocal = path.join(DROPBOX_ROOT_FOLDER, "config/utility", hostname, "children");
 
-const statsFolder = "/stats/" + hostname;
+const statsFolder = path.join(DROPBOX_ROOT_FOLDER, "stats",hostname);
 const statsFile = configuration.DROPBOX.DROPBOX_STATS_FILE;
 
 const defaultNetworkInputsConfigFile = "default_networkInputsConfig.json";
