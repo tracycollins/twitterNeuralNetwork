@@ -1109,6 +1109,37 @@ function networkEvolve(params) {
     const options = params.options;
     let network = {};
 
+    options.schedule = {
+
+      function: function(schedParams){
+
+        const elapsedInt = moment().valueOf() - params.schedStartTime;
+        const iterationRate = elapsedInt/schedParams.iteration;
+        const timeToComplete = iterationRate*(params.iterations - schedParams.iteration);
+
+        statsObj.evolve.stats = schedParams;
+
+        const sObj = {
+          networkId: params.runId,
+          numInputs: params.inputsObj.meta.numInputs,
+          inputsId: params.inputsId,
+          evolveStart: params.schedStartTime,
+          evolveElapsed: elapsedInt,
+          totalIterations: params.iterations,
+          iteration: schedParams.iteration,
+          iterationRate: iterationRate,
+          timeToComplete: timeToComplete,
+          error: schedParams.error.toFixed(5) || "---",
+          fitness: schedParams.fitness.toFixed(5) || "---"
+        };
+
+        process.send({op: "EVOLVE_SCHEDULE", childId: configuration.childId, childIdShort: configuration.childIdShort, stats: sObj});
+
+      },
+      
+      iterations: params.log
+    };
+
     if(empty(nn.evolve)) {
 
       console.log(chalkAlert("TNC | !!! NETWORK EVOLVE UNDEFINED | CONVERT FROM JSON"
@@ -1120,7 +1151,8 @@ function networkEvolve(params) {
       if(empty(nn.input_nodes)) { nn.input_nodes = []; }
       if(empty(nn.output_nodes)) { nn.output_nodes = []; }
 
-      nn.nodes.forEach(function(node){
+      async.forEachSeries(nn.nodes, function(node, cb){
+
         switch (node.type) {
           case "input":
             nn.input_nodes.push(node.index);
@@ -1131,9 +1163,16 @@ function networkEvolve(params) {
           default:
             console.log(chalkLog("TNC | ??? NN NODE TYPE: " + node.type));
         }
+        
+        cb();
+
+      }, function(err){
+        if (err) {
+          return reject(err);
+        }
+        network = networkTech.Network.fromJSON(nn);
       });
 
-      network = networkTech.Network.fromJSON(nn);
     }
     else {
       network = nn;
@@ -1142,11 +1181,14 @@ function networkEvolve(params) {
     network.evolve(preppedTrainingSet, options).
     then(function(results){
 
+      debug("network.evolve results\n" + jsonPrint(results));
+
       results.threads = options.threads;
 
       statsObj.evolve.endTime = moment().valueOf();
       statsObj.evolve.elapsed = moment().valueOf() - statsObj.evolve.startTime;
       statsObj.evolve.results = results;
+      statsObj.evolve.results.fitness = statsObj.evolve.stats.fitness;
 
       const exportedNetwork = network.toJSON();
 
@@ -1676,36 +1718,36 @@ function evolve(p){
 
         params.schedStartTime = moment().valueOf();
 
-        options.schedule = {
+        // options.schedule = {
 
-          function: function(schedParams){
+        //   function: function(schedParams){
 
-            const elapsedInt = moment().valueOf() - params.schedStartTime;
-            const iterationRate = elapsedInt/schedParams.iteration;
-            const timeToComplete = iterationRate*(params.iterations - schedParams.iteration);
+        //     const elapsedInt = moment().valueOf() - params.schedStartTime;
+        //     const iterationRate = elapsedInt/schedParams.iteration;
+        //     const timeToComplete = iterationRate*(params.iterations - schedParams.iteration);
 
-            statsObj.evolve.stats = schedParams;
+        //     statsObj.evolve.stats = schedParams;
 
-            const sObj = {
-              networkId: params.runId,
-              numInputs: params.inputsObj.meta.numInputs,
-              inputsId: params.inputsId,
-              evolveStart: params.schedStartTime,
-              evolveElapsed: elapsedInt,
-              totalIterations: params.iterations,
-              iteration: schedParams.iteration,
-              iterationRate: iterationRate,
-              timeToComplete: timeToComplete,
-              error: schedParams.error.toFixed(5) || "---",
-              fitness: schedParams.fitness.toFixed(5) || "---"
-            };
+        //     const sObj = {
+        //       networkId: params.runId,
+        //       numInputs: params.inputsObj.meta.numInputs,
+        //       inputsId: params.inputsId,
+        //       evolveStart: params.schedStartTime,
+        //       evolveElapsed: elapsedInt,
+        //       totalIterations: params.iterations,
+        //       iteration: schedParams.iteration,
+        //       iterationRate: iterationRate,
+        //       timeToComplete: timeToComplete,
+        //       error: schedParams.error.toFixed(5) || "---",
+        //       fitness: schedParams.fitness.toFixed(5) || "---"
+        //     };
 
-            process.send({op: "EVOLVE_SCHEDULE", childId: configuration.childId, childIdShort: configuration.childIdShort, stats: sObj});
+        //     process.send({op: "EVOLVE_SCHEDULE", childId: configuration.childId, childIdShort: configuration.childIdShort, stats: sObj});
 
-          },
+        //   },
           
-          iterations: params.log
-        };
+        //   iterations: params.log
+        // };
 
         params.options = options; // network evolve options
 
