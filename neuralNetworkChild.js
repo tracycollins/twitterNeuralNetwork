@@ -12,7 +12,7 @@ hostname = hostname.replace(/word0-instance-1/g, "google");
 hostname = hostname.replace(/word/g, "google");
 
 const MODULE_NAME = "tncChild";
-const MODULE_ID_PREFIX = "TNC";
+const MODULE_ID_PREFIX = "NNC";
 const DEFAULT_NETWORK_TECHNOLOGY = "neataptic";
 const DEFAULT_INPUTS_BINARY_MODE = false;
 const TEST_MODE_LENGTH = 500;
@@ -256,7 +256,7 @@ async function init(){
 
   statsObj.status = "INIT";
 
-  console.log(chalkBlueBold("TNC | TEST | CARROT TECH XOR")); 
+  console.log(chalkBlueBold("NNC | TEST | CARROT TECH XOR")); 
 
   const network = new networkTech.Network(2,1);
 
@@ -278,36 +278,36 @@ async function init(){
 
   let out = network.activate([0,0]); // 0.2413
   if (out > 0.5) { 
-    console.log(chalkError("TNC | *** XOR TEST FAIL | IN 0,0 | EXPECTED 0 : OUTPUT: " + out));
+    console.log(chalkError("NNC | *** XOR TEST FAIL | IN 0,0 | EXPECTED 0 : OUTPUT: " + out));
     return(new Error("XOR test fail"));
   }
-  console.log(chalkGreen("TNC | XOR | [0, 0] --> " + out));
+  console.log(chalkGreen("NNC | XOR | [0, 0] --> " + out));
 
   out = network.activate([0,1]); // 1.0000
   if (out < 0.5) { 
-    console.log(chalkError("TNC | *** XOR TEST FAIL | IN 0,1 | EXPECTED 1 : OUTPUT: " + out));
+    console.log(chalkError("NNC | *** XOR TEST FAIL | IN 0,1 | EXPECTED 1 : OUTPUT: " + out));
     return(new Error("XOR test fail"));
   }
-  console.log(chalkGreen("TNC | XOR | [0, 1] --> " + out));
+  console.log(chalkGreen("NNC | XOR | [0, 1] --> " + out));
 
   out = network.activate([1,0]); // 0.7663
   if (out < 0.5) { 
-    console.log(chalkError("TNC | *** XOR TEST FAIL | IN 1,0 | EXPECTED 1 : OUTPUT: " + out));
+    console.log(chalkError("NNC | *** XOR TEST FAIL | IN 1,0 | EXPECTED 1 : OUTPUT: " + out));
     return(new Error("XOR test fail"));
   }
-  console.log(chalkGreen("TNC | XOR | [1, 0] --> " + out));
+  console.log(chalkGreen("NNC | XOR | [1, 0] --> " + out));
 
   out = network.activate([1,1]); // -0.008
   if (out > 0.5) { 
-    console.log(chalkError("TNC | *** XOR TEST FAIL | IN 1,1 | EXPECTED 0 : OUTPUT: " + out));
+    console.log(chalkError("NNC | *** XOR TEST FAIL | IN 1,1 | EXPECTED 0 : OUTPUT: " + out));
     return(new Error("XOR test fail"));
   }
 
-  console.log(chalkGreen("TNC | XOR | [1, 1] --> " + out));
+  console.log(chalkGreen("NNC | XOR | [1, 1] --> " + out));
 
   const netJson = network.toJSON();
 
-  console.log(chalkLog("TNC | TEST XOR NETWORK\n" + jsonPrint(netJson)));
+  console.log(chalkLog("NNC | TEST XOR NETWORK\n" + jsonPrint(netJson)));
 
   return;
 }
@@ -1209,7 +1209,7 @@ function updateNetworkNodes(params){
 
 async function networkEvolve(params) {
 
-  console.log(chalkBlueBold("TNC | >>> START NETWORK EVOLVE"
+  console.log(chalkBlueBold("NNC | >>> START NETWORK EVOLVE"
     + " | " + getTimeStamp()
     + " | NNID: " + statsObj.training.testRunId
   ));
@@ -1251,7 +1251,7 @@ async function networkEvolve(params) {
 
   if(!nn.evolve || (nn.evolve === undefined)) {
 
-    console.log(chalkAlert("TNC | !!! NETWORK EVOLVE UNDEFINED | CONVERT FROM JSON"
+    console.log(chalkAlert("NNC | !!! NETWORK EVOLVE UNDEFINED | CONVERT FROM JSON"
       + " | NNID: " + statsObj.training.testRunId
     ));
 
@@ -1270,8 +1270,8 @@ async function networkEvolve(params) {
           nn.output_nodes.push(node.index);
         break;
         default:
-          console.log(chalkLog("TNC | ??? NN NODE TYPE: " + node.type));
-          throw new Error("UNKNOWN NN NODE TYPE: " + node.type);
+          console.log(chalkLog("NNC | ??? NN NODE TYPE: " + node.type + "\n" + jsonPrint(node)));
+          // throw new Error("UNKNOWN NN NODE TYPE: " + node.type);
       }
       
     }
@@ -1394,7 +1394,7 @@ function trainingSetPrep(params){
 
   return new Promise(function(resolve, reject){
 
-    preppedTrainingSet = [];
+    const preppedTrainingSet = [];
 
     let dataConverted = 0;
 
@@ -1413,39 +1413,52 @@ function trainingSetPrep(params){
     async.eachSeries(shuffledTrainingData, function(datum, cb){
 
       try {
+
+        if ((!datum.profileHistograms || datum.profileHistograms === undefined || datum.profileHistograms == {}) 
+          && (!datum.tweetHistograms || datum.tweetHistograms === undefined  || datum.tweetHistograms == {})){
+          console.log(chalkAlert(MODULE_ID_PREFIX + " | !!! EMPTY USER HISTOGRAMS ... SKIPPING | @" + datum.screenName));
+          return cb();
+        }
         // const datumObj = await tcUtils.convertDatumOneNetwork({primaryInputsFlag: true, datum: datum});
         tcUtils.convertDatumOneNetwork({primaryInputsFlag: true, datum: datum}).
-        then(function(datumObj){
+        then(function(results){
+
+          if (results.emptyFlag) {
+            debug(chalkAlert(MODULE_ID_PREFIX + " | !!! EMPTY CONVERTED DATUM ... SKIPPING | @" + datum.screenName));
+            return cb();
+          }
+
+          // results = {datum: datum, inputHits: inputHits, inputMisses: inputMisses, inputHitRate: inputHitRate}
 
           dataConverted += 1;
 
-          if (datumObj.input.length !== params.inputsObj.meta.numInputs) { 
+          if (results.datum.input.length !== params.inputsObj.meta.numInputs) { 
             console.log(chalkError(MODULE_ID_PREFIX
               + " | *** ERROR TRAINING SET PREP ERROR" 
               + " | INPUT NUMBER MISMATCH" 
               + " | INPUTS NUM IN: " + params.inputsObj.meta.numInputs
-              + " | DATUM NUM IN: " + datumObj.input.length
+              + " | DATUM NUM IN: " + results.datum.input.length
             ));
             return cb(new Error("INPUT NUMBER MISMATCH"));
           }
 
-          if (datumObj.output.length !== 3) { 
+          if (results.datum.output.length !== 3) { 
             console.log(chalkError(MODULE_ID_PREFIX
               + " | *** ERROR TRAINING SET PREP ERROR" 
               + " | OUTPUT NUMBER MISMATCH" 
               + " | INPUTS NUM IN: " + params.inputsObj.meta.numOutputs
-              + " | DATUM NUM IN: " + datumObj.output.length
+              + " | DATUM NUM IN: " + results.datum.output.length
             ));
             return cb(new Error("INPUT NUMBER MISMATCH"));
           }
 
           preppedTrainingSet.push({ 
-            input: datumObj.input, 
-            output: datumObj.output
+            input: results.datum.input, 
+            output: results.datum.output
           });
 
           if (configuration.verbose || (dataConverted % 1000 === 0) || configuration.testMode && (dataConverted % 100 === 0)){
-            console.log(chalkLog("TNC | DATA CONVERTED: " + dataConverted + "/" + trainingSetObj.data.length));
+            console.log(chalkLog("NNC | DATA CONVERTED: " + dataConverted + "/" + trainingSetObj.data.length));
           }
 
           cb();
@@ -1469,9 +1482,9 @@ function trainingSetPrep(params){
         return reject(err);
       }
 
-      console.log(chalkBlue("TNC | TRAINING SET PREP COMPLETE | TRAINING SET LENGTH: " + preppedTrainingSet.length));
+      console.log(chalkBlue("NNC | TRAINING SET PREP COMPLETE | TRAINING SET LENGTH: " + preppedTrainingSet.length));
 
-      resolve();
+      resolve(preppedTrainingSet);
 
     });
 
@@ -1691,7 +1704,7 @@ function evolve(p){
       try {
         await tcUtils.loadInputs({inputsObj: params.inputsObj});
         await tcUtils.setPrimaryInputs({inputsId: params.inputsObj.inputsId});
-        await trainingSetPrep(params);
+        preppedTrainingSet = await trainingSetPrep(params);
 
         params.schedStartTime = moment().valueOf();
         params.options = options; // network evolve options
