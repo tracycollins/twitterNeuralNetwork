@@ -6,6 +6,8 @@ const MODULE_ID_PREFIX = "TNN";
 const CHILD_PREFIX = "tnc_node";
 const CHILD_PREFIX_SHORT = "CH";
 
+const DEFAULT_MAX_FAIL_NETWORKS = 10;
+
 const os = require("os");
 let hostname = os.hostname();
 hostname = hostname.replace(/.tld/g, ""); // amtrak wifi
@@ -77,7 +79,7 @@ configuration.testMode = TEST_MODE;
 configuration.globalTestMode = GLOBAL_TEST_MODE;
 configuration.quitOnComplete = QUIT_ON_COMPLETE;
 configuration.statsUpdateIntervalTime = STATS_UPDATE_INTERVAL;
-
+configuration.maxFailNetworks = DEFAULT_MAX_FAIL_NETWORKS;
 childConfiguration.primaryHost = configuration.primaryHost;
 childConfiguration.testMode = configuration.testMode;
 childConfiguration.updateUserDb = false;
@@ -1341,6 +1343,8 @@ async function loadNetworkFile(params){
 
 async function loadInputsFile(params){
 
+    const maxFailNetworks = params.maxFailNetworks || configuration.maxFailNetworks;
+
     let inputsObj;
 
     try {
@@ -1376,7 +1380,7 @@ async function loadInputsFile(params){
 
     inputsSet.add(dbInputsObj.inputsId);
 
-    if ((dbInputsObj.networks.length === 0) && (empty(dbInputsObj.failNetworks))){
+    if ((dbInputsObj.networks.length === 0) && (empty(dbInputsObj.failNetworks) || (dbInputsObj.failNetworks.length < maxFailNetworks))){
       inputsNoNetworksSet.add(dbInputsObj.inputsId);
       console.log(chalkBlueBold(MODULE_ID_PREFIX 
         + " | +++ NO NETWORKS INPUTS [" + inputsNoNetworksSet.size + " IN SET]"

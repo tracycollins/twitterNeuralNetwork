@@ -1415,7 +1415,7 @@ function trainingSetPrep(params){
       try {
 
         if ((!datum.profileHistograms || datum.profileHistograms === undefined || datum.profileHistograms == {}) 
-          && (!datum.tweetHistograms || datum.tweetHistograms === undefined  || datum.tweetHistograms == {})){
+          && (!datum.tweetHistograms || datum.tweetHistograms === undefined || datum.tweetHistograms == {})){
           console.log(chalkAlert(MODULE_ID_PREFIX + " | !!! EMPTY USER HISTOGRAMS ... SKIPPING | @" + datum.screenName));
           return cb();
         }
