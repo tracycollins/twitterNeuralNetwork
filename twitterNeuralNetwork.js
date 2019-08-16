@@ -412,13 +412,12 @@ else {
 }
 
 configuration.childAppPath = path.join(configuration.cwd, "neuralNetworkChild.js");
-
 configuration.childIdPrefix = DEFAULT_CHILD_ID_PREFIX;
 configuration.childIndex = 0;
 
+const carrot = require("@liquid-carrot/carrot");
 const neataptic = require("neataptic");
 const networkTech = neataptic;
-
 
 let childPingAllInterval;
 
