@@ -35,7 +35,7 @@ module.exports = {
             "error",
             "last"
         ],
-        "complexity": "error",
+        "complexity": "off",
         "computed-property-spacing": [
             "error",
             "never"
@@ -56,7 +56,7 @@ module.exports = {
         "func-names": "off",
         "func-style": "off",
         "generator-star-spacing": "error",
-        "global-require": "error",
+        "global-require": "off",
         "guard-for-in": "error",
         "handle-callback-err": "off",
         "id-blacklist": "error",
@@ -91,7 +91,7 @@ module.exports = {
         "no-caller": "error",
         "no-catch-shadow": "error",
         "no-confusing-arrow": "error",
-        "no-continue": "error",
+        "no-continue": "off",
         "no-div-regex": "error",
         "no-duplicate-imports": "error",
         "no-else-return": "off",

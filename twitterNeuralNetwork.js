@@ -67,7 +67,7 @@ const statsObj = {};
 let statsObjSmall = {};
 let configuration = {};
 
-let childConfiguration = {};
+const childConfiguration = {};
 
 configuration.previousChildConfig = false;
 configuration.offlineMode = OFFLINE_MODE;
@@ -83,8 +83,6 @@ configuration.maxFailNetworks = DEFAULT_MAX_FAIL_NETWORKS;
 childConfiguration.primaryHost = configuration.primaryHost;
 childConfiguration.testMode = configuration.testMode;
 childConfiguration.updateUserDb = false;
-
-
 
 const empty = require("is-empty");
 const path = require("path");
@@ -415,7 +413,7 @@ configuration.childAppPath = path.join(configuration.cwd, "neuralNetworkChild.js
 configuration.childIdPrefix = DEFAULT_CHILD_ID_PREFIX;
 configuration.childIndex = 0;
 
-const carrot = require("@liquid-carrot/carrot");
+// const carrot = require("@liquid-carrot/carrot");
 const neataptic = require("neataptic");
 const networkTech = neataptic;
 
@@ -609,7 +607,7 @@ const defaultUnionInputsConfigFile = "default_unionInputsConfig.json";
 const defaultInputsFolder = path.join(configDefaultFolder, "inputs");
 const globalBestNetworkFolder = path.join(DROPBOX_ROOT_FOLDER, "config/utility/best/neuralNetworks");
 
-const globalArchiveInputsFolder = path.join(configDefaultFolder, "inputsArchive");
+// const globalArchiveInputsFolder = path.join(configDefaultFolder, "inputsArchive");
 
 const localBestNetworkFolder = path.join(configHostFolder, "neuralNetworks/best");
 const localFailNetworkFolder = path.join(configHostFolder, "neuralNetworks/fail");
@@ -903,7 +901,7 @@ function printResultsHashmap(){
       status = (networkObj.status && networkObj.status !== undefined) ? networkObj.status : "UNKNOWN";
       snIdRes = (networkObj.seedNetworkId && networkObj.seedNetworkId !== undefined) ? networkObj.seedNetworkRes.toFixed(2) : "---";
       betterChild = (networkObj.betterChild && networkObj.betterChild !== undefined) ? networkObj.betterChild : "---";
-      hiddenLayerSize = (networkObj.hiddenLayerSize && networkObj.hiddenLayerSize !== undefined) ? networkObj.hiddenLayerSize : "---";
+      hiddenLayerSize = (networkObj.hiddenLayerSize && (networkObj.hiddenLayerSize !== undefined)) ? networkObj.hiddenLayerSize : "---";
       seedNetworkId = (networkObj.seedNetworkId && networkObj.seedNetworkId !== undefined) ? networkObj.seedNetworkId : "---";
       iterations = (networkObj.evolve.results && networkObj.evolve.results !== undefined) ? networkObj.evolve.results.iterations : "---";
 
@@ -914,14 +912,6 @@ function printResultsHashmap(){
       fitness = ((networkObj.evolve.results && networkObj.evolve.results !== undefined) 
         && (networkObj.evolve.results.fitness !== undefined)
         && networkObj.evolve.results.fitness) ? networkObj.evolve.results.fitness.toFixed(5) : "---";
-
-      // effMut = (
-      //   networkObj.evolve.effMut 
-      //   && (networkObj.evolve.effMut !== undefined) 
-      //   && networkObj.evolve.results.effMut 
-      //   && (networkObj.evolve.results.effMut !== undefined)
-      // )
-      //   ? networkObj.evolve.results.effMut : false;
 
       successRate = ((networkObj.successRate || (networkObj.successRate === 0)) && networkObj.successRate !== undefined) ? networkObj.successRate.toFixed(2) : "---";
       elapsed = (networkObj.evolve.elapsed && networkObj.evolve.elapsed !== undefined) ? networkObj.evolve.elapsed : (moment().valueOf() - networkObj.evolve.startTime);
@@ -1170,7 +1160,7 @@ async function loadNetworkFile(params){
     console.log(chalkInfo(MODULE_ID_PREFIX + " | ??? INVALID NETWORK ... PURGING"
       + " | " + path
     ));
-    await purgeNetwork(networkId);
+    await purgeNetwork(nnObj.networkId);
     return;
   }
 
@@ -1362,9 +1352,9 @@ async function loadInputsFile(params){
     if(empty(inputsObj.meta)) {
       inputsObj.meta = {};
       inputsObj.meta.numInputs = 0;
-      Object.keys(inputsObj.inputs).forEach(function(inputType){
+      for(const inputType of Object.keys(inputsObj.inputs)){
         inputsObj.meta.numInputs += inputsObj.inputs[inputType].length;
-      });
+      }
     }
 
     let dbInputsObj;
@@ -1599,103 +1589,6 @@ function networkPass(params) {
   return pass;
 }
 
-// function loadBestNetworkDropboxFolders (p){
-
-//   return new Promise(function(resolve, reject){
-
-//     const params = p || {};
-
-//     let numNetworksLoaded = 0;
-
-//     console.log(chalkNetwork(MODULE_ID_PREFIX + " | ... LOADING DROPBOX NETWORK FOLDERS"
-//       + " | " + params.folders.length + " FOLDERS"
-//       + "\n" + jsonPrint(params.folders)
-//     ));
-
-//     listDropboxFolders(params)
-//     .then(function(dbEntries){
-
-//       let dropboxFoldersEntries = dbEntries;
-
-//       if (configuration.testMode) {
-//         dropboxFoldersEntries = _.shuffle(dbEntries);
-//         dropboxFoldersEntries.length = 10;
-//       }
-
-//       async.eachSeries(dropboxFoldersEntries, function(entry, cb){
-
-//         if (configuration.testMode && (numNetworksLoaded >= TEST_DROPBOX_NN_LOAD)) {
-//           return cb("TEST_MODE");
-//         }
-
-//         if (entry.name.toLowerCase() === bestRuntimeNetworkFileName.toLowerCase()) {
-//           console.log(chalkInfo(MODULE_ID_PREFIX + " | ... SKIPPING LOAD OF " + entry.name));
-//           return cb();
-//         }
-
-//         if (!entry.name.endsWith(".json")) {
-//           console.log(chalkInfo(MODULE_ID_PREFIX + " | ... SKIPPING LOAD OF " + entry.name));
-//           return cb();
-//         }
-
-//         const folder = path.dirname(entry.path_display);
-
-//         const fileNameArray = entry.name.split(".");
-//         const networkId = fileNameArray[0];
-
-//         if (configuration.verbose) {
-//           console.log(chalkInfo(MODULE_ID_PREFIX + " | DROPBOX NETWORK FOUND"
-//             + " | LAST MOD: " + moment(new Date(entry.client_modified)).format(compactDateTimeFormat)
-//             + " | " + networkId
-//             + " | FOLDER: " + folder
-//             + " | " + entry.name
-//           ));
-//         }
-
-//         if (skipLoadNetworkSet.has(networkId)){
-//           console.log(chalkInfo(MODULE_ID_PREFIX + " | DROPBOX NETWORK IN SKIP SET | SKIPPING ..."
-//             + " | " + networkId
-//             + " | FOLDER: " + folder
-//             + " | " + entry.name
-//           ));
-//           return cb();
-//         }
-        
-//         loadNetworkFile({folder: folder, file: entry.name, purgeMin: params.purgeMin}).
-//         then(function(networkObj){
-//           if (networkObj) {
-//             numNetworksLoaded += 1;
-//           }
-//           cb();
-//         }).
-//         catch(function(err){
-//           console.log(chalkError(MODULE_ID_PREFIX + " | *** LOAD NETWORK DROPBOX ENTRY ERROR: " + err
-//             + " | " + networkId
-//             + " | FOLDER: " + folder
-//             + " | " + entry.name
-//           ));
-//           cb(err);
-//         });
-
-//       }, function(err){
-//         if (err) { 
-//           if (err == "TEST_MODE") {
-//             console.log(chalkInfo(MODULE_ID_PREFIX + " | !!! TEST MODE | LOADED " + numNetworksLoaded + " NNs"));
-//             resolve(numNetworksLoaded);
-//           }
-//           console.log(chalkError(MODULE_ID_PREFIX + " | *** ERROR LOAD DROPBOX FOLDERS: " + err)); 
-//           return reject(err);
-//         }
-//         return resolve(numNetworksLoaded);
-//       });
-//     })
-//     .catch(function(err){
-//       return reject(err);
-//     });
-
-//   });
-// }
-
 async function loadBestNetworkFolders (p){
 
   const params = p || {};
@@ -1792,10 +1685,8 @@ async function loadInputsFolders (p){
 
       if (!configuration.inputsIdArray.includes(inputsId)){
         console.log(chalkInfo(MODULE_ID_PREFIX + " | --- INPUTS ... NOT IN INPUTS ARRAY"
-          // + "\n" + inputsId
           + " | " + fileObj.path
         ));
-        // await renameFileAsync(path.join(fileObj.folder, fileObj.file), path.join(globalArchiveInputsFolder, fileObj.file));
         continue;
       }
 
@@ -1957,20 +1848,16 @@ function generateSeedInputsNetworkId(params){
   });
 }
 
-function calculateHiddenLayerSize(params){
-  return new Promise(function(resolve){
+async function calculateHiddenLayerSize(params){
+  const networkObj = params.networkObj;
 
-    const networkObj = params.networkObj;
+  let hiddenLayerSize = 0;
 
-    let hiddenLayerSize = 0;
+  for(const node of networkObj.network.nodes){
+    if (node.type === "hidden") { hiddenLayerSize += 1; }
+  }
 
-    networkObj.network.nodes.forEach(function(node){
-      if (node.type === "hidden") { hiddenLayerSize += 1; }
-    });
-
-    resolve(hiddenLayerSize);
-
-  });
+  return hiddenLayerSize;
 }
 
 async function generateRandomEvolveConfig (){
@@ -2022,7 +1909,7 @@ async function generateRandomEvolveConfig (){
       networkObj = deepcopy(dbNetworkObj.toObject());
       delete networkObj._id;
 
-      if (empty(networkObj.hiddenLayerSize)){
+      if (!networkObj.hiddenLayerSize || (networkObj.hiddenLayerSize === undefined)){
         config.hiddenLayerSize = await calculateHiddenLayerSize({networkObj: networkObj});
         networkObj.hiddenLayerSize = config.hiddenLayerSize;
       }
@@ -4272,7 +4159,6 @@ async function childInit(p){
 
   const childId = params.childId;
   const childIdShort = params.childIdShort;
-  const config = params.config || {};
   const verbose = params.verbose || false;
   const testMode = params.testMode || false;
 
