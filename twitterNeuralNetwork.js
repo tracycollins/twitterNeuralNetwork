@@ -1883,7 +1883,7 @@ async function generateRandomEvolveConfig (){
   config.elitism = randomInt(EVOLVE_ELITISM_RANGE.min, EVOLVE_ELITISM_RANGE.max);
   config.equal = true;
   config.error = configuration.evolve.error;
-  config.fitnessPopulation = false;
+  config.fitnessPopulation = true;
   config.growth = randomFloat(EVOLVE_GROWTH_RANGE.min, EVOLVE_GROWTH_RANGE.max);
   config.iterations = configuration.evolve.iterations;
   config.log = configuration.evolve.log;
@@ -3378,6 +3378,7 @@ const inputsId = { name: "inputsId", alias: "i", type: String};
 const trainingSetFile = { name: "trainingSetFile", alias: "T", type: String};
 const networkCreateMode = { name: "networkCreateMode", alias: "n", type: String, defaultValue: "evolve" };
 const hiddenLayerSize = { name: "hiddenLayerSize", alias: "H", type: Number};
+const seedNetworkProbability = { name: "seedNetworkProbability", alias: "p", type: Number };
 const seedNetworkId = { name: "seedNetworkId", alias: "s", type: String };
 const useBestNetwork = { name: "useBestNetwork", alias: "b", type: Boolean };
 const evolveIterations = { name: "evolveIterations", alias: "I", type: Number};
@@ -3393,6 +3394,7 @@ const optionDefinitions = [
   trainingSetFile,
   networkCreateMode,
   hiddenLayerSize,
+  seedNetworkProbability,
   seedNetworkId,
   useBestNetwork, 
   enableStdin, 

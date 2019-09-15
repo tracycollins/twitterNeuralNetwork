@@ -26,6 +26,35 @@ configuration.testSetRatio = DEFAULT_TEST_RATIO;
 configuration.inputsBinaryMode = DEFAULT_INPUTS_BINARY_MODE;
 configuration.neatapticHiddenLayerSize = 9;
 
+const carrotEvolveOptionsPickArray = [
+  "iterations",
+  "error",
+  "growth",
+  "cost",
+  "amount",
+  "threads",
+  "network",
+  "log",
+  "schedule",
+  "clear",
+  "equal",
+  "population_size",
+  "elitism",
+  "provenance",
+  "mutation_rate",
+  "mutation_amount",
+  "fitness_population",
+  "fitness",
+  "selection",
+  "crossover",
+  "mutation",
+  "max_nodes",
+  "maxConns",
+  "maxGates",
+  "mutationSelection",
+  "efficientMutation"
+];
+
 const ThreeceeUtilities = require("@threeceelabs/threecee-utilities");
 const tcUtils = new ThreeceeUtilities("NNC_TCU");
 
@@ -256,48 +285,61 @@ async function init(){
 
   statsObj.status = "INIT";
 
-  console.log(chalkBlueBold("NNC | TEST | CARROT TECH XOR")); 
+  // console.log(chalkBlueBold("NNC | TEST | CARROT TECH XOR")); 
 
-  const network = new networkTech.Network(2,1);
+  const xorNetwork = new networkTech.Network(2,1);
 
    // XOR dataset
-  const trainingSet = [
+  const xorTrainingSet = [
     { input: [0,0], output: [0] },
     { input: [0,1], output: [1] },
     { input: [1,0], output: [1] },
     { input: [1,1], output: [0] }
   ];
 
-  await network.evolve(trainingSet, {
+  const xorOptions = {
     mutation: networkTech.methods.mutation.FFW,
     equal: true,
+    clear: true,
+    growth: 0.000055765814154501214,
     error: 0.01,
-    elitism: 5,
-    mutation_rate: 0.25
-  });
+    elitism: 3,
+    provenance: 0,
+    population_size: 50,
+    mutation_amount: 1,
+    mutation_rate: 0.25,
+    threads: 2,
+    fitness_population: true,
+    efficientMutation: true,
+    iterations: 1000
+  };
 
-  let out = network.activate([0,0]); // 0.2413
+  console.log(chalkBlueBold("NNC | TEST | CARROT TECH XOR\nOPTIONS\n" + jsonPrint(xorOptions))); 
+
+  await xorNetwork.evolve(xorTrainingSet, xorOptions);
+
+  let out = xorNetwork.activate([0,0]); // 0.2413
   if (out > 0.5) { 
     console.log(chalkError("NNC | *** XOR TEST FAIL | IN 0,0 | EXPECTED 0 : OUTPUT: " + out));
     return(new Error("XOR test fail"));
   }
   console.log(chalkGreen("NNC | XOR | [0, 0] --> " + out));
 
-  out = network.activate([0,1]); // 1.0000
+  out = xorNetwork.activate([0,1]); // 1.0000
   if (out < 0.5) { 
     console.log(chalkError("NNC | *** XOR TEST FAIL | IN 0,1 | EXPECTED 1 : OUTPUT: " + out));
     return(new Error("XOR test fail"));
   }
   console.log(chalkGreen("NNC | XOR | [0, 1] --> " + out));
 
-  out = network.activate([1,0]); // 0.7663
+  out = xorNetwork.activate([1,0]); // 0.7663
   if (out < 0.5) { 
     console.log(chalkError("NNC | *** XOR TEST FAIL | IN 1,0 | EXPECTED 1 : OUTPUT: " + out));
     return(new Error("XOR test fail"));
   }
   console.log(chalkGreen("NNC | XOR | [1, 0] --> " + out));
 
-  out = network.activate([1,1]); // -0.008
+  out = xorNetwork.activate([1,1]); // -0.008
   if (out > 0.5) { 
     console.log(chalkError("NNC | *** XOR TEST FAIL | IN 1,1 | EXPECTED 0 : OUTPUT: " + out));
     return(new Error("XOR test fail"));
@@ -305,7 +347,7 @@ async function init(){
 
   console.log(chalkGreen("NNC | XOR | [1, 1] --> " + out));
 
-  const netJson = network.toJSON();
+  const netJson = xorNetwork.toJSON();
 
   console.log(chalkLog("NNC | TEST XOR NETWORK\n" + jsonPrint(netJson)));
 
@@ -1280,6 +1322,14 @@ async function networkEvolve(params) {
     network = nn;
   }
 
+  // let finalOptions = options;
+
+  // if (params.networkTechnology == "carrot"){
+  //   finalOptions = pick(options, carrotEvolveOptionsPickArray);
+  //   // finalOptions.hiddenLayerSize = 9;
+  //   // console.log(chalkAlert(MODULE_ID_PREFIX + " | CARROT FINAL OPTIONS\n" + jsonPrint(finalOptions)));
+  // }
+
   const results = await network.evolve(preppedTrainingSet, options);
 
   debug("network.evolve results\n" + jsonPrint(results));
@@ -1550,6 +1600,7 @@ function evolve(p){
     options.mutationRate = params.mutationRate; 
     options.mutation_rate = params.mutationRate; // carrot
     options.popsize = params.popsize;
+    options.population_size = params.popsize; // carrot
     options.provenance = params.provenance; // carrot
     options.threads = params.threads;
 
@@ -1736,7 +1787,8 @@ function evolve(p){
         return resolve(networkObj);
       }
       catch(err){
-        console.log(chalkError("NNC | *** EVOLVE ERROR: " + err));
+        console.log(chalkError(MODULE_ID_PREFIX + " | *** EVOLVE ERROR: " + err));
+        console.trace(err);
         return reject(err);
       }
 
