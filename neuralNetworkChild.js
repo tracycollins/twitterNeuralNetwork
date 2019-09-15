@@ -1491,6 +1491,17 @@ function trainingSetPrep(params){
   });
 }
 
+const ignoreKeyArray = [
+  "log",
+  "inputsId",
+  "inputsObj",
+  "networkTechnology",
+  "runId",
+  "seedNetworkId",
+  "seedNetworkRes",
+  "outputs"
+];
+
 function evolve(p){
 
   return new Promise(function(resolve, reject){
@@ -1577,7 +1588,7 @@ function evolve(p){
         break;
 
         default:
-          if (key !== "log"){
+          if (!ignoreKeyArray.includes(key)){
             console.log("NNC" + " | " + configuration.childId + " | EVOLVE OPTION | " + key + ": " + params[key]);
             options[key] = params[key];
           }

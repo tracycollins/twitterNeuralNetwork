@@ -884,7 +884,7 @@ function printResultsHashmap(){
         networkObj.evolve.options.elitism = "---";
       }
 
-      let networkTechnology = "";
+      let nnTech = "";
       let status = "";
       let snIdRes = "";
       // let effMut = "";
@@ -897,7 +897,7 @@ function printResultsHashmap(){
       let hiddenLayerSize = "";
       let seedNetworkId = "";
 
-      networkTechnology = (networkObj.networkTechnology && networkObj.networkTechnology !== undefined) ? networkObj.networkTechnology : "UNKNOWN";
+      nnTech = (networkObj.networkTechnology && networkObj.networkTechnology !== undefined) ? networkObj.networkTechnology : "UNKNOWN";
       status = (networkObj.status && networkObj.status !== undefined) ? networkObj.status : "UNKNOWN";
       snIdRes = (networkObj.seedNetworkId && networkObj.seedNetworkId !== undefined) ? networkObj.seedNetworkRes.toFixed(2) : "---";
       betterChild = (networkObj.betterChild && networkObj.betterChild !== undefined) ? networkObj.betterChild : "---";
@@ -918,7 +918,7 @@ function printResultsHashmap(){
 
       tableArray.push([
         MODULE_ID_PREFIX + " | " + networkId,
-        networkTechnology,
+        nnTech,
         status,
         betterChild,
         seedNetworkId,
@@ -3368,6 +3368,7 @@ const quitOnError = { name: "quitOnError", alias: "Q", type: Boolean, defaultVal
 const verbose = { name: "verbose", alias: "v", type: Boolean };
 const testMode = { name: "testMode", alias: "X", type: Boolean};
 
+const networkTechnology = { name: "networkTechnology", alias: "c", type: String, defaultValue: "neataptic"};
 const threads = { name: "threads", alias: "t", type: Number};
 const maxNumberChildren = { name: "maxNumberChildren", alias: "N", type: Number};
 const useLocalTrainingSets = { name: "useLocalTrainingSets", alias: "L", type: Boolean};
@@ -3382,6 +3383,7 @@ const useBestNetwork = { name: "useBestNetwork", alias: "b", type: Boolean };
 const evolveIterations = { name: "evolveIterations", alias: "I", type: Number};
 
 const optionDefinitions = [
+  networkTechnology,
   threads,
   maxNumberChildren,
   useLocalTrainingSets,
