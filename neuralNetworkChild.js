@@ -1280,8 +1280,8 @@ async function networkEvolve(params) {
         iteration: schedParams.iteration,
         iterationRate: iterationRate,
         timeToComplete: timeToComplete,
-        error: schedParams.error.toFixed(5) || "---",
-        fitness: schedParams.fitness.toFixed(5) || "---"
+        error: schedParams.error.toFixed(5) || Infinity,
+        fitness: schedParams.fitness.toFixed(5) || -Infinity
       };
 
       process.send({op: "EVOLVE_SCHEDULE", childId: configuration.childId, childIdShort: configuration.childIdShort, stats: sObj});
