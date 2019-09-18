@@ -447,7 +447,7 @@ configuration.childIdPrefix = DEFAULT_CHILD_ID_PREFIX;
 configuration.childIndex = 0;
 
 // const carrot = require("@liquid-carrot/carrot");
-const neataptic = require("neataptic");
+// const neataptic = require("neataptic");
 // const networkTech = neataptic;
 
 let childPingAllInterval;
@@ -1984,7 +1984,6 @@ async function generateRandomEvolveConfig (){
     config.inputsId = networkObj.inputsId;
     config.inputsObj = {};
     config.inputsObj = deepcopy(networkObj.inputsObj);
-
 
     console.log(MODULE_ID_PREFIX + " | SEED NETWORK: " + config.networkObj.networkId);
     console.log(MODULE_ID_PREFIX + " | HIDDEN NODES: " + networkObj.hiddenLayerSize);
