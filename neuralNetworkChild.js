@@ -1337,7 +1337,7 @@ function prepNetworkEvolve(params) {
 
       },
       
-      iterations: childNetworkObj.evolve.options.log
+      iterations: 1
     };
 
     if(!childNetwork.evolve || (childNetwork.evolve === undefined)) {
@@ -1417,6 +1417,7 @@ function networkEvolve(params){
     const options = params.options;
 
     statsObj.evolve.startTime = moment().valueOf();
+
     childNetworkObj.evolve.elapsed = 0;
     childNetworkObj.evolve.startTime = statsObj.evolve.startTime;
     childNetworkObj.evolve.endTime = statsObj.evolve.endTime;
@@ -1440,33 +1441,14 @@ function networkEvolve(params){
       childNetworkObj.evolve.startTime = statsObj.evolve.startTime;
       childNetworkObj.evolve.endTime = statsObj.evolve.endTime;
 
-      debug("... END NETWORK NODE UPDATE: " + statsObj.training.testRunId);
-
-      if (((results.error === 0) || (results.error > options.error)) && (results.iterations < options.iterations)) {
-
-        statsObj.evolve.results.earlyComplete = true;
-        childNetworkObj.evolve.results.earlyComplete = true;
-
-        console.log(chalkError("NNC | EVOLVE COMPLETE EARLY???"
-          + " | " + configuration.childId
-          + " | " + getTimeStamp()
-          + " | " + "TECH: " + childNetworkObj.networkTechnology
-          + " | " + "TIME: " + results.time
-          + " | " + "THREADS: " + results.threads
-          + " | " + "ITERATIONS: " + results.iterations
-          + " | " + "ERROR: " + results.error
-          + " | " + "ELAPSED: " + msToTime(statsObj.evolve.elapsed)
-        ));
-
-        throw new Error("EVOLVE EARLY COMPLETE");
-      }
-
       console.log(chalkBlueBold("=======================================================\n"
         + MODULE_ID_PREFIX
         + " | EVOLVE COMPLETE"
         + " | " + configuration.childId
         + " | " + getTimeStamp()
         + " | " + "TECH: " + childNetworkObj.networkTechnology
+        + " | " + "INPUT ID: " + childNetworkObj.inputsId
+        + " | " + "INPUTS: " + childNetworkObj.inputsObj.meta.numInputs
         + " | " + "TIME: " + results.time
         + " | " + "THREADS: " + results.threads
         + " | " + "ITERATIONS: " + results.iterations
@@ -1598,14 +1580,14 @@ function trainingSetPrep(){
 }
 
 const ignoreKeyArray = [
-  // "architecture",
-  // "log",
+  "architecture",
+  "log",
   "hiddenLayerSize",
   "inputsId",
   "inputsObj",
   "networkTechnology",
   "runId",
-  // "schedule",
+  "schedule",
   "schedStartTime",
   "seedNetworkId",
   "seedNetworkRes",

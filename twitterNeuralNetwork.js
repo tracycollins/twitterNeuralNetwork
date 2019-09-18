@@ -810,6 +810,11 @@ function networkDefaults(networkObj){
       return reject(new Error("networkDefaults ERROR: networkObj UNDEFINED"));
     }
 
+    if (empty(networkObj.inputsObj)) {
+      console.trace(chalkError("networkDefaults ERROR: networkObj.inputsObj UNDEFINED"));
+      return reject(new Error("networkDefaults ERROR: networkObj.inputsObj UNDEFINED"));
+    }
+
     if(empty(networkObj.networkTechnology)) { networkObj.networkTechnology = "neataptic"; }
     if(empty(networkObj.betterChild)) { networkObj.betterChild = false; }
     if(empty(networkObj.testCycles)) { networkObj.testCycles = 0; }
@@ -1101,31 +1106,27 @@ async function updateDbInputs(p){
 
     const params = p || {};
 
-    if (empty(params.inputsObj)) {
-      throw new Error("undefined params.inputsObj");
+    if (empty(params.inputsId)) {
+      throw new Error("undefined params.inputsId");
     }
 
-    if (empty(params.inputsObj.inputsId)) {
-      throw new Error("undefined params.inputsObj.inputsId");
-    }
+    // if (empty(params.inputsObj.meta)) {
+    //   throw new Error("undefined params.inputsObj.meta");
+    // }
 
-    if (empty(params.inputsObj.meta)) {
-      throw new Error("undefined params.inputsObj.meta");
-    }
+    // if (empty(params.inputsObj.inputs)) {
+    //   throw new Error("undefined params.inputsObj.inputs");
+    // }
 
-    if (empty(params.inputsObj.inputs)) {
-      throw new Error("undefined params.inputsObj.inputs");
-    }
+    // if(empty(params.inputsObj.networks)) {
+    //   params.inputsObj.networks = [];
+    // }
 
-    if(empty(params.inputsObj.networks)) {
-      params.inputsObj.networks = [];
-    }
+    // if(empty(params.inputsObj.failNetworks)) {
+    //   params.inputsObj.failNetworks = [];
+    // }
 
-    if(empty(params.inputsObj.failNetworks)) {
-      params.inputsObj.failNetworks = [];
-    }
-
-    const query = { inputsId: params.inputsObj.inputsId };
+    const query = { inputsId: params.inputsId };
 
     try{
 
@@ -1160,20 +1161,22 @@ async function updateDbInputs(p){
       }
       else{
 
-        if (params.networkId && !params.inputsObj.networks.includes(params.networkId)) {
-          params.inputsObj.networks.push(params.networkId);
-        }
-        if (params.failNetworkId && !params.inputsObj.failNetworks.includes(params.failNetworkId)) {
-          params.inputsObj.failNetworks.push(params.failNetworkId);
-        }
+        throw new Error("INPUTS OBJ NOT IN DB");
 
-        const ni = new global.globalNetworkInputs(params.inputsObj);
+        // if (params.networkId && !params.dbInputsObj.networks.includes(params.networkId)) {
+        //   params.inputsObj.networks.push(params.networkId);
+        // }
+        // if (params.failNetworkId && !params.inputsObj.failNetworks.includes(params.failNetworkId)) {
+        //   params.inputsObj.failNetworks.push(params.failNetworkId);
+        // }
 
-        const niDbUpdated = await ni.save();
+        // const ni = new global.globalNetworkInputs(params.inputsObj);
 
-        if (verbose) { printInputsObj(MODULE_ID_PREFIX + " | +++ INPUTS DB UPDATED", niDbUpdated); }
+        // const niDbUpdated = await ni.save();
 
-        return niDbUpdated;
+        // if (verbose) { printInputsObj(MODULE_ID_PREFIX + " | +++ INPUTS DB UPDATED", niDbUpdated); }
+
+        // return niDbUpdated;
       }
 
     }
@@ -4372,7 +4375,7 @@ async function childCreate(p){
             snIdRes = (nn.seedNetworkId !== undefined) ? nn.seedNetworkRes.toFixed(2) : "---";
 
             console.log(chalkBlue("\nTNN ========================================================\n"
-              + MODULE_ID_PREFIX + " | NETWORK EVOLVE + TEST COMPLETE"
+              + MODULE_ID_PREFIX + " | NETWORK EVOLVE + TEST complete"
               + "\nTNN |                  " + m.childId
               + "\nTNN | NID:             " + nn.networkId
               + "\nTNN | TECH:            " + nn.networkTechnology
@@ -4467,13 +4470,15 @@ async function childCreate(p){
                 ));
                 
               }
-              await updateDbInputs({inputsObj: nn.inputsObj, networkId: nn.networkId});
+
+              await updateDbInputs({inputsId: nn.inputsId, networkId: nn.networkId});
 
               bestNetworkFile = nn.networkId + ".json";
 
               networkIdSet.add(nn.networkId);
 
               if(empty(inputsIdHashMap[nn.inputsId])) { inputsIdHashMap[nn.inputsId] = new Set(); }
+
               inputsIdHashMap[nn.inputsId].add(nn.networkId);
 
               // Add to nn child better than parent array
@@ -4608,7 +4613,7 @@ async function childCreate(p){
                 || ((nn.evolve.options.cost === "MSE") && (nn.test.results.successRate < configuration.localMinSuccessRateMSE))
                 )
               {
-                await updateDbInputs({inputsObj: nn.inputsObj, failNetworkId: nn.networkId});
+                await updateDbInputs({inputsId: nn.inputsId, failNetworkId: nn.networkId});
                 inputsFailedSet.add(nn.inputsId);
                 console.log(chalkInfo(MODULE_ID_PREFIX + " | +++ FAILED INPUTS ID TO SET"
                   + " [" + inputsFailedSet.size + "]"
