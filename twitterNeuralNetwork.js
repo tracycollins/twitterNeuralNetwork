@@ -30,6 +30,39 @@ console.log("HOST NAME:    " + hostname);
 console.log("=========================================");
 console.log("=========================================");
 
+const carrotEvolveOptionsPickArray = [
+  "activation",
+  "amount",
+  "clear",
+  "cost",
+  "crossover",
+  "efficient_mutation",
+  "elitism",
+  "equal",
+  "error",
+  "fitness",
+  "fitness_population",
+  "growth",
+  "iterations",
+  "log",
+  "max_nodes",
+  "maxConns",
+  "maxGates",
+  "mutation",
+  "mutationAmount",
+  "mutation_amount",
+  "mutationRate",
+  "mutation_rate",
+  "mutationSelection",
+  "network",
+  "popsize",
+  "population_size",
+  "provenance",
+  // "schedule",
+  "selection",
+  "threads",
+];
+
 let DROPBOX_ROOT_FOLDER;
 
 if (hostname === "google") {
@@ -415,7 +448,7 @@ configuration.childIndex = 0;
 
 // const carrot = require("@liquid-carrot/carrot");
 const neataptic = require("neataptic");
-const networkTech = neataptic;
+// const networkTech = neataptic;
 
 let childPingAllInterval;
 
@@ -486,7 +519,7 @@ const DEFAULT_EVOLVE_LOG = 1;
 // const DEFAULT_EVOLVE_MUTATION = networkTech.methods.mutation.FFW;
 const DEFAULT_EVOLVE_MUTATION = "FFW";
 const DEFAULT_EVOLVE_MUTATION_RATE = 0.3;
-const DEFAULT_EVOLVE_MUTATION_EFFICIENT = true; // carrot only efficientMutation
+const DEFAULT_EVOLVE_MUTATION_EFFICIENT = true; // carrot only efficient_mutation
 const DEFAULT_EVOLVE_POPSIZE = 50;
 const DEFAULT_EVOLVE_GROWTH = 0.0001;
 // const DEFAULT_EVOLVE_CLEAR = false;
@@ -721,7 +754,7 @@ configuration.evolve.iterations = DEFAULT_ITERATIONS;
 configuration.evolve.log = DEFAULT_EVOLVE_LOG;
 configuration.evolve.mutation = DEFAULT_EVOLVE_MUTATION;
 configuration.evolve.mutationRate = DEFAULT_EVOLVE_MUTATION_RATE;
-configuration.evolve.efficientMutation = DEFAULT_EVOLVE_MUTATION_EFFICIENT;
+configuration.evolve.efficient_mutation = DEFAULT_EVOLVE_MUTATION_EFFICIENT;
 configuration.evolve.popsize = DEFAULT_EVOLVE_POPSIZE;
 configuration.evolve.growth = DEFAULT_EVOLVE_GROWTH;
 configuration.evolve.cost = DEFAULT_EVOLVE_COST;
@@ -889,24 +922,24 @@ function printResultsHashmap(){
         networkObj.evolve.options.cost = "---";
         networkObj.evolve.options.growth = "---";
         networkObj.evolve.options.equal = "---";
-        networkObj.evolve.options.mutationRate = "---";
-        networkObj.evolve.options.efficientMutation = "---";
-        networkObj.evolve.options.popsize = "---";
-        networkObj.evolve.options.elitism = "---";
+        networkObj.evolve.options.mutationRate = 0;
+        networkObj.evolve.options.efficient_mutation = "---";
+        networkObj.evolve.options.popsize = 0;
+        networkObj.evolve.options.elitism = 0;
       }
 
       let nnTech = "";
       let status = "";
-      let snIdRes = "";
+      let snIdRes = 0;
       // let effMut = "";
       let iterations = 0;
       let secPerIteration = 0;
-      let error = "";
-      let fitness = "";
-      let successRate = "";
+      let error = 0;
+      let fitness = 0;
+      let successRate = 0;
       let elapsed = 0;
       let betterChild = "";
-      let hiddenLayerSize = "";
+      let hiddenLayerSize = 0;
       let seedNetworkId = "";
 
       nnTech = (networkObj.networkTechnology && networkObj.networkTechnology !== undefined) ? networkObj.networkTechnology.slice(0,4).toUpperCase() : "?";
@@ -950,7 +983,7 @@ function printResultsHashmap(){
         networkObj.evolve.options.growth.toFixed(8),
         formatBoolean(networkObj.evolve.options.equal),
         networkObj.evolve.options.mutationRate.toFixed(3),
-        formatBoolean(networkObj.evolve.options.efficientMutation),
+        formatBoolean(networkObj.evolve.options.efficient_mutation),
         networkObj.evolve.options.popsize,
         networkObj.evolve.options.elitism,
         getTimeStamp(networkObj.evolve.startTime),
@@ -976,7 +1009,7 @@ function printResultsHashmap(){
       statsObj.networkResults[networkId].hiddenLayerSize = hiddenLayerSize;
       statsObj.networkResults[networkId].networkObj.evolve.options = pick(
         networkObj.evolve.options, 
-        ["activation", "clear", "cost", "growth", "equal", "mutationRate", "efficientMutation", "popsize", "elitism"]
+        ["amount", "activation", "clear", "cost", "growth", "equal", "mutation", "mutationRate", "mutationAmount", "efficient_mutation", "popsize", "elitism"]
       );
       statsObj.networkResults[networkId].startTime = getTimeStamp(networkObj.evolve.startTime);
       statsObj.networkResults[networkId].elapsed = msToTime(elapsed);
@@ -1897,9 +1930,10 @@ async function generateRandomEvolveConfig (){
   config = await generateSeedInputsNetworkId({config: config});
 
   config.activation = randomItem(configuration.activationArray);
+  config.amount = configuration.evolve.amount;
   config.clear = randomItem([true, false]);
   config.cost = randomItem(configuration.costArray);
-  config.efficientMutation = configuration.evolve.efficientMutation;
+  config.efficient_mutation = configuration.evolve.efficient_mutation;
   config.elitism = randomInt(EVOLVE_ELITISM_RANGE.min, EVOLVE_ELITISM_RANGE.max);
   config.equal = true;
   config.error = configuration.evolve.error;
@@ -1907,10 +1941,13 @@ async function generateRandomEvolveConfig (){
   config.growth = randomFloat(EVOLVE_GROWTH_RANGE.min, EVOLVE_GROWTH_RANGE.max);
   config.iterations = configuration.evolve.iterations;
   config.log = configuration.evolve.log;
-  config.mutation = DEFAULT_EVOLVE_MUTATION;
+  config.mutation = configuration.evolve.mutation;
   config.mutationAmount = 1;
+  config.mutation_amount = 1;
   config.mutationRate = randomFloat(EVOLVE_MUTATION_RATE_RANGE.min, EVOLVE_MUTATION_RATE_RANGE.max);
+  config.mutation_rate = config.mutationRate;
   config.popsize = configuration.evolve.popsize;
+  config.population_size = configuration.evolve.popsize;
   config.provenance = 0;
   config.threads = configuration.evolve.threads;
 
@@ -1963,6 +2000,7 @@ async function generateRandomEvolveConfig (){
       config.error = randomItem([config.error, networkObj.evolve.options.error]);
       config.growth = randomItem([config.growth, networkObj.evolve.options.growth]);
       config.mutationRate = randomItem([config.mutationRate, networkObj.evolve.options.mutationRate]);
+      config.mutation_rate = config.matchRate;
     }
     else {
       console.log(chalkLog(MODULE_ID_PREFIX + " | USE SEED NETWORK OPTIONS | " + config.seedNetworkId));
@@ -1974,6 +2012,7 @@ async function generateRandomEvolveConfig (){
       config.error = networkObj.evolve.options.error;
       config.growth = networkObj.evolve.options.growth;
       config.mutationRate = networkObj.evolve.options.mutationRate;
+      config.mutation_rate = config.matchRate;
     }
   }
   else {
@@ -2095,7 +2134,7 @@ async function initNetworkCreate(params){
           + "\n" + MODULE_ID_PREFIX + " | INPUTS ID:         " + messageObj.inputsId
           + "\n" + MODULE_ID_PREFIX + " | INPUTS:            " + messageObj.inputsObj.meta.numInputs
           + "\n" + MODULE_ID_PREFIX + " | HIDDEN LAYER SIZE: " + messageObj.hiddenLayerSize
-          + "\n" + MODULE_ID_PREFIX + " | EFF MUTATION:      " + messageObj.efficientMutation
+          + "\n" + MODULE_ID_PREFIX + " | EFF MUTATION:      " + messageObj.efficient_mutation
           + "\n" + MODULE_ID_PREFIX + " | ACTIVATION:        " + messageObj.activation
           + "\n" + MODULE_ID_PREFIX + " | COST:              " + messageObj.cost
           + "\n" + MODULE_ID_PREFIX + " | ITERATIONS:        " + messageObj.iterations
@@ -2132,7 +2171,8 @@ async function initNetworkCreate(params){
         networkCreateObj.evolve.endTime = moment().valueOf();
         networkCreateObj.evolve.complete = false;
         networkCreateObj.evolve.options = {};
-        networkCreateObj.evolve.options = pick(childConf, ["activation", "clear", "cost", "growth", "equal", "mutationRate", "efficientMutation", "popsize", "elitism"]);
+        // networkCreateObj.evolve.options = pick(childConf, ["activation", "clear", "cost", "growth", "equal", "mutationRate", "efficient_mutation", "popsize", "elitism"]);
+        networkCreateObj.evolve.options = pick(childConf, carrotEvolveOptionsPickArray);
 
         resultsHashmap[messageObj.testRunId] = networkCreateObj;
 
@@ -2146,7 +2186,7 @@ async function initNetworkCreate(params){
     }
   }
   catch(err){
-    console.log(chalkError(MODULE_ID_PREFIX + " | INIT CREATE NETWORK ERROR: " + err));
+    console.trace(MODULE_ID_PREFIX + " | INIT CREATE NETWORK ERROR ", err);
     throw err;
   }
 
