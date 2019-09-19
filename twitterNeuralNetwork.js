@@ -49,9 +49,7 @@ const carrotEvolveOptionsPickArray = [
   "maxConns",
   "maxGates",
   "mutation",
-  "mutationAmount",
   "mutation_amount",
-  "mutationRate",
   "mutation_rate",
   "mutationSelection",
   "network",
@@ -753,7 +751,7 @@ configuration.evolve.error = DEFAULT_EVOLVE_ERROR;
 configuration.evolve.iterations = DEFAULT_ITERATIONS;
 configuration.evolve.log = DEFAULT_EVOLVE_LOG;
 configuration.evolve.mutation = DEFAULT_EVOLVE_MUTATION;
-configuration.evolve.mutationRate = DEFAULT_EVOLVE_MUTATION_RATE;
+configuration.evolve.mutation_rate = DEFAULT_EVOLVE_MUTATION_RATE;
 configuration.evolve.efficient_mutation = DEFAULT_EVOLVE_MUTATION_EFFICIENT;
 configuration.evolve.popsize = DEFAULT_EVOLVE_POPSIZE;
 configuration.evolve.growth = DEFAULT_EVOLVE_GROWTH;
@@ -810,10 +808,10 @@ function networkDefaults(networkObj){
       return reject(new Error("networkDefaults ERROR: networkObj UNDEFINED"));
     }
 
-    if (empty(networkObj.inputsObj)) {
-      console.trace(chalkError("networkDefaults ERROR: networkObj.inputsObj UNDEFINED"));
-      return reject(new Error("networkDefaults ERROR: networkObj.inputsObj UNDEFINED"));
-    }
+    // if (empty(networkObj.inputsObj)) {
+    //   console.trace(chalkError("networkDefaults ERROR: networkObj.inputsObj UNDEFINED"));
+    //   return reject(new Error("networkDefaults ERROR: networkObj.inputsObj UNDEFINED"));
+    // }
 
     if(empty(networkObj.networkTechnology)) { networkObj.networkTechnology = "neataptic"; }
     if(empty(networkObj.betterChild)) { networkObj.betterChild = false; }
@@ -927,7 +925,7 @@ function printResultsHashmap(){
         networkObj.evolve.options.cost = "---";
         networkObj.evolve.options.growth = "---";
         networkObj.evolve.options.equal = "---";
-        networkObj.evolve.options.mutationRate = 0;
+        networkObj.evolve.options.mutation_rate = 0;
         networkObj.evolve.options.efficient_mutation = "---";
         networkObj.evolve.options.popsize = 0;
         networkObj.evolve.options.elitism = 0;
@@ -973,7 +971,7 @@ function printResultsHashmap(){
         secPerIteration = (elapsed/(1000*iterations));
       }
 
-      tableArray.push([
+      const tableEntry = [
         MODULE_ID_PREFIX + " | " + networkId,
         nnTech,
         status,
@@ -987,9 +985,9 @@ function printResultsHashmap(){
         networkObj.evolve.options.cost,
         networkObj.evolve.options.growth.toFixed(8),
         formatBoolean(networkObj.evolve.options.equal),
-        networkObj.evolve.options.mutationRate.toFixed(3),
+        networkObj.evolve.options.mutation_rate.toFixed(3),
         formatBoolean(networkObj.evolve.options.efficient_mutation),
-        networkObj.evolve.options.popsize,
+        networkObj.evolve.options.population_size,
         networkObj.evolve.options.elitism,
         getTimeStamp(networkObj.evolve.startTime),
         msToTime(elapsed),
@@ -998,7 +996,15 @@ function printResultsHashmap(){
         error,
         fitness,
         successRate
-      ]);
+      ];
+
+      for(let i=0; i<tableEntry.length; i++){
+        if (!tableEntry[i] || tableEntry[i] == undefined || tableEntry[i] === null) {
+          console.log("INDEX: " + i + " | " + tableEntry[i]);
+        }
+      }
+
+      tableArray.push(tableEntry);
 
       if (empty(statsObj.networkResults[networkId])){
         statsObj.networkResults[networkId] = {};
@@ -1014,7 +1020,7 @@ function printResultsHashmap(){
       statsObj.networkResults[networkId].hiddenLayerSize = hiddenLayerSize;
       statsObj.networkResults[networkId].networkObj.evolve.options = pick(
         networkObj.evolve.options, 
-        ["amount", "activation", "clear", "cost", "growth", "equal", "mutation", "mutationRate", "mutationAmount", "efficient_mutation", "popsize", "elitism"]
+        ["amount", "activation", "clear", "cost", "growth", "equal", "mutation", "mutation_rate", "mutation_amount", "efficient_mutation", "popsize", "population_size", "elitism"]
       );
       statsObj.networkResults[networkId].startTime = getTimeStamp(networkObj.evolve.startTime);
       statsObj.networkResults[networkId].elapsed = msToTime(elapsed);
@@ -1102,91 +1108,80 @@ function purgeInputs(inputsId){
 
 async function updateDbInputs(p){
 
-  // return new Promise(function(resolve, reject){
+  const params = p || {};
 
-    const params = p || {};
+  if (empty(params.inputsId) && empty(params.inputsObj)) {
+    throw new Error("undefined params.inputsId AND params.inputsObj");
+  }
 
-    if (empty(params.inputsId)) {
-      throw new Error("undefined params.inputsId");
-    }
+  const inputsId = params.inputsId || params.inputsObj.inputsId;
 
-    // if (empty(params.inputsObj.meta)) {
-    //   throw new Error("undefined params.inputsObj.meta");
-    // }
+  const query = { inputsId: inputsId };
 
-    // if (empty(params.inputsObj.inputs)) {
-    //   throw new Error("undefined params.inputsObj.inputs");
-    // }
+  try{
 
-    // if(empty(params.inputsObj.networks)) {
-    //   params.inputsObj.networks = [];
-    // }
+    const inputsObj = await global.globalNetworkInputs.findOne(query);
 
-    // if(empty(params.inputsObj.failNetworks)) {
-    //   params.inputsObj.failNetworks = [];
-    // }
+    if (inputsObj) {
 
-    const query = { inputsId: params.inputsId };
+      if(empty(inputsObj.networks)) {
+        inputsObj.networks = [];
+      }
 
-    try{
+      if(empty(inputsObj.failNetworks)) {
+        inputsObj.failNetworks = [];
+      }
 
-      const inputsObj = await global.globalNetworkInputs.findOne(query);
+      if (params.networkId && !inputsObj.networks.includes(params.networkId)) {
+        inputsObj.networks.push(params.networkId);
+      }
 
-      if (inputsObj) {
+      if (params.failNetworkId && !inputsObj.networks.includes(params.failNetworkId)) {
+        inputsObj.failNetworks.push(params.failNetworkId);
+      }
 
-        if(empty(inputsObj.networks)) {
-          inputsObj.networks = [];
-        }
+      inputsObj.networks = _.union([params.networkId], inputsObj.networks);
+      inputsObj.failNetworks = _.union(params.failNetworkId, inputsObj.failNetworks);
 
-        if(empty(inputsObj.failNetworks)) {
-          inputsObj.failNetworks = [];
-        }
-
-        if (params.networkId && !inputsObj.networks.includes(params.networkId)) {
-          inputsObj.networks.push(params.networkId);
-        }
-
-        if (params.failNetworkId && !inputsObj.networks.includes(params.failNetworkId)) {
-          inputsObj.failNetworks.push(params.failNetworkId);
-        }
-
+      if (params.inputsObj && params.inputsObj.networks){
         inputsObj.networks = _.union(params.inputsObj.networks, inputsObj.networks);
+      }
+
+      if (params.inputsObj && params.inputsObj.failNetworks){
         inputsObj.failNetworks = _.union(params.inputsObj.failNetworks, inputsObj.failNetworks);
-
-        const niDbUpdated = await inputsObj.save();
-
-        if (verbose) { printInputsObj(MODULE_ID_PREFIX + " | +++ INPUTS DB UPDATED", niDbUpdated); }
-
-        return niDbUpdated;
-      }
-      else{
-
-        throw new Error("INPUTS OBJ NOT IN DB");
-
-        // if (params.networkId && !params.dbInputsObj.networks.includes(params.networkId)) {
-        //   params.inputsObj.networks.push(params.networkId);
-        // }
-        // if (params.failNetworkId && !params.inputsObj.failNetworks.includes(params.failNetworkId)) {
-        //   params.inputsObj.failNetworks.push(params.failNetworkId);
-        // }
-
-        // const ni = new global.globalNetworkInputs(params.inputsObj);
-
-        // const niDbUpdated = await ni.save();
-
-        // if (verbose) { printInputsObj(MODULE_ID_PREFIX + " | +++ INPUTS DB UPDATED", niDbUpdated); }
-
-        // return niDbUpdated;
       }
 
+      const niDbUpdated = await inputsObj.save();
+
+      if (verbose) { printInputsObj(MODULE_ID_PREFIX + " | +++ INPUTS DB UPDATED", niDbUpdated); }
+
+      return niDbUpdated;
     }
-    catch(e){
-      console.log(chalkError("*** updateDbInputs | INPUTS FIND ONE ERROR: " + e
-        + "\nINPUTS ID: " + params.inputsObj.inputsId
-      ));
-      console.log(e);
-      throw e;
+    else if (params.inputsObj) {
+
+      if (params.networkId && !params.inputsObj.networks.includes(params.networkId)) {
+        params.inputsObj.networks.push(params.networkId);
+      }
+      if (params.failNetworkId && !params.inputsObj.failNetworks.includes(params.failNetworkId)) {
+        params.inputsObj.failNetworks.push(params.failNetworkId);
+      }
+
+      const ni = new global.globalNetworkInputs(params.inputsObj);
+
+      const niDbUpdated = await ni.save();
+
+      if (verbose) { printInputsObj(MODULE_ID_PREFIX + " | +++ INPUTS DB UPDATED", niDbUpdated); }
+
+      return niDbUpdated;
     }
+  }
+  catch(e){
+    console.log(chalkError("*** updateDbInputs | INPUTS FIND ONE ERROR: " + e
+      + "\nINPUTS ID: " + params.inputsObj.inputsId
+    ));
+    console.log(e);
+    throw e;
+  }
 }
 
 async function loadNetworkFile(params){
@@ -1208,8 +1203,6 @@ async function loadNetworkFile(params){
 
   const nnObj = await tcUtils.loadFileRetry({folder: params.folder, file: params.file});
 
-  // const networkId = params.file.replace(".json", "");
-
   const networkObj = await validateNetwork({networkId: nnObj.networkId, networkObj: nnObj});
 
   if (empty(networkObj)) {
@@ -1220,19 +1213,20 @@ async function loadNetworkFile(params){
     return;
   }
 
-  const dbInputsObj = await updateDbInputs({inputsObj: networkObj.inputsObj, networkId: networkObj.networkId});
+  const dbInputsObj = await updateDbInputs({inputsId: networkObj.inputsId, networkId: networkObj.networkId});
 
   const inputsObj = dbInputsObj.toObject();
 
   if (!configuration.inputsIdArray.includes(networkObj.inputsId)) {
 
     if (configuration.archiveNotInInputsIdArray && path.toLowerCase().includes(localBestNetworkFolder.toLowerCase())){
+      
       console.log(chalkInfo(MODULE_ID_PREFIX + " | 000 NN INPUTS NOT IN INPUTS ID ARRAY ... ARCHIVING"
         + " | NUM INPUTS: " + networkObj.numInputs
         + " | INPUTS ID: " + networkObj.inputsId
         + " | " + path
       ));
-      // await dropboxFileMove({srcFolder: localBestNetworkFolder, srcFile: params.file, dstFolder: localArchiveNetworkFolder, dstFile: params.file});
+
       await renameFileAsync(path.join(localBestNetworkFolder, params.file), path.join(localArchiveNetworkFolder, params.file));
       return;
     }
@@ -1388,20 +1382,14 @@ async function loadNetworkFile(params){
 
 async function loadInputsFile(params){
 
+  try {
+
     const maxFailNetworks = params.maxFailNetworks || configuration.maxFailNetworks;
 
-    let inputsObj;
-
-    try {
-      inputsObj = await tcUtils.loadFileRetry({folder: params.folder, file: params.file});
-    }
-    catch(err) {
-      console.log(chalkError(MODULE_ID_PREFIX + " | DROPBOX INPUTS LOAD FILE ERROR: " + err));
-      throw err;
-    }
+    const inputsObj = await tcUtils.loadFileRetry({folder: params.folder, file: params.file});
 
     if (empty(inputsObj)) {
-      console.log(chalkError(MODULE_ID_PREFIX + " | DROPBOX INPUTS LOAD FILE ERROR | JSON UNDEFINED ??? "));
+      console.log(chalkError(MODULE_ID_PREFIX + " | INPUTS LOAD FILE ERROR | JSON UNDEFINED ??? "));
       throw new Error("JSON UNDEFINED");
     }
 
@@ -1413,15 +1401,7 @@ async function loadInputsFile(params){
       }
     }
 
-    let dbInputsObj;
-
-    try {
-      dbInputsObj = await updateDbInputs({inputsObj: inputsObj});
-    }
-    catch(err){
-      console.log(chalkError(MODULE_ID_PREFIX + " | DB INPUTS UPDATE ERROR: " + err));
-      throw err;
-    }
+    const dbInputsObj = await updateDbInputs({inputsObj: inputsObj});
 
     inputsSet.add(dbInputsObj.inputsId);
 
@@ -1448,6 +1428,11 @@ async function loadInputsFile(params){
     ));
 
     return inputsObj;
+  }
+  catch(err) {
+    console.log(chalkError(MODULE_ID_PREFIX + " | INPUTS LOAD FILE ERROR: " + err));
+    throw err;
+  }
 
 }
 
@@ -1519,7 +1504,6 @@ async function updateDbNetwork(params) {
 
     return nnObj;
   });
-
 }
 
 function listFolders(params){
@@ -1754,11 +1738,17 @@ async function loadInputsFolders (p){
       }
 
       const inputsObj = await loadInputsFile({folder: fileObj.folder, file: fileObj.file});
-      inputsSet.add(inputsObj.inputsId);
-      printInputsObj(MODULE_ID_PREFIX + " | +++ INPUTS DB UPDATED", inputsObj);
+
+      if (inputsObj.inputsId || (inputsObj.inputsId !== undefined)) {
+        inputsSet.add(inputsObj.inputsId);
+        printInputsObj(MODULE_ID_PREFIX + " | +++ INPUTS DB UPDATED", inputsObj);
+      }
+      else{
+        console.log(chalkError(MODULE_ID_PREFIX + " | *** INPUTS OBJ ERROR | UNDEFINED INPUTS ID\n" + jsonPrint(inputsObj)));
+      }
     }
     catch(err){
-      console.log(chalkError(MODULE_ID_PREFIX + " | *** unlinkFileAsync OR readFileAsync ERROR: " + err));
+      console.log(chalkError(MODULE_ID_PREFIX + " | *** LOAD INPUTS FILE ERROR: " + err));
       throw err;
     }
 
@@ -1945,10 +1935,8 @@ async function generateRandomEvolveConfig (){
   config.iterations = configuration.evolve.iterations;
   config.log = configuration.evolve.log;
   config.mutation = configuration.evolve.mutation;
-  config.mutationAmount = 1;
   config.mutation_amount = 1;
-  config.mutationRate = randomFloat(EVOLVE_MUTATION_RATE_RANGE.min, EVOLVE_MUTATION_RATE_RANGE.max);
-  config.mutation_rate = config.mutationRate;
+  config.mutation_rate = randomFloat(EVOLVE_MUTATION_RATE_RANGE.min, EVOLVE_MUTATION_RATE_RANGE.max);
   config.popsize = configuration.evolve.popsize;
   config.population_size = configuration.evolve.popsize;
   config.provenance = 0;
@@ -1986,7 +1974,8 @@ async function generateRandomEvolveConfig (){
     config.architecture = "loadedNetwork";
     config.inputsId = networkObj.inputsId;
     config.inputsObj = {};
-    config.inputsObj = deepcopy(networkObj.inputsObj);
+
+    config.inputsObj = await global.globalNetworkInputs.findOne({ inputsId: networkObj.inputsId }).lean();
 
     console.log(MODULE_ID_PREFIX + " | SEED NETWORK: " + config.networkObj.networkId);
     console.log(MODULE_ID_PREFIX + " | HIDDEN NODES: " + networkObj.hiddenLayerSize);
@@ -2001,8 +1990,8 @@ async function generateRandomEvolveConfig (){
       config.equal = randomItem([config.equal, networkObj.evolve.options.equal]);
       config.error = randomItem([config.error, networkObj.evolve.options.error]);
       config.growth = randomItem([config.growth, networkObj.evolve.options.growth]);
-      config.mutationRate = randomItem([config.mutationRate, networkObj.evolve.options.mutationRate]);
-      config.mutation_rate = config.matchRate;
+      config.mutation_rate = randomItem([config.mutation_rate, (networkObj.evolve.options.mutation_rate || networkObj.evolve.options.mutationRate)]);
+      config.mutation_amount = randomItem([config.mutation_amount, (networkObj.evolve.options.mutation_amount || networkObj.evolve.options.mutationAmount)]);
     }
     else {
       console.log(chalkLog(MODULE_ID_PREFIX + " | USE SEED NETWORK OPTIONS | " + config.seedNetworkId));
@@ -2013,8 +2002,8 @@ async function generateRandomEvolveConfig (){
       config.equal = networkObj.evolve.options.equal;
       config.error = networkObj.evolve.options.error;
       config.growth = networkObj.evolve.options.growth;
-      config.mutationRate = networkObj.evolve.options.mutationRate;
-      config.mutation_rate = config.matchRate;
+      config.mutation_rate = networkObj.evolve.options.mutation_rate || networkObj.evolve.options.mutationRate;
+      config.mutation_amount = networkObj.evolve.options.mutation_amount || networkObj.evolve.options.mutationAmount;
     }
   }
   else {
@@ -2173,7 +2162,6 @@ async function initNetworkCreate(params){
         networkCreateObj.evolve.endTime = moment().valueOf();
         networkCreateObj.evolve.complete = false;
         networkCreateObj.evolve.options = {};
-        // networkCreateObj.evolve.options = pick(childConf, ["activation", "clear", "cost", "growth", "equal", "mutationRate", "efficient_mutation", "popsize", "elitism"]);
         networkCreateObj.evolve.options = pick(childConf, carrotEvolveOptionsPickArray);
 
         resultsHashmap[messageObj.testRunId] = networkCreateObj;
@@ -3501,14 +3489,20 @@ function loadCommandLineArgs(){
         configuration.evolve.threads = commandLineConfig[arg];
         console.log(MODULE_ID_PREFIX + " | --> COMMAND LINE CONFIG | " + arg + ": " + configuration.evolve.iterations);
       }
+
       else if (arg === "evolveIterations"){
         configuration.evolve.iterations = commandLineConfig[arg];
         console.log(MODULE_ID_PREFIX + " | --> COMMAND LINE CONFIG | " + arg + ": " + configuration.evolve.iterations);
       }
-      else {
-        configuration[arg] = commandLineConfig[arg];
-        console.log(MODULE_ID_PREFIX + " | --> COMMAND LINE CONFIG | " + arg + ": " + configuration[arg]);
+
+      else if (arg === "networkTechnology"){
+        configuration.networkTechnology = commandLineConfig[arg];
+        configuration.enableRandomTechnology = false;
+        console.log(MODULE_ID_PREFIX + " | --> COMMAND LINE CONFIG | " + arg + ": " + configuration.evolve.networkTechnology);
       }
+
+      configuration[arg] = commandLineConfig[arg];
+      console.log(MODULE_ID_PREFIX + " | --> COMMAND LINE CONFIG | " + arg + ": " + configuration[arg]);
 
       cb();
 
@@ -4463,13 +4457,13 @@ async function childCreate(p){
 
               // It's a Keeper!!
 
-              if (empty(nn.inputsObj)) {
-                console.log(chalkAlert(MODULE_ID_PREFIX + " | *** nn.inputsObj UNDEFINED"
-                  + " | NN ID: " + nn.networkId
-                  + " | IN ID: " + nn.inputsId
-                ));
+              // if (empty(nn.inputsObj)) {
+              //   console.log(chalkAlert(MODULE_ID_PREFIX + " | *** nn.inputsObj UNDEFINED"
+              //     + " | NN ID: " + nn.networkId
+              //     + " | IN ID: " + nn.inputsId
+              //   ));
                 
-              }
+              // }
 
               await updateDbInputs({inputsId: nn.inputsId, networkId: nn.networkId});
 
@@ -4526,7 +4520,7 @@ async function childCreate(p){
 
               console.log(chalkLog(MODULE_ID_PREFIX + " | INPUTS ID"
                 + " | " + nn.inputsId
-                + " | INPUTS: " + nn.inputsObj.meta.numInputs
+                + " | INPUTS: " + nn.numInputs
                 + " | " + inputsNetworksHashMap[nn.inputsId].size + " NETWORKS"
               ));
 
