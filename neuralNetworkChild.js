@@ -6,6 +6,7 @@ let childNetworkObj; // this is the common, default nn object
 let seedNetworkObj; // this is the common, default nn object
 
 const os = require("os");
+const _ = require("lodash");
 let hostname = os.hostname();
 hostname = hostname.replace(/.tld/g, ""); // amtrak wifi
 hostname = hostname.replace(/.local/g, "");
@@ -86,6 +87,8 @@ const neatapticEvolveOptionsPickArray = [
   "threads",
 ];
 
+const combinedEvolveOptionsPickArray = _.union(carrotEvolveOptionsPickArray, neatapticEvolveOptionsPickArray);
+
 const ThreeceeUtilities = require("@threeceelabs/threecee-utilities");
 const tcUtils = new ThreeceeUtilities("NNC_TCU");
 
@@ -123,7 +126,6 @@ const carrot = require("@liquid-carrot/carrot");
 
 let networkTech = (DEFAULT_NETWORK_TECHNOLOGY === "neataptic") ? neataptic : carrot;
 
-const _ = require("lodash");
 const moment = require("moment");
 const pick = require("object.pick");
 const treeify = require("treeify");

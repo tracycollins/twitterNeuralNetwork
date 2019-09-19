@@ -18,6 +18,8 @@ hostname = hostname.replace(/.fios-router.home/g, "");
 hostname = hostname.replace(/word0-instance-1/g, "google");
 hostname = hostname.replace(/word/g, "google");
 
+const _ = require("lodash");
+
 const PRIMARY_HOST = process.env.PRIMARY_HOST || "google";
 const HOST = (hostname === PRIMARY_HOST) ? "default" : "local";
 
@@ -56,10 +58,36 @@ const carrotEvolveOptionsPickArray = [
   "popsize",
   "population_size",
   "provenance",
-  // "schedule",
+  "schedule",
   "selection",
   "threads",
 ];
+
+const neatapticEvolveOptionsPickArray = [
+  "amount",
+  "clear",
+  "cost",
+  "crossover",
+  "elitism",
+  "equal",
+  "error",
+  "fitnessPopulation",
+  "growth",
+  "iterations",
+  "log",
+  "mutation",
+  "mutationAmount",
+  "mutationRate",
+  "mutationSelection",
+  "network",
+  "popsize",
+  "provenance",
+  "schedule",
+  "selection",
+  "threads",
+];
+
+const combinedEvolveOptionsPickArray = _.union(carrotEvolveOptionsPickArray, neatapticEvolveOptionsPickArray);
 
 let DROPBOX_ROOT_FOLDER;
 
@@ -70,7 +98,7 @@ else {
   DROPBOX_ROOT_FOLDER = "/Users/tc/Dropbox/Apps/wordAssociation";
 }
 
-const DEFAULT_NETWORK_TECHNOLOGY = "neataptic";
+const DEFAULT_NETWORK_TECHNOLOGY = "carrot";
 const DEFAULT_ENABLE_RANDOM_NETWORK_TECHNOLOGY = false;
 
 const DEFAULT_PURGE_MIN = true; // applies only to parent
@@ -124,7 +152,6 @@ const pick = require("object.pick");
 const shell = require("shelljs");
 const touch = require("touch");
 const kill = require("tree-kill");
-const _ = require("lodash");
 const treeify = require("treeify");
 const objectPath = require("object-path");
 const NodeCache = require("node-cache");
@@ -1011,6 +1038,7 @@ function printResultsHashmap(){
         statsObj.networkResults[networkId].networkObj = {};
         statsObj.networkResults[networkId].networkObj.evolve = {};
         statsObj.networkResults[networkId].networkObj.evolve.options = {};
+        statsObj.networkResults[networkId].networkObj.evolve.results = {};
       }
 
       statsObj.networkResults[networkId].status = status;
@@ -1916,6 +1944,7 @@ async function generateRandomEvolveConfig (){
 
   config.networkCreateMode = "evolve";
   config.networkTechnology = (configuration.enableRandomTechnology) ? randomItem(["neataptic", "carrot"]) : configuration.networkTechnology;
+
   console.log(chalkAlert(MODULE_ID_PREFIX + " | NETWORK TECHNOLOGY: " + config.networkTechnology));
 
   debug(chalkLog(MODULE_ID_PREFIX + " | NETWORK CREATE MODE: " + config.networkCreateMode));
@@ -2162,7 +2191,7 @@ async function initNetworkCreate(params){
         networkCreateObj.evolve.endTime = moment().valueOf();
         networkCreateObj.evolve.complete = false;
         networkCreateObj.evolve.options = {};
-        networkCreateObj.evolve.options = pick(childConf, carrotEvolveOptionsPickArray);
+        networkCreateObj.evolve.options = pick(childConf, combinedEvolveOptionsPickArray);
 
         resultsHashmap[messageObj.testRunId] = networkCreateObj;
 
@@ -3418,7 +3447,7 @@ const quitOnError = { name: "quitOnError", alias: "Q", type: Boolean, defaultVal
 const verbose = { name: "verbose", alias: "v", type: Boolean };
 const testMode = { name: "testMode", alias: "X", type: Boolean};
 
-const networkTechnology = { name: "networkTechnology", alias: "c", type: String, defaultValue: "neataptic"};
+const networkTechnology = { name: "networkTechnology", alias: "c", type: String};
 const threads = { name: "threads", alias: "t", type: Number};
 const maxNumberChildren = { name: "maxNumberChildren", alias: "N", type: Number};
 const useLocalTrainingSets = { name: "useLocalTrainingSets", alias: "L", type: Boolean};
@@ -3498,11 +3527,12 @@ function loadCommandLineArgs(){
       else if (arg === "networkTechnology"){
         configuration.networkTechnology = commandLineConfig[arg];
         configuration.enableRandomTechnology = false;
-        console.log(MODULE_ID_PREFIX + " | --> COMMAND LINE CONFIG | " + arg + ": " + configuration.evolve.networkTechnology);
+        console.log(MODULE_ID_PREFIX + " | --> COMMAND LINE CONFIG | " + arg + ": " + configuration.networkTechnology);
       }
-
-      configuration[arg] = commandLineConfig[arg];
-      console.log(MODULE_ID_PREFIX + " | --> COMMAND LINE CONFIG | " + arg + ": " + configuration[arg]);
+      else{
+        configuration[arg] = commandLineConfig[arg];
+        console.log(MODULE_ID_PREFIX + " | --> COMMAND LINE CONFIG | " + arg + ": " + configuration[arg]);
+      }
 
       cb();
 
@@ -4323,6 +4353,9 @@ async function childCreate(p){
 
           error = (m.stats.error > 1000) ? expo(m.stats.error, 2) : m.stats.error;
           fitness = (m.stats.fitness < -1000) ? expo(m.stats.fitness, 2) : m.stats.fitness;
+
+          _.set(resultsHashmap[m.stats.networkId], 'evolve.results.error', error);
+          _.set(resultsHashmap[m.stats.networkId], 'evolve.results.fitness', fitness);
 
           console.log(chalkLog(MODULE_ID_PREFIX 
             + " | " + m.childIdShort 
