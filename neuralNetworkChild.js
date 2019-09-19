@@ -1198,7 +1198,7 @@ async function testNetwork(){
     + " | " + shuffledTestData.length + " TEST DATA LENGTH"
   ));
 
-  await nnTools.loadNetwork({networkObj: childNetworkObj});
+  await nnTools.loadNetwork({networkObj: childNetworkObj, networkIsRaw: true});
   await nnTools.setPrimaryNeuralNetwork(childNetworkObj.networkId);
 
   childNetworkObj.test = {};
@@ -1271,7 +1271,7 @@ function prepNetworkEvolve() {
           case "input":
             childNetwork.input_nodes.push(node.index);
           break;
-          case "oputput":
+          case "output":
             childNetwork.output_nodes.push(node.index);
           break;
           default:

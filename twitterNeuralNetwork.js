@@ -972,9 +972,12 @@ function printResultsHashmap(){
       let hiddenLayerSize = 0;
       let seedNetworkId = "";
 
+      const growth = (networkObj.evolve.options.growth && networkObj.evolve.options.growth !== undefined) ? networkObj.evolve.options.growth.toFixed(8) : "---";
+      const mutation_rate = (networkObj.evolve.options.mutation_rate && networkObj.evolve.options.mutation_rate !== undefined) ? networkObj.evolve.options.mutation_rate.toFixed(3) : "---";
+
       nnTech = (networkObj.networkTechnology && networkObj.networkTechnology !== undefined) ? networkObj.networkTechnology.slice(0,4).toUpperCase() : "?";
       status = (networkObj.status && networkObj.status !== undefined) ? networkObj.status : "UNKNOWN";
-      snIdRes = (networkObj.seedNetworkId && networkObj.seedNetworkId !== undefined) ? networkObj.seedNetworkRes.toFixed(2) : "---";
+      snIdRes = (networkObj.seedNetworkId && networkObj.seedNetworkId !== undefined && networkObj.seedNetworkRes !== undefined) ? networkObj.seedNetworkRes.toFixed(2) : "---";
       betterChild = (networkObj.betterChild && networkObj.betterChild !== undefined) ? formatBoolean(networkObj.betterChild) : "---";
       hiddenLayerSize = (networkObj.hiddenLayerSize && (networkObj.hiddenLayerSize !== undefined)) ? networkObj.hiddenLayerSize : "---";
       seedNetworkId = (networkObj.seedNetworkId && networkObj.seedNetworkId !== undefined) ? networkObj.seedNetworkId : "---";
@@ -988,8 +991,8 @@ function printResultsHashmap(){
         && (networkObj.evolve.results.fitness !== undefined)
         && networkObj.evolve.results.fitness) ? networkObj.evolve.results.fitness : -Infinity;
 
-      error = (error > 1000) ? expo(error, 2) : error.toFixed(5);
-      fitness = (fitness < -1000) ? expo(fitness, 2) : fitness.toFixed(5);
+      error = (error > 1000) ? expo(error, 2) : Number.parseFloat(error).toFixed(5);
+      fitness = (fitness < -1000) ? expo(fitness, 2) : Number.parseFloat(fitness).toFixed(5);
 
       successRate = ((networkObj.successRate || (networkObj.successRate === 0)) && networkObj.successRate !== undefined) ? networkObj.successRate.toFixed(2) : 0;
       elapsed = (networkObj.evolve.elapsed && networkObj.evolve.elapsed !== undefined) ? networkObj.evolve.elapsed : (moment().valueOf() - networkObj.evolve.startTime);
@@ -1010,9 +1013,9 @@ function printResultsHashmap(){
         networkObj.evolve.options.activation,
         formatBoolean(networkObj.evolve.options.clear),
         networkObj.evolve.options.cost,
-        networkObj.evolve.options.growth.toFixed(8),
+        growth,
         formatBoolean(networkObj.evolve.options.equal),
-        networkObj.evolve.options.mutation_rate.toFixed(3),
+        mutation_rate,
         formatBoolean(networkObj.evolve.options.efficient_mutation),
         networkObj.evolve.options.population_size,
         networkObj.evolve.options.elitism,
@@ -1027,7 +1030,7 @@ function printResultsHashmap(){
 
       for(let i=0; i<tableEntry.length; i++){
         if (!tableEntry[i] || tableEntry[i] == undefined || tableEntry[i] === null) {
-          console.log("INDEX: " + i + " | " + tableEntry[i]);
+          console.log(chalkAlert(MODULE_ID_PREFIX + " | TABLE INDEX: " + i + " | " + tableEntry[i]));
         }
       }
 
@@ -1046,10 +1049,7 @@ function printResultsHashmap(){
       statsObj.networkResults[networkId].seedNetworkId = seedNetworkId;
       statsObj.networkResults[networkId].snIdRes = snIdRes;
       statsObj.networkResults[networkId].hiddenLayerSize = hiddenLayerSize;
-      statsObj.networkResults[networkId].networkObj.evolve.options = pick(
-        networkObj.evolve.options, 
-        ["amount", "activation", "clear", "cost", "growth", "equal", "mutation", "mutation_rate", "mutation_amount", "efficient_mutation", "popsize", "population_size", "elitism"]
-      );
+      statsObj.networkResults[networkId].networkObj.evolve.options = pick(networkObj.evolve.options, combinedEvolveOptionsPickArray);
       statsObj.networkResults[networkId].startTime = getTimeStamp(networkObj.evolve.startTime);
       statsObj.networkResults[networkId].elapsed = msToTime(elapsed);
       statsObj.networkResults[networkId].iterations = iterations;
@@ -4351,8 +4351,8 @@ async function childCreate(p){
 
           _.set(resultsHashmap[m.stats.networkId], 'evolve.results.iterations', m.stats.iteration);
 
-          error = (m.stats.error > 1000) ? expo(m.stats.error, 2) : m.stats.error;
-          fitness = (m.stats.fitness < -1000) ? expo(m.stats.fitness, 2) : m.stats.fitness;
+          error = (m.stats.error > 1000) ? expo(m.stats.error, 2) : Number.parseFloat(m.stats.error);
+          fitness = (m.stats.fitness < -1000) ? expo(m.stats.fitness, 2) : Number.parseFloat(m.stats.fitness);
 
           _.set(resultsHashmap[m.stats.networkId], 'evolve.results.error', error);
           _.set(resultsHashmap[m.stats.networkId], 'evolve.results.fitness', fitness);

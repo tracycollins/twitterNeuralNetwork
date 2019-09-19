@@ -209,13 +209,7 @@ module.exports = {
         "require-jsdoc": "off",
         "rest-spread-spacing": "error",
         "semi": "off",
-        "semi-spacing": [
-            "error",
-            {
-                "after": false,
-                "before": false
-            }
-        ],
+        "semi-spacing": "off",
         "sort-imports": "error",
         "sort-vars": "off",
         "space-before-blocks": "off",
