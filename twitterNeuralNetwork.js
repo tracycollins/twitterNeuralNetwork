@@ -7,6 +7,7 @@ const CHILD_PREFIX = "tnc_node";
 const CHILD_PREFIX_SHORT = "CH";
 
 const DEFAULT_MAX_FAIL_NETWORKS = 10;
+// const DEFAULT_MIN_NETWORKS_TOTAL = 20;
 
 const os = require("os");
 let hostname = os.hostname();
@@ -138,6 +139,7 @@ configuration.testMode = TEST_MODE;
 configuration.globalTestMode = GLOBAL_TEST_MODE;
 configuration.quitOnComplete = QUIT_ON_COMPLETE;
 configuration.statsUpdateIntervalTime = STATS_UPDATE_INTERVAL;
+// configuration.minNetworksTotal = DEFAULT_MIN_NETWORKS_TOTAL; // min # of attempts (pass+fail) before deciding to use inputsObj or not
 configuration.maxFailNetworks = DEFAULT_MAX_FAIL_NETWORKS;
 childConfiguration.primaryHost = configuration.primaryHost;
 childConfiguration.testMode = configuration.testMode;
@@ -602,7 +604,7 @@ const betterChildSeedNetworkIdSet = new Set();
 const skipLoadNetworkSet = new Set();
 
 const inputsIdHashMap = {};
-const inputsNoNetworksSet = new Set();
+const inputsViableSet = new Set();
 const inputsFailedSet = new Set();
 
 const inputsSet = new Set();
@@ -1125,7 +1127,7 @@ function purgeInputs(inputsId){
       if (!configuration.inputsIdArray.includes(inputsId)){
         console.log(chalkInfo(MODULE_ID_PREFIX + " | XXX PURGE INPUTS: " + inputsId));
         inputsSet.delete(inputsId);
-        inputsNoNetworksSet.delete(inputsId);
+        inputsViableSet.delete(inputsId);
         skipLoadInputsSet.add(inputsId);
         delete inputsIdHashMap[inputsId];
       }
@@ -1223,6 +1225,27 @@ async function updateDbInputs(p){
     console.log(e);
     throw e;
   }
+}
+
+function checkInputsViability(p){
+
+  const params = p || {};
+
+  const maxFailNetworks = params.maxFailNetworks || configuration.maxFailNetworks;
+  // const minNetworksTotal = params.minNetworksTotal || configuration.minNetworksTotal;
+
+  const numPassNetworks = params.inputsObj.networks.length;
+  const numFailNetworks = params.inputsObj.failNetworks.length;
+
+  if (numFailNetworks <= maxFailNetworks){
+    return true;
+  }
+
+  if (numPassNetworks > numFailNetworks){
+    return true;
+  }
+
+  return false;
 }
 
 async function loadNetworkFile(params){
@@ -1425,7 +1448,8 @@ async function loadInputsFile(params){
 
   try {
 
-    const maxFailNetworks = params.maxFailNetworks || configuration.maxFailNetworks;
+    // const maxFailNetworks = params.maxFailNetworks || configuration.maxFailNetworks;
+    // const minNetworksTotal = params.minNetworksTotal || configuration.minNetworksTotal;
 
     const inputsObj = await tcUtils.loadFileRetry({folder: params.folder, file: params.file});
 
@@ -1446,16 +1470,20 @@ async function loadInputsFile(params){
 
     inputsSet.add(dbInputsObj.inputsId);
 
-    if ((dbInputsObj.networks.length === 0) && (empty(dbInputsObj.failNetworks) || (dbInputsObj.failNetworks.length < maxFailNetworks))){
-      inputsNoNetworksSet.add(dbInputsObj.inputsId);
+    const inputsViable = checkInputsViability({inputsObj: dbInputsObj});
+
+    if (inputsViable){
+
+      inputsViableSet.add(dbInputsObj.inputsId);
+
       console.log(chalkBlueBold(MODULE_ID_PREFIX 
-        + " | +++ NO NETWORKS INPUTS [" + inputsNoNetworksSet.size + " IN SET]"
+        + " | +++ VIABLE NETWORKS INPUTS [" + inputsViableSet.size + " IN SET]"
         + " | " + dbInputsObj.meta.numInputs
         + " INPUTS | " + dbInputsObj.inputsId
       ));
     }
     else {
-      inputsNoNetworksSet.delete(dbInputsObj.inputsId);
+      inputsViableSet.delete(dbInputsObj.inputsId);
     }
 
     if(empty(inputsNetworksHashMap[dbInputsObj.inputsId])) {
@@ -1874,7 +1902,7 @@ function generateSeedInputsNetworkId(params){
     // no better children, so try an input set with no networks
     //
     
-    const noNetworksInputsIdArray = [...inputsNoNetworksSet].sort();
+    const noNetworksInputsIdArray = [...inputsViableSet].sort();
     const failedInputsIdArray = [...inputsFailedSet];
     const availableInputsIdArray = _.difference(noNetworksInputsIdArray, failedInputsIdArray);
 
@@ -1888,7 +1916,7 @@ function generateSeedInputsNetworkId(params){
 
       console.log(chalkBlueBold(MODULE_ID_PREFIX
         + " | NO NETWORKS RANDOM INPUT"
-        + " | INPUT NO NETWORKS SET: " + inputsNoNetworksSet.size
+        + " | INPUT NO NETWORKS SET: " + inputsViableSet.size
         + " | AVAIL NO NETWORKS INPUTS: " + availableInputsIdArray.length
         + " | " + config.seedInputsId
       ));
@@ -4601,14 +4629,14 @@ async function childCreate(p){
 
                 inputsFailedSet.delete(nn.inputsId);
 
-                if (inputsNoNetworksSet.has(nn.inputsId)) {
+                if (inputsViableSet.has(nn.inputsId)) {
                   noNetworksInputsFlag = true;
                   console.log(chalkBlueBold("TNN | GLOBAL BEST | NO NETWORKS INPUTS"
                     + " | " + nn.networkId
                     + " | INPUTS: " + nn.inputsId
                   ));
                   statsObj.evolveStats.noNetworksInputs.push(nn.inputsId);
-                  inputsNoNetworksSet.delete(nn.inputsId);
+                  inputsViableSet.delete(nn.inputsId);
                 }
 
                 slackText = "\n*GLOBAL BEST | " + nn.test.results.successRate.toFixed(2) + "%*";
