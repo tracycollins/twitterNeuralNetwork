@@ -1300,17 +1300,22 @@ function prepNetworkEvolve() {
     console.log(chalkAlert(MODULE_ID_PREFIX + " | EVOLVE OPTIONS\n" + jsonPrint(finalOptions)));
 
     if ((options.activation !== undefined) && (typeof options.activation == "string")) {
-      console.log(chalkAlert(MODULE_ID_PREFIX + " | EVOLVE OPTIONS | ACTIVATION", options.activation));
+      console.log(chalkAlert(MODULE_ID_PREFIX + " | EVOLVE OPTIONS | ACTIVATION: " + options.activation));
       finalOptions.activation = networkTech.methods.activation[options.activation];
     }
 
+    if ((options.selection !== undefined) && (typeof options.selection == "string")) {
+      console.log(chalkAlert(MODULE_ID_PREFIX + " | EVOLVE OPTIONS | SELECTION: " + options.selection));
+      finalOptions.selection = networkTech.methods.selection[options.selection];
+    }
+
     if ((options.cost !== undefined) && (typeof options.cost == "string")) {
-      console.log(chalkAlert(MODULE_ID_PREFIX + " | EVOLVE OPTIONS | COST", options.cost));
+      console.log(chalkAlert(MODULE_ID_PREFIX + " | EVOLVE OPTIONS | COST: " + options.cost));
       finalOptions.cost = networkTech.methods.cost[options.cost];
     }
 
     if ((options.mutation !== undefined) && (typeof options.mutation == "string")) {
-      console.log(chalkAlert(MODULE_ID_PREFIX + " | EVOLVE OPTIONS | MUTATION", options.mutation));
+      console.log(chalkAlert(MODULE_ID_PREFIX + " | EVOLVE OPTIONS | MUTATION: " + options.mutation));
       finalOptions.mutation = networkTech.methods.mutation[options.mutation];
     }
 
@@ -1577,17 +1582,6 @@ function evolve(){
     if (!params.architecture || (params.architecture === undefined)) { params.architecture = "perceptron"; }
     if (!params.networkTechnology || (params.networkTechnology === undefined)) { params.networkTechnology = configuration.networkTechnology; }
 
-    // switch (params.networkTechnology) {
-    //   case "neataptic":
-    //     networkTech = neataptic;
-    //   break;
-    //   case "carrot":
-    //     networkTech = carrot;
-    //   break;
-    //   default:
-    //     networkTech = neataptic;
-    // }
-
     statsObj.evolve.startTime = moment().valueOf();
     statsObj.evolve.elapsed = 0;
     statsObj.evolve.stats = {};
@@ -1612,6 +1606,12 @@ function evolve(){
           console.log("NNC" + " | " + configuration.childId + " | EVOLVE OPTION | " + key + ": " + params[key]);
           options.mutation = networkTech.methods.mutation[params[key]];
           console.log("typeof options.mutation: " + typeof options.mutation);
+        break;
+              
+        case "selection":
+          console.log("NNC" + " | " + configuration.childId + " | EVOLVE OPTION | " + key + ": " + params[key]);
+          options.selection = networkTech.methods.selection[params[key]];
+          console.log("typeof options.selection: " + typeof options.selection);
         break;
               
         case "cost":
@@ -2090,7 +2090,6 @@ process.on("message", function(m) {
           "hiddenLayerSize",
           "inputsId",
           "iterations",
-          // "log",
           "mutation", 
           "mutation_amount", 
           "mutation_rate",
@@ -2102,6 +2101,7 @@ process.on("message", function(m) {
           "runId",
           "seedNetworkId",
           "seedNetworkRes",
+          "selection",
           "threads",
         ]
       );

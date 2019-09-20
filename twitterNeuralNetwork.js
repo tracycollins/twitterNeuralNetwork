@@ -471,10 +471,6 @@ configuration.childAppPath = path.join(configuration.cwd, "neuralNetworkChild.js
 configuration.childIdPrefix = DEFAULT_CHILD_ID_PREFIX;
 configuration.childIndex = 0;
 
-// const carrot = require("@liquid-carrot/carrot");
-// const neataptic = require("neataptic");
-// const networkTech = neataptic;
-
 let childPingAllInterval;
 
 const bestRuntimeNetworkFileName = "bestRuntimeNetwork.json";
@@ -540,6 +536,7 @@ const DEFAULT_EVOLVE_BEST_NETWORK = false;
 const DEFAULT_EVOLVE_ELITISM = 1;
 const DEFAULT_EVOLVE_EQUAL = true;
 const DEFAULT_EVOLVE_ERROR = 0.03;
+const DEFAULT_EVOLVE_FITNESS_POPULATION = true;
 const DEFAULT_EVOLVE_LOG = 1;
 // const DEFAULT_EVOLVE_MUTATION = networkTech.methods.mutation.FFW;
 const DEFAULT_EVOLVE_MUTATION = "FFW";
@@ -547,6 +544,7 @@ const DEFAULT_EVOLVE_MUTATION_RATE = 0.3;
 const DEFAULT_EVOLVE_MUTATION_EFFICIENT = true; // carrot only efficient_mutation
 const DEFAULT_EVOLVE_POPSIZE = 50;
 const DEFAULT_EVOLVE_GROWTH = 0.0001;
+const DEFAULT_EVOLVE_SELECTION = "FITNESS_PROPORTIONATE";
 // const DEFAULT_EVOLVE_CLEAR = false;
 const DEFAULT_EVOLVE_AMOUNT = 1;
 const DEFAULT_EVOLVE_COST = "CROSS_ENTROPY";
@@ -560,7 +558,14 @@ const DEFAULT_EVOLVE_COST_ARRAY = [
   "HINGE",
   "MAE",
   "MAPE",
-  "MSE"
+  "MSE",
+  "MSLE",
+  "WAPE"
+];
+const DEFAULT_EVOLVE_SELECTION_ARRAY = [
+  "FITNESS_PROPORTIONATE",
+  "POWER",
+  "TOURNAMENT"
 ];
 const DEFAULT_EVOLVE_MOD_ACTIVATION_ARRAY = [
   "ABSOLUTE",
@@ -734,6 +739,10 @@ configuration.costArray = (process.env.TNN_EVOLVE_COST_ARRAY !== undefined)
   ? process.env.TNN_EVOLVE_COST_ARRAY 
   : DEFAULT_EVOLVE_COST_ARRAY;
 
+configuration.selectionArray = (process.env.TNN_EVOLVE_SELECTION_ARRAY !== undefined) 
+  ? process.env.TNN_EVOLVE_SELECTION_ARRAY 
+  : DEFAULT_EVOLVE_SELECTION_ARRAY;
+
 configuration.activationArray = (process.env.TNN_EVOLVE_MOD_ACTIVATION_ARRAY !== undefined) 
   ? process.env.TNN_EVOLVE_MOD_ACTIVATION_ARRAY 
   : DEFAULT_EVOLVE_MOD_ACTIVATION_ARRAY;
@@ -775,6 +784,7 @@ configuration.evolve.networkObj = null;
 configuration.evolve.elitism = DEFAULT_EVOLVE_ELITISM;
 configuration.evolve.equal = DEFAULT_EVOLVE_EQUAL;
 configuration.evolve.error = DEFAULT_EVOLVE_ERROR;
+configuration.evolve.fitness_population = DEFAULT_EVOLVE_FITNESS_POPULATION;
 configuration.evolve.iterations = DEFAULT_ITERATIONS;
 configuration.evolve.log = DEFAULT_EVOLVE_LOG;
 configuration.evolve.mutation = DEFAULT_EVOLVE_MUTATION;
@@ -783,6 +793,7 @@ configuration.evolve.efficient_mutation = DEFAULT_EVOLVE_MUTATION_EFFICIENT;
 configuration.evolve.popsize = DEFAULT_EVOLVE_POPSIZE;
 configuration.evolve.growth = DEFAULT_EVOLVE_GROWTH;
 configuration.evolve.cost = DEFAULT_EVOLVE_COST;
+configuration.evolve.selection = DEFAULT_EVOLVE_SELECTION;
 configuration.evolve.amount = DEFAULT_EVOLVE_AMOUNT;
 
 statsObj.evolveStats = {};
@@ -955,6 +966,8 @@ function printResultsHashmap(){
         networkObj.evolve.options.mutation_rate = 0;
         networkObj.evolve.options.efficient_mutation = "---";
         networkObj.evolve.options.popsize = 0;
+        networkObj.evolve.options.population_size = 0;
+        networkObj.evolve.options.selection = "---";
         networkObj.evolve.options.elitism = 0;
       }
 
@@ -1934,7 +1947,7 @@ async function calculateHiddenLayerSize(params){
   return hiddenLayerSize;
 }
 
-async function generateRandomEvolveConfig (){
+async function generateRandomEvolveConfig(){
 
   statsObj.status = "GENERATE EVOLVE CONFIG";
 
@@ -1954,12 +1967,17 @@ async function generateRandomEvolveConfig (){
   config.activation = randomItem(configuration.activationArray);
   config.amount = configuration.evolve.amount;
   config.clear = randomItem([true, false]);
-  config.cost = randomItem(configuration.costArray);
+
+  // neataptic doesn't have WAPE cost
+
+  const costArray = (config.networkTechnology == "neataptic") ? _.pull(configuration.costArray, "WAPE") : configuration.costArray;
+  config.cost = randomItem(costArray);
+
   config.efficient_mutation = configuration.evolve.efficient_mutation;
   config.elitism = randomInt(EVOLVE_ELITISM_RANGE.min, EVOLVE_ELITISM_RANGE.max);
   config.equal = true;
   config.error = configuration.evolve.error;
-  config.fitnessPopulation = true;
+  config.fitness_population = configuration.evolve.fitness_population;
   config.growth = randomFloat(EVOLVE_GROWTH_RANGE.min, EVOLVE_GROWTH_RANGE.max);
   config.iterations = configuration.evolve.iterations;
   config.log = configuration.evolve.log;
@@ -1969,6 +1987,7 @@ async function generateRandomEvolveConfig (){
   config.popsize = configuration.evolve.popsize;
   config.population_size = configuration.evolve.popsize;
   config.provenance = 0;
+  config.selection = randomItem(configuration.selectionArray);
   config.threads = configuration.evolve.threads;
 
   if (configuration.enableSeedNetwork && config.seedNetworkId && networkIdSet.has(config.seedNetworkId)) {
@@ -2018,9 +2037,11 @@ async function generateRandomEvolveConfig (){
       config.elitism = randomItem([config.elitism, networkObj.evolve.options.elitism]);
       config.equal = randomItem([config.equal, networkObj.evolve.options.equal]);
       config.error = randomItem([config.error, networkObj.evolve.options.error]);
+      config.fitness_population = randomItem([config.fitness_population, networkObj.evolve.options.fitness_population]);
       config.growth = randomItem([config.growth, networkObj.evolve.options.growth]);
       config.mutation_rate = randomItem([config.mutation_rate, (networkObj.evolve.options.mutation_rate || networkObj.evolve.options.mutationRate)]);
       config.mutation_amount = randomItem([config.mutation_amount, (networkObj.evolve.options.mutation_amount || networkObj.evolve.options.mutationAmount)]);
+      config.selection = randomItem([config.selection, networkObj.evolve.options.selection]);
     }
     else {
       console.log(chalkLog(MODULE_ID_PREFIX + " | USE SEED NETWORK OPTIONS | " + config.seedNetworkId));
@@ -2033,6 +2054,7 @@ async function generateRandomEvolveConfig (){
       config.growth = networkObj.evolve.options.growth;
       config.mutation_rate = networkObj.evolve.options.mutation_rate || networkObj.evolve.options.mutationRate;
       config.mutation_amount = networkObj.evolve.options.mutation_amount || networkObj.evolve.options.mutationAmount;
+      config.selection = networkObj.evolve.options.selection || networkObj.evolve.options.selection;
     }
   }
   else {
@@ -2157,6 +2179,7 @@ async function initNetworkCreate(params){
           + "\n" + MODULE_ID_PREFIX + " | EFF MUTATION:      " + messageObj.efficient_mutation
           + "\n" + MODULE_ID_PREFIX + " | ACTIVATION:        " + messageObj.activation
           + "\n" + MODULE_ID_PREFIX + " | COST:              " + messageObj.cost
+          + "\n" + MODULE_ID_PREFIX + " | SELECTION:         " + messageObj.selection
           + "\n" + MODULE_ID_PREFIX + " | ITERATIONS:        " + messageObj.iterations
         ));
 
@@ -3130,6 +3153,11 @@ async function loadConfigFile(params) {
       newConfiguration.costArray = loadedConfigObj.TNN_EVOLVE_COST_ARRAY;
     }
 
+    if (loadedConfigObj.TNN_EVOLVE_SELECTION_ARRAY !== undefined){
+      console.log(MODULE_ID_PREFIX + " | LOADED TNN_EVOLVE_SELECTION_ARRAY: " + loadedConfigObj.TNN_EVOLVE_SELECTION_ARRAY);
+      newConfiguration.selectionArray = loadedConfigObj.TNN_EVOLVE_SELECTION_ARRAY;
+    }
+
     if (loadedConfigObj.TNN_GLOBAL_MIN_SUCCESS_RATE !== undefined){
       console.log(MODULE_ID_PREFIX + " | LOADED TNN_GLOBAL_MIN_SUCCESS_RATE: " + loadedConfigObj.TNN_GLOBAL_MIN_SUCCESS_RATE);
       newConfiguration.globalMinSuccessRate = loadedConfigObj.TNN_GLOBAL_MIN_SUCCESS_RATE;
@@ -3200,6 +3228,7 @@ async function loadAllConfigFiles(){
   configuration = deepcopy(tempConfig);
 
   configuration.costArray = _.uniq(configuration.costArray);
+  configuration.selectionArray = _.uniq(configuration.selectionArray);
 
   return;
 }
@@ -4633,7 +4662,7 @@ async function childCreate(p){
                 + " | GLOBAL SUCCESS: " + configuration.globalMinSuccessRate.toFixed(2) + "%"
               ));
 
-              resultsHashmap[nn.networkId].status = "   fail";
+              resultsHashmap[nn.networkId].status = "- fail -";
 
               if (
                    ((nn.evolve.options.cost !== "MSE") && (nn.test.results.successRate < configuration.localMinSuccessRate))
