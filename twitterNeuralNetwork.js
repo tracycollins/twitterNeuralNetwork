@@ -1478,12 +1478,20 @@ async function loadInputsFile(params){
 
       console.log(chalkBlueBold(MODULE_ID_PREFIX 
         + " | +++ VIABLE NETWORKS INPUTS [" + inputsViableSet.size + " IN SET]"
+        + " | P/F: " + dbInputsObj.networks.length + "/" + dbInputsObj.failNetworks.length
         + " | " + dbInputsObj.meta.numInputs
         + " INPUTS | " + dbInputsObj.inputsId
       ));
     }
     else {
       inputsViableSet.delete(dbInputsObj.inputsId);
+      console.log(chalkBlueBold(MODULE_ID_PREFIX 
+        + " | XXX NOT VIABLE NETWORKS INPUTS [" + inputsViableSet.size + " IN SET]"
+        + " | P/F: " + dbInputsObj.networks.length + "/" + dbInputsObj.failNetworks.length
+        + " | " + dbInputsObj.meta.numInputs
+        + " | " + dbInputsObj.meta.numInputs
+        + " INPUTS | " + dbInputsObj.inputsId
+      ));
     }
 
     if(empty(inputsNetworksHashMap[dbInputsObj.inputsId])) {
