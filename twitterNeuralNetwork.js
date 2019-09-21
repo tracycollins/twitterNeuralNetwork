@@ -4648,12 +4648,13 @@ async function childCreate(p){
                 }
 
                 slackText = "\n*GLOBAL BEST | " + nn.test.results.successRate.toFixed(2) + "%*";
-                slackText = slackText + "\n              " + nn.networkId;
-                slackText = slackText + "\nIN:           " + nn.inputsId;
-                slackText = slackText + "\nINPUTS:       " + nn.network.input;
+                slackText = slackText + "\n" + nn.networkId;
+                slackText = slackText + "\nTECH: " + nn.networkTechnology;
+                slackText = slackText + "\nIN: " + nn.inputsId;
+                slackText = slackText + "\nINPUTS: " + nn.network.input;
                 slackText = slackText + "\nINPUTS NO NNs: " + noNetworksInputsFlag;
                 slackText = slackText + "\nBETTER CHILD: " + nn.betterChild;
-                slackText = slackText + "\nELAPSED:      " + msToTime(nn.evolve.elapsed);
+                slackText = slackText + "\nELAPSED: " + msToTime(nn.evolve.elapsed);
 
                 slackSendWebMessage({ channel: slackChannelPassGlobal, text: slackText});
 
@@ -4680,11 +4681,13 @@ async function childCreate(p){
                 statsObj.evolveStats.passLocal += 1;
 
                 slackText = "\n*LOCAL BEST | " + nn.test.results.successRate.toFixed(2) + "%*";
-                slackText = slackText + "\n              " + nn.networkId;
-                slackText = slackText + "\nIN:           " + nn.inputsId;
-                slackText = slackText + "\nINPUTS:       " + nn.network.input;
+                slackText = slackText + "\n" + nn.networkId;
+                slackText = slackText + "\nTECH: " + nn.networkTechnology;
+                slackText = slackText + "\nIN: " + nn.inputsId;
+                slackText = slackText + "\nINPUTS: " + nn.network.input;
+                slackText = slackText + "\nINPUTS NO NNs: " + noNetworksInputsFlag;
                 slackText = slackText + "\nBETTER CHILD: " + nn.betterChild;
-                slackText = slackText + "\nELAPSED:      " + msToTime(nn.evolve.elapsed);
+                slackText = slackText + "\nELAPSED: " + msToTime(nn.evolve.elapsed);
 
                 slackSendWebMessage({ channel: slackChannelPassLocal, text: slackText });
 
@@ -4713,12 +4716,14 @@ async function childCreate(p){
                 ));
               }
 
-              slackText = "\n*-FAIL-*";
-              slackText = slackText + "\n*" + nn.test.results.successRate.toFixed(2) + "%*";
+              slackText = "\n*FAIL | " + nn.test.results.successRate.toFixed(2) + "%*";
               slackText = slackText + "\n" + nn.networkId;
-              slackText = slackText + "\nELAPSED: " + msToTime(nn.evolve.elapsed);
+              slackText = slackText + "\nTECH: " + nn.networkTechnology;
               slackText = slackText + "\nIN: " + nn.inputsId;
               slackText = slackText + "\nINPUTS: " + nn.network.input;
+              slackText = slackText + "\nINPUTS NO NNs: " + noNetworksInputsFlag;
+              slackText = slackText + "\nBETTER CHILD: " + nn.betterChild;
+              slackText = slackText + "\nELAPSED: " + msToTime(nn.evolve.elapsed);
 
               slackSendWebMessage({ channel: slackChannelFail, text: slackText });
 
