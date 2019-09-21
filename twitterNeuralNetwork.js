@@ -804,7 +804,7 @@ statsObj.evolveStats.total = 0;
 statsObj.evolveStats.passLocal = 0;
 statsObj.evolveStats.passGlobal = 0;
 statsObj.evolveStats.fail = 0;
-statsObj.evolveStats.noNetworksInputs = [];
+statsObj.evolveStats.viableInputs = [];
 
 statsObj.users = {};
 statsObj.users.imageParse = {};
@@ -1910,9 +1910,9 @@ function generateSeedInputsNetworkId(params){
     // no better children, so try an input set with no networks
     //
     
-    const noNetworksInputsIdArray = [...inputsViableSet].sort();
+    const viableInputsIdArray = [...inputsViableSet].sort();
     const failedInputsIdArray = [...inputsFailedSet];
-    const availableInputsIdArray = _.difference(noNetworksInputsIdArray, failedInputsIdArray);
+    const availableInputsIdArray = _.difference(viableInputsIdArray, failedInputsIdArray);
 
     if (availableInputsIdArray.size > 0) {
 
@@ -4363,6 +4363,8 @@ async function childCreate(p){
   let child = {};
   const options = {};
 
+  let inputsViableFlag = false;
+
   options.cwd = params.cwd || configuration.cwd;
 
   statsObj.status = "CHILD CREATE | CH ID: " + childId + " | APP: " + appPath;
@@ -4633,17 +4635,17 @@ async function childCreate(p){
 
                 statsObj.evolveStats.passGlobal += 1;
 
-                let noNetworksInputsFlag = false;
+                inputsViableFlag = false;
 
                 inputsFailedSet.delete(nn.inputsId);
 
                 if (inputsViableSet.has(nn.inputsId)) {
-                  noNetworksInputsFlag = true;
-                  console.log(chalkBlueBold("TNN | GLOBAL BEST | NO NETWORKS INPUTS"
+                  inputsViableFlag = true;
+                  console.log(chalkBlueBold("TNN | GLOBAL BEST | VIABLE NETWORKS INPUTS"
                     + " | " + nn.networkId
                     + " | INPUTS: " + nn.inputsId
                   ));
-                  statsObj.evolveStats.noNetworksInputs.push(nn.inputsId);
+                  statsObj.evolveStats.viableInputs.push(nn.inputsId);
                   inputsViableSet.delete(nn.inputsId);
                 }
 
@@ -4652,7 +4654,7 @@ async function childCreate(p){
                 slackText = slackText + "\nTECH: " + nn.networkTechnology;
                 slackText = slackText + "\nIN: " + nn.inputsId;
                 slackText = slackText + "\nINPUTS: " + nn.network.input;
-                slackText = slackText + "\nINPUTS NO NNs: " + noNetworksInputsFlag;
+                slackText = slackText + "\nINPUTS VIABLE: " + inputsViableFlag;
                 slackText = slackText + "\nBETTER CHILD: " + nn.betterChild;
                 slackText = slackText + "\nELAPSED: " + msToTime(nn.evolve.elapsed);
 
@@ -4680,12 +4682,24 @@ async function childCreate(p){
 
                 statsObj.evolveStats.passLocal += 1;
 
+                inputsViableFlag = false;
+
+                if (inputsViableSet.has(nn.inputsId)) {
+                  inputsViableFlag = true;
+                  console.log(chalkBlueBold("TNN | LOCAL BEST | VIABLE NETWORKS INPUTS"
+                    + " | " + nn.networkId
+                    + " | INPUTS: " + nn.inputsId
+                  ));
+                  statsObj.evolveStats.viableInputs.push(nn.inputsId);
+                  inputsViableSet.delete(nn.inputsId);
+                }
+
                 slackText = "\n*LOCAL BEST | " + nn.test.results.successRate.toFixed(2) + "%*";
                 slackText = slackText + "\n" + nn.networkId;
                 slackText = slackText + "\nTECH: " + nn.networkTechnology;
                 slackText = slackText + "\nIN: " + nn.inputsId;
                 slackText = slackText + "\nINPUTS: " + nn.network.input;
-                slackText = slackText + "\nINPUTS NO NNs: " + noNetworksInputsFlag;
+                slackText = slackText + "\nINPUTS VIABLE: " + inputsViableFlag;
                 slackText = slackText + "\nBETTER CHILD: " + nn.betterChild;
                 slackText = slackText + "\nELAPSED: " + msToTime(nn.evolve.elapsed);
 
@@ -4721,7 +4735,7 @@ async function childCreate(p){
               slackText = slackText + "\nTECH: " + nn.networkTechnology;
               slackText = slackText + "\nIN: " + nn.inputsId;
               slackText = slackText + "\nINPUTS: " + nn.network.input;
-              slackText = slackText + "\nINPUTS NO NNs: " + noNetworksInputsFlag;
+              slackText = slackText + "\nINPUTS VIABLE: " + inputsViableFlag;
               slackText = slackText + "\nBETTER CHILD: " + nn.betterChild;
               slackText = slackText + "\nELAPSED: " + msToTime(nn.evolve.elapsed);
 
