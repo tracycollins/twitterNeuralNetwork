@@ -322,24 +322,24 @@ async function createXorOptions(){
   const testIterations = 100000;
 
   const xorOptions = {
-    amount: 1,
-    clear: false,
-    cost: networkTech.methods.cost.MSE,
-    efficient_mutation: true,
-    efficientMutation: true,
-    elitism: 5,
-    equal: true,
+    // amount: 1,
+    // clear: false,
+    // cost: networkTech.methods.cost.MSE,
+    // efficient_mutation: true,
+    // efficientMutation: true,
+    // elitism: 5,
+    // equal: true,
     error: 0.05,
-    fitness_population: true,
-    growth: 0.0001,
-    iterations: testIterations,
-    mutation: networkTech.methods.mutation.FFW,
-    mutation_amount: 1,
-    mutation_rate: 0.4,
-    popsize: 50,
-    population_size: 50,
-    provenance: 0,
-    threads: 8,
+    // fitness_population: true,
+    // growth: 0.0001,
+    // iterations: testIterations,
+    // mutation: networkTech.methods.mutation.FFW,
+    // mutation_amount: 1,
+    // mutation_rate: 0.4,
+    // popsize: 50,
+    // population_size: 50,
+    // provenance: 0,
+    // threads: 8,
   };
 
   xorOptions.schedule = {
@@ -1141,13 +1141,15 @@ function testNetworkData(params){
   return new Promise(function(resolve, reject){
 
     const testData = params.testData;
+    const binaryMode = (params.binaryMode !== undefined) ? params.binaryMode : configuration.binaryMode;
+
     let numTested = 0;
     let numPassed = 0;
     let successRate = 0;
 
     async.eachSeries(testData, function(datum, cb){
 
-      nnTools.activateSingleNetwork({networkId: params.networkId, user: datum, verbose: configuration.verbose}).
+      nnTools.activateSingleNetwork({networkId: params.networkId, user: datum, binaryMode: binaryMode, verbose: configuration.verbose}).
       then(function(testOutput){
 
         const passed = (testOutput.categoryAuto === datum.category);
@@ -1201,7 +1203,11 @@ function testNetworkData(params){
   });
 }
 
-async function testNetwork(){
+async function testNetwork(p){
+
+  const params = p || {};
+
+  const binaryMode = (params.binaryMode !== undefined) ? params.binaryMode : configuration.binaryMode;
 
   const shuffledTestData = _.shuffle(testSetObj.data);
 
@@ -1216,7 +1222,7 @@ async function testNetwork(){
   childNetworkObj.test = {};
   childNetworkObj.test.results = {};
 
-  childNetworkObj.test.results = await testNetworkData({networkId: childNetworkObj.networkId, testData: shuffledTestData});
+  childNetworkObj.test.results = await testNetworkData({networkId: childNetworkObj.networkId, testData: shuffledTestData, binaryMode: binaryMode});
 
   childNetworkObj.successRate = childNetworkObj.test.results.successRate;
 
