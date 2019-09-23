@@ -4,7 +4,9 @@
 const MODULE_NAME = "twitterNeuralNetwork";
 const MODULE_ID_PREFIX = "TNN";
 const CHILD_PREFIX = "tnc_node";
-const CHILD_PREFIX_SHORT = "CH";
+const CHILD_PREFIX_SHORT = "NC";
+
+const DEFAULT_BINARY_MODE = true;
 
 const DEFAULT_MAX_FAIL_NETWORKS = 10;
 // const DEFAULT_MIN_NETWORKS_TOTAL = 20;
@@ -128,6 +130,8 @@ let statsObjSmall = {};
 let configuration = {};
 
 const childConfiguration = {};
+
+configuration.binaryMode = DEFAULT_BINARY_MODE;
 
 configuration.previousChildConfig = false;
 configuration.offlineMode = OFFLINE_MODE;
@@ -537,19 +541,20 @@ const DEFAULT_EVOLVE_INPUTS_TO_HIDDEN_LAYER_SIZE_RATIO = 0.1;
 const DEFAULT_EVOLVE_BEST_NETWORK = false;
 const DEFAULT_EVOLVE_ELITISM = 1;
 const DEFAULT_EVOLVE_EQUAL = true;
-const DEFAULT_EVOLVE_ERROR = 0.03;
+const DEFAULT_EVOLVE_ERROR = 0.05;
 const DEFAULT_EVOLVE_FITNESS_POPULATION = true;
 const DEFAULT_EVOLVE_LOG = 1;
 // const DEFAULT_EVOLVE_MUTATION = networkTech.methods.mutation.FFW;
 const DEFAULT_EVOLVE_MUTATION = "FFW";
-const DEFAULT_EVOLVE_MUTATION_RATE = 0.3;
-const DEFAULT_EVOLVE_MUTATION_EFFICIENT = true; // carrot only efficient_mutation
+const DEFAULT_EVOLVE_MUTATION_RATE = 0.4;
+const DEFAULT_EVOLVE_MUTATION_EFFICIENT = false; // carrot only efficient_mutation
 const DEFAULT_EVOLVE_POPSIZE = 50;
 const DEFAULT_EVOLVE_GROWTH = 0.0001;
 const DEFAULT_EVOLVE_SELECTION = "FITNESS_PROPORTIONATE";
-// const DEFAULT_EVOLVE_CLEAR = false;
+const DEFAULT_EVOLVE_CLEAR = false;
 const DEFAULT_EVOLVE_AMOUNT = 1;
-const DEFAULT_EVOLVE_COST = "CROSS_ENTROPY";
+const DEFAULT_EVOLVE_COST = "MSE";
+const DEFAULT_EVOLVE_PROVENANCE = 0;
 const EVOLVE_MUTATION_RATE_RANGE = { min: 0.35, max: 0.75 };
 const DEFAULT_GROWTH = { min: 0.00005, max: 0.00015 };
 const EVOLVE_GROWTH_RANGE = { min: DEFAULT_GROWTH.min, max: DEFAULT_GROWTH.max };
@@ -778,25 +783,27 @@ configuration.normalization = null;
 configuration.testSetRatio = DEFAULT_TEST_RATIO;
 
 configuration.evolve = {};
-configuration.evolve.useBestNetwork = DEFAULT_EVOLVE_BEST_NETWORK;
-configuration.evolve.networkId = DEFAULT_SEED_NETWORK_ID;
-configuration.evolve.threads = DEFAULT_EVOLVE_THREADS;
+configuration.evolve.amount = DEFAULT_EVOLVE_AMOUNT;
 configuration.evolve.architecture = DEFAULT_EVOLVE_ARCHITECTURE;
-configuration.evolve.networkObj = null;
+configuration.evolve.clear = DEFAULT_EVOLVE_CLEAR;
+configuration.evolve.cost = DEFAULT_EVOLVE_COST;
+configuration.evolve.efficient_mutation = DEFAULT_EVOLVE_MUTATION_EFFICIENT;
 configuration.evolve.elitism = DEFAULT_EVOLVE_ELITISM;
 configuration.evolve.equal = DEFAULT_EVOLVE_EQUAL;
 configuration.evolve.error = DEFAULT_EVOLVE_ERROR;
 configuration.evolve.fitness_population = DEFAULT_EVOLVE_FITNESS_POPULATION;
+configuration.evolve.growth = DEFAULT_EVOLVE_GROWTH;
 configuration.evolve.iterations = DEFAULT_ITERATIONS;
 configuration.evolve.log = DEFAULT_EVOLVE_LOG;
 configuration.evolve.mutation = DEFAULT_EVOLVE_MUTATION;
 configuration.evolve.mutation_rate = DEFAULT_EVOLVE_MUTATION_RATE;
-configuration.evolve.efficient_mutation = DEFAULT_EVOLVE_MUTATION_EFFICIENT;
+configuration.evolve.networkId = DEFAULT_SEED_NETWORK_ID;
+configuration.evolve.networkObj = null;
 configuration.evolve.popsize = DEFAULT_EVOLVE_POPSIZE;
-configuration.evolve.growth = DEFAULT_EVOLVE_GROWTH;
-configuration.evolve.cost = DEFAULT_EVOLVE_COST;
+configuration.evolve.provenance = DEFAULT_EVOLVE_PROVENANCE;
 configuration.evolve.selection = DEFAULT_EVOLVE_SELECTION;
-configuration.evolve.amount = DEFAULT_EVOLVE_AMOUNT;
+configuration.evolve.threads = DEFAULT_EVOLVE_THREADS;
+configuration.evolve.useBestNetwork = DEFAULT_EVOLVE_BEST_NETWORK;
 
 statsObj.evolveStats = {};
 statsObj.evolveStats.results = {};
@@ -1983,7 +1990,9 @@ async function calculateHiddenLayerSize(params){
   return hiddenLayerSize;
 }
 
-async function generateRandomEvolveConfig(){
+async function generateRandomEvolveConfig(p){
+
+  const params = p || {};
 
   statsObj.status = "GENERATE EVOLVE CONFIG";
 
@@ -1992,6 +2001,7 @@ async function generateRandomEvolveConfig(){
   let config = {};
 
   config.networkCreateMode = "evolve";
+  config.binaryMode = (params.binaryMode !== undefined) ? params.binaryMode : configuration.binaryMode;
   config.networkTechnology = (configuration.enableRandomTechnology) ? randomItem(["neataptic", "carrot"]) : configuration.networkTechnology;
 
   console.log(chalkAlert(MODULE_ID_PREFIX + " | NETWORK TECHNOLOGY: " + config.networkTechnology));
@@ -2002,7 +2012,8 @@ async function generateRandomEvolveConfig(){
 
   config.activation = randomItem(configuration.activationArray);
   config.amount = configuration.evolve.amount;
-  config.clear = randomItem([true, false]);
+  // config.clear = randomItem([true, false]);
+  config.clear = false;
 
   // neataptic doesn't have WAPE cost
 
@@ -2022,7 +2033,7 @@ async function generateRandomEvolveConfig(){
   config.mutation_rate = randomFloat(EVOLVE_MUTATION_RATE_RANGE.min, EVOLVE_MUTATION_RATE_RANGE.max);
   config.popsize = configuration.evolve.popsize;
   config.population_size = configuration.evolve.popsize;
-  config.provenance = 0;
+  config.provenance = configuration.evolve.provenance;
   config.selection = randomItem(configuration.selectionArray);
   config.threads = configuration.evolve.threads;
 
@@ -2143,6 +2154,7 @@ async function generateRandomEvolveConfig(){
 async function initNetworkCreate(params){
 
   const childId = params.childId;
+  const binaryMode = (params.binaryMode !== undefined) ? params.binaryMode : configuration.binaryMode;
   const networkId = params.networkId;
   const compareTechFlag = params.compareTechFlag;
 
@@ -2177,7 +2189,7 @@ async function initNetworkCreate(params){
       configuration.previousChildConfig = false;
     }
     else {
-      childConf = await generateRandomEvolveConfig();
+      childConf = await generateRandomEvolveConfig({binaryMode: binaryMode});
       configuration.previousChildConfig = childConf;
     }
 
@@ -2193,7 +2205,7 @@ async function initNetworkCreate(params){
         messageObj.childId = childId;
         messageObj.op = "CONFIG_EVOLVE";
         messageObj.testRunId = networkId;
-        messageObj.outputs = {};
+        messageObj.outputs = [];
         messageObj.outputs = ["left", "neutral", "right"];
 
         messageObj.betterChild = false;
@@ -3126,6 +3138,16 @@ async function loadConfigFile(params) {
       }
       if ((loadedConfigObj.TNN_ENABLE_RANDOM_NETWORK_TECHNOLOGY === false) || (loadedConfigObj.TNN_ENABLE_RANDOM_NETWORK_TECHNOLOGY === "false")) {
         newConfiguration.enableRandomTechnology = false;
+      }
+    }
+
+    if (loadedConfigObj.TNN_BINARY_MODE !== undefined) {
+      console.log(MODULE_ID_PREFIX + " | LOADED TNN_BINARY_MODE: " + loadedConfigObj.TNN_BINARY_MODE);
+      if ((loadedConfigObj.TNN_BINARY_MODE === true) || (loadedConfigObj.TNN_BINARY_MODE === "true")) {
+        newConfiguration.binaryMode = true;
+      }
+      if ((loadedConfigObj.TNN_BINARY_MODE === false) || (loadedConfigObj.TNN_BINARY_MODE === "false")) {
+        newConfiguration.binaryMode = false;
       }
     }
 
@@ -4177,43 +4199,60 @@ function getNewNetworkId(p){
 
 async function startNetworkCreate(params){
 
-  const networkId = getNewNetworkId();
+  try{
+    const networkId = getNewNetworkId();
 
-  childHashMap[params.childId].currentNetworkId = networkId;
+    childHashMap[params.childId].currentNetworkId = networkId;
 
-  console.log(chalkBlue(MODULE_ID_PREFIX + " | START EVOLVE CHILD"
-    + " | CHILD: " + params.childId
-    + " | NETWORK ID: " + networkId
-  ));
+    console.log(chalkBlue(MODULE_ID_PREFIX + " | START EVOLVE CHILD"
+      + " | CHILD: " + params.childId
+      + " | NETWORK ID: " + networkId
+    ));
 
-  await initNetworkCreate({childId: params.childId, networkId: networkId, compareTechFlag: params.compareTechFlag});
+    await initNetworkCreate({childId: params.childId, networkId: networkId, binaryMode: params.binaryMode, compareTechFlag: params.compareTechFlag});
 
-  return;
+    return;
+  }
+  catch(err){
+    throw err;
+  }
 }
 
-function childStartAll(){
+function childStartAll(p){
 
   return new Promise(function(resolve, reject){
 
+      const params = p || {};
+      const binaryMode = (params.binaryMode !== undefined) ? params.binaryMode : configuration.binaryMode;
+
       console.log(chalkBlue(MODULE_ID_PREFIX + " | START EVOLVE ALL CHILDREN: " + Object.keys(childHashMap).length));
 
-      async.eachSeries(Object.keys(childHashMap), async function(childId) {
+      async.eachSeries(Object.keys(childHashMap), function(childId, cb) {
 
         if (childHashMap[childId] !== undefined){
-          try {
-            await startNetworkCreate({childId: childId, compareTechFlag: true});
-            return;
-          }
-          catch(err){
-            return err;
-          }
+          // try {
+          //   await startNetworkCreate({childId: childId, binaryMode: params.binaryMode, compareTechFlag: true});
+          //   return;
+          // }
+          // catch(err){
+          //   return err;
+          // }
+          startNetworkCreate({childId: childId, binaryMode: binaryMode, compareTechFlag: true})
+          .then(function(){
+            cb();
+          })
+          .catch(function(err){
+            return cb(err);
+          })
         }
-
-        return;
+        else{
+          console.log(chalkAlert(MODULE_ID_PREFIX + " | *** CHILD NOT IN childHashMap: " + childId))
+          cb();
+        }
 
       }, function(err){
         if (err) {
-          console.log(chalkError("TNN | *** CHILD START ALL ERROR: " + err));
+          console.log(chalkError(MODULE_ID_PREFIX + " | *** CHILD START ALL ERROR: " + err));
           return reject(err);
         }
         resolve();
@@ -4321,6 +4360,7 @@ async function childInit(p){
 
   const command = {
     op: "INIT",
+    moduleIdPrefix: childIdShort,
     childId: childId,
     childIdShort: childIdShort,
     testMode: testMode,
@@ -4763,7 +4803,7 @@ async function childCreate(p){
 
             if (!configuration.quitOnComplete){
               try{
-                await startNetworkCreate({childId: childId, compareTechFlag: true});
+                await startNetworkCreate({childId: childId, binaryMode: params.binaryMode, compareTechFlag: true});
               }
               catch(err){
                 console.log(chalkError(MODULE_ID_PREFIX 
