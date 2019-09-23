@@ -4466,6 +4466,8 @@ async function childCreate(p){
 
           console.log(chalkLog(MODULE_ID_PREFIX 
             + " | " + m.childIdShort 
+            + " | " + m.stats.networkTechnology.toUpperCase()
+            + " | BIN: " + m.stats.binaryMode
             + " | " + m.stats.networkId
             + " | " + m.stats.inputsId
             + " | ERR " + error
