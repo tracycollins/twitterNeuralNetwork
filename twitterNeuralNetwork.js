@@ -1680,11 +1680,11 @@ async function validateNetwork(params){
     return;
   }
 
-  // if(empty(networkObj.inputsObj)) {
-  //   console.log(chalkError(MODULE_ID_PREFIX + " | *** NETWORK INPUTS OBJ UNDEFINED"
-  //     + " | " + networkObj.networkId));
-  //   return;
-  // }
+  if(empty(networkObj.network)) {
+    console.log(chalkError(MODULE_ID_PREFIX + " | *** NETWORK NETWORK OBJ UNDEFINED"
+      + " | " + networkObj.networkId));
+    return;
+  }
 
   try {
 
@@ -1696,9 +1696,12 @@ async function validateNetwork(params){
 
     delete networkObj._id;
 
-    if (!networkObj.networkRaw || (networkObj.networkRaw === undefined)){
+    if (networkObj.network && (!networkObj.networkRaw || (networkObj.networkRaw === undefined))){
 
-      console.log(chalkAlert(MODULE_ID_PREFIX + " | ... CREATING RAW NETWORK | " + networkObj.networkId));
+      console.log(chalkAlert(MODULE_ID_PREFIX + " | ... CREATING RAW NETWORK"
+        + " | TECH: " + networkObj.networkTechnology
+        + " | " + networkObj.networkId
+      ));
 
       if (networkObj.networkTechnology === "carrot"){
         networkObj.networkRaw = carrot.Network.fromJSON(networkObj.network);
@@ -1718,6 +1721,7 @@ async function validateNetwork(params){
   }
   catch(err){
     console.trace(chalkError("validateNetwork ERROR: " + err));
+    quit({cause: "validateNetwork ERROR"});
     throw err;
   }
 }
@@ -1978,6 +1982,7 @@ function generateSeedInputsNetworkId(params){
         const randomNetworkId = randomItem([...randomNetworkIdSet]);
 
         config.seedNetworkId = randomNetworkId;
+        config.seedInputsId = randomInputsId;
         config.isBetterChildSeed = false;
 
         console.log(chalkBlueBold(MODULE_ID_PREFIX
@@ -2142,6 +2147,10 @@ async function generateRandomEvolveConfig(p){
     }
   }
   else { // not seed network
+
+    if (!config.seedInputsId && (config.seedInputsId === undefined)){
+
+    }
 
     if (config.seedInputsId && (config.seedInputsId !== undefined) && inputsSet.has(config.seedInputsId)) {
 
