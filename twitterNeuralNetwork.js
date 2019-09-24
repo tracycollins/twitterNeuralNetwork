@@ -1893,6 +1893,8 @@ function generateSeedInputsNetworkId(params){
 
   return new Promise(function(resolve, reject){
 
+    console.log(chalkLog(MODULE_ID_PREFIX + " | ... GENERATE SEED INPUTS/NETWORK ..."));
+
     const config = params.config || {};
 
     //
@@ -1914,7 +1916,7 @@ function generateSeedInputsNetworkId(params){
     }
     
     //
-    // no better children, so try an input set with no networks
+    // no better children, so try a viable input set
     //
     
     const viableInputsIdArray = [...inputsViableSet].sort();
@@ -1923,17 +1925,17 @@ function generateSeedInputsNetworkId(params){
 
     if (availableInputsIdArray.size > 0) {
 
-      console.log(chalkLog(MODULE_ID_PREFIX + " | AVAILABLE NO NETWORKS INPUTS: " + availableInputsIdArray.length));
+      console.log(chalkLog(MODULE_ID_PREFIX + " | VIABLE NETWORKS INPUTS: " + availableInputsIdArray.length));
 
       availableInputsIdArray.sort();
 
       config.seedInputsId = availableInputsIdArray.pop(); // most recent input
 
       console.log(chalkBlueBold(MODULE_ID_PREFIX
-        + " | NO NETWORKS RANDOM INPUT"
-        + " | INPUT NO NETWORKS SET: " + inputsViableSet.size
-        + " | AVAIL NO NETWORKS INPUTS: " + availableInputsIdArray.length
-        + " | " + config.seedInputsId
+        + " | VIABLE INPUT"
+        + " | VIABLE INPUTS: " + inputsViableSet.size
+        + " | AVAIL INPUTS: " + availableInputsIdArray.length
+        + " | SEED INPUTS: " + config.seedInputsId
       ));
 
       return resolve(config);
@@ -1949,11 +1951,21 @@ function generateSeedInputsNetworkId(params){
 
       const randomInputsId = randomItem(Object.keys(inputsIdHashMap));
       const randomNetworkIdSet = inputsIdHashMap[randomInputsId];
-      const randomNetworkId = randomItem([...randomNetworkIdSet]);
 
-      config.seedNetworkId = randomNetworkId;
-      config.isBetterChildSeed = false;
-      return resolve(config);
+      if (randomNetworkIdSet.size > 0) {
+
+        const randomNetworkId = randomItem([...randomNetworkIdSet]);
+
+        config.seedNetworkId = randomNetworkId;
+        config.isBetterChildSeed = false;
+
+        console.log(chalkBlueBold(MODULE_ID_PREFIX
+          + " | USE RANDOM SEED NETWORK"
+          + " | " + config.seedNetworkId
+        ));
+
+        return resolve(config);
+      }
     }
 
     //
@@ -1966,6 +1978,7 @@ function generateSeedInputsNetworkId(params){
       ));
       return reject(new Error("EMPTY INPUTS SET"));
     }
+    
     config.seedInputsId = randomItem([...inputsSet]);
 
     console.log(chalkLog(MODULE_ID_PREFIX
@@ -2037,7 +2050,7 @@ async function generateRandomEvolveConfig(p){
   config.selection = randomItem(configuration.selectionArray);
   config.threads = configuration.evolve.threads;
 
-  if (configuration.enableSeedNetwork && config.seedNetworkId && networkIdSet.has(config.seedNetworkId)) {
+  if (configuration.enableSeedNetwork && config.seedNetworkId && (config.seedNetworkId !== undefined) && networkIdSet.has(config.seedNetworkId)) {
 
     let networkObj = {};
 
@@ -2104,8 +2117,9 @@ async function generateRandomEvolveConfig(p){
       config.selection = networkObj.evolve.options.selection || networkObj.evolve.options.selection;
     }
   }
-  else {
-    if (inputsSet.has(config.seedInputsId)) {
+  else { // not seed network
+
+    if (config.seedInputsId && (config.seedInputsId !== undefined) && inputsSet.has(config.seedInputsId)) {
 
       console.log(chalkLog(MODULE_ID_PREFIX + " | USE SEED INPUTS ID | " + config.seedInputsId));
 
