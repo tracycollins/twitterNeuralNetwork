@@ -35,6 +35,9 @@ console.log("HOST NAME:    " + hostname);
 console.log("=========================================");
 console.log("=========================================");
 
+const neataptic = require("neataptic");
+const carrot = require("@liquid-carrot/carrot");
+
 const carrotEvolveOptionsPickArray = [
   "activation",
   "amount",
@@ -897,7 +900,7 @@ async function printNetworkObj(title, nObj, format) {
   try {
     const networkObj = await networkDefaults(nObj);
     console.log(chalkFormat(title
-      + " | TECH: " + networkObj.networkTechnology
+      + " | TECH: " + networkObj.networkTechnology.slice(0,4).toUpperCase()
       + " | OAMR: " + networkObj.overallMatchRate.toFixed(2) + "%"
       + " | MR: " + networkObj.matchRate.toFixed(2) + "%"
       + " | SR: " + networkObj.successRate.toFixed(2) + "%"
@@ -1051,8 +1054,8 @@ function printResultsHashmap(){
       ];
 
       for(let i=0; i<tableEntry.length; i++){
-        if (!tableEntry[i] || tableEntry[i] == undefined || tableEntry[i] === null) {
-          console.log(chalkAlert(MODULE_ID_PREFIX + " | TABLE INDEX: " + i + " | " + tableEntry[i]));
+        if (tableEntry[i] == undefined || tableEntry[i] === null) {
+          console.log(chalkAlert(MODULE_ID_PREFIX + " | *** TABLE INDEX: " + i + " | " + tableEntry[i]));
         }
       }
 
@@ -1583,7 +1586,7 @@ async function updateDbNetwork(params) {
 
     if (verbose) { printNetworkObj(MODULE_ID_PREFIX + " | +++ NN DB UPDATED", nnDbUpdated); }
 
-    const nnObj = deepcopy(nnDbUpdated.toObject());
+    const nnObj = nnDbUpdated.toObject();
     delete nnObj._id;
 
     return nnObj;
@@ -1647,58 +1650,76 @@ function listFolders(params){
   });
 }
 
-function validateNetwork(params){
+async function validateNetwork(params){
 
-  return new Promise(function(resolve, reject){
+  if (empty(params) || empty(params.networkObj) || empty(params.networkId)) {
+    console.log(chalkError(MODULE_ID_PREFIX + " | validateNetwork *** PARAMS UNDEFINED ???\nPARAMS\n" + jsonPrint(params)));
+    throw new Error("params undefined");
+  }
 
-    if (empty(params) || empty(params.networkObj) || empty(params.networkId)) {
-      console.log(chalkError(MODULE_ID_PREFIX + " | validateNetwork *** PARAMS UNDEFINED ???\nPARAMS\n" + jsonPrint(params)));
-      return reject(new Error("params undefined"));
+  let networkObj = params.networkObj;
+
+  if (networkObj.networkId !== params.networkId) {
+    console.log(chalkError(MODULE_ID_PREFIX + " | *** NETWORK ID MISMATCH"
+      + " | " + networkObj.networkId 
+      + " | " + params.networkId
+    ));
+    return;
+  }
+
+  if(empty(networkObj.numInputs)) {
+    console.log(chalkError(MODULE_ID_PREFIX + " | *** NETWORK NETWORK numInputs UNDEFINED"
+      + " | " + networkObj.networkId
+    ));
+    return;
+  }
+
+  if(empty(networkObj.inputsId)) {
+    console.log(chalkError(MODULE_ID_PREFIX + " | *** NETWORK INPUTS ID UNDEFINED"
+      + " | " + networkObj.networkId));
+    return;
+  }
+
+  // if(empty(networkObj.inputsObj)) {
+  //   console.log(chalkError(MODULE_ID_PREFIX + " | *** NETWORK INPUTS OBJ UNDEFINED"
+  //     + " | " + networkObj.networkId));
+  //   return;
+  // }
+
+  try {
+
+    networkObj = await networkDefaults(networkObj);
+
+    if (networkObj.toObject !== undefined){
+      networkObj = networkObj.toObject();
     }
 
-    const networkObj = params.networkObj;
+    delete networkObj._id;
 
-    if (networkObj.networkId !== params.networkId) {
-      console.log(chalkError(MODULE_ID_PREFIX + " | *** NETWORK ID MISMATCH"
-        + " | " + networkObj.networkId 
-        + " | " + params.networkId
-      ));
-      return resolve();
+    if (!networkObj.networkRaw || (networkObj.networkRaw === undefined)){
+
+      console.log(chalkAlert(MODULE_ID_PREFIX + " | ... CREATING RAW NETWORK | " + networkObj.networkId));
+
+      if (networkObj.networkTechnology === "carrot"){
+        networkObj.networkRaw = carrot.Network.fromJSON(networkObj.network);
+      }
+      else { // assume neataptic
+        networkObj.networkTechnology = "neataptic";
+        networkObj.networkRaw = neataptic.Network.fromJSON(networkObj.network);
+      }
+
     }
 
-    if(empty(networkObj.numInputs)) {
-      console.log(chalkError(MODULE_ID_PREFIX + " | *** NETWORK NETWORK numInputs UNDEFINED"
-        + " | " + networkObj.networkId
-      ));
-      return resolve();
+    if (!networkObj.hiddenLayerSize || (networkObj.hiddenLayerSize === undefined)){
+      networkObj.hiddenLayerSize = await calculateHiddenLayerSize({networkObj: networkObj});
     }
-
-    if(empty(networkObj.inputsId)) {
-      console.log(chalkError(MODULE_ID_PREFIX + " | *** NETWORK INPUTS ID UNDEFINED"
-        + " | " + networkObj.networkId));
-      return resolve();
-    }
-
-    if(empty(networkObj.inputsObj)) {
-      console.log(chalkError(MODULE_ID_PREFIX + " | *** NETWORK INPUTS OBJ UNDEFINED"
-        + " | " + networkObj.networkId));
-      return resolve();
-    }
-
-    try {
-      const nnObj = networkDefaults(networkObj);
-      
-      delete nnObj._id;
-
-      resolve(nnObj);
-    }
-    catch(err){
-      console.trace(chalkError("validateNetwork ERROR: " + err));
-      return;
-    }
-
-
-  });
+    
+    return networkObj;
+  }
+  catch(err){
+    console.trace(chalkError("validateNetwork ERROR: " + err));
+    throw err;
+  }
 }
 
 function networkPass(params) {
@@ -1978,7 +1999,7 @@ function generateSeedInputsNetworkId(params){
       ));
       return reject(new Error("EMPTY INPUTS SET"));
     }
-    
+
     config.seedInputsId = randomItem([...inputsSet]);
 
     console.log(chalkLog(MODULE_ID_PREFIX
@@ -2055,6 +2076,7 @@ async function generateRandomEvolveConfig(p){
     let networkObj = {};
 
     try{
+
       const dbNetworkObj = await global.globalNeuralNetwork.findOne({ networkId: config.seedNetworkId });
 
       if (!dbNetworkObj) {
@@ -2062,23 +2084,25 @@ async function generateRandomEvolveConfig(p){
         throw new Error("NN not found: " + networkObj.inputsId);
       }
 
-      networkObj = deepcopy(dbNetworkObj.toObject());
-      delete networkObj._id;
+      networkObj = await validateNetwork({networkId: dbNetworkObj.networkId, networkObj: dbNetworkObj});
 
-      if (!networkObj.hiddenLayerSize || (networkObj.hiddenLayerSize === undefined)){
-        config.hiddenLayerSize = await calculateHiddenLayerSize({networkObj: networkObj});
-        networkObj.hiddenLayerSize = config.hiddenLayerSize;
+      if (empty(networkObj)) {
+        console.log(chalkInfo(MODULE_ID_PREFIX + " | ??? INVALID NETWORK ... PURGING"
+          + " | " + path
+        ));
+        // await purgeNetwork(nnObj.networkId);
+        throw new Error("INVALID NETWORK: " + networkObj.networkId);
       }
-      else{
-        config.hiddenLayerSize = networkObj.hiddenLayerSize;
-      }
+
+      config.hiddenLayerSize = (networkObj.hiddenLayerSize && (networkObj.hiddenLayerSize !== undefined)) ? networkObj.hiddenLayerSize : 0;
+
     }
     catch(err){
       console.log(chalkError(MODULE_ID_PREFIX + " | *** DB FIND NN ERROR | " + config.seedNetworkId));
       throw new Error("NN not found: " + networkObj.inputsId);
     }
 
-    config.networkObj = deepcopy(networkObj);
+    config.networkObj = networkObj;
     config.architecture = "loadedNetwork";
     config.inputsId = networkObj.inputsId;
     config.inputsObj = {};
@@ -4557,6 +4581,8 @@ async function childCreate(p){
             console.log(chalkError(MODULE_ID_PREFIX + " | NN DB DOC SIZE: " + objSize.toFixed(2) + " MB")); 
 
             newNeuralNetwork.markModified("overallMatchRate");
+            newNeuralNetwork.markModified("network");
+            newNeuralNetwork.markModified("networkRaw");
 
             await newNeuralNetwork.save();
 

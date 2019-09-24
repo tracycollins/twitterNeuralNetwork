@@ -125,6 +125,7 @@ const compactDateTimeFormat = "YYYYMMDD_HHmmss";
 //=========================================================================
 const neataptic = require("neataptic");
 const carrot = require("@liquid-carrot/carrot");
+// const carrot = require("@liquid-carrot/carrot/dist/carrot.commonjs2.js");
 
 let networkTech = carrot;
 
@@ -1450,7 +1451,7 @@ const ignoreKeyArray = [
 
 function createNetwork(){
 
-  return new Promise(function(resolve){
+  return new Promise(function(resolve, reject){
 
     let network;
 
@@ -1460,21 +1461,41 @@ function createNetwork(){
 
       case "loadedNetwork":
 
-        if (childNetworkObj.networkTechnology === "neataptic"){
-          network = neataptic.Network.fromJSON(childNetworkObj.network);
+        if (!empty(childNetworkObj.networkRaw) && (childNetworkObj.networkRaw.evolve !== undefined)){
+          network = childNetworkObj.networkRaw;
+        }
+        else if (childNetworkObj.networkTechnology === "carrot"){
+          if (childNetworkObj.network.evolve !== undefined){
+            network = childNetworkObj.network;
+          }
+          else{
+            try {
+              network = carrot.Network.fromJSON(childNetworkObj.network);
+            }
+            catch(err){
+              console.log(chalkError(MODULE_ID_PREFIX + " | *** ERROR CREATE NETWORK | CARROT fromJSON: " + err));
+              return reject(err);
+            }
+          }
+        }
+        else { // assume neataptic
+          try {
+            network = neataptic.Network.fromJSON(childNetworkObj.network);
+          }
+          catch(err){
+            console.log(chalkError(MODULE_ID_PREFIX + " | *** ERROR CREATE NETWORK | NEATAPTIC fromJSON: " + err));
+            return reject(err);
+          }
         }
 
-        if (childNetworkObj.networkTechnology === "carrot"){
-          network = childNetworkObj.network;
-        }
-
-        console.log("NNC"
+        console.log(MODULE_ID_PREFIX
           + " | " + configuration.childId
           + " | " + childNetworkObj.networkTechnology.toUpperCase()
           + " | EVOLVE ARCH | LOADED: " + childNetworkObj.networkId
           + " | IN: " + network.input
           + " | OUT: " + network.output
         );
+
         resolve(network);
 
       break;
@@ -1635,6 +1656,8 @@ function networkEvolve(){
 
     if (!params.architecture || (params.architecture === undefined)) { params.architecture = "perceptron"; }
     if (!params.networkTechnology || (params.networkTechnology === undefined)) { params.networkTechnology = configuration.networkTechnology; }
+
+    networkTech = (params.networkTechnology == "carrot") ? carrot : neataptic;
 
     statsObj.evolve.startTime = moment().valueOf();
     statsObj.evolve.elapsed = 0;
