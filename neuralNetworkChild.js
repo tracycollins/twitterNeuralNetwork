@@ -1230,7 +1230,7 @@ async function testNetwork(p){
   return;
 }
 
-function prepNetworkEvolve() {
+async function prepNetworkEvolve() {
 
   console.log(chalkBlueBold(MODULE_ID_PREFIX + " | >>> START NETWORK EVOLVE"
     + " | " + getTimeStamp()
@@ -1581,16 +1581,16 @@ async function evolve(params){
 
   try {
 
+    const binaryMode = (params.binaryMode !== undefined) ? params.binaryMode : configuration.binaryMode;
+
     await tcUtils.loadInputs({inputsObj: childNetworkObj.inputsObj});
     await tcUtils.setPrimaryInputs({inputsId: childNetworkObj.inputsObj.inputsId});
-    const trainingSet = await trainingSetPrep(params);
+
+    const trainingSet = await trainingSetPrep({binaryMode: binaryMode});
 
     const childNetwork = await createNetwork();
 
     const preppedOptions = await prepNetworkEvolve();
-
-    // console.log("preppedOptions\n" + jsonPrint(preppedOptions));
-    // console.log(preppedOptions);
 
     const evolveResults = await childNetwork.evolve(trainingSet, preppedOptions);
 
@@ -1629,7 +1629,7 @@ async function evolve(params){
       + "\n======================================================="
     ));
 
-    await testNetwork();
+    await testNetwork({binaryMode: binaryMode});
 
     return;
   }
@@ -1646,6 +1646,8 @@ function networkEvolve(){
 
     const params = childNetworkObj.evolve.options;
 
+    const binaryMode = params.binaryMode || configuration.binaryMode;
+    
     const options = {};
 
     if (params.seedNetworkId) {
@@ -1714,7 +1716,7 @@ function networkEvolve(){
 
     }, function(){
 
-      evolve()
+      evolve({binaryMode: binaryMode})
       .then(function(){
         resolve();
       })
