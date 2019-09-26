@@ -1714,7 +1714,12 @@ async function validateNetwork(params){
       ));
 
       if (networkObj.networkTechnology === "carrot"){
-        networkObj.networkRaw = carrot.Network.fromJSON(networkObj.network);
+        if (networkObj.network.evolve == undefined) {
+          networkObj.networkRaw = carrot.Network.fromJSON(networkObj.network);
+        }
+        else{
+          networkObj.networkRaw = networkObj.network;
+        }
       }
       else { // assume neataptic
         networkObj.networkTechnology = "neataptic";
