@@ -1629,6 +1629,14 @@ async function evolve(params){
       + "\n======================================================="
     ));
 
+    if (evolveResults.iterations != childNetworkObj.evolve.options.iterations) {
+      console.log(chalkError(MODULE_ID_PREFIX + " | *** EVOLVE ERROR: ITERATIONS"
+        + " | EXPECTED: " + childNetworkObj.evolve.options.iterations
+        + " | ACTUAL: " + evolveResults.iterations
+      ));
+      throw new Error("EVOLVE ITERATIONS");
+    }
+
     await testNetwork({binaryMode: binaryMode});
 
     return;
