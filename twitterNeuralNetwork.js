@@ -1183,7 +1183,7 @@ async function updateDbInputs(params){
 
   try{
 
-    const inputsObj = await global.globalNetworkInputs.findOne(query);
+    const inputsObj = await global.globalNetworkInputs.findOne(query).exec();
 
     if (inputsObj) {
 
@@ -2095,7 +2095,7 @@ async function generateRandomEvolveConfig(p){
 
     try{
 
-      const dbNetworkObj = await global.globalNeuralNetwork.findOne({ networkId: config.seedNetworkId });
+      const dbNetworkObj = await global.globalNeuralNetwork.findOne({ networkId: config.seedNetworkId }).exec();
 
       if (!dbNetworkObj) {
         console.log(chalkError(MODULE_ID_PREFIX + " | *** DB FIND SEED NN ERROR | " + config.seedNetworkId));
@@ -2118,7 +2118,7 @@ async function generateRandomEvolveConfig(p){
       config.inputsId = config.networkObj.inputsId;
       config.inputsObj = {};
 
-      config.inputsObj = await global.globalNetworkInputs.findOne({ inputsId: config.networkObj.inputsId }).lean();
+      config.inputsObj = await global.globalNetworkInputs.findOne({ inputsId: config.networkObj.inputsId }).lean().exec();
 
       console.log(MODULE_ID_PREFIX + " | SEED NETWORK: " + config.networkObj.networkId);
       console.log(MODULE_ID_PREFIX + " | HIDDEN NODES: " + config.networkObj.hiddenLayerSize);
@@ -2169,7 +2169,7 @@ async function generateRandomEvolveConfig(p){
       config.inputsObj = {};
 
       try{
-        const inputsObj = await global.globalNetworkInputs.findOne({inputsId: config.seedInputsId});
+        const inputsObj = await global.globalNetworkInputs.findOne({inputsId: config.seedInputsId}).exec();
 
         if (!inputsObj) {
           console.log(chalkError("TNN | *** LOAD INPUTS ERROR | NOT FOUND"
