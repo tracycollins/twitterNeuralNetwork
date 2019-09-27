@@ -2093,73 +2093,72 @@ async function generateRandomEvolveConfig(p){
 
   if (configuration.enableSeedNetwork && config.seedNetworkId && (config.seedNetworkId !== undefined) && networkIdSet.has(config.seedNetworkId)) {
 
-    let networkObj = {};
-
     try{
 
       const dbNetworkObj = await global.globalNeuralNetwork.findOne({ networkId: config.seedNetworkId });
 
       if (!dbNetworkObj) {
-        console.log(chalkError(MODULE_ID_PREFIX + " | *** DB FIND NN ERROR | " + config.seedNetworkId));
-        throw new Error("NN not found: " + networkObj.inputsId);
+        console.log(chalkError(MODULE_ID_PREFIX + " | *** DB FIND SEED NN ERROR | " + config.seedNetworkId));
+        throw new Error("SEED NN not found: " + config.seedNetworkId);
       }
 
-      networkObj = await validateNetwork({networkId: dbNetworkObj.networkId, networkObj: dbNetworkObj});
+      config.networkObj = await validateNetwork({networkId: dbNetworkObj.networkId, networkObj: dbNetworkObj});
 
-      if (empty(networkObj)) {
+      if (empty(config.networkObj)) {
         console.log(chalkInfo(MODULE_ID_PREFIX + " | ??? INVALID NETWORK ... PURGING"
           + " | " + path
         ));
         // await purgeNetwork(nnObj.networkId);
-        throw new Error("INVALID NETWORK: " + networkObj.networkId);
+        throw new Error("INVALID NETWORK: " + config.networkObj.networkId);
       }
 
-      config.hiddenLayerSize = (networkObj.hiddenLayerSize && (networkObj.hiddenLayerSize !== undefined)) ? networkObj.hiddenLayerSize : 0;
+      config.hiddenLayerSize = (config.networkObj.hiddenLayerSize && (config.networkObj.hiddenLayerSize !== undefined)) ? config.networkObj.hiddenLayerSize : 0;
+
+      config.architecture = "loadedNetwork";
+      config.inputsId = config.networkObj.inputsId;
+      config.inputsObj = {};
+
+      config.inputsObj = await global.globalNetworkInputs.findOne({ inputsId: config.networkObj.inputsId }).lean();
+
+      console.log(MODULE_ID_PREFIX + " | SEED NETWORK: " + config.networkObj.networkId);
+      console.log(MODULE_ID_PREFIX + " | HIDDEN NODES: " + config.networkObj.hiddenLayerSize);
+      console.log(MODULE_ID_PREFIX + " | SEED INPUTS | " + config.networkObj.inputsId);
+
+      if (configuration.randomizeSeedOptions) {
+        console.log(chalkLog(MODULE_ID_PREFIX + " | RANDOMIZE SEED NETWORK OPTIONS | " + config.seedNetworkId));
+        config.activation = randomItem([config.activation, config.networkObj.evolve.options.activation]);
+        config.clear = randomItem([config.clear, config.networkObj.evolve.options.clear]);
+        config.cost = randomItem([config.cost, config.networkObj.evolve.options.cost]);
+        config.elitism = randomItem([config.elitism, config.networkObj.evolve.options.elitism]);
+        config.equal = randomItem([config.equal, config.networkObj.evolve.options.equal]);
+        config.error = randomItem([config.error, config.networkObj.evolve.options.error]);
+        config.fitness_population = randomItem([config.fitness_population, config.networkObj.evolve.options.fitness_population]);
+        config.growth = randomItem([config.growth, config.networkObj.evolve.options.growth]);
+        config.mutation_rate = randomItem([config.mutation_rate, (config.networkObj.evolve.options.mutation_rate || config.networkObj.evolve.options.mutationRate)]);
+        config.mutation_amount = randomItem([config.mutation_amount, (config.networkObj.evolve.options.mutation_amount || config.networkObj.evolve.options.mutationAmount)]);
+        config.selection = randomItem([config.selection, config.networkObj.evolve.options.selection]);
+      }
+      else {
+        console.log(chalkLog(MODULE_ID_PREFIX + " | USE SEED NETWORK OPTIONS | " + config.seedNetworkId));
+        config.activation = config.networkObj.evolve.options.activation;
+        config.clear = config.networkObj.evolve.options.clear;
+        config.cost = config.networkObj.evolve.options.cost;
+        config.elitism = config.networkObj.evolve.options.elitism;
+        config.equal = config.networkObj.evolve.options.equal;
+        config.error = config.networkObj.evolve.options.error;
+        config.growth = config.networkObj.evolve.options.growth;
+        config.mutation_rate = config.networkObj.evolve.options.mutation_rate || config.networkObj.evolve.options.mutationRate;
+        config.mutation_amount = config.networkObj.evolve.options.mutation_amount || config.networkObj.evolve.options.mutationAmount;
+        config.selection = config.networkObj.evolve.options.selection || config.networkObj.evolve.options.selection;
+      }
 
     }
     catch(err){
       console.log(chalkError(MODULE_ID_PREFIX + " | *** DB FIND NN ERROR | " + config.seedNetworkId));
-      throw new Error("NN not found: " + networkObj.inputsId);
+      throw new Error("NN not found: " + config.networkObj.inputsId);
     }
 
-    config.networkObj = networkObj;
-    config.architecture = "loadedNetwork";
-    config.inputsId = networkObj.inputsId;
-    config.inputsObj = {};
 
-    config.inputsObj = await global.globalNetworkInputs.findOne({ inputsId: networkObj.inputsId }).lean();
-
-    console.log(MODULE_ID_PREFIX + " | SEED NETWORK: " + config.networkObj.networkId);
-    console.log(MODULE_ID_PREFIX + " | HIDDEN NODES: " + networkObj.hiddenLayerSize);
-    console.log(MODULE_ID_PREFIX + " | SEED INPUTS | " + networkObj.inputsId);
-
-    if (configuration.randomizeSeedOptions) {
-      console.log(chalkLog(MODULE_ID_PREFIX + " | RANDOMIZE SEED NETWORK OPTIONS | " + config.seedNetworkId));
-      config.activation = randomItem([config.activation, networkObj.evolve.options.activation]);
-      config.clear = randomItem([config.clear, networkObj.evolve.options.clear]);
-      config.cost = randomItem([config.cost, networkObj.evolve.options.cost]);
-      config.elitism = randomItem([config.elitism, networkObj.evolve.options.elitism]);
-      config.equal = randomItem([config.equal, networkObj.evolve.options.equal]);
-      config.error = randomItem([config.error, networkObj.evolve.options.error]);
-      config.fitness_population = randomItem([config.fitness_population, networkObj.evolve.options.fitness_population]);
-      config.growth = randomItem([config.growth, networkObj.evolve.options.growth]);
-      config.mutation_rate = randomItem([config.mutation_rate, (networkObj.evolve.options.mutation_rate || networkObj.evolve.options.mutationRate)]);
-      config.mutation_amount = randomItem([config.mutation_amount, (networkObj.evolve.options.mutation_amount || networkObj.evolve.options.mutationAmount)]);
-      config.selection = randomItem([config.selection, networkObj.evolve.options.selection]);
-    }
-    else {
-      console.log(chalkLog(MODULE_ID_PREFIX + " | USE SEED NETWORK OPTIONS | " + config.seedNetworkId));
-      config.activation = networkObj.evolve.options.activation;
-      config.clear = networkObj.evolve.options.clear;
-      config.cost = networkObj.evolve.options.cost;
-      config.elitism = networkObj.evolve.options.elitism;
-      config.equal = networkObj.evolve.options.equal;
-      config.error = networkObj.evolve.options.error;
-      config.growth = networkObj.evolve.options.growth;
-      config.mutation_rate = networkObj.evolve.options.mutation_rate || networkObj.evolve.options.mutationRate;
-      config.mutation_amount = networkObj.evolve.options.mutation_amount || networkObj.evolve.options.mutationAmount;
-      config.selection = networkObj.evolve.options.selection || networkObj.evolve.options.selection;
-    }
   }
   else { // not seed network
 
