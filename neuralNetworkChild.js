@@ -125,9 +125,6 @@ const compactDateTimeFormat = "YYYYMMDD_HHmmss";
 //=========================================================================
 const neataptic = require("neataptic");
 const carrot = require("@liquid-carrot/carrot");
-// const carrot = require("@liquid-carrot/carrot/dist/carrot.commonjs2.js");
-
-let networkTech = carrot;
 
 const moment = require("moment");
 const pick = require("object.pick");
@@ -1219,6 +1216,7 @@ async function testNetwork(p){
 
   await nnTools.loadNetwork({networkObj: childNetworkObj, networkIsRaw: true});
   await nnTools.setPrimaryNeuralNetwork(childNetworkObj.networkId);
+  await nnTools.setBinaryMode(binaryMode);
 
   childNetworkObj.test = {};
   childNetworkObj.test.results = {};
@@ -1654,7 +1652,7 @@ function networkEvolve(){
 
     const params = childNetworkObj.evolve.options;
 
-    const binaryMode = params.binaryMode || configuration.binaryMode;
+    const binaryMode = (params.binaryMode != undefined) ? params.binaryMode : configuration.binaryMode;
     
     const options = {};
 
@@ -1667,7 +1665,7 @@ function networkEvolve(){
     if (!params.architecture || (params.architecture === undefined)) { params.architecture = "perceptron"; }
     if (!params.networkTechnology || (params.networkTechnology === undefined)) { params.networkTechnology = configuration.networkTechnology; }
 
-    networkTech = (params.networkTechnology == "carrot") ? carrot : neataptic;
+    const networkTech = (params.networkTechnology == "carrot") ? carrot : neataptic;
 
     statsObj.evolve.startTime = moment().valueOf();
     statsObj.evolve.elapsed = 0;
