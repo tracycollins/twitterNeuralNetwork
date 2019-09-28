@@ -9,7 +9,7 @@ const CHILD_PREFIX_SHORT = "NC";
 const DEFAULT_BINARY_MODE = true;
 const DEFAULT_COMPARE_TECH = false;
 
-const DEFAULT_MAX_FAIL_NETWORKS = 10;
+const DEFAULT_MAX_FAIL_NETWORKS = 20;
 
 const os = require("os");
 let hostname = os.hostname();
@@ -1250,7 +1250,7 @@ function checkInputsViability(p){
     return true;
   }
 
-  if (numPassNetworks > numFailNetworks){
+  if (numPassNetworks >= numFailNetworks){
     return true;
   }
 
@@ -1456,9 +1456,6 @@ async function loadNetworkFile(params){
 async function loadInputsFile(params){
 
   try {
-
-    // const maxFailNetworks = params.maxFailNetworks || configuration.maxFailNetworks;
-    // const minNetworksTotal = params.minNetworksTotal || configuration.minNetworksTotal;
 
     const inputsObj = await tcUtils.loadFileRetry({folder: params.folder, file: params.file});
 
@@ -3293,6 +3290,11 @@ async function loadConfigFile(params) {
       newConfiguration.maxNumberChildren = loadedConfigObj.TNN_MAX_NEURAL_NETWORK_CHILDREN;
     }
 
+    if (loadedConfigObj.TNN_MAX_FAIL_NETWORKS !== undefined){
+      console.log(MODULE_ID_PREFIX + " | LOADED TNN_MAX_FAIL_NETWORKS: " + loadedConfigObj.TNN_MAX_FAIL_NETWORKS);
+      newConfiguration.maxFailNetworks = loadedConfigObj.TNN_MAX_FAIL_NETWORKS;
+    }
+
     if (loadedConfigObj.TNN_SEED_NETWORK_PROBABILITY !== undefined){
       console.log(MODULE_ID_PREFIX + " | LOADED TNN_SEED_NETWORK_PROBABILITY: " + loadedConfigObj.TNN_SEED_NETWORK_PROBABILITY);
       newConfiguration.seedNetworkProbability = loadedConfigObj.TNN_SEED_NETWORK_PROBABILITY;
@@ -3375,7 +3377,7 @@ async function loadAllConfigFiles(){
   const defaultAndHostConfig = merge(defaultConfiguration, hostConfiguration); // host settings override defaults
   const tempConfig = merge(configuration, defaultAndHostConfig); // any new settings override existing config
 
-  configuration = deepcopy(tempConfig);
+  configuration = tempConfig;
 
   configuration.costArray = _.uniq(configuration.costArray);
   configuration.selectionArray = _.uniq(configuration.selectionArray);
