@@ -62,18 +62,17 @@ const carrotEvolveOptionsPickArray = [
   "provenance",
   "schedule",
   "selection",
-  "threads",
+  "threads"
 ];
 
 const neatapticEvolveOptionsPickArray = [
-  "amount",
+  // "amount",
   "clear",
   "cost",
   "crossover",
   "elitism",
   "equal",
   "error",
-  "fitnessPopulation",
   "growth",
   "iterations",
   "log",
@@ -86,10 +85,8 @@ const neatapticEvolveOptionsPickArray = [
   "provenance",
   "schedule",
   "selection",
-  "threads",
+  "threads"
 ];
-
-// const combinedEvolveOptionsPickArray = _.union(carrotEvolveOptionsPickArray, neatapticEvolveOptionsPickArray);
 
 const ThreeceeUtilities = require("@threeceelabs/threecee-utilities");
 const tcUtils = new ThreeceeUtilities("NNC_TCU");
