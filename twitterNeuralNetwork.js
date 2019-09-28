@@ -569,7 +569,6 @@ const DEFAULT_EVOLVE_COST_ARRAY = [
   "MAE",
   "MAPE",
   "MSE",
-  "MSLE",
   "WAPE"
 ];
 const DEFAULT_EVOLVE_SELECTION_ARRAY = [
