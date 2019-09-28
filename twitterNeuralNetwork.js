@@ -147,7 +147,6 @@ configuration.testMode = TEST_MODE;
 configuration.globalTestMode = GLOBAL_TEST_MODE;
 configuration.quitOnComplete = QUIT_ON_COMPLETE;
 configuration.statsUpdateIntervalTime = STATS_UPDATE_INTERVAL;
-// configuration.minNetworksTotal = DEFAULT_MIN_NETWORKS_TOTAL; // min # of attempts (pass+fail) before deciding to use inputsObj or not
 configuration.maxFailNetworks = DEFAULT_MAX_FAIL_NETWORKS;
 childConfiguration.primaryHost = configuration.primaryHost;
 childConfiguration.testMode = configuration.testMode;
@@ -467,7 +466,7 @@ statsObj.networkResults = {};
 const DEFAULT_LOAD_ALL_INPUTS = false;
 const DEFAULT_ARCHIVE_NOT_IN_INPUTS_ID_ARRAY = true;
 const DEFAULT_DELETE_NOT_IN_INPUTS_ID_ARRAY = false;
-const TEST_DROPBOX_NN_LOAD = 10;
+const TEST_DROPBOX_NN_LOAD = 15;
 const DEFAULT_CHILD_ID_PREFIX = "tnc_node_";
 
 if (hostname === "google") {
@@ -1710,7 +1709,7 @@ async function validateNetwork(params){
         + " | " + networkObj.networkId
       ));
 
-      if (networkObj.networkTechnology === "carrot"){
+      if (networkObj.networkTechnology == "carrot"){
         if (networkObj.network.evolve == undefined) {
           networkObj.networkRaw = carrot.Network.fromJSON(networkObj.network);
         }
@@ -2160,13 +2159,11 @@ async function generateRandomEvolveConfig(p){
       }
 
       return config;
-
     }
     catch(err){
       console.log(chalkError(MODULE_ID_PREFIX + " | *** DB FIND NN ERROR | " + config.seedNetworkId));
       throw new Error("NN not found: " + config.networkObj.inputsId);
     }
-
 
   }
   else { // not seed network
@@ -2658,7 +2655,10 @@ async function initConfig(cnf) {
     const configArgs = Object.keys(configuration);
 
     configArgs.forEach(function(arg){
-      if (_.isObject(configuration[arg])) {
+      if (arg == "inputsIdArray") {
+        console.log(MODULE_ID_PREFIX + " | _FINAL CONFIG | " + arg + ": " + configuration[arg].length + " INPUT IDS");
+      }
+      else if (_.isObject(configuration[arg])) {
         console.log(MODULE_ID_PREFIX + " | _FINAL CONFIG | " + arg + "\n" + jsonPrint(configuration[arg]));
       }
       else {
@@ -3729,7 +3729,7 @@ async function loadNetworkInputsConfig(params){
     console.log(chalkNetwork(MODULE_ID_PREFIX + " | LOADED NETWORK INPUTS ARRAY"
       + " | " + networkInputsObj.INPUTS_IDS.length + " ITEMS IN FILE"
       + " | " + configuration.inputsIdArray.length + " TOTAL ITEMS IN ARRAY"
-      + "\n" + jsonPrint(configuration.inputsIdArray) + " TOTAL ITEMS IN ARRAY"
+      // + "\n" + jsonPrint(configuration.inputsIdArray) + " TOTAL ITEMS IN ARRAY"
     ));
 
     statsObj.networkInputsSetReady = true;
@@ -4657,19 +4657,6 @@ async function childCreate(p){
               }
             }
 
-            // if (m.statsObj.evolve.results.iterations < nn.evolve.options.iterations) {
-
-            //   console.log(chalkError(MODULE_ID_PREFIX + " | XXX | NOT SAVING NN FILE TO DROPBOX ... EARLY COMPLETE?"
-            //     + " | " + nn.networkId
-            //     + " | ITRNS: " + m.statsObj.evolve.results.iterations
-            //     + " | MIN: " + configuration.globalMinSuccessRate.toFixed(2) + "%"
-            //     + " | " + nn.successRate.toFixed(2) + "%"
-            //   ));
-
-            //   resultsHashmap[nn.networkId].status = "FAIL";
-
-            //   printNetworkObj(MODULE_ID_PREFIX + " | " + nn.networkId, nn);
-            // }
             if ((nn.test.results.successRate < 100) && 
               ((nn.seedNetworkId && (nn.test.results.successRate > nn.seedNetworkRes)) // better than seed nn
               || (!nn.seedNetworkId && (nn.test.results.successRate >= configuration.localMinSuccessRate)) // no seed but better than local min
@@ -4678,14 +4665,6 @@ async function childCreate(p){
               )) { 
 
               // It's a Keeper!!
-
-              // if (empty(nn.inputsObj)) {
-              //   console.log(chalkAlert(MODULE_ID_PREFIX + " | *** nn.inputsObj UNDEFINED"
-              //     + " | NN ID: " + nn.networkId
-              //     + " | IN ID: " + nn.inputsId
-              //   ));
-                
-              // }
 
               await updateDbInputs({inputsId: nn.inputsId, networkId: nn.networkId});
 
@@ -4937,7 +4916,6 @@ async function childCreate(p){
     const childInitParams = {};
     childInitParams.childId = childId;
     childInitParams.childIdShort = childIdShort;
-    // childInitParams.config = configArgs;
     childInitParams.configuration = childConfiguration;
     childInitParams.trainingSetsFolder = configuration.trainingSetsFolder;
     childInitParams.testMode = configuration.testMode;
@@ -4956,9 +4934,9 @@ async function childCreate(p){
       shell.cd(childPidFolderLocal);
       shell.rm(childPidFile);
 
-      if ((childHashMap[childId] !== undefined) && childHashMap[childId].currentNetworkId) {
-        resultsHashmap[childHashMap[childId].currentNetworkId].status = "CHILD CLOSED";
-      }
+      // if ((childHashMap[childId] !== undefined) && childHashMap[childId].currentNetworkId) {
+      //   resultsHashmap[childHashMap[childId].currentNetworkId].status = "CHILD CLOSED";
+      // }
 
       delete childHashMap[childId];
     });
@@ -4970,9 +4948,9 @@ async function childCreate(p){
       shell.cd(childPidFolderLocal);
       shell.rm(childPidFile);
 
-      if ((childHashMap[childId] !== undefined) && childHashMap[childId].currentNetworkId) {
-        resultsHashmap[childHashMap[childId].currentNetworkId].status = "CHILD EXIT";
-      }
+      // if ((childHashMap[childId] !== undefined) && childHashMap[childId].currentNetworkId) {
+      //   resultsHashmap[childHashMap[childId].currentNetworkId].status = "CHILD EXIT";
+      // }
 
       delete childHashMap[childId];
 
