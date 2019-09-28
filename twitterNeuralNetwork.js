@@ -848,25 +848,22 @@ const statsPickArray = [
 
 statsObjSmall = pick(statsObj, statsPickArray);
 
-function networkDefaults(networkObj){
+async function networkDefaults(networkObj){
 
-  return new Promise(function(resolve, reject){
+  if (empty(networkObj)) {
+    console.trace(chalkError("networkDefaults ERROR: networkObj UNDEFINED"));
+    throw new Error("networkDefaults ERROR: networkObj UNDEFINED");
+  }
 
-    if (empty(networkObj)) {
-      console.trace(chalkError("networkDefaults ERROR: networkObj UNDEFINED"));
-      return reject(new Error("networkDefaults ERROR: networkObj UNDEFINED"));
-    }
+  if(empty(networkObj.networkTechnology)) { networkObj.networkTechnology = "neataptic"; }
+  if(empty(networkObj.betterChild)) { networkObj.betterChild = false; }
+  if(empty(networkObj.testCycles)) { networkObj.testCycles = 0; }
+  if(empty(networkObj.testCycleHistory)) { networkObj.testCycleHistory = []; }
+  if(empty(networkObj.overallMatchRate)) { networkObj.overallMatchRate = 0; }
+  if(empty(networkObj.matchRate)) { networkObj.matchRate = 0; }
+  if(empty(networkObj.successRate)) { networkObj.successRate = 0; }
 
-    if(empty(networkObj.networkTechnology)) { networkObj.networkTechnology = "neataptic"; }
-    if(empty(networkObj.betterChild)) { networkObj.betterChild = false; }
-    if(empty(networkObj.testCycles)) { networkObj.testCycles = 0; }
-    if(empty(networkObj.testCycleHistory)) { networkObj.testCycleHistory = []; }
-    if(empty(networkObj.overallMatchRate)) { networkObj.overallMatchRate = 0; }
-    if(empty(networkObj.matchRate)) { networkObj.matchRate = 0; }
-    if(empty(networkObj.successRate)) { networkObj.successRate = 0; }
-
-    return resolve(networkObj);
-  });
+  return networkObj;
 }
 
 function printInputsObj(title, inputsObj, format) {
@@ -1230,7 +1227,7 @@ async function updateDbInputs(params){
       return niDbUpdated;
     }
     else {
-      
+      throw new Error("updateDbInputs | INPUTS NOT IN DB + no INPUTS OBJ PARAM");
     }
   }
   catch(e){
@@ -1709,10 +1706,28 @@ async function validateNetwork(params){
       ));
 
       if (networkObj.networkTechnology == "carrot"){
-        if (networkObj.network.evolve == undefined) {
-          networkObj.networkRaw = carrot.Network.fromJSON(networkObj.network);
+        if (networkObj.network.activate == undefined) {
+          console.log(chalkAlert(MODULE_ID_PREFIX + " | ... RAW NETWORK FROM JSON"
+            + " | TECH: " + networkObj.networkTechnology
+            + " | " + networkObj.networkId
+          ));
+          try{
+            networkObj.networkRaw = carrot.Network.fromJSON(networkObj.network);
+          }
+          catch(e){
+            console.log(chalkAlert(MODULE_ID_PREFIX + " | *** RAW NETWORK FROM JSON ERROR"
+              + " | TECH: " + networkObj.networkTechnology
+              + " | " + networkObj.networkId
+              + " | " + e
+            ));
+            return;
+          }
         }
         else{
+          console.log(chalkAlert(MODULE_ID_PREFIX + " | NETWORK IS ALREADY RAW"
+            + " | TECH: " + networkObj.networkTechnology
+            + " | " + networkObj.networkId
+          ));
           networkObj.networkRaw = networkObj.network;
         }
       }
@@ -2004,7 +2019,9 @@ async function generateSeedInputsNetworkId(params){
 
         console.log(chalkBlueBold(MODULE_ID_PREFIX
           + " | USE RANDOM SEED NETWORK"
-          + " | " + config.seedNetworkId
+          + " | NN ID: " + networkObj.networkId
+          + " | TECH: " + networkObj.networkTechnology
+          + " | INPUTS ID: " + networkObj.inputsId
         ));
 
         return config;
@@ -4657,7 +4674,7 @@ async function childCreate(p){
             }
 
             if ((nn.test.results.successRate < 100) && 
-              ((nn.seedNetworkId && (nn.test.results.successRate > nn.seedNetworkRes)) // better than seed nn
+              ((nn.seedNetworkId && (nn.test.results.successRate >= nn.seedNetworkRes)) // better than seed nn
               || (!nn.seedNetworkId && (nn.test.results.successRate >= configuration.localMinSuccessRate)) // no seed but better than local min
               || (!nn.seedNetworkId && (nn.evolve.options.cost === "MSE") && (nn.test.results.successRate >= configuration.localMinSuccessRateMSE)) // no seed but better than local min
               || (nn.test.results.successRate >= configuration.globalMinSuccessRate) // better than global min
@@ -4676,7 +4693,7 @@ async function childCreate(p){
               inputsIdHashMap[nn.inputsId].add(nn.networkId);
 
               // Add to nn child better than parent array
-              if (nn.seedNetworkId && (nn.test.results.successRate < 100) && (nn.test.results.successRate > nn.seedNetworkRes)) {
+              if (nn.seedNetworkId && (nn.test.results.successRate < 100) && (nn.test.results.successRate >= nn.seedNetworkRes)) {
 
                 betterChildSeedNetworkIdSet.add(nn.networkId);
 
