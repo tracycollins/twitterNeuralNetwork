@@ -681,12 +681,9 @@ const defaultUnionInputsConfigFile = "default_unionInputsConfig.json";
 const defaultInputsFolder = path.join(configDefaultFolder, "inputs");
 const globalBestNetworkFolder = path.join(DROPBOX_ROOT_FOLDER, "config/utility/best/neuralNetworks");
 
-// const globalArchiveInputsFolder = path.join(configDefaultFolder, "inputsArchive");
-
 const localBestNetworkFolder = path.join(configHostFolder, "neuralNetworks/best");
 const localFailNetworkFolder = path.join(configHostFolder, "neuralNetworks/fail");
 const localArchiveNetworkFolder = path.join(configHostFolder, "neuralNetworks/archive");
-
 
 configuration.local = {};
 configuration.local.trainingSetsFolder = configHostFolder + "/trainingSets";
