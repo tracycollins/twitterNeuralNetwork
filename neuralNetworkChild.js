@@ -1629,7 +1629,7 @@ async function evolve(params){
         + " | EXPECTED: " + childNetworkObj.evolve.options.iterations
         + " | ACTUAL: " + evolveResults.iterations
       ));
-      throw new Error("EVOLVE ITERATIONS");
+      // throw new Error("EVOLVE ITERATIONS");
     }
 
     await testNetwork({binaryMode: binaryMode});
