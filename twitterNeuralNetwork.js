@@ -7,10 +7,9 @@ const CHILD_PREFIX = "tnc_node";
 const CHILD_PREFIX_SHORT = "NC";
 
 const DEFAULT_BINARY_MODE = true;
-const DEFAULT_COMPARE_TECH = true;
+const DEFAULT_COMPARE_TECH = false;
 
 const DEFAULT_MAX_FAIL_NETWORKS = 10;
-// const DEFAULT_MIN_NETWORKS_TOTAL = 20;
 
 const os = require("os");
 let hostname = os.hostname();
@@ -860,11 +859,6 @@ function networkDefaults(networkObj){
       return reject(new Error("networkDefaults ERROR: networkObj UNDEFINED"));
     }
 
-    // if (empty(networkObj.inputsObj)) {
-    //   console.trace(chalkError("networkDefaults ERROR: networkObj.inputsObj UNDEFINED"));
-    //   return reject(new Error("networkDefaults ERROR: networkObj.inputsObj UNDEFINED"));
-    // }
-
     if(empty(networkObj.networkTechnology)) { networkObj.networkTechnology = "neataptic"; }
     if(empty(networkObj.betterChild)) { networkObj.betterChild = false; }
     if(empty(networkObj.testCycles)) { networkObj.testCycles = 0; }
@@ -1199,12 +1193,12 @@ async function updateDbInputs(params){
         inputsObj.networks.push(params.networkId);
       }
 
-      if (params.failNetworkId && !inputsObj.networks.includes(params.failNetworkId)) {
+      if (params.failNetworkId && !inputsObj.failNetworks.includes(params.failNetworkId)) {
         inputsObj.failNetworks.push(params.failNetworkId);
       }
 
-      inputsObj.networks = _.union([params.networkId], inputsObj.networks);
-      inputsObj.failNetworks = _.union(params.failNetworkId, inputsObj.failNetworks);
+      // inputsObj.networks = _.union([params.networkId], inputsObj.networks);
+      // inputsObj.failNetworks = _.union(params.failNetworkId, inputsObj.failNetworks);
 
       if (params.inputsObj && params.inputsObj.networks){
         inputsObj.networks = _.union(params.inputsObj.networks, inputsObj.networks);
@@ -1220,7 +1214,7 @@ async function updateDbInputs(params){
 
       return niDbUpdated;
     }
-    else if (params.inputsObj) {
+    else if (params.inputsObj && (params.inputsObj != undefined)) {
 
       if (params.networkId && !params.inputsObj.networks.includes(params.networkId)) {
         params.inputsObj.networks.push(params.networkId);
@@ -1236,6 +1230,9 @@ async function updateDbInputs(params){
       if (verbose) { printInputsObj(MODULE_ID_PREFIX + " | +++ INPUTS DB UPDATED", niDbUpdated); }
 
       return niDbUpdated;
+    }
+    else {
+      
     }
   }
   catch(e){
@@ -1929,10 +1926,9 @@ function initWatch(params){
   });
 }
 
-function generateSeedInputsNetworkId(params){
+async function generateSeedInputsNetworkId(params){
 
-  return new Promise(function(resolve, reject){
-
+  try{
     console.log(chalkLog(MODULE_ID_PREFIX + " | ... GENERATE SEED INPUTS/NETWORK ..."));
 
     const config = params.config || {};
@@ -1952,7 +1948,7 @@ function generateSeedInputsNetworkId(params){
         + " [" + betterChildSeedNetworkIdSet.size + "] SEED: " + config.seedNetworkId
       ));
 
-      return resolve(config);
+      return config;
     }
     
     //
@@ -1978,7 +1974,7 @@ function generateSeedInputsNetworkId(params){
         + " | SEED INPUTS: " + config.seedInputsId
       ));
 
-      return resolve(config);
+      return config;
     }
 
     //
@@ -1996,6 +1992,14 @@ function generateSeedInputsNetworkId(params){
 
         const randomNetworkId = randomItem([...randomNetworkIdSet]);
 
+        const networkObj = await global.globalNeuralNetwork.findOne({networkId: randomNetworkId}).lean().exec();
+
+        if (!networkObj) {
+          console.log(chalkError(MODULE_ID_PREFIX + " | *** GENERATE SEED INPUTS NETWORK ID ERROR: NN NOT IN DB | RANDOM NN ID: " + randomNetworkId));
+          throw new Error("RANDOM NN NOT IN DB: " + randomNetworkId);
+        }
+
+        config.networkObj = networkObj;
         config.seedNetworkId = randomNetworkId;
         config.seedInputsId = randomInputsId;
         config.isBetterChildSeed = false;
@@ -2005,7 +2009,7 @@ function generateSeedInputsNetworkId(params){
           + " | " + config.seedNetworkId
         ));
 
-        return resolve(config);
+        return config;
       }
     }
 
@@ -2017,7 +2021,7 @@ function generateSeedInputsNetworkId(params){
       console.log(chalkError(MODULE_ID_PREFIX
         + " | *** EMPTY INPUTS SET [" + inputsSet.size + "]"
       ));
-      return reject(new Error("EMPTY INPUTS SET"));
+      throw new Error("EMPTY INPUTS SET");
     }
 
     config.seedInputsId = randomItem([...inputsSet]);
@@ -2027,9 +2031,13 @@ function generateSeedInputsNetworkId(params){
       + " | " + config.seedInputsId
     ));
 
-    resolve(config);
+    return config;
+  }
+  catch(err){
+    console.log(chalkError(MODULE_ID_PREFIX + " | *** GENERATE SEED INPUTS NETWORK ID ERROR: " + err));
+    throw err;
+  }
 
-  });
 }
 
 async function calculateHiddenLayerSize(params){
@@ -2066,7 +2074,6 @@ async function generateRandomEvolveConfig(p){
 
   config.activation = randomItem(configuration.activationArray);
   config.amount = configuration.evolve.amount;
-  // config.clear = randomItem([true, false]);
   config.clear = false;
 
   // neataptic doesn't have WAPE cost
@@ -2152,6 +2159,8 @@ async function generateRandomEvolveConfig(p){
         config.selection = config.networkObj.evolve.options.selection || config.networkObj.evolve.options.selection;
       }
 
+      return config;
+
     }
     catch(err){
       console.log(chalkError(MODULE_ID_PREFIX + " | *** DB FIND NN ERROR | " + config.seedNetworkId));
@@ -2169,6 +2178,7 @@ async function generateRandomEvolveConfig(p){
       config.inputsObj = {};
 
       try{
+
         const inputsObj = await global.globalNetworkInputs.findOne({inputsId: config.seedInputsId}).exec();
 
         if (!inputsObj) {
@@ -2180,6 +2190,17 @@ async function generateRandomEvolveConfig(p){
 
         config.inputsObj = inputsObj.toObject();
 
+        config.architecture = "perceptron";
+
+        config.hiddenLayerSize = parseInt((configuration.inputsToHiddenLayerSizeRatio * config.inputsObj.meta.numInputs) + 3);
+        config.hiddenLayerSize = randomItem([0,config.hiddenLayerSize]);
+
+        config.inputsId = config.seedInputsId;
+
+        debug(MODULE_ID_PREFIX + " | PERCEPTRON ARCH | SEED INPUTS: " + config.seedInputsId);
+
+        return config;
+
       }
       catch(err){
         console.log(chalkError("TNN | *** LOAD INPUTS ERROR"
@@ -2189,14 +2210,6 @@ async function generateRandomEvolveConfig(p){
         throw new Error(config.seedInputsId + " NOT IN inputsSet");
       }
 
-      config.architecture = "perceptron";
-
-      config.hiddenLayerSize = parseInt((configuration.inputsToHiddenLayerSizeRatio * config.inputsObj.meta.numInputs) + 3);
-      config.hiddenLayerSize = randomItem([0,config.hiddenLayerSize]);
-
-      config.inputsId = config.seedInputsId;
-
-      debug(MODULE_ID_PREFIX + " | PERCEPTRON ARCH | SEED INPUTS: " + config.seedInputsId);
     }
     else {
       console.log("TNN | *** ERROR *** | PERCEPTRON ARCH | seedInputsId " + config.seedInputsId + " NOT IN inputsSet");
@@ -2204,7 +2217,6 @@ async function generateRandomEvolveConfig(p){
     }
   }
 
-  return config;
 
 }
 
