@@ -70,6 +70,7 @@ const carrotEvolveOptionsPickArray = [
 ];
 
 const neatapticEvolveOptionsPickArray = [
+  "activation",
   "amount",
   "clear",
   "cost",
@@ -930,6 +931,7 @@ function printResultsHashmap(){
       "ACTVTN",
       "CLR",
       "COST",
+      "SELCTN",
       "GRWTH",
       "EQ",
       "MRATE",
@@ -1026,6 +1028,7 @@ function printResultsHashmap(){
         networkObj.evolve.options.activation,
         formatBoolean(networkObj.evolve.options.clear),
         networkObj.evolve.options.cost,
+        networkObj.evolve.options.selection,
         growth,
         formatBoolean(networkObj.evolve.options.equal),
         mutation_rate,
@@ -1079,7 +1082,7 @@ function printResultsHashmap(){
       }
 
       const t = table(tableArray, { 
-        align: ["l", "l", "l", "l", "l", "l", "r", "l", "l", "l", "l", "l", "l", "r", "l", "r", "r", "l", "l", "r", "r", "r", "r", "r"] 
+        align: ["l", "l", "l", "l", "l", "l", "r", "l", "l", "l", "l", "l", "l", "l", "r", "l", "r", "r", "l", "l", "r", "r", "r", "r", "r"] 
       });
 
       console.log(chalkLog(MODULE_ID_PREFIX + " | === NETWORK RESULTS ========================================================================================================================"));
