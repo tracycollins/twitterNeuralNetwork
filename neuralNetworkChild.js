@@ -1365,25 +1365,25 @@ function trainingSetPrep(p){
 
           for(const inputValue of results.datum.input){
             if (typeof inputValue != "number") {
-              return cb(new Error("INPUT VALUE NOT TYPE NUMBER: " + typeof inputValue));
+              return cb(new Error("INPUT VALUE NOT TYPE NUMBER | @" + results.datum.screenName + " | INPUT TYPE: " + typeof inputValue));
             }
             if (inputValue < 0) {
-              return cb(new Error("INPUT VALUE LESS THAN ZERO", inputValue));
+              return cb(new Error("INPUT VALUE LESS THAN ZERO | @" + results.datum.screenName + " | INPUT: " + inputValue));
             }
             if (inputValue > 1) {
-              return cb(new Error("INPUT VALUE GREATER THAN ONE", inputValue));
+              return cb(new Error("INPUT VALUE GREATER THAN ONE | @" + results.datum.screenName + " | INPUT: " + inputValue));
             }
           }
 
           for(const outputValue of results.datum.output){
             if (typeof outputValue != "number") {
-              return cb(new Error("OUTPUT VALUE NOT TYPE NUMBER: " + typeof outputValue));
+              return cb(new Error("OUTPUT VALUE NOT TYPE NUMBER | @" + results.datum.screenName + " | OUTPUT TYPE: " + typeof outputValue));
             }
             if (outputValue < 0) {
-              return cb(new Error("OUTPUT VALUE LESS THAN ZERO", outputValue));
+              return cb(new Error("OUTPUT VALUE LESS THAN ZERO | @" + results.datum.screenName + " | OUTPUT: " + outputValue));
             }
             if (outputValue > 1) {
-              return cb(new Error("OUTPUT VALUE GREATER THAN ONE", outputValue));
+              return cb(new Error("OUTPUT VALUE GREATER THAN ONE | @" + results.datum.screenName + " | OUTPUT: " + outputValue));
             }
           }
 
@@ -1395,9 +1395,11 @@ function trainingSetPrep(p){
           }
 
           cb();
-
         }).
         catch(function(err){
+          console.log(chalkError(MODULE_ID_PREFIX
+            + " | *** ERROR convertDatumOneNetwork: " + err 
+          ));
           cb(err);
         });
 

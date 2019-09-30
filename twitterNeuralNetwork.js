@@ -1020,7 +1020,6 @@ function printResultsHashmap(){
       let nnTech = "";
       let status = "";
       let snIdRes = 0;
-      // let effMut = "";
       let iterations = 0;
       let secPerIteration = 0;
       let error = 0;
@@ -1032,6 +1031,7 @@ function printResultsHashmap(){
       let seedNetworkId = "";
 
       const growth = (networkObj.evolve.options.growth && networkObj.evolve.options.growth !== undefined) ? networkObj.evolve.options.growth.toFixed(8) : "---";
+      const selection = (networkObj.evolve.options.selection && networkObj.evolve.options.selection !== undefined) ? networkObj.evolve.options.selection : "---";
       const mutation_rate = (networkObj.evolve.options.mutation_rate && networkObj.evolve.options.mutation_rate !== undefined) ? networkObj.evolve.options.mutation_rate.toFixed(3) : "---";
 
       nnTech = (networkObj.networkTechnology && networkObj.networkTechnology !== undefined) ? networkObj.networkTechnology.slice(0,4).toUpperCase() : "?";
@@ -1072,7 +1072,7 @@ function printResultsHashmap(){
         networkObj.evolve.options.activation,
         formatBoolean(networkObj.evolve.options.clear),
         networkObj.evolve.options.cost,
-        networkObj.evolve.options.selection,
+        selection,
         growth,
         formatBoolean(networkObj.evolve.options.equal),
         mutation_rate,
