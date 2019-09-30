@@ -861,6 +861,50 @@ async function networkDefaults(networkObj){
   if(empty(networkObj.matchRate)) { networkObj.matchRate = 0; }
   if(empty(networkObj.successRate)) { networkObj.successRate = 0; }
 
+  if (networkObj.network && (!networkObj.networkRaw || (networkObj.networkRaw === undefined))){
+
+    console.log(chalkAlert(MODULE_ID_PREFIX + " | networkDefaults ... CREATING RAW NETWORK"
+      + " | TECH: " + networkObj.networkTechnology
+      + " | " + networkObj.networkId
+    ));
+
+    if (networkObj.networkTechnology == "carrot"){
+      if (networkObj.network.activate == undefined) {
+        console.log(chalkAlert(MODULE_ID_PREFIX + " | networkDefaults ... RAW NETWORK FROM JSON"
+          + " | TECH: " + networkObj.networkTechnology
+          + " | " + networkObj.networkId
+        ));
+        try{
+          networkObj.networkRaw = carrot.Network.fromJSON(networkObj.network);
+        }
+        catch(e){
+          console.log(chalkAlert(MODULE_ID_PREFIX + " | *** networkDefaults RAW NETWORK FROM JSON ERROR"
+            + " | TECH: " + networkObj.networkTechnology
+            + " | " + networkObj.networkId
+            + " | " + e
+          ));
+          return;
+        }
+      }
+      else{
+        console.log(chalkAlert(MODULE_ID_PREFIX + " | networkDefaults NETWORK IS ALREADY RAW"
+          + " | TECH: " + networkObj.networkTechnology
+          + " | " + networkObj.networkId
+        ));
+        networkObj.networkRaw = networkObj.network;
+      }
+    }
+    else { // assume neataptic
+      networkObj.networkTechnology = "neataptic";
+      networkObj.networkRaw = neataptic.Network.fromJSON(networkObj.network);
+    }
+
+  }
+
+  if (!networkObj.hiddenLayerSize || (networkObj.hiddenLayerSize === undefined)){
+    networkObj.hiddenLayerSize = await calculateHiddenLayerSize({networkObj: networkObj});
+  }
+
   return networkObj;
 }
 
@@ -1695,49 +1739,49 @@ async function validateNetwork(params){
 
     delete networkObj._id;
 
-    if (networkObj.network && (!networkObj.networkRaw || (networkObj.networkRaw === undefined))){
+    // if (networkObj.network && (!networkObj.networkRaw || (networkObj.networkRaw === undefined))){
 
-      console.log(chalkAlert(MODULE_ID_PREFIX + " | ... CREATING RAW NETWORK"
-        + " | TECH: " + networkObj.networkTechnology
-        + " | " + networkObj.networkId
-      ));
+    //   console.log(chalkAlert(MODULE_ID_PREFIX + " | ... CREATING RAW NETWORK"
+    //     + " | TECH: " + networkObj.networkTechnology
+    //     + " | " + networkObj.networkId
+    //   ));
 
-      if (networkObj.networkTechnology == "carrot"){
-        if (networkObj.network.activate == undefined) {
-          console.log(chalkAlert(MODULE_ID_PREFIX + " | ... RAW NETWORK FROM JSON"
-            + " | TECH: " + networkObj.networkTechnology
-            + " | " + networkObj.networkId
-          ));
-          try{
-            networkObj.networkRaw = carrot.Network.fromJSON(networkObj.network);
-          }
-          catch(e){
-            console.log(chalkAlert(MODULE_ID_PREFIX + " | *** RAW NETWORK FROM JSON ERROR"
-              + " | TECH: " + networkObj.networkTechnology
-              + " | " + networkObj.networkId
-              + " | " + e
-            ));
-            return;
-          }
-        }
-        else{
-          console.log(chalkAlert(MODULE_ID_PREFIX + " | NETWORK IS ALREADY RAW"
-            + " | TECH: " + networkObj.networkTechnology
-            + " | " + networkObj.networkId
-          ));
-          networkObj.networkRaw = networkObj.network;
-        }
-      }
-      else { // assume neataptic
-        networkObj.networkTechnology = "neataptic";
-        networkObj.networkRaw = neataptic.Network.fromJSON(networkObj.network);
-      }
+    //   if (networkObj.networkTechnology == "carrot"){
+    //     if (networkObj.network.activate == undefined) {
+    //       console.log(chalkAlert(MODULE_ID_PREFIX + " | ... RAW NETWORK FROM JSON"
+    //         + " | TECH: " + networkObj.networkTechnology
+    //         + " | " + networkObj.networkId
+    //       ));
+    //       try{
+    //         networkObj.networkRaw = carrot.Network.fromJSON(networkObj.network);
+    //       }
+    //       catch(e){
+    //         console.log(chalkAlert(MODULE_ID_PREFIX + " | *** RAW NETWORK FROM JSON ERROR"
+    //           + " | TECH: " + networkObj.networkTechnology
+    //           + " | " + networkObj.networkId
+    //           + " | " + e
+    //         ));
+    //         return;
+    //       }
+    //     }
+    //     else{
+    //       console.log(chalkAlert(MODULE_ID_PREFIX + " | NETWORK IS ALREADY RAW"
+    //         + " | TECH: " + networkObj.networkTechnology
+    //         + " | " + networkObj.networkId
+    //       ));
+    //       networkObj.networkRaw = networkObj.network;
+    //     }
+    //   }
+    //   else { // assume neataptic
+    //     networkObj.networkTechnology = "neataptic";
+    //     networkObj.networkRaw = neataptic.Network.fromJSON(networkObj.network);
+    //   }
 
-    }
+    // }
 
-    if (!networkObj.hiddenLayerSize || (networkObj.hiddenLayerSize === undefined)){
-      networkObj.hiddenLayerSize = await calculateHiddenLayerSize({networkObj: networkObj});
-    }
+    // if (!networkObj.hiddenLayerSize || (networkObj.hiddenLayerSize === undefined)){
+    //   networkObj.hiddenLayerSize = await calculateHiddenLayerSize({networkObj: networkObj});
+    // }
     
     return networkObj;
   }

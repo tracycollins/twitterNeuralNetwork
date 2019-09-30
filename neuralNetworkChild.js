@@ -420,10 +420,6 @@ async function init(){
 
   console.log(chalkGreen(MODULE_ID_PREFIX + " | XOR | [1, 1] --> " + out));
 
-  const netJson = childNetwork.toJSON();
-
-  debug(chalkLog(MODULE_ID_PREFIX + " | TEST XOR NETWORK\n" + jsonPrint(netJson)));
-
   return;
 }
 
@@ -1590,6 +1586,7 @@ async function evolve(params){
     const evolveResults = await childNetwork.evolve(trainingSet, preppedOptions);
 
     childNetworkObj.network = childNetwork;
+    childNetworkObj.networkRaw = childNetwork;
 
     debug("childNetwork.evolve evolveResults\n" + jsonPrint(Object.keys(evolveResults)));
 
@@ -1997,23 +1994,263 @@ console.log(chalkBlueBold(
   + "\n=======================================================================\n"
 ));
 
-const networkDefaults = function (netObj){
+// const networkObjDefaults = function (netObj){
 
-  const networkObj = {} || netObj;
+//   const networkObj = {} || netObj;
 
-  if (networkObj.binaryMode === undefined) { networkObj.binaryMode = false; }
-  if (networkObj.betterChild === undefined) { networkObj.betterChild = false; }
-  if (!networkObj.hiddenLayerSize || networkObj.hiddenLayerSize === undefined) { networkObj.hiddenLayerSize = 0; }
-  if (!networkObj.testCycles || networkObj.testCycles === undefined) { networkObj.testCycles = 0; }
-  if (!networkObj.testCycleHistory || networkObj.testCycleHistory === undefined) { networkObj.testCycleHistory = []; }
-  if (!networkObj.overallMatchRate || networkObj.overallMatchRate === undefined) { networkObj.overallMatchRate = 0; }
-  if (!networkObj.matchRate || networkObj.matchRate === undefined) { networkObj.matchRate = 0; }
-  if (!networkObj.successRate || networkObj.successRate === undefined) { networkObj.successRate = 0; }
+//   if (networkObj.binaryMode === undefined) { networkObj.binaryMode = false; }
+//   if (networkObj.betterChild === undefined) { networkObj.betterChild = false; }
+//   if (!networkObj.hiddenLayerSize || networkObj.hiddenLayerSize === undefined) { networkObj.hiddenLayerSize = 0; }
+//   if (!networkObj.testCycles || networkObj.testCycles === undefined) { networkObj.testCycles = 0; }
+//   if (!networkObj.testCycleHistory || networkObj.testCycleHistory === undefined) { networkObj.testCycleHistory = []; }
+//   if (!networkObj.overallMatchRate || networkObj.overallMatchRate === undefined) { networkObj.overallMatchRate = 0; }
+//   if (!networkObj.matchRate || networkObj.matchRate === undefined) { networkObj.matchRate = 0; }
+//   if (!networkObj.successRate || networkObj.successRate === undefined) { networkObj.successRate = 0; }
 
-  return networkObj;
-};
+//   return networkObj;
+// };
 
-process.on("message", function(m) {
+async function generateNetworkRaw(nnObj){
+
+  if (!nnObj.network || (nnObj.network === undefined)){
+    throw new Error("NETWORK OBJ NETWORK UNDEFINED");
+  }
+  else if (!nnObj.networkRaw || (nnObj.networkRaw === undefined)){
+
+    let networkRaw;
+
+    console.log(chalkAlert(MODULE_ID_PREFIX + " | generateNetworkRaw ... CREATING RAW NETWORK"
+      + " | TECH: " + nnObj.networkTechnology
+      + " | " + nnObj.networkId
+    ));
+
+    if (nnObj.networkTechnology == "carrot"){
+      if (nnObj.network.activate == undefined) {
+        console.log(chalkAlert(MODULE_ID_PREFIX + " | generateNetworkRaw ... RAW NETWORK FROM JSON"
+          + " | TECH: " + nnObj.networkTechnology
+          + " | " + nnObj.networkId
+        ));
+        try{
+          networkRaw = carrot.Network.fromJSON(nnObj.network);
+          return networkRaw;
+        }
+        catch(e){
+          console.log(chalkAlert(MODULE_ID_PREFIX + " | *** generateNetworkRaw RAW NETWORK FROM JSON ERROR"
+            + " | TECH: " + nnObj.networkTechnology
+            + " | " + nnObj.networkId
+            + " | " + e
+          ));
+          throw e;
+        }
+      }
+      else{
+        console.log(chalkAlert(MODULE_ID_PREFIX + " | generateNetworkRaw NETWORK IS ALREADY RAW"
+          + " | TECH: " + nnObj.networkTechnology
+          + " | " + nnObj.networkId
+        ));
+        networkRaw = nnObj.network;
+        return networkRaw;
+      }
+    }
+    else { // assume neataptic
+      if (nnObj.network.activate == undefined) {
+        console.log(chalkAlert(MODULE_ID_PREFIX + " | generateNetworkRaw ... RAW NETWORK FROM JSON"
+          + " | TECH: " + nnObj.networkTechnology
+          + " | " + nnObj.networkId
+        ));
+        try{
+          networkRaw = neataptic.Network.fromJSON(nnObj.network);
+          return networkRaw;
+        }
+        catch(e){
+          console.log(chalkAlert(MODULE_ID_PREFIX + " | *** generateNetworkRaw RAW NETWORK FROM JSON ERROR"
+            + " | TECH: " + nnObj.networkTechnology
+            + " | " + nnObj.networkId
+            + " | " + e
+          ));
+          throw e;
+        }
+      }
+      else{
+        console.log(chalkAlert(MODULE_ID_PREFIX + " | generateNetworkRaw NETWORK IS ALREADY RAW"
+          + " | TECH: " + nnObj.networkTechnology
+          + " | " + nnObj.networkId
+        ));
+        networkRaw = nnObj.network;
+        return networkRaw;
+      }
+    }
+  }
+  else {
+    return nnObj.networkRaw;
+  }
+}
+
+async function calculateHiddenLayerSize(params){
+  const networkObj = params.networkObj;
+
+  let hiddenLayerSize = 0;
+
+  if (!networkObj.network.nodes || (networkObj.network.nodes === undefined)){
+    return hiddenLayerSize;
+  }
+
+  for(const node of networkObj.network.nodes){
+    if (node.type === "hidden") { hiddenLayerSize += 1; }
+  }
+
+  return hiddenLayerSize;
+}
+
+async function networkObjDefaults(nnObj){
+
+  if (empty(nnObj)) {
+    console.trace(chalkError("networkObjDefaults ERROR: networkObj UNDEFINED"));
+    throw new Error("networkObjDefaults ERROR: networkObj UNDEFINED");
+  }
+
+  if(empty(nnObj.networkTechnology)) { nnObj.networkTechnology = "neataptic"; }
+  if(empty(nnObj.betterChild)) { nnObj.betterChild = false; }
+  if(empty(nnObj.testCycles)) { nnObj.testCycles = 0; }
+  if(empty(nnObj.testCycleHistory)) { nnObj.testCycleHistory = []; }
+  if(empty(nnObj.overallMatchRate)) { nnObj.overallMatchRate = 0; }
+  if(empty(nnObj.matchRate)) { nnObj.matchRate = 0; }
+  if(empty(nnObj.successRate)) { nnObj.successRate = 0; }
+
+  if (!nnObj.hiddenLayerSize || (nnObj.hiddenLayerSize === undefined)){
+    nnObj.hiddenLayerSize = await calculateHiddenLayerSize({networkObj: nnObj});
+  }
+
+  if (!empty(nnObj.network)){
+    nnObj.networkRaw = await generateNetworkRaw(nnObj);
+  }
+
+  return nnObj;
+
+}
+
+async function configNetworkEvolve(params){
+
+  let nnObj = {};
+  const newNetObj = {};
+
+  if (params.testSetRatio !== undefined) { configuration.testSetRatio = params.testSetRatio; }
+
+  console.log(chalkInfo(MODULE_ID_PREFIX + " | CONFIG EVOLVE"
+    + " | CHILD ID: " + params.childId
+    + " | NETWORK TECH: " + params.networkTechnology
+    + " | TEST SET RATIO: " + configuration.testSetRatio
+  ));
+
+  configuration.childId = params.childId;
+
+  newNetObj.binaryMode = (params.binaryMode !== undefined) ? params.binaryMode : configuration.binaryMode;
+
+  newNetObj.networkTechnology = params.networkTechnology || "neataptic";
+
+  newNetObj.networkId = params.testRunId;
+  newNetObj.seedNetworkId = params.seedNetworkId || false;
+  newNetObj.seedNetworkRes = params.seedNetworkRes;
+  newNetObj.networkCreateMode = "evolve";
+  newNetObj.testRunId = params.testRunId;
+  newNetObj.network = {};
+  newNetObj.inputsId = params.inputsId;
+  newNetObj.inputsObj = {};
+  newNetObj.inputsObj = params.inputsObj;
+  newNetObj.numInputs = params.inputsObj.meta.numInputs;
+  newNetObj.numOutputs = 3;
+  newNetObj.outputs = [];
+  newNetObj.outputs = params.outputs;
+
+  newNetObj.evolve = {};
+  newNetObj.evolve.results = {};
+  newNetObj.evolve.options = {};
+
+  newNetObj.evolve.options = pick(
+    params,
+    [
+      "activation",
+      "amount", 
+      "architecture",
+      "binaryMode",
+      "clear", 
+      "cost", 
+      "efficient_mutation", 
+      "elitism", 
+      "equal", 
+      "error",
+      "fitness_population", 
+      "growth",
+      "hiddenLayerSize",
+      "inputsId",
+      "iterations",
+      "mutation", 
+      "mutation_amount", 
+      "mutation_rate",
+      "networkTechnology",
+      "outputs",
+      "popsize", 
+      "population_size", 
+      "provenance",
+      "runId",
+      "seedNetworkId",
+      "seedNetworkRes",
+      "selection",
+      "threads",
+    ]
+  );
+
+  newNetObj.evolve.elapsed = statsObj.evolve.elapsed;
+  newNetObj.evolve.startTime = statsObj.evolve.startTime;
+  newNetObj.evolve.endTime = statsObj.evolve.endTime;
+
+  if (newNetObj.evolve.options.seedNetworkId) {
+
+    seedNetworkObj = params.networkObj;
+
+    if (seedNetworkObj.networkTechnology !== newNetObj.networkTechnology){
+      console.log(chalkAlert(MODULE_ID_PREFIX + " | !!! CHANGE NETWORK TECH TO SEED NN TECH"
+        + " | SEED: " + seedNetworkObj.networkTechnology
+        + " --> CHILD: " + newNetObj.networkTechnology
+      ));
+      newNetObj.networkTechnology = seedNetworkObj.networkTechnology;
+    }
+
+    newNetObj.numInputs = seedNetworkObj.numInputs;
+    newNetObj.numOutputs = seedNetworkObj.numOutputs;
+
+    console.log(chalkBlueBold(MODULE_ID_PREFIX + " | EVOLVE | " + getTimeStamp()
+      + " | " + configuration.childId
+      + " | " + newNetObj.networkId
+      + " | BIN MODE: " + newNetObj.evolve.options.binaryMode
+      + " | TECH: " + newNetObj.evolve.options.networkTechnology
+      + " | HIDDEN: " + newNetObj.evolve.options.hiddenLayerSize
+      + "\n SEED: " + seedNetworkObj.networkId
+      + " | SEED RES %: " + seedNetworkObj.successRate.toFixed(2)
+      + "\n THREADs: " + newNetObj.evolve.options.threads
+      + " | ITRS: " + newNetObj.evolve.options.iterations
+    ));
+  }
+  else {
+
+    seedNetworkObj = {};
+
+    console.log(chalkBlueBold(MODULE_ID_PREFIX + " | EVOLVE | " + getTimeStamp()
+      + " | " + configuration.childId
+      + " | " + newNetObj.networkId
+      + " | BIN MODE: " + newNetObj.evolve.options.binaryMode
+      + " | TECH: " + newNetObj.evolve.options.networkTechnology
+      + " | HIDDEN: " + newNetObj.evolve.options.hiddenLayerSize
+      + " | THREADs: " + newNetObj.evolve.options.threads
+      + " | ITRS: " + newNetObj.evolve.options.iterations
+    ));
+  }
+
+  nnObj = await networkObjDefaults(newNetObj);
+  return nnObj;
+}
+
+process.on("message", async function(m) {
 
   if (configuration.verbose) { console.log(chalkLog(MODULE_ID_PREFIX + " | CHILD RX MESSAGE | OP: " + m.op)); }
 
@@ -2075,119 +2312,7 @@ process.on("message", function(m) {
 
     case "CONFIG_EVOLVE":
 
-      if (m.testSetRatio !== undefined) { configuration.testSetRatio = m.testSetRatio; }
-
-      console.log(chalkInfo(MODULE_ID_PREFIX + " | CONFIG_EVOLVE"
-        + " | CHILD ID: " + m.childId
-        + " | NETWORK TECH: " + m.networkTechnology
-        + " | TEST SET RATIO: " + configuration.testSetRatio
-      ));
-
-      configuration.childId = m.childId;
-
-      childNetworkObj = networkDefaults();
-
-      childNetworkObj.binaryMode = (m.binaryMode !== undefined) ? m.binaryMode : configuration.binaryMode;
-
-      childNetworkObj.networkTechnology = m.networkTechnology || "neataptic";
-
-      childNetworkObj.networkId = m.testRunId;
-      childNetworkObj.seedNetworkId = m.seedNetworkId || false;
-      childNetworkObj.seedNetworkRes = m.seedNetworkRes;
-      childNetworkObj.networkCreateMode = "evolve";
-      childNetworkObj.testRunId = m.testRunId;
-      childNetworkObj.network = {};
-      childNetworkObj.inputsId = m.inputsId;
-      childNetworkObj.inputsObj = {};
-      childNetworkObj.inputsObj = m.inputsObj;
-      childNetworkObj.numInputs = m.inputsObj.meta.numInputs;
-      childNetworkObj.numOutputs = 3;
-      childNetworkObj.outputs = [];
-      childNetworkObj.outputs = m.outputs;
-
-      childNetworkObj.evolve = {};
-      childNetworkObj.evolve.results = {};
-      childNetworkObj.evolve.options = {};
-
-      childNetworkObj.evolve.options = pick(
-        m,
-        [
-          "activation",
-          "amount", 
-          "architecture",
-          "binaryMode",
-          "clear", 
-          "cost", 
-          "efficient_mutation", 
-          "elitism", 
-          "equal", 
-          "error",
-          "fitness_population", 
-          "growth",
-          "hiddenLayerSize",
-          "inputsId",
-          "iterations",
-          "mutation", 
-          "mutation_amount", 
-          "mutation_rate",
-          "networkTechnology",
-          "outputs",
-          "popsize", 
-          "population_size", 
-          "provenance",
-          "runId",
-          "seedNetworkId",
-          "seedNetworkRes",
-          "selection",
-          "threads",
-        ]
-      );
-
-      childNetworkObj.evolve.elapsed = statsObj.evolve.elapsed;
-      childNetworkObj.evolve.startTime = statsObj.evolve.startTime;
-      childNetworkObj.evolve.endTime = statsObj.evolve.endTime;
-
-      if (childNetworkObj.evolve.options.seedNetworkId) {
-
-        seedNetworkObj = m.networkObj;
-
-        if (seedNetworkObj.networkTechnology !== childNetworkObj.networkTechnology){
-          console.log(chalkAlert(MODULE_ID_PREFIX + " | !!! CHANGE NETWORK TECH TO SEED NN TECH"
-            + " | SEED: " + seedNetworkObj.networkTechnology
-            + " --> CHILD: " + childNetworkObj.networkTechnology
-          ));
-          childNetworkObj.networkTechnology = seedNetworkObj.networkTechnology;
-        }
-
-        childNetworkObj.numInputs = seedNetworkObj.numInputs;
-        childNetworkObj.numOutputs = seedNetworkObj.numOutputs;
-
-        console.log(chalkBlueBold(MODULE_ID_PREFIX + " | EVOLVE | " + getTimeStamp()
-          + " | " + configuration.childId
-          + " | " + childNetworkObj.evolve.options.runId
-          + " | BIN MODE: " + childNetworkObj.evolve.options.binaryMode
-          + " | TECH: " + childNetworkObj.evolve.options.networkTechnology
-          + " | HIDDEN: " + childNetworkObj.evolve.options.hiddenLayerSize
-          + "\n SEED: " + seedNetworkObj.networkId
-          + " | SEED RES %: " + seedNetworkObj.successRate.toFixed(2)
-          + "\n THREADs: " + childNetworkObj.evolve.options.threads
-          + " | ITRS: " + childNetworkObj.evolve.options.iterations
-        ));
-      }
-      else {
-
-        seedNetworkObj = {};
-
-        console.log(chalkBlueBold(MODULE_ID_PREFIX + " | EVOLVE | " + getTimeStamp()
-          + " | " + configuration.childId
-          + " | " + childNetworkObj.evolve.options.runId
-          + " | BIN MODE: " + childNetworkObj.evolve.options.binaryMode
-          + " | TECH: " + childNetworkObj.evolve.options.networkTechnology
-          + " | HIDDEN: " + childNetworkObj.evolve.options.hiddenLayerSize
-          + "\n THREADs: " + childNetworkObj.evolve.options.threads
-          + " | ITRS: " + childNetworkObj.evolve.options.iterations
-        ));
-      }
+      childNetworkObj = await configNetworkEvolve(m);
 
       statsObj.evolve.options = childNetworkObj.evolve.options;
 
@@ -2202,7 +2327,6 @@ process.on("message", function(m) {
       statsObj.inputsObj = m.inputsObj;
       statsObj.outputs = [];
       statsObj.outputs = m.outputs;
-
 
       fsm.fsm_config_evolve();
     break;
