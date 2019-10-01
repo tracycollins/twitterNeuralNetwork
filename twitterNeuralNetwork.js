@@ -3426,8 +3426,8 @@ async function loadAllConfigFiles(){
 
   configuration = tempConfig;
 
-  configuration.costArray = _.uniq(configuration.costArray);
-  configuration.selectionArray = _.uniq(configuration.selectionArray);
+  // configuration.costArray = _.uniq(configuration.costArray);
+  // configuration.selectionArray = _.uniq(configuration.selectionArray);
 
   return;
 }
