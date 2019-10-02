@@ -2059,7 +2059,7 @@ async function generateSeedInputsNetworkId(params){
         config.isBetterChildSeed = false;
 
         console.log(chalkBlueBold(MODULE_ID_PREFIX
-          + " | USE RANDOM SEED NETWORK"
+          + " | USE RANDOM SEED NETWORK [" + randomNetworkIdSet.size + " NNs IN SEED POOL]"
           + " | NN ID: " + networkObj.networkId
           + " | TECH: " + networkObj.networkTechnology
           + " | INPUTS ID: " + networkObj.inputsId
