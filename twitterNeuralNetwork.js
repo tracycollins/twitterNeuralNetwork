@@ -869,7 +869,7 @@ async function networkDefaults(networkObj){
       + " | " + networkObj.networkId
     ));
 
-    if (networkObj.network.activate == undefined) {
+    if (networkObj.network && networkObj.network.activate == undefined) {
 
       console.log(chalkAlert(MODULE_ID_PREFIX + " | networkDefaults ... RAW NETWORK FROM JSON"
         + " | TECH: " + networkObj.networkTechnology
@@ -879,7 +879,7 @@ async function networkDefaults(networkObj){
       try{
         const networkTech = (networkObj.networkTechnology == "networkTechnology") ? neataptic : carrot;
         networkObj.networkRaw = networkTech.Network.fromJSON(networkObj.network);
-        if (networkObj.networkJson == undefined) { networkObj.networkJson = networkObj.network.toJSON(); }
+        if (!networkObj.networkJson || networkObj.networkJson == undefined) { networkObj.networkJson = networkObj.network.toJSON(); }
       }
       catch(e){
         console.log(chalkAlert(MODULE_ID_PREFIX + " | *** networkDefaults RAW NETWORK FROM JSON ERROR"
@@ -906,13 +906,13 @@ async function networkDefaults(networkObj){
         }
       }
     }
-    else{
+    else if (networkObj.network && networkObj.network.activate != undefined) {
       console.log(chalkAlert(MODULE_ID_PREFIX + " | networkDefaults NETWORK IS ALREADY RAW"
         + " | TECH: " + networkObj.networkTechnology
         + " | " + networkObj.networkId
       ));
       networkObj.networkRaw = networkObj.network;
-      if (networkObj.networkJson == undefined) { networkObj.networkJson = networkObj.network.toJSON(); }
+      if (!networkObj.networkJson || networkObj.networkJson == undefined) { networkObj.networkJson = networkObj.network.toJSON(); }
       return networkObj;
     }
 
@@ -1750,18 +1750,12 @@ async function validateNetwork(params){
 
     networkObj = await networkDefaults(networkObj);
 
-    // if (networkObj.toObject != undefined){
-    //   networkObj = networkObj.toObject();
-    // }
-
     delete networkObj._id;    
     return networkObj;
   }
   catch(err){
     console.trace(chalkError("validateNetwork ERROR: " + err));
     return;
-    // quit({cause: "validateNetwork ERROR"});
-    // throw err;
   }
 }
 

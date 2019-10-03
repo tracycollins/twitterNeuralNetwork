@@ -1,7 +1,6 @@
  /*jslint node: true */
 /*jshint sub:true*/
 
-// let childNetwork; // this is the common, default nn (part of childNetworkObj.childNetwork)
 let childNetworkObj; // this is the common, default nn object
 let seedNetworkObj; // this is the common, default nn object
 
@@ -134,6 +133,7 @@ const async = require("async");
 const chalk = require("chalk");
 const chalkNetwork = chalk.blue;
 const chalkBlueBold = chalk.blue.bold;
+const chalkGreenBold = chalk.green.bold;
 const chalkBlue = chalk.blue;
 const chalkGreen = chalk.green;
 const chalkError = chalk.bold.red;
@@ -364,15 +364,15 @@ async function init(){
 
   statsObj.status = "INIT";
 
-  let childNetwork;
+  let childNetworkRaw;
 
   console.log(chalkBlueBold("\n=============================\nNNC | TEST | CARROT TECH XOR")); 
 
   if (configuration.networkTechnology == "carrot"){
-    childNetwork = new carrot.Network(2,1);
+    childNetworkRaw = new carrot.Network(2,1);
   }
   else{
-    childNetwork = new neataptic.Network(2,1);
+    childNetworkRaw = new neataptic.Network(2,1);
   }
 
   // XOR dataset
@@ -389,30 +389,30 @@ async function init(){
 
   console.log(xorTrainingSet);
 
-  await childNetwork.evolve(xorTrainingSet, xorOptions);
+  await childNetworkRaw.evolve(xorTrainingSet, xorOptions);
 
-  let out = childNetwork.activate([0,0]); // 0.2413
+  let out = childNetworkRaw.activate([0,0]); // 0.2413
   if (out > 0.5) { 
     console.log(chalkError(MODULE_ID_PREFIX + " | *** XOR TEST FAIL | IN 0,0 | EXPECTED 0 : OUTPUT: " + out));
     return(new Error("XOR test fail"));
   }
   console.log(chalkGreen(MODULE_ID_PREFIX + " | XOR | [0, 0] --> " + out));
 
-  out = childNetwork.activate([0,1]); // 1.0000
+  out = childNetworkRaw.activate([0,1]); // 1.0000
   if (out < 0.5) { 
     console.log(chalkError(MODULE_ID_PREFIX + " | *** XOR TEST FAIL | IN 0,1 | EXPECTED 1 : OUTPUT: " + out));
     return(new Error("XOR test fail"));
   }
   console.log(chalkGreen(MODULE_ID_PREFIX + " | XOR | [0, 1] --> " + out));
 
-  out = childNetwork.activate([1,0]); // 0.7663
+  out = childNetworkRaw.activate([1,0]); // 0.7663
   if (out < 0.5) { 
     console.log(chalkError(MODULE_ID_PREFIX + " | *** XOR TEST FAIL | IN 1,0 | EXPECTED 1 : OUTPUT: " + out));
     return(new Error("XOR test fail"));
   }
   console.log(chalkGreen(MODULE_ID_PREFIX + " | XOR | [1, 0] --> " + out));
 
-  out = childNetwork.activate([1,1]); // -0.008
+  out = childNetworkRaw.activate([1,1]); // -0.008
   if (out > 0.5) { 
     console.log(chalkError(MODULE_ID_PREFIX + " | *** XOR TEST FAIL | IN 1,1 | EXPECTED 0 : OUTPUT: " + out));
     return(new Error("XOR test fail"));
@@ -449,10 +449,6 @@ let dbConnectionReadyInterval;
 const UserServerController = require("@threeceelabs/user-server-controller");
 let userServerController;
 let userServerControllerReady = false;
-
-// const TweetServerController = require("@threeceelabs/tweet-server-controller");
-// let tweetServerController;
-// let tweetServerControllerReady = false;
 
 function connectDb(){
 
@@ -1143,19 +1139,26 @@ function testNetworkData(params){
       nnTools.activateSingleNetwork({user: datum.user, datum: datum, convertDatumFlag: convertDatumFlag, binaryMode: binaryMode, verbose: configuration.verbose}).
       then(function(testOutput){
 
-        const passed = (testOutput.categoryAuto == datum.user.category);
-
         numTested += 1;
 
-        numPassed = passed ? numPassed+1 : numPassed;
+        let match = "FAIL";
+        let currentChalk = chalkAlert;
+
+        if (testOutput.categoryAuto == datum.user.category){
+          match = "PASS";
+          numPassed += 1;
+          currentChalk = chalkGreenBold;
+        }
 
         successRate = 100 * numPassed/numTested;
 
-        const currentChalk = passed ? chalkLog : chalkAlert;
-
-        if ((configuration.testMode && (numTested % 100 == 0)) || configuration.verbose){
-          console.log(currentChalk(MODULE_ID_PREFIX + " | TEST RESULT: " + numPassed + "/" + numTested
+        if (configuration.testMode || configuration.verbose){
+          console.log(currentChalk(MODULE_ID_PREFIX + " | TESTING"
             + " | " + successRate.toFixed(2) + "%"
+            + " | " + numPassed + "/" + numTested
+            + " | CAT M: " + datum.user.category[0].toUpperCase() + " A: " + testOutput.categoryAuto[0].toUpperCase()
+            + " | MATCH: " + match
+            + " | @" + datum.user.screenName
           ));
         }
 
@@ -1178,9 +1181,11 @@ function testNetworkData(params){
         successRate: successRate
       };
 
-      console.log(chalkAlert(MODULE_ID_PREFIX + " | TEST COMPLETE"
+      console.log(chalkBlueBold("\n================================================\n"
+        + MODULE_ID_PREFIX + " | TEST COMPLETE"
         + " | " + numPassed + "/" + testSetObj.meta.setSize
         + " | " + successRate.toFixed(2) + "%"
+        + "\n================================================\n"
       ));
 
       debug(chalkNetwork(MODULE_ID_PREFIX
@@ -1274,25 +1279,25 @@ async function prepNetworkEvolve() {
     finalOptions = pick(options, neatapticEvolveOptionsPickArray);
   }
 
-  console.log(chalkAlert(MODULE_ID_PREFIX + " | EVOLVE OPTIONS\n" + jsonPrint(finalOptions)));
+  console.log(chalkBlueBold(MODULE_ID_PREFIX + " | EVOLVE OPTIONS\n" + jsonPrint(finalOptions)));
 
   if ((childNetworkObj.networkTechnology == "neataptic") && (options.activation != undefined) && (typeof options.activation == "string")) {
-    console.log(chalkAlert(MODULE_ID_PREFIX + " | EVOLVE OPTIONS | ACTIVATION: " + options.activation));
+    console.log(chalkBlueBold(MODULE_ID_PREFIX + " | EVOLVE OPTIONS | ACTIVATION: " + options.activation));
     finalOptions.activation = neataptic.methods.activation[options.activation];
   }
 
   if ((options.selection != undefined) && (typeof options.selection == "string")) {
-    console.log(chalkAlert(MODULE_ID_PREFIX + " | EVOLVE OPTIONS | SELECTION: " + options.selection));
+    console.log(chalkBlueBold(MODULE_ID_PREFIX + " | EVOLVE OPTIONS | SELECTION: " + options.selection));
     finalOptions.selection = neataptic.methods.selection[options.selection];
   }
 
   if ((options.cost != undefined) && (typeof options.cost == "string")) {
-    console.log(chalkAlert(MODULE_ID_PREFIX + " | EVOLVE OPTIONS | COST: " + options.cost));
+    console.log(chalkBlueBold(MODULE_ID_PREFIX + " | EVOLVE OPTIONS | COST: " + options.cost));
     finalOptions.cost = neataptic.methods.cost[options.cost];
   }
 
   if ((options.mutation != undefined) && (typeof options.mutation == "string")) {
-    console.log(chalkAlert(MODULE_ID_PREFIX + " | EVOLVE OPTIONS | MUTATION: " + options.mutation));
+    console.log(chalkBlueBold(MODULE_ID_PREFIX + " | EVOLVE OPTIONS | MUTATION: " + options.mutation));
     finalOptions.mutation = neataptic.methods.mutation[options.mutation];
   }
 
@@ -1324,7 +1329,7 @@ function dataSetPrep(p){
 
     const shuffledData = _.shuffle(dataSetObj.data);
 
-    async.eachSeries(shuffledData, function(user, cb){
+    async.each(shuffledData, function(user, cb){
 
       try {
 
@@ -1446,7 +1451,7 @@ function createNetwork(){
 
   return new Promise(function(resolve, reject){
 
-    let network;
+    let networkRaw;
 
     const numInputs = childNetworkObj.inputsObj.meta.numInputs;
 
@@ -1455,41 +1460,35 @@ function createNetwork(){
       case "loadedNetwork":
 
         if (!empty(childNetworkObj.networkRaw) && (childNetworkObj.networkRaw.evolve != undefined)){
-          network = childNetworkObj.networkRaw;
+          networkRaw = childNetworkObj.networkRaw;
         }
-        else if (childNetworkObj.networkTechnology == "carrot"){
-          if (childNetworkObj.network.evolve != undefined){
-            network = childNetworkObj.network;
-          }
-          else{
-            try {
-              network = carrot.Network.fromJSON(childNetworkObj.network);
-            }
-            catch(err){
-              console.log(chalkError(MODULE_ID_PREFIX + " | *** ERROR CREATE NETWORK | CARROT fromJSON: " + err));
-              return reject(err);
-            }
-          }
+        else if (childNetworkObj.network.evolve != undefined){
+          networkRaw = childNetworkObj.network;
         }
-        else { // assume neataptic
+        else{
           try {
-            network = neataptic.Network.fromJSON(childNetworkObj.network);
+            if (childNetworkObj.networkTechnology == "carrot"){
+              networkRaw = carrot.Network.fromJSON(childNetworkObj.network);
+            }
+            else{
+              networkRaw = neataptic.Network.fromJSON(childNetworkObj.network);
+            }
           }
           catch(err){
-            console.log(chalkError(MODULE_ID_PREFIX + " | *** ERROR CREATE NETWORK | NEATAPTIC fromJSON: " + err));
+            console.log(chalkError(MODULE_ID_PREFIX + " | *** ERROR CREATE NETWORK | CARROT fromJSON: " + err));
             return reject(err);
           }
         }
 
-        console.log(MODULE_ID_PREFIX
+        console.log(chalkBlueBold(MODULE_ID_PREFIX
           + " | " + configuration.childId
           + " | " + childNetworkObj.networkTechnology.toUpperCase()
           + " | EVOLVE ARCH | LOADED: " + childNetworkObj.networkId
-          + " | IN: " + network.input
-          + " | OUT: " + network.output
-        );
+          + " | IN: " + networkRaw.input
+          + " | OUT: " + networkRaw.output
+        ));
 
-        resolve(network);
+        resolve(networkRaw);
 
       break;
 
@@ -1498,22 +1497,22 @@ function createNetwork(){
         if (childNetworkObj.networkTechnology == "carrot"){
 
           if (childNetworkObj.hiddenLayerSize && (childNetworkObj.hiddenLayerSize > 0)){
-            network = new carrot.architect.Perceptron(numInputs, childNetworkObj.hiddenLayerSize, 3);
+            networkRaw = new carrot.architect.Perceptron(numInputs, childNetworkObj.hiddenLayerSize, 3);
           }
           else{
             childNetworkObj.architecture = "random";
-            network = new carrot.Network(numInputs,3);
+            networkRaw = new carrot.Network(numInputs,3);
           }
 
-          console.log("NNC"
+          console.log(chalkBlueBold("NNC"
             + " | " + configuration.childId
             + " | " + childNetworkObj.networkTechnology.toUpperCase()
             + " | " + childNetworkObj.architecture.toUpperCase()
             + " | IN: " + numInputs 
             + " | OUT: " + trainingSetObj.meta.numOutputs
             + " | HIDDEN LAYER NODES: " + childNetworkObj.hiddenLayerSize
-          );
-          resolve(network);
+          ));
+          resolve(networkRaw);
         }
         else{
 
@@ -1522,23 +1521,28 @@ function createNetwork(){
             childNetworkObj.hiddenLayerSize = Math.min(configuration.neatapticHiddenLayerSize, childNetworkObj.hiddenLayerSize);
             childNetworkObj.hiddenLayerSize = Math.max(childNetworkObj.hiddenLayerSize, trainingSetObj.meta.numOutputs);
 
-            network = new neataptic.architect.Perceptron(numInputs, childNetworkObj.hiddenLayerSize, 3);
+            networkRaw = new neataptic.architect.Perceptron(numInputs, childNetworkObj.hiddenLayerSize, 3);
           }
           else{
             childNetworkObj.architecture = "random";
-            network = new neataptic.Network(numInputs, 3);
+            if (childNetworkObj.networkTechnology == "neataptic"){
+              networkRaw = new neataptic.Network(numInputs, 3);
+            }
+            else{
+              networkRaw = new carrot.Network(numInputs, 3);
+            }
           }
 
-          console.log("NNC"
+          console.log(chalkBlueBold("NNC"
             + " | " + configuration.childId
             + " | " + childNetworkObj.networkTechnology.toUpperCase()
             + " | " + childNetworkObj.architecture.toUpperCase()
             + " | IN: " + numInputs 
             + " | OUT: " + trainingSetObj.meta.numOutputs
             + " | HIDDEN LAYER NODES: " + childNetworkObj.hiddenLayerSize
-          );
+          ));
 
-          resolve(network);
+          resolve(networkRaw);
 
         }
       break;
@@ -1547,22 +1551,21 @@ function createNetwork(){
 
         childNetworkObj.architecture = "random";
 
-        console.log(MODULE_ID_PREFIX + " | EVOLVE ARCH"
+        console.log(chalkBlueBold(MODULE_ID_PREFIX + " | EVOLVE ARCH"
           + " | " + configuration.childId
           + " | " + childNetworkObj.networkTechnology.toUpperCase()
           + " | " + childNetworkObj.architecture.toUpperCase()
           + " | INPUTS: " + numInputs
           + " | OUTPUTS: " + trainingSetObj.meta.numOutputs
-        );
+        ));
 
         if (childNetworkObj.networkTechnology == "carrot"){
-
-          network = new carrot.Network(numInputs, 3);
-          resolve(network);
+          networkRaw = new carrot.Network(numInputs, 3);
+          resolve(networkRaw);
         }
         else{
-          network = new neataptic.Network(numInputs, 3);
-          resolve(network);
+          networkRaw = new neataptic.Network(numInputs, 3);
+          resolve(networkRaw);
         }
 
     }
@@ -1581,16 +1584,16 @@ async function evolve(params){
 
     const trainingSet = await dataSetPrep({dataSetObj: trainingSetObj, binaryMode: binaryMode});
 
-    const childNetwork = await createNetwork();
+    const childNetworkRaw = await createNetwork();
 
     const preppedOptions = await prepNetworkEvolve();
 
-    const evolveResults = await childNetwork.evolve(trainingSet, preppedOptions);
+    const evolveResults = await childNetworkRaw.evolve(trainingSet, preppedOptions);
 
-    childNetworkObj.networkJson = childNetwork.toJSON();
-    childNetworkObj.networkRaw = childNetwork;
+    childNetworkObj.networkJson = childNetworkRaw.toJSON();
+    childNetworkObj.networkRaw = childNetworkRaw;
 
-    debug("childNetwork.evolve evolveResults\n" + jsonPrint(Object.keys(evolveResults)));
+    debug("childNetworkRaw.evolve evolveResults\n" + jsonPrint(Object.keys(evolveResults)));
 
     evolveResults.threads = preppedOptions.threads;
     evolveResults.fitness = statsObj.evolve.stats.fitness;
@@ -1686,25 +1689,21 @@ function networkEvolve(){
         case "mutation":
           console.log("NNC" + " | " + configuration.childId + " | EVOLVE OPTION | " + key + ": " + params[key]);
           options.mutation = networkTech.methods.mutation[params[key]];
-          console.log("typeof options.mutation: " + typeof options.mutation);
         break;
               
         case "selection":
           console.log("NNC" + " | " + configuration.childId + " | EVOLVE OPTION | " + key + ": " + params[key]);
           options.selection = networkTech.methods.selection[params[key]];
-          console.log("typeof options.selection: " + typeof options.selection);
         break;
               
         case "cost":
           console.log("NNC" + " | " + configuration.childId + " | EVOLVE OPTION | " + key + ": " + params[key]);
           options.cost = networkTech.methods.cost[params[key]];
-          console.log("typeof options.cost: " + typeof options.cost);
         break;
 
         case "activation":
           console.log("NNC" + " | " + configuration.childId + " | EVOLVE OPTION | " + key + ": " + params[key]);
           options.activation = networkTech.methods.activation[params[key]];
-          console.log("typeof options.activation: " + typeof options.activation);
         break;
 
         default:
