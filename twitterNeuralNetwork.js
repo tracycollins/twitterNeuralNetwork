@@ -1668,14 +1668,12 @@ async function validateNetwork(params){
 
   try {
 
-    networkObj = await networkDefaults(networkObj);
-
     if (empty(params) || empty(params.networkObj) || empty(params.networkId)) {
       console.log(chalkError(MODULE_ID_PREFIX + " | validateNetwork *** PARAMS UNDEFINED ???\nPARAMS\n" + jsonPrint(params)));
       throw new Error("params undefined");
     }
 
-    let networkObj = params.networkObj;
+    const networkObj = await networkDefaults(params.networkObj);
 
     if (networkObj.networkId != params.networkId) {
       console.log(chalkError(MODULE_ID_PREFIX + " | *** NETWORK ID MISMATCH"
