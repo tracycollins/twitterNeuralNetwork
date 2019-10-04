@@ -38,8 +38,8 @@ console.log("=========================================");
 // const neataptic = require("neataptic");
 // const carrot = require("@liquid-carrot/carrot");
 
-// const NeuralNetworkTools = require("@threeceelabs/neural-network-tools");
-// const nnTools = new NeuralNetworkTools(MODULE_ID_PREFIX + "_NNT");
+const NeuralNetworkTools = require("@threeceelabs/neural-network-tools");
+const nnTools = new NeuralNetworkTools(MODULE_ID_PREFIX + "_NNT");
 
 const carrotEvolveOptionsPickArray = [
   "activation",
@@ -866,13 +866,19 @@ async function networkDefaults(networkObj){
     if(empty(networkObj.matchRate)) { networkObj.matchRate = 0; }
     if(empty(networkObj.successRate)) { networkObj.successRate = 0; }
 
-    // const nnObj = await nnTools.convertNetwork({networkObj: networkObj});
+    if (!empty(networkObj.network) || !empty(networkObj.networkJson)){
 
-    if (!networkObj.hiddenLayerSize || (networkObj.hiddenLayerSize == undefined)){
-      networkObj.hiddenLayerSize = await calculateHiddenLayerSize({networkObj: networkObj});
+      const nnObj = await nnTools.convertNetwork({networkObj: networkObj});
+
+      if (empty(nnObj.hiddenLayerSize)){
+        nnObj.hiddenLayerSize = await calculateHiddenLayerSize({networkObj: nnObj});
+      }
+
+      return nnObj;
     }
 
     return networkObj;
+
   }
   catch(err){
     throw err;
@@ -1292,15 +1298,15 @@ async function loadNetworkFile(params){
     + " | PATH: " + path
   ));
 
-  const nnObj = await tcUtils.loadFileRetry({folder: params.folder, file: params.file});
+  const networkObj = await tcUtils.loadFileRetry({folder: params.folder, file: params.file});
 
-  const networkObj = await validateNetwork({networkId: nnObj.networkId, networkObj: nnObj});
+  const networkObjValid = await nnTools.validateNetwork({networkId: networkObj.networkId, networkObj: networkObj});
 
-  if (empty(networkObj)) {
+  if (!networkObjValid) {
     console.log(chalkInfo(MODULE_ID_PREFIX + " | ??? INVALID NETWORK ... PURGING"
       + " | " + path
     ));
-    await purgeNetwork(nnObj.networkId);
+    await purgeNetwork(networkObj.networkId);
     return;
   }
 
@@ -1664,52 +1670,52 @@ function listFolders(params){
   });
 }
 
-async function validateNetwork(params){
+// async function validateNetwork(params){
 
-  try {
+//   try {
 
-    if (empty(params) || empty(params.networkObj) || empty(params.networkId)) {
-      console.log(chalkError(MODULE_ID_PREFIX + " | validateNetwork *** PARAMS UNDEFINED ???\nPARAMS\n" + jsonPrint(params)));
-      throw new Error("params undefined");
-    }
+//     if (empty(params) || empty(params.networkObj) || empty(params.networkId)) {
+//       console.log(chalkError(MODULE_ID_PREFIX + " | validateNetwork *** PARAMS UNDEFINED ???\nPARAMS\n" + jsonPrint(params)));
+//       throw new Error("params undefined");
+//     }
 
-    const networkObj = await networkDefaults(params.networkObj);
+//     const networkObj = await networkDefaults(params.networkObj);
 
-    if (networkObj.networkId != params.networkId) {
-      console.log(chalkError(MODULE_ID_PREFIX + " | *** NETWORK ID MISMATCH"
-        + " | " + networkObj.networkId 
-        + " | " + params.networkId
-      ));
-      return;
-    }
+//     if (networkObj.networkId != params.networkId) {
+//       console.log(chalkError(MODULE_ID_PREFIX + " | *** NETWORK ID MISMATCH"
+//         + " | " + networkObj.networkId 
+//         + " | " + params.networkId
+//       ));
+//       return;
+//     }
 
-    if(empty(networkObj.numInputs)) {
-      console.log(chalkError(MODULE_ID_PREFIX + " | *** NETWORK NETWORK numInputs UNDEFINED"
-        + " | " + networkObj.networkId
-      ));
-      return;
-    }
+//     if(empty(networkObj.numInputs)) {
+//       console.log(chalkError(MODULE_ID_PREFIX + " | *** NETWORK NETWORK numInputs UNDEFINED"
+//         + " | " + networkObj.networkId
+//       ));
+//       return;
+//     }
 
-    if(empty(networkObj.inputsId)) {
-      console.log(chalkError(MODULE_ID_PREFIX + " | *** NETWORK INPUTS ID UNDEFINED"
-        + " | " + networkObj.networkId));
-      return;
-    }
+//     if(empty(networkObj.inputsId)) {
+//       console.log(chalkError(MODULE_ID_PREFIX + " | *** NETWORK INPUTS ID UNDEFINED"
+//         + " | " + networkObj.networkId));
+//       return;
+//     }
 
-    if(empty(networkObj.networkJson)) {
-      console.log(chalkError(MODULE_ID_PREFIX + " | *** NETWORK NETWORK OBJ UNDEFINED"
-        + " | " + networkObj.networkId));
-      return;
-    }
+//     if(empty(networkObj.networkJson)) {
+//       console.log(chalkError(MODULE_ID_PREFIX + " | *** NETWORK NETWORK OBJ UNDEFINED"
+//         + " | " + networkObj.networkId));
+//       return;
+//     }
 
-    delete networkObj._id;    
-    return networkObj;
-  }
-  catch(err){
-    console.trace(chalkError("validateNetwork ERROR: " + err));
-    return;
-  }
-}
+//     delete networkObj._id;    
+//     return networkObj;
+//   }
+//   catch(err){
+//     console.trace(chalkError("validateNetwork ERROR: " + err));
+//     return;
+//   }
+// }
 
 function networkPass(params) {
   const pass = 
@@ -2106,13 +2112,13 @@ async function generateRandomEvolveConfig(p){
 
       const dbNetworkObj = nnDoc.toObject();
 
-      config.networkObj = await validateNetwork({networkId: dbNetworkObj.networkId, networkObj: dbNetworkObj});
+      console.log(chalkInfo(MODULE_ID_PREFIX + " | +++ DB FIND SEED NN | " + dbNetworkObj.networkId));
 
-      if (empty(config.networkObj)) {
-        console.log(chalkInfo(MODULE_ID_PREFIX + " | ??? INVALID NETWORK ... PURGING"
-          + " | " + path
-        ));
-        // await purgeNetwork(nnObj.networkId);
+      const networkObjValid = await nnTools.validateNetwork({networkId: dbNetworkObj.networkId, networkObj: dbNetworkObj});
+
+      if (!networkObjValid) {
+        console.log(chalkInfo(MODULE_ID_PREFIX + " | ??? INVALID NETWORK ... PURGING: " + dbNetworkObj.networkId));
+        await purgeNetwork(dbNetworkObj.networkId);
         throw new Error("INVALID NETWORK: " + config.networkObj.networkId);
       }
 
@@ -4588,7 +4594,7 @@ async function childCreate(p){
         case "EVOLVE_COMPLETE":
 
           try {
-            const nn = await networkDefaults(m.networkObj);
+            const nn = m.networkObj;
 
             m.statsObj.evolve.results.fitness = statsObj.networkResults[m.networkObj.networkId].fitness;
             statsObj.evolveStats.total += 1;
@@ -4618,13 +4624,15 @@ async function childCreate(p){
               + "\nTNN | CONNS:           " + nn.networkJson.connections.length
             ));
 
-            // let objSize = sizeof(nn)/ONE_MEGABYTE;
+            // let objSize = sizeof(nn);
+            // objSize = objSize/ONE_MEGABYTE;
 
             // console.log(chalkError(MODULE_ID_PREFIX + " | NN OBJECT SIZE: " + objSize.toFixed(2) + " MB")); 
 
             newNeuralNetwork = new global.globalNeuralNetwork(nn);
 
-            // objSize = sizeof(newNeuralNetwork)/ONE_MEGABYTE;
+            // objSize = sizeof(newNeuralNetwork);
+            // objSize = objSize/ONE_MEGABYTE;
 
             // console.log(chalkError(MODULE_ID_PREFIX + " | NN DB DOC SIZE: " + objSize.toFixed(2) + " MB")); 
 

@@ -1271,7 +1271,8 @@ async function prepNetworkEvolve() {
     + " | NNID: " + statsObj.training.testRunId
   ));
 
-  const options = deepcopy(childNetworkObj.evolve.options);
+  // const options = deepcopy(childNetworkObj.evolve.options);
+  const options = childNetworkObj.evolve.options;
   const schedStartTime = moment().valueOf();
 
   options.schedule = {
@@ -1945,9 +1946,16 @@ const fsmStates = {
           delete childNetworkObj.network;
           delete childNetworkObj.networkRaw;
 
-          process.send({op: "EVOLVE_COMPLETE", childId: configuration.childId, networkObj: childNetworkObj, statsObj: statsObj});
+          process.send({op: "EVOLVE_COMPLETE", childId: configuration.childId, networkObj: childNetworkObj, statsObj: statsObj}, function(err){
+            if (err) {
+              console.log(chalkError(MODULE_ID_PREFIX + " | *** SEND EVOLVE_COMPLETE ERROR: " + err));
+              fsm.fsm_error();
+            }
+            else{
+              fsm.fsm_evolve_complete();
+            }
+          });
 
-          fsm.fsm_evolve_complete();
 
         }
         catch(err){
