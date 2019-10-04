@@ -2068,10 +2068,8 @@ async function networkObjDefaults(nnObj){
     if (!nnObj.hiddenLayerSize || (nnObj.hiddenLayerSize == undefined)){
       nnObj.hiddenLayerSize = await calculateHiddenLayerSize({networkObj: nnObj});
     }
-
-    const nn = await nnTools.convertNetwork({networkObj: nnObj});
-
-    return nn;
+    
+    return nnObj;
   }
   catch(err){
     throw err;
