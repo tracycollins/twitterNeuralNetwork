@@ -35,8 +35,11 @@ console.log("HOST NAME:    " + hostname);
 console.log("=========================================");
 console.log("=========================================");
 
-const neataptic = require("neataptic");
-const carrot = require("@liquid-carrot/carrot");
+// const neataptic = require("neataptic");
+// const carrot = require("@liquid-carrot/carrot");
+
+const NeuralNetworkTools = require("@threeceelabs/neural-network-tools");
+const nnTools = new NeuralNetworkTools(MODULE_ID_PREFIX + "_NNT");
 
 const carrotEvolveOptionsPickArray = [
   "activation",
@@ -183,6 +186,7 @@ const deepcopy = require("deep-copy");
 const async = require("async");
 const omit = require("object.omit");
 const omitDeep = require("omit-deep-lodash");
+// const objectRenameKeys = require("object-rename-keys");
 
 const cp = require("child_process");
 const childHashMap = {};
@@ -552,7 +556,7 @@ const DEFAULT_EVOLVE_LOG = 1;
 const DEFAULT_EVOLVE_MUTATION = "FFW";
 const DEFAULT_EVOLVE_MUTATION_RATE = 0.4;
 const DEFAULT_EVOLVE_MUTATION_EFFICIENT = false; // carrot only efficient_mutation
-const DEFAULT_EVOLVE_POPSIZE = 50;
+const DEFAULT_EVOLVE_POPSIZE = 20;
 const DEFAULT_EVOLVE_GROWTH = 0.0001;
 const DEFAULT_EVOLVE_SELECTION = "FITNESS_PROPORTIONATE";
 const DEFAULT_EVOLVE_CLEAR = false;
@@ -848,81 +852,31 @@ statsObjSmall = pick(statsObj, statsPickArray);
 
 async function networkDefaults(networkObj){
 
-  if (empty(networkObj)) {
-    console.trace(chalkError("networkDefaults ERROR: networkObj UNDEFINED"));
-    throw new Error("networkDefaults ERROR: networkObj UNDEFINED");
-  }
-
-  if(empty(networkObj.networkTechnology)) { networkObj.networkTechnology = "neataptic"; }
-  if(empty(networkObj.betterChild)) { networkObj.betterChild = false; }
-  if(empty(networkObj.testCycles)) { networkObj.testCycles = 0; }
-  if(empty(networkObj.testCycleHistory)) { networkObj.testCycleHistory = []; }
-  if(empty(networkObj.overallMatchRate)) { networkObj.overallMatchRate = 0; }
-  if(empty(networkObj.matchRate)) { networkObj.matchRate = 0; }
-  if(empty(networkObj.successRate)) { networkObj.successRate = 0; }
-
-
-  if (networkObj.network && (networkObj.network != undefined) && (!networkObj.networkRaw || (networkObj.networkRaw == undefined))){
-
-    console.log(chalkAlert(MODULE_ID_PREFIX + " | networkDefaults ... CREATING RAW NETWORK"
-      + " | TECH: " + networkObj.networkTechnology
-      + " | " + networkObj.networkId
-    ));
-
-    if (networkObj.network && networkObj.network.activate == undefined) {
-
-      console.log(chalkAlert(MODULE_ID_PREFIX + " | networkDefaults ... RAW NETWORK FROM JSON"
-        + " | TECH: " + networkObj.networkTechnology
-        + " | " + networkObj.networkId
-      ));
-
-      try{
-        const networkTech = (networkObj.networkTechnology == "networkTechnology") ? neataptic : carrot;
-        networkObj.networkRaw = networkTech.Network.fromJSON(networkObj.network);
-        if (!networkObj.networkJson || networkObj.networkJson == undefined) { networkObj.networkJson = networkObj.network.toJSON(); }
-      }
-      catch(e){
-        console.log(chalkAlert(MODULE_ID_PREFIX + " | *** networkDefaults RAW NETWORK FROM JSON ERROR"
-          + " | TECH: " + networkObj.networkTechnology
-          + " | " + networkObj.networkId
-          + " | " + e
-        ));
-
-        try{
-          console.log(chalkAlert(MODULE_ID_PREFIX + " | ... TRYING ALTERNATE NET TECH ..."));
-
-          if (networkObj.networkTechnology == "neataptic"){
-            networkObj.networkTechnology = "carrot";
-            networkObj.networkRaw = carrot.Network.fromJSON(networkObj.network);
-          }
-          else{
-            networkObj.networkTechnology = "neataptic";
-            networkObj.networkRaw = neataptic.Network.fromJSON(networkObj.network);
-          }
-          return networkObj;
-        }
-        catch(e2){
-          throw e2;
-        }
-      }
-    }
-    else if (networkObj.network && networkObj.network.activate != undefined) {
-      console.log(chalkAlert(MODULE_ID_PREFIX + " | networkDefaults NETWORK IS ALREADY RAW"
-        + " | TECH: " + networkObj.networkTechnology
-        + " | " + networkObj.networkId
-      ));
-      networkObj.networkRaw = networkObj.network;
-      if (!networkObj.networkJson || networkObj.networkJson == undefined) { networkObj.networkJson = networkObj.network.toJSON(); }
-      return networkObj;
+  try{
+    if (empty(networkObj)) {
+      console.trace(chalkError("networkDefaults ERROR: networkObj UNDEFINED"));
+      throw new Error("networkDefaults ERROR: networkObj UNDEFINED");
     }
 
-  }
+    if(empty(networkObj.networkTechnology)) { networkObj.networkTechnology = "neataptic"; }
+    if(empty(networkObj.betterChild)) { networkObj.betterChild = false; }
+    if(empty(networkObj.testCycles)) { networkObj.testCycles = 0; }
+    if(empty(networkObj.testCycleHistory)) { networkObj.testCycleHistory = []; }
+    if(empty(networkObj.overallMatchRate)) { networkObj.overallMatchRate = 0; }
+    if(empty(networkObj.matchRate)) { networkObj.matchRate = 0; }
+    if(empty(networkObj.successRate)) { networkObj.successRate = 0; }
 
-  if (!networkObj.hiddenLayerSize || (networkObj.hiddenLayerSize == undefined)){
-    networkObj.hiddenLayerSize = await calculateHiddenLayerSize({networkObj: networkObj});
-  }
+    const nnObj = await nnTools.convertNetwork({networkObj: networkObj});
 
-  return networkObj;
+    if (!nnObj.hiddenLayerSize || (nnObj.hiddenLayerSize == undefined)){
+      nnObj.hiddenLayerSize = await calculateHiddenLayerSize({networkObj: nnObj});
+    }
+
+    return nnObj;
+  }
+  catch(err){
+    throw err;
+  }
 }
 
 function printInputsObj(title, inputsObj, format) {
@@ -963,7 +917,7 @@ async function printNetworkObj(title, nObj, format) {
     ));
   }
   catch(err){
-    console.trace(chalkError("printNetworkObj ERROR: " + err + "\nTITLE: " + title));
+    console.log(chalkError(MODULE_ID_PREFIX + " | printNetworkObj ERROR: " + err + "\nTITLE: " + title));
   }
 }
 
@@ -1962,12 +1916,14 @@ async function generateSeedInputsNetworkId(params){
 
       config.seedNetworkId = betterChildSeedNetworkIdSet.keys().next().value;
 
-      const networkObj = await global.globalNeuralNetwork.findOne({networkId: config.seedNetworkId}).lean().exec();
+      const nnDoc = await global.globalNeuralNetwork.findOne({networkId: config.seedNetworkId}).exec();
 
-      if (!networkObj) {
+      if (!nnDoc) {
         console.log(chalkError(MODULE_ID_PREFIX + " | *** BETTER CHILD SEED NETWORK ERROR: NN NOT IN DB | SEED NN ID: " + config.seedNetworkId));
         throw new Error("SEED NN NOT IN DB: " + config.seedNetworkId);
       }
+
+      const networkObj = nnDoc.toObject();
 
       betterChildSeedNetworkIdSet.delete(config.seedNetworkId);
 
@@ -2028,12 +1984,14 @@ async function generateSeedInputsNetworkId(params){
 
         const randomNetworkId = randomItem([...randomNetworkIdSet]);
 
-        const networkObj = await global.globalNeuralNetwork.findOne({networkId: randomNetworkId}).lean().exec();
+        const nnDoc = await global.globalNeuralNetwork.findOne({networkId: randomNetworkId}).exec();
 
-        if (!networkObj) {
+        if (!nnDoc) {
           console.log(chalkError(MODULE_ID_PREFIX + " | *** GENERATE SEED INPUTS NETWORK ID ERROR: NN NOT IN DB | RANDOM NN ID: " + randomNetworkId));
           throw new Error("RANDOM NN NOT IN DB: " + randomNetworkId);
         }
+
+        const networkObj = nnDoc.toObject();
 
         config.networkObj = networkObj;
         config.networkTechnology = networkObj.networkTechnology;
@@ -2141,12 +2099,14 @@ async function generateRandomEvolveConfig(p){
 
     try{
 
-      const dbNetworkObj = await global.globalNeuralNetwork.findOne({ networkId: config.seedNetworkId }).exec();
+      const nnDoc = await global.globalNeuralNetwork.findOne({ networkId: config.seedNetworkId }).exec();
 
-      if (!dbNetworkObj) {
+      if (!nnDoc) {
         console.log(chalkError(MODULE_ID_PREFIX + " | *** DB FIND SEED NN ERROR | " + config.seedNetworkId));
         throw new Error("SEED NN not found: " + config.seedNetworkId);
       }
+
+      const dbNetworkObj = nnDoc.toObject();
 
       config.networkObj = await validateNetwork({networkId: dbNetworkObj.networkId, networkObj: dbNetworkObj});
 
@@ -3358,6 +3318,11 @@ async function loadConfigFile(params) {
     if (loadedConfigObj.TNN_LOCAL_PURGE_MIN_SUCCESS_RATE != undefined){
       console.log(MODULE_ID_PREFIX + " | LOADED TNN_LOCAL_PURGE_MIN_SUCCESS_RATE: " + loadedConfigObj.TNN_LOCAL_PURGE_MIN_SUCCESS_RATE);
       newConfiguration.localPurgeMinSuccessRate = loadedConfigObj.TNN_LOCAL_PURGE_MIN_SUCCESS_RATE;
+    }
+
+    if (loadedConfigObj.TNN_EVOLVE_POPSIZE != undefined){
+      console.log(MODULE_ID_PREFIX + " | LOADED TNN_EVOLVE_POPSIZE: " + loadedConfigObj.TNN_EVOLVE_POPSIZE);
+      newConfiguration.evolve.popsize = loadedConfigObj.TNN_EVOLVE_POPSIZE;
     }
 
     if (loadedConfigObj.TNN_EVOLVE_THREADS != undefined){
