@@ -1629,7 +1629,7 @@ async function evolve(params){
     const evolveResults = await childNetworkRaw.evolve(trainingSet, preppedOptions);
 
     childNetworkObj.networkJson = childNetworkRaw.toJSON();
-    childNetworkObj.networkRaw = childNetworkRaw;
+    // childNetworkObj.networkRaw = childNetworkRaw;
 
     debug("childNetworkRaw.evolve evolveResults\n" + jsonPrint(Object.keys(evolveResults)));
 
@@ -1860,17 +1860,17 @@ const fsmStates = {
       if (event != "fsm_tick") {
         reporter(event, oldState, newState);
         statsObj.fsmStatus = "INIT";
-        try {
-          const initError = await init();
-          if (initError) {
-            fsm.fsm_error();
-          }
+        // try {
+        //   const initError = await init();
+        //   if (initError) {
+        //     fsm.fsm_error();
+        //   }
           fsm.fsm_ready();
-        }
-        catch(err){
-          console.log(MODULE_ID_PREFIX + " | *** INIT ERROR: " + err);
-          fsm.fsm_error();
-        }
+        // }
+        // catch(err){
+        //   console.log(MODULE_ID_PREFIX + " | *** INIT ERROR: " + err);
+        //   fsm.fsm_error();
+        // }
         process.send({op: "STATS", childId: configuration.childId, data: statsObj});
       }
     },
@@ -1941,6 +1941,9 @@ const fsmStates = {
         try {
 
           await networkEvolve();
+
+          delete childNetworkObj.network;
+          delete childNetworkObj.networkRaw;
 
           process.send({op: "EVOLVE_COMPLETE", childId: configuration.childId, networkObj: childNetworkObj, statsObj: statsObj});
 
@@ -2068,7 +2071,7 @@ async function networkObjDefaults(nnObj){
     if (!nnObj.hiddenLayerSize || (nnObj.hiddenLayerSize == undefined)){
       nnObj.hiddenLayerSize = await calculateHiddenLayerSize({networkObj: nnObj});
     }
-    
+
     return nnObj;
   }
   catch(err){

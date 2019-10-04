@@ -38,8 +38,8 @@ console.log("=========================================");
 // const neataptic = require("neataptic");
 // const carrot = require("@liquid-carrot/carrot");
 
-const NeuralNetworkTools = require("@threeceelabs/neural-network-tools");
-const nnTools = new NeuralNetworkTools(MODULE_ID_PREFIX + "_NNT");
+// const NeuralNetworkTools = require("@threeceelabs/neural-network-tools");
+// const nnTools = new NeuralNetworkTools(MODULE_ID_PREFIX + "_NNT");
 
 const carrotEvolveOptionsPickArray = [
   "activation",
@@ -866,13 +866,13 @@ async function networkDefaults(networkObj){
     if(empty(networkObj.matchRate)) { networkObj.matchRate = 0; }
     if(empty(networkObj.successRate)) { networkObj.successRate = 0; }
 
-    const nnObj = await nnTools.convertNetwork({networkObj: networkObj});
+    // const nnObj = await nnTools.convertNetwork({networkObj: networkObj});
 
-    if (!nnObj.hiddenLayerSize || (nnObj.hiddenLayerSize == undefined)){
-      nnObj.hiddenLayerSize = await calculateHiddenLayerSize({networkObj: nnObj});
+    if (!networkObj.hiddenLayerSize || (networkObj.hiddenLayerSize == undefined)){
+      networkObj.hiddenLayerSize = await calculateHiddenLayerSize({networkObj: networkObj});
     }
 
-    return nnObj;
+    return networkObj;
   }
   catch(err){
     throw err;
@@ -4620,15 +4620,15 @@ async function childCreate(p){
               + "\nTNN | CONNS:           " + nn.networkJson.connections.length
             ));
 
-            let objSize = sizeof(nn)/ONE_MEGABYTE;
+            // let objSize = sizeof(nn)/ONE_MEGABYTE;
 
-            console.log(chalkError(MODULE_ID_PREFIX + " | NN OBJECT SIZE: " + objSize.toFixed(2) + " MB")); 
+            // console.log(chalkError(MODULE_ID_PREFIX + " | NN OBJECT SIZE: " + objSize.toFixed(2) + " MB")); 
 
             newNeuralNetwork = new global.globalNeuralNetwork(nn);
 
-            objSize = sizeof(newNeuralNetwork)/ONE_MEGABYTE;
+            // objSize = sizeof(newNeuralNetwork)/ONE_MEGABYTE;
 
-            console.log(chalkError(MODULE_ID_PREFIX + " | NN DB DOC SIZE: " + objSize.toFixed(2) + " MB")); 
+            // console.log(chalkError(MODULE_ID_PREFIX + " | NN DB DOC SIZE: " + objSize.toFixed(2) + " MB")); 
 
             newNeuralNetwork.markModified("overallMatchRate");
             newNeuralNetwork.markModified("networkJson");
