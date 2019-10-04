@@ -4631,8 +4631,7 @@ async function childCreate(p){
             console.log(chalkError(MODULE_ID_PREFIX + " | NN DB DOC SIZE: " + objSize.toFixed(2) + " MB")); 
 
             newNeuralNetwork.markModified("overallMatchRate");
-            newNeuralNetwork.markModified("network");
-            newNeuralNetwork.markModified("networkRaw");
+            newNeuralNetwork.markModified("networkJson");
 
             await newNeuralNetwork.save();
 
