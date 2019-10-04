@@ -357,7 +357,6 @@ async function createXorOptions(){
   };
 
   return xorOptions;
-
 }
 
 async function init(){
@@ -368,12 +367,12 @@ async function init(){
 
   console.log(chalkBlueBold("\n=============================\nNNC | TEST | CARROT TECH XOR")); 
 
-  if (configuration.networkTechnology == "carrot"){
-    childNetworkRaw = new carrot.Network(2,1);
-  }
-  else{
+  // if (configuration.networkTechnology == "carrot"){
+  //   childNetworkRaw = new carrot.Network(2,1);
+  // }
+  // else{
     childNetworkRaw = new neataptic.Network(2,1);
-  }
+  // }
 
   // XOR dataset
   const xorTrainingSet = [
@@ -392,6 +391,45 @@ async function init(){
   await childNetworkRaw.evolve(xorTrainingSet, xorOptions);
 
   let out = childNetworkRaw.activate([0,0]); // 0.2413
+
+  if (out > 0.5) { 
+    console.log(chalkError(MODULE_ID_PREFIX + " | *** XOR TEST FAIL | IN 0,0 | EXPECTED 0 : OUTPUT: " + out));
+    return(new Error("XOR test fail"));
+  }
+  console.log(chalkGreen(MODULE_ID_PREFIX + " | XOR | [0, 0] --> " + out));
+
+  out = childNetworkRaw.activate([0,1]); // 1.0000
+  if (out < 0.5) { 
+    console.log(chalkError(MODULE_ID_PREFIX + " | *** XOR TEST FAIL | IN 0,1 | EXPECTED 1 : OUTPUT: " + out));
+    return(new Error("XOR test fail"));
+  }
+  console.log(chalkGreen(MODULE_ID_PREFIX + " | XOR | [0, 1] --> " + out));
+
+  out = childNetworkRaw.activate([1,0]); // 0.7663
+  if (out < 0.5) { 
+    console.log(chalkError(MODULE_ID_PREFIX + " | *** XOR TEST FAIL | IN 1,0 | EXPECTED 1 : OUTPUT: " + out));
+    return(new Error("XOR test fail"));
+  }
+  console.log(chalkGreen(MODULE_ID_PREFIX + " | XOR | [1, 0] --> " + out));
+
+  out = childNetworkRaw.activate([1,1]); // -0.008
+  if (out > 0.5) { 
+    console.log(chalkError(MODULE_ID_PREFIX + " | *** XOR TEST FAIL | IN 1,1 | EXPECTED 0 : OUTPUT: " + out));
+    return(new Error("XOR test fail"));
+  }
+
+  console.log(chalkGreen(MODULE_ID_PREFIX + " | XOR | [1, 1] --> " + out));
+
+
+
+  const chalkNetworkJson = childNetworkRaw.toJSON();
+
+  childNetworkRaw = neataptic.Network.fromJSON(chalkNetworkJson);
+
+  // await childNetworkRaw.evolve(xorTrainingSet, xorOptions);
+
+  
+  out = childNetworkRaw.activate([0,0]); // 0.2413
   if (out > 0.5) { 
     console.log(chalkError(MODULE_ID_PREFIX + " | *** XOR TEST FAIL | IN 0,0 | EXPECTED 0 : OUTPUT: " + out));
     return(new Error("XOR test fail"));
