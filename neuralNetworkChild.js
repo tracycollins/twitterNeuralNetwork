@@ -2033,82 +2033,6 @@ console.log(chalkBlueBold(
   + "\n=======================================================================\n"
 ));
 
-async function generateNetworkRaw(nnObj){
-
-  if (!nnObj.network || (nnObj.network == undefined)){
-    throw new Error("NETWORK OBJ NETWORK UNDEFINED");
-  }
-  else if (!nnObj.networkRaw || (nnObj.networkRaw == undefined)){
-
-    let networkRaw;
-
-    console.log(chalkAlert(MODULE_ID_PREFIX + " | generateNetworkRaw ... CREATING RAW NETWORK"
-      + " | TECH: " + nnObj.networkTechnology
-      + " | " + nnObj.networkId
-    ));
-
-    if (nnObj.networkTechnology == "carrot"){
-      if (nnObj.network.activate == undefined) {
-        console.log(chalkAlert(MODULE_ID_PREFIX + " | generateNetworkRaw ... RAW NETWORK FROM JSON"
-          + " | TECH: " + nnObj.networkTechnology
-          + " | " + nnObj.networkId
-        ));
-        try{
-          networkRaw = carrot.Network.fromJSON(nnObj.network);
-          return networkRaw;
-        }
-        catch(e){
-          console.log(chalkAlert(MODULE_ID_PREFIX + " | *** generateNetworkRaw RAW NETWORK FROM JSON ERROR"
-            + " | TECH: " + nnObj.networkTechnology
-            + " | " + nnObj.networkId
-            + " | " + e
-          ));
-          throw e;
-        }
-      }
-      else{
-        console.log(chalkAlert(MODULE_ID_PREFIX + " | generateNetworkRaw NETWORK IS ALREADY RAW"
-          + " | TECH: " + nnObj.networkTechnology
-          + " | " + nnObj.networkId
-        ));
-        networkRaw = nnObj.network;
-        return networkRaw;
-      }
-    }
-    else { // assume neataptic
-      if (nnObj.network.activate == undefined) {
-        console.log(chalkAlert(MODULE_ID_PREFIX + " | generateNetworkRaw ... RAW NETWORK FROM JSON"
-          + " | TECH: " + nnObj.networkTechnology
-          + " | " + nnObj.networkId
-        ));
-        try{
-          networkRaw = neataptic.Network.fromJSON(nnObj.network);
-          return networkRaw;
-        }
-        catch(e){
-          console.log(chalkAlert(MODULE_ID_PREFIX + " | *** generateNetworkRaw RAW NETWORK FROM JSON ERROR"
-            + " | TECH: " + nnObj.networkTechnology
-            + " | " + nnObj.networkId
-            + " | " + e
-          ));
-          throw e;
-        }
-      }
-      else{
-        console.log(chalkAlert(MODULE_ID_PREFIX + " | generateNetworkRaw NETWORK IS ALREADY RAW"
-          + " | TECH: " + nnObj.networkTechnology
-          + " | " + nnObj.networkId
-        ));
-        networkRaw = nnObj.network;
-        return networkRaw;
-      }
-    }
-  }
-  else {
-    return nnObj.networkRaw;
-  }
-}
-
 async function calculateHiddenLayerSize(params){
   const networkObj = params.networkObj;
 
@@ -2127,28 +2051,31 @@ async function calculateHiddenLayerSize(params){
 
 async function networkObjDefaults(nnObj){
 
-  if (empty(nnObj)) {
-    console.trace(chalkError("networkObjDefaults ERROR: networkObj UNDEFINED"));
-    throw new Error("networkObjDefaults ERROR: networkObj UNDEFINED");
+  try{
+    if (empty(nnObj)) {
+      console.trace(chalkError("networkObjDefaults ERROR: networkObj UNDEFINED"));
+      throw new Error("networkObjDefaults ERROR: networkObj UNDEFINED");
+    }
+
+    if(empty(nnObj.networkTechnology)) { nnObj.networkTechnology = "neataptic"; }
+    if(empty(nnObj.betterChild)) { nnObj.betterChild = false; }
+    if(empty(nnObj.testCycles)) { nnObj.testCycles = 0; }
+    if(empty(nnObj.testCycleHistory)) { nnObj.testCycleHistory = []; }
+    if(empty(nnObj.overallMatchRate)) { nnObj.overallMatchRate = 0; }
+    if(empty(nnObj.matchRate)) { nnObj.matchRate = 0; }
+    if(empty(nnObj.successRate)) { nnObj.successRate = 0; }
+
+    if (!nnObj.hiddenLayerSize || (nnObj.hiddenLayerSize == undefined)){
+      nnObj.hiddenLayerSize = await calculateHiddenLayerSize({networkObj: nnObj});
+    }
+
+    const nn = await nnTools.convertNetwork({networkObj: nnObj});
+
+    return nn;
   }
-
-  if(empty(nnObj.networkTechnology)) { nnObj.networkTechnology = "neataptic"; }
-  if(empty(nnObj.betterChild)) { nnObj.betterChild = false; }
-  if(empty(nnObj.testCycles)) { nnObj.testCycles = 0; }
-  if(empty(nnObj.testCycleHistory)) { nnObj.testCycleHistory = []; }
-  if(empty(nnObj.overallMatchRate)) { nnObj.overallMatchRate = 0; }
-  if(empty(nnObj.matchRate)) { nnObj.matchRate = 0; }
-  if(empty(nnObj.successRate)) { nnObj.successRate = 0; }
-
-  if (!nnObj.hiddenLayerSize || (nnObj.hiddenLayerSize == undefined)){
-    nnObj.hiddenLayerSize = await calculateHiddenLayerSize({networkObj: nnObj});
+  catch(err){
+    throw err;
   }
-
-  if (!empty(nnObj.network)){
-    nnObj.networkRaw = await generateNetworkRaw(nnObj);
-  }
-
-  return nnObj;
 
 }
 

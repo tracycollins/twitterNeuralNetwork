@@ -1559,7 +1559,6 @@ async function updateDbNetwork(params) {
     networkTechnology: networkObj.networkTechnology,
     seedNetworkId: networkObj.seedNetworkId,
     seedNetworkRes: networkObj.seedNetworkRes,
-    network: networkObj.network,
     successRate: networkObj.successRate, 
     numInputs: networkObj.numInputs,
     numOutputs: networkObj.numOutputs,
@@ -1571,6 +1570,7 @@ async function updateDbNetwork(params) {
   };
 
   update.$set = { 
+    network: networkObj.networkJson,
     matchRate: networkObj.matchRate, 
     overallMatchRate: networkObj.overallMatchRate,
   };
@@ -1666,43 +1666,43 @@ function listFolders(params){
 
 async function validateNetwork(params){
 
-  if (empty(params) || empty(params.networkObj) || empty(params.networkId)) {
-    console.log(chalkError(MODULE_ID_PREFIX + " | validateNetwork *** PARAMS UNDEFINED ???\nPARAMS\n" + jsonPrint(params)));
-    throw new Error("params undefined");
-  }
-
-  let networkObj = params.networkObj;
-
-  if (networkObj.networkId != params.networkId) {
-    console.log(chalkError(MODULE_ID_PREFIX + " | *** NETWORK ID MISMATCH"
-      + " | " + networkObj.networkId 
-      + " | " + params.networkId
-    ));
-    return;
-  }
-
-  if(empty(networkObj.numInputs)) {
-    console.log(chalkError(MODULE_ID_PREFIX + " | *** NETWORK NETWORK numInputs UNDEFINED"
-      + " | " + networkObj.networkId
-    ));
-    return;
-  }
-
-  if(empty(networkObj.inputsId)) {
-    console.log(chalkError(MODULE_ID_PREFIX + " | *** NETWORK INPUTS ID UNDEFINED"
-      + " | " + networkObj.networkId));
-    return;
-  }
-
-  if(empty(networkObj.networkRaw) && empty(networkObj.networkJson) && empty(networkObj.network)) {
-    console.log(chalkError(MODULE_ID_PREFIX + " | *** NETWORK NETWORK OBJ UNDEFINED"
-      + " | " + networkObj.networkId));
-    return;
-  }
-
   try {
 
     networkObj = await networkDefaults(networkObj);
+
+    if (empty(params) || empty(params.networkObj) || empty(params.networkId)) {
+      console.log(chalkError(MODULE_ID_PREFIX + " | validateNetwork *** PARAMS UNDEFINED ???\nPARAMS\n" + jsonPrint(params)));
+      throw new Error("params undefined");
+    }
+
+    let networkObj = params.networkObj;
+
+    if (networkObj.networkId != params.networkId) {
+      console.log(chalkError(MODULE_ID_PREFIX + " | *** NETWORK ID MISMATCH"
+        + " | " + networkObj.networkId 
+        + " | " + params.networkId
+      ));
+      return;
+    }
+
+    if(empty(networkObj.numInputs)) {
+      console.log(chalkError(MODULE_ID_PREFIX + " | *** NETWORK NETWORK numInputs UNDEFINED"
+        + " | " + networkObj.networkId
+      ));
+      return;
+    }
+
+    if(empty(networkObj.inputsId)) {
+      console.log(chalkError(MODULE_ID_PREFIX + " | *** NETWORK INPUTS ID UNDEFINED"
+        + " | " + networkObj.networkId));
+      return;
+    }
+
+    if(empty(networkObj.networkJson)) {
+      console.log(chalkError(MODULE_ID_PREFIX + " | *** NETWORK NETWORK OBJ UNDEFINED"
+        + " | " + networkObj.networkId));
+      return;
+    }
 
     delete networkObj._id;    
     return networkObj;
