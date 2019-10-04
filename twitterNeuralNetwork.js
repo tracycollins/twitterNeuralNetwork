@@ -4636,7 +4636,7 @@ async function childCreate(p){
             await newNeuralNetwork.save();
 
             resultsHashmap[nn.networkId] = {};
-            resultsHashmap[nn.networkId] = omit(nn, ["network", "inputs", "outputs", "inputsObj"]);
+            resultsHashmap[nn.networkId] = omit(nn, ["network", "networkJson", "networkRaw", "inputs", "outputs", "inputsObj"]);
             resultsHashmap[nn.networkId].status = "COMPLETE";
             resultsHashmap[nn.networkId].stats = {};
             resultsHashmap[nn.networkId].stats = omitDeep(
