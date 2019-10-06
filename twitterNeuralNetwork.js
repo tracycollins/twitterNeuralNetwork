@@ -1330,13 +1330,13 @@ async function loadNetworkFile(params){
 
   const networkObj = await tcUtils.loadFileRetry({folder: params.folder, file: params.file});
 
-  if (networkObj.networkTechnology == "carrot"){
-    console.log(chalkAlert(MODULE_ID_PREFIX + " | CARROT ... SKIPPING LOAD NETWORK"
-      + " | " + path
-    ));
-    await purgeNetwork(networkObj.networkId);
-    return;
-  }
+  // if (networkObj.networkTechnology == "carrot"){
+  //   console.log(chalkAlert(MODULE_ID_PREFIX + " | CARROT ... SKIPPING LOAD NETWORK"
+  //     + " | " + path
+  //   ));
+  //   await purgeNetwork(networkObj.networkId);
+  //   return;
+  // }
 
   const networkObjValid = await nnTools.validateNetwork({networkId: networkObj.networkId, networkObj: networkObj});
 
@@ -1392,7 +1392,7 @@ async function loadNetworkFile(params){
   if ((params.folder.toLowerCase() != globalBestNetworkFolder.toLowerCase())
     && !networkIdSet.has(networkObj.networkId)
     && ((networkObj.successRate >= configuration.globalMinSuccessRate) 
-    && (networkObj.networkTechnology != "carrot") 
+    // && (networkObj.networkTechnology != "carrot") 
     || (networkObj.overallMatchRate >= configuration.globalMinSuccessRate))) {
 
     networkIdSet.add(networkObj.networkId);
@@ -4159,7 +4159,7 @@ function childCreateAll(p){
     options.env.NODE_ENV = "production";
 
     const createParams = {};
-    createParams.args = {};
+    createParams.args = [];
     createParams.options = {};
     createParams.config = {};
     createParams.childId = childId;
@@ -4857,6 +4857,8 @@ async function childCreate(p){
   let child = {};
   const options = {};
 
+  // options.silent = true;
+
   options.cwd = params.cwd || configuration.cwd;
 
   statsObj.status = "CHILD CREATE | CH ID: " + childId + " | APP: " + appPath;
@@ -4888,8 +4890,9 @@ async function childCreate(p){
     const childPidFile = await touchChildPidFile({ childId: childId, pid: child.pid });
 
     childHashMap[childId].childPidFile = childPidFile;
+    childHashMap[childId].child = child;
 
-    child.on("disconnect", function(){
+    childHashMap[childId].child.on("disconnect", function(){
 
       console.log(chalkAlert(MODULE_ID_PREFIX + " | *** CHILD DISCONNECT | " + childId));
 
@@ -4899,7 +4902,7 @@ async function childCreate(p){
       delete childHashMap[childId];
     });
 
-    child.on("close", function(){
+    childHashMap[childId].child.on("close", function(){
 
       console.log(chalkAlert(MODULE_ID_PREFIX + " | *** CHILD CLOSED | " + childId));
 
@@ -4909,7 +4912,7 @@ async function childCreate(p){
       delete childHashMap[childId];
     });
 
-    child.on("exit", function(){
+    childHashMap[childId].child.on("exit", function(){
 
       console.log(chalkAlert(MODULE_ID_PREFIX + " | *** CHILD EXITED | " + childId));
 
@@ -4921,7 +4924,7 @@ async function childCreate(p){
       quit({cause: "CHILD EXIT", force: true});
     });
 
-    child.on("error", function(err){
+    childHashMap[childId].child.on("error", function(err){
       console.log(chalkError(MODULE_ID_PREFIX + " | *** CHILD ERROR: " + err));
 
       shell.cd(childPidFolderLocal);
@@ -4932,7 +4935,7 @@ async function childCreate(p){
       quit({cause: "CHILD ERROR: " + err});
     })
 
-    child.on("message", async function(message){
+    childHashMap[childId].child.on("message", async function(message){
       if (configuration.verbose || configuration.testMode) { 
         console.log(chalkLog(MODULE_ID_PREFIX + " | <R MESSAGE | " + getTimeStamp() + " | OP: " + message.op)); 
       }
@@ -4945,10 +4948,8 @@ async function childCreate(p){
         + " | " + getTimeStamp()
         + " | " + childId
       ));
-      child.kill();
+      childHashMap[childId].child.kill();
     }
-
-    childHashMap[childId].child = child;
 
     const childInitParams = {};
     childInitParams.childId = childId;

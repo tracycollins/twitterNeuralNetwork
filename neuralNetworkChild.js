@@ -22,7 +22,7 @@ hostname = hostname.replace(/word/g, "google");
 
 const MODULE_NAME = "tncChild";
 let MODULE_ID_PREFIX = "NNC";
-const DEFAULT_NETWORK_TECHNOLOGY = "neataptic";
+const DEFAULT_NETWORK_TECHNOLOGY = "carrot";
 const DEFAULT_BINARY_MODE = true;
 const DEFAULT_TEST_RATIO = 0.20;
 const QUIT_WAIT_INTERVAL = ONE_SECOND;
@@ -357,7 +357,7 @@ function connectDb(){
 
         db.on("error", async function(){
           statsObj.status = "MONGO ERROR";
-          console.error.bind(console, MODULE_ID_PREFIX + " | *** MONGO DB CONNECTION ERROR");
+          // console.error.bind(console, MODULE_ID_PREFIX + " | *** MONGO DB CONNECTION ERROR");
           console.log(chalkError(MODULE_ID_PREFIX + " | *** MONGO DB CONNECTION ERROR"));
           db.close();
           quit({cause: "MONGO DB ERROR: " + err});
@@ -365,7 +365,7 @@ function connectDb(){
 
         db.on("disconnected", async function(){
           statsObj.status = "MONGO DISCONNECTED";
-          console.error.bind(console, MODULE_ID_PREFIX + " | *** MONGO DB DISCONNECTED");
+          // console.error.bind(console, MODULE_ID_PREFIX + " | *** MONGO DB DISCONNECTED");
           console.log(chalkAlert(MODULE_ID_PREFIX + " | *** MONGO DB DISCONNECTED"));
           quit({cause: "MONGO DB DISCONNECTED"});
         });
@@ -1339,7 +1339,7 @@ function createNetwork(){
             }
           }
           catch(err){
-            console.log(chalkError(MODULE_ID_PREFIX + " | *** ERROR CREATE NETWORK | CARROT fromJSON: " + err));
+            console.log(chalkError(MODULE_ID_PREFIX + " | *** ERROR CREATE NETWORK | " + childNetworkObj.networkTechnology + " fromJSON: " + err));
             return reject(err);
           }
         }
