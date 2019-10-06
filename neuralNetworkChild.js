@@ -1,11 +1,16 @@
  /*jslint node: true */
 /*jshint sub:true*/
 
+const ONE_SECOND = 1000;
+
 let childNetworkObj; // this is the common, default nn object
 let seedNetworkObj; // this is the common, default nn object
 
 const os = require("os");
 const _ = require("lodash");
+const omit = require("object.omit");
+const omitDeep = require("omit-deep-lodash");
+
 let hostname = os.hostname();
 hostname = hostname.replace(/.tld/g, ""); // amtrak wifi
 hostname = hostname.replace(/.local/g, "");
@@ -19,12 +24,10 @@ const MODULE_NAME = "tncChild";
 let MODULE_ID_PREFIX = "NNC";
 const DEFAULT_NETWORK_TECHNOLOGY = "neataptic";
 const DEFAULT_BINARY_MODE = true;
+const DEFAULT_TEST_RATIO = 0.20;
+const QUIT_WAIT_INTERVAL = ONE_SECOND;
 
 const TEST_MODE_LENGTH = 1000;
-
-const ONE_SECOND = 1000;
-
-const DEFAULT_TEST_RATIO = 0.20;
 
 let configuration = {};
 
@@ -90,6 +93,10 @@ const neatapticEvolveOptionsPickArray = [
 const ThreeceeUtilities = require("@threeceelabs/threecee-utilities");
 const tcUtils = new ThreeceeUtilities("NNC_TCU");
 
+const msToTime = tcUtils.msToTime;
+const jsonPrint = tcUtils.jsonPrint;
+const getTimeStamp = tcUtils.getTimeStamp;
+
 const NeuralNetworkTools = require("@threeceelabs/neural-network-tools");
 const nnTools = new NeuralNetworkTools("NNC_NNT");
 
@@ -112,10 +119,6 @@ console.log("HOST NAME:    " + hostname);
 console.log("=========================================");
 console.log("=========================================");
 
-const QUIT_WAIT_INTERVAL = ONE_SECOND;
-
-const compactDateTimeFormat = "YYYYMMDD_HHmmss";
-
 //=========================================================================
 // MODULE REQUIRES
 //=========================================================================
@@ -124,7 +127,6 @@ const carrot = require("@liquid-carrot/carrot");
 
 const moment = require("moment");
 const pick = require("object.pick");
-const treeify = require("treeify");
 const debug = require("debug")("tfe");
 const util = require("util");
 const deepcopy = require("deep-copy");
@@ -187,7 +189,7 @@ statsObj.training.seedNetworkRes = 0;
 statsObj.training.iterations = 0;
 
 statsObj.inputsId = "";
-statsObj.inputsObj = {};
+// statsObj.inputsObj = {};
 statsObj.outputs = [];
 
 const statsPickArray = [
@@ -308,159 +310,6 @@ function initConfig(cnf) {
   });
 }
 
-function expo(x, f) {
-  return Number.parseFloat(x).toExponential(f);
-}
-
-async function createXorOptions(){
-
-  const testIterations = 100000;
-
-  const xorOptions = {
-    // amount: 1,
-    // clear: false,
-    // cost: networkTech.methods.cost.MSE,
-    // efficient_mutation: true,
-    // efficientMutation: true,
-    // elitism: 5,
-    // equal: true,
-    error: 0.05,
-    // fitness_population: true,
-    // growth: 0.0001,
-    // iterations: testIterations,
-    // mutation: networkTech.methods.mutation.FFW,
-    // mutation_amount: 1,
-    // mutation_rate: 0.4,
-    // popsize: 50,
-    // population_size: 50,
-    // provenance: 0,
-    // threads: 8,
-  };
-
-  xorOptions.schedule = {
-
-    function: function(schedParams){
-
-      const error = (schedParams.error > 1000) ? expo(schedParams.error, 2) : schedParams.error;
-      const fitness = (schedParams.fitness < -1000) ? expo(schedParams.fitness, 2) : schedParams.fitness;
-
-      console.log(chalkLog(MODULE_ID_PREFIX 
-        + " | XOR TEST"
-        + " | ERR: " + error
-        + " | FIT: " + fitness
-        + " | I: " + schedParams.iteration + "/" + testIterations
-      ));
-
-    },
-    
-    iterations: 1000
-  };
-
-  return xorOptions;
-}
-
-async function init(){
-
-  statsObj.status = "INIT";
-
-  let childNetworkRaw;
-
-  console.log(chalkBlueBold("\n=============================\nNNC | TEST | CARROT TECH XOR")); 
-
-  // if (configuration.networkTechnology == "carrot"){
-  //   childNetworkRaw = new carrot.Network(2,1);
-  // }
-  // else{
-    childNetworkRaw = new neataptic.Network(2,1);
-  // }
-
-  // XOR dataset
-  const xorTrainingSet = [
-    { input: [0,0], output: [0] },
-    { input: [0,1], output: [1] },
-    { input: [1,0], output: [1] },
-    { input: [1,1], output: [0] }
-  ];
-
-  const xorOptions = await createXorOptions();
-
-  console.log(chalkBlueBold(MODULE_ID_PREFIX + " | TEST | CARROT TECH XOR\nOPTIONS\n" + jsonPrint(xorOptions))); 
-
-  console.log(xorTrainingSet);
-
-  await childNetworkRaw.evolve(xorTrainingSet, xorOptions);
-
-  let out = childNetworkRaw.activate([0,0]); // 0.2413
-
-  if (out > 0.5) { 
-    console.log(chalkError(MODULE_ID_PREFIX + " | *** XOR TEST FAIL | IN 0,0 | EXPECTED 0 : OUTPUT: " + out));
-    return(new Error("XOR test fail"));
-  }
-  console.log(chalkGreen(MODULE_ID_PREFIX + " | XOR | [0, 0] --> " + out));
-
-  out = childNetworkRaw.activate([0,1]); // 1.0000
-  if (out < 0.5) { 
-    console.log(chalkError(MODULE_ID_PREFIX + " | *** XOR TEST FAIL | IN 0,1 | EXPECTED 1 : OUTPUT: " + out));
-    return(new Error("XOR test fail"));
-  }
-  console.log(chalkGreen(MODULE_ID_PREFIX + " | XOR | [0, 1] --> " + out));
-
-  out = childNetworkRaw.activate([1,0]); // 0.7663
-  if (out < 0.5) { 
-    console.log(chalkError(MODULE_ID_PREFIX + " | *** XOR TEST FAIL | IN 1,0 | EXPECTED 1 : OUTPUT: " + out));
-    return(new Error("XOR test fail"));
-  }
-  console.log(chalkGreen(MODULE_ID_PREFIX + " | XOR | [1, 0] --> " + out));
-
-  out = childNetworkRaw.activate([1,1]); // -0.008
-  if (out > 0.5) { 
-    console.log(chalkError(MODULE_ID_PREFIX + " | *** XOR TEST FAIL | IN 1,1 | EXPECTED 0 : OUTPUT: " + out));
-    return(new Error("XOR test fail"));
-  }
-
-  console.log(chalkGreen(MODULE_ID_PREFIX + " | XOR | [1, 1] --> " + out));
-
-
-
-  const chalkNetworkJson = childNetworkRaw.toJSON();
-
-  childNetworkRaw = neataptic.Network.fromJSON(chalkNetworkJson);
-
-  // await childNetworkRaw.evolve(xorTrainingSet, xorOptions);
-
-  
-  out = childNetworkRaw.activate([0,0]); // 0.2413
-  if (out > 0.5) { 
-    console.log(chalkError(MODULE_ID_PREFIX + " | *** XOR TEST FAIL | IN 0,0 | EXPECTED 0 : OUTPUT: " + out));
-    return(new Error("XOR test fail"));
-  }
-  console.log(chalkGreen(MODULE_ID_PREFIX + " | XOR | [0, 0] --> " + out));
-
-  out = childNetworkRaw.activate([0,1]); // 1.0000
-  if (out < 0.5) { 
-    console.log(chalkError(MODULE_ID_PREFIX + " | *** XOR TEST FAIL | IN 0,1 | EXPECTED 1 : OUTPUT: " + out));
-    return(new Error("XOR test fail"));
-  }
-  console.log(chalkGreen(MODULE_ID_PREFIX + " | XOR | [0, 1] --> " + out));
-
-  out = childNetworkRaw.activate([1,0]); // 0.7663
-  if (out < 0.5) { 
-    console.log(chalkError(MODULE_ID_PREFIX + " | *** XOR TEST FAIL | IN 1,0 | EXPECTED 1 : OUTPUT: " + out));
-    return(new Error("XOR test fail"));
-  }
-  console.log(chalkGreen(MODULE_ID_PREFIX + " | XOR | [1, 0] --> " + out));
-
-  out = childNetworkRaw.activate([1,1]); // -0.008
-  if (out > 0.5) { 
-    console.log(chalkError(MODULE_ID_PREFIX + " | *** XOR TEST FAIL | IN 1,1 | EXPECTED 0 : OUTPUT: " + out));
-    return(new Error("XOR test fail"));
-  }
-
-  console.log(chalkGreen(MODULE_ID_PREFIX + " | XOR | [1, 1] --> " + out));
-
-  return;
-}
-
 //=========================================================================
 // MONGO DB
 //=========================================================================
@@ -475,6 +324,7 @@ const emojiModel = require("@threeceelabs/mongoose-twitter/models/emoji.server.m
 const hashtagModel = require("@threeceelabs/mongoose-twitter/models/hashtag.server.model");
 const locationModel = require("@threeceelabs/mongoose-twitter/models/location.server.model");
 const mediaModel = require("@threeceelabs/mongoose-twitter/models/media.server.model");
+const networkInputsModel = require("@threeceelabs/mongoose-twitter/models/networkInputs.server.model");
 const neuralNetworkModel = require("@threeceelabs/mongoose-twitter/models/neuralNetwork.server.model");
 const placeModel = require("@threeceelabs/mongoose-twitter/models/place.server.model");
 const tweetModel = require("@threeceelabs/mongoose-twitter/models/tweet.server.model");
@@ -520,7 +370,6 @@ function connectDb(){
           quit({cause: "MONGO DB DISCONNECTED"});
         });
 
-
         global.globalDbConnection = db;
 
         console.log(chalk.green(MODULE_ID_PREFIX + " | MONGOOSE DEFAULT CONNECTION OPEN"));
@@ -530,6 +379,7 @@ function connectDb(){
         global.globalLocation = global.globalDbConnection.model("Location", locationModel.LocationSchema);
         global.globalMedia = global.globalDbConnection.model("Media", mediaModel.MediaSchema);
         global.globalNeuralNetwork = global.globalDbConnection.model("NeuralNetwork", neuralNetworkModel.NeuralNetworkSchema);
+        global.globalNetworkInputs = global.globalDbConnection.model("NetworkInputs", networkInputsModel.NetworkInputsSchema);
         global.globalPlace = global.globalDbConnection.model("Place", placeModel.PlaceSchema);
         global.globalTweet = global.globalDbConnection.model("Tweet", tweetModel.TweetSchema);
         global.globalUrl = global.globalDbConnection.model("Url", urlModel.UrlSchema);
@@ -538,19 +388,6 @@ function connectDb(){
 
         const uscChildName = MODULE_ID_PREFIX + "_USC";
         userServerController = new UserServerController(uscChildName);
-
-        // const tscChildName = MODULE_ID_PREFIX + "_TSC";
-        // tweetServerController = new TweetServerController(tscChildName);
-
-        // tweetServerController.on("ready", function(appname){
-        //   tweetServerControllerReady = true;
-        //   console.log(chalk.green(MODULE_ID_PREFIX + " | " + tscChildName + " READY | " + appname));
-        // });
-
-        // tweetServerController.on("error", function(err){
-        //   tweetServerControllerReady = false;
-        //   console.trace(chalkError(MODULE_ID_PREFIX + " | *** " + tscChildName + " ERROR | " + err));
-        // });
 
         userServerController.on("ready", function(appname){
           userServerControllerReady = true;
@@ -578,60 +415,10 @@ function connectDb(){
     }
   });
 }
+
 //=========================================================================
 // MISC FUNCTIONS (own module?)
 //=========================================================================
-function jsonPrint(obj) {
-  if (obj) {
-    return treeify.asTree(obj, true, true);
-  }
-  else {
-    return "UNDEFINED";
-  }
-}
-
-function msToTime(d) {
-
-  let duration = d;
-  let sign = 1;
-
-  if (duration < 0) {
-    sign = -1;
-    duration = -duration;
-  }
-
-  let seconds = parseInt((duration / 1000) % 60);
-  let minutes = parseInt((duration / (1000 * 60)) % 60);
-  let hours = parseInt((duration / (1000 * 60 * 60)) % 24);
-  let days = parseInt(duration / (1000 * 60 * 60 * 24));
-  days = (days < 10) ? "0" + days : days;
-  hours = (hours < 10) ? "0" + hours : hours;
-  minutes = (minutes < 10) ? "0" + minutes : minutes;
-  seconds = (seconds < 10) ? "0" + seconds : seconds;
-
-  if (sign > 0) return days + ":" + hours + ":" + minutes + ":" + seconds;
-  return "- " + days + ":" + hours + ":" + minutes + ":" + seconds;
-}
-
-function getTimeStamp(inputTime) {
-  let currentTimeStamp;
-  if(empty(inputTime)) {
-    currentTimeStamp = moment().format(compactDateTimeFormat);
-    return currentTimeStamp;
-  }
-  else if (moment.isMoment(inputTime)) {
-    currentTimeStamp = moment(inputTime).format(compactDateTimeFormat);
-    return currentTimeStamp;
-  }
-  else if (moment.isDate(new Date(inputTime))) {
-    currentTimeStamp = moment(new Date(inputTime)).format(compactDateTimeFormat);
-    return currentTimeStamp;
-  }
-  else {
-    currentTimeStamp = moment(parseInt(inputTime)).format(compactDateTimeFormat);
-    return currentTimeStamp;
-  }
-}
 
 function getElapsedTimeStamp(){
   statsObj.elapsedMS = moment().valueOf() - startTimeMoment.valueOf();
@@ -677,6 +464,25 @@ function clearAllIntervals(){
   });
 }
 
+function processSend(message){
+  return new Promise(function(resolve, reject){
+
+    if (configuration.verbose || configuration.testMode){
+      console.log(chalkLog(MODULE_ID_PREFIX + " | >T MESSAGE | " + getTimeStamp() + " | OP: " + message.op)); 
+    }
+
+    process.send(message, function(err){
+      if (err){
+        console.log(chalkError(MODULE_ID_PREFIX + " | *** SEND MESSAGE ERROR | " + getTimeStamp() + " | OP: " + message.op + " | ERROR: " + err)); 
+        return reject(err);
+      }
+      console.log(chalkGreen(MODULE_ID_PREFIX + " | SENT MESSAGE | " + getTimeStamp() + " | OP: " + message.op)); 
+      resolve();
+    });
+
+  });
+}
+
 //=========================================================================
 // QUIT + EXIT
 //=========================================================================
@@ -704,7 +510,7 @@ async function quit(opts) {
 
   showStats(true);
 
-  process.send({op: "QUIT", childId: configuration.childId, data: statsObj});
+  await processSend({op: "QUIT", childId: configuration.childId, fsmStatus: statsObj.fsmStatus});
 
   setInterval(async function() {
 
@@ -1018,6 +824,48 @@ function fileSize(params){
           ));
           return resolve();
         }
+
+        sizeInterval = setInterval(async function(){
+
+          console.log(chalkInfo(MODULE_ID_PREFIX + " | FILE SIZE | " + getTimeStamp()
+            + " | EXISTS: " + exists
+            + " | CUR: " + size
+            + " | PREV: " + prevSize
+            + " | EXPECTED: " + params.size
+            + " | " + params.path
+          ));
+
+          exists = fs.existsSync(params.path);
+
+          if (exists) {
+            fs.stat(params.path, function(err, stats){
+
+              if (err) {
+                return reject(err);
+              }
+
+              prevSize = size;
+              size = stats.size;
+
+              if ((size > 0) && ((params.size && (size == params.size)) || (size == prevSize))) {
+
+                clearInterval(sizeInterval);
+
+                console.log(chalkGreen(MODULE_ID_PREFIX + " | FILE SIZE STABLE | " + getTimeStamp()
+                  + " | EXISTS: " + exists
+                  + " | CUR: " + size
+                  + " | PREV: " + prevSize
+                  + " | EXPECTED: " + params.size
+                  + " | " + params.path
+                ));
+
+                return resolve();
+              }
+            });
+          }
+
+        }, interval);
+
       }
       catch(err){
         return reject(err);
@@ -1030,49 +878,9 @@ function fileSize(params){
         + " | EXPECTED: " + params.size
         + " | " + params.path
       ));
+
+      return reject(new Error("NON-EXISTENT FILE: " + params.path));
     }
-
-
-    sizeInterval = setInterval(async function(){
-
-      console.log(chalkInfo(MODULE_ID_PREFIX + " | FILE SIZE | " + getTimeStamp()
-        + " | EXISTS: " + exists
-        + " | CUR: " + size
-        + " | PREV: " + prevSize
-        + " | EXPECTED: " + params.size
-        + " | " + params.path
-      ));
-
-      exists = fs.existsSync(params.path);
-
-      if (exists) {
-        fs.stat(params.path, function(err, stats){
-
-          if (err) {
-            return reject(err);
-          }
-
-          prevSize = size;
-          size = stats.size;
-
-          if ((size > 0) && ((params.size && (size == params.size)) || (size == prevSize))) {
-
-            clearInterval(sizeInterval);
-
-            console.log(chalkGreen(MODULE_ID_PREFIX + " | FILE SIZE STABLE | " + getTimeStamp()
-              + " | EXISTS: " + exists
-              + " | CUR: " + size
-              + " | PREV: " + prevSize
-              + " | EXPECTED: " + params.size
-              + " | " + params.path
-            ));
-
-            resolve();
-          }
-        });
-      }
-
-    }, interval);
 
   });
 }
@@ -1122,6 +930,29 @@ async function loadTrainingSet(){
   try{
     archiveFlagObj = await tcUtils.loadFileRetry({folder: configuration.userArchiveFolder, file: configuration.defaultUserArchiveFlagFile});
     console.log(chalkNetwork(MODULE_ID_PREFIX + " | USERS ARCHIVE FLAG FILE\n" + jsonPrint(archiveFlagObj)));
+
+    console.log(chalkLog(MODULE_ID_PREFIX + " | USER ARCHIVE FILE | FILE: " + archiveFlagObj.file + " | SIZE: " + archiveFlagObj.size));
+
+    if (archiveFlagObj.file != statsObj.archiveFile) {
+
+      statsObj.trainingSetReady = false;
+      statsObj.loadUsersArchiveBusy = true;
+
+      await loadUsersArchive({file: archiveFlagObj.file, size: archiveFlagObj.size});
+
+      statsObj.archiveModified = getTimeStamp();
+      statsObj.loadUsersArchiveBusy = false;
+      statsObj.archiveFile = archiveFlagObj.file;
+      statsObj.trainingSetReady = true;
+      return;
+    }
+    else {
+      console.log(chalkLog(MODULE_ID_PREFIX + " | USERS ARCHIVE SAME ... SKIPPING | " + archiveFlagObj.file + " | SIZE: " + archiveFlagObj.size));
+      statsObj.loadUsersArchiveBusy = false;
+      statsObj.trainingSetReady = true;
+      return;
+    }
+
   }
   catch(err){
     console.log(chalkError(MODULE_ID_PREFIX + " | *** USERS ARCHIVE FLAG FILE LOAD ERROR: " + err));
@@ -1130,39 +961,11 @@ async function loadTrainingSet(){
     throw err;
   }
 
-
-  console.log(chalkLog(MODULE_ID_PREFIX + " | USER ARCHIVE FILE | FILE: " + archiveFlagObj.file + " | SIZE: " + archiveFlagObj.size));
-
-  if (archiveFlagObj.file != statsObj.archiveFile) {
-
-    statsObj.trainingSetReady = false;
-
-    try {
-      await loadUsersArchive({file: archiveFlagObj.file, size: archiveFlagObj.size});
-      statsObj.archiveModified = getTimeStamp();
-      statsObj.loadUsersArchiveBusy = false;
-      statsObj.archiveFile = archiveFlagObj.file;
-      statsObj.trainingSetReady = true;
-      return;
-    }
-    catch(err){
-      statsObj.loadUsersArchiveBusy = false;
-      statsObj.trainingSetReady = false;
-      throw err;
-    }
-  }
-  else {
-    console.log(chalkLog(MODULE_ID_PREFIX + " | USERS ARCHIVE SAME ... SKIPPING | " + archiveFlagObj.path));
-    statsObj.loadUsersArchiveBusy = false;
-    statsObj.trainingSetReady = true;
-    return;
-  }
 }
 
-function testNetworkData(params){
+async function testNetworkData(params){
 
-  return new Promise(function(resolve, reject){
-
+  try{
     const testSet = params.testSet;
     const convertDatumFlag = params.convertDatumFlag || false;
     const binaryMode = (params.binaryMode != undefined) ? params.binaryMode : configuration.binaryMode;
@@ -1171,107 +974,103 @@ function testNetworkData(params){
     let numPassed = 0;
     let successRate = 0;
 
-    async.eachSeries(testSet, function(datum, cb){
+    for(const datum of testSet){
 
-      // nnTools.activateSingleNetwork({networkId: params.networkId, user: datum, binaryMode: binaryMode, verbose: configuration.verbose}).
-      nnTools.activateSingleNetwork({user: datum.user, datum: datum, convertDatumFlag: convertDatumFlag, binaryMode: binaryMode, verbose: configuration.verbose}).
-      then(function(testOutput){
+      const activateParams = {
+        user: datum.user, 
+        datum: datum, 
+        convertDatumFlag: convertDatumFlag, 
+        binaryMode: binaryMode, 
+        verbose: configuration.verbose
+      };
+      
+      const testOutput = await nnTools.activateSingleNetwork(activateParams);
 
-        numTested += 1;
+      numTested += 1;
 
-        let match = "FAIL";
-        let currentChalk = chalkAlert;
+      let match = "FAIL";
+      let currentChalk = chalkAlert;
 
-        if (testOutput.categoryAuto == datum.user.category){
-          match = "PASS";
-          numPassed += 1;
-          currentChalk = chalkGreenBold;
-        }
-
-        successRate = 100 * numPassed/numTested;
-
-        if (configuration.testMode || configuration.verbose){
-          console.log(currentChalk(MODULE_ID_PREFIX + " | TESTING"
-            + " | " + successRate.toFixed(2) + "%"
-            + " | " + numPassed + "/" + numTested
-            + " | CAT M: " + datum.user.category[0].toUpperCase() + " A: " + testOutput.categoryAuto[0].toUpperCase()
-            + " | MATCH: " + match
-            + " | @" + datum.user.screenName
-          ));
-        }
-
-        cb();
-      }).
-      catch(function(err){
-        return cb(err);
-      });
-
-    }, function(err){
-
-      if (err){
-        return reject(err);
+      if (testOutput.categoryAuto == datum.user.category){
+        match = "PASS";
+        numPassed += 1;
+        currentChalk = chalkGreenBold;
       }
 
-      const testResults = { 
-        testSetId: testSetObj.meta.testSetId, 
-        numTests: numTested, 
-        numPassed: numPassed, 
-        successRate: successRate
-      };
+      successRate = 100 * numPassed/numTested;
 
-      console.log(chalkBlueBold("\n================================================\n"
-        + MODULE_ID_PREFIX + " | TEST COMPLETE"
-        + " | " + numPassed + "/" + testSetObj.meta.setSize
-        + " | " + successRate.toFixed(2) + "%"
-        + "\n================================================\n"
-      ));
+      if (configuration.testMode || configuration.verbose){
+        console.log(currentChalk(MODULE_ID_PREFIX + " | TESTING"
+          + " | " + successRate.toFixed(2) + "%"
+          + " | " + numPassed + "/" + numTested
+          + " | CAT M: " + datum.user.category[0].toUpperCase() + " A: " + testOutput.categoryAuto[0].toUpperCase()
+          + " | MATCH: " + match
+          + " | @" + datum.user.screenName
+        ));
+      }
+    }
 
-      debug(chalkNetwork(MODULE_ID_PREFIX
-        + " | TEST RESULTS\n" + jsonPrint(testResults)
-      ));
+    const testResults = { 
+      testSetId: testSetObj.meta.testSetId, 
+      numTests: numTested, 
+      numPassed: numPassed, 
+      successRate: successRate
+    };
 
-      resolve(testResults);
+    console.log(chalkBlueBold("\n================================================\n"
+      + MODULE_ID_PREFIX + " | TEST COMPLETE"
+      + " | " + numPassed + "/" + testSetObj.meta.setSize
+      + " | " + successRate.toFixed(2) + "%"
+      + "\n================================================\n"
+    ));
 
-    });
+    return testResults;
 
-  });
+  }
+  catch(err){
+    throw err;
+  }
 }
 
 async function testNetwork(p){
 
-  const params = p || {};
+  try{
+    const params = p || {};
 
-  const binaryMode = (params.binaryMode != undefined) ? params.binaryMode : configuration.binaryMode;
+    const binaryMode = (params.binaryMode != undefined) ? params.binaryMode : configuration.binaryMode;
 
-  const testSet = await dataSetPrep({dataSetObj: testSetObj, binaryMode: binaryMode});
+    const testSet = await dataSetPrep({dataSetObj: testSetObj, binaryMode: binaryMode});
 
-  console.log(chalkBlue(MODULE_ID_PREFIX + " | TEST NETWORK"
-    + " | NETWORK ID: " + childNetworkObj.networkId
-    + " | " + testSet.length + " TEST DATA LENGTH"
-  ));
+    console.log(chalkBlue(MODULE_ID_PREFIX + " | TEST NETWORK"
+      + " | NETWORK ID: " + childNetworkObj.networkId
+      + " | " + testSet.length + " TEST DATA LENGTH"
+    ));
 
-  await nnTools.loadNetwork({networkObj: childNetworkObj, networkIsRaw: true});
-  await nnTools.setPrimaryNeuralNetwork(childNetworkObj.networkId);
-  await nnTools.setBinaryMode(binaryMode);
+    await nnTools.loadNetwork({networkObj: childNetworkObj});
+    await nnTools.setPrimaryNeuralNetwork(childNetworkObj.networkId);
+    await nnTools.setBinaryMode(binaryMode);
 
-  childNetworkObj.test = {};
-  childNetworkObj.test.results = {};
+    childNetworkObj.test = {};
+    childNetworkObj.test.results = {};
 
-  childNetworkObj.test.results = await testNetworkData({networkId: childNetworkObj.networkId, testSet: testSet, convertDatumFlag: false, binaryMode: binaryMode});
+    childNetworkObj.test.results = await testNetworkData({networkId: childNetworkObj.networkId, testSet: testSet, convertDatumFlag: false, binaryMode: binaryMode});
 
-  childNetworkObj.successRate = childNetworkObj.test.results.successRate;
+    childNetworkObj.successRate = childNetworkObj.test.results.successRate;
 
-  return;
+    return;
+  }
+  catch(err){
+    throw err;
+  }
 }
 
 async function prepNetworkEvolve() {
 
-  console.log(chalkBlueBold(MODULE_ID_PREFIX + " | >>> START NETWORK EVOLVE"
+  console.log(chalkBlueBold(MODULE_ID_PREFIX + " | PREP NETWORK EVOLVE OPTIONS"
     + " | " + getTimeStamp()
     + " | NNID: " + statsObj.training.testRunId
   ));
 
-  // const options = deepcopy(childNetworkObj.evolve.options);
   const options = childNetworkObj.evolve.options;
   const schedStartTime = moment().valueOf();
 
@@ -1289,7 +1088,7 @@ async function prepNetworkEvolve() {
         networkTechnology: childNetworkObj.networkTechnology,
         binaryMode: childNetworkObj.binaryMode,
         networkId: childNetworkObj.networkId,
-        numInputs: childNetworkObj.inputsObj.meta.numInputs,
+        numInputs: childNetworkObj.numInputs,
         inputsId: childNetworkObj.inputsId,
         evolveStart: schedStartTime,
         evolveElapsed: elapsedInt,
@@ -1301,7 +1100,14 @@ async function prepNetworkEvolve() {
         fitness: schedParams.fitness.toFixed(5) || -Infinity
       };
 
-      process.send({op: "EVOLVE_SCHEDULE", childId: configuration.childId, childIdShort: configuration.childIdShort, stats: sObj});
+      console.log(MODULE_ID_PREFIX + " | EVOLVE_SCHEDULE sObj\n" + jsonPrint(sObj));
+
+      processSend({op: "EVOLVE_SCHEDULE", childId: configuration.childId, childIdShort: configuration.childIdShort, stats: sObj})
+      .then(function(){
+      })
+      .catch(function(err){
+        console.err("EVOLVE_SCHEDULE ERROR: " + err);
+      });
 
     },
     
@@ -1318,7 +1124,11 @@ async function prepNetworkEvolve() {
     finalOptions = pick(options, neatapticEvolveOptionsPickArray);
   }
 
-  console.log(chalkBlueBold(MODULE_ID_PREFIX + " | EVOLVE OPTIONS\n" + jsonPrint(finalOptions)));
+  // console.log(chalkBlueBold(MODULE_ID_PREFIX + " | EVOLVE OPTIONS\n" + jsonPrint(finalOptions)));
+
+  if ((options.network != undefined)) {
+    console.log(chalkBlueBold(MODULE_ID_PREFIX + " | EVOLVE OPTIONS | NETWORK: " + Object.keys(options.network)));
+  }
 
   if ((childNetworkObj.networkTechnology == "neataptic") && (options.activation != undefined) && (typeof options.activation == "string")) {
     console.log(chalkBlueBold(MODULE_ID_PREFIX + " | EVOLVE OPTIONS | ACTIVATION: " + options.activation));
@@ -1356,13 +1166,12 @@ function dataSetPrep(p){
 
     let dataConverted = 0;
 
-    dataSetObj.meta.numInputs = childNetworkObj.inputsObj.meta.numInputs;
-    // testSetObj.meta.numInputs = childNetworkObj.inputsObj.meta.numInputs;
+    dataSetObj.meta.numInputs = childNetworkObj.numInputs;
 
     console.log(chalkBlue(MODULE_ID_PREFIX
       + " | DATA SET PREP"
       + " | DATA LENGTH: " + dataSetObj.data.length
-      + " | INPUTS: " + childNetworkObj.inputsObj.meta.numInputs
+      + " | INPUTS: " + childNetworkObj.numInputs
       + "\nDATA SET META\n" + jsonPrint(dataSetObj.meta)
     ));
 
@@ -1388,11 +1197,11 @@ function dataSetPrep(p){
 
           dataConverted += 1;
 
-          if (results.datum.input.length != childNetworkObj.inputsObj.meta.numInputs) { 
+          if (results.datum.input.length != childNetworkObj.numInputs) { 
             console.log(chalkError(MODULE_ID_PREFIX
               + " | *** ERROR DATA SET PREP ERROR" 
               + " | INPUT NUMBER MISMATCH" 
-              + " | INPUTS NUM IN: " + childNetworkObj.inputsObj.meta.numInputs
+              + " | INPUTS NUM IN: " + childNetworkObj.numInputs
               + " | DATUM NUM IN: " + results.datum.input.length
             ));
             return cb(new Error("INPUT NUMBER MISMATCH"));
@@ -1402,7 +1211,7 @@ function dataSetPrep(p){
             console.log(chalkError(MODULE_ID_PREFIX
               + " | *** ERROR DATA SET PREP ERROR" 
               + " | OUTPUT NUMBER MISMATCH" 
-              + " | INPUTS NUM IN: " + childNetworkObj.inputsObj.meta.numOutputs
+              + " | INPUTS NUM IN: " + childNetworkObj.numOutputs
               + " | DATUM NUM IN: " + results.datum.output.length
             ));
             return cb(new Error("INPUT NUMBER MISMATCH"));
@@ -1492,25 +1301,41 @@ function createNetwork(){
 
     let networkRaw;
 
-    const numInputs = childNetworkObj.inputsObj.meta.numInputs;
+    const numInputs = childNetworkObj.numInputs;
 
     switch (childNetworkObj.architecture) {
 
       case "loadedNetwork":
 
+        console.log(chalkBlueBold(MODULE_ID_PREFIX
+          + " | " + configuration.childId
+          + " | EVOLVE ARCH | SEED: " + childNetworkObj.seedNetworkId
+          + " | " + childNetworkObj.networkTechnology.toUpperCase()
+         ));
+
         if (!empty(childNetworkObj.networkRaw) && (childNetworkObj.networkRaw.evolve != undefined)){
+          console.log(chalkLog(MODULE_ID_PREFIX + " | CHILD RAW NETWORK: " + childNetworkObj.seedNetworkId));
           networkRaw = childNetworkObj.networkRaw;
         }
-        else if (childNetworkObj.network.evolve != undefined){
+        else if (!empty(childNetworkObj.network) && childNetworkObj.network.evolve != undefined){
+          console.log(chalkLog(MODULE_ID_PREFIX + " | CHILD RAW NETWORK: " + childNetworkObj.seedNetworkId));
+          childNetworkObj.networkRaw = childNetworkObj.network;
           networkRaw = childNetworkObj.network;
+          delete childNetworkObj.network;
         }
         else{
           try {
-            if (childNetworkObj.networkTechnology == "carrot"){
+            if (childNetworkObj.networkTechnology == "carrot" && !empty(childNetworkObj.network)){
               networkRaw = carrot.Network.fromJSON(childNetworkObj.network);
+              console.log(chalkLog(MODULE_ID_PREFIX + " | CHILD CARROT RAW NETWORK: " + childNetworkObj.seedNetworkId));
+            }
+            else if (!empty(childNetworkObj.network)){
+              networkRaw = neataptic.Network.fromJSON(childNetworkObj.network);
+              console.log(chalkLog(MODULE_ID_PREFIX + " | CHILD NEATAPTIC RAW NETWORK: " + childNetworkObj.seedNetworkId));
             }
             else{
-              networkRaw = neataptic.Network.fromJSON(childNetworkObj.network);
+              console.log(chalkError(MODULE_ID_PREFIX + " | *** CHILD NO RAW NETWORK: " + childNetworkObj.seedNetworkId));
+              return reject(new Error("NO RAW NETWORK: " + childNetworkObj.networkId));
             }
           }
           catch(err){
@@ -1618,21 +1443,25 @@ async function evolve(params){
 
     const binaryMode = (params.binaryMode != undefined) ? params.binaryMode : configuration.binaryMode;
 
-    await tcUtils.loadInputs({inputsObj: childNetworkObj.inputsObj});
-    await tcUtils.setPrimaryInputs({inputsId: childNetworkObj.inputsObj.inputsId});
+    const inputsObj = await global.globalNetworkInputs.findOne({inputsId: childNetworkObj.inputsId}).lean().exec();
+
+    await tcUtils.loadInputs({inputsObj: inputsObj});
+    await tcUtils.setPrimaryInputs({inputsId: inputsObj.inputsId});
 
     const trainingSet = await dataSetPrep({dataSetObj: trainingSetObj, binaryMode: binaryMode});
 
     const childNetworkRaw = await createNetwork();
+    // childNetworkObj.evolve.options.network = childNetworkRaw;
 
     const preppedOptions = await prepNetworkEvolve();
+
+    console.log(chalkBlue(MODULE_ID_PREFIX + " | >>> START NETWORK EVOLVE | " + childNetworkObj.networkId));
 
     const evolveResults = await childNetworkRaw.evolve(trainingSet, preppedOptions);
 
     childNetworkObj.networkJson = childNetworkRaw.toJSON();
-    // childNetworkObj.networkRaw = childNetworkRaw;
 
-    debug("childNetworkRaw.evolve evolveResults\n" + jsonPrint(Object.keys(evolveResults)));
+    // console.log("childNetworkRaw.evolve evolveResults\n" + jsonPrint(Object.keys(evolveResults)));
 
     evolveResults.threads = preppedOptions.threads;
     evolveResults.fitness = statsObj.evolve.stats.fitness;
@@ -1656,7 +1485,7 @@ async function evolve(params){
       + " | " + getTimeStamp()
       + " | " + "TECH: " + childNetworkObj.networkTechnology
       + " | " + "INPUT ID: " + childNetworkObj.inputsId
-      + " | " + "INPUTS: " + childNetworkObj.inputsObj.meta.numInputs
+      + " | " + "INPUTS: " + childNetworkObj.numInputs
       + " | " + "TIME: " + evolveResults.time
       + " | " + "THREADS: " + evolveResults.threads
       + " | " + "ITERATIONS: " + evolveResults.iterations
@@ -1672,9 +1501,6 @@ async function evolve(params){
       ));
       // throw new Error("EVOLVE ITERATIONS");
     }
-
-    await testNetwork({binaryMode: binaryMode});
-
     return;
   }
   catch(err){
@@ -1700,7 +1526,7 @@ function networkEvolve(){
       debug(chalkAlert(MODULE_ID_PREFIX + " | START NETWORK DEFINED: " + params.networkId));
     }
 
-    if (!params.architecture || (params.architecture == undefined)) { params.architecture = "perceptron"; }
+    if (!params.architecture || (params.architecture == undefined)) { params.architecture = "random"; }
     if (!params.networkTechnology || (params.networkTechnology == undefined)) { params.networkTechnology = configuration.networkTechnology; }
 
     const networkTech = (params.networkTechnology == "carrot") ? carrot : neataptic;
@@ -1725,6 +1551,15 @@ function networkEvolve(){
           );
         break;
 
+        case "network":
+          if (!empty(params.network)){
+            console.log("NNC" + " | " + configuration.childId + " | EVOLVE OPTION | " + key + "\n" + Object.keys(params[key]));
+          }
+          else {
+            console.log("NNC" + " | " + configuration.childId + " | EVOLVE OPTION | " + key + ": " + params[key]);
+          }
+        break;
+              
         case "mutation":
           console.log("NNC" + " | " + configuration.childId + " | EVOLVE OPTION | " + key + ": " + params[key]);
           options.mutation = networkTech.methods.mutation[params[key]];
@@ -1754,17 +1589,21 @@ function networkEvolve(){
 
       cb();
 
-    }, function(){
+    }, async function(err){
 
-      evolve({binaryMode: binaryMode})
-      .then(function(){
-        resolve();
-      })
-      .catch(function(err){
-        console.log(chalkError(MODULE_ID_PREFIX + " | *** EVOLVE ERROR: " + err));
-        console.trace(err);
+      if (err) {
         return reject(err);
-      });
+      }
+
+      try{
+        await evolve({binaryMode: binaryMode});
+        console.log(chalkGreen(MODULE_ID_PREFIX + " | END NETWORK EVOLVE"));
+        resolve();
+      }
+      catch(e){
+        console.log(chalkError(MODULE_ID_PREFIX + " | *** EVOLVE ERROR: " + err));
+        return reject(e);
+      }
 
     });
 
@@ -1859,20 +1698,19 @@ const fsmStates = {
   "INIT": {
     onEnter: async function(event, oldState, newState) {
       if (event != "fsm_tick") {
-        reporter(event, oldState, newState);
-        statsObj.fsmStatus = "INIT";
-        // try {
-        //   const initError = await init();
-        //   if (initError) {
-        //     fsm.fsm_error();
-        //   }
+        try {
+
+          reporter(event, oldState, newState);
+          statsObj.fsmStatus = "INIT";
+
+          await connectDb();
+          await processSend({op: "STATS", childId: configuration.childId, fsmStatus: statsObj.fsmStatus});
           fsm.fsm_ready();
-        // }
-        // catch(err){
-        //   console.log(MODULE_ID_PREFIX + " | *** INIT ERROR: " + err);
-        //   fsm.fsm_error();
-        // }
-        process.send({op: "STATS", childId: configuration.childId, data: statsObj});
+        }
+        catch(err){
+          console.log(MODULE_ID_PREFIX + " | *** INIT ERROR: " + err);
+          fsm.fsm_error();
+        }
       }
     },
     fsm_tick: function() {
@@ -1884,11 +1722,11 @@ const fsmStates = {
   },
 
   "READY": {
-    onEnter: function(event, oldState, newState) {
+    onEnter: async function(event, oldState, newState) {
       if (event != "fsm_tick") {
         reporter(event, oldState, newState);
         statsObj.fsmStatus = "READY";
-        process.send({op: "STATS", childId: configuration.childId, data: statsObj});
+        await processSend({op: "STATS", childId: configuration.childId, fsmStatus: statsObj.fsmStatus});
       }
     },
     fsm_tick: function() {
@@ -1905,21 +1743,27 @@ const fsmStates = {
 
       if (event != "fsm_tick") {
 
-        reporter(event, oldState, newState);
-        statsObj.fsmStatus = "CONFIG_EVOLVE";
-        process.send({op: "STATS", childId: configuration.childId, data: statsObj});
+        try{
+          reporter(event, oldState, newState);
+          statsObj.fsmStatus = "CONFIG_EVOLVE";
 
-        await loadTrainingSet();
+          await processSend({op: "STATS", childId: configuration.childId, fsmStatus: statsObj.fsmStatus});
+          await loadTrainingSet();
 
-        if (configuration.testMode) {
-          trainingSetObj.data = _.shuffle(trainingSetObj.data);
-          trainingSetObj.data.length = Math.min(trainingSetObj.data.length, TEST_MODE_LENGTH);
-          testSetObj.data.length = parseInt(configuration.testSetRatio * trainingSetObj.data.length);
-          trainingSetObj.meta.setSize = trainingSetObj.data.length;
-          testSetObj.meta.setSize = testSetObj.data.length;
+          if (configuration.testMode) {
+            trainingSetObj.data = _.shuffle(trainingSetObj.data);
+            trainingSetObj.data.length = Math.min(trainingSetObj.data.length, TEST_MODE_LENGTH);
+            testSetObj.data.length = parseInt(configuration.testSetRatio * trainingSetObj.data.length);
+            trainingSetObj.meta.setSize = trainingSetObj.data.length;
+            testSetObj.meta.setSize = testSetObj.data.length;
+          }
+
+          fsm.fsm_evolve();
         }
-
-        fsm.fsm_evolve();
+        catch(err){
+          console.log(chalkError(MODULE_ID_PREFIX + " | *** CONFIG_EVOLVE ERROR: " + err));
+          fsm.fsm_error();
+        }
       }
     },
     fsm_tick: function() {
@@ -1935,33 +1779,45 @@ const fsmStates = {
     onEnter: async function(event, oldState, newState) {
       if (event != "fsm_tick") {
 
-        reporter(event, oldState, newState);
-        statsObj.fsmStatus = "EVOLVE";
-        process.send({op: "STATS", childId: configuration.childId, data: statsObj});
-
         try {
 
-          await networkEvolve();
+          reporter(event, oldState, newState);
+          statsObj.fsmStatus = "EVOLVE";
+          await processSend({op: "STATS", childId: configuration.childId, fsmStatus: statsObj.fsmStatus});
 
+          await networkEvolve();
+          await testNetwork({binaryMode: configuration.binaryMode});
+
+          delete childNetworkObj.inputsObj;
           delete childNetworkObj.network;
           delete childNetworkObj.networkRaw;
+          delete childNetworkObj.evolve.options.network;
+          delete childNetworkObj.evolve.options.schedule;
 
-          process.send({op: "EVOLVE_COMPLETE", childId: configuration.childId, networkObj: childNetworkObj, statsObj: statsObj}, function(err){
-            if (err) {
-              console.log(chalkError(MODULE_ID_PREFIX + " | *** SEND EVOLVE_COMPLETE ERROR: " + err));
-              fsm.fsm_error();
-            }
-            else{
-              fsm.fsm_evolve_complete();
-            }
-          });
+          console.log(chalkLog(MODULE_ID_PREFIX + " | ... SAVING NN TO DB: " + childNetworkObj.networkId));
 
+          const nnDoc = new global.globalNeuralNetwork(childNetworkObj);
+
+          await nnDoc.save();
+
+          console.log(chalkGreen(MODULE_ID_PREFIX + " | +++ ADDED NN TO DB: " + childNetworkObj.networkId));
+
+          const messageObj = {
+            op: "EVOLVE_COMPLETE", 
+            childId: configuration.childId, 
+            networkId: childNetworkObj.networkId, 
+            statsObj: statsObj.evolve.results
+          };
+
+          await processSend(messageObj);
+
+          console.log(chalkLog(MODULE_ID_PREFIX + " | SENT EVOLVE_COMPLETE: " + childNetworkObj.networkId));
+          fsm.fsm_evolve_complete();
 
         }
         catch(err){
           console.log(chalkError(MODULE_ID_PREFIX + " | *** EVOLVE ERROR: " + err));
           console.log(chalkError(MODULE_ID_PREFIX + " | *** EVOLVE ERROR\nnetworkObj.meta\n" + jsonPrint(childNetworkObj.meta)));
-          console.log(chalkError(MODULE_ID_PREFIX + " | *** EVOLVE ERROR\ninputsObj\n" + jsonPrint(childNetworkObj.inputsObj.meta)));
           console.log(chalkError(MODULE_ID_PREFIX + " | *** EVOLVE ERROR\ntrainingSet\n" + jsonPrint(trainingSetObj.meta)));
           console.log(chalkError(MODULE_ID_PREFIX + " | *** EVOLVE ERROR\ntestSet\n" + jsonPrint(testSetObj.meta)));
           fsm.fsm_error();
@@ -1980,15 +1836,14 @@ const fsmStates = {
 
   "EVOLVE_COMPLETE": {
 
-    onEnter: function(event, oldState, newState) {
+    onEnter: async function(event, oldState, newState) {
 
       if (event != "fsm_tick") {
 
         reporter(event, oldState, newState);
-
         statsObj.fsmStatus = "EVOLVE_COMPLETE";
 
-        process.send({op: "STATS", childId: configuration.childId, data: statsObj});
+        await processSend({op: "STATS", childId: configuration.childId, fsmStatus: statsObj.fsmStatus});
 
         if (configuration.quitOnComplete) {
           console.log(chalkBlueBold(MODULE_ID_PREFIX + " | EVOLVE COMPLETE | QUITTING ..."));
@@ -2045,27 +1900,33 @@ console.log(chalkBlueBold(
 ));
 
 async function calculateHiddenLayerSize(params){
-  const networkObj = params.networkObj;
+  try {
+    const networkObj = params.networkObj;
 
-  let hiddenLayerSize = 0;
+    let hiddenLayerSize = 0;
 
-  if (!networkObj.network.nodes || (networkObj.network.nodes == undefined)){
+    if (!networkObj.network.nodes || (networkObj.network.nodes == undefined)){
+      return hiddenLayerSize;
+    }
+
+    for(const node of networkObj.network.nodes){
+      if (node.type == "hidden") { hiddenLayerSize += 1; }
+    }
+
     return hiddenLayerSize;
   }
-
-  for(const node of networkObj.network.nodes){
-    if (node.type == "hidden") { hiddenLayerSize += 1; }
+  catch(err){
+    console.log(chalkError(MODULE_ID_PREFIX + " | *** calculateHiddenLayerSize ERROR: " + err));
+    throw err;
   }
-
-  return hiddenLayerSize;
 }
 
-async function networkObjDefaults(nnObj){
+async function networkDefaults(nnObj){
 
   try{
     if (empty(nnObj)) {
-      console.trace(chalkError("networkObjDefaults ERROR: networkObj UNDEFINED"));
-      throw new Error("networkObjDefaults ERROR: networkObj UNDEFINED");
+      console.trace(chalkError("networkDefaults ERROR: networkObj UNDEFINED"));
+      throw new Error("networkDefaults ERROR: networkObj UNDEFINED");
     }
 
     if(empty(nnObj.networkTechnology)) { nnObj.networkTechnology = "neataptic"; }
@@ -2076,13 +1937,10 @@ async function networkObjDefaults(nnObj){
     if(empty(nnObj.matchRate)) { nnObj.matchRate = 0; }
     if(empty(nnObj.successRate)) { nnObj.successRate = 0; }
 
-    if (!nnObj.hiddenLayerSize || (nnObj.hiddenLayerSize == undefined)){
-      nnObj.hiddenLayerSize = await calculateHiddenLayerSize({networkObj: nnObj});
-    }
-
     return nnObj;
   }
   catch(err){
+    console.log(chalkError(MODULE_ID_PREFIX + " | *** networkDefaults ERROR: " + err));
     throw err;
   }
 
@@ -2090,237 +1948,275 @@ async function networkObjDefaults(nnObj){
 
 async function configNetworkEvolve(params){
 
-  let nnObj = {};
-  const newNetObj = {};
+  try{
+    const newNetObj = {};
 
-  if (params.testSetRatio != undefined) { configuration.testSetRatio = params.testSetRatio; }
+    if (params.testSetRatio != undefined) { configuration.testSetRatio = params.testSetRatio; }
 
-  console.log(chalkInfo(MODULE_ID_PREFIX + " | CONFIG EVOLVE"
-    + " | CHILD ID: " + params.childId
-    + " | NETWORK TECH: " + params.networkTechnology
-    + " | TEST SET RATIO: " + configuration.testSetRatio
-  ));
+    console.log(chalkInfo(MODULE_ID_PREFIX + " | CONFIG EVOLVE"
+      + " | CHILD ID: " + params.childId
+      + " | ARCH: " + params.architecture
+      + " | NETWORK TECH: " + params.networkTechnology
+      + " | INPUTS: " + params.numInputs
+      + " | SEED: " + params.seedNetworkId
+      + " | SEED RES: " + params.seedNetworkRes
+      + " | TEST SET RATIO: " + configuration.testSetRatio
+    ));
 
-  configuration.childId = params.childId;
+    configuration.childId = params.childId;
 
-  newNetObj.binaryMode = (params.binaryMode != undefined) ? params.binaryMode : configuration.binaryMode;
+    newNetObj.binaryMode = (params.binaryMode != undefined) ? params.binaryMode : configuration.binaryMode;
 
-  newNetObj.networkTechnology = params.networkTechnology || "neataptic";
+    newNetObj.networkTechnology = params.networkTechnology || "neataptic";
 
-  newNetObj.networkId = params.testRunId;
-  newNetObj.seedNetworkId = params.seedNetworkId || false;
-  newNetObj.seedNetworkRes = params.seedNetworkRes;
-  newNetObj.networkCreateMode = "evolve";
-  newNetObj.testRunId = params.testRunId;
-  newNetObj.network = {};
-  newNetObj.inputsId = params.inputsId;
-  newNetObj.inputsObj = {};
-  newNetObj.inputsObj = params.inputsObj;
-  newNetObj.numInputs = params.inputsObj.meta.numInputs;
-  newNetObj.numOutputs = 3;
-  newNetObj.outputs = [];
-  newNetObj.outputs = params.outputs;
+    newNetObj.networkId = params.testRunId;
+    newNetObj.architecture = params.architecture;
+    newNetObj.seedNetworkId = (params.seedNetworkId && params.seedNetworkId !== undefined && params.seedNetworkId != "false") ? params.seedNetworkId : false;
+    newNetObj.seedNetworkRes = params.seedNetworkRes;
+    newNetObj.networkCreateMode = "evolve";
+    newNetObj.testRunId = params.testRunId;
+    // newNetObj.network = {};
+    newNetObj.inputsId = params.inputsId;
+    newNetObj.numInputs = params.numInputs;
+    newNetObj.numOutputs = 3;
+    newNetObj.outputs = [];
+    newNetObj.outputs = params.outputs;
 
-  newNetObj.evolve = {};
-  newNetObj.evolve.results = {};
-  newNetObj.evolve.options = {};
+    newNetObj.evolve = {};
+    newNetObj.evolve.results = {};
+    newNetObj.evolve.options = {};
 
-  newNetObj.evolve.options = pick(
-    params,
-    [
-      "activation",
-      "amount", 
-      "architecture",
-      "binaryMode",
-      "clear", 
-      "cost", 
-      "efficient_mutation", 
-      "elitism", 
-      "equal", 
-      "error",
-      "fitness_population", 
-      "growth",
-      "hiddenLayerSize",
-      "inputsId",
-      "iterations",
-      "mutation", 
-      "mutation_amount", 
-      "mutation_rate",
-      "networkTechnology",
-      "outputs",
-      "popsize", 
-      "population_size", 
-      "provenance",
-      "runId",
-      "seedNetworkId",
-      "seedNetworkRes",
-      "selection",
-      "threads",
-    ]
-  );
+    newNetObj.evolve.options = pick(
+      params,
+      [
+        "activation",
+        "amount", 
+        "architecture",
+        "binaryMode",
+        "clear", 
+        "cost", 
+        "efficient_mutation", 
+        "elitism", 
+        "equal", 
+        "error",
+        "fitness_population", 
+        "growth",
+        "hiddenLayerSize",
+        "inputsId",
+        "iterations",
+        "mutation", 
+        "mutation_amount", 
+        "mutation_rate",
+        "networkTechnology",
+        "outputs",
+        "popsize", 
+        "population_size", 
+        "provenance",
+        "runId",
+        "seedNetworkId",
+        "seedNetworkRes",
+        "selection",
+        "threads",
+      ]
+    );
 
-  newNetObj.evolve.elapsed = statsObj.evolve.elapsed;
-  newNetObj.evolve.startTime = statsObj.evolve.startTime;
-  newNetObj.evolve.endTime = statsObj.evolve.endTime;
+    newNetObj.evolve.elapsed = statsObj.evolve.elapsed;
+    newNetObj.evolve.startTime = statsObj.evolve.startTime;
+    newNetObj.evolve.endTime = statsObj.evolve.endTime;
 
-  if (newNetObj.evolve.options.seedNetworkId) {
+    if (newNetObj.evolve.options.seedNetworkId) {
 
-    seedNetworkObj = params.networkObj;
+      seedNetworkObj = await global.globalNeuralNetwork.findOne({networkId: newNetObj.seedNetworkId}).lean().exec();
 
-    if (seedNetworkObj.networkTechnology != newNetObj.networkTechnology){
-      console.log(chalkAlert(MODULE_ID_PREFIX + " | !!! CHANGE NETWORK TECH TO SEED NN TECH"
-        + " | SEED: " + seedNetworkObj.networkTechnology
-        + " --> CHILD: " + newNetObj.networkTechnology
+      if (seedNetworkObj && seedNetworkObj.networkTechnology != newNetObj.networkTechnology){
+        console.log(chalkAlert(MODULE_ID_PREFIX + " | !!! CHANGE NETWORK TECH TO SEED NN TECH"
+          + " | SEED: " + seedNetworkObj.networkTechnology
+          + " --> CHILD: " + newNetObj.networkTechnology
+        ));
+        newNetObj.networkTechnology = seedNetworkObj.networkTechnology;
+      }
+
+      newNetObj.numInputs = seedNetworkObj.numInputs;
+      newNetObj.numOutputs = seedNetworkObj.numOutputs;
+      newNetObj.seedNetworkId = seedNetworkObj.networkId;
+      newNetObj.seedNetworkRes = seedNetworkObj.seedNetworkRes;
+
+      if (!empty(seedNetworkObj.networkJson)) {
+        newNetObj.networkJson = seedNetworkObj.networkJson;        
+      }
+      else if (!empty(seedNetworkObj.network)) {
+        newNetObj.networkJson = seedNetworkObj.network;        
+      }
+      else {
+        console.log(chalkError(MODULE_ID_PREFIX + " | *** NN JSON UNDEFINED"
+          + " | SEED: " + seedNetworkObj.networkId
+          + " | TECH: " + seedNetworkObj.networkTechnology
+        ));
+        throw new Error("SEED NN JSON UNDEFINED: " + seedNetworkObj.networkId);
+      }
+
+      console.log(chalkBlueBold(MODULE_ID_PREFIX + " | EVOLVE | " + getTimeStamp()
+        + " | " + configuration.childId
+        + " | " + newNetObj.networkId
+        + " | BIN MODE: " + newNetObj.evolve.options.binaryMode
+        + " | ARCH: " + newNetObj.architecture
+        + " | TECH: " + newNetObj.networkTechnology
+        + " | INPUTS: " + newNetObj.numInputs
+        + " | HIDDEN: " + newNetObj.evolve.options.hiddenLayerSize
+        + " | THREADs: " + newNetObj.evolve.options.threads
+        + " | ITRS: " + newNetObj.evolve.options.iterations
+        + " | SEED: " + newNetObj.seedNetworkId
+        + " | SEED RES %: " + newNetObj.seedNetworkRes
       ));
-      newNetObj.networkTechnology = seedNetworkObj.networkTechnology;
+
+      const nnConvertedObj = await nnTools.convertNetwork({networkObj: newNetObj});
+      nnConvertedObj.evolve.options.network = nnConvertedObj.networkRaw;
+      return nnConvertedObj;
+    }
+    else {
+
+      seedNetworkObj = null;
+      newNetObj.evolve.options.network = null;
+
+      console.log(chalkBlueBold(MODULE_ID_PREFIX + " | EVOLVE | " + getTimeStamp()
+        + " | " + configuration.childId
+        + " | " + newNetObj.networkId
+        + " | BIN MODE: " + newNetObj.evolve.options.binaryMode
+        + " | ARCH: " + newNetObj.architecture
+        + " | TECH: " + newNetObj.evolve.options.networkTechnology
+        + " | INPUTS: " + newNetObj.numInputs
+        + " | HIDDEN: " + newNetObj.evolve.options.hiddenLayerSize
+        + " | THREADs: " + newNetObj.evolve.options.threads
+        + " | ITRS: " + newNetObj.evolve.options.iterations
+      ));
+
+      const nnObj = await networkDefaults(newNetObj);
+      return nnObj;
     }
 
-    newNetObj.numInputs = seedNetworkObj.numInputs;
-    newNetObj.numOutputs = seedNetworkObj.numOutputs;
-
-    console.log(chalkBlueBold(MODULE_ID_PREFIX + " | EVOLVE | " + getTimeStamp()
-      + " | " + configuration.childId
-      + " | " + newNetObj.networkId
-      + " | BIN MODE: " + newNetObj.evolve.options.binaryMode
-      + " | TECH: " + newNetObj.evolve.options.networkTechnology
-      + " | HIDDEN: " + newNetObj.evolve.options.hiddenLayerSize
-      + "\n SEED: " + seedNetworkObj.networkId
-      + " | SEED RES %: " + seedNetworkObj.successRate.toFixed(2)
-      + "\n THREADs: " + newNetObj.evolve.options.threads
-      + " | ITRS: " + newNetObj.evolve.options.iterations
-    ));
   }
-  else {
-
-    seedNetworkObj = {};
-
-    console.log(chalkBlueBold(MODULE_ID_PREFIX + " | EVOLVE | " + getTimeStamp()
-      + " | " + configuration.childId
-      + " | " + newNetObj.networkId
-      + " | BIN MODE: " + newNetObj.evolve.options.binaryMode
-      + " | TECH: " + newNetObj.evolve.options.networkTechnology
-      + " | HIDDEN: " + newNetObj.evolve.options.hiddenLayerSize
-      + " | THREADs: " + newNetObj.evolve.options.threads
-      + " | ITRS: " + newNetObj.evolve.options.iterations
-    ));
+  catch(err){
+    throw err;
   }
-
-  nnObj = await networkObjDefaults(newNetObj);
-  return nnObj;
 }
 
 process.on("message", async function(m) {
 
-  if (configuration.verbose) { console.log(chalkLog(MODULE_ID_PREFIX + " | CHILD RX MESSAGE | OP: " + m.op)); }
+  try{
 
-  switch (m.op) {
+    if (configuration.verbose || configuration.testMode) { 
+      console.log(chalkLog(MODULE_ID_PREFIX + " | <R MESSAGE | " + getTimeStamp() + " | OP: " + m.op)); 
+    }
 
-    case "RESET":
-      console.log(chalkInfo(MODULE_ID_PREFIX + " | RESET"
-        + " | CHILD ID: " + m.childId
-      ));
-      fsm.fsm_reset();
-    break;
+    switch (m.op) {
 
-    case "VERBOSE":
-      console.log(chalkInfo(MODULE_ID_PREFIX + " | VERBOSE"
-        + " | CHILD ID: " + m.childId
-        + " | VERBOSE: " + m.verbose
-        + "\n" + jsonPrint(m)
-      ));
-      configuration.verbose = m.verbose;
-    break;
-
-    case "INIT":
-
-      MODULE_ID_PREFIX = m.moduleIdPrefix || MODULE_ID_PREFIX;
-
-      console.log(chalkInfo(MODULE_ID_PREFIX + " | INIT"
-        + " | CHILD ID: " + m.childId
-      ));
-
-      console.log(configuration);
-
-      configuration = _.assign(configuration, m.configuration);
-
-      if (m.testMode != undefined) { configuration.testMode = m.testMode; }
-      if (m.verbose != undefined) { configuration.verbose = m.verbose; }
-      if (m.testSetRatio != undefined) { configuration.testSetRatio = m.testSetRatio; }
-      if (m.binaryMode != undefined) { 
-        configuration.binaryMode = m.binaryMode;
-      }
-
-      configuration.childId = m.childId;
-      configuration.childIdShort = m.childIdShort;
-
-      statsObj.childId = m.childId;
-      statsObj.childIdShort = m.childIdShort;
-
-      process.title = m.childId;
-      process.name = m.childId;
-
-      fsm.fsm_init();
-    break;
-
-    case "READY":
-      console.log(chalkInfo(MODULE_ID_PREFIX + " | READY"
-        + " | CHILD ID: " + m.childId
-      ));
-      fsm.fsm_ready();
-    break;
-
-    case "CONFIG_EVOLVE":
-
-      childNetworkObj = await configNetworkEvolve(m);
-
-      statsObj.evolve.options = childNetworkObj.evolve.options;
-
-      statsObj.training.startTime = moment().valueOf();
-      statsObj.training.testRunId = m.testRunId;
-      statsObj.training.seedNetworkId = m.seedNetworkId;
-      statsObj.training.seedNetworkRes = m.seedNetworkRes;
-      statsObj.training.iterations = m.iterations;
-
-      statsObj.inputsId = m.inputsId;
-      statsObj.inputsObj = {};
-      statsObj.inputsObj = m.inputsObj;
-      statsObj.outputs = [];
-      statsObj.outputs = m.outputs;
-
-      fsm.fsm_config_evolve();
-    break;
-
-    case "EVOLVE":
-      console.log(chalkInfo(MODULE_ID_PREFIX + " | EVOLVE"
-        + " | CHILD ID: " + m.childId
-      ));
-      configuration.childId = m.childId;
-
-      fsm.fsm_evolve();
-    break;
-
-    case "STATS":
-      showStats();
-      process.send({op: "STATS", childId: configuration.childId, data: statsObj});
-    break;
-    
-    case "QUIT":
-      quit({cause: "PARENT QUIT"});
-    break;
-
-    case "PING":
-      if (configuration.verbose) {
-        console.log(chalkInfo(MODULE_ID_PREFIX + " | PING"
+      case "RESET":
+        console.log(chalkInfo(MODULE_ID_PREFIX + " | RESET"
           + " | CHILD ID: " + m.childId
-          + " | PING ID: " + m.pingId
         ));
-      }
-      process.send({op: "PONG", pingId: m.pingId, childId: configuration.childId, data: statsObj});
-    break;
+        fsm.fsm_reset();
+      break;
 
-    default:
-      console.log(chalkError(MODULE_ID_PREFIX + " | UNKNOWN OP ERROR | " + m.op ));
+      case "VERBOSE":
+        console.log(chalkInfo(MODULE_ID_PREFIX + " | VERBOSE"
+          + " | CHILD ID: " + m.childId
+          + " | VERBOSE: " + m.verbose
+          + "\n" + jsonPrint(m)
+        ));
+        configuration.verbose = m.verbose;
+      break;
+
+      case "INIT":
+
+        MODULE_ID_PREFIX = m.moduleIdPrefix || MODULE_ID_PREFIX;
+
+        console.log(chalkBlueBold(MODULE_ID_PREFIX + " | <R INIT"
+          + " | CHILD ID: " + m.childId
+          + "\nCONFIGURATION\n" + jsonPrint(configuration)
+        ));
+
+        configuration = _.assign(configuration, m.configuration);
+
+        if (m.testMode != undefined) { configuration.testMode = m.testMode; }
+        if (m.verbose != undefined) { configuration.verbose = m.verbose; }
+        if (m.testSetRatio != undefined) { configuration.testSetRatio = m.testSetRatio; }
+        if (m.binaryMode != undefined) { 
+          configuration.binaryMode = m.binaryMode;
+        }
+
+        configuration.childId = m.childId;
+        configuration.childIdShort = m.childIdShort;
+
+        statsObj.childId = m.childId;
+        statsObj.childIdShort = m.childIdShort;
+
+        process.title = m.childId;
+        process.name = m.childId;
+
+        console.log(chalkBlueBold(MODULE_ID_PREFIX + " | INIT CONFIGURATION"
+          + "\n" + jsonPrint(configuration)
+        ));
+
+
+        fsm.fsm_init();
+      break;
+
+      case "READY":
+        console.log(chalkInfo(MODULE_ID_PREFIX + " | READY"
+          + " | CHILD ID: " + m.childId
+        ));
+        fsm.fsm_ready();
+      break;
+
+      case "CONFIG_EVOLVE":
+
+        childNetworkObj = {};
+        console.log("==== BEFORE await configNetworkEvolve");
+        childNetworkObj = await configNetworkEvolve(m);
+        console.log("==== AFTER  await configNetworkEvolve");
+
+        statsObj.evolve.options = omit(childNetworkObj.evolve.options, ["network"]);
+
+        statsObj.training.startTime = moment().valueOf();
+        statsObj.training.testRunId = m.testRunId;
+        statsObj.training.seedNetworkId = m.seedNetworkId;
+        statsObj.training.seedNetworkRes = m.seedNetworkRes;
+        statsObj.training.iterations = m.iterations;
+
+        statsObj.inputsId = m.inputsId;
+        statsObj.outputs = [];
+        statsObj.outputs = m.outputs;
+
+        fsm.fsm_config_evolve();
+      break;
+
+      case "STATS":
+        showStats();
+        await processSend({op: "STATS", childId: configuration.childId, fsmStatus: statsObj.fsmStatus});
+      break;
+      
+      case "QUIT":
+        quit({cause: "PARENT QUIT"});
+      break;
+
+      case "PING":
+        if (configuration.verbose) {
+          console.log(chalkInfo(MODULE_ID_PREFIX + " | PING"
+            + " | CHILD ID: " + m.childId
+            + " | PING ID: " + m.pingId
+          ));
+        }
+        await processSend({op: "PONG", pingId: m.pingId, childId: configuration.childId, fsmStatus: statsObj.fsmStatus});
+      break;
+
+      default:
+        console.log(chalkError(MODULE_ID_PREFIX + " | UNKNOWN OP ERROR | " + m.op ));
+    }
   }
+  catch(err){
+    console.log(chalkError(MODULE_ID_PREFIX + " | *** PROCESS ON MESSAGE ERROR: " + err));
+  }
+
 });
 
 
@@ -2348,10 +2244,9 @@ setTimeout(async function(){
       + "--------------------------------------------------------"
     ));
 
-    initFsmTickInterval(FSM_TICK_INTERVAL);
-
     try {
-      await connectDb();
+      // await connectDb();
+      initFsmTickInterval(FSM_TICK_INTERVAL);
     }
     catch(err){
       console.log(chalkError(MODULE_ID_PREFIX + " | *** MONGO DB CONNECTION ERROR: " + err + " | QUITTING ***"));
