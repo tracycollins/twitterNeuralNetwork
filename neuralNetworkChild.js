@@ -9,7 +9,7 @@ let seedNetworkObj; // this is the common, default nn object
 const os = require("os");
 const _ = require("lodash");
 const omit = require("object.omit");
-const omitDeep = require("omit-deep-lodash");
+// const omitDeep = require("omit-deep-lodash");
 
 let hostname = os.hostname();
 hostname = hostname.replace(/.tld/g, ""); // amtrak wifi
@@ -29,6 +29,9 @@ const QUIT_WAIT_INTERVAL = ONE_SECOND;
 
 const TEST_MODE_LENGTH = 1000;
 
+const wordAssoDb = require("@threeceelabs/mongoose-twitter");
+// let dbConnection;
+
 let configuration = {};
 
 configuration.testSetRatio = DEFAULT_TEST_RATIO;
@@ -38,8 +41,7 @@ configuration.networkTechnology = DEFAULT_NETWORK_TECHNOLOGY;
 
 const carrotEvolveOptionsPickArray = [
   // "activation",
-  "amount",
-  "clear",
+  // "clear",
   "cost",
   "crossover",
   "efficient_mutation",
@@ -50,7 +52,7 @@ const carrotEvolveOptionsPickArray = [
   "fitness_population",
   "growth",
   "iterations",
-  "log",
+  // "log",
   "max_nodes",
   "maxConns",
   "maxGates",
@@ -68,8 +70,7 @@ const carrotEvolveOptionsPickArray = [
 ];
 
 const neatapticEvolveOptionsPickArray = [
-  // "amount",
-  "clear",
+  // "clear",
   "cost",
   "crossover",
   "elitism",
@@ -77,7 +78,7 @@ const neatapticEvolveOptionsPickArray = [
   "error",
   "growth",
   "iterations",
-  "log",
+  // "log",
   "mutation",
   "mutationAmount",
   "mutationRate",
@@ -108,7 +109,7 @@ const yauzl = require("yauzl");
 const MODULE_ID = MODULE_ID_PREFIX + "_" + hostname;
 
 const PRIMARY_HOST = process.env.PRIMARY_HOST || "google";
-const HOST = (hostname == PRIMARY_HOST) ? "default" : "local";
+const HOST = (hostname === PRIMARY_HOST) ? "default" : "local";
 
 console.log("=========================================");
 console.log("=========================================");
@@ -278,11 +279,11 @@ function initConfig(cnf) {
     }
 
     cnf.processName = process.env.PROCESS_NAME || MODULE_ID;
-    cnf.testMode = (process.env.TEST_MODE == "true") ? true : cnf.testMode;
+    cnf.testMode = (process.env.TEST_MODE === "true") ? true : cnf.testMode;
     cnf.quitOnError = process.env.QUIT_ON_ERROR || false;
 
-    if (process.env.QUIT_ON_COMPLETE == "false") { cnf.quitOnComplete = false; }
-    else if ((process.env.QUIT_ON_COMPLETE == true) || (process.env.QUIT_ON_COMPLETE == "true")) {
+    if (process.env.QUIT_ON_COMPLETE === "false") { cnf.quitOnComplete = false; }
+    else if ((process.env.QUIT_ON_COMPLETE === true) || (process.env.QUIT_ON_COMPLETE === "true")) {
       cnf.quitOnComplete = true;
     }
 
@@ -311,112 +312,6 @@ function initConfig(cnf) {
 }
 
 //=========================================================================
-// MONGO DB
-//=========================================================================
-
-global.globalDbConnection = false;
-const mongoose = require("mongoose");
-mongoose.set("useFindAndModify", false);
-
-global.globalWordAssoDb = require("@threeceelabs/mongoose-twitter");
-
-const emojiModel = require("@threeceelabs/mongoose-twitter/models/emoji.server.model");
-const hashtagModel = require("@threeceelabs/mongoose-twitter/models/hashtag.server.model");
-const locationModel = require("@threeceelabs/mongoose-twitter/models/location.server.model");
-const mediaModel = require("@threeceelabs/mongoose-twitter/models/media.server.model");
-const networkInputsModel = require("@threeceelabs/mongoose-twitter/models/networkInputs.server.model");
-const neuralNetworkModel = require("@threeceelabs/mongoose-twitter/models/neuralNetwork.server.model");
-const placeModel = require("@threeceelabs/mongoose-twitter/models/place.server.model");
-const tweetModel = require("@threeceelabs/mongoose-twitter/models/tweet.server.model");
-const urlModel = require("@threeceelabs/mongoose-twitter/models/url.server.model");
-const userModel = require("@threeceelabs/mongoose-twitter/models/user.server.model");
-const wordModel = require("@threeceelabs/mongoose-twitter/models/word.server.model");
-
-let dbConnectionReadyInterval;
-
-const UserServerController = require("@threeceelabs/user-server-controller");
-let userServerController;
-let userServerControllerReady = false;
-
-function connectDb(){
-
-  return new Promise(function(resolve, reject){
-
-    try {
-
-      statsObj.status = "CONNECTING MONGO DB";
-
-      global.globalWordAssoDb.connect(MODULE_ID + "_" + process.pid, async function(err, db){
-
-        if (err) {
-          console.log(chalkError(MODULE_ID_PREFIX + " | *** MONGO DB CONNECTION ERROR: " + err));
-          statsObj.status = "MONGO CONNECTION ERROR";
-          quit({cause: "MONGO DB ERROR: " + err});
-          return reject(err);
-        }
-
-        db.on("error", async function(){
-          statsObj.status = "MONGO ERROR";
-          // console.error.bind(console, MODULE_ID_PREFIX + " | *** MONGO DB CONNECTION ERROR");
-          console.log(chalkError(MODULE_ID_PREFIX + " | *** MONGO DB CONNECTION ERROR"));
-          db.close();
-          quit({cause: "MONGO DB ERROR: " + err});
-        });
-
-        db.on("disconnected", async function(){
-          statsObj.status = "MONGO DISCONNECTED";
-          // console.error.bind(console, MODULE_ID_PREFIX + " | *** MONGO DB DISCONNECTED");
-          console.log(chalkAlert(MODULE_ID_PREFIX + " | *** MONGO DB DISCONNECTED"));
-          quit({cause: "MONGO DB DISCONNECTED"});
-        });
-
-        global.globalDbConnection = db;
-
-        console.log(chalk.green(MODULE_ID_PREFIX + " | MONGOOSE DEFAULT CONNECTION OPEN"));
-
-        global.globalEmoji = global.globalDbConnection.model("Emoji", emojiModel.EmojiSchema);
-        global.globalHashtag = global.globalDbConnection.model("Hashtag", hashtagModel.HashtagSchema);
-        global.globalLocation = global.globalDbConnection.model("Location", locationModel.LocationSchema);
-        global.globalMedia = global.globalDbConnection.model("Media", mediaModel.MediaSchema);
-        global.globalNeuralNetwork = global.globalDbConnection.model("NeuralNetwork", neuralNetworkModel.NeuralNetworkSchema);
-        global.globalNetworkInputs = global.globalDbConnection.model("NetworkInputs", networkInputsModel.NetworkInputsSchema);
-        global.globalPlace = global.globalDbConnection.model("Place", placeModel.PlaceSchema);
-        global.globalTweet = global.globalDbConnection.model("Tweet", tweetModel.TweetSchema);
-        global.globalUrl = global.globalDbConnection.model("Url", urlModel.UrlSchema);
-        global.globalUser = global.globalDbConnection.model("User", userModel.UserSchema);
-        global.globalWord = global.globalDbConnection.model("Word", wordModel.WordSchema);
-
-        const uscChildName = MODULE_ID_PREFIX + "_USC";
-        userServerController = new UserServerController(uscChildName);
-
-        userServerController.on("ready", function(appname){
-          userServerControllerReady = true;
-          console.log(chalkLog(MODULE_ID_PREFIX + " | " + uscChildName + " READY | " + appname));
-        });
-
-        dbConnectionReadyInterval = setInterval(function(){
-
-          if (userServerControllerReady) {
-
-            console.log(chalk.green(MODULE_ID_PREFIX + " | MONGO DB READY"));
-
-            clearInterval(dbConnectionReadyInterval);
-            statsObj.status = "MONGO DB CONNECTED";
-            resolve(db);
-          }
-
-        }, 1000);
-
-      });
-    }
-    catch(err){
-      console.log(chalkError(MODULE_ID_PREFIX + " | *** MONGO DB CONNECT ERROR: " + err));
-      reject(err);
-    }
-  });
-}
-
-//=========================================================================
 // MISC FUNCTIONS (own module?)
 //=========================================================================
 
@@ -425,7 +320,7 @@ function getElapsedTimeStamp(){
   return msToTime(statsObj.elapsedMS);
 }
 
-async function showStats(options) {
+function showStats(options) {
 
   statsObj.elapsed = getElapsedTimeStamp();
 
@@ -467,19 +362,22 @@ function clearAllIntervals(){
 function processSend(message){
   return new Promise(function(resolve, reject){
 
-    if (configuration.verbose || configuration.testMode){
-      console.log(chalkLog(MODULE_ID_PREFIX + " | >T MESSAGE | " + getTimeStamp() + " | OP: " + message.op)); 
+    if (configuration.verbose){
+      console.log(chalkGreen(MODULE_ID_PREFIX 
+        + " [" + processSendQueue.length + "]"
+        + " | >T MESSAGE | " + getTimeStamp() 
+        + " | OP: " + message.op
+      )); 
     }
 
-    process.send(message, function(err){
-      if (err){
-        console.log(chalkError(MODULE_ID_PREFIX + " | *** SEND MESSAGE ERROR | " + getTimeStamp() + " | OP: " + message.op + " | ERROR: " + err)); 
-        return reject(err);
-      }
-      console.log(chalkGreen(MODULE_ID_PREFIX + " | SENT MESSAGE | " + getTimeStamp() + " | OP: " + message.op)); 
-      resolve();
-    });
+    try{
+      process.send(message);
+    }
+    catch(err){
+      return reject(err);
+    }
 
+    resolve();
   });
 }
 
@@ -563,17 +461,17 @@ function unzipUsersToArray(params){
           return reject(err);
         }
 
-        zipfile.on("error", async function(err) {
+        zipfile.on("error", function(err) {
           console.log(chalkError(MODULE_ID_PREFIX + " | *** UNZIP ERROR: " + err));
           reject(err);
         });
 
-        zipfile.on("close", async function() {
+        zipfile.on("close", function() {
           console.log(chalkLog(MODULE_ID_PREFIX + " | UNZIP CLOSE"));
           resolve(true);
         });
 
-        zipfile.on("end", async function() {
+        zipfile.on("end", function() {
           console.log(chalkLog(MODULE_ID_PREFIX + " | UNZIP END"));
           resolve(true);
         });
@@ -586,7 +484,7 @@ function unzipUsersToArray(params){
             zipfile.readEntry(); 
           } 
           else {
-            zipfile.openReadStream(entry, async function(err, readStream) {
+            zipfile.openReadStream(entry, function(err, readStream) {
 
               entryNumber += 1;
               
@@ -625,11 +523,11 @@ function unzipUsersToArray(params){
                       hmHit = MODULE_ID_PREFIX + " | **> UNZIP";
                     }
 
-                    if ((userObj.category == "left") || (userObj.category == "right") || (userObj.category == "neutral")) {
+                    if ((userObj.category === "left") || (userObj.category === "right") || (userObj.category === "neutral")) {
 
                       trainingSetUsersHashMap[userObj.category].set(userObj.nodeId, userObj);
 
-                      if (configuration.verbose || (statsObj.users.unzipped % 1000 == 0)) {
+                      if ((configuration.testMode && (statsObj.users.unzipped % 100 === 0)) || configuration.verbose || (statsObj.users.unzipped % 1000 === 0)) {
 
                         console.log(chalkLog(hmHit
                           + " [" + statsObj.users.unzipped + "]"
@@ -644,10 +542,6 @@ function unzipUsersToArray(params){
                           + " | FRNDs DB: " + userObj.friends.length
                           + " | CAT M: " + userObj.category + " A: " + userObj.categoryAuto
                         ));
-                      }
-
-                      if (configuration.updateUserDb) {
-                        await userServerController.findOneUserV2({user: userObj, mergeHistograms: false, noInc: true});
                       }
 
                       zipfile.readEntry();
@@ -683,12 +577,12 @@ function unzipUsersToArray(params){
                 userString += part;
               });
 
-              readStream.on("close", async function(){
-                console.log(chalkInfo(MODULE_ID_PREFIX + " | UNZIP STREAM CLOSED"));
+              readStream.on("close", function(){
+                console.log(chalkBlueBold(MODULE_ID_PREFIX + " | UNZIP STREAM CLOSED"));
                 resolve();
               });
 
-              readStream.on("error",async function(err){
+              readStream.on("error", function(err){
                 console.log(chalkError(MODULE_ID_PREFIX + " | *** UNZIP READ STREAM ERROR EVENT: " + err));
                 reject(err);
               });
@@ -702,7 +596,7 @@ function unzipUsersToArray(params){
 
     }
     catch(err){
-      console.error(chalkError(MODULE_ID_PREFIX + " | *** USER ARCHIVE READ ERROR: " + err));
+      console.log(chalkError(MODULE_ID_PREFIX + " | *** USER ARCHIVE READ ERROR: " + err));
       return reject(new Error("USER ARCHIVE READ ERROR"));
     }
 
@@ -746,7 +640,7 @@ function updateTrainingSet(){
 
         cb();
 
-      }, async function(err){
+      }, function(err){
 
         if (err) {
           console.log(chalkError(MODULE_ID_PREFIX + " | *** UPDATE TRAINING SET ERROR: " + err));
@@ -815,7 +709,7 @@ function fileSize(params){
         size = stats.size;
         prevSize = stats.size;
 
-        if (params.size && (size == params.size)) {
+        if (params.size && (size === params.size)) {
           console.log(chalkGreen(MODULE_ID_PREFIX + " | FILE SIZE EXPECTED | " + getTimeStamp()
             + " | EXISTS: " + exists
             + " | CUR: " + size
@@ -825,7 +719,7 @@ function fileSize(params){
           return resolve();
         }
 
-        sizeInterval = setInterval(async function(){
+        sizeInterval = setInterval(function(){
 
           console.log(chalkInfo(MODULE_ID_PREFIX + " | FILE SIZE | " + getTimeStamp()
             + " | EXISTS: " + exists
@@ -847,7 +741,7 @@ function fileSize(params){
               prevSize = size;
               size = stats.size;
 
-              if ((size > 0) && ((params.size && (size == params.size)) || (size == prevSize))) {
+              if ((size > 0) && ((params.size && (size === params.size)) || (size === prevSize))) {
 
                 clearInterval(sizeInterval);
 
@@ -887,24 +781,24 @@ function fileSize(params){
 
 async function loadUsersArchive(params){
 
-  let file = params.file;
-
-  if (configuration.testMode) {
-    file = file.replace(/users\.zip/, "users_test.zip");
-  }
-
-  params.folder = params.folder || configuration.userArchiveFolder;
-  params.path = (params.path != undefined) ? params.path : params.folder + "/" + file;
-
-  console.log(chalkLog(MODULE_ID_PREFIX 
-    + " | LOADING USERS ARCHIVE"
-    + " | " + getTimeStamp() 
-    + "\n PATH:   " + params.path
-    + "\n FOLDER: " + params.folder
-    + "\n FILE:   " + file
-  ));
-
   try {
+    let file = params.file;
+
+    if (configuration.testMode) {
+      file = file.replace(/users\.zip/, "users_test.zip");
+    }
+
+    params.folder = params.folder || configuration.userArchiveFolder;
+    params.path = (params.path !== undefined) ? params.path : params.folder + "/" + file;
+
+    console.log(chalkLog(MODULE_ID_PREFIX 
+      + " | LOADING USERS ARCHIVE"
+      + " | " + getTimeStamp() 
+      + "\n PATH:   " + params.path
+      + "\n FOLDER: " + params.folder
+      + "\n FILE:   " + file
+    ));
+
     await fileSize(params);
     await unzipUsersToArray(params);
     await updateTrainingSet();
@@ -919,21 +813,19 @@ async function loadUsersArchive(params){
 
 async function loadTrainingSet(){
 
-  statsObj.status = "LOAD TRAINING SET";
-
-  console.log(chalkLog(MODULE_ID_PREFIX
-    + " | LOAD ARCHIVE FLAG FILE: " + configuration.userArchiveFolder + "/" + configuration.defaultUserArchiveFlagFile
-  ));
-
-  let archiveFlagObj;
-
   try{
-    archiveFlagObj = await tcUtils.loadFileRetry({folder: configuration.userArchiveFolder, file: configuration.defaultUserArchiveFlagFile});
+    statsObj.status = "LOAD TRAINING SET";
+
+    console.log(chalkLog(MODULE_ID_PREFIX
+      + " | LOAD ARCHIVE FLAG FILE: " + configuration.userArchiveFolder + "/" + configuration.defaultUserArchiveFlagFile
+    ));
+
+    const archiveFlagObj = await tcUtils.loadFileRetry({folder: configuration.userArchiveFolder, file: configuration.defaultUserArchiveFlagFile});
     console.log(chalkNetwork(MODULE_ID_PREFIX + " | USERS ARCHIVE FLAG FILE\n" + jsonPrint(archiveFlagObj)));
 
     console.log(chalkLog(MODULE_ID_PREFIX + " | USER ARCHIVE FILE | FILE: " + archiveFlagObj.file + " | SIZE: " + archiveFlagObj.size));
 
-    if (archiveFlagObj.file != statsObj.archiveFile) {
+    if (archiveFlagObj.file !== statsObj.archiveFile) {
 
       statsObj.trainingSetReady = false;
       statsObj.loadUsersArchiveBusy = true;
@@ -944,6 +836,7 @@ async function loadTrainingSet(){
       statsObj.loadUsersArchiveBusy = false;
       statsObj.archiveFile = archiveFlagObj.file;
       statsObj.trainingSetReady = true;
+      console.log(chalkGreenBold(MODULE_ID_PREFIX + " | TRAINING SET LOADED: " + archiveFlagObj.file));
       return;
     }
     else {
@@ -968,7 +861,7 @@ async function testNetworkData(params){
   try{
     const testSet = params.testSet;
     const convertDatumFlag = params.convertDatumFlag || false;
-    const binaryMode = (params.binaryMode != undefined) ? params.binaryMode : configuration.binaryMode;
+    const binaryMode = (params.binaryMode !== undefined) ? params.binaryMode : configuration.binaryMode;
 
     let numTested = 0;
     let numPassed = 0;
@@ -991,7 +884,7 @@ async function testNetworkData(params){
       let match = "FAIL";
       let currentChalk = chalkAlert;
 
-      if (testOutput.categoryAuto == datum.user.category){
+      if (testOutput.categoryAuto === datum.user.category){
         match = "PASS";
         numPassed += 1;
         currentChalk = chalkGreenBold;
@@ -999,7 +892,7 @@ async function testNetworkData(params){
 
       successRate = 100 * numPassed/numTested;
 
-      if (configuration.testMode || configuration.verbose){
+      if ((configuration.testMode || configuration.verbose) && (numTested % 100 === 0)){
         console.log(currentChalk(MODULE_ID_PREFIX + " | TESTING"
           + " | " + successRate.toFixed(2) + "%"
           + " | " + numPassed + "/" + numTested
@@ -1037,7 +930,7 @@ async function testNetwork(p){
   try{
     const params = p || {};
 
-    const binaryMode = (params.binaryMode != undefined) ? params.binaryMode : configuration.binaryMode;
+    const binaryMode = (params.binaryMode !== undefined) ? params.binaryMode : configuration.binaryMode;
 
     const testSet = await dataSetPrep({dataSetObj: testSetObj, binaryMode: binaryMode});
 
@@ -1064,7 +957,49 @@ async function testNetwork(p){
   }
 }
 
-async function prepNetworkEvolve() {
+let processSendQueueInterval;
+const processSendQueue = [];
+let processSendQueueReady = true;
+
+function initProcessSendQueue(params){
+
+  const interval = (params) ? params.interval : 10;
+
+  return new Promise(function(resolve){
+
+    statsObj.status = "INIT PROCESS SEND QUEUE";
+
+    clearInterval(processSendQueueInterval);
+
+    processSendQueueInterval = setInterval(function(){
+
+      if (processSendQueueReady && (processSendQueue.length > 0)){
+
+        processSendQueueReady = false;
+
+        const messageObj = processSendQueue.shift();
+
+        processSend(messageObj)
+        .then(function(){
+          processSendQueueReady = true;
+        })
+        .catch(function(err){
+          console.err("processSend ERROR: " + err);
+          processSendQueueReady = true;
+        });
+
+      }
+
+    }, interval);
+
+    intervalsSet.add("processSendQueueInterval");
+
+    resolve();
+
+  });
+}
+
+function prepNetworkEvolve() {
 
   console.log(chalkBlueBold(MODULE_ID_PREFIX + " | PREP NETWORK EVOLVE OPTIONS"
     + " | " + getTimeStamp()
@@ -1100,52 +1035,43 @@ async function prepNetworkEvolve() {
         fitness: schedParams.fitness.toFixed(5) || -Infinity
       };
 
-      console.log(MODULE_ID_PREFIX + " | EVOLVE_SCHEDULE sObj\n" + jsonPrint(sObj));
-
-      processSend({op: "EVOLVE_SCHEDULE", childId: configuration.childId, childIdShort: configuration.childIdShort, stats: sObj})
-      .then(function(){
-      })
-      .catch(function(err){
-        console.err("EVOLVE_SCHEDULE ERROR: " + err);
-      });
+      processSendQueue.push({op: "EVOLVE_SCHEDULE", childId: configuration.childId, childIdShort: configuration.childIdShort, stats: sObj});
 
     },
     
     iterations: 1
   };
 
-  let finalOptions = options;
+  let finalOptions;
 
-  if (childNetworkObj.networkTechnology == "carrot"){
+  if (childNetworkObj.networkTechnology === "carrot"){
     finalOptions = pick(options, carrotEvolveOptionsPickArray);
   }
 
-  if (childNetworkObj.networkTechnology == "neataptic"){
+  if (childNetworkObj.networkTechnology === "neataptic"){
     finalOptions = pick(options, neatapticEvolveOptionsPickArray);
   }
 
-  // console.log(chalkBlueBold(MODULE_ID_PREFIX + " | EVOLVE OPTIONS\n" + jsonPrint(finalOptions)));
-
-  if ((options.network != undefined)) {
+  if (!empty(options.network)) {
     console.log(chalkBlueBold(MODULE_ID_PREFIX + " | EVOLVE OPTIONS | NETWORK: " + Object.keys(options.network)));
   }
 
-  if ((childNetworkObj.networkTechnology == "neataptic") && (options.activation != undefined) && (typeof options.activation == "string")) {
+  if ((childNetworkObj.networkTechnology === "neataptic") && (options.activation !== undefined) && (typeof options.activation === "string")) {
     console.log(chalkBlueBold(MODULE_ID_PREFIX + " | EVOLVE OPTIONS | ACTIVATION: " + options.activation));
     finalOptions.activation = neataptic.methods.activation[options.activation];
   }
 
-  if ((options.selection != undefined) && (typeof options.selection == "string")) {
+  if ((options.selection !== undefined) && (typeof options.selection === "string")) {
     console.log(chalkBlueBold(MODULE_ID_PREFIX + " | EVOLVE OPTIONS | SELECTION: " + options.selection));
     finalOptions.selection = neataptic.methods.selection[options.selection];
   }
 
-  if ((options.cost != undefined) && (typeof options.cost == "string")) {
+  if ((options.cost !== undefined) && (typeof options.cost === "string")) {
     console.log(chalkBlueBold(MODULE_ID_PREFIX + " | EVOLVE OPTIONS | COST: " + options.cost));
     finalOptions.cost = neataptic.methods.cost[options.cost];
   }
 
-  if ((options.mutation != undefined) && (typeof options.mutation == "string")) {
+  if ((options.mutation !== undefined) && (typeof options.mutation === "string")) {
     console.log(chalkBlueBold(MODULE_ID_PREFIX + " | EVOLVE OPTIONS | MUTATION: " + options.mutation));
     finalOptions.mutation = neataptic.methods.mutation[options.mutation];
   }
@@ -1160,7 +1086,7 @@ function dataSetPrep(p){
     const params = p || {};
     const dataSetObj = params.dataSetObj;
 
-    const binaryMode = (params.binaryMode != undefined) ? params.binaryMode : configuration.binaryMode;
+    const binaryMode = (params.binaryMode !== undefined) ? params.binaryMode : configuration.binaryMode;
 
     const dataSet = [];
 
@@ -1181,8 +1107,8 @@ function dataSetPrep(p){
 
       try {
 
-        if ((!user.profileHistograms || user.profileHistograms == undefined || user.profileHistograms == {}) 
-          && (!user.tweetHistograms || user.tweetHistograms == undefined || user.tweetHistograms == {})){
+        if ((!user.profileHistograms || user.profileHistograms === undefined || user.profileHistograms === {}) 
+          && (!user.tweetHistograms || user.tweetHistograms === undefined || user.tweetHistograms === {})){
           console.log(chalkAlert(MODULE_ID_PREFIX + " | !!! EMPTY USER HISTOGRAMS ... SKIPPING | @" + user.screenName));
           return cb();
         }
@@ -1197,7 +1123,7 @@ function dataSetPrep(p){
 
           dataConverted += 1;
 
-          if (results.datum.input.length != childNetworkObj.numInputs) { 
+          if (results.datum.input.length !== childNetworkObj.numInputs) { 
             console.log(chalkError(MODULE_ID_PREFIX
               + " | *** ERROR DATA SET PREP ERROR" 
               + " | INPUT NUMBER MISMATCH" 
@@ -1207,7 +1133,7 @@ function dataSetPrep(p){
             return cb(new Error("INPUT NUMBER MISMATCH"));
           }
 
-          if (results.datum.output.length != 3) { 
+          if (results.datum.output.length !== 3) { 
             console.log(chalkError(MODULE_ID_PREFIX
               + " | *** ERROR DATA SET PREP ERROR" 
               + " | OUTPUT NUMBER MISMATCH" 
@@ -1218,7 +1144,7 @@ function dataSetPrep(p){
           }
 
           for(const inputValue of results.datum.input){
-            if (typeof inputValue != "number") {
+            if (typeof inputValue !== "number") {
               return cb(new Error("INPUT VALUE NOT TYPE NUMBER | @" + results.user.screenName + " | INPUT TYPE: " + typeof inputValue));
             }
             if (inputValue < 0) {
@@ -1230,7 +1156,7 @@ function dataSetPrep(p){
           }
 
           for(const outputValue of results.datum.output){
-            if (typeof outputValue != "number") {
+            if (typeof outputValue !== "number") {
               return cb(new Error("OUTPUT VALUE NOT TYPE NUMBER | @" + results.user.screenName + " | OUTPUT TYPE: " + typeof outputValue));
             }
             if (outputValue < 0) {
@@ -1243,7 +1169,7 @@ function dataSetPrep(p){
 
           dataSet.push({user: results.user, input: results.datum.input, output: results.datum.output});
 
-          if (configuration.verbose || (dataConverted % 1000 == 0) || configuration.testMode && (dataConverted % 100 == 0)){
+          if (configuration.verbose || (dataConverted % 1000 === 0) || configuration.testMode && (dataConverted % 100 === 0)){
             console.log(chalkLog(MODULE_ID_PREFIX + " | DATA CONVERTED: " + dataConverted + "/" + dataSetObj.data.length));
           }
 
@@ -1313,11 +1239,11 @@ function createNetwork(){
           + " | " + childNetworkObj.networkTechnology.toUpperCase()
          ));
 
-        if (!empty(childNetworkObj.networkRaw) && (childNetworkObj.networkRaw.evolve != undefined)){
+        if (!empty(childNetworkObj.networkRaw) && (childNetworkObj.networkRaw.evolve !== undefined)){
           console.log(chalkLog(MODULE_ID_PREFIX + " | CHILD RAW NETWORK: " + childNetworkObj.seedNetworkId));
           networkRaw = childNetworkObj.networkRaw;
         }
-        else if (!empty(childNetworkObj.network) && childNetworkObj.network.evolve != undefined){
+        else if (!empty(childNetworkObj.network) && childNetworkObj.network.evolve !== undefined){
           console.log(chalkLog(MODULE_ID_PREFIX + " | CHILD RAW NETWORK: " + childNetworkObj.seedNetworkId));
           childNetworkObj.networkRaw = childNetworkObj.network;
           networkRaw = childNetworkObj.network;
@@ -1325,7 +1251,7 @@ function createNetwork(){
         }
         else{
           try {
-            if (childNetworkObj.networkTechnology == "carrot" && !empty(childNetworkObj.network)){
+            if (childNetworkObj.networkTechnology === "carrot" && !empty(childNetworkObj.network)){
               networkRaw = carrot.Network.fromJSON(childNetworkObj.network);
               console.log(chalkLog(MODULE_ID_PREFIX + " | CHILD CARROT RAW NETWORK: " + childNetworkObj.seedNetworkId));
             }
@@ -1358,7 +1284,7 @@ function createNetwork(){
 
       case "perceptron":
 
-        if (childNetworkObj.networkTechnology == "carrot"){
+        if (childNetworkObj.networkTechnology === "carrot"){
 
           if (childNetworkObj.hiddenLayerSize && (childNetworkObj.hiddenLayerSize > 0)){
             networkRaw = new carrot.architect.Perceptron(numInputs, childNetworkObj.hiddenLayerSize, 3);
@@ -1368,7 +1294,7 @@ function createNetwork(){
             networkRaw = new carrot.Network(numInputs,3);
           }
 
-          console.log(chalkBlueBold("NNC"
+          console.log(chalkBlueBold(MODULE_ID_PREFIX
             + " | " + configuration.childId
             + " | " + childNetworkObj.networkTechnology.toUpperCase()
             + " | " + childNetworkObj.architecture.toUpperCase()
@@ -1389,7 +1315,7 @@ function createNetwork(){
           }
           else{
             childNetworkObj.architecture = "random";
-            if (childNetworkObj.networkTechnology == "neataptic"){
+            if (childNetworkObj.networkTechnology === "neataptic"){
               networkRaw = new neataptic.Network(numInputs, 3);
             }
             else{
@@ -1397,7 +1323,7 @@ function createNetwork(){
             }
           }
 
-          console.log(chalkBlueBold("NNC"
+          console.log(chalkBlueBold(MODULE_ID_PREFIX
             + " | " + configuration.childId
             + " | " + childNetworkObj.networkTechnology.toUpperCase()
             + " | " + childNetworkObj.architecture.toUpperCase()
@@ -1423,7 +1349,7 @@ function createNetwork(){
           + " | OUTPUTS: " + trainingSetObj.meta.numOutputs
         ));
 
-        if (childNetworkObj.networkTechnology == "carrot"){
+        if (childNetworkObj.networkTechnology === "carrot"){
           networkRaw = new carrot.Network(numInputs, 3);
           resolve(networkRaw);
         }
@@ -1441,9 +1367,16 @@ async function evolve(params){
 
   try {
 
-    const binaryMode = (params.binaryMode != undefined) ? params.binaryMode : configuration.binaryMode;
+    console.log(chalkBlue(MODULE_ID_PREFIX + " | >>> START NETWORK EVOLVE"
+      + " | TECH: " + childNetworkObj.networkTechnology
+      + " | NN: " + childNetworkObj.networkId
+      + " | SEED: " + childNetworkObj.seedNetworkId
+      + " | IN: " + childNetworkObj.inputsId
+    ));
 
-    const inputsObj = await global.globalNetworkInputs.findOne({inputsId: childNetworkObj.inputsId}).lean().exec();
+    const binaryMode = (params.binaryMode !== undefined) ? params.binaryMode : configuration.binaryMode;
+
+    const inputsObj = await wordAssoDb.NetworkInputs.findOne({inputsId: childNetworkObj.inputsId}).lean();
 
     await tcUtils.loadInputs({inputsObj: inputsObj});
     await tcUtils.setPrimaryInputs({inputsId: inputsObj.inputsId});
@@ -1451,17 +1384,12 @@ async function evolve(params){
     const trainingSet = await dataSetPrep({dataSetObj: trainingSetObj, binaryMode: binaryMode});
 
     const childNetworkRaw = await createNetwork();
-    // childNetworkObj.evolve.options.network = childNetworkRaw;
 
     const preppedOptions = await prepNetworkEvolve();
-
-    console.log(chalkBlue(MODULE_ID_PREFIX + " | >>> START NETWORK EVOLVE | " + childNetworkObj.networkId));
 
     const evolveResults = await childNetworkRaw.evolve(trainingSet, preppedOptions);
 
     childNetworkObj.networkJson = childNetworkRaw.toJSON();
-
-    // console.log("childNetworkRaw.evolve evolveResults\n" + jsonPrint(Object.keys(evolveResults)));
 
     evolveResults.threads = preppedOptions.threads;
     evolveResults.fitness = statsObj.evolve.stats.fitness;
@@ -1494,7 +1422,7 @@ async function evolve(params){
       + "\n======================================================="
     ));
 
-    if (evolveResults.iterations != childNetworkObj.evolve.options.iterations) {
+    if (evolveResults.iterations !== childNetworkObj.evolve.options.iterations) {
       console.log(chalkError(MODULE_ID_PREFIX + " | *** EVOLVE ERROR: ITERATIONS"
         + " | EXPECTED: " + childNetworkObj.evolve.options.iterations
         + " | ACTUAL: " + evolveResults.iterations
@@ -1514,9 +1442,11 @@ function networkEvolve(){
 
   return new Promise(function(resolve, reject){
 
+    console.log(chalkBlueBold(MODULE_ID_PREFIX + " | NETWORK EVOLVE | " + configuration.childId));
+
     const params = childNetworkObj.evolve.options;
 
-    const binaryMode = (params.binaryMode != undefined) ? params.binaryMode : configuration.binaryMode;
+    const binaryMode = (params.binaryMode !== undefined) ? params.binaryMode : configuration.binaryMode;
     
     const options = {};
 
@@ -1526,23 +1456,23 @@ function networkEvolve(){
       debug(chalkAlert(MODULE_ID_PREFIX + " | START NETWORK DEFINED: " + params.networkId));
     }
 
-    if (!params.architecture || (params.architecture == undefined)) { params.architecture = "random"; }
-    if (!params.networkTechnology || (params.networkTechnology == undefined)) { params.networkTechnology = configuration.networkTechnology; }
+    if (!params.architecture || (params.architecture === undefined)) { params.architecture = "random"; }
+    if (!params.networkTechnology || (params.networkTechnology === undefined)) { params.networkTechnology = configuration.networkTechnology; }
 
-    const networkTech = (params.networkTechnology == "carrot") ? carrot : neataptic;
+    const networkTech = (params.networkTechnology === "carrot") ? carrot : neataptic;
 
     statsObj.evolve.startTime = moment().valueOf();
     statsObj.evolve.elapsed = 0;
     statsObj.evolve.stats = {};
 
-    async.each(Object.keys(params), function(key, cb){
+    async.eachSeries(Object.keys(params), function(key, cb){
 
       debug(">>>> KEY: " + key);
 
       switch (key) {
 
         case "networkObj":
-          console.log("NNC"
+          console.log(MODULE_ID_PREFIX
             + " | " + configuration.childId
             + " | EVOLVE OPTION"
             + " | NN ID: " + key + ": " + params[key].networkId 
@@ -1553,36 +1483,36 @@ function networkEvolve(){
 
         case "network":
           if (!empty(params.network)){
-            console.log("NNC" + " | " + configuration.childId + " | EVOLVE OPTION | " + key + "\n" + Object.keys(params[key]));
+            console.log(MODULE_ID_PREFIX + " | " + configuration.childId + " | EVOLVE OPTION | " + key + "\n" + Object.keys(params[key]));
           }
           else {
-            console.log("NNC" + " | " + configuration.childId + " | EVOLVE OPTION | " + key + ": " + params[key]);
+            console.log(MODULE_ID_PREFIX + " | " + configuration.childId + " | EVOLVE OPTION | " + key + ": " + params[key]);
           }
         break;
               
         case "mutation":
-          console.log("NNC" + " | " + configuration.childId + " | EVOLVE OPTION | " + key + ": " + params[key]);
+          console.log(MODULE_ID_PREFIX + " | " + configuration.childId + " | EVOLVE OPTION | " + key + ": " + params[key]);
           options.mutation = networkTech.methods.mutation[params[key]];
         break;
               
         case "selection":
-          console.log("NNC" + " | " + configuration.childId + " | EVOLVE OPTION | " + key + ": " + params[key]);
+          console.log(MODULE_ID_PREFIX + " | " + configuration.childId + " | EVOLVE OPTION | " + key + ": " + params[key]);
           options.selection = networkTech.methods.selection[params[key]];
         break;
               
         case "cost":
-          console.log("NNC" + " | " + configuration.childId + " | EVOLVE OPTION | " + key + ": " + params[key]);
+          console.log(MODULE_ID_PREFIX + " | " + configuration.childId + " | EVOLVE OPTION | " + key + ": " + params[key]);
           options.cost = networkTech.methods.cost[params[key]];
         break;
 
         case "activation":
-          console.log("NNC" + " | " + configuration.childId + " | EVOLVE OPTION | " + key + ": " + params[key]);
+          console.log(MODULE_ID_PREFIX + " | " + configuration.childId + " | EVOLVE OPTION | " + key + ": " + params[key]);
           options.activation = networkTech.methods.activation[params[key]];
         break;
 
         default:
           if (!ignoreKeyArray.includes(key)){
-            console.log("NNC" + " | " + configuration.childId + " | EVOLVE OPTION | " + key + ": " + params[key]);
+            console.log(MODULE_ID_PREFIX + " | " + configuration.childId + " | EVOLVE OPTION | " + key + ": " + params[key]);
             options[key] = params[key];
           }
       }
@@ -1591,13 +1521,13 @@ function networkEvolve(){
 
     }, async function(err){
 
-      if (err) {
-        return reject(err);
-      }
-
       try{
+        if (err) {
+          console.log(chalkError(MODULE_ID_PREFIX + " | *** networkEvolve ERROR: " + err));
+          return reject(err);
+        }
+        console.log(chalkGreen(MODULE_ID_PREFIX + " | END networkEvolve"));
         await evolve({binaryMode: binaryMode});
-        console.log(chalkGreen(MODULE_ID_PREFIX + " | END NETWORK EVOLVE"));
         resolve();
       }
       catch(e){
@@ -1643,7 +1573,7 @@ const fsmStates = {
 
     onEnter: function(event, oldState, newState) {
 
-      if (event != "fsm_tick") {
+      if (event !== "fsm_tick") {
         reporter(event, oldState, newState);
         statsObj.fsmStatus = "RESET";
       }
@@ -1662,7 +1592,7 @@ const fsmStates = {
   "IDLE": {
     onEnter: function(event, oldState, newState) {
 
-      if (event != "fsm_tick") {
+      if (event !== "fsm_tick") {
         reporter(event, oldState, newState);
 
         statsObj.fsmStatus = "IDLE";
@@ -1697,13 +1627,13 @@ const fsmStates = {
 
   "INIT": {
     onEnter: async function(event, oldState, newState) {
-      if (event != "fsm_tick") {
+      if (event !== "fsm_tick") {
         try {
 
           reporter(event, oldState, newState);
           statsObj.fsmStatus = "INIT";
 
-          await connectDb();
+          // await connectDb();
           await processSend({op: "STATS", childId: configuration.childId, fsmStatus: statsObj.fsmStatus});
           fsm.fsm_ready();
         }
@@ -1723,7 +1653,7 @@ const fsmStates = {
 
   "READY": {
     onEnter: async function(event, oldState, newState) {
-      if (event != "fsm_tick") {
+      if (event !== "fsm_tick") {
         reporter(event, oldState, newState);
         statsObj.fsmStatus = "READY";
         await processSend({op: "STATS", childId: configuration.childId, fsmStatus: statsObj.fsmStatus});
@@ -1741,7 +1671,7 @@ const fsmStates = {
   "CONFIG_EVOLVE": {
     onEnter: async function(event, oldState, newState) {
 
-      if (event != "fsm_tick") {
+      if (event !== "fsm_tick") {
 
         try{
           reporter(event, oldState, newState);
@@ -1777,7 +1707,7 @@ const fsmStates = {
 
   "EVOLVE": {
     onEnter: async function(event, oldState, newState) {
-      if (event != "fsm_tick") {
+      if (event !== "fsm_tick") {
 
         try {
 
@@ -1796,7 +1726,7 @@ const fsmStates = {
 
           console.log(chalkLog(MODULE_ID_PREFIX + " | ... SAVING NN TO DB: " + childNetworkObj.networkId));
 
-          const nnDoc = new global.globalNeuralNetwork(childNetworkObj);
+          const nnDoc = new wordAssoDb.NeuralNetwork(childNetworkObj);
 
           await nnDoc.save();
 
@@ -1838,20 +1768,25 @@ const fsmStates = {
 
     onEnter: async function(event, oldState, newState) {
 
-      if (event != "fsm_tick") {
+      if (event !== "fsm_tick") {
 
-        reporter(event, oldState, newState);
-        statsObj.fsmStatus = "EVOLVE_COMPLETE";
+        try{
+          reporter(event, oldState, newState);
+          statsObj.fsmStatus = "EVOLVE_COMPLETE";
 
-        await processSend({op: "STATS", childId: configuration.childId, fsmStatus: statsObj.fsmStatus});
+          await processSend({op: "STATS", childId: configuration.childId, fsmStatus: statsObj.fsmStatus});
 
-        if (configuration.quitOnComplete) {
-          console.log(chalkBlueBold(MODULE_ID_PREFIX + " | EVOLVE COMPLETE | QUITTING ..."));
-          quit({cause: "QUIT_ON_COMPLETE"});
+          if (configuration.quitOnComplete) {
+            console.log(chalkBlueBold(MODULE_ID_PREFIX + " | EVOLVE COMPLETE | QUITTING ..."));
+            quit({cause: "QUIT_ON_COMPLETE"});
+          }
+          else {
+            console.log(chalkBlueBold(MODULE_ID_PREFIX + " | EVOLVE COMPLETE"));
+            fsm.fsm_ready();
+          }
         }
-        else {
-          console.log(chalkBlueBold(MODULE_ID_PREFIX + " | EVOLVE COMPLETE"));
-          fsm.fsm_ready();
+        catch(err){
+          throw err;
         }
 
       }
@@ -1899,27 +1834,27 @@ console.log(chalkBlueBold(
   + "\n=======================================================================\n"
 ));
 
-async function calculateHiddenLayerSize(params){
-  try {
-    const networkObj = params.networkObj;
+// async function calculateHiddenLayerSize(params){
+//   try {
+//     const networkObj = params.networkObj;
 
-    let hiddenLayerSize = 0;
+//     let hiddenLayerSize = 0;
 
-    if (!networkObj.network.nodes || (networkObj.network.nodes == undefined)){
-      return hiddenLayerSize;
-    }
+//     if (!networkObj.network.nodes || (networkObj.network.nodes === undefined)){
+//       return hiddenLayerSize;
+//     }
 
-    for(const node of networkObj.network.nodes){
-      if (node.type == "hidden") { hiddenLayerSize += 1; }
-    }
+//     for(const node of networkObj.network.nodes){
+//       if (node.type === "hidden") { hiddenLayerSize += 1; }
+//     }
 
-    return hiddenLayerSize;
-  }
-  catch(err){
-    console.log(chalkError(MODULE_ID_PREFIX + " | *** calculateHiddenLayerSize ERROR: " + err));
-    throw err;
-  }
-}
+//     return hiddenLayerSize;
+//   }
+//   catch(err){
+//     console.log(chalkError(MODULE_ID_PREFIX + " | *** calculateHiddenLayerSize ERROR: " + err));
+//     throw err;
+//   }
+// }
 
 async function networkDefaults(nnObj){
 
@@ -1943,7 +1878,6 @@ async function networkDefaults(nnObj){
     console.log(chalkError(MODULE_ID_PREFIX + " | *** networkDefaults ERROR: " + err));
     throw err;
   }
-
 }
 
 async function configNetworkEvolve(params){
@@ -1951,7 +1885,7 @@ async function configNetworkEvolve(params){
   try{
     const newNetObj = {};
 
-    if (params.testSetRatio != undefined) { configuration.testSetRatio = params.testSetRatio; }
+    if (params.testSetRatio !== undefined) { configuration.testSetRatio = params.testSetRatio; }
 
     console.log(chalkInfo(MODULE_ID_PREFIX + " | CONFIG EVOLVE"
       + " | CHILD ID: " + params.childId
@@ -1965,13 +1899,13 @@ async function configNetworkEvolve(params){
 
     configuration.childId = params.childId;
 
-    newNetObj.binaryMode = (params.binaryMode != undefined) ? params.binaryMode : configuration.binaryMode;
+    newNetObj.binaryMode = (params.binaryMode !== undefined) ? params.binaryMode : configuration.binaryMode;
 
     newNetObj.networkTechnology = params.networkTechnology || "neataptic";
 
     newNetObj.networkId = params.testRunId;
     newNetObj.architecture = params.architecture;
-    newNetObj.seedNetworkId = (params.seedNetworkId && params.seedNetworkId !== undefined && params.seedNetworkId != "false") ? params.seedNetworkId : false;
+    newNetObj.seedNetworkId = (params.seedNetworkId && params.seedNetworkId !== undefined && params.seedNetworkId !== "false") ? params.seedNetworkId : false;
     newNetObj.seedNetworkRes = params.seedNetworkRes;
     newNetObj.networkCreateMode = "evolve";
     newNetObj.testRunId = params.testRunId;
@@ -1990,7 +1924,6 @@ async function configNetworkEvolve(params){
       params,
       [
         "activation",
-        "amount", 
         "architecture",
         "binaryMode",
         "clear", 
@@ -2026,9 +1959,9 @@ async function configNetworkEvolve(params){
 
     if (newNetObj.evolve.options.seedNetworkId) {
 
-      seedNetworkObj = await global.globalNeuralNetwork.findOne({networkId: newNetObj.seedNetworkId}).lean().exec();
+      seedNetworkObj = await wordAssoDb.NeuralNetwork.findOne({networkId: newNetObj.seedNetworkId}).lean();
 
-      if (seedNetworkObj && seedNetworkObj.networkTechnology != newNetObj.networkTechnology){
+      if (seedNetworkObj && seedNetworkObj.networkTechnology !== newNetObj.networkTechnology){
         console.log(chalkAlert(MODULE_ID_PREFIX + " | !!! CHANGE NETWORK TECH TO SEED NN TECH"
           + " | SEED: " + seedNetworkObj.networkTechnology
           + " --> CHILD: " + newNetObj.networkTechnology
@@ -2039,7 +1972,7 @@ async function configNetworkEvolve(params){
       newNetObj.numInputs = seedNetworkObj.numInputs;
       newNetObj.numOutputs = seedNetworkObj.numOutputs;
       newNetObj.seedNetworkId = seedNetworkObj.networkId;
-      newNetObj.seedNetworkRes = seedNetworkObj.seedNetworkRes;
+      newNetObj.seedNetworkRes = seedNetworkObj.successRate;
 
       if (!empty(seedNetworkObj.networkJson)) {
         newNetObj.networkJson = seedNetworkObj.networkJson;        
@@ -2104,7 +2037,7 @@ process.on("message", async function(m) {
 
   try{
 
-    if (configuration.verbose || configuration.testMode) { 
+    if (configuration.verbose) { 
       console.log(chalkLog(MODULE_ID_PREFIX + " | <R MESSAGE | " + getTimeStamp() + " | OP: " + m.op)); 
     }
 
@@ -2137,10 +2070,10 @@ process.on("message", async function(m) {
 
         configuration = _.assign(configuration, m.configuration);
 
-        if (m.testMode != undefined) { configuration.testMode = m.testMode; }
-        if (m.verbose != undefined) { configuration.verbose = m.verbose; }
-        if (m.testSetRatio != undefined) { configuration.testSetRatio = m.testSetRatio; }
-        if (m.binaryMode != undefined) { 
+        if (m.testMode !== undefined) { configuration.testMode = m.testMode; }
+        if (m.verbose !== undefined) { configuration.verbose = m.verbose; }
+        if (m.testSetRatio !== undefined) { configuration.testSetRatio = m.testSetRatio; }
+        if (m.binaryMode !== undefined) { 
           configuration.binaryMode = m.binaryMode;
         }
 
@@ -2169,11 +2102,8 @@ process.on("message", async function(m) {
       break;
 
       case "CONFIG_EVOLVE":
-
-        childNetworkObj = {};
-        console.log("==== BEFORE await configNetworkEvolve");
+        childNetworkObj = null;
         childNetworkObj = await configNetworkEvolve(m);
-        console.log("==== AFTER  await configNetworkEvolve");
 
         statsObj.evolve.options = omit(childNetworkObj.evolve.options, ["network"]);
 
@@ -2216,9 +2146,41 @@ process.on("message", async function(m) {
   catch(err){
     console.log(chalkError(MODULE_ID_PREFIX + " | *** PROCESS ON MESSAGE ERROR: " + err));
   }
-
 });
 
+async function connectDb(){
+
+  try {
+
+    statsObj.status = "CONNECTING MONGO DB";
+
+    console.log(chalkBlueBold(MODULE_ID_PREFIX + " | CONNECT MONGO DB ..."));
+
+    const db = await wordAssoDb.connect(MODULE_ID_PREFIX + "_" + process.pid);
+
+    db.on("error", async function(err){
+      statsObj.status = "MONGO ERROR";
+      console.log(chalkError(MODULE_ID_PREFIX + " | *** MONGO DB CONNECTION ERROR"));
+      db.close();
+      quit({cause: "MONGO DB ERROR: " + err});
+    });
+
+    db.on("disconnected", async function(){
+      statsObj.status = "MONGO DISCONNECTED";
+      console.log(chalkAlert(MODULE_ID_PREFIX + " | *** MONGO DB DISCONNECTED"));
+      quit({cause: "MONGO DB DISCONNECTED"});
+    });
+
+    console.log(chalk.green(MODULE_ID_PREFIX + " | MONGOOSE DEFAULT CONNECTION OPEN"));
+
+    return db;
+
+  }
+  catch(err){
+    console.log(chalkError(MODULE_ID_PREFIX + " | *** MONGO DB CONNECT ERROR: " + err));
+    throw err;
+  }
+}
 
 setTimeout(async function(){
 
@@ -2245,7 +2207,8 @@ setTimeout(async function(){
     ));
 
     try {
-      // await connectDb();
+      await connectDb();
+      await initProcessSendQueue();
       initFsmTickInterval(FSM_TICK_INTERVAL);
     }
     catch(err){
@@ -2256,7 +2219,7 @@ setTimeout(async function(){
   }
   catch(err){
     console.log(chalkError(MODULE_ID_PREFIX + " | **** INIT CONFIG ERROR *****\n" + jsonPrint(err)));
-    if (err.code != 404) {
+    if (err.code !== 404) {
       quit({cause: new Error("INIT CONFIG ERROR")});
     }
   }
