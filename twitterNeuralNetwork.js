@@ -2767,45 +2767,37 @@ function delay(p) {
 
   return new Promise(function(resolve, reject){
 
-    // try {
+    if (verbose) {
+      console.log(chalkLog(MODULE_ID_PREFIX + " | +++ DELAY START | NOW: " + getTimeStamp() + " | PERIOD: " + msToTime(period)));
+    }
+
+    delayInterval = setInterval(function(){
 
       if (verbose) {
-        console.log(chalkLog(MODULE_ID_PREFIX + " | +++ DELAY START | NOW: " + getTimeStamp() + " | PERIOD: " + msToTime(period)));
+        console.log(chalkLog(MODULE_ID_PREFIX 
+          + " | ... DELAY ... "
+          + " | PERIOD: " + msToTime(period)
+          + " | INTERVAL: " + interval + " MS"
+          + " | START: " + getTimeStamp(delayStartMoment) 
+          + " | END: " + getTimeStamp(delayEndMoment) 
+          + " | NOW: " + getTimeStamp() 
+        ));
       }
 
-      delayInterval = setInterval(function(){
+      if (moment().isAfter(delayEndMoment)){
+        console.log(chalkAlert(MODULE_ID_PREFIX 
+          + " | XXX DELAY END "
+          + " | PERIOD: " + msToTime(period)
+          + " | INTERVAL: " + msToTime(interval)
+          + " | START: " + getTimeStamp(delayStartMoment) 
+          + " | END: " + getTimeStamp(delayEndMoment) 
+          + " | NOW: " + getTimeStamp() 
+        ));
+        clearInterval(delayInterval);
+        resolve();
+      }
 
-        // if (verbose) {
-          console.log(chalkLog(MODULE_ID_PREFIX 
-            + " | ... DELAY ... "
-            + " | PERIOD: " + msToTime(period)
-            + " | INTERVAL: " + interval + " MS"
-            + " | START: " + getTimeStamp(delayStartMoment) 
-            + " | END: " + getTimeStamp(delayEndMoment) 
-            + " | NOW: " + getTimeStamp() 
-          ));
-        // }
-
-        if (moment().isAfter(delayEndMoment)){
-          console.log(chalkAlert(MODULE_ID_PREFIX 
-            + " | XXX DELAY END "
-            + " | PERIOD: " + msToTime(period)
-            + " | INTERVAL: " + msToTime(interval)
-            + " | START: " + getTimeStamp(delayStartMoment) 
-            + " | END: " + getTimeStamp(delayEndMoment) 
-            + " | NOW: " + getTimeStamp() 
-          ));
-          clearInterval(delayInterval);
-          resolve();
-        }
-
-      }, interval);
-
-    // }
-    // catch(err){
-    //   console.log(chalkError(MODULE_ID_PREFIX + " | *** delay ERROR:", err));
-    //   reject(err);
-    // }
+    }, interval);
 
   });
 }
