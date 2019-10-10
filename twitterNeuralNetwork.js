@@ -964,6 +964,9 @@ const format = function(input){
   if (typeof input === "number"){
     return input.toFixed(3);
   }
+  if (typeof input === "string"){
+    return parseFloat(input).toFixed(3);
+  }
 
   return input;
 }
@@ -4446,7 +4449,7 @@ async function evolveCompleteHandler(params){
     m.statsObj.fitness = statsObj.networkResults[nn.networkId].fitness;
     statsObj.evolveStats.total += 1;
 
-    const snIdRes = (nn.seedNetworkId && nn.seedNetworkRes && nn.seedNetworkRes !== undefined) ? nn.seedNetworkRes : "---";
+    const snIdRes = (nn.seedNetworkId && nn.seedNetworkRes && nn.seedNetworkRes !== undefined) ? nn.seedNetworkRes.toFixed(2) : "---";
 
     console.log(chalkBlueBold(
         "\nTNN | ========================================================"
