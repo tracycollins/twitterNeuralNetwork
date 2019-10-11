@@ -420,7 +420,6 @@ async function initSlackRtmClient(){
       }
     });
 
-
     // slackRtmClient.on("message", async function(message){
     //   if (configuration.verbose) { console.log(chalkLog("TNN | RTM R<\n" + jsonPrint(message))); }
     //   debug(`TNN | SLACK RTM MESSAGE | R< | CH: ${message.channel} | USER: ${message.user} | ${message.text}`);
@@ -573,8 +572,8 @@ const DEFAULT_EVOLVE_MUTATION_EFFICIENT = false; // carrot only efficient_mutati
 const DEFAULT_EVOLVE_POPSIZE = 20;
 const DEFAULT_EVOLVE_GROWTH = 0.0001;
 const DEFAULT_EVOLVE_SELECTION = "FITNESS_PROPORTIONATE";
-const DEFAULT_EVOLVE_CLEAR = false;
-const DEFAULT_EVOLVE_AMOUNT = 1;
+// const DEFAULT_EVOLVE_CLEAR = false;
+// const DEFAULT_EVOLVE_AMOUNT = 1;
 const DEFAULT_EVOLVE_COST = "MSE";
 const DEFAULT_EVOLVE_PROVENANCE = 0;
 const EVOLVE_MUTATION_RATE_RANGE = { min: 0.35, max: 0.75 };
@@ -922,32 +921,20 @@ function printInputsObj(title, inputsObj, format) {
 
 function printNetworkObj(title, networkObj, format) {
 
-  return new Promise(function(resolve, reject){
+  const chalkFormat = (format !== undefined) ? format : chalkNetwork;
 
-    const chalkFormat = (format !== undefined) ? format : chalkNetwork;
-
-    // networkDefaults(nObj)
-    // .then(function(networkObj){
-      console.log(chalkFormat(title
-        + " | TECH: " + networkObj.networkTechnology.slice(0,4).toUpperCase()
-        + " | OAMR: " + networkObj.overallMatchRate.toFixed(2) + "%"
-        + " | MR: " + networkObj.matchRate.toFixed(2) + "%"
-        + " | SR: " + networkObj.successRate.toFixed(2) + "%"
-        + " | CR: " + getTimeStamp(networkObj.createdAt)
-        + " | TC:  " + networkObj.testCycles
-        + " | TCH: " + networkObj.testCycleHistory.length
-        + " | INPUTS: " + networkObj.numInputs
-        + " | IN ID:  " + networkObj.inputsId
-        + " | " + networkObj.networkId
-      ));
-      
-      resolve();
-    // })
-    // .catch(function(err){
-    //   reject(err);
-    // });
-
-  });
+  console.log(chalkFormat(title
+    + " | TECH: " + networkObj.networkTechnology.slice(0,4).toUpperCase()
+    + " | OAMR: " + networkObj.overallMatchRate.toFixed(2) + "%"
+    + " | MR: " + networkObj.matchRate.toFixed(2) + "%"
+    + " | SR: " + networkObj.successRate.toFixed(2) + "%"
+    + " | CR: " + getTimeStamp(networkObj.createdAt)
+    + " | TC:  " + networkObj.testCycles
+    + " | TCH: " + networkObj.testCycleHistory.length
+    + " | INPUTS: " + networkObj.numInputs
+    + " | IN ID:  " + networkObj.inputsId
+    + " | " + networkObj.networkId
+  ));
 }
 
 const formatBoolean = function(bool){
@@ -1159,20 +1146,15 @@ function printResultsHashmap(){
 
 function purgeNetwork(networkId){
 
-  return new Promise(function(resolve, reject){
-    console.log(chalkAlert(MODULE_ID_PREFIX + " | XXX PURGE NETWORK: " + networkId));
+  console.log(chalkAlert(MODULE_ID_PREFIX + " | XXX PURGE NETWORK: " + networkId));
 
-    networkIdSet.delete(networkId);
+  networkIdSet.delete(networkId);
+  betterChildSeedNetworkIdSet.delete(networkId);
+  skipLoadNetworkSet.add(networkId);
 
-    betterChildSeedNetworkIdSet.delete(networkId);
-
-    skipLoadNetworkSet.add(networkId);
-
-    if (resultsHashmap[networkId] !== undefined) { 
-      resultsHashmap[networkId].status = "PURGED";
-    }
-    resolve();
-  });
+  if (resultsHashmap[networkId] !== undefined) { 
+    resultsHashmap[networkId].status = "PURGED";
+  }
 }
 
 function purgeInputs(inputsId){
@@ -1338,7 +1320,7 @@ async function loadNetworkFile(params){
       console.log(chalkInfo(MODULE_ID_PREFIX + " | ??? INVALID NETWORK ... PURGING"
         + " | " + path
       ));
-      await purgeNetwork(networkObj.networkId);
+      purgeNetwork(networkObj.networkId);
       return;
     }
 
@@ -1394,7 +1376,7 @@ async function loadNetworkFile(params){
       if(empty(inputsIdHashMap[networkObj.inputsId])) { inputsIdHashMap[networkObj.inputsId] = new Set(); }
       inputsIdHashMap[networkObj.inputsId].add(networkObj.networkId);
 
-      await printNetworkObj(MODULE_ID_PREFIX 
+      printNetworkObj(MODULE_ID_PREFIX 
         + " | LOCAL > GLOBAL"
         + " | " + params.folder, 
         networkObj, 
@@ -1418,11 +1400,11 @@ async function loadNetworkFile(params){
       if(empty(inputsIdHashMap[networkObj.inputsId])) { inputsIdHashMap[networkObj.inputsId] = new Set(); }
       inputsIdHashMap[networkObj.inputsId].add(networkObj.networkId);
 
-      await printNetworkObj(MODULE_ID_PREFIX + " | +++ NN SET [" + networkIdSet.size + " IN SET]", networkObj);
+      printNetworkObj(MODULE_ID_PREFIX + " | +++ NN SET [" + networkIdSet.size + " IN SET]", networkObj);
 
       if (!currentBestNetwork || (networkObj.overallMatchRate > currentBestNetwork.overallMatchRate)) {
         currentBestNetwork = networkObj;
-        await printNetworkObj(MODULE_ID_PREFIX + " | ===> NEW BEST NN <===", networkObj, chalkGreen);
+        printNetworkObj(MODULE_ID_PREFIX + " | ===> NEW BEST NN <===", networkObj, chalkGreen);
       }
 
       //========================
@@ -1463,7 +1445,7 @@ async function loadNetworkFile(params){
 
         if (!currentBestNetwork || (nnDb.overallMatchRate > currentBestNetwork.overallMatchRate)) {
           currentBestNetwork = nnDb;
-          await printNetworkObj(MODULE_ID_PREFIX + " | *** NEW BEST NN (DB)", nnDb, chalkGreen);
+          printNetworkObj(MODULE_ID_PREFIX + " | *** NEW BEST NN (DB)", nnDb, chalkGreen);
         }
 
         networkIdSet.add(nnDb.networkId);
@@ -1483,7 +1465,7 @@ async function loadNetworkFile(params){
     if (((hostname === PRIMARY_HOST) && (params.folder.toLowerCase() === globalBestNetworkFolder.toLowerCase()))
       || ((hostname !== PRIMARY_HOST) && (params.folder.toLowerCase() === localBestNetworkFolder.toLowerCase())) ) {
 
-      await printNetworkObj(
+      printNetworkObj(
         MODULE_ID_PREFIX 
           + " | XXX DELETING NN [" + networkIdSet.size + " IN SET]"
           + " | FOLDER: " + params.folder, 
@@ -1491,13 +1473,13 @@ async function loadNetworkFile(params){
         chalkAlert
       );
 
-      await purgeNetwork(networkObj.networkId);
+      purgeNetwork(networkObj.networkId);
       await purgeInputs(networkObj.inputsId);
       await unlinkFileAsync({folder: params.folder, file: params.file});
       return;
     }
 
-    await printNetworkObj(
+    printNetworkObj(
       MODULE_ID_PREFIX 
         + " | --- NN HASH MAP [" + networkIdSet.size + " IN SET]"
         + " | PRIMARY_HOST: " + PRIMARY_HOST
@@ -1648,7 +1630,7 @@ async function updateDbNetwork(params) {
         return reject(err);
       }
 
-      if (verbose) { await printNetworkObj(MODULE_ID_PREFIX + " | +++ NN DB UPDATED", nnDbUpdated); }
+      if (verbose) { printNetworkObj(MODULE_ID_PREFIX + " | +++ NN DB UPDATED", nnDbUpdated); }
 
       const nnObj = nnDbUpdated.toObject();
       delete nnObj._id;
@@ -2163,7 +2145,7 @@ async function generateRandomEvolveConfig(p){
 
         if (!networkObjValid) {
           console.log(chalkInfo(MODULE_ID_PREFIX + " | ??? INVALID NETWORK ... PURGING: " + dbNetworkObj.networkId));
-          await purgeNetwork(dbNetworkObj.networkId);
+          purgeNetwork(dbNetworkObj.networkId);
           throw new Error("INVALID NETWORK: " + dbNetworkObj.networkId);
         }
 
@@ -2768,7 +2750,7 @@ function delay(p) {
   const delayStartMoment = moment();
   const delayEndMoment = moment().add(period, "ms");
 
-  return new Promise(function(resolve, reject){
+  return new Promise(function(resolve){
 
     if (verbose) {
       console.log(chalkLog(MODULE_ID_PREFIX + " | +++ DELAY START | NOW: " + getTimeStamp() + " | PERIOD: " + msToTime(period)));
@@ -4440,7 +4422,6 @@ async function evolveCompleteHandler(params){
   try {
 
     const m = params.m;
-    let inputsViableFlag = false;
 
     const nn = await wordAssoDb.NeuralNetwork.findOne({networkId: m.networkId}).lean();
 
@@ -4449,7 +4430,7 @@ async function evolveCompleteHandler(params){
     m.statsObj.fitness = statsObj.networkResults[nn.networkId].fitness;
     statsObj.evolveStats.total += 1;
 
-    const snIdRes = (nn.seedNetworkId && nn.seedNetworkRes && nn.seedNetworkRes !== undefined) ? nn.seedNetworkRes.toFixed(2) : "---";
+    const snIdRes = (nn.seedNetworkId && nn.seedNetworkRes && nn.seedNetworkRes !== undefined) ? parseFloat(nn.seedNetworkRes).toFixed(2) : "---";
 
     console.log(chalkBlueBold(
         "\nTNN | ========================================================"
@@ -4587,12 +4568,9 @@ async function evolveCompleteHandler(params){
 
         statsObj.evolveStats.passGlobal += 1;
 
-        inputsViableFlag = false;
-
         inputsFailedSet.delete(nn.inputsId);
 
         if (inputsViableSet.has(nn.inputsId)) {
-          inputsViableFlag = true;
           console.log(chalkBlueBold("TNN | GLOBAL BEST | VIABLE NETWORKS INPUTS"
             + " | " + nn.networkId
             + " | INPUTS: " + nn.inputsId
@@ -4601,18 +4579,17 @@ async function evolveCompleteHandler(params){
           inputsViableSet.delete(nn.inputsId);
         }
 
-        // slackText = "\n*GLOBAL BEST | " + nn.test.results.successRate.toFixed(2) + "%*";
-        // slackText = slackText + "\n" + nn.networkId;
-        // slackText = slackText + "\nTECH: " + nn.networkTechnology;
-        // slackText = slackText + "\nIN: " + nn.inputsId;
-        // slackText = slackText + "\nINPUTS: " + nn.networkJson.input;
-        // slackText = slackText + "\nINPUTS VIABLE: " + inputsViableFlag;
-        // slackText = slackText + "\nBETTER CHILD: " + nn.betterChild;
-        // slackText = slackText + "\nELAPSED: " + msToTime(nn.evolve.elapsed);
+        slackText = "\n*GLOBAL BEST | " + nn.test.results.successRate.toFixed(2) + "%*";
+        slackText = slackText + "\n" + nn.networkId;
+        slackText = slackText + "\nTECH: " + nn.networkTechnology;
+        slackText = slackText + "\nIN: " + nn.inputsId;
+        slackText = slackText + "\nINPUTS: " + nn.networkJson.input;
+        slackText = slackText + "\nBETTER CHILD: " + nn.betterChild;
+        slackText = slackText + "\nELAPSED: " + msToTime(nn.evolve.elapsed);
 
-        // await slackSendWebMessage({ channel: slackChannelPassGlobal, text: slackText});
+        await slackSendWebMessage({ channel: slackChannelPassGlobal, text: slackText});
 
-        // await printNetworkObj(MODULE_ID_PREFIX + " | " + nn.networkId, nn);
+        printNetworkObj(MODULE_ID_PREFIX + " | " + nn.networkId, nn);
 
         saveFileQueue.push({localFlag: false, folder: globalBestNetworkFolder, file: bestNetworkFile, obj: nn});
       }
@@ -4634,10 +4611,7 @@ async function evolveCompleteHandler(params){
 
         statsObj.evolveStats.passLocal += 1;
 
-        inputsViableFlag = false;
-
         if (inputsViableSet.has(nn.inputsId)) {
-          inputsViableFlag = true;
           console.log(chalkBlueBold("TNN | LOCAL BEST | VIABLE NETWORKS INPUTS"
             + " | " + nn.networkId
             + " | INPUTS: " + nn.inputsId
@@ -4646,16 +4620,15 @@ async function evolveCompleteHandler(params){
           inputsViableSet.delete(nn.inputsId);
         }
 
-        // slackText = "\n*LOCAL BEST | " + nn.test.results.successRate.toFixed(2) + "%*";
-        // slackText = slackText + "\n" + nn.networkId;
-        // slackText = slackText + "\nTECH: " + nn.networkTechnology;
-        // slackText = slackText + "\nIN: " + nn.inputsId;
-        // slackText = slackText + "\nINPUTS: " + nn.networkJson.input;
-        // slackText = slackText + "\nINPUTS VIABLE: " + inputsViableFlag;
-        // slackText = slackText + "\nBETTER CHILD: " + nn.betterChild;
-        // slackText = slackText + "\nELAPSED: " + msToTime(nn.evolve.elapsed);
+        slackText = "\n*LOCAL BEST | " + nn.test.results.successRate.toFixed(2) + "%*";
+        slackText = slackText + "\n" + nn.networkId;
+        slackText = slackText + "\nTECH: " + nn.networkTechnology;
+        slackText = slackText + "\nIN: " + nn.inputsId;
+        slackText = slackText + "\nINPUTS: " + nn.networkJson.input;
+        slackText = slackText + "\nBETTER CHILD: " + nn.betterChild;
+        slackText = slackText + "\nELAPSED: " + msToTime(nn.evolve.elapsed);
 
-        // await slackSendWebMessage({ channel: slackChannelPassLocal, text: slackText });
+        await slackSendWebMessage({ channel: slackChannelPassLocal, text: slackText });
 
         saveFileQueue.push({localFlag: false, folder: localBestNetworkFolder, file: localNetworkFile, obj: nn});
       }
@@ -4682,16 +4655,15 @@ async function evolveCompleteHandler(params){
         ));
       }
 
-      // slackText = "\n*FAIL | " + nn.test.results.successRate.toFixed(2) + "%*";
-      // slackText = slackText + "\n" + nn.networkId;
-      // slackText = slackText + "\nTECH: " + nn.networkTechnology;
-      // slackText = slackText + "\nIN: " + nn.inputsId;
-      // slackText = slackText + "\nINPUTS: " + nn.networkJson.input;
-      // slackText = slackText + "\nINPUTS VIABLE: " + inputsViableFlag;
-      // slackText = slackText + "\nBETTER CHILD: " + nn.betterChild;
-      // slackText = slackText + "\nELAPSED: " + msToTime(nn.evolve.elapsed);
+      slackText = "\n*FAIL | " + nn.test.results.successRate.toFixed(2) + "%*";
+      slackText = slackText + "\n" + nn.networkId;
+      slackText = slackText + "\nTECH: " + nn.networkTechnology;
+      slackText = slackText + "\nIN: " + nn.inputsId;
+      slackText = slackText + "\nINPUTS: " + nn.networkJson.input;
+      slackText = slackText + "\nBETTER CHILD: " + nn.betterChild;
+      slackText = slackText + "\nELAPSED: " + msToTime(nn.evolve.elapsed);
 
-      // await slackSendWebMessage({ channel: slackChannelFail, text: slackText });
+      await slackSendWebMessage({ channel: slackChannelFail, text: slackText });
 
       statsObj.evolveStats.fail += 1;
 
@@ -4707,7 +4679,7 @@ async function evolveCompleteHandler(params){
     statsObj.evolveStats.results[nn.networkId] = {};
     statsObj.evolveStats.results[nn.networkId] = resultsHashmap[nn.networkId];
 
-    await printNetworkObj(MODULE_ID_PREFIX + " | " + nn.networkId, nn);
+    printNetworkObj(MODULE_ID_PREFIX + " | " + nn.networkId, nn);
     await printResultsHashmap();
 
     return;
