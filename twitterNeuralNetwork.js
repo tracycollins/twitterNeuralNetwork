@@ -432,10 +432,10 @@ async function initSlackRtmClient(){
 
   // });
 
-  slackRtmClient.on("ready", async function(){
-    if (configuration.verbose) { await slackSendRtmMessage(hostname + " | TNN | SLACK RTM READY"); }
-    return;
-  });
+  // slackRtmClient.on("ready", async function(){
+  //   if (configuration.verbose) { await slackSendRtmMessage(hostname + " | TNN | SLACK RTM READY"); }
+  //   return;
+  // });
 
 }
 
