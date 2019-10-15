@@ -859,7 +859,7 @@ async function loadTrainingSet(){
 async function testNetworkData(params){
 
   try{
-    const testSet = params.testSet;
+    const testSetObj = params.testSetObj;
     const convertDatumFlag = params.convertDatumFlag || false;
     const binaryMode = (params.binaryMode !== undefined) ? params.binaryMode : configuration.binaryMode;
 
@@ -867,11 +867,15 @@ async function testNetworkData(params){
     let numPassed = 0;
     let successRate = 0;
 
-    for(const datum of testSet){
+    for(const user of testSetObj.data){
+
+      const results = await tcUtils.convertDatumOneNetwork({primaryInputsFlag: true, user: user, binaryMode: binaryMode});
+      //convertDatumOneNetwork
+      // results = {user: user, datum: datum, inputHits: inputHits, inputMisses: inputMisses, inputHitRate: inputHitRate};
 
       const activateParams = {
-        user: datum.user, 
-        datum: datum, 
+        user: user, 
+        datum: results.datum, // user, input, output
         convertDatumFlag: convertDatumFlag, 
         binaryMode: binaryMode, 
         verbose: configuration.verbose
@@ -932,11 +936,13 @@ async function testNetwork(p){
 
     const binaryMode = (params.binaryMode !== undefined) ? params.binaryMode : configuration.binaryMode;
 
-    const testSet = await dataSetPrep({dataSetObj: testSetObj, binaryMode: binaryMode});
+    //dataSetPrep = dataSet.push({user: results.user, input: results.datum.input, output: results.datum.output});
+
+    // const testSet = await dataSetPrep({dataSetObj: testSetObj, binaryMode: binaryMode});
 
     console.log(chalkBlue(MODULE_ID_PREFIX + " | TEST NETWORK"
       + " | NETWORK ID: " + childNetworkObj.networkId
-      + " | " + testSet.length + " TEST DATA LENGTH"
+      + " | " + testSetObj.data.length + " TEST DATA LENGTH"
     ));
 
     await nnTools.loadNetwork({networkObj: childNetworkObj});
@@ -946,7 +952,7 @@ async function testNetwork(p){
     childNetworkObj.test = {};
     childNetworkObj.test.results = {};
 
-    childNetworkObj.test.results = await testNetworkData({networkId: childNetworkObj.networkId, testSet: testSet, convertDatumFlag: false, binaryMode: binaryMode});
+    childNetworkObj.test.results = await testNetworkData({networkId: childNetworkObj.networkId, testSetObj: testSetObj, convertDatumFlag: false, binaryMode: binaryMode});
 
     childNetworkObj.successRate = childNetworkObj.test.results.successRate;
 
@@ -1113,6 +1119,9 @@ function dataSetPrep(p){
           return cb();
         }
 
+        //convertDatumOneNetwork
+        // results = {user: user, datum: datum, inputHits: inputHits, inputMisses: inputMisses, inputHitRate: inputHitRate};
+
         tcUtils.convertDatumOneNetwork({primaryInputsFlag: true, user: user, binaryMode: binaryMode}).
         then(function(results){
 
@@ -1167,7 +1176,17 @@ function dataSetPrep(p){
             }
           }
 
-          dataSet.push({user: results.user, input: results.datum.input, output: results.datum.output});
+          dataSet.push({
+            user: results.user, 
+            screenName: user.screenName, 
+            input: results.datum.input, 
+            output: results.datum.output,
+            inputHits: results.inputHits,
+            inputMisses: results.inputMisses,
+            inputHitRate: results.inputHitRate
+          });
+          // dataSet.push({user: results.user, datum: results.datum, stats: results.stats});
+          // dataSet.push(results);
 
           if (configuration.verbose || (dataConverted % 1000 === 0) || configuration.testMode && (dataConverted % 100 === 0)){
             console.log(chalkLog(MODULE_ID_PREFIX + " | DATA CONVERTED: " + dataConverted + "/" + dataSetObj.data.length));
