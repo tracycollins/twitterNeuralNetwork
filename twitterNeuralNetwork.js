@@ -9,7 +9,7 @@ const CHILD_PREFIX_SHORT = "NC";
 const DEFAULT_BINARY_MODE = true;
 const DEFAULT_COMPARE_TECH = false;
 
-const DEFAULT_MAX_FAIL_NETWORKS = 20;
+const DEFAULT_MAX_FAIL_NETWORKS = 50;
 
 const os = require("os");
 let hostname = os.hostname();
@@ -1034,7 +1034,7 @@ function printResultsHashmap(){
       let seedNetworkId = false;
 
       const growth = (networkObj.evolve.options.growth && networkObj.evolve.options.growth !== undefined) ? networkObj.evolve.options.growth.toFixed(8) : "---";
-      const selection = (networkObj.evolve.options.selection && networkObj.evolve.options.selection !== undefined) ? networkObj.evolve.options.selection : "---";
+      const selection = (networkObj.evolve.options.selection && networkObj.evolve.options.selection !== undefined) ? networkObj.evolve.options.selection.slice(0,6) : "---";
       const mutation_rate = (networkObj.evolve.options.mutation_rate && networkObj.evolve.options.mutation_rate !== undefined) ? networkObj.evolve.options.mutation_rate.toFixed(3) : "---";
 
       nnTech = (networkObj.networkTechnology && networkObj.networkTechnology !== undefined) ? networkObj.networkTechnology.slice(0,4).toUpperCase() : "?";
@@ -1072,9 +1072,9 @@ function printResultsHashmap(){
         snIdRes,
         hiddenLayerSize,
         networkObj.inputsId,
-        networkObj.evolve.options.activation,
+        networkObj.evolve.options.activation.slice(0,6),
         formatBoolean(networkObj.evolve.options.clear),
-        networkObj.evolve.options.cost,
+        networkObj.evolve.options.cost.slice(0,4),
         selection,
         growth,
         formatBoolean(networkObj.evolve.options.equal),
