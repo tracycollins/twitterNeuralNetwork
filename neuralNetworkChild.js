@@ -18,6 +18,7 @@ hostname = hostname.replace(/.home/g, "");
 hostname = hostname.replace(/.at.net/g, "");
 hostname = hostname.replace(/.fios-router.home/g, "");
 hostname = hostname.replace(/word0-instance-1/g, "google");
+hostname = hostname.replace(/word-1/g, "google");
 hostname = hostname.replace(/word/g, "google");
 
 const MODULE_NAME = "tncChild";
@@ -859,21 +860,17 @@ async function loadTrainingSet(){
 async function testNetworkData(params){
 
   const testSet = params.testSet;
-  const convertDatumFlag = params.convertDatumFlag || false;
-  const verbose = params.verbose || false;
+
+  const convertDatumFlag = (params.convertDatumFlag !== undefined) ? params.convertDatumFlag : false;
   const binaryMode = (params.binaryMode !== undefined) ? params.binaryMode : configuration.binaryMode;
+
+  const verbose = params.verbose || false;
 
   let numTested = 0;
   let numPassed = 0;
   let successRate = 0;
 
   for(const datum of testSet){
-
-    // const results = await tcUtils.convertDatumOneNetwork({primaryInputsFlag: true, user: user, binaryMode: binaryMode});
-    //convertDatumOneNetwork
-    // results = {user: user, datum: datum, inputHits: inputHits, inputMisses: inputMisses, inputHitRate: inputHitRate};
-
-    // console.log("datum\n" + jsonPrint(datum));
 
     const activateParams = {
       user: datum.user, 

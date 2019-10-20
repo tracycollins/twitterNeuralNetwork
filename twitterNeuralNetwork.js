@@ -19,6 +19,7 @@ hostname = hostname.replace(/.home/g, "");
 hostname = hostname.replace(/.at.net/g, "");
 hostname = hostname.replace(/.fios-router.home/g, "");
 hostname = hostname.replace(/word0-instance-1/g, "google");
+hostname = hostname.replace(/word-1/g, "google");
 hostname = hostname.replace(/word/g, "google");
 
 const _ = require("lodash");
@@ -38,8 +39,8 @@ console.log("=========================================");
 const wordAssoDb = require("@threeceelabs/mongoose-twitter");
 let dbConnection;
 
-const NeuralNetworkTools = require("@threeceelabs/neural-network-tools");
-const nnTools = new NeuralNetworkTools(MODULE_ID_PREFIX + "_NNT");
+// const NeuralNetworkTools = require("@threeceelabs/neural-network-tools");
+// const nnTools = new NeuralNetworkTools(MODULE_ID_PREFIX + "_NNT");
 
 const carrotEvolveOptionsPickArray = [
   "activation",
@@ -217,26 +218,26 @@ let slackText = "";
 const channelsHashMap = new HashMap();
 
 const slackOAuthAccessToken = "xoxp-3708084981-3708084993-206468961315-ec62db5792cd55071a51c544acf0da55";
-const slackConversationId = "D65CSAELX"; // wordbot
+// const slackConversationId = "D65CSAELX"; // wordbot
 const slackRtmToken = "xoxb-209434353623-bNIoT4Dxu1vv8JZNgu7CDliy";
 
 let slackRtmClient;
 let slackWebClient;
 
-async function slackSendRtmMessage(msg){
-  try{
-    console.log(chalkBlueBold("TNN | SLACK RTM | SEND: " + msg));
+// async function slackSendRtmMessage(msg){
+//   try{
+//     console.log(chalkBlueBold("TNN | SLACK RTM | SEND: " + msg));
 
-    const sendResponse = await slackRtmClient.sendMessage(msg, slackConversationId);
+//     const sendResponse = await slackRtmClient.sendMessage(msg, slackConversationId);
 
-    console.log(chalkLog("TNN | SLACK RTM | >T\n" + jsonPrint(sendResponse)));
-    return sendResponse;
-  }
-  catch(err){
-    console.log(chalkAlert(MODULE_ID_PREFIX + " | *** slackSendRtmMessage ERROR: " + err));
-    throw err;
-  }
-}
+//     console.log(chalkLog("TNN | SLACK RTM | >T\n" + jsonPrint(sendResponse)));
+//     return sendResponse;
+//   }
+//   catch(err){
+//     console.log(chalkAlert(MODULE_ID_PREFIX + " | *** slackSendRtmMessage ERROR: " + err));
+//     throw err;
+//   }
+// }
 
 async function slackSendWebMessage(msgObj){
   try{
@@ -861,7 +862,7 @@ statsObjSmall = pick(statsObj, statsPickArray);
 
 function networkDefaults(networkObj){
 
-  return new Promise(function(resolve, reject){
+  return new Promise(function(resolve){
 
     if (empty(networkObj)) {
       console.trace(chalkError("networkDefaults ERROR: networkObj UNDEFINED"));
@@ -2044,19 +2045,18 @@ async function generateSeedInputsNetworkId(params){
   }
 }
 
-function calculateHiddenLayerSize(params){
+// function calculateHiddenLayerSize(params){
 
-  const networkObj = params.networkObj;
+//   const networkObj = params.networkObj;
 
-  let hiddenLayerSize = 0;
+//   let hiddenLayerSize = 0;
 
-  for(const node of networkObj.networkJson.nodes){
-    if (node.type === "hidden") { hiddenLayerSize += 1; }
-  }
+//   for(const node of networkObj.networkJson.nodes){
+//     if (node.type === "hidden") { hiddenLayerSize += 1; }
+//   }
 
-  return hiddenLayerSize;
-
-}
+//   return hiddenLayerSize;
+// }
 
 async function generateRandomEvolveConfig(p){
 
