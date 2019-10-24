@@ -165,7 +165,7 @@ const shell = require("shelljs");
 const touch = require("touch");
 const kill = require("tree-kill");
 const objectPath = require("object-path");
-const NodeCache = require("node-cache");
+// const NodeCache = require("node-cache");
 const merge = require("deepmerge");
 const table = require("text-table");
 const randomItem = require("random-item");
@@ -3297,28 +3297,28 @@ if(empty(saveCacheCheckPeriod)) { saveCacheCheckPeriod = 10; }
 
 console.log(MODULE_ID_PREFIX + " | SAVE CACHE CHECK PERIOD: " + saveCacheCheckPeriod + " SECONDS");
 
-const saveCache = new NodeCache({
-  stdTTL: saveCacheTtl,
-  checkperiod: saveCacheCheckPeriod
-});
+// const saveCache = new NodeCache({
+//   stdTTL: saveCacheTtl,
+//   checkperiod: saveCacheCheckPeriod
+// });
 
-function saveCacheExpired(file, fileObj) {
-  debug(chalkLog("XXX $ SAVE"
-    + " [" + saveCache.getStats().keys + "]"
-    + " | " + file
-  ));
-  saveFileQueue.push(fileObj);
-  statsObj.queues.saveFileQueue.size = saveFileQueue.length;
-}
+// function saveCacheExpired(file, fileObj) {
+//   debug(chalkLog("XXX $ SAVE"
+//     + " [" + saveCache.getStats().keys + "]"
+//     + " | " + file
+//   ));
+//   saveFileQueue.push(fileObj);
+//   statsObj.queues.saveFileQueue.size = saveFileQueue.length;
+// }
 
-saveCache.on("expired", saveCacheExpired);
+// saveCache.on("expired", saveCacheExpired);
 
-saveCache.on("set", function(file, fileObj) {
-  debug(chalkLog(MODULE_ID_PREFIX + " | $$$ SAVE CACHE"
-    + " [" + saveCache.getStats().keys + "]"
-    + " | " + fileObj.folder + "/" + file
-  ));
-});
+// saveCache.on("set", function(file, fileObj) {
+//   debug(chalkLog(MODULE_ID_PREFIX + " | $$$ SAVE CACHE"
+//     + " [" + saveCache.getStats().keys + "]"
+//     + " | " + fileObj.folder + "/" + file
+//   ));
+// });
 
 function initSaveFileQueue(cnf) {
 
@@ -3343,7 +3343,7 @@ function initSaveFileQueue(cnf) {
           MODULE_ID_PREFIX 
           + " | SAVED FILE"
           + " [Q: " + saveFileQueue.length + "] " 
-          + " [$: " + saveCache.getStats().keys + "] " 
+          // + " [$: " + saveCache.getStats().keys + "] " 
           + saveFileObj.folder + "/" + saveFileObj.file
         ));
         statsObj.queues.saveFileQueue.busy = false;
