@@ -1102,7 +1102,7 @@ function dataSetPrep(p){
     dataSetObj.meta.numInputs = childNetworkObj.numInputs;
 
     console.log(chalkBlue(MODULE_ID_PREFIX
-      + " | DATA SET PREP"
+      + " | DATA SET preppedOptions"
       + " | DATA LENGTH: " + dataSetObj.data.length
       + " | INPUTS: " + childNetworkObj.numInputs
       + "\nDATA SET META\n" + jsonPrint(dataSetObj.meta)
@@ -1110,7 +1110,7 @@ function dataSetPrep(p){
 
     const shuffledData = _.shuffle(dataSetObj.data);
 
-    async.each(shuffledData, function(user, cb){
+    async.eachSeries(shuffledData, function(user, cb){
 
       try {
 

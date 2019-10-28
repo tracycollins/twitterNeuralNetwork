@@ -1,6 +1,3 @@
-/*jslint node: true */
-/*jshint sub:true*/
-
 const MODULE_NAME = "twitterNeuralNetwork";
 const MODULE_ID_PREFIX = "TNN";
 const CHILD_PREFIX = "tnc_node";
@@ -38,9 +35,6 @@ console.log("=========================================");
 
 const wordAssoDb = require("@threeceelabs/mongoose-twitter");
 let dbConnection;
-
-// const NeuralNetworkTools = require("@threeceelabs/neural-network-tools");
-// const nnTools = new NeuralNetworkTools(MODULE_ID_PREFIX + "_NNT");
 
 const carrotEvolveOptionsPickArray = [
   "activation",
@@ -269,94 +263,6 @@ async function slackSendWebMessage(msgObj){
   }
 }
 
-// function slackMessageHandler(message){
-//   return new Promise(function(resolve, reject){
-
-//     try {
-
-//       console.log(chalkInfo("TNN | MESSAGE | " + message.type + " | " + message.text));
-
-//       if (message.type !== "message") {
-//         console.log(chalkAlert("Unhandled MESSAGE TYPE: " + message.type));
-//         return resolve();
-//       }
-
-//       const text = message.text.trim();
-//       const textArray = text.split("|");
-
-//       const sourceMessage = (textArray[2]) ? textArray[2].trim() : "NONE";
-
-//       switch (sourceMessage) {
-//         case "END FETCH ALL":
-//         case "ERROR":
-//         case "FETCH FRIENDS":
-//         case "FSM INIT":
-//         case "FSM FETCH_ALL":
-//         case "GEN AUTO CAT":
-//         case "INIT CHILD":
-//         case "INIT LANG ANALYZER":
-//         case "INIT MAX INPUT HASHMAP":
-//         case "INIT NNs":
-//         case "INIT RAN NNs":
-//         case "INIT RNT CHILD":
-//         case "INIT TWITTER USERS":
-//         case "INIT TWITTER":
-//         case "INIT UNFOLLOWABLE USER SET":
-//         case "INIT UNFOLLOWABLE":
-//         case "INIT":
-//         case "LOAD BEST NN":
-//         case "LOAD NN":
-//         case "MONGO DB CONNECTED":
-//         case "PONG":
-//         case "QUIT":
-//         case "QUITTING":
-//         case "READY":
-//         case "RESET":
-//         case "SAV NN HASHMAP":
-//         case "SLACK QUIT":
-//         case "SLACK READY":
-//         case "SLACK RTM READY":
-//         case "START":
-//         case "STATS":
-//         case "TEXT": 
-//         case "UPDATE HISTOGRAMS":
-//         case "UPDATE NN STATS":
-//         case "WAIT UPDATE STATS":
-//         case "END UPDATE STATS":
-//         case "UPDATE USER CAT STATS":
-//           resolve();
-//         break;
-//         case "STATSUS":
-//           console.log(chalkInfo(message.text));
-//           resolve();
-//         break;
-//         case "PING":
-//           slackSendWebMessage(hostname + " | TNN | PONG")
-//           .then(function(){
-//             resolve();
-//           })
-//           .catch(function(err){
-//             console.log(chalkAlert(MODULE_ID_PREFIX + " | *** SLACK SEND WEB MESSAGE ERROR: " + err));
-//             return reject(err);
-//           });
-//           resolve();
-//         break;
-//         case "NONE":
-//           resolve();
-//         break;
-//         default:
-//           console.log(chalkAlert("TNN | *** UNDEFINED SLACK MESSAGE: " + message.text));
-//           // reject(new Error("UNDEFINED SLACK MESSAGE TYPE: " + message.text));
-//           resolve({text: "UNDEFINED SLACK MESSAGE", message: message});
-//       }
-//     }
-//     catch(err){
-//       reject(err);
-//     }
-
-//   });
-// }
-
 async function initSlackWebClient(){
   try {
 
@@ -418,25 +324,6 @@ async function initSlackRtmClient(){
       default: debug(chalkInfo("TNN | SLACK RTM EVENT | " + getTimeStamp() + " | " + eventType + "\n" + jsonPrint(event)));
     }
   });
-
-  // slackRtmClient.on("message", async function(message){
-  //   if (configuration.verbose) { console.log(chalkLog("TNN | RTM R<\n" + jsonPrint(message))); }
-  //   debug(`TNN | SLACK RTM MESSAGE | R< | CH: ${message.channel} | USER: ${message.user} | ${message.text}`);
-
-  //   try {
-  //     await slackMessageHandler(message);
-  //   }
-  //   catch(err){
-  //     console.log(chalkError("TNN | *** SLACK RTM MESSAGE ERROR: " + err));
-  //   }
-
-  // });
-
-  // slackRtmClient.on("ready", async function(){
-  //   if (configuration.verbose) { await slackSendRtmMessage(hostname + " | TNN | SLACK RTM READY"); }
-  //   return;
-  // });
-
 }
 
 //=========================================================================
