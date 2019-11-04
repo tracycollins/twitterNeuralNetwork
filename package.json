@@ -32,7 +32,7 @@
     "debug": "^4.1.1",
     "deep-copy": "^1.4.2",
     "deepmerge": "^4.2.2",
-    "dot-object": "^1.9.0",
+    "dot-object": "^2.1.2",
     "dropbox": "^4.0.30",
     "dropbox-streaming-upload": "^1.0.4",
     "emoji-regex": "^8.0.0",
