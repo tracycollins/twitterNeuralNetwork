@@ -510,6 +510,7 @@ let currentBestNetwork;
 const networkIdSet = new Set();
 const betterChildSeedNetworkIdSet = new Set();
 const skipLoadNetworkSet = new Set();
+const zeroSuccessEvolveOptionsSet = new Set();
 
 const inputsIdHashMap = {};
 const inputsViableSet = new Set();
@@ -712,6 +713,7 @@ statsObj.evolveStats.passLocal = 0;
 statsObj.evolveStats.passGlobal = 0;
 statsObj.evolveStats.fail = 0;
 statsObj.evolveStats.viableInputs = [];
+statsObj.evolveStats.zeroSuccessOptions = [];
 
 statsObj.users = {};
 statsObj.users.imageParse = {};
@@ -1931,18 +1933,59 @@ async function generateSeedInputsNetworkId(params){
   }
 }
 
-// function calculateHiddenLayerSize(params){
+async function generateEvolveOptions(params){
 
-//   const networkObj = params.networkObj;
+  try{
 
-//   let hiddenLayerSize = 0;
+    const config = params.config;
 
-//   for(const node of networkObj.networkJson.nodes){
-//     if (node.type === "hidden") { hiddenLayerSize += 1; }
-//   }
+    let attempts = 1;
+    let key;
 
-//   return hiddenLayerSize;
-// }
+    do{
+
+      console.log(chalkLog(MODULE_ID_PREFIX + " | ... GENERATE EVOLVE OPTIONS ... | ATTEMPTS: " + attempts + " | KEY: " + key));
+
+      config.activation = randomItem(configuration.activationArray);
+      config.clear = false;
+
+      // neataptic doesn't have WAPE cost
+
+      const costArray = (config.networkTechnology === "neataptic") ? _.pull(configuration.costArray, "WAPE") : configuration.costArray;
+      config.cost = randomItem(costArray);
+
+      config.efficient_mutation = configuration.evolve.efficient_mutation;
+      config.elitism = randomInt(EVOLVE_ELITISM_RANGE.min, EVOLVE_ELITISM_RANGE.max);
+      config.equal = true;
+      config.error = configuration.evolve.error;
+      config.fitness_population = configuration.evolve.fitness_population;
+      config.growth = randomFloat(EVOLVE_GROWTH_RANGE.min, EVOLVE_GROWTH_RANGE.max);
+      config.iterations = configuration.evolve.iterations;
+      config.log = configuration.evolve.log;
+      config.mutation = configuration.evolve.mutation;
+      config.mutation_amount = 1;
+      config.mutation_rate = randomFloat(EVOLVE_MUTATION_RATE_RANGE.min, EVOLVE_MUTATION_RATE_RANGE.max);
+      config.popsize = configuration.evolve.popsize;
+      config.population_size = configuration.evolve.popsize;
+      config.provenance = configuration.evolve.provenance;
+      config.selection = randomItem(configuration.selectionArray);
+      config.threads = configuration.evolve.threads;
+
+      key = config.activation + ":" + config.cost + ":" + config.selection;
+
+      attempts += 1;
+
+    }
+    while(zeroSuccessEvolveOptionsSet.has(key));
+
+    return config;
+
+  }
+  catch(err){
+    console.log(chalkError(MODULE_ID_PREFIX + " | *** GENERATE EVOLVE OPTIONS ERROR: " + err));
+    throw err;
+  }
+}
 
 async function generateRandomEvolveConfig(p){
 
@@ -1963,32 +2006,9 @@ async function generateRandomEvolveConfig(p){
   debug(chalkLog(MODULE_ID_PREFIX + " | NETWORK CREATE MODE: " + config.networkCreateMode));
 
   config = await generateSeedInputsNetworkId({config: config});
+  config = await generateEvolveOptions({config: config});
 
-  config.activation = randomItem(configuration.activationArray);
-  config.clear = false;
-
-  // neataptic doesn't have WAPE cost
-
-  const costArray = (config.networkTechnology === "neataptic") ? _.pull(configuration.costArray, "WAPE") : configuration.costArray;
-  config.cost = randomItem(costArray);
-
-  config.efficient_mutation = configuration.evolve.efficient_mutation;
-  config.elitism = randomInt(EVOLVE_ELITISM_RANGE.min, EVOLVE_ELITISM_RANGE.max);
-  config.equal = true;
-  config.error = configuration.evolve.error;
-  config.fitness_population = configuration.evolve.fitness_population;
-  config.growth = randomFloat(EVOLVE_GROWTH_RANGE.min, EVOLVE_GROWTH_RANGE.max);
-  config.iterations = configuration.evolve.iterations;
-  config.log = configuration.evolve.log;
-  config.mutation = configuration.evolve.mutation;
-  config.mutation_amount = 1;
-  config.mutation_rate = randomFloat(EVOLVE_MUTATION_RATE_RANGE.min, EVOLVE_MUTATION_RATE_RANGE.max);
-  config.popsize = configuration.evolve.popsize;
-  config.population_size = configuration.evolve.popsize;
-  config.provenance = configuration.evolve.provenance;
-  config.selection = randomItem(configuration.selectionArray);
-  config.threads = configuration.evolve.threads;
-
+  // SEED NETWORK?
   if (configuration.enableSeedNetwork && config.seedNetworkId && (config.seedNetworkId !== undefined) && (config.seedNetworkId !== false) && networkIdSet.has(config.seedNetworkId)) {
 
     try{
@@ -2000,18 +2020,9 @@ async function generateRandomEvolveConfig(p){
         throw new Error("SEED NN not found: " + config.seedNetworkId);
       }
 
-      // const networkObj = nnDoc.toObject();
-
       console.log(chalkInfo(MODULE_ID_PREFIX + " | +++ DB FIND SEED NN | " + networkObj.networkId));
 
       const dbNetworkObj = await networkDefaults(networkObj);
-      // const networkObjValid = await nnTools.validateNetwork({networkId: dbNetworkObj.networkId, networkObj: dbNetworkObj});
-
-      // if (!networkObjValid) {
-      //   console.log(chalkInfo(MODULE_ID_PREFIX + " | ??? INVALID NETWORK ... PURGING: " + dbNetworkObj.networkId));
-      //   purgeNetwork(dbNetworkObj.networkId);
-      //   throw new Error("INVALID NETWORK: " + dbNetworkObj.networkId);
-      // }
 
       config.hiddenLayerSize = (dbNetworkObj.hiddenLayerSize && (dbNetworkObj.hiddenLayerSize !== undefined)) ? dbNetworkObj.hiddenLayerSize : 0;
 
@@ -2028,7 +2039,6 @@ async function generateRandomEvolveConfig(p){
       if (configuration.randomizeSeedOptions) {
         console.log(chalkLog(MODULE_ID_PREFIX + " | RANDOMIZE SEED NETWORK OPTIONS | " + config.seedNetworkId));
         config.activation = randomItem([config.activation, dbNetworkObj.evolve.options.activation]);
-        // config.clear = randomItem([config.clear, dbNetworkObj.evolve.options.clear]);
         config.cost = randomItem([config.cost, dbNetworkObj.evolve.options.cost]);
         config.elitism = randomItem([config.elitism, dbNetworkObj.evolve.options.elitism]);
         config.equal = randomItem([config.equal, dbNetworkObj.evolve.options.equal]);
@@ -2042,7 +2052,6 @@ async function generateRandomEvolveConfig(p){
       else {
         console.log(chalkLog(MODULE_ID_PREFIX + " | USE SEED NETWORK OPTIONS | " + config.seedNetworkId));
         config.activation = dbNetworkObj.evolve.options.activation;
-        // config.clear = dbNetworkObj.evolve.options.clear;
         config.cost = dbNetworkObj.evolve.options.cost;
         config.elitism = dbNetworkObj.evolve.options.elitism;
         config.equal = dbNetworkObj.evolve.options.equal;
@@ -4444,6 +4453,27 @@ async function evolveCompleteHandler(params){
         ));
       }
 
+      if (nn.test.results.successRate === 0){
+
+        const key = nn.evolve.options.activation + ":" + nn.evolve.options.cost + ":" + nn.evolve.options.selection;
+        zeroSuccessEvolveOptionsSet.add(key);
+
+        statsObj.evolveStats.zeroSuccessOptions = [...zeroSuccessEvolveOptionsSet];
+
+        console.log(chalkAlert(MODULE_ID_PREFIX + " | XXX ZERO SUCCESS RATE - ADDED EVOLVE OPTIONS TO ZERO FAIL SET"
+          + " [" + zeroSuccessEvolveOptionsSet.size + "]"
+          + " | ACTIVATION: " + nn.evolve.options.activation
+          + " | COST: " + nn.evolve.options.cost
+          + " | SELECTION: " + nn.evolve.options.selection
+        ));
+
+        for(const key of [...zeroSuccessEvolveOptionsSet].sort()){
+          console.log(chalkAlert(MODULE_ID_PREFIX + " | XXX ZERO SUCCESS ACT/COST/SEL"
+            + " | " + key
+          ));
+        }
+      }
+
       slackText = "\n*FAIL | " + nn.test.results.successRate.toFixed(2) + "%*";
       slackText = slackText + "\n" + nn.networkId;
       slackText = slackText + "\nTECH: " + nn.networkTechnology;
@@ -4456,13 +4486,16 @@ async function evolveCompleteHandler(params){
 
       statsObj.evolveStats.fail += 1;
 
-      localNetworkFile = nn.networkId + ".json";
+      if (!configuration.testMode){
 
-      console.log(chalkLog(MODULE_ID_PREFIX + " | ... SAVING NN FILE TO DROPBOX LOCAL FAIL"
-        + " | " + localFailNetworkFolder + "/" + localNetworkFile
-      ));
+        localNetworkFile = nn.networkId + ".json";
 
-      saveFileQueue.push({localFlag: false, folder: localFailNetworkFolder, file: localNetworkFile, obj: nn});
+        console.log(chalkLog(MODULE_ID_PREFIX + " | ... SAVING NN FILE TO DROPBOX LOCAL FAIL"
+          + " | " + localFailNetworkFolder + "/" + localNetworkFile
+        ));
+
+        saveFileQueue.push({localFlag: false, folder: localFailNetworkFolder, file: localNetworkFile, obj: nn});
+      }
     }
 
     statsObj.evolveStats.results[nn.networkId] = {};
