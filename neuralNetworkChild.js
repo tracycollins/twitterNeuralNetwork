@@ -12,6 +12,9 @@ const omit = require("object.omit");
 // const omitDeep = require("omit-deep-lodash");
 
 let hostname = os.hostname();
+if (hostname.startsWith("mbp3")){
+  hostname = "mbp3";
+}
 hostname = hostname.replace(/.tld/g, ""); // amtrak wifi
 hostname = hostname.replace(/.local/g, "");
 hostname = hostname.replace(/.home/g, "");
