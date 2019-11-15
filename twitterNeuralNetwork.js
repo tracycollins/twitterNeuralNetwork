@@ -771,23 +771,6 @@ function networkDefaults(networkObj){
 
     resolve(networkObj);
 
-    // if (!empty(networkObj.network) || !empty(networkObj.networkJson)){
-
-    //   nnTools.convertNetwork({networkObj: networkObj})
-    //   .then(function(nnObj){
-    //     if (empty(nnObj.hiddenLayerSize)){
-    //       nnObj.hiddenLayerSize = calculateHiddenLayerSize({networkObj: nnObj});
-    //     }
-    //     resolve(nnObj);
-    //   })
-    //   .catch(function(err){
-    //     reject(err);
-    //   });
-    // }
-    // else{
-    //   resolve(networkObj);
-    // }
-
   });
 
 }

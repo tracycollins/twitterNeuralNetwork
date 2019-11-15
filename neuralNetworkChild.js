@@ -1,6 +1,3 @@
- /*jslint node: true */
-/*jshint sub:true*/
-
 const ONE_SECOND = 1000;
 
 let childNetworkObj; // this is the common, default nn object
@@ -9,7 +6,6 @@ let seedNetworkObj; // this is the common, default nn object
 const os = require("os");
 const _ = require("lodash");
 const omit = require("object.omit");
-// const omitDeep = require("omit-deep-lodash");
 
 let hostname = os.hostname();
 if (hostname.startsWith("mbp3")){
@@ -34,7 +30,6 @@ const QUIT_WAIT_INTERVAL = ONE_SECOND;
 const TEST_MODE_LENGTH = 1000;
 
 const wordAssoDb = require("@threeceelabs/mongoose-twitter");
-// let dbConnection;
 
 let configuration = {};
 
