@@ -1241,7 +1241,6 @@ async function loadNetworkFile(params){
   if ((params.folder.toLowerCase() !== globalBestNetworkFolder.toLowerCase())
     && !networkIdSet.has(networkObj.networkId)
     && ((networkObj.successRate >= configuration.globalMinSuccessRate) 
-    // && (networkObj.networkTechnology !== "carrot") 
     || (networkObj.overallMatchRate >= configuration.globalMinSuccessRate))) {
 
     networkIdSet.add(networkObj.networkId);
