@@ -1413,6 +1413,7 @@ async function evolve(params){
     const evolveResults = await childNetworkRaw.evolve(trainingSet, preppedOptions);
 
     childNetworkObj.networkJson = childNetworkRaw.toJSON();
+    childNetworkObj.networkRaw = childNetworkRaw;
 
     evolveResults.threads = preppedOptions.threads;
     evolveResults.fitness = statsObj.evolve.stats.fitness;
