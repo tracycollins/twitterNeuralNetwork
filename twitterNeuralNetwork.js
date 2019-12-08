@@ -4440,7 +4440,7 @@ async function evolveCompleteHandler(params){
         ));
       }
 
-      if (nn.test.results.successRate === 0){
+      if (nn.test.results.successRate <= 1.0){
 
         const key = nn.evolve.options.activation + ":" + nn.evolve.options.cost + ":" + nn.evolve.options.selection;
         zeroSuccessEvolveOptionsSet.add(key);
