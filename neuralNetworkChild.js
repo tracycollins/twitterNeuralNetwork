@@ -1956,7 +1956,9 @@ async function configNetworkEvolve(params){
 
   if (newNetObj.evolve.options.seedNetworkId) {
 
-    seedNetworkObj = await wordAssoDb.NeuralNetwork.findOne({networkId: newNetObj.seedNetworkId}).lean();
+    const seedNetworkDoc = await wordAssoDb.NeuralNetwork.findOne({networkId: newNetObj.seedNetworkId});
+
+    seedNetworkObj = seedNetworkDoc.toObject();
 
     if (seedNetworkObj && seedNetworkObj.networkTechnology !== newNetObj.networkTechnology){
       console.log(chalkAlert(MODULE_ID_PREFIX + " | !!! CHANGE NETWORK TECH TO SEED NN TECH"
