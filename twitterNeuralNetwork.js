@@ -4519,14 +4519,11 @@ async function childMessageHandler(params){
     switch(m.op) {
 
       case "STATS":
-        // if (configuration.testMode) { console.log(chalkLog(MODULE_ID_PREFIX + " | <R TNC STATS | " + m.fsmStatus)); }
         childHashMap[childId].status = m.fsmStatus;
         objectPath.set(statsObj, ["children", childId, "status"], childHashMap[childId].status);
         return;
 
       case "EVOLVE_SCHEDULE":
-
-        // if (configuration.testMode) { console.log(chalkLog(MODULE_ID_PREFIX + " | <R TNC EVOLVE_SCHEDULE\n" + jsonPrint(m))); }
 
         _.set(resultsHashmap[m.stats.networkId], "evolve.results.iterations", m.stats.iteration);
 
@@ -4539,16 +4536,12 @@ async function childMessageHandler(params){
         console.log(chalkLog(MODULE_ID_PREFIX 
           + " | " + m.childIdShort 
           + " | " + m.stats.networkTechnology.slice(0,1).toUpperCase()
-          // + " | BIN: " + m.stats.binaryMode
           + " | " + m.stats.networkId
           + " | " + m.stats.inputsId
           + " | ERR " + error
           + " | FIT " + fitness
-          // + " | S " + moment(m.stats.evolveStart).format(compactDateTimeFormat)
-          // + " N " + moment().format(compactDateTimeFormat)
-          + " R " + msToTime(m.stats.evolveElapsed)
-          + " | ETC " + msToTime(m.stats.timeToComplete)
-          + " " + moment().add(m.stats.timeToComplete).format(compactDateTimeFormat)
+          + " | R " + msToTime(m.stats.evolveElapsed)
+          + " | ETC " + msToTime(m.stats.timeToComplete) + " " + moment().add(m.stats.timeToComplete).format(compactDateTimeFormat)
           + " | " + (m.stats.iterationRate/1000.0).toFixed(1) + " spi"
           + " | I " + m.stats.iteration + "/" + m.stats.totalIterations
         ));
