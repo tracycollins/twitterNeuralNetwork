@@ -1736,6 +1736,7 @@ const fsmStates = {
         try {
 
           reporter(event, oldState, newState);
+          
           statsObj.fsmStatus = "EVOLVE";
           await processSend({op: "STATS", childId: configuration.childId, fsmStatus: statsObj.fsmStatus});
 

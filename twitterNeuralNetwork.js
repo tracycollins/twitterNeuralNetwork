@@ -3970,7 +3970,7 @@ function childCreateAll(p){
         setTimeout(function(){
 
           childId = CHILD_PREFIX + "_" + hostname + "_" + process.pid + "_" + childIndex;
-          childIdShort = CHILD_PREFIX_SHORT + "_" + process.pid + "_" + childIndex;
+          childIdShort = CHILD_PREFIX_SHORT + childIndex;
 
           createParams.childId = childId;
           createParams.childIdShort = childIdShort;
@@ -4207,7 +4207,10 @@ async function evolveCompleteHandler(params){
 
     const m = params.m;
 
-    const nn = await wordAssoDb.NeuralNetwork.findOne({networkId: m.networkId}).lean();
+    // const nn = await wordAssoDb.NeuralNetwork.findOne({networkId: m.networkId}).lean();
+    const nnDoc = await wordAssoDb.NeuralNetwork.findOne({networkId: m.networkId});
+
+    const nn = nnDoc.toObject();
 
     nn.seedNetworkId = (nn.seedNetworkId && nn.seedNetworkId !== undefined && nn.seedNetworkId !== "false") ? nn.seedNetworkId : false;
 
@@ -4535,14 +4538,14 @@ async function childMessageHandler(params){
 
         console.log(chalkLog(MODULE_ID_PREFIX 
           + " | " + m.childIdShort 
-          + " | " + m.stats.networkTechnology.slice(0,4).toUpperCase()
-          + " | BIN: " + m.stats.binaryMode
+          + " | " + m.stats.networkTechnology.slice(0,1).toUpperCase()
+          // + " | BIN: " + m.stats.binaryMode
           + " | " + m.stats.networkId
           + " | " + m.stats.inputsId
           + " | ERR " + error
           + " | FIT " + fitness
-          + " | S " + moment(m.stats.evolveStart).format(compactDateTimeFormat)
-          + " N " + moment().format(compactDateTimeFormat)
+          // + " | S " + moment(m.stats.evolveStart).format(compactDateTimeFormat)
+          // + " N " + moment().format(compactDateTimeFormat)
           + " R " + msToTime(m.stats.evolveElapsed)
           + " | ETC " + msToTime(m.stats.timeToComplete)
           + " " + moment().add(m.stats.timeToComplete).format(compactDateTimeFormat)
