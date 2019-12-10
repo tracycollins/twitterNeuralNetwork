@@ -1268,7 +1268,10 @@ async function loadNetworkFile(params){
 
     printNetworkObj(MODULE_ID_PREFIX + " | +++ NN SET [" + networkIdSet.size + " IN SET]", networkObj);
 
-    if (!currentBestNetwork || (networkObj.overallMatchRate > currentBestNetwork.overallMatchRate)) {
+    if (!currentBestNetwork
+      || (networkObj.overallMatchRate > currentBestNetwork.overallMatchRate)
+      || (!networkObj.overallMatchRate && !currentBestNetwork.overallMatchRate && (networkObj.successRate > currentBestNetwork.successRate))
+    ) {
       currentBestNetwork = networkObj;
       printNetworkObj(MODULE_ID_PREFIX + " | ===> NEW BEST NN <===", networkObj, chalkGreen);
     }
@@ -1629,50 +1632,7 @@ async function loadBestNetworkFolders (p){
       });
 
       if (networkObj) {
-
         numNetworksLoaded += 1;
-
-        // if ((networkObj.test.results.successRate < 100) 
-        //   && (networkObj.test.results.successRate >= configuration.globalMinSuccessRate)
-        //   && (fileObj.folder !== globalBestNetworkFolder)) {
-
-        //   const file = networkObj.networkId + ".json";
-
-        //   console.log(chalkGreen(MODULE_ID_PREFIX + " | ### MOVE NN FROM LOCAL TO GLOBAL BEST"
-        //     + " | " + globalBestNetworkFolder + "/" + file
-        //   ));
-
-        //   inputsFailedSet.delete(networkObj.inputsId);
-
-        //   if (inputsViableSet.has(networkObj.inputsId)) {
-        //     console.log(chalkBlueBold("TNN | GLOBAL BEST | VIABLE NETWORKS INPUTS"
-        //       + " | " + networkObj.networkId
-        //       + " | INPUTS: " + networkObj.inputsId
-        //     ));
-        //     statsObj.evolveStats.viableInputs.push(networkObj.inputsId);
-        //     inputsViableSet.delete(networkObj.inputsId);
-        //   }
-
-
-        //   printNetworkObj(MODULE_ID_PREFIX + " | " + networkObj.networkId, networkObj);
-
-        //   await tcUtils.saveFile({folder: globalBestNetworkFolder, file: file, obj: networkObj});
-
-        //   await unlinkFileAsync(path.join(fileObj.folder, file));
-
-        //   slackText = "\n*MOVE NN TO GLOBAL BEST | " + networkObj.test.results.successRate.toFixed(2) + "%*";
-        //   slackText = slackText + "\n" + networkObj.networkId;
-        //   slackText = slackText + "\nTECH: " + networkObj.networkTechnology;
-        //   slackText = slackText + "\nIN: " + networkObj.inputsId;
-        //   slackText = slackText + "\nINPUTS: " + networkObj.numInputs;
-        //   slackText = slackText + "\nBETTER CHILD: " + networkObj.betterChild;
-        //   slackText = slackText + "\nELAPSED: " + msToTime(networkObj.evolve.elapsed);
-
-        //   await slackSendWebMessage({ channel: slackChannelPassGlobal, text: slackText});
-
-        // }
-
-
       }
     }
     catch(err){
@@ -1681,9 +1641,9 @@ async function loadBestNetworkFolders (p){
         + " | " + networkId
       ));
     }
-
-    return;
   }
+
+  return;
 
 }
 
