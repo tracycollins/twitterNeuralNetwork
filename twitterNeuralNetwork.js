@@ -1238,6 +1238,10 @@ async function loadNetworkFile(params){
     if(empty(inputsIdHashMap[networkObj.inputsId])) { inputsIdHashMap[networkObj.inputsId] = new Set(); }
     inputsIdHashMap[networkObj.inputsId].add(networkObj.networkId);
 
+    console.log(chalkGreen(MODULE_ID_PREFIX + " | ### MOVE NN FROM LOCAL TO GLOBAL BEST"
+      + " | " + params.folder + "/" + params.file
+    ));
+
     printNetworkObj(MODULE_ID_PREFIX 
       + " | LOCAL > GLOBAL"
       + " | " + params.folder, 
@@ -1628,45 +1632,45 @@ async function loadBestNetworkFolders (p){
 
         numNetworksLoaded += 1;
 
-        if ((networkObj.test.results.successRate < 100) 
-          && (networkObj.test.results.successRate >= configuration.globalMinSuccessRate)
-          && (fileObj.folder !== globalBestNetworkFolder)) {
+        // if ((networkObj.test.results.successRate < 100) 
+        //   && (networkObj.test.results.successRate >= configuration.globalMinSuccessRate)
+        //   && (fileObj.folder !== globalBestNetworkFolder)) {
 
-          const file = networkObj.networkId + ".json";
+        //   const file = networkObj.networkId + ".json";
 
-          console.log(chalkGreen(MODULE_ID_PREFIX + " | ### MOVE NN FROM LOCAL TO GLOBAL BEST"
-            + " | " + globalBestNetworkFolder + "/" + file
-          ));
+        //   console.log(chalkGreen(MODULE_ID_PREFIX + " | ### MOVE NN FROM LOCAL TO GLOBAL BEST"
+        //     + " | " + globalBestNetworkFolder + "/" + file
+        //   ));
 
-          inputsFailedSet.delete(networkObj.inputsId);
+        //   inputsFailedSet.delete(networkObj.inputsId);
 
-          if (inputsViableSet.has(networkObj.inputsId)) {
-            console.log(chalkBlueBold("TNN | GLOBAL BEST | VIABLE NETWORKS INPUTS"
-              + " | " + networkObj.networkId
-              + " | INPUTS: " + networkObj.inputsId
-            ));
-            statsObj.evolveStats.viableInputs.push(networkObj.inputsId);
-            inputsViableSet.delete(networkObj.inputsId);
-          }
+        //   if (inputsViableSet.has(networkObj.inputsId)) {
+        //     console.log(chalkBlueBold("TNN | GLOBAL BEST | VIABLE NETWORKS INPUTS"
+        //       + " | " + networkObj.networkId
+        //       + " | INPUTS: " + networkObj.inputsId
+        //     ));
+        //     statsObj.evolveStats.viableInputs.push(networkObj.inputsId);
+        //     inputsViableSet.delete(networkObj.inputsId);
+        //   }
 
 
-          printNetworkObj(MODULE_ID_PREFIX + " | " + networkObj.networkId, networkObj);
+        //   printNetworkObj(MODULE_ID_PREFIX + " | " + networkObj.networkId, networkObj);
 
-          await tcUtils.saveFile({folder: globalBestNetworkFolder, file: file, obj: networkObj});
+        //   await tcUtils.saveFile({folder: globalBestNetworkFolder, file: file, obj: networkObj});
 
-          await unlinkFileAsync(path.join(fileObj.folder, file));
+        //   await unlinkFileAsync(path.join(fileObj.folder, file));
 
-          slackText = "\n*MOVE NN TO GLOBAL BEST | " + networkObj.test.results.successRate.toFixed(2) + "%*";
-          slackText = slackText + "\n" + networkObj.networkId;
-          slackText = slackText + "\nTECH: " + networkObj.networkTechnology;
-          slackText = slackText + "\nIN: " + networkObj.inputsId;
-          slackText = slackText + "\nINPUTS: " + networkObj.numInputs;
-          slackText = slackText + "\nBETTER CHILD: " + networkObj.betterChild;
-          slackText = slackText + "\nELAPSED: " + msToTime(networkObj.evolve.elapsed);
+        //   slackText = "\n*MOVE NN TO GLOBAL BEST | " + networkObj.test.results.successRate.toFixed(2) + "%*";
+        //   slackText = slackText + "\n" + networkObj.networkId;
+        //   slackText = slackText + "\nTECH: " + networkObj.networkTechnology;
+        //   slackText = slackText + "\nIN: " + networkObj.inputsId;
+        //   slackText = slackText + "\nINPUTS: " + networkObj.numInputs;
+        //   slackText = slackText + "\nBETTER CHILD: " + networkObj.betterChild;
+        //   slackText = slackText + "\nELAPSED: " + msToTime(networkObj.evolve.elapsed);
 
-          await slackSendWebMessage({ channel: slackChannelPassGlobal, text: slackText});
+        //   await slackSendWebMessage({ channel: slackChannelPassGlobal, text: slackText});
 
-        }
+        // }
 
 
       }
