@@ -1629,7 +1629,8 @@ async function loadBestNetworkFolders (p){
         numNetworksLoaded += 1;
 
         if ((networkObj.test.results.successRate < 100) 
-          && (networkObj.test.results.successRate >= configuration.globalMinSuccessRate)) {
+          && (networkObj.test.results.successRate >= configuration.globalMinSuccessRate)
+          && (fileObj.folder !== globalBestNetworkFolder)) {
 
           const file = networkObj.networkId + ".json";
 
@@ -1653,7 +1654,7 @@ async function loadBestNetworkFolders (p){
 
           await tcUtils.saveFile({folder: globalBestNetworkFolder, file: file, obj: networkObj});
 
-          await unlinkFileAsync(path.join(globalBestNetworkFolder, file));
+          await unlinkFileAsync(path.join(fileObj.folder, file));
 
           slackText = "\n*MOVE NN TO GLOBAL BEST | " + networkObj.test.results.successRate.toFixed(2) + "%*";
           slackText = slackText + "\n" + networkObj.networkId;
