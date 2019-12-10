@@ -1044,7 +1044,7 @@ function purgeInputs(inputsId){
         delete inputsIdHashMap[inputsId];
       }
       else {
-        console.log(chalkInfo(MODULE_ID_PREFIX + " | ** NO XXX PURGE INPUTS ... IN CONFIGURATION INPUTS ID ARRAY" 
+        console.log(chalkInfo(MODULE_ID_PREFIX + " | --- NO PURGE INPUTS ... IN CONFIGURATION INPUTS ID ARRAY" 
           + " | INPUTS ID: " + inputsId
         ));
 
@@ -1170,19 +1170,19 @@ function checkInputsViability(p){
 
 async function loadNetworkFile(params){
 
-  let path;
+  let filePath;
 
   if (params.path) {
-    path = params.path;
+    filePath = params.path;
   }
   else {
-    path = params.folder + "/" + params.file;
+    filePath = params.folder + "/" + params.file;
   }
 
   console.log(chalkInfo(MODULE_ID_PREFIX + " | <<< LOAD NN FILE"
-    + " | FOLDER: " + params.folder
-    + " | FILE: " + params.file
-    + " | PATH: " + path
+    // + " | FOLDER: " + params.folder
+    // + " | FILE: " + params.file
+    + " | " + filePath
   ));
 
   const networkObj = await tcUtils.loadFileRetry({folder: params.folder, file: params.file});
@@ -1193,22 +1193,22 @@ async function loadNetworkFile(params){
 
   if (!configuration.inputsIdArray.includes(networkObj.inputsId)) {
 
-    if (configuration.archiveNotInInputsIdArray && path.toLowerCase().includes(localBestNetworkFolder.toLowerCase())){
+    if (configuration.archiveNotInInputsIdArray && filePath.toLowerCase().includes(localBestNetworkFolder.toLowerCase())){
       
       console.log(chalkInfo(MODULE_ID_PREFIX + " | 000 NN INPUTS NOT IN INPUTS ID ARRAY ... ARCHIVING"
         + " | NUM INPUTS: " + networkObj.numInputs
         + " | INPUTS ID: " + networkObj.inputsId
-        + " | " + path
+        + " | " + filePath
       ));
 
       await renameFileAsync(path.join(localBestNetworkFolder, params.file), path.join(localArchiveNetworkFolder, params.file));
       return;
     }
-    else if (configuration.deleteNotInInputsIdArray && path.toLowerCase().includes(localBestNetworkFolder.toLowerCase())){
+    else if (configuration.deleteNotInInputsIdArray && filePath.toLowerCase().includes(localBestNetworkFolder.toLowerCase())){
       console.log(chalkInfo(MODULE_ID_PREFIX + " | XXX NN INPUTS NOT IN INPUTS ID ARRAY ... DELETING"
         + " | NUM INPUTS: " + networkObj.numInputs
         + " | INPUTS ID: " + networkObj.inputsId
-        + " | " + path
+        + " | " + filePath
       ));
       await unlinkFileAsync(path.join(localBestNetworkFolder, params.file));
       return;
@@ -1217,7 +1217,7 @@ async function loadNetworkFile(params){
     console.log(chalkInfo(MODULE_ID_PREFIX + " | --- NN INPUTS NOT IN INPUTS ID ARRAY ... SKIPPING"
       + " | NUM INPUTS: " + networkObj.numInputs
       + " | INPUTS ID: " + networkObj.inputsId
-      + " | " + path
+      + " | " + filePath
     ));
 
     skipLoadNetworkSet.add(networkObj.networkId);
@@ -1250,7 +1250,7 @@ async function loadNetworkFile(params){
     );
 
     saveFileQueue.push({folder: globalBestNetworkFolder, file: params.file, obj: networkObj});
-    await unlinkFileAsync({folder: params.folder, file: params.file});
+    await unlinkFileAsync(path.join(params.folder, params.file));
   }
 
   //========================
@@ -1344,7 +1344,8 @@ async function loadNetworkFile(params){
 
     purgeNetwork(networkObj.networkId);
     await purgeInputs(networkObj.inputsId);
-    await unlinkFileAsync({folder: params.folder, file: params.file});
+    await unlinkFileAsync(path.join(params.folder, params.file));
+
     return;
   }
 
@@ -1636,8 +1637,8 @@ async function loadBestNetworkFolders (p){
       }
     }
     catch(err){
-      console.log(chalkError(MODULE_ID_PREFIX + " | *** LOAD NN ENTRY ERROR: " + err
-        + " | " + fileObj.path
+      console.trace(chalkError(MODULE_ID_PREFIX + " | *** LOAD NN ENTRY ERROR: " + err
+        + " | " + fileObj.folder + "/" + fileObj.file
         + " | " + networkId
       ));
     }
