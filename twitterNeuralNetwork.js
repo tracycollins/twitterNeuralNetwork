@@ -1659,7 +1659,7 @@ async function loadBestNetworkFolders (p){
           slackText = slackText + "\n" + networkObj.networkId;
           slackText = slackText + "\nTECH: " + networkObj.networkTechnology;
           slackText = slackText + "\nIN: " + networkObj.inputsId;
-          slackText = slackText + "\nINPUTS: " + networkObj.networkJson.input;
+          slackText = slackText + "\nINPUTS: " + networkObj.numInputs;
           slackText = slackText + "\nBETTER CHILD: " + networkObj.betterChild;
           slackText = slackText + "\nELAPSED: " + msToTime(networkObj.evolve.elapsed);
 
