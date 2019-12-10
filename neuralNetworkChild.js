@@ -2027,7 +2027,6 @@ async function configNetworkEvolve(params){
     const nnObj = await networkDefaults(newNetObj);
     return nnObj;
   }
-
 }
 
 process.on("message", async function(m) {
