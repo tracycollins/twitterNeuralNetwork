@@ -3783,7 +3783,7 @@ const fsmStates = {
           await loadNetworkInputsConfig({file: defaultBestInputsConfigFile});
           await loadNetworkInputsConfig({file: defaultNetworkInputsConfigFile});
           await loadNetworkInputsConfig({file: defaultUnionInputsConfigFile});
-          await loadBestNetworkFolders({folders: [globalBestNetworkFolder, localBestNetworkFolder]});
+          await loadBestNetworkFolders({folders: [globalBestNetworkFolder, localBestNetworkFolder], purgeMin: configuration.localPurgeMinSuccessRate});
           await loadInputsFolders({folders: [defaultInputsFolder]});
 
           await childStartAll();
