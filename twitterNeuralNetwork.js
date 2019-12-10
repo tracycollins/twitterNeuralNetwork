@@ -1187,16 +1187,6 @@ async function loadNetworkFile(params){
 
   const networkObj = await tcUtils.loadFileRetry({folder: params.folder, file: params.file});
 
-  // const networkObjValid = await nnTools.validateNetwork({networkId: networkObj.networkId, networkObj: networkObj});
-
-  // if (!networkObjValid) {
-  //   console.log(chalkInfo(MODULE_ID_PREFIX + " | ??? INVALID NETWORK ... PURGING"
-  //     + " | " + path
-  //   ));
-  //   purgeNetwork(networkObj.networkId);
-  //   return;
-  // }
-
   const dbInputsObj = await updateDbInputs({inputsId: networkObj.inputsId, networkId: networkObj.networkId});
 
   const inputsObj = dbInputsObj.toObject();
@@ -1255,7 +1245,7 @@ async function loadNetworkFile(params){
       chalkGreen
     );
 
-    saveFileQueue.push({localFlag: false, folder: globalBestNetworkFolder, file: params.file, obj: networkObj});
+    saveFileQueue.push({folder: globalBestNetworkFolder, file: params.file, obj: networkObj});
     await unlinkFileAsync({folder: params.folder, file: params.file});
   }
 
@@ -1635,7 +1625,49 @@ async function loadBestNetworkFolders (p){
       });
 
       if (networkObj) {
+
         numNetworksLoaded += 1;
+
+        if ((networkObj.test.results.successRate < 100) 
+          && (networkObj.test.results.successRate >= configuration.globalMinSuccessRate)) {
+
+          const file = networkObj.networkId + ".json";
+
+          console.log(chalkInfo(MODULE_ID_PREFIX + " | ### MOVING NN FILE TO DROPBOX GLOBAL BEST"
+            + " | " + globalBestNetworkFolder + "/" + file
+          ));
+
+          inputsFailedSet.delete(networkObj.inputsId);
+
+          if (inputsViableSet.has(networkObj.inputsId)) {
+            console.log(chalkBlueBold("TNN | GLOBAL BEST | VIABLE NETWORKS INPUTS"
+              + " | " + networkObj.networkId
+              + " | INPUTS: " + networkObj.inputsId
+            ));
+            statsObj.evolveStats.viableInputs.push(networkObj.inputsId);
+            inputsViableSet.delete(networkObj.inputsId);
+          }
+
+
+          printNetworkObj(MODULE_ID_PREFIX + " | " + networkObj.networkId, networkObj);
+
+          await tcUtils.saveFile({folder: globalBestNetworkFolder, file: file, obj: networkObj});
+
+          await unlinkFileAsync(path.join(globalBestNetworkFolder, file));
+
+          slackText = "\n*MOVE NN TO GLOBAL BEST | " + networkObj.test.results.successRate.toFixed(2) + "%*";
+          slackText = slackText + "\n" + networkObj.networkId;
+          slackText = slackText + "\nTECH: " + networkObj.networkTechnology;
+          slackText = slackText + "\nIN: " + networkObj.inputsId;
+          slackText = slackText + "\nINPUTS: " + networkObj.networkJson.input;
+          slackText = slackText + "\nBETTER CHILD: " + networkObj.betterChild;
+          slackText = slackText + "\nELAPSED: " + msToTime(networkObj.evolve.elapsed);
+
+          await slackSendWebMessage({ channel: slackChannelPassGlobal, text: slackText});
+
+        }
+
+
       }
     }
     catch(err){
@@ -2903,7 +2935,7 @@ function initStatsUpdate() {
       statsObj.elapsed = getElapsedTimeStamp();
       statsObj.timeStamp = getTimeStamp();
 
-      tcUtils.saveFile({localFlag: false, folder: statsFolder, file: statsFile, obj: statsObj});
+      tcUtils.saveFile({folder: statsFolder, file: statsFile, obj: statsObj});
 
       clearInterval(statsUpdateInterval);
 
@@ -2912,7 +2944,7 @@ function initStatsUpdate() {
         statsObj.elapsed = getElapsedTimeStamp();
         statsObj.timeStamp = getTimeStamp();
 
-        saveFileQueue.push({localFlag: false, folder: statsFolder, file: statsFile, obj: statsObj});
+        saveFileQueue.push({folder: statsFolder, file: statsFile, obj: statsObj});
         statsObj.queues.saveFileQueue.size = saveFileQueue.length;
 
         try{
@@ -3201,7 +3233,6 @@ function initSaveFileQueue(cnf) {
           MODULE_ID_PREFIX 
           + " | SAVED FILE"
           + " [Q: " + saveFileQueue.length + "] " 
-          // + " [$: " + saveCache.getStats().keys + "] " 
           + saveFileObj.folder + "/" + saveFileObj.file
         ));
         statsObj.queues.saveFileQueue.busy = false;
@@ -4378,7 +4409,7 @@ async function evolveCompleteHandler(params){
 
         printNetworkObj(MODULE_ID_PREFIX + " | " + nn.networkId, nn);
 
-        saveFileQueue.push({localFlag: false, folder: globalBestNetworkFolder, file: bestNetworkFile, obj: nn});
+        saveFileQueue.push({folder: globalBestNetworkFolder, file: bestNetworkFile, obj: nn});
       }
       else if (
            (nn.test.results.successRate < 100) && (nn.test.results.successRate >= configuration.localMinSuccessRate)
@@ -4417,7 +4448,7 @@ async function evolveCompleteHandler(params){
 
         await slackSendWebMessage({ channel: slackChannelPassLocal, text: slackText });
 
-        saveFileQueue.push({localFlag: false, folder: localBestNetworkFolder, file: localNetworkFile, obj: nn});
+        saveFileQueue.push({folder: localBestNetworkFolder, file: localNetworkFile, obj: nn});
       }
     }
     else {
@@ -4483,7 +4514,7 @@ async function evolveCompleteHandler(params){
           + " | " + localFailNetworkFolder + "/" + localNetworkFile
         ));
 
-        saveFileQueue.push({localFlag: false, folder: localFailNetworkFolder, file: localNetworkFile, obj: nn});
+        saveFileQueue.push({folder: localFailNetworkFolder, file: localNetworkFile, obj: nn});
       }
     }
 
