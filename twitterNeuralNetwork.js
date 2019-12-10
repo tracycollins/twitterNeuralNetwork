@@ -1633,7 +1633,7 @@ async function loadBestNetworkFolders (p){
 
           const file = networkObj.networkId + ".json";
 
-          console.log(chalkGreen(MODULE_ID_PREFIX + " | ### COPY NN TO DROPBOX GLOBAL BEST"
+          console.log(chalkGreen(MODULE_ID_PREFIX + " | ### MOVE NN FROM LOCAL TO GLOBAL BEST"
             + " | " + globalBestNetworkFolder + "/" + file
           ));
 
