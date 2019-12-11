@@ -887,7 +887,7 @@ function printResultsHashmap(){
         networkObj.evolve.options.activation = "---";
         networkObj.evolve.options.clear = "---";
         networkObj.evolve.options.cost = "---";
-        networkObj.evolve.options.growth = "---";
+        networkObj.evolve.options.growth = 0;
         networkObj.evolve.options.equal = "---";
         networkObj.evolve.options.mutation_rate = 0;
         networkObj.evolve.options.efficient_mutation = "---";
