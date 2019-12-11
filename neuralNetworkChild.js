@@ -945,6 +945,10 @@ async function testNetwork(p){
   await nnTools.setPrimaryNeuralNetwork(childNetworkObj.networkId);
   await nnTools.setBinaryMode(binaryMode);
 
+  if (configuration.testMode && (Math.random() > 0.5)){
+    throw new Error("TEST MODE RANDOM testNetwork ERROR");
+  }
+
   childNetworkObj.test = {};
   childNetworkObj.test.results = {};
 
@@ -1145,10 +1149,10 @@ function dataSetPrep(p){
             console.log(chalkError(MODULE_ID_PREFIX
               + " | *** ERROR DATA SET PREP ERROR" 
               + " | OUTPUT NUMBER MISMATCH" 
-              + " | INPUTS NUM IN: " + childNetworkObj.numOutputs
+              + " | OUTPUTS NUM IN: " + childNetworkObj.numOutputs
               + " | DATUM NUM IN: " + results.datum.output.length
             ));
-            return cb(new Error("INPUT NUMBER MISMATCH"));
+            return cb(new Error("OUTPUT NUMBER MISMATCH"));
           }
 
           for(const inputValue of results.datum.input){
@@ -1781,10 +1785,19 @@ const fsmStates = {
 
         }
         catch(err){
+
+          delete childNetworkObj.inputsObj;
+          delete childNetworkObj.network;
+          delete childNetworkObj.networkJson;
+          delete childNetworkObj.networkRaw;
+          delete childNetworkObj.evolve.options.network;
+          delete childNetworkObj.evolve.options.schedule;
+
           const messageObj = {
             op: "EVOLVE_ERROR", 
             childId: configuration.childId, 
             networkId: childNetworkObj.networkId,
+            networkObj: childNetworkObj,
             err: err,
             statsObj: statsObj.evolve.results
           };

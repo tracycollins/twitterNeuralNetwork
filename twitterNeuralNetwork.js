@@ -4216,7 +4216,8 @@ async function evolveErrorHandler(params){
     ));
 
     resultsHashmap[m.networkId] = {};
-    resultsHashmap[m.networkId].status = "ERROR";
+    resultsHashmap[m.networkId] = omit(m.networkObj, ["network", "networkJson", "networkRaw", "inputs", "outputs", "inputsObj"]);
+    resultsHashmap[m.networkId].status = "*** ERROR ***";
     resultsHashmap[m.networkId].error = m.err;
     resultsHashmap[m.networkId].stats = {};
     resultsHashmap[m.networkId].stats = omitDeep(
@@ -4647,7 +4648,7 @@ async function childMessageHandler(params){
         try{
           console.log(chalkError(MODULE_ID_PREFIX 
             + " | " + childId
-            + " | *** EVOLVE_ERROR"
+            + " | *** EVOLVE_ERROR ***"
           ));
           console.error(m.err);
           await evolveErrorHandler({m: m, childId: childId});
