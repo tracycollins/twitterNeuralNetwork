@@ -877,11 +877,13 @@ function printResultsHashmap(){
         return cb("UNDEFINED");
       }
       
-      if(empty(networkObj.numInputs)) {
-        return cb("numInputs UNDEFINED");
-      }
+      // if(empty(networkObj.numInputs)) {
+      //   return cb("numInputs UNDEFINED");
+      // }
       
       if(empty(networkObj.evolve)) {
+        networkObj.evolve = {};
+        networkObj.evolve.options = {};
         networkObj.evolve.options.activation = "---";
         networkObj.evolve.options.clear = "---";
         networkObj.evolve.options.cost = "---";
@@ -4198,6 +4200,67 @@ function expo(x, f) {
   return Number.parseFloat(x).toExponential(f);
 }
 
+async function evolveErrorHandler(params){
+
+  try {
+
+    const m = params.m;
+
+    console.log(chalkError(
+        "\nTNN | ========================================================"
+      + "\nTNN | NETWORK EVOLVE ERROR"
+      + "\nTNN | ========================================================"
+      + "\nTNN | CHILD:      " + m.childId
+      + "\nTNN | NID:        " + m.networkId
+      + "\nTNN | ========================================================\n"
+    ));
+
+    resultsHashmap[m.networkId] = {};
+    resultsHashmap[m.networkId].status = "ERROR";
+    resultsHashmap[m.networkId].error = m.err;
+    resultsHashmap[m.networkId].stats = {};
+    resultsHashmap[m.networkId].stats = omitDeep(
+      m.statsObj, 
+      [
+        "inputsObj", 
+        "train", 
+        "outputs", 
+        "normalization", 
+        "evolve.options.networkObj.network",
+        "evolve.options.networkObj.networkJson",
+        "evolve.options.networkObj.networkRaw",
+        "evolve.options.networkObj.inputsObj"
+      ]
+    );
+
+    if(empty(childHashMap[m.childId])) {
+      console.log(chalkError("??? CHILD NOT IN childHashMap ??? | CHILD ID: "+ m.childId));
+      childHashMap[m.childId] = {};
+      childHashMap[m.childId].status = "IDLE";
+    }
+    else {
+      if (configuration.quitOnComplete) {
+        childHashMap[m.childId].status = "COMPLETE";
+      }
+      else {
+        childHashMap[m.childId].status = "READY";
+      }
+    }
+
+    statsObj.evolveStats.results[m.networkId] = {};
+    statsObj.evolveStats.results[m.networkId] = resultsHashmap[m.networkId];
+
+    await printResultsHashmap();
+
+    return;
+
+  }
+  catch(err){
+    console.log(chalkError("EVOLVE_ERROR ERROR: " + err));
+    throw err;
+  }
+}
+
 async function evolveCompleteHandler(params){
 
   try {
@@ -4276,7 +4339,9 @@ async function evolveCompleteHandler(params){
     if ((nn.test.results.successRate < 100) && 
       ((nn.seedNetworkId && nn.seedNetworkId !== undefined && nn.seedNetworkId !== "false" && (nn.test.results.successRate >= nn.seedNetworkRes)) // better than seed nn
       || (!nn.seedNetworkId && (nn.test.results.successRate >= configuration.localMinSuccessRate)) // no seed but better than local min
+      || (configuration.testMode && !nn.seedNetworkId && (nn.test.results.successRate >= 0.5*configuration.localMinSuccessRate)) // no seed but better than local min
       || (!nn.seedNetworkId && (nn.evolve.options.cost === "MSE") && (nn.test.results.successRate >= configuration.localMinSuccessRateMSE)) // no seed but better than local min
+      || (configuration.testMode && !nn.seedNetworkId && (nn.evolve.options.cost === "MSE") && (nn.test.results.successRate >= 0.5*configuration.localMinSuccessRateMSE)) // no seed but better than local min
       || (nn.test.results.successRate >= configuration.globalMinSuccessRate) // better than global min
       )) { 
 
@@ -4310,7 +4375,9 @@ async function evolveCompleteHandler(params){
       // no seed but better than localMinSuccessRate, so act like better child and start parent/child chain
       else if (
            (!nn.seedNetworkId && (nn.test.results.successRate < 100) && (nn.test.results.successRate >= configuration.localMinSuccessRate))
+        || (configuration.testMode && !nn.seedNetworkId && (nn.test.results.successRate < 100) && (nn.test.results.successRate >= 0.5*configuration.localMinSuccessRate))
         || (!nn.seedNetworkId && (nn.evolve.options.cost === "MSE") && (nn.test.results.successRate < 100) && (nn.test.results.successRate >= configuration.localMinSuccessRateMSE))
+        || (configuration.testMode && !nn.seedNetworkId && (nn.evolve.options.cost === "MSE") && (nn.test.results.successRate < 100) && (nn.test.results.successRate >= 0.5*configuration.localMinSuccessRateMSE))
         )
       {
 
@@ -4379,7 +4446,9 @@ async function evolveCompleteHandler(params){
       }
       else if (
            (nn.test.results.successRate < 100) && (nn.test.results.successRate >= configuration.localMinSuccessRate)
+        || (configuration.testMode && nn.test.results.successRate < 100) && (nn.test.results.successRate >= 0.5*configuration.localMinSuccessRate)
         || ((nn.evolve.options.cost === "MSE") && (nn.test.results.successRate >= configuration.localMinSuccessRateMSE))
+        || (configuration.testMode && (nn.evolve.options.cost === "MSE") && (nn.test.results.successRate >= 0.5*configuration.localMinSuccessRateMSE))
         )
       {
 
@@ -4426,10 +4495,10 @@ async function evolveCompleteHandler(params){
 
       resultsHashmap[nn.networkId].status = "- fail -";
 
-      if (
+      if (!configuration.testMode && (
            ((nn.evolve.options.cost !== "MSE") && (nn.test.results.successRate < configuration.localMinSuccessRate))
         || ((nn.evolve.options.cost === "MSE") && (nn.test.results.successRate < configuration.localMinSuccessRateMSE))
-        )
+        ))
       {
         await updateDbInputs({inputsId: nn.inputsId, failNetworkId: nn.networkId});
         inputsFailedSet.add(nn.inputsId);
@@ -4494,7 +4563,7 @@ async function evolveCompleteHandler(params){
 
   }
   catch(err){
-    console.log(chalkError("EVOLVE_COMPLETE ERROR: " + err));
+    console.log(chalkError(MODULE_ID_PREFIX + "| *** EVOLVE_COMPLETE ERROR: " + err));
     throw err;
   }
 }
@@ -4570,6 +4639,24 @@ async function childMessageHandler(params){
           console.log(chalkError(MODULE_ID_PREFIX 
             + " | " + childId
             + " | *** EVOLVE_COMPLETE ERROR: " + e
+          ));
+        }
+      return;
+
+      case "EVOLVE_ERROR":
+        try{
+          console.log(chalkError(MODULE_ID_PREFIX 
+            + " | " + childId
+            + " | *** EVOLVE_ERROR"
+          ));
+          console.error(m.err);
+          await evolveErrorHandler({m: m, childId: childId});
+          await startNetworkCreate({childId: childId, binaryMode: binaryMode, compareTech: compareTech});
+        }
+        catch(e){
+          console.log(chalkError(MODULE_ID_PREFIX 
+            + " | " + childId
+            + " | *** EVOLVE_ERROR ERROR: " + e
           ));
         }
       return;

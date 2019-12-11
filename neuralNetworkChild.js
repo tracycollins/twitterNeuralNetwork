@@ -1555,7 +1555,7 @@ function networkEvolve(p){
         resolve();
       }
       catch(e){
-        console.log(chalkError(MODULE_ID_PREFIX + " | *** EVOLVE ERROR: " + err));
+        console.log(chalkError(MODULE_ID_PREFIX + " | *** EVOLVE ERROR: " + e));
         return reject(e);
       }
 
@@ -1640,12 +1640,22 @@ const fsmStates = {
   },
 
   "ERROR": {
-    onEnter: function(event, oldState, newState) {
+    onEnter: async function(event, oldState, newState) {
       reporter(event, oldState, newState);
 
       statsObj.fsmStatus = "ERROR";
 
-      quit({cause: "FSM ERROR"});
+      await processSend({op: "STATS", childId: configuration.childId, fsmStatus: statsObj.fsmStatus});
+
+      if (configuration.quitOnError) {
+        console.log(chalkError(MODULE_ID_PREFIX + " | *** ERROR | QUITTING ..."));
+        quit({cause: "QUIT_ON_ERROR"});
+      }
+      else {
+        console.log(chalkError(MODULE_ID_PREFIX + " | *** ERROR | ==> READY STATE"));
+        fsm.fsm_ready();
+      }
+
     }
   },
 
@@ -1771,11 +1781,20 @@ const fsmStates = {
 
         }
         catch(err){
+          const messageObj = {
+            op: "EVOLVE_ERROR", 
+            childId: configuration.childId, 
+            networkId: childNetworkObj.networkId,
+            err: err,
+            statsObj: statsObj.evolve.results
+          };
+
+          await processSend(messageObj);
           console.log(chalkError(MODULE_ID_PREFIX + " | *** EVOLVE ERROR: " + err));
           console.log(chalkError(MODULE_ID_PREFIX + " | *** EVOLVE ERROR\nnetworkObj.meta\n" + jsonPrint(childNetworkObj.meta)));
           console.log(chalkError(MODULE_ID_PREFIX + " | *** EVOLVE ERROR\ntrainingSet\n" + jsonPrint(trainingSetObj.meta)));
           console.log(chalkError(MODULE_ID_PREFIX + " | *** EVOLVE ERROR\ntestSet\n" + jsonPrint(testSetObj.meta)));
-          fsm.fsm_error();
+          fsm.fsm_evolve_complete();
         }
 
       }
