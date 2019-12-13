@@ -85,7 +85,7 @@
     "string": "^3.3.3",
     "text-table": "^0.2.0",
     "touch": "^3.1.0",
-    "tree-kill": "^1.2.1",
+    "tree-kill": "^1.2.2",
     "treeify": "^1.1.0",
     "unzip": "^0.1.11",
     "util": "^0.12.1",
