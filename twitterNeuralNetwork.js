@@ -4241,6 +4241,7 @@ async function evolveErrorHandler(params){
     }
     else {
       if (configuration.quitOnComplete) {
+        console.log(chalkAlert(">>> CHILD QUIT ON COMPLETE | CHILD ID: "+ m.childId));
         childHashMap[m.childId].status = "COMPLETE";
       }
       else {
