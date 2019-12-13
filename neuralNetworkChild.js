@@ -945,9 +945,9 @@ async function testNetwork(p){
   await nnTools.setPrimaryNeuralNetwork(childNetworkObj.networkId);
   await nnTools.setBinaryMode(binaryMode);
 
-  if (configuration.testMode && (Math.random() > 0.5)){
-    throw new Error("TEST MODE RANDOM testNetwork ERROR");
-  }
+  // if (configuration.testMode && (Math.random() > 0.5)){
+  //   throw new Error("TEST MODE RANDOM testNetwork ERROR");
+  // }
 
   childNetworkObj.test = {};
   childNetworkObj.test.results = {};

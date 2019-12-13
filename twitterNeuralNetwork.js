@@ -1595,9 +1595,9 @@ async function loadBestNetworkFolders (p){
 
   for (const fileObj of files) {
 
-    if (configuration.testMode && (numNetworksLoaded >= TEST_DROPBOX_NN_LOAD)) {
-      continue;
-    }
+    // if (configuration.testMode && (numNetworksLoaded >= TEST_DROPBOX_NN_LOAD)) {
+    //   continue;
+    // }
     
     if (fileObj.file.toLowerCase() === bestRuntimeNetworkFileName.toLowerCase()) {
       console.log(chalkInfo(MODULE_ID_PREFIX + " | ... SKIPPING LOAD OF " + fileObj.file));
@@ -1812,30 +1812,30 @@ async function generateSeedInputsNetworkId(params){
     const failedInputsIdArray = [...inputsFailedSet];
     const availableInputsIdArray = _.difference(viableInputsIdArray, failedInputsIdArray);
 
-    if (availableInputsIdArray.length > 0) {
+    // if (availableInputsIdArray.length > 0) {
 
-      console.log(chalkLog(MODULE_ID_PREFIX + " | VIABLE NETWORKS INPUTS: " + availableInputsIdArray.length));
+    //   console.log(chalkLog(MODULE_ID_PREFIX + " | VIABLE NETWORKS INPUTS: " + availableInputsIdArray.length));
 
-      availableInputsIdArray.sort();
+    //   availableInputsIdArray.sort();
 
-      config.seedInputsId = availableInputsIdArray.pop(); // most recent input
-      config.inputsId = config.seedInputsId;
+    //   config.seedInputsId = availableInputsIdArray.pop(); // most recent input
+    //   config.inputsId = config.seedInputsId;
 
-      console.log(chalkBlue(MODULE_ID_PREFIX + " | SEED INPUTS: " + config.inputsId));
+    //   console.log(chalkBlue(MODULE_ID_PREFIX + " | SEED INPUTS: " + config.inputsId));
 
-      const inputsObj = await wordAssoDb.NetworkInputs.findOne({inputsId: config.inputsId}).lean();
-      config.numInputs = inputsObj.meta.numInputs;
+    //   const inputsObj = await wordAssoDb.NetworkInputs.findOne({inputsId: config.inputsId}).lean();
+    //   config.numInputs = inputsObj.meta.numInputs;
 
-      console.log(chalkBlueBold(MODULE_ID_PREFIX
-        + " | VIABLE INPUT"
-        + " | VIABLE INPUTS: " + inputsViableSet.size
-        + " | AVAIL INPUTS: " + availableInputsIdArray.length
-        + " | SEED INPUTS: " + config.seedInputsId
-        + " | NUM INPUTS: " + config.numInputs
-      ));
+    //   console.log(chalkBlueBold(MODULE_ID_PREFIX
+    //     + " | VIABLE INPUT"
+    //     + " | VIABLE INPUTS: " + inputsViableSet.size
+    //     + " | AVAIL INPUTS: " + availableInputsIdArray.length
+    //     + " | SEED INPUTS: " + config.seedInputsId
+    //     + " | NUM INPUTS: " + config.numInputs
+    //   ));
 
-      return config;
-    }
+    //   return config;
+    // }
 
     //
     // no input set with no networks, so maybe random network
@@ -1887,6 +1887,30 @@ async function generateSeedInputsNetworkId(params){
         ));
         return config;
       }
+    }
+    else if (availableInputsIdArray.length > 0) {
+
+      console.log(chalkLog(MODULE_ID_PREFIX + " | VIABLE NETWORKS INPUTS: " + availableInputsIdArray.length));
+
+      availableInputsIdArray.sort();
+
+      config.seedInputsId = availableInputsIdArray.pop(); // most recent input
+      config.inputsId = config.seedInputsId;
+
+      console.log(chalkBlue(MODULE_ID_PREFIX + " | SEED INPUTS: " + config.inputsId));
+
+      const inputsObj = await wordAssoDb.NetworkInputs.findOne({inputsId: config.inputsId}).lean();
+      config.numInputs = inputsObj.meta.numInputs;
+
+      console.log(chalkBlueBold(MODULE_ID_PREFIX
+        + " | VIABLE INPUT"
+        + " | VIABLE INPUTS: " + inputsViableSet.size
+        + " | AVAIL INPUTS: " + availableInputsIdArray.length
+        + " | SEED INPUTS: " + config.seedInputsId
+        + " | NUM INPUTS: " + config.numInputs
+      ));
+
+      return config;
     }
     else if (inputsSet.size === 0) {
 
