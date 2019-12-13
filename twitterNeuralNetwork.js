@@ -3028,22 +3028,22 @@ async function loadConfigFile(params) {
       }
     }
 
-    if (loadedConfigObj.TEST_MODE !== undefined) {
-      console.log(MODULE_ID_PREFIX + " | LOADED TEST_MODE: " + loadedConfigObj.TEST_MODE);
-      if ((loadedConfigObj.TEST_MODE === true) || (loadedConfigObj.TEST_MODE === "true")) {
+    if (loadedConfigObj.TNN_TEST_MODE !== undefined) {
+      console.log(MODULE_ID_PREFIX + " | LOADED TNN_TEST_MODE: " + loadedConfigObj.TNN_TEST_MODE);
+      if ((loadedConfigObj.TNN_TEST_MODE === true) || (loadedConfigObj.TNN_TEST_MODE === "true")) {
         newConfiguration.testMode = true;
       }
-      if ((loadedConfigObj.TEST_MODE === false) || (loadedConfigObj.TEST_MODE === "false")) {
+      if ((loadedConfigObj.TNN_TEST_MODE === false) || (loadedConfigObj.TNN_TEST_MODE === "false")) {
         newConfiguration.testMode = false;
       }
     }
 
-    if (loadedConfigObj.QUIT_ON_COMPLETE !== undefined) {
-      console.log(MODULE_ID_PREFIX + " | LOADED QUIT_ON_COMPLETE: " + loadedConfigObj.QUIT_ON_COMPLETE);
-      if ((loadedConfigObj.QUIT_ON_COMPLETE === true) || (loadedConfigObj.QUIT_ON_COMPLETE === "true")) {
+    if (loadedConfigObj.TNN_QUIT_ON_COMPLETE !== undefined) {
+      console.log(MODULE_ID_PREFIX + " | LOADED TNN_QUIT_ON_COMPLETE: " + loadedConfigObj.TNN_QUIT_ON_COMPLETE);
+      if ((loadedConfigObj.TNN_QUIT_ON_COMPLETE === true) || (loadedConfigObj.TNN_QUIT_ON_COMPLETE === "true")) {
         newConfiguration.quitOnComplete = true;
       }
-      if ((loadedConfigObj.QUIT_ON_COMPLETE === false) || (loadedConfigObj.QUIT_ON_COMPLETE === "false")) {
+      if ((loadedConfigObj.TNN_QUIT_ON_COMPLETE === false) || (loadedConfigObj.TNN_QUIT_ON_COMPLETE === "false")) {
         newConfiguration.quitOnComplete = false;
       }
     }
