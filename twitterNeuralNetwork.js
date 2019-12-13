@@ -4635,7 +4635,9 @@ async function childMessageHandler(params){
       case "EVOLVE_COMPLETE":
         try{
           await evolveCompleteHandler({m: m, childId: childId});
-          await startNetworkCreate({childId: childId, binaryMode: binaryMode, compareTech: compareTech});
+          if (!configuration.quitOnComplete) {
+            await startNetworkCreate({childId: childId, binaryMode: binaryMode, compareTech: compareTech});
+          }
         }
         catch(e){
           console.log(chalkError(MODULE_ID_PREFIX 
@@ -4653,7 +4655,9 @@ async function childMessageHandler(params){
           ));
           console.error(m.err);
           await evolveErrorHandler({m: m, childId: childId});
-          await startNetworkCreate({childId: childId, binaryMode: binaryMode, compareTech: compareTech});
+          if (!configuration.quitOnComplete) {
+            await startNetworkCreate({childId: childId, binaryMode: binaryMode, compareTech: compareTech});
+          }
         }
         catch(e){
           console.log(chalkError(MODULE_ID_PREFIX 
