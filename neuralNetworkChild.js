@@ -945,6 +945,10 @@ async function testNetwork(p){
   await nnTools.setPrimaryNeuralNetwork(childNetworkObj.networkId);
   await nnTools.setBinaryMode(binaryMode);
 
+  // if (configuration.testMode && (Math.random() > 0.5)){
+  //   throw new Error("TEST MODE RANDOM testNetwork ERROR");
+  // }
+
   childNetworkObj.test = {};
   childNetworkObj.test.results = {};
 
@@ -1145,10 +1149,10 @@ function dataSetPrep(p){
             console.log(chalkError(MODULE_ID_PREFIX
               + " | *** ERROR DATA SET PREP ERROR" 
               + " | OUTPUT NUMBER MISMATCH" 
-              + " | INPUTS NUM IN: " + childNetworkObj.numOutputs
+              + " | OUTPUTS NUM IN: " + childNetworkObj.numOutputs
               + " | DATUM NUM IN: " + results.datum.output.length
             ));
-            return cb(new Error("INPUT NUMBER MISMATCH"));
+            return cb(new Error("OUTPUT NUMBER MISMATCH"));
           }
 
           for(const inputValue of results.datum.input){
@@ -1555,7 +1559,7 @@ function networkEvolve(p){
         resolve();
       }
       catch(e){
-        console.log(chalkError(MODULE_ID_PREFIX + " | *** EVOLVE ERROR: " + err));
+        console.log(chalkError(MODULE_ID_PREFIX + " | *** EVOLVE ERROR: " + e));
         return reject(e);
       }
 
@@ -1640,12 +1644,22 @@ const fsmStates = {
   },
 
   "ERROR": {
-    onEnter: function(event, oldState, newState) {
+    onEnter: async function(event, oldState, newState) {
       reporter(event, oldState, newState);
 
       statsObj.fsmStatus = "ERROR";
 
-      quit({cause: "FSM ERROR"});
+      await processSend({op: "STATS", childId: configuration.childId, fsmStatus: statsObj.fsmStatus});
+
+      if (configuration.quitOnError) {
+        console.log(chalkError(MODULE_ID_PREFIX + " | *** ERROR | QUITTING ..."));
+        quit({cause: "QUIT_ON_ERROR"});
+      }
+      else {
+        console.log(chalkError(MODULE_ID_PREFIX + " | *** ERROR | ==> READY STATE"));
+        fsm.fsm_ready();
+      }
+
     }
   },
 
@@ -1771,11 +1785,29 @@ const fsmStates = {
 
         }
         catch(err){
+
+          delete childNetworkObj.inputsObj;
+          delete childNetworkObj.network;
+          delete childNetworkObj.networkJson;
+          delete childNetworkObj.networkRaw;
+          delete childNetworkObj.evolve.options.network;
+          delete childNetworkObj.evolve.options.schedule;
+
+          const messageObj = {
+            op: "EVOLVE_ERROR", 
+            childId: configuration.childId, 
+            networkId: childNetworkObj.networkId,
+            networkObj: childNetworkObj,
+            err: err,
+            statsObj: statsObj.evolve.results
+          };
+
+          await processSend(messageObj);
           console.log(chalkError(MODULE_ID_PREFIX + " | *** EVOLVE ERROR: " + err));
           console.log(chalkError(MODULE_ID_PREFIX + " | *** EVOLVE ERROR\nnetworkObj.meta\n" + jsonPrint(childNetworkObj.meta)));
           console.log(chalkError(MODULE_ID_PREFIX + " | *** EVOLVE ERROR\ntrainingSet\n" + jsonPrint(trainingSetObj.meta)));
           console.log(chalkError(MODULE_ID_PREFIX + " | *** EVOLVE ERROR\ntestSet\n" + jsonPrint(testSetObj.meta)));
-          fsm.fsm_error();
+          fsm.fsm_evolve_complete();
         }
 
       }
@@ -2027,7 +2059,6 @@ async function configNetworkEvolve(params){
     const nnObj = await networkDefaults(newNetObj);
     return nnObj;
   }
-
 }
 
 process.on("message", async function(m) {
