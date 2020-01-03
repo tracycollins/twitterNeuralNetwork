@@ -436,10 +436,15 @@ const DEFAULT_TEST_RATIO = 0.20;
 const DEFAULT_ITERATIONS = 10;
 const DEFAULT_SEED_NETWORK_ID = false;
 const DEFAULT_SEED_NETWORK_PROBABILITY = 0.5;
-const DEFAULT_GLOBAL_MIN_SUCCESS_RATE = 75; // percent
-const DEFAULT_LOCAL_MIN_SUCCESS_RATE = 50; // percent
-const DEFAULT_LOCAL_MIN_SUCCESS_RATE_MSE = 40; // Harder to past with cost === MSE
-const DEFAULT_LOCAL_PURGE_MIN_SUCCESS_RATE = 60; // percent
+
+const DEFAULT_GLOBAL_MIN_SUCCESS_RATE = 90; // percent
+
+const DEFAULT_LOCAL_MIN_SUCCESS_RATE = 80; // percent
+
+const DEFAULT_HOST_MIN_SUCCESS_RATE = 50; // percent
+const DEFAULT_HOST_MIN_SUCCESS_RATE_MSE = 40; // Harder to past with cost === MSE
+const DEFAULT_HOST_PURGE_MIN_SUCCESS_RATE = 60; // percent
+
 const DEFAULT_DISABLE_CREATE_TEST_SET = false;
 const DEFAULT_INIT_MAIN_INTERVAL = process.env.TNN_INIT_MAIN_INTERVAL || 10*ONE_MINUTE;
 
@@ -504,7 +509,7 @@ DEFAULT_INPUT_TYPES.forEach(function(type){
   globalhistograms[type] = {};
 });
 
-let localNetworkFile;
+let hostBestNetworkFile;
 let networkIndex = 0;
 let bestNetworkFile;
 
@@ -586,8 +591,9 @@ const defaultUnionInputsConfigFile = "default_unionInputsConfig.json";
 
 const defaultInputsFolder = path.join(configDefaultFolder, "inputs");
 const globalBestNetworkFolder = path.join(DROPBOX_ROOT_FOLDER, "config/utility/best/neuralNetworks");
+const localBestNetworkFolder = path.join(DROPBOX_ROOT_FOLDER, "config/utility/localBest/neuralNetworks");
 
-const localBestNetworkFolder = path.join(configHostFolder, "neuralNetworks/best");
+const hostBestNetworkFolder = path.join(configHostFolder, "neuralNetworks/best");
 const localFailNetworkFolder = path.join(configHostFolder, "neuralNetworks/fail");
 const localArchiveNetworkFolder = path.join(configHostFolder, "neuralNetworks/archive");
 
@@ -667,13 +673,17 @@ configuration.localMinSuccessRate = (process.env.TNN_LOCAL_MIN_SUCCESS_RATE !== 
   ? process.env.TNN_LOCAL_MIN_SUCCESS_RATE 
   : DEFAULT_LOCAL_MIN_SUCCESS_RATE;
 
-configuration.localMinSuccessRateMSE = (process.env.TNN_LOCAL_MIN_SUCCESS_RATE_MSE !== undefined) 
-  ? process.env.TNN_LOCAL_MIN_SUCCESS_RATE_MSE
-  : DEFAULT_LOCAL_MIN_SUCCESS_RATE_MSE;
+configuration.hostMinSuccessRate = (process.env.TNN_HOST_MIN_SUCCESS_RATE !== undefined) 
+  ? process.env.TNN_HOST_MIN_SUCCESS_RATE 
+  : DEFAULT_HOST_MIN_SUCCESS_RATE;
 
-configuration.localPurgeMinSuccessRate = (process.env.TNN_LOCAL_PURGE_MIN_SUCCESS_RATE !== undefined) 
-  ? process.env.TNN_LOCAL_PURGE_MIN_SUCCESS_RATE 
-  : DEFAULT_LOCAL_PURGE_MIN_SUCCESS_RATE;
+configuration.hostMinSuccessRateMSE = (process.env.TNN_HOST_MIN_SUCCESS_RATE_MSE !== undefined) 
+  ? process.env.TNN_HOST_MIN_SUCCESS_RATE_MSE
+  : DEFAULT_HOST_MIN_SUCCESS_RATE_MSE;
+
+configuration.hostPurgeMinSuccessRate = (process.env.TNN_HOST_PURGE_MIN_SUCCESS_RATE !== undefined) 
+  ? process.env.TNN_HOST_PURGE_MIN_SUCCESS_RATE 
+  : DEFAULT_HOST_PURGE_MIN_SUCCESS_RATE;
 
 configuration.loadTrainingSetFromFile = false;
 
@@ -1195,28 +1205,28 @@ async function loadNetworkFile(params){
 
   if (!configuration.inputsIdArray.includes(networkObj.inputsId)) {
 
-    if (configuration.archiveNotInInputsIdArray && filePath.toLowerCase().includes(localBestNetworkFolder.toLowerCase())){
+    if (configuration.archiveNotInInputsIdArray && filePath.toLowerCase().includes(hostBestNetworkFolder.toLowerCase())){
       
-      console.log(chalkInfo(MODULE_ID_PREFIX + " | 000 NN INPUTS NOT IN INPUTS ID ARRAY ... ARCHIVING"
+      console.log(chalkInfo(MODULE_ID_PREFIX + " | 000 HOST BEST NN INPUTS NOT IN INPUTS ID ARRAY ... ARCHIVING"
         + " | NUM INPUTS: " + networkObj.numInputs
         + " | INPUTS ID: " + networkObj.inputsId
         + " | " + filePath
       ));
 
-      await renameFileAsync(path.join(localBestNetworkFolder, params.file), path.join(localArchiveNetworkFolder, params.file));
+      await renameFileAsync(path.join(hostBestNetworkFolder, params.file), path.join(localArchiveNetworkFolder, params.file));
       return;
     }
-    else if (configuration.deleteNotInInputsIdArray && filePath.toLowerCase().includes(localBestNetworkFolder.toLowerCase())){
-      console.log(chalkInfo(MODULE_ID_PREFIX + " | XXX NN INPUTS NOT IN INPUTS ID ARRAY ... DELETING"
+    else if (configuration.deleteNotInInputsIdArray && filePath.toLowerCase().includes(hostBestNetworkFolder.toLowerCase())){
+      console.log(chalkInfo(MODULE_ID_PREFIX + " | XXX HOST BEST NN INPUTS NOT IN INPUTS ID ARRAY ... DELETING"
         + " | NUM INPUTS: " + networkObj.numInputs
         + " | INPUTS ID: " + networkObj.inputsId
         + " | " + filePath
       ));
-      await unlinkFileAsync(path.join(localBestNetworkFolder, params.file));
+      await unlinkFileAsync(path.join(hostBestNetworkFolder, params.file));
       return;
     }
 
-    console.log(chalkInfo(MODULE_ID_PREFIX + " | --- NN INPUTS NOT IN INPUTS ID ARRAY ... SKIPPING"
+    console.log(chalkInfo(MODULE_ID_PREFIX + " | --- HOST BEST NN INPUTS NOT IN INPUTS ID ARRAY ... SKIPPING"
       + " | NUM INPUTS: " + networkObj.numInputs
       + " | INPUTS ID: " + networkObj.inputsId
       + " | " + filePath
@@ -1334,7 +1344,7 @@ async function loadNetworkFile(params){
   //========================
 
   if (((hostname === PRIMARY_HOST) && (params.folder.toLowerCase() === globalBestNetworkFolder.toLowerCase()))
-    || ((hostname !== PRIMARY_HOST) && (params.folder.toLowerCase() === localBestNetworkFolder.toLowerCase())) ) {
+    || ((hostname !== PRIMARY_HOST) && (params.folder.toLowerCase() === hostBestNetworkFolder.toLowerCase())) ) {
 
     printNetworkObj(
       MODULE_ID_PREFIX 
@@ -1571,10 +1581,10 @@ function networkPass(params) {
   const pass = 
        ((params.folder.toLowerCase() === globalBestNetworkFolder.toLowerCase()) && (params.networkObj.successRate >= configuration.globalMinSuccessRate))
     || ((params.folder.toLowerCase() === globalBestNetworkFolder.toLowerCase()) && (params.networkObj.matchRate >= configuration.globalMinSuccessRate))
-    || (params.purgeMin && (params.folder.toLowerCase() !== globalBestNetworkFolder.toLowerCase()) && (params.networkObj.overallMatchRate === 0) && (params.networkObj.matchRate === 0) && (params.networkObj.successRate >= configuration.localPurgeMinSuccessRate))
-    || (params.purgeMin && (params.folder.toLowerCase() !== globalBestNetworkFolder.toLowerCase()) && (params.networkObj.overallMatchRate === 0) && (params.networkObj.matchRate >= configuration.localPurgeMinSuccessRate))
-    || (!params.purgeMin && (params.folder.toLowerCase() !== globalBestNetworkFolder.toLowerCase()) && (params.networkObj.successRate >= configuration.localMinSuccessRate))
-    || (!params.purgeMin && (params.folder.toLowerCase() !== globalBestNetworkFolder.toLowerCase()) && (params.networkObj.matchRate >= configuration.localMinSuccessRate));
+    || (params.purgeMin && (params.folder.toLowerCase() !== globalBestNetworkFolder.toLowerCase()) && (params.networkObj.overallMatchRate === 0) && (params.networkObj.matchRate === 0) && (params.networkObj.successRate >= configuration.hostPurgeMinSuccessRate))
+    || (params.purgeMin && (params.folder.toLowerCase() !== globalBestNetworkFolder.toLowerCase()) && (params.networkObj.overallMatchRate === 0) && (params.networkObj.matchRate >= configuration.hostPurgeMinSuccessRate))
+    || (!params.purgeMin && (params.folder.toLowerCase() !== globalBestNetworkFolder.toLowerCase()) && (params.networkObj.successRate >= configuration.hostMinSuccessRate))
+    || (!params.purgeMin && (params.folder.toLowerCase() !== globalBestNetworkFolder.toLowerCase()) && (params.networkObj.matchRate >= configuration.hostMinSuccessRate));
 
   return pass;
 }
@@ -1582,8 +1592,6 @@ function networkPass(params) {
 async function loadBestNetworkFolders (p){
 
   const params = p || {};
-
-  // let numNetworksLoaded = 0;
 
   console.log(chalkNetwork(MODULE_ID_PREFIX + " | ... LOADING BEST NN FOLDERS"
     + " | " + params.folders.length + " FOLDERS"
@@ -1596,10 +1604,6 @@ async function loadBestNetworkFolders (p){
 
   for (const fileObj of files) {
 
-    // if (configuration.testMode && (numNetworksLoaded >= TEST_DROPBOX_NN_LOAD)) {
-    //   continue;
-    // }
-    
     if (fileObj.file.toLowerCase() === bestRuntimeNetworkFileName.toLowerCase()) {
       console.log(chalkInfo(MODULE_ID_PREFIX + " | ... SKIPPING LOAD OF " + fileObj.file));
       continue;
@@ -1635,9 +1639,6 @@ async function loadBestNetworkFolders (p){
         purgeMin: params.purgeMin
       });
 
-      // if (networkObj) {
-      //   numNetworksLoaded += 1;
-      // }
     }
     catch(err){
       console.trace(chalkError(MODULE_ID_PREFIX + " | *** LOAD NN ENTRY ERROR: " + err
@@ -1753,6 +1754,7 @@ async function initWatch(params){
     monitor.on("removed", function (f) {
       console.log(chalkInfo(MODULE_ID_PREFIX + " | XXX FILE DELETED | " + getTimeStamp() + " | " + f));
     });
+
   });
 
   return;
@@ -2332,7 +2334,7 @@ async function initWatchAllConfigFolders(p){
     }
 
     //========================
-    // WATCH NETWORKS
+    // WATCH GLOBAL NETWORKS
     //========================
 
     watch.createMonitor(globalBestNetworkFolder, options, function (monitorNetworks) {
@@ -2380,6 +2382,59 @@ async function initWatchAllConfigFolders(p){
         ));
         networkIdSet.delete(networkId);
       });
+    });
+
+    //========================
+    // WATCH LOCAL NETWORKS
+    //========================
+
+    watch.createMonitor(localBestNetworkFolder, options, function (monitorNetworks) {
+
+      console.log(chalkBlue(MODULE_ID_PREFIX + " | INIT WATCH LOCAL NETWORKS FOLDER: " + localBestNetworkFolder));
+
+      monitorNetworks.on("created", async function(f){
+        const fileNameArray = f.split("/");
+        const file = fileNameArray[fileNameArray.length-1];
+        if (!fileNameArray.includes("archive") && file.endsWith(".json") && !file.startsWith("bestRuntimeNetwork")) {
+          console.log(chalkBlue(MODULE_ID_PREFIX + " | +++ LOCAl NETWORK FILE CREATED: " + f));
+          try{
+            await delay({period: 30*ONE_SECOND});
+            await loadNetworkFile({folder: localBestNetworkFolder, file: file});
+          }
+          catch(err){
+            console.log(chalkBlue(MODULE_ID_PREFIX + " | *** LOAD LOCAL NETWORK FILE CREATED ERROR | " + f + ": " + err));
+          }
+        }
+
+      });
+
+      monitorNetworks.on("changed", async function(f){
+        const fileNameArray = f.split("/");
+        const file = fileNameArray[fileNameArray.length-1];
+        if (!fileNameArray.includes("archive") && file.endsWith(".json") && !file.startsWith("bestRuntimeNetwork")) {
+          console.log(chalkBlue(MODULE_ID_PREFIX + " | -/- LOCAL NETWORK FILE CHANGED: " + f));
+          try{
+            await delay({period: 30*ONE_SECOND});
+            await loadNetworkFile({folder: localBestNetworkFolder, file: file});
+          }
+          catch(err){
+            console.log(chalkBlue(MODULE_ID_PREFIX + " | *** LOAD LOCAL NETWORK FILE CREATED ERROR | " + f + ": " + err));
+          }
+        }
+      });
+
+
+      monitorNetworks.on("removed", function (f) {
+        const fileNameArray = f.split("/");
+        const networkId = fileNameArray[fileNameArray.length-1].replace(".json", "");
+        console.log(chalkAlert(MODULE_ID_PREFIX + " | XXX LOCAL NETWORK FILE DELETED | " + getTimeStamp() 
+          + " | " + networkId 
+          + "\n" + f
+        ));
+
+        networkIdSet.delete(networkId);
+      });
+
     });
 
     //========================
@@ -3111,14 +3166,19 @@ async function loadConfigFile(params) {
       newConfiguration.localMinSuccessRate = loadedConfigObj.TNN_LOCAL_MIN_SUCCESS_RATE;
     }
 
-    if (loadedConfigObj.TNN_LOCAL_MIN_SUCCESS_RATE_MSE !== undefined){
-      console.log(MODULE_ID_PREFIX + " | LOADED TNN_LOCAL_MIN_SUCCESS_RATE_MSE: " + loadedConfigObj.TNN_LOCAL_MIN_SUCCESS_RATE_MSE);
-      newConfiguration.localMinSuccessRateMSE = loadedConfigObj.TNN_LOCAL_MIN_SUCCESS_RATE_MSE;
+    if (loadedConfigObj.TNN_HOST_MIN_SUCCESS_RATE !== undefined){
+      console.log(MODULE_ID_PREFIX + " | LOADED TNN_HOST_MIN_SUCCESS_RATE: " + loadedConfigObj.TNN_HOST_MIN_SUCCESS_RATE);
+      newConfiguration.hostMinSuccessRate = loadedConfigObj.TNN_HOST_MIN_SUCCESS_RATE;
     }
 
-    if (loadedConfigObj.TNN_LOCAL_PURGE_MIN_SUCCESS_RATE !== undefined){
-      console.log(MODULE_ID_PREFIX + " | LOADED TNN_LOCAL_PURGE_MIN_SUCCESS_RATE: " + loadedConfigObj.TNN_LOCAL_PURGE_MIN_SUCCESS_RATE);
-      newConfiguration.localPurgeMinSuccessRate = loadedConfigObj.TNN_LOCAL_PURGE_MIN_SUCCESS_RATE;
+    if (loadedConfigObj.TNN_HOST_MIN_SUCCESS_RATE_MSE !== undefined){
+      console.log(MODULE_ID_PREFIX + " | LOADED TNN_HOST_MIN_SUCCESS_RATE_MSE: " + loadedConfigObj.TNN_HOST_MIN_SUCCESS_RATE_MSE);
+      newConfiguration.hostMinSuccessRateMSE = loadedConfigObj.TNN_HOST_MIN_SUCCESS_RATE_MSE;
+    }
+
+    if (loadedConfigObj.TNN_HOST_PURGE_MIN_SUCCESS_RATE !== undefined){
+      console.log(MODULE_ID_PREFIX + " | LOADED TNN_HOST_PURGE_MIN_SUCCESS_RATE: " + loadedConfigObj.TNN_HOST_PURGE_MIN_SUCCESS_RATE);
+      newConfiguration.hostPurgeMinSuccessRate = loadedConfigObj.TNN_HOST_PURGE_MIN_SUCCESS_RATE;
     }
 
     if (loadedConfigObj.TNN_EVOLVE_POPSIZE !== undefined){
@@ -3813,7 +3873,7 @@ const fsmStates = {
           await loadNetworkInputsConfig({file: defaultBestInputsConfigFile});
           await loadNetworkInputsConfig({file: defaultNetworkInputsConfigFile});
           await loadNetworkInputsConfig({file: defaultUnionInputsConfigFile});
-          await loadBestNetworkFolders({folders: [globalBestNetworkFolder, localBestNetworkFolder], purgeMin: configuration.localPurgeMinSuccessRate});
+          await loadBestNetworkFolders({folders: [globalBestNetworkFolder, localBestNetworkFolder, hostBestNetworkFolder], purgeMin: configuration.hostPurgeMinSuccessRate});
           await loadInputsFolders({folders: [defaultInputsFolder]});
 
           await childStartAll();
@@ -4367,10 +4427,11 @@ async function evolveCompleteHandler(params){
 
     if ((nn.test.results.successRate < 100) && 
       ((nn.seedNetworkId && nn.seedNetworkId !== undefined && nn.seedNetworkId !== "false" && (nn.test.results.successRate >= nn.seedNetworkRes)) // better than seed nn
-      || (!nn.seedNetworkId && (nn.test.results.successRate >= configuration.localMinSuccessRate)) // no seed but better than local min
-      || (configuration.testMode && !nn.seedNetworkId && (nn.test.results.successRate >= 0.5*configuration.localMinSuccessRate)) // no seed but better than local min
-      || (!nn.seedNetworkId && (nn.evolve.options.cost === "MSE") && (nn.test.results.successRate >= configuration.localMinSuccessRateMSE)) // no seed but better than local min
-      || (configuration.testMode && !nn.seedNetworkId && (nn.evolve.options.cost === "MSE") && (nn.test.results.successRate >= 0.5*configuration.localMinSuccessRateMSE)) // no seed but better than local min
+      || (!nn.seedNetworkId && (nn.test.results.successRate >= configuration.hostMinSuccessRate)) // no seed but better than local min
+      || (configuration.testMode && !nn.seedNetworkId && (nn.test.results.successRate >= 0.5*configuration.hostMinSuccessRate)) // no seed but better than local min
+      || (!nn.seedNetworkId && (nn.evolve.options.cost === "MSE") && (nn.test.results.successRate >= configuration.hostMinSuccessRateMSE)) // no seed but better than local min
+      || (configuration.testMode && !nn.seedNetworkId && (nn.evolve.options.cost === "MSE") && (nn.test.results.successRate >= 0.5*configuration.hostMinSuccessRateMSE)) // no seed but better than local min
+      || (nn.test.results.successRate >= configuration.localMinSuccessRate) // better than local min
       || (nn.test.results.successRate >= configuration.globalMinSuccessRate) // better than global min
       )) { 
 
@@ -4401,12 +4462,12 @@ async function evolveCompleteHandler(params){
           + " | SR: " + nn.seedNetworkRes + "%"
         ));
       }
-      // no seed but better than localMinSuccessRate, so act like better child and start parent/child chain
+      // no seed but better than hostMinSuccessRate, so act like better child and start parent/child chain
       else if (
-           (!nn.seedNetworkId && (nn.test.results.successRate < 100) && (nn.test.results.successRate >= configuration.localMinSuccessRate))
-        || (configuration.testMode && !nn.seedNetworkId && (nn.test.results.successRate < 100) && (nn.test.results.successRate >= 0.5*configuration.localMinSuccessRate))
-        || (!nn.seedNetworkId && (nn.evolve.options.cost === "MSE") && (nn.test.results.successRate < 100) && (nn.test.results.successRate >= configuration.localMinSuccessRateMSE))
-        || (configuration.testMode && !nn.seedNetworkId && (nn.evolve.options.cost === "MSE") && (nn.test.results.successRate < 100) && (nn.test.results.successRate >= 0.5*configuration.localMinSuccessRateMSE))
+           (!nn.seedNetworkId && (nn.test.results.successRate < 100) && (nn.test.results.successRate >= configuration.hostMinSuccessRate))
+        || (configuration.testMode && !nn.seedNetworkId && (nn.test.results.successRate < 100) && (nn.test.results.successRate >= 0.5*configuration.hostMinSuccessRate))
+        || (!nn.seedNetworkId && (nn.evolve.options.cost === "MSE") && (nn.test.results.successRate < 100) && (nn.test.results.successRate >= configuration.hostMinSuccessRateMSE))
+        || (configuration.testMode && !nn.seedNetworkId && (nn.evolve.options.cost === "MSE") && (nn.test.results.successRate < 100) && (nn.test.results.successRate >= 0.5*configuration.hostMinSuccessRateMSE))
         )
       {
 
@@ -4473,25 +4534,18 @@ async function evolveCompleteHandler(params){
 
         saveFileQueue.push({folder: globalBestNetworkFolder, file: bestNetworkFile, obj: nn});
       }
-      else if (
-           (nn.test.results.successRate < 100) && (nn.test.results.successRate >= configuration.localMinSuccessRate)
-        || (configuration.testMode && nn.test.results.successRate < 100) && (nn.test.results.successRate >= 0.5*configuration.localMinSuccessRate)
-        || ((nn.evolve.options.cost === "MSE") && (nn.test.results.successRate >= configuration.localMinSuccessRateMSE))
-        || (configuration.testMode && (nn.evolve.options.cost === "MSE") && (nn.test.results.successRate >= 0.5*configuration.localMinSuccessRateMSE))
-        )
-      {
+      else if ((nn.test.results.successRate < 100) 
+        && (nn.test.results.successRate >= configuration.localMinSuccessRate)) {
 
-        localNetworkFile = nn.networkId + ".json";
-
-        console.log(chalkLog(MODULE_ID_PREFIX + " | ... SAVING NN FILE TO DROPBOX LOCAL BEST"
-          + " | " + localBestNetworkFolder + "/" + localNetworkFile
+        console.log(chalkInfo(MODULE_ID_PREFIX + " | ### SAVING NN FILE TO DROPBOX LOCAL BEST"
+          + " | " + localBestNetworkFolder + "/" + bestNetworkFile
         ));
 
         resultsHashmap[nn.networkId].status = "LOCAL";
 
-        inputsFailedSet.delete(nn.inputsId);
-
         statsObj.evolveStats.passLocal += 1;
+
+        inputsFailedSet.delete(nn.inputsId);
 
         if (inputsViableSet.has(nn.inputsId)) {
           console.log(chalkBlueBold("TNN | LOCAL BEST | VIABLE NETWORKS INPUTS"
@@ -4510,23 +4564,67 @@ async function evolveCompleteHandler(params){
         slackText = slackText + "\nBETTER CHILD: " + nn.betterChild;
         slackText = slackText + "\nELAPSED: " + msToTime(nn.evolve.elapsed);
 
+        await slackSendWebMessage({ channel: slackChannelPassGlobal, text: slackText});
+
+        printNetworkObj(MODULE_ID_PREFIX + " | " + nn.networkId, nn);
+
+        saveFileQueue.push({folder: localBestNetworkFolder, file: bestNetworkFile, obj: nn});
+      }
+      else if (
+           (nn.test.results.successRate < 100) && (nn.test.results.successRate >= configuration.hostMinSuccessRate)
+        || (configuration.testMode && nn.test.results.successRate < 100) && (nn.test.results.successRate >= 0.5*configuration.hostMinSuccessRate)
+        || ((nn.evolve.options.cost === "MSE") && (nn.test.results.successRate >= configuration.hostMinSuccessRateMSE))
+        || (configuration.testMode && (nn.evolve.options.cost === "MSE") && (nn.test.results.successRate >= 0.5*configuration.hostMinSuccessRateMSE))
+        )
+      {
+
+        hostBestNetworkFile = nn.networkId + ".json";
+
+        console.log(chalkLog(MODULE_ID_PREFIX + " | ... SAVING NN FILE TO DROPBOX HOST BEST"
+          + " | " + hostBestNetworkFolder + "/" + hostBestNetworkFile
+        ));
+
+        resultsHashmap[nn.networkId].status = "HOST";
+
+        inputsFailedSet.delete(nn.inputsId);
+
+        statsObj.evolveStats.passLocal += 1;
+
+        if (inputsViableSet.has(nn.inputsId)) {
+          console.log(chalkBlueBold("TNN | HOST BEST | VIABLE NETWORKS INPUTS"
+            + " | " + nn.networkId
+            + " | INPUTS: " + nn.inputsId
+          ));
+          statsObj.evolveStats.viableInputs.push(nn.inputsId);
+          inputsViableSet.delete(nn.inputsId);
+        }
+
+        slackText = "\n*HOST BEST | " + nn.test.results.successRate.toFixed(2) + "%*";
+        slackText = slackText + "\n" + nn.networkId;
+        slackText = slackText + "\nTECH: " + nn.networkTechnology;
+        slackText = slackText + "\nIN: " + nn.inputsId;
+        slackText = slackText + "\nINPUTS: " + nn.networkJson.input;
+        slackText = slackText + "\nBETTER CHILD: " + nn.betterChild;
+        slackText = slackText + "\nELAPSED: " + msToTime(nn.evolve.elapsed);
+
         await slackSendWebMessage({ channel: slackChannelPassLocal, text: slackText });
 
-        saveFileQueue.push({folder: localBestNetworkFolder, file: localNetworkFile, obj: nn});
+        saveFileQueue.push({folder: hostBestNetworkFolder, file: hostBestNetworkFile, obj: nn});
       }
     }
     else {
-      console.log(chalkInfo(MODULE_ID_PREFIX + " | XXX | NOT SAVING NN GLOBAL DROPBOX ... LESS THAN GLOBAL MIN SUCCESS *OR* NOT BETTER THAN SEED"
+      console.log(chalkInfo(MODULE_ID_PREFIX + " | XXX | NOT SAVING NN GLOBAL or LOCAL DROPBOX ... LESS THAN GLOBAL and LOCAL MIN SUCCESS *OR* NOT BETTER THAN SEED"
         + " | " + nn.networkId
         + " | SUCCESS: " + nn.successRate.toFixed(2) + "%"
         + " | GLOBAL SUCCESS: " + configuration.globalMinSuccessRate.toFixed(2) + "%"
+        + " | LOCAL SUCCESS: " + configuration.localMinSuccessRate.toFixed(2) + "%"
       ));
 
       resultsHashmap[nn.networkId].status = "- fail -";
 
       if (!configuration.testMode && (
-           ((nn.evolve.options.cost !== "MSE") && (nn.test.results.successRate < configuration.localMinSuccessRate))
-        || ((nn.evolve.options.cost === "MSE") && (nn.test.results.successRate < configuration.localMinSuccessRateMSE))
+           ((nn.evolve.options.cost !== "MSE") && (nn.test.results.successRate < configuration.hostMinSuccessRate))
+        || ((nn.evolve.options.cost === "MSE") && (nn.test.results.successRate < configuration.hostMinSuccessRateMSE))
         ))
       {
         await updateDbInputs({inputsId: nn.inputsId, failNetworkId: nn.networkId});
@@ -4572,13 +4670,13 @@ async function evolveCompleteHandler(params){
 
       if (!configuration.testMode){
 
-        localNetworkFile = nn.networkId + ".json";
+        hostBestNetworkFile = nn.networkId + ".json";
 
         console.log(chalkLog(MODULE_ID_PREFIX + " | ... SAVING NN FILE TO DROPBOX LOCAL FAIL"
-          + " | " + localFailNetworkFolder + "/" + localNetworkFile
+          + " | " + localFailNetworkFolder + "/" + hostBestNetworkFile
         ));
 
-        saveFileQueue.push({folder: localFailNetworkFolder, file: localNetworkFile, obj: nn});
+        saveFileQueue.push({folder: localFailNetworkFolder, file: hostBestNetworkFile, obj: nn});
       }
     }
 
