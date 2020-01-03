@@ -371,7 +371,7 @@ statsObj.networkResults = {};
 const DEFAULT_LOAD_ALL_INPUTS = false;
 const DEFAULT_ARCHIVE_NOT_IN_INPUTS_ID_ARRAY = true;
 const DEFAULT_DELETE_NOT_IN_INPUTS_ID_ARRAY = false;
-const TEST_DROPBOX_NN_LOAD = 15;
+// const TEST_DROPBOX_NN_LOAD = 15;
 const DEFAULT_CHILD_ID_PREFIX = "tnc_node_";
 
 if (hostname === "google") {
@@ -1447,6 +1447,7 @@ async function updateDbNetwork(params) {
 
     const networkObj = params.networkObj;
     const seedNetworkId = (networkObj.seedNetworkId && networkObj.seedNetworkId !== undefined && networkObj.seedNetworkId !== "false") ? networkObj.seedNetworkId : null;
+    const seedNetworkRes = (networkObj.seedNetworkRes && networkObj.seedNetworkRes !== undefined && networkObj.seedNetworkRes !== "false") ? networkObj.seedNetworkRes : 0;
     const incrementTestCycles = (params.incrementTestCycles !== undefined) ? params.incrementTestCycles : false;
     const testHistoryItem = (params.testHistoryItem !== undefined) ? params.testHistoryItem : false;
     const addToTestHistory = (params.addToTestHistory !== undefined) ? params.addToTestHistory : true;
@@ -1459,7 +1460,7 @@ async function updateDbNetwork(params) {
     update.$setOnInsert = { 
       networkTechnology: networkObj.networkTechnology,
       seedNetworkId: seedNetworkId,
-      seedNetworkRes: networkObj.seedNetworkRes,
+      seedNetworkRes: seedNetworkRes,
       successRate: networkObj.successRate, 
       numInputs: networkObj.numInputs,
       numOutputs: networkObj.numOutputs,
@@ -1582,7 +1583,7 @@ async function loadBestNetworkFolders (p){
 
   const params = p || {};
 
-  let numNetworksLoaded = 0;
+  // let numNetworksLoaded = 0;
 
   console.log(chalkNetwork(MODULE_ID_PREFIX + " | ... LOADING BEST NN FOLDERS"
     + " | " + params.folders.length + " FOLDERS"
@@ -1628,15 +1629,15 @@ async function loadBestNetworkFolders (p){
     }
 
     try{
-      const networkObj = await loadNetworkFile({
+      await loadNetworkFile({
         folder: fileObj.folder, 
         file: fileObj.file, 
         purgeMin: params.purgeMin
       });
 
-      if (networkObj) {
-        numNetworksLoaded += 1;
-      }
+      // if (networkObj) {
+      //   numNetworksLoaded += 1;
+      // }
     }
     catch(err){
       console.trace(chalkError(MODULE_ID_PREFIX + " | *** LOAD NN ENTRY ERROR: " + err
@@ -1867,6 +1868,7 @@ async function generateSeedInputsNetworkId(params){
 
         config.networkTechnology = networkObj.networkTechnology;
         config.seedNetworkId = randomNetworkId;
+        config.seedNetworkRes = networkObj.successRate;
         config.seedInputsId = randomInputsId;
         config.inputsId = randomInputsId;
         config.numInputs = networkObj.numInputs;
@@ -1876,6 +1878,7 @@ async function generateSeedInputsNetworkId(params){
           + " | USE RANDOM SEED NETWORK [" + randomNetworkIdSet.size + " NNs IN SEED POOL]"
           + " | NN ID: " + networkObj.networkId
           + " | TECH: " + networkObj.networkTechnology
+          + " | SUCCESS RATE: " + networkObj.successRate.toFixed(3) + "%"
           + " | INPUTS ID: " + networkObj.inputsId
         ));
 
@@ -2181,7 +2184,7 @@ async function initNetworkCreate(params){
     messageObj.betterChild = false;
 
     messageObj.seedNetworkId = (messageObj.seedNetworkId && messageObj.seedNetworkId !== undefined && messageObj.seedNetworkId !== "false") ? messageObj.seedNetworkId : false;
-    messageObj.seedNetworkRes = (messageObj.seedNetworkId && messageObj.seedNetworkId !== undefined && messageObj.seedNetworkId !== "false") ? messageObj.seedNetworkRes : null;
+    messageObj.seedNetworkRes = (messageObj.seedNetworkRes && messageObj.seedNetworkRes !== undefined && messageObj.seedNetworkRes !== "false") ? messageObj.seedNetworkRes : 0;
 
     console.log(chalkBlue("\nTNN | START NETWORK EVOLVE"));
 
@@ -2190,7 +2193,7 @@ async function initNetworkCreate(params){
       + "\n" + MODULE_ID_PREFIX + " | TECHNOLOGY:        " + messageObj.networkTechnology
       + "\n" + MODULE_ID_PREFIX + " | ARCHITECTURE:      " + messageObj.architecture
       + "\n" + MODULE_ID_PREFIX + " | SEED:              " + messageObj.seedNetworkId
-      + "\n" + MODULE_ID_PREFIX + " | SEED RES:          " + messageObj.seedNetworkRes
+      + "\n" + MODULE_ID_PREFIX + " | SEED RES:          " + messageObj.seedNetworkRes.toFixed(3) + "%"
       + "\n" + MODULE_ID_PREFIX + " | INPUTS ID:         " + messageObj.inputsId
       + "\n" + MODULE_ID_PREFIX + " | INPUTS:            " + messageObj.numInputs
       + "\n" + MODULE_ID_PREFIX + " | HIDDEN LAYER SIZE: " + messageObj.hiddenLayerSize
@@ -2203,7 +2206,7 @@ async function initNetworkCreate(params){
 
     if (messageObj.seedNetworkId) {
       console.log(chalkBlue(MODULE_ID_PREFIX + " | SEED:                " + messageObj.seedNetworkId 
-        + " | SR: " + messageObj.seedNetworkRes.toFixed(2) + "%"
+        + " | SR: " + messageObj.seedNetworkRes.toFixed(3) + "%"
       ));
       console.log(chalkBlue(MODULE_ID_PREFIX + " | BETTER CHILD SEED:   " + messageObj.isBetterChildSeed));
     }
