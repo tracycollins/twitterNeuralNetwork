@@ -207,6 +207,7 @@ const getTimeStamp = tcUtils.getTimeStamp;
 //=========================================================================
 
 const slackChannelFail = "nn-fail";
+const slackChannelPassHost = "nn-pass-host";
 const slackChannelPassLocal = "nn-pass-local";
 const slackChannelPassGlobal= "nn-pass-global";
 
@@ -4556,7 +4557,7 @@ async function evolveCompleteHandler(params){
           inputsViableSet.delete(nn.inputsId);
         }
 
-        slackText = "\n*LOCAL BEST | " + nn.test.results.successRate.toFixed(2) + "%*";
+        slackText = "\n*PASS LOCAL | " + nn.test.results.successRate.toFixed(2) + "%*";
         slackText = slackText + "\n" + nn.networkId;
         slackText = slackText + "\nTECH: " + nn.networkTechnology;
         slackText = slackText + "\nIN: " + nn.inputsId;
@@ -4564,7 +4565,7 @@ async function evolveCompleteHandler(params){
         slackText = slackText + "\nBETTER CHILD: " + nn.betterChild;
         slackText = slackText + "\nELAPSED: " + msToTime(nn.evolve.elapsed);
 
-        await slackSendWebMessage({ channel: slackChannelPassGlobal, text: slackText});
+        await slackSendWebMessage({ channel: slackChannelPassLocal, text: slackText});
 
         printNetworkObj(MODULE_ID_PREFIX + " | " + nn.networkId, nn);
 
@@ -4599,7 +4600,7 @@ async function evolveCompleteHandler(params){
           inputsViableSet.delete(nn.inputsId);
         }
 
-        slackText = "\n*HOST BEST | " + nn.test.results.successRate.toFixed(2) + "%*";
+        slackText = "\n*PASS HOST | " + nn.test.results.successRate.toFixed(2) + "%*";
         slackText = slackText + "\n" + nn.networkId;
         slackText = slackText + "\nTECH: " + nn.networkTechnology;
         slackText = slackText + "\nIN: " + nn.inputsId;
@@ -4607,7 +4608,7 @@ async function evolveCompleteHandler(params){
         slackText = slackText + "\nBETTER CHILD: " + nn.betterChild;
         slackText = slackText + "\nELAPSED: " + msToTime(nn.evolve.elapsed);
 
-        await slackSendWebMessage({ channel: slackChannelPassLocal, text: slackText });
+        await slackSendWebMessage({ channel: slackChannelPassHost, text: slackText });
 
         saveFileQueue.push({folder: hostBestNetworkFolder, file: hostBestNetworkFile, obj: nn});
       }
