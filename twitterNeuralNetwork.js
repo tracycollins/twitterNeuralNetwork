@@ -2708,7 +2708,7 @@ function delay(p) {
       }
 
       if (moment().isAfter(delayEndMoment)){
-        console.log(chalkAlert(MODULE_ID_PREFIX 
+        console.log(chalkLog(MODULE_ID_PREFIX 
           + " | XXX DELAY END "
           + " | PERIOD: " + msToTime(period)
           + " | INTERVAL: " + msToTime(interval)
