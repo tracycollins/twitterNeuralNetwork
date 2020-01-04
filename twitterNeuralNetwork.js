@@ -2435,7 +2435,6 @@ async function initWatchAllConfigFolders(p){
 
         networkIdSet.delete(networkId);
       });
-
     });
 
     //========================
