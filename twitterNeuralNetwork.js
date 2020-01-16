@@ -4426,7 +4426,7 @@ async function evolveCompleteHandler(params){
     }
 
     if ((nn.test.results.successRate < 100) && 
-      ((nn.seedNetworkId && nn.seedNetworkId !== undefined && nn.seedNetworkId !== "false" && (nn.test.results.successRate >= nn.seedNetworkRes)) // better than seed nn
+      ((nn.seedNetworkId && nn.seedNetworkId !== undefined && nn.seedNetworkId !== "false" && (nn.test.results.successRate > nn.seedNetworkRes)) // better than seed nn
       || (!nn.seedNetworkId && (nn.test.results.successRate >= configuration.hostMinSuccessRate)) // no seed but better than local min
       || (configuration.testMode && !nn.seedNetworkId && (nn.test.results.successRate >= 0.5*configuration.hostMinSuccessRate)) // no seed but better than local min
       || (!nn.seedNetworkId && (nn.evolve.options.cost === "MSE") && (nn.test.results.successRate >= configuration.hostMinSuccessRateMSE)) // no seed but better than local min
