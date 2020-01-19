@@ -3,6 +3,7 @@ const MODULE_ID_PREFIX = "TNN";
 const CHILD_PREFIX = "tnc_node";
 const CHILD_PREFIX_SHORT = "NC";
 
+const DEFAULT_USER_PROFILE_ONLY_FLAG = false;
 const DEFAULT_BINARY_MODE = true;
 const DEFAULT_COMPARE_TECH = false;
 
@@ -136,6 +137,7 @@ let configuration = {};
 const childConfiguration = {};
 
 configuration.binaryMode = DEFAULT_BINARY_MODE;
+configuration.userProfileOnlyFlag = DEFAULT_USER_PROFILE_ONLY_FLAG;
 configuration.compareTech = DEFAULT_COMPARE_TECH;
 
 configuration.previousChildConfig = false;
@@ -149,7 +151,9 @@ configuration.globalTestMode = GLOBAL_TEST_MODE;
 configuration.quitOnComplete = QUIT_ON_COMPLETE;
 configuration.statsUpdateIntervalTime = STATS_UPDATE_INTERVAL;
 configuration.maxFailNetworks = DEFAULT_MAX_FAIL_NETWORKS;
+
 childConfiguration.primaryHost = configuration.primaryHost;
+childConfiguration.userProfileOnlyFlag = configuration.userProfileOnlyFlag;
 childConfiguration.testMode = configuration.testMode;
 childConfiguration.updateUserDb = false;
 
@@ -3066,6 +3070,18 @@ async function loadConfigFile(params) {
       }
     }
 
+    if (loadedConfigObj.TNN_USER_PROFILE_ONLY_FLAG !== undefined) {
+      console.log(MODULE_ID_PREFIX + " | LOADED TNN_USER_PROFILE_ONLY_FLAG: " + loadedConfigObj.TNN_USER_PROFILE_ONLY_FLAG);
+      if ((loadedConfigObj.TNN_USER_PROFILE_ONLY_FLAG === true) || (loadedConfigObj.TNN_USER_PROFILE_ONLY_FLAG === "true")) {
+        newConfiguration.userProfileOnlyFlag = true;
+      }
+      if ((loadedConfigObj.TNN_USER_PROFILE_ONLY_FLAG === false) || (loadedConfigObj.TNN_USER_PROFILE_ONLY_FLAG === "false")) {
+        newConfiguration.userProfileOnlyFlag = false;
+      }
+
+      childConfiguration.userProfileOnlyFlag = newConfiguration.userProfileOnlyFlag;
+    }
+
     if (loadedConfigObj.TNN_BINARY_MODE !== undefined) {
       console.log(MODULE_ID_PREFIX + " | LOADED TNN_BINARY_MODE: " + loadedConfigObj.TNN_BINARY_MODE);
       if ((loadedConfigObj.TNN_BINARY_MODE === true) || (loadedConfigObj.TNN_BINARY_MODE === "true")) {
@@ -3074,6 +3090,8 @@ async function loadConfigFile(params) {
       if ((loadedConfigObj.TNN_BINARY_MODE === false) || (loadedConfigObj.TNN_BINARY_MODE === "false")) {
         newConfiguration.binaryMode = false;
       }
+
+      childConfiguration.binaryMode = newConfiguration.binaryMode;
     }
 
     if (loadedConfigObj.TNN_COMPARE_TECH !== undefined) {

@@ -861,6 +861,7 @@ async function testNetworkData(params){
 
   const convertDatumFlag = (params.convertDatumFlag !== undefined) ? params.convertDatumFlag : false;
   const binaryMode = (params.binaryMode !== undefined) ? params.binaryMode : configuration.binaryMode;
+  const userProfileOnlyFlag = (params.userProfileOnlyFlag !== undefined) ? params.userProfileOnlyFlag : configuration.userProfileOnlyFlag;
 
   const verbose = params.verbose || false;
 
@@ -874,6 +875,7 @@ async function testNetworkData(params){
       user: datum.user, 
       datum: datum, // user, input, output
       convertDatumFlag: convertDatumFlag, 
+      userProfileOnlyFlag: userProfileOnlyFlag,
       binaryMode: binaryMode, 
       verbose: verbose
     };
@@ -930,13 +932,20 @@ async function testNetwork(p){
   const params = p || {};
 
   const binaryMode = (params.binaryMode !== undefined) ? params.binaryMode : configuration.binaryMode;
+  const userProfileOnlyFlag = (params.userProfileOnlyFlag !== undefined) ? params.userProfileOnlyFlag : configuration.userProfileOnlyFlag;
 
   //dataSetPrep = dataSet.push({user: results.user, input: results.datum.input, output: results.datum.output});
 
-  const testSet = await dataSetPrep({dataSetObj: testSetObj, binaryMode: binaryMode, verbose: params.verbose});
+  const testSet = await dataSetPrep({
+    dataSetObj: testSetObj,
+    userProfileOnlyFlag: userProfileOnlyFlag,
+    binaryMode: binaryMode,
+    verbose: params.verbose
+  });
 
   console.log(chalkBlue(MODULE_ID_PREFIX + " | TEST NETWORK"
     + " | NETWORK ID: " + childNetworkObj.networkId
+    + " | USER PROFILE ONLY: " + userProfileOnlyFlag
     + " | " + testSet.length + " TEST DATA LENGTH"
     + " | VERBOSE: " + params.verbose
   ));
@@ -956,6 +965,7 @@ async function testNetwork(p){
     networkId: childNetworkObj.networkId, 
     testSet: testSet, 
     convertDatumFlag: false,
+    userProfileOnlyFlag: userProfileOnlyFlag,
     binaryMode: binaryMode,
     verbose: params.verbose
   });
@@ -1096,6 +1106,7 @@ function dataSetPrep(p){
     const dataSetObj = params.dataSetObj;
 
     const binaryMode = (params.binaryMode !== undefined) ? params.binaryMode : configuration.binaryMode;
+    const userProfileOnlyFlag = (params.userProfileOnlyFlag !== undefined) ? params.userProfileOnlyFlag : configuration.userProfileOnlyFlag;
 
     const dataSet = [];
 
@@ -1107,6 +1118,8 @@ function dataSetPrep(p){
       + " | DATA SET preppedOptions"
       + " | DATA LENGTH: " + dataSetObj.data.length
       + " | INPUTS: " + childNetworkObj.numInputs
+      + " | USER PROFILE ONLY: " + userProfileOnlyFlag
+      + " | BIN MODE: " + binaryMode
       + "\nDATA SET META\n" + jsonPrint(dataSetObj.meta)
     ));
 
@@ -1125,7 +1138,13 @@ function dataSetPrep(p){
         //convertDatumOneNetwork
         // results = {user: user, datum: datum, inputHits: inputHits, inputMisses: inputMisses, inputHitRate: inputHitRate};
 
-        tcUtils.convertDatumOneNetwork({primaryInputsFlag: true, user: user, binaryMode: binaryMode, verbose: params.verbose}).
+        tcUtils.convertDatumOneNetwork({
+          primaryInputsFlag: true, 
+          user: user,
+          userProfileOnlyFlag: userProfileOnlyFlag,
+          binaryMode: binaryMode, 
+          verbose: params.verbose
+        }).
         then(function(results){
 
           if (results.emptyFlag) {
@@ -1401,14 +1420,24 @@ async function evolve(params){
       + " | IN: " + childNetworkObj.inputsId
     ));
 
-    const binaryMode = (params.binaryMode !== undefined) ? params.binaryMode : configuration.binaryMode;
 
     const inputsObj = await wordAssoDb.NetworkInputs.findOne({inputsId: childNetworkObj.inputsId}).lean();
+
+    const binaryMode = (params.binaryMode !== undefined) ? params.binaryMode : configuration.binaryMode;
+    const userProfileOnlyFlag = inputsObj.meta.userProfileOnlyFlag || false;
+
+    if (childNetworkObj.meta === undefined) { childNetworkObj.meta = {}; }
+    childNetworkObj.meta.userProfileOnlyFlag = userProfileOnlyFlag;
 
     await tcUtils.loadInputs({inputsObj: inputsObj});
     await tcUtils.setPrimaryInputs({inputsId: inputsObj.inputsId});
 
-    const trainingSet = await dataSetPrep({dataSetObj: trainingSetObj, binaryMode: binaryMode, verbose: params.verbose});
+    const trainingSet = await dataSetPrep({
+      dataSetObj: trainingSetObj, 
+      userProfileOnlyFlag: userProfileOnlyFlag,
+      binaryMode: binaryMode,
+      verbose: params.verbose
+    });
 
     const childNetworkRaw = await createNetwork();
 
@@ -1755,7 +1784,10 @@ const fsmStates = {
           await processSend({op: "STATS", childId: configuration.childId, fsmStatus: statsObj.fsmStatus});
 
           await networkEvolve({verbose: configuration.verbose});
-          await testNetwork({binaryMode: configuration.binaryMode, verbose: configuration.verbose});
+          await testNetwork({
+            binaryMode: configuration.binaryMode, 
+            verbose: configuration.verbose
+          });
 
           delete childNetworkObj.inputsObj;
           delete childNetworkObj.network;
