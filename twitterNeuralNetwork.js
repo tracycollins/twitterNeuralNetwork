@@ -411,22 +411,22 @@ statsObj.normalization.magnitude.max = -Infinity;
 statsObj.normalization.comp.min = Infinity;
 statsObj.normalization.comp.max = -Infinity;
 
-const DEFAULT_INPUT_TYPES = [
-  "emoji",
-  "friends",
-  "hashtags",  
-  "images", 
-  "locations", 
-  "media", 
-  "mentions", 
-  "places", 
-  "sentiment", 
-  "urls", 
-  "userMentions", 
-  "words"
-];
+// const DEFAULT_INPUT_TYPES = [
+//   "emoji",
+//   "friends",
+//   "hashtags",  
+//   "images", 
+//   "locations", 
+//   "media", 
+//   "mentions", 
+//   "places", 
+//   "sentiment", 
+//   "urls", 
+//   "userMentions", 
+//   "words"
+// ];
 
-DEFAULT_INPUT_TYPES.sort();
+// DEFAULT_INPUT_TYPES.sort();
 
 const GLOBAL_TRAINING_SET_ID = "globalTrainingSet";
 
@@ -504,11 +504,11 @@ const DEFAULT_EVOLVE_MOD_ACTIVATION_ARRAY = [
   "TANH"
 ];
 
-const globalhistograms = {};
+// const globalhistograms = {};
 
-DEFAULT_INPUT_TYPES.forEach(function(type){
-  globalhistograms[type] = {};
-});
+// DEFAULT_INPUT_TYPES.forEach(function(type){
+//   globalhistograms[type] = {};
+// });
 
 let hostBestNetworkFile;
 let networkIndex = 0;
