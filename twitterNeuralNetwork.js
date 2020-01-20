@@ -38,6 +38,8 @@ console.log("HOST NAME:    " + hostname);
 console.log("=========================================");
 console.log("=========================================");
 
+const MODULE_ID = MODULE_ID_PREFIX + "_node_" + hostname;
+
 const wordAssoDb = require("@threeceelabs/mongoose-twitter");
 let dbConnection;
 
@@ -130,32 +132,13 @@ const compactDateTimeFormat = "YYYYMMDD_HHmmss";
 
 const OFFLINE_MODE = false;
 
-const statsObj = {};
-let statsObjSmall = {};
-let configuration = {};
+const tcuChildName = MODULE_ID_PREFIX + "_TCU";
+const ThreeceeUtilities = require("@threeceelabs/threecee-utilities");
+const tcUtils = new ThreeceeUtilities(tcuChildName);
 
-const childConfiguration = {};
-
-configuration.binaryMode = DEFAULT_BINARY_MODE;
-configuration.userProfileOnlyFlag = DEFAULT_USER_PROFILE_ONLY_FLAG;
-configuration.compareTech = DEFAULT_COMPARE_TECH;
-
-configuration.previousChildConfig = false;
-configuration.offlineMode = OFFLINE_MODE;
-configuration.primaryHost = PRIMARY_HOST;
-configuration.networkTechnology = DEFAULT_NETWORK_TECHNOLOGY;
-configuration.enableRandomTechnology = DEFAULT_ENABLE_RANDOM_NETWORK_TECHNOLOGY;
-configuration.purgeMin = DEFAULT_PURGE_MIN;
-configuration.testMode = TEST_MODE;
-configuration.globalTestMode = GLOBAL_TEST_MODE;
-configuration.quitOnComplete = QUIT_ON_COMPLETE;
-configuration.statsUpdateIntervalTime = STATS_UPDATE_INTERVAL;
-configuration.maxFailNetworks = DEFAULT_MAX_FAIL_NETWORKS;
-
-childConfiguration.primaryHost = configuration.primaryHost;
-childConfiguration.userProfileOnlyFlag = configuration.userProfileOnlyFlag;
-childConfiguration.testMode = configuration.testMode;
-childConfiguration.updateUserDb = false;
+const msToTime = tcUtils.msToTime;
+const jsonPrint = tcUtils.jsonPrint;
+const getTimeStamp = tcUtils.getTimeStamp;
 
 const empty = require("is-empty");
 const path = require("path");
@@ -198,13 +181,37 @@ const chalkAlert = chalk.red;
 const chalkLog = chalk.gray;
 const chalkInfo = chalk.black;
 
-const tcuChildName = MODULE_ID_PREFIX + "_TCU";
-const ThreeceeUtilities = require("@threeceelabs/threecee-utilities");
-const tcUtils = new ThreeceeUtilities(tcuChildName);
+//=========================================================================
 
-const msToTime = tcUtils.msToTime;
-const jsonPrint = tcUtils.jsonPrint;
-const getTimeStamp = tcUtils.getTimeStamp;
+const statsObj = {};
+let statsObjSmall = {};
+let configuration = {};
+
+const childConfiguration = {};
+
+configuration.networkIdPrefix = "nn_" + getTimeStamp() + "_" + hostname ;
+
+configuration.binaryMode = DEFAULT_BINARY_MODE;
+configuration.userProfileOnlyFlag = DEFAULT_USER_PROFILE_ONLY_FLAG;
+configuration.compareTech = DEFAULT_COMPARE_TECH;
+
+configuration.previousChildConfig = false;
+configuration.offlineMode = OFFLINE_MODE;
+configuration.primaryHost = PRIMARY_HOST;
+configuration.networkTechnology = DEFAULT_NETWORK_TECHNOLOGY;
+configuration.enableRandomTechnology = DEFAULT_ENABLE_RANDOM_NETWORK_TECHNOLOGY;
+configuration.purgeMin = DEFAULT_PURGE_MIN;
+configuration.testMode = TEST_MODE;
+configuration.globalTestMode = GLOBAL_TEST_MODE;
+configuration.quitOnComplete = QUIT_ON_COMPLETE;
+configuration.statsUpdateIntervalTime = STATS_UPDATE_INTERVAL;
+configuration.maxFailNetworks = DEFAULT_MAX_FAIL_NETWORKS;
+
+childConfiguration.primaryHost = configuration.primaryHost;
+childConfiguration.userProfileOnlyFlag = configuration.userProfileOnlyFlag;
+childConfiguration.testMode = configuration.testMode;
+childConfiguration.updateUserDb = false;
+
 
 //=========================================================================
 // SLACK
@@ -340,11 +347,6 @@ async function initSlackRtmClient(){
 //=========================================================================
 
 const startTimeMoment = moment();
-
-const MODULE_ID = MODULE_ID_PREFIX + "_node_" + hostname;
-const DEFAULT_NETWORK_ID_PREFIX = hostname + "_" + getTimeStamp();
-
-configuration.networkIdPrefix = DEFAULT_NETWORK_ID_PREFIX;
 
 statsObj.pid = process.pid;
 statsObj.cpus = os.cpus().length;
@@ -533,11 +535,6 @@ const inputsFailedSet = new Set();
 const inputsSet = new Set();
 const inputsNetworksHashMap = {};
 const skipLoadInputsSet = new Set();
-
-const testObj = {};
-testObj.testRunId = hostname + "_" + statsObj.startTime;
-testObj.results = {};
-testObj.testSet = [];
 
 configuration.quitOnComplete = QUIT_ON_COMPLETE;
 
@@ -1369,8 +1366,10 @@ async function loadNetworkFile(params){
   printNetworkObj(
     MODULE_ID_PREFIX 
       + " | --- NN HASH MAP [" + networkIdSet.size + " IN SET]"
-      + " | PRIMARY_HOST: " + PRIMARY_HOST
-      + " | FOLDER: " + params.folder, 
+      + " | PRI HOST: " + PRIMARY_HOST
+      + " | FOLDER: " + params.folder
+      + "\n" + MODULE_ID_PREFIX
+      + " | --- NN HASH MAP [" + networkIdSet.size + " IN SET]",
     networkObj, 
     chalkLog
   );
@@ -3891,8 +3890,8 @@ const fsmStates = {
           await loadNetworkInputsConfig({file: defaultBestInputsConfigFile});
           await loadNetworkInputsConfig({file: defaultNetworkInputsConfigFile});
           await loadNetworkInputsConfig({file: defaultUnionInputsConfigFile});
-          await loadBestNetworkFolders({folders: [globalBestNetworkFolder, localBestNetworkFolder, hostBestNetworkFolder], purgeMin: configuration.hostPurgeMinSuccessRate});
           await loadInputsFolders({folders: [defaultInputsFolder]});
+          await loadBestNetworkFolders({folders: [globalBestNetworkFolder, localBestNetworkFolder, hostBestNetworkFolder], purgeMin: configuration.hostPurgeMinSuccessRate});
 
           await childStartAll();
 

@@ -934,8 +934,6 @@ async function testNetwork(p){
   const binaryMode = (params.binaryMode !== undefined) ? params.binaryMode : configuration.binaryMode;
   const userProfileOnlyFlag = (params.userProfileOnlyFlag !== undefined) ? params.userProfileOnlyFlag : configuration.userProfileOnlyFlag;
 
-  //dataSetPrep = dataSet.push({user: results.user, input: results.datum.input, output: results.datum.output});
-
   const testSet = await dataSetPrep({
     dataSetObj: testSetObj,
     userProfileOnlyFlag: userProfileOnlyFlag,
@@ -953,10 +951,6 @@ async function testNetwork(p){
   await nnTools.loadNetwork({networkObj: childNetworkObj});
   await nnTools.setPrimaryNeuralNetwork(childNetworkObj.networkId);
   await nnTools.setBinaryMode(binaryMode);
-
-  // if (configuration.testMode && (Math.random() > 0.5)){
-  //   throw new Error("TEST MODE RANDOM testNetwork ERROR");
-  // }
 
   childNetworkObj.test = {};
   childNetworkObj.test.results = {};
