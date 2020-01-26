@@ -3,6 +3,7 @@ const MODULE_ID_PREFIX = "TNN";
 const CHILD_PREFIX = "tnc_node";
 const CHILD_PREFIX_SHORT = "NC";
 
+const DEFAULT_REMOVE_SEED_FROM_VIABLE_NN_SET_ON_FAIL = true;
 const DEFAULT_USER_PROFILE_ONLY_FLAG = false;
 const DEFAULT_BINARY_MODE = true;
 const DEFAULT_COMPARE_TECH = false;
@@ -190,7 +191,7 @@ let configuration = {};
 const childConfiguration = {};
 
 configuration.networkIdPrefix = "nn_" + getTimeStamp() + "_" + hostname ;
-
+configuration.removeSeedFromViableNetworkOnFail = DEFAULT_REMOVE_SEED_FROM_VIABLE_NN_SET_ON_FAIL;
 configuration.binaryMode = DEFAULT_BINARY_MODE;
 configuration.userProfileOnlyFlag = DEFAULT_USER_PROFILE_ONLY_FLAG;
 configuration.compareTech = DEFAULT_COMPARE_TECH;
@@ -506,7 +507,7 @@ let bestNetworkFile;
 const resultsHashmap = {};
 let currentBestNetwork;
 
-const networkIdSet = new Set();
+const viableNetworkIdSet = new Set();
 const betterChildSeedNetworkIdSet = new Set();
 const skipLoadNetworkSet = new Set();
 const zeroSuccessEvolveOptionsSet = new Set();
@@ -767,7 +768,6 @@ function networkDefaults(networkObj){
     resolve(networkObj);
 
   });
-
 }
 
 function printInputsObj(title, inputsObj, format) {
@@ -1019,7 +1019,7 @@ function purgeNetwork(networkId){
 
   console.log(chalkAlert(MODULE_ID_PREFIX + " | XXX PURGE NETWORK: " + networkId));
 
-  networkIdSet.delete(networkId);
+  viableNetworkIdSet.delete(networkId);
   betterChildSeedNetworkIdSet.delete(networkId);
   skipLoadNetworkSet.add(networkId);
 
@@ -1177,8 +1177,6 @@ async function loadNetworkFile(params){
   }
 
   console.log(chalkInfo(MODULE_ID_PREFIX + " | <<< LOAD NN FILE"
-    // + " | FOLDER: " + params.folder
-    // + " | FILE: " + params.file
     + " | " + filePath
   ));
 
@@ -1226,11 +1224,11 @@ async function loadNetworkFile(params){
   //========================
 
   if ((params.folder.toLowerCase() !== globalBestNetworkFolder.toLowerCase())
-    && !networkIdSet.has(networkObj.networkId)
+    && !viableNetworkIdSet.has(networkObj.networkId)
     && ((networkObj.successRate >= configuration.globalMinSuccessRate) 
     || (networkObj.overallMatchRate >= configuration.globalMinSuccessRate))) {
 
-    networkIdSet.add(networkObj.networkId);
+    viableNetworkIdSet.add(networkObj.networkId);
 
     if(empty(inputsIdHashMap[networkObj.inputsId])) { inputsIdHashMap[networkObj.inputsId] = new Set(); }
     inputsIdHashMap[networkObj.inputsId].add(networkObj.networkId);
@@ -1258,12 +1256,12 @@ async function loadNetworkFile(params){
 
   if (passed) {
 
-    networkIdSet.add(networkObj.networkId);
+    viableNetworkIdSet.add(networkObj.networkId);
 
     if(empty(inputsIdHashMap[networkObj.inputsId])) { inputsIdHashMap[networkObj.inputsId] = new Set(); }
     inputsIdHashMap[networkObj.inputsId].add(networkObj.networkId);
 
-    printNetworkObj(MODULE_ID_PREFIX + " | +++ NN SET [" + networkIdSet.size + " IN SET]", networkObj);
+    printNetworkObj(MODULE_ID_PREFIX + " | +++ VIABLE NN SET [" + viableNetworkIdSet.size + " IN SET]", networkObj);
 
     if (!currentBestNetwork
       || (networkObj.overallMatchRate > currentBestNetwork.overallMatchRate)
@@ -1314,7 +1312,7 @@ async function loadNetworkFile(params){
         printNetworkObj(MODULE_ID_PREFIX + " | *** NEW BEST NN (DB)", nnDb, chalkGreen);
       }
 
-      networkIdSet.add(nnDb.networkId);
+      viableNetworkIdSet.add(nnDb.networkId);
 
       if(empty(inputsIdHashMap[nnDb.inputsId])) { inputsIdHashMap[nnDb.inputsId] = new Set(); }
       inputsIdHashMap[nnDb.inputsId].add(nnDb.networkId);
@@ -1333,7 +1331,7 @@ async function loadNetworkFile(params){
 
     printNetworkObj(
       MODULE_ID_PREFIX 
-        + " | XXX DELETING NN [" + networkIdSet.size + " IN SET]"
+        + " | XXX DELETING NN [" + viableNetworkIdSet.size + " IN SET]"
         + " | FOLDER: " + params.folder, 
       networkObj, 
       chalkAlert
@@ -1348,17 +1346,16 @@ async function loadNetworkFile(params){
 
   printNetworkObj(
     MODULE_ID_PREFIX 
-      + " | --- NN HASH MAP [" + networkIdSet.size + " IN SET]"
+      + " | --- NN HASH MAP [" + viableNetworkIdSet.size + " IN SET]"
       + " | PRI HOST: " + PRIMARY_HOST
       + " | FOLDER: " + params.folder
       + "\n" + MODULE_ID_PREFIX
-      + " | --- NN HASH MAP [" + networkIdSet.size + " IN SET]",
+      + " | --- NN HASH MAP [" + viableNetworkIdSet.size + " IN SET]",
     networkObj, 
     chalkLog
   );
 
   return networkObj;
-
 }
 
 async function loadInputsFile(params){
@@ -1433,7 +1430,7 @@ async function updateDbNetwork(params) {
     statsObj.status = "UPDATE DB NETWORKS";
 
     if (configuration.verbose) {
-      printNetworkObj(MODULE_ID_PREFIX + " | [" + networkIdSet.size + "] >>> UPDATE NN DB", params.networkObj)
+      printNetworkObj(MODULE_ID_PREFIX + " | [" + viableNetworkIdSet.size + "] >>> UPDATE NN DB", params.networkObj)
       .then(function(){
 
       })
@@ -1636,7 +1633,6 @@ async function loadBestNetworkFolders (p){
   }
 
   return;
-
 }
 
 async function loadInputsFolders (p){
@@ -1694,7 +1690,6 @@ async function loadInputsFolders (p){
   }
 
   return;
-
 }
 
 const watchOptions = {
@@ -1745,7 +1740,6 @@ async function initWatch(params){
   });
 
   return;
-
 }
 
 async function generateSeedInputsNetworkId(params){
@@ -1801,31 +1795,6 @@ async function generateSeedInputsNetworkId(params){
     const viableInputsIdArray = [...inputsViableSet].sort();
     const failedInputsIdArray = [...inputsFailedSet];
     const availableInputsIdArray = _.difference(viableInputsIdArray, failedInputsIdArray);
-
-    // if (availableInputsIdArray.length > 0) {
-
-    //   console.log(chalkLog(MODULE_ID_PREFIX + " | VIABLE NETWORKS INPUTS: " + availableInputsIdArray.length));
-
-    //   availableInputsIdArray.sort();
-
-    //   config.seedInputsId = availableInputsIdArray.pop(); // most recent input
-    //   config.inputsId = config.seedInputsId;
-
-    //   console.log(chalkBlue(MODULE_ID_PREFIX + " | SEED INPUTS: " + config.inputsId));
-
-    //   const inputsObj = await wordAssoDb.NetworkInputs.findOne({inputsId: config.inputsId}).lean();
-    //   config.numInputs = inputsObj.meta.numInputs;
-
-    //   console.log(chalkBlueBold(MODULE_ID_PREFIX
-    //     + " | VIABLE INPUT"
-    //     + " | VIABLE INPUTS: " + inputsViableSet.size
-    //     + " | AVAIL INPUTS: " + availableInputsIdArray.length
-    //     + " | SEED INPUTS: " + config.seedInputsId
-    //     + " | NUM INPUTS: " + config.numInputs
-    //   ));
-
-    //   return config;
-    // }
 
     //
     // no input set with no networks, so maybe random network
@@ -2011,7 +1980,11 @@ async function generateRandomEvolveConfig(p){
   config = await generateEvolveOptions({config: config});
 
   // SEED NETWORK?
-  if (configuration.enableSeedNetwork && config.seedNetworkId && (config.seedNetworkId !== undefined) && (config.seedNetworkId !== false) && networkIdSet.has(config.seedNetworkId)) {
+  if (configuration.enableSeedNetwork 
+    && config.seedNetworkId 
+    && (config.seedNetworkId !== undefined) 
+    && (config.seedNetworkId !== false) 
+    && viableNetworkIdSet.has(config.seedNetworkId)) {
 
     try{
 
@@ -2071,7 +2044,8 @@ async function generateRandomEvolveConfig(p){
       throw new Error("SEED NETWORK ERROR: " + config.seedNetworkId);
     }
   }
-  else { // not seed network
+  // not seed network
+  else { 
 
     if (config.seedInputsId && (config.seedInputsId !== undefined) && inputsSet.has(config.seedInputsId)) {
 
@@ -2114,7 +2088,6 @@ async function generateRandomEvolveConfig(p){
       throw new Error(config.seedInputsId + " NOT IN inputsSet");
     }
   }
-
 }
 
 async function initNetworkCreate(params){
@@ -2367,7 +2340,7 @@ async function initWatchAllConfigFolders(p){
           + " | " + networkId 
           + "\n" + f
         ));
-        networkIdSet.delete(networkId);
+        viableNetworkIdSet.delete(networkId);
       });
     });
 
@@ -2419,7 +2392,7 @@ async function initWatchAllConfigFolders(p){
           + "\n" + f
         ));
 
-        networkIdSet.delete(networkId);
+        viableNetworkIdSet.delete(networkId);
       });
     });
 
@@ -2917,7 +2890,6 @@ async function killAll(){
     console.log(chalkBlue(MODULE_ID_PREFIX + " | KILL ALL | NO CHILDREN"));
     return childPidArray;
   }
-
 }
 
 //=========================================================================
@@ -2957,7 +2929,6 @@ async function showStats(options) {
 
     return;
   }
-
 }
 
 function initStatsUpdate() {
@@ -3049,6 +3020,16 @@ async function loadConfigFile(params) {
       }
       if ((loadedConfigObj.TNN_ENABLE_RANDOM_NETWORK_TECHNOLOGY === false) || (loadedConfigObj.TNN_ENABLE_RANDOM_NETWORK_TECHNOLOGY === "false")) {
         newConfiguration.enableRandomTechnology = false;
+      }
+    }
+
+    if (loadedConfigObj.TNN_REMOVE_SEED_FROM_VIABLE_NN_SET_ON_FAIL !== undefined) {
+      console.log(MODULE_ID_PREFIX + " | LOADED TNN_REMOVE_SEED_FROM_VIABLE_NN_SET_ON_FAIL: " + loadedConfigObj.TNN_REMOVE_SEED_FROM_VIABLE_NN_SET_ON_FAIL);
+      if ((loadedConfigObj.TNN_REMOVE_SEED_FROM_VIABLE_NN_SET_ON_FAIL === true) || (loadedConfigObj.TNN_REMOVE_SEED_FROM_VIABLE_NN_SET_ON_FAIL === "true")) {
+        newConfiguration.removeSeedFromViableNetworkOnFail = true;
+      }
+      if ((loadedConfigObj.TNN_REMOVE_SEED_FROM_VIABLE_NN_SET_ON_FAIL === false) || (loadedConfigObj.TNN_REMOVE_SEED_FROM_VIABLE_NN_SET_ON_FAIL === "false")) {
+        newConfiguration.removeSeedFromViableNetworkOnFail = false;
       }
     }
 
@@ -3236,7 +3217,6 @@ async function loadAllConfigFiles(){
   configuration = tempConfig;
 
   return;
-
 }
 
 //=========================================================================
@@ -3436,7 +3416,6 @@ async function quit(opts) {
     }
 
   }, QUIT_WAIT_INTERVAL);
-
 }
 
 //=========================================================================
@@ -4106,7 +4085,6 @@ async function childStatsAll(p){
 
   const command = params.command || defaultCommand;
   await childSendAll({command: command});
-
 }
 
 function getNewNetworkId(p){
@@ -4133,7 +4111,6 @@ async function startNetworkCreate(params){
   await initNetworkCreate({childId: params.childId, networkId: networkId, binaryMode: binaryMode, compareTech: compareTech});
 
   return;
-
 }
 
 function childStartAll(p){
@@ -4356,7 +4333,6 @@ async function evolveCompleteHandler(params){
 
     const m = params.m;
 
-    // const nn = await wordAssoDb.NeuralNetwork.findOne({networkId: m.networkId}).lean();
     const nnDoc = await wordAssoDb.NeuralNetwork.findOne({networkId: m.networkId});
 
     const nn = nnDoc.toObject();
@@ -4425,6 +4401,7 @@ async function evolveCompleteHandler(params){
       }
     }
 
+    // PASSED
     if ((nn.test.results.successRate < 100) && 
       ((nn.seedNetworkId && nn.seedNetworkId !== undefined && nn.seedNetworkId !== "false" && (nn.test.results.successRate > nn.seedNetworkRes)) // better than seed nn
       || (!nn.seedNetworkId && (nn.test.results.successRate >= configuration.hostMinSuccessRate)) // no seed but better than local min
@@ -4441,14 +4418,17 @@ async function evolveCompleteHandler(params){
 
       bestNetworkFile = nn.networkId + ".json";
 
-      networkIdSet.add(nn.networkId);
+      viableNetworkIdSet.add(nn.networkId);
 
       if(empty(inputsIdHashMap[nn.inputsId])) { inputsIdHashMap[nn.inputsId] = new Set(); }
 
       inputsIdHashMap[nn.inputsId].add(nn.networkId);
 
-      // Add to nn child better than parent array
-      if (nn.seedNetworkId && (nn.test.results.successRate < 100) && (nn.seedNetworkRes > 0) && (nn.test.results.successRate >= nn.seedNetworkRes)) {
+      // nn seed but better than parent; add to nn child better than parent array
+      if (nn.seedNetworkId 
+        && (nn.test.results.successRate < 100) 
+        && (nn.seedNetworkRes > 0) 
+        && (nn.test.results.successRate >= nn.seedNetworkRes)) {
 
         betterChildSeedNetworkIdSet.add(nn.networkId);
 
@@ -4463,13 +4443,11 @@ async function evolveCompleteHandler(params){
         ));
       }
       // no seed but better than hostMinSuccessRate, so act like better child and start parent/child chain
-      else if (
-           (!nn.seedNetworkId && (nn.test.results.successRate < 100) && (nn.test.results.successRate >= configuration.hostMinSuccessRate))
+      else if ((!nn.seedNetworkId && (nn.test.results.successRate < 100) 
+        && (nn.test.results.successRate >= configuration.hostMinSuccessRate))
         || (configuration.testMode && !nn.seedNetworkId && (nn.test.results.successRate < 100) && (nn.test.results.successRate >= 0.5*configuration.hostMinSuccessRate))
         || (!nn.seedNetworkId && (nn.evolve.options.cost === "MSE") && (nn.test.results.successRate < 100) && (nn.test.results.successRate >= configuration.hostMinSuccessRateMSE))
-        || (configuration.testMode && !nn.seedNetworkId && (nn.evolve.options.cost === "MSE") && (nn.test.results.successRate < 100) && (nn.test.results.successRate >= 0.5*configuration.hostMinSuccessRateMSE))
-        )
-      {
+        || (configuration.testMode && !nn.seedNetworkId && (nn.evolve.options.cost === "MSE") && (nn.test.results.successRate < 100) && (nn.test.results.successRate >= 0.5*configuration.hostMinSuccessRateMSE))){
 
         betterChildSeedNetworkIdSet.add(nn.networkId);
 
@@ -4481,6 +4459,7 @@ async function evolveCompleteHandler(params){
           + " | SR: " + nn.test.results.successRate.toFixed(3) + "%"
         ));
       }
+      // not better child
       else {
         nn.betterChild = false;
         resultsHashmap[nn.networkId].betterChild = false;
@@ -4498,6 +4477,7 @@ async function evolveCompleteHandler(params){
         + " | " + inputsNetworksHashMap[nn.inputsId].size + " NETWORKS"
       ));
 
+      // GLOBAL SUCCESS
       if ((nn.test.results.successRate < 100) 
         && (nn.test.results.successRate >= configuration.globalMinSuccessRate)) {
 
@@ -4534,6 +4514,7 @@ async function evolveCompleteHandler(params){
 
         saveFileQueue.push({folder: globalBestNetworkFolder, file: bestNetworkFile, obj: nn});
       }
+      // LOCAL SUCCESS
       else if ((nn.test.results.successRate < 100) 
         && (nn.test.results.successRate >= configuration.localMinSuccessRate)) {
 
@@ -4570,13 +4551,11 @@ async function evolveCompleteHandler(params){
 
         saveFileQueue.push({folder: localBestNetworkFolder, file: bestNetworkFile, obj: nn});
       }
-      else if (
-           (nn.test.results.successRate < 100) && (nn.test.results.successRate >= configuration.hostMinSuccessRate)
+      // HOST SUCCESS
+      else if ((nn.test.results.successRate < 100) && (nn.test.results.successRate >= configuration.hostMinSuccessRate)
         || (configuration.testMode && nn.test.results.successRate < 100) && (nn.test.results.successRate >= 0.5*configuration.hostMinSuccessRate)
         || ((nn.evolve.options.cost === "MSE") && (nn.test.results.successRate >= configuration.hostMinSuccessRateMSE))
-        || (configuration.testMode && (nn.evolve.options.cost === "MSE") && (nn.test.results.successRate >= 0.5*configuration.hostMinSuccessRateMSE))
-        )
-      {
+        || (configuration.testMode && (nn.evolve.options.cost === "MSE") && (nn.test.results.successRate >= 0.5*configuration.hostMinSuccessRateMSE))){
 
         hostBestNetworkFile = nn.networkId + ".json";
 
@@ -4612,6 +4591,7 @@ async function evolveCompleteHandler(params){
         saveFileQueue.push({folder: hostBestNetworkFolder, file: hostBestNetworkFile, obj: nn});
       }
     }
+    // FAILED
     else {
       console.log(chalkInfo(MODULE_ID_PREFIX + " | XXX | NOT SAVING NN GLOBAL or LOCAL DROPBOX ... LESS THAN GLOBAL and LOCAL MIN SUCCESS *OR* NOT BETTER THAN SEED"
         + " | " + nn.networkId
@@ -4619,6 +4599,11 @@ async function evolveCompleteHandler(params){
         + " | GLOBAL SUCCESS: " + configuration.globalMinSuccessRate.toFixed(2) + "%"
         + " | LOCAL SUCCESS: " + configuration.localMinSuccessRate.toFixed(2) + "%"
       ));
+
+      if (configuration.removeSeedFromViableNetworkOnFail && nn.seedNetworkId) {
+        viableNetworkIdSet.delete(nn.seedNetworkId)
+        console.log(chalkLog(MODULE_ID_PREFIX + " | XXX REMOVED SEED NN FROM VIABLE NN SET [" + viableNetworkIdSet.size + "] | " + nn.seedNetworkId));
+      }
 
       resultsHashmap[nn.networkId].status = "- fail -";
 
@@ -4635,6 +4620,7 @@ async function evolveCompleteHandler(params){
         ));
       }
 
+      // ZERO FAIL SET
       if (nn.test.results.successRate <= 1.0){
 
         const key = nn.evolve.options.activation + ":" + nn.evolve.options.cost + ":" + nn.evolve.options.selection;
@@ -5023,7 +5009,6 @@ async function childPingAll(p){
 
   await childSendAll({command: command});
   return;
-
 }
 
 function toggleVerbose(){
