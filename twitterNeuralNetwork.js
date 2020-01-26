@@ -212,7 +212,6 @@ childConfiguration.userProfileOnlyFlag = configuration.userProfileOnlyFlag;
 childConfiguration.testMode = configuration.testMode;
 childConfiguration.updateUserDb = false;
 
-
 //=========================================================================
 // SLACK
 //=========================================================================
@@ -227,26 +226,10 @@ let slackText = "";
 const channelsHashMap = new HashMap();
 
 const slackOAuthAccessToken = "xoxp-3708084981-3708084993-206468961315-ec62db5792cd55071a51c544acf0da55";
-// const slackConversationId = "D65CSAELX"; // wordbot
 const slackRtmToken = "xoxb-209434353623-bNIoT4Dxu1vv8JZNgu7CDliy";
 
 let slackRtmClient;
 let slackWebClient;
-
-// async function slackSendRtmMessage(msg){
-//   try{
-//     console.log(chalkBlueBold("TNN | SLACK RTM | SEND: " + msg));
-
-//     const sendResponse = await slackRtmClient.sendMessage(msg, slackConversationId);
-
-//     console.log(chalkLog("TNN | SLACK RTM | >T\n" + jsonPrint(sendResponse)));
-//     return sendResponse;
-//   }
-//   catch(err){
-//     console.log(chalkAlert(MODULE_ID_PREFIX + " | *** slackSendRtmMessage ERROR: " + err));
-//     throw err;
-//   }
-// }
 
 async function slackSendWebMessage(msgObj){
   try{
