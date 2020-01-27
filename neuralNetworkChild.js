@@ -1,4 +1,6 @@
 const ONE_SECOND = 1000;
+const ONE_MINUTE = 60*ONE_SECOND;
+const compactDateTimeFormat = "YYYYMMDD_HHmmss";
 
 let childNetworkObj; // this is the common, default nn object
 let seedNetworkObj; // this is the common, default nn object
@@ -682,6 +684,51 @@ function updateTrainingSet(){
   });
 }
 
+let existsInterval;
+
+function waitFileExists(params){
+
+  return new Promise(function(resolve, reject){
+
+    clearInterval(existsInterval);
+
+    const interval = params.interval || 10*ONE_SECOND;
+    const maxWaitTime = params.maxWaitTime || 5*ONE_MINUTE;
+
+    const endWaitTimeMoment = moment().add(maxWaitTime, "ms");
+
+    console.log(chalkLog(MODULE_ID_PREFIX
+      + " | WAIT FILE EXISTS"
+      + " | MAX WAIT TIME: " + msToTime(maxWaitTime)
+      + " | END WAIT TIME: " + endWaitTimeMoment.format(compactDateTimeFormat)
+      + " | PATH: " + params.path
+    ));
+
+    let exists = fs.existsSync(params.path);
+
+    if (exists) {
+      return resolve();
+    }
+
+    existsInterval = setInterval(function(){
+
+      exists = fs.existsSync(params.path);
+
+      if (exists) {
+        clearInterval(existsInterval);
+        console.log(chalkLog(MODULE_ID_PREFIX + " | FILE EXISTS: " + params.path));
+        return resolve();
+      }
+      else if (moment().isAfter(endWaitTimeMoment)){
+        clearInterval(existsInterval);
+        return reject(new Error("WAIT FILE EXISTS EXPIRED: " + msToTime(maxWaitTime)));
+      }
+
+    }, interval);
+
+  });
+}
+
 let sizeInterval;
 
 function fileSize(params){
@@ -697,7 +744,6 @@ function fileSize(params){
     let stats;
     let size = 0;
     let prevSize = 0;
-
 
     let exists = fs.existsSync(params.path);
 
@@ -763,7 +809,6 @@ function fileSize(params){
       catch(err){
         return reject(err);
       }
-
     }
     else {
       console.log(chalkAlert(MODULE_ID_PREFIX + " | ??? FILE SIZE | NON-EXISTENT FILE | " + getTimeStamp()
@@ -798,6 +843,7 @@ async function loadUsersArchive(params){
       + "\n FILE:   " + file
     ));
 
+    await waitFileExists(params);
     await fileSize(params);
     await unzipUsersToArray(params);
     await updateTrainingSet();
