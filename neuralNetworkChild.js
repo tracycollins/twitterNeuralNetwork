@@ -28,6 +28,7 @@ const DEFAULT_NETWORK_TECHNOLOGY = "carrot";
 const DEFAULT_BINARY_MODE = true;
 const DEFAULT_TEST_RATIO = 0.20;
 const QUIT_WAIT_INTERVAL = ONE_SECOND;
+const DEFAULT_USER_ARCHIVE_FILE_EXITS_MAX_WAIT_TIME = 15*ONE_MINUTE;
 
 const TEST_MODE_LENGTH = 1000;
 
@@ -35,6 +36,7 @@ const wordAssoDb = require("@threeceelabs/mongoose-twitter");
 
 let configuration = {};
 
+configuration.userArchiveFileExistsMaxWaitTime = DEFAULT_USER_ARCHIVE_FILE_EXITS_MAX_WAIT_TIME;
 configuration.testSetRatio = DEFAULT_TEST_RATIO;
 configuration.binaryMode = DEFAULT_BINARY_MODE;
 configuration.neatapticHiddenLayerSize = 9;
@@ -693,13 +695,14 @@ function waitFileExists(params){
     clearInterval(existsInterval);
 
     const interval = params.interval || 10*ONE_SECOND;
-    const maxWaitTime = params.maxWaitTime || 5*ONE_MINUTE;
+    const maxWaitTime = params.maxWaitTime || configuration.userArchiveFileExistsMaxWaitTime;
 
     const endWaitTimeMoment = moment().add(maxWaitTime, "ms");
 
     console.log(chalkLog(MODULE_ID_PREFIX
       + " | WAIT FILE EXISTS"
       + " | MAX WAIT TIME: " + msToTime(maxWaitTime)
+      + " | NOW: " + getTimeStamp()
       + " | END WAIT TIME: " + endWaitTimeMoment.format(compactDateTimeFormat)
       + " | PATH: " + params.path
     ));
@@ -709,6 +712,14 @@ function waitFileExists(params){
     if (exists) {
       return resolve();
     }
+
+    console.log(chalkAlert(MODULE_ID_PREFIX
+      + " | !!! FILE DOES NOT EXIST"
+      + " | MAX WAIT TIME: " + msToTime(maxWaitTime)
+      + " | NOW: " + getTimeStamp()
+      + " | END WAIT TIME: " + endWaitTimeMoment.format(compactDateTimeFormat)
+      + " | PATH: " + params.path
+    ));
 
     existsInterval = setInterval(function(){
 
@@ -720,6 +731,7 @@ function waitFileExists(params){
         return resolve();
       }
       else if (moment().isAfter(endWaitTimeMoment)){
+        console.log(chalkError(MODULE_ID_PREFIX + " | *** WAIT FILE EXISTS EXPIRED: " + params.path));
         clearInterval(existsInterval);
         return reject(new Error("WAIT FILE EXISTS EXPIRED: " + msToTime(maxWaitTime)));
       }
@@ -1718,7 +1730,7 @@ const fsmStates = {
 
       statsObj.fsmStatus = "ERROR";
 
-      await processSend({op: "STATS", childId: configuration.childId, fsmStatus: statsObj.fsmStatus});
+      await processSend({op: "ERROR", childId: configuration.childId, err: statsObj.error, fsmStatus: statsObj.fsmStatus});
 
       if (configuration.quitOnError) {
         console.log(chalkError(MODULE_ID_PREFIX + " | *** ERROR | QUITTING ..."));
@@ -1746,6 +1758,7 @@ const fsmStates = {
         }
         catch(err){
           console.log(MODULE_ID_PREFIX + " | *** INIT ERROR: " + err);
+          statsObj.error = err;
           fsm.fsm_error();
         }
       }
@@ -1799,6 +1812,7 @@ const fsmStates = {
         }
         catch(err){
           console.log(chalkError(MODULE_ID_PREFIX + " | *** CONFIG_EVOLVE ERROR: " + err));
+          statsObj.error = err;
           fsm.fsm_error();
         }
       }
@@ -2175,6 +2189,9 @@ process.on("message", async function(m) {
         if (m.testSetRatio !== undefined) { configuration.testSetRatio = m.testSetRatio; }
         if (m.binaryMode !== undefined) { 
           configuration.binaryMode = m.binaryMode;
+        }
+        if (m.userArchiveFileExistsMaxWaitTime !== undefined) { 
+          configuration.userArchiveFileExistsMaxWaitTime = m.userArchiveFileExistsMaxWaitTime;
         }
 
         configuration.childId = m.childId;

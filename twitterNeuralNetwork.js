@@ -4318,6 +4318,11 @@ async function evolveErrorHandler(params){
 
     await printResultsHashmap();
 
+    let slackText = "\n*EVOLVE ERROR*";
+    slackText = "\nERROR: " + m.err;
+
+    await slackSendWebMessage({ channel: slackChannelPassGlobal, text: slackText});
+
     return;
 
   }
@@ -4697,6 +4702,26 @@ async function childMessageHandler(params){
 
     switch(m.op) {
 
+      case "ERROR":
+        try{
+          console.log(chalkError(MODULE_ID_PREFIX 
+            + " | " + childId
+            + " | *** ERROR ***"
+          ));
+          console.error(m.err);
+          await evolveErrorHandler({m: m, childId: childId});
+          if (!configuration.quitOnComplete) {
+            await startNetworkCreate({childId: childId, binaryMode: binaryMode, compareTech: compareTech});
+          }
+        }
+        catch(e){
+          console.log(chalkError(MODULE_ID_PREFIX 
+            + " | " + childId
+            + " | *** EVOLVE_ERROR ERROR: " + e
+          ));
+        }
+      return;
+
       case "STATS":
         childHashMap[childId].status = m.fsmStatus;
         objectPath.set(statsObj, ["children", childId, "status"], childHashMap[childId].status);
@@ -4740,7 +4765,6 @@ async function childMessageHandler(params){
         statsObj.networkResults[m.stats.networkId].timeToComplete = moment().add(m.stats.timeToComplete).format(compactDateTimeFormat);
         statsObj.networkResults[m.stats.networkId].error = m.stats.error;
         statsObj.networkResults[m.stats.networkId].fitness = m.stats.fitness;
-
       return;
 
       case "EVOLVE_COMPLETE":
@@ -4780,7 +4804,6 @@ async function childMessageHandler(params){
 
       case "EXIT":
       case "QUIT":
-      case "ERROR":
       case "INIT":
       case "INIT_COMPLETE":
       case "PONG":
