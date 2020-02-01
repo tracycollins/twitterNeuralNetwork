@@ -1,5 +1,6 @@
 const ONE_SECOND = 1000;
 const ONE_MINUTE = 60*ONE_SECOND;
+const ONE_HOUR = 60*ONE_MINUTE;
 const compactDateTimeFormat = "YYYYMMDD_HHmmss";
 
 let childNetworkObj; // this is the common, default nn object
@@ -28,7 +29,7 @@ const DEFAULT_NETWORK_TECHNOLOGY = "carrot";
 const DEFAULT_BINARY_MODE = true;
 const DEFAULT_TEST_RATIO = 0.20;
 const QUIT_WAIT_INTERVAL = ONE_SECOND;
-const DEFAULT_USER_ARCHIVE_FILE_EXITS_MAX_WAIT_TIME = 15*ONE_MINUTE;
+const DEFAULT_USER_ARCHIVE_FILE_EXITS_MAX_WAIT_TIME = 2*ONE_HOUR;
 
 const TEST_MODE_LENGTH = 1000;
 
@@ -694,27 +695,28 @@ function waitFileExists(params){
 
     clearInterval(existsInterval);
 
-    const interval = params.interval || 10*ONE_SECOND;
+    const interval = params.interval || 5*ONE_MINUTE;
     const maxWaitTime = params.maxWaitTime || configuration.userArchiveFileExistsMaxWaitTime;
 
     const endWaitTimeMoment = moment().add(maxWaitTime, "ms");
 
-    console.log(chalkLog(MODULE_ID_PREFIX
-      + " | WAIT FILE EXISTS"
-      + " | MAX WAIT TIME: " + msToTime(maxWaitTime)
-      + " | NOW: " + getTimeStamp()
-      + " | END WAIT TIME: " + endWaitTimeMoment.format(compactDateTimeFormat)
-      + " | PATH: " + params.path
-    ));
-
     let exists = fs.existsSync(params.path);
 
     if (exists) {
+
+      console.log(chalkLog(MODULE_ID_PREFIX
+        + " | FILE EXISTS"
+        // + " | MAX WAIT TIME: " + msToTime(maxWaitTime)
+        + " | NOW: " + getTimeStamp()
+        // + " | END WAIT TIME: " + endWaitTimeMoment.format(compactDateTimeFormat)
+        + " | PATH: " + params.path
+      ));
+
       return resolve();
     }
 
     console.log(chalkAlert(MODULE_ID_PREFIX
-      + " | !!! FILE DOES NOT EXIST"
+      + " | !!! FILE DOES NOT EXIST | START WAIT"
       + " | MAX WAIT TIME: " + msToTime(maxWaitTime)
       + " | NOW: " + getTimeStamp()
       + " | END WAIT TIME: " + endWaitTimeMoment.format(compactDateTimeFormat)
@@ -727,13 +729,34 @@ function waitFileExists(params){
 
       if (exists) {
         clearInterval(existsInterval);
-        console.log(chalkLog(MODULE_ID_PREFIX + " | FILE EXISTS: " + params.path));
+        console.log(chalkGreenBold(MODULE_ID_PREFIX
+          + " | FILE EXISTS"
+          + " | MAX WAIT TIME: " + msToTime(maxWaitTime)
+          + " | NOW: " + getTimeStamp()
+          + " | END WAIT TIME: " + endWaitTimeMoment.format(compactDateTimeFormat)
+          + " | PATH: " + params.path
+        ));
         return resolve();
       }
       else if (moment().isAfter(endWaitTimeMoment)){
-        console.log(chalkError(MODULE_ID_PREFIX + " | *** WAIT FILE EXISTS EXPIRED: " + params.path));
         clearInterval(existsInterval);
+        console.log(chalkError(MODULE_ID_PREFIX
+          + " | *** WAIT FILE EXISTS EXPIRED"
+          + " | MAX WAIT TIME: " + msToTime(maxWaitTime)
+          + " | NOW: " + getTimeStamp()
+          + " | END WAIT TIME: " + endWaitTimeMoment.format(compactDateTimeFormat)
+          + " | PATH: " + params.path
+        ));
         return reject(new Error("WAIT FILE EXISTS EXPIRED: " + msToTime(maxWaitTime)));
+      }
+      else{
+        console.log(chalkAlert(MODULE_ID_PREFIX
+          + " | ... WAIT FILE EXISTS"
+          + " | MAX WAIT TIME: " + msToTime(maxWaitTime)
+          + " | NOW: " + getTimeStamp()
+          + " | END WAIT TIME: " + endWaitTimeMoment.format(compactDateTimeFormat)
+          + " | PATH: " + params.path
+        ));
       }
 
     }, interval);
