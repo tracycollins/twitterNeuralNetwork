@@ -158,7 +158,7 @@ const randomFloat = require("random-float");
 const randomInt = require("random-int");
 const fs = require("fs");
 const { promisify } = require("util");
-const readdirAsync = promisify(fs.readdir);
+// const readdirAsync = promisify(fs.readdir);
 const renameFileAsync = promisify(fs.rename);
 const unlinkFileAsync = promisify(fs.unlink);
 const debug = require("debug")("TNN");
@@ -1504,62 +1504,62 @@ async function updateDbNetwork(params) {
   });
 }
 
-function listFolders(params){
+// function listFolders(params){
 
-  return new Promise(function(resolve, reject){
+//   return new Promise(function(resolve, reject){
 
-    console.log(chalkNetwork(MODULE_ID_PREFIX + " | ... GETTING FOLDERS ENTRIES"
-      + " | " + params.folders.length + " FOLDERS"
-      + "\n" + jsonPrint(params.folders)
-    ));
+//     console.log(chalkNetwork(MODULE_ID_PREFIX + " | ... GETTING FOLDERS ENTRIES"
+//       + " | " + params.folders.length + " FOLDERS"
+//       + "\n" + jsonPrint(params.folders)
+//     ));
 
-    let totalEntries = [];
+//     let totalEntries = [];
 
-    async.forEach(params.folders, async function(folder){
+//     async.forEach(params.folders, async function(folder){
 
-      console.log(chalkNetwork(MODULE_ID_PREFIX + " | ... GETTING FOLDERS ENTRIES"
-        + " | FOLDER: " + folder
-      ));
+//       console.log(chalkNetwork(MODULE_ID_PREFIX + " | ... GETTING FOLDERS ENTRIES"
+//         + " | FOLDER: " + folder
+//       ));
 
-      try {
+//       try {
 
-        const entries = await readdirAsync(folder);
+//         const entries = await readdirAsync(folder);
 
-        const entryObjs = entries.map(function(entry){
+//         const entryObjs = entries.map(function(entry){
 
-          const entryObj = {};
+//           const entryObj = {};
 
-          entryObj.folder = folder;
-          entryObj.file = entry;
-          entryObj.path = path.join(folder, entry);
+//           entryObj.folder = folder;
+//           entryObj.file = entry;
+//           entryObj.path = path.join(folder, entry);
 
-          debug("entryObj\n" + jsonPrint(entryObj));
+//           debug("entryObj\n" + jsonPrint(entryObj));
 
-          return entryObj;
+//           return entryObj;
 
-        });
+//         });
 
-        console.log(chalkLog(MODULE_ID_PREFIX + " | READ DIR " + folder + " | ENTRIES: " + entryObjs.length));
-        totalEntries = _.concat(totalEntries, entryObjs);
-        return;
-      }
-      catch(err){
-        return err;
-      }
+//         console.log(chalkLog(MODULE_ID_PREFIX + " | READ DIR " + folder + " | ENTRIES: " + entryObjs.length));
+//         totalEntries = _.concat(totalEntries, entryObjs);
+//         return;
+//       }
+//       catch(err){
+//         return err;
+//       }
 
-    }, function(err){
+//     }, function(err){
 
-      if (err) { 
-        console.log(chalkError(MODULE_ID_PREFIX + " | *** ERROR listFolders: " + err));
-        return reject(err);
-      }
+//       if (err) { 
+//         console.log(chalkError(MODULE_ID_PREFIX + " | *** ERROR listFolders: " + err));
+//         return reject(err);
+//       }
 
-      resolve(totalEntries);
-    });
+//       resolve(totalEntries);
+//     });
 
 
-  });
-}
+//   });
+// }
 
 function networkPass(params) {
   const pass = 
@@ -1582,7 +1582,7 @@ async function loadBestNetworkFolders (p){
     + "\n" + jsonPrint(params.folders)
   ));
 
-  const files = await listFolders({folders: params.folders});
+  const files = await tcUtils.listFolders({folders: params.folders});
 
   console.log(chalkNetwork(MODULE_ID_PREFIX + " | ... FOUND " + files.length + " FILES IN NN FOLDERS"));
 
@@ -1644,7 +1644,7 @@ async function loadInputsFolders (p){
     + "\n" + jsonPrint(params.folders)
   ));
 
-  const files = await listFolders({folders: params.folders});
+  const files = await tcUtils.listFolders({folders: params.folders});
 
   for (const fileObj of files) {
 
