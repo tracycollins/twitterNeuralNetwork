@@ -33,7 +33,7 @@ const DEFAULT_USER_ARCHIVE_FILE_EXITS_MAX_WAIT_TIME = 2*ONE_HOUR;
 
 const TEST_MODE_LENGTH = 1000;
 
-const wordAssoDb = require("@threeceelabs/mongoose-twitter");
+global.wordAssoDb = require("@threeceelabs/mongoose-twitter");
 
 let configuration = {};
 
@@ -1496,7 +1496,7 @@ async function evolve(params){
     ));
 
 
-    const inputsObj = await wordAssoDb.NetworkInputs.findOne({inputsId: childNetworkObj.inputsId}).lean();
+    const inputsObj = await global.wordAssoDb.NetworkInputs.findOne({inputsId: childNetworkObj.inputsId}).lean();
 
     const binaryMode = (params.binaryMode !== undefined) ? params.binaryMode : configuration.binaryMode;
     const userProfileOnlyFlag = inputsObj.meta.userProfileOnlyFlag || false;
@@ -1874,7 +1874,7 @@ const fsmStates = {
 
           console.log(chalkLog(MODULE_ID_PREFIX + " | ... SAVING NN TO DB: " + childNetworkObj.networkId));
 
-          const nnDoc = new wordAssoDb.NeuralNetwork(childNetworkObj);
+          const nnDoc = new global.wordAssoDb.NeuralNetwork(childNetworkObj);
 
           await nnDoc.save();
 
@@ -2097,7 +2097,7 @@ async function configNetworkEvolve(params){
 
   if (newNetObj.evolve.options.seedNetworkId) {
 
-    const seedNetworkDoc = await wordAssoDb.NeuralNetwork.findOne({networkId: newNetObj.seedNetworkId});
+    const seedNetworkDoc = await global.wordAssoDb.NeuralNetwork.findOne({networkId: newNetObj.seedNetworkId});
 
     seedNetworkObj = seedNetworkDoc.toObject();
 
@@ -2296,7 +2296,7 @@ async function connectDb(){
 
     console.log(chalkBlueBold(MODULE_ID_PREFIX + " | CONNECT MONGO DB ..."));
 
-    const db = await wordAssoDb.connect(MODULE_ID_PREFIX + "_" + process.pid);
+    const db = await global.wordAssoDb.connect(MODULE_ID_PREFIX + "_" + process.pid);
 
     db.on("error", async function(err){
       statsObj.status = "MONGO ERROR";
