@@ -173,6 +173,7 @@ const childHashMap = {};
 
 const chalk = require("chalk");
 const chalkNetwork = chalk.blue;
+const chalkInputs = chalk.black;
 const chalkBlueBold = chalk.blue.bold;
 const chalkTwitter = chalk.blue;
 const chalkBlue = chalk.blue;
@@ -772,16 +773,18 @@ function networkDefaults(networkObj){
 
 function printInputsObj(title, inputsObj, format) {
 
-  const chalkFormat = (format !== undefined) ? format : chalkNetwork;
+  let chalkFormat = (format !== undefined) ? format : chalkInputs;
 
   const numNetworks = (inputsObj.networks !== undefined) ? inputsObj.networks.length : 0;
   const numFails = (inputsObj.failNetworks !== undefined) ? inputsObj.failNetworks.length : 0;
   const totalAttempts = numNetworks + numFails;
   const percentSuccess = (totalAttempts > 0) ? 100*(numNetworks/totalAttempts) : 0;
 
+  if (percentSuccess < 50 && totalAttempts > 0) { chalkFormat = chalkAlert; }
+
   console.log(chalkFormat(title
     + " | NETWORKS: " + numNetworks
-    + " | FAILS: " + numFails
+    + " | P/F/T: " + numNetworks + "/" + numFails + "/" + totalAttempts
     + " | SUCCESS: " + percentSuccess.toFixed(2) + "%"
     + " | INPUTS: " + inputsObj.meta.numInputs
     + " | " + inputsObj.inputsId
@@ -1108,9 +1111,11 @@ async function updateDbInputs(params){
         inputsObj.failNetworks = _.union(params.inputsObj.failNetworks, inputsObj.failNetworks);
       }
 
+      await updateInputsViabilitySet({inputsObj: inputsObj});
+
       const niDbUpdated = await inputsObj.save();
 
-      if (verbose) { printInputsObj(MODULE_ID_PREFIX + " | +++ INPUTS DB UPDATED", niDbUpdated); }
+      // if (verbose) { printInputsObj(MODULE_ID_PREFIX + " | +++ INPUTS DB UPDATED", niDbUpdated); }
 
       return niDbUpdated;
     }
@@ -1123,11 +1128,13 @@ async function updateDbInputs(params){
         params.inputsObj.failNetworks.push(params.failNetworkId);
       }
 
+      await updateInputsViabilitySet({inputsObj: params.inputsObj});
+
       const ni = new wordAssoDb.NetworkInputs(params.inputsObj);
 
       const niDbUpdated = await ni.save();
 
-      if (verbose) { printInputsObj(MODULE_ID_PREFIX + " | +++ INPUTS DB UPDATED", niDbUpdated); }
+      // if (verbose) { printInputsObj(MODULE_ID_PREFIX + " | +++ INPUTS DB UPDATED", niDbUpdated); }
 
       return niDbUpdated;
     }
@@ -1144,25 +1151,56 @@ async function updateDbInputs(params){
   }
 }
 
-function checkInputsViability(p){
+async function updateInputsViabilitySet(p){
 
   const params = p || {};
 
   const maxFailNetworks = params.maxFailNetworks || configuration.maxFailNetworks;
   // const minNetworksTotal = params.minNetworksTotal || configuration.minNetworksTotal;
 
-  const numPassNetworks = params.inputsObj.networks.length;
-  const numFailNetworks = params.inputsObj.failNetworks.length;
+  const numPassNetworks = (params.inputsObj.networks) ? params.inputsObj.networks.length : 0;
+  const numFailNetworks = (params.inputsObj.failNetworks) ? params.inputsObj.failNetworks.length : 0;
+  const totalNetworks = numPassNetworks + numFailNetworks;
+
+  const inputsSuccess = (totalNetworks) ? 100*(numPassNetworks/totalNetworks) : 0;
+
+  let inputsViable = false;
 
   if (numFailNetworks <= maxFailNetworks){
-    return true;
+    inputsViable = true;
   }
 
   if (numPassNetworks >= numFailNetworks){
-    return true;
+    inputsViable = true;
   }
 
-  return false;
+  if (inputsViable){
+
+    inputsViableSet.add(params.inputsObj.inputsId);
+
+    console.log(chalkGreen(MODULE_ID_PREFIX 
+      + " | +++ VIABLE INPUTS [" + inputsViableSet.size + "]"
+      + " | P/F/T: " + numPassNetworks + "/" + numFailNetworks + "/" + totalNetworks
+      + " | SUCCESS: " + inputsSuccess.toFixed(2) + "%"
+      + " | " + params.inputsObj.meta.numInputs
+      + " | " + params.inputsObj.inputsId
+    ));
+  }
+  else {
+
+    inputsViableSet.delete(params.inputsObj.inputsId);
+
+    console.log(chalkAlert(MODULE_ID_PREFIX 
+      + " | XXX NOT VIABLE INPUTS [" + inputsViableSet.size + "]"
+      + " | P/F/T: " + numPassNetworks + "/" + numFailNetworks + "/" + totalNetworks
+      + " | SUCCESS: " + inputsSuccess.toFixed(2) + "%"
+      + " | " + params.inputsObj.meta.numInputs
+      + " | " + params.inputsObj.meta.numInputs
+      + " | " + params.inputsObj.inputsId
+    ));
+  }
+
+  return inputsViable;
 }
 
 async function loadNetworkFile(params){
@@ -1176,7 +1214,7 @@ async function loadNetworkFile(params){
     filePath = params.folder + "/" + params.file;
   }
 
-  console.log(chalkInfo(MODULE_ID_PREFIX + " | <<< LOAD NN FILE"
+  console.log(chalkLog(MODULE_ID_PREFIX + " | <<< LOAD NN FILE"
     + " | " + filePath
   ));
 
@@ -1261,7 +1299,7 @@ async function loadNetworkFile(params){
     if(empty(inputsIdHashMap[networkObj.inputsId])) { inputsIdHashMap[networkObj.inputsId] = new Set(); }
     inputsIdHashMap[networkObj.inputsId].add(networkObj.networkId);
 
-    printNetworkObj(MODULE_ID_PREFIX + " | +++ VIABLE NN SET [" + viableNetworkIdSet.size + " IN SET]", networkObj);
+    printNetworkObj(MODULE_ID_PREFIX + " | +++ VIABLE NN [" + viableNetworkIdSet.size + "]", networkObj);
 
     if (!currentBestNetwork
       || (networkObj.overallMatchRate > currentBestNetwork.overallMatchRate)
@@ -1377,40 +1415,19 @@ async function loadInputsFile(params){
       }
     }
 
+    const inputsViable = await updateInputsViabilitySet({inputsObj: inputsObj});
+
     const dbInputsObj = await updateDbInputs({inputsObj: inputsObj});
 
     inputsSet.add(dbInputsObj.inputsId);
-
-    const inputsViable = checkInputsViability({inputsObj: dbInputsObj});
-
-    if (inputsViable){
-
-      inputsViableSet.add(dbInputsObj.inputsId);
-
-      console.log(chalkBlueBold(MODULE_ID_PREFIX 
-        + " | +++ VIABLE NETWORKS INPUTS [" + inputsViableSet.size + " IN SET]"
-        + " | P/F: " + dbInputsObj.networks.length + "/" + dbInputsObj.failNetworks.length
-        + " | " + dbInputsObj.meta.numInputs
-        + " INPUTS | " + dbInputsObj.inputsId
-      ));
-    }
-    else {
-      inputsViableSet.delete(dbInputsObj.inputsId);
-      console.log(chalkBlueBold(MODULE_ID_PREFIX 
-        + " | XXX NOT VIABLE NETWORKS INPUTS [" + inputsViableSet.size + " IN SET]"
-        + " | P/F: " + dbInputsObj.networks.length + "/" + dbInputsObj.failNetworks.length
-        + " | " + dbInputsObj.meta.numInputs
-        + " | " + dbInputsObj.meta.numInputs
-        + " INPUTS | " + dbInputsObj.inputsId
-      ));
-    }
 
     if(empty(inputsNetworksHashMap[dbInputsObj.inputsId])) {
       inputsNetworksHashMap[dbInputsObj.inputsId] = new Set();
     }
 
-    console.log(chalkInfo(MODULE_ID_PREFIX
-      + " | +++ INPUTS [" + inputsSet.size + " IN HM]"
+    console.log(chalkLog(MODULE_ID_PREFIX
+      + " | +++ INPUTS [" + inputsSet.size + "]"
+      + " |  INPUTS VIABLE: " + inputsViable
       + " | " + dbInputsObj.meta.numInputs + " INPUTS"
       + " | " + dbInputsObj.inputsId
     ));
@@ -1503,63 +1520,6 @@ async function updateDbNetwork(params) {
     });
   });
 }
-
-// function listFolders(params){
-
-//   return new Promise(function(resolve, reject){
-
-//     console.log(chalkNetwork(MODULE_ID_PREFIX + " | ... GETTING FOLDERS ENTRIES"
-//       + " | " + params.folders.length + " FOLDERS"
-//       + "\n" + jsonPrint(params.folders)
-//     ));
-
-//     let totalEntries = [];
-
-//     async.forEach(params.folders, async function(folder){
-
-//       console.log(chalkNetwork(MODULE_ID_PREFIX + " | ... GETTING FOLDERS ENTRIES"
-//         + " | FOLDER: " + folder
-//       ));
-
-//       try {
-
-//         const entries = await readdirAsync(folder);
-
-//         const entryObjs = entries.map(function(entry){
-
-//           const entryObj = {};
-
-//           entryObj.folder = folder;
-//           entryObj.file = entry;
-//           entryObj.path = path.join(folder, entry);
-
-//           debug("entryObj\n" + jsonPrint(entryObj));
-
-//           return entryObj;
-
-//         });
-
-//         console.log(chalkLog(MODULE_ID_PREFIX + " | READ DIR " + folder + " | ENTRIES: " + entryObjs.length));
-//         totalEntries = _.concat(totalEntries, entryObjs);
-//         return;
-//       }
-//       catch(err){
-//         return err;
-//       }
-
-//     }, function(err){
-
-//       if (err) { 
-//         console.log(chalkError(MODULE_ID_PREFIX + " | *** ERROR listFolders: " + err));
-//         return reject(err);
-//       }
-
-//       resolve(totalEntries);
-//     });
-
-
-//   });
-// }
 
 function networkPass(params) {
   const pass = 
@@ -1676,7 +1636,7 @@ async function loadInputsFolders (p){
 
       if (inputsObj.inputsId || (inputsObj.inputsId !== undefined)) {
         inputsSet.add(inputsObj.inputsId);
-        printInputsObj(MODULE_ID_PREFIX + " | +++ INPUTS DB UPDATED", inputsObj);
+        // printInputsObj(MODULE_ID_PREFIX + " | +++ INPUTS DB UPDATED", inputsObj);
       }
       else{
         console.log(chalkError(MODULE_ID_PREFIX + " | *** INPUTS OBJ ERROR | UNDEFINED INPUTS ID\n" + jsonPrint(inputsObj)));
