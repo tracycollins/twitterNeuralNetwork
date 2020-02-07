@@ -219,6 +219,7 @@ childConfiguration.updateUserDb = false;
 //=========================================================================
 
 const slackChannelFail = "nn-fail";
+const slackChannelError = "nn-error";
 const slackChannelPassHost = "nn-pass-host";
 const slackChannelPassLocal = "nn-pass-local";
 const slackChannelPassGlobal= "nn-pass-global";
@@ -4282,7 +4283,7 @@ async function evolveErrorHandler(params){
     let slackText = "\n*EVOLVE ERROR*";
     slackText = slackText +  "\n" + jsonPrint(m.err);
 
-    await slackSendWebMessage({ channel: slackChannelPassGlobal, text: slackText});
+    await slackSendWebMessage({ channel: slackChannelError, text: slackText});
 
     return;
 
