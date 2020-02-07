@@ -4279,7 +4279,7 @@ async function evolveErrorHandler(params){
     await printResultsHashmap();
 
     let slackText = "\n*EVOLVE ERROR*";
-    slackText = "\nERROR: " + m.err;
+    slackText = slackText +  "\n" + jsonPrint(m.err);
 
     await slackSendWebMessage({ channel: slackChannelPassGlobal, text: slackText});
 
