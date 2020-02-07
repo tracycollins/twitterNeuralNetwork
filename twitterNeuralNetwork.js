@@ -4236,6 +4236,7 @@ async function evolveErrorHandler(params){
       + "\nTNN | ========================================================"
       + "\nTNN | CHILD:      " + m.childId
       + "\nTNN | NID:        " + m.networkId
+      + "\nTNN | ERROR\n" + jsonPrint(m.err)
       + "\nTNN | ========================================================\n"
     ));
 
