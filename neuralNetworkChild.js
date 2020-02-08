@@ -9,6 +9,7 @@ let seedNetworkObj; // this is the common, default nn object
 const os = require("os");
 const _ = require("lodash");
 const omit = require("object.omit");
+const atob = require("atob");
 
 let hostname = os.hostname();
 if (hostname.startsWith("mbp3")){
@@ -1967,11 +1968,6 @@ const fsmStates = {
             binaryMode: configuration.binaryMode, 
             verbose: configuration.verbose
           });
-
-          if (childNetworkObj.networkTechnology === "brain"){
-            childNetworkObj.networkBuffer = childNetworkObj.networkRaw;
-            delete childNetworkObj.networkJson;
-          }
 
           delete childNetworkObj.inputsObj;
           delete childNetworkObj.network;
