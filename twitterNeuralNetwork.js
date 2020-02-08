@@ -4335,8 +4335,8 @@ async function evolveCompleteHandler(params){
       + "\nTNN | HIDDEN:     " + nn.networkJson.hiddenLayerSize
       + "\nTNN | OUTPUTS:    " + nn.networkJson.output
       + "\nTNN | DROPOUT:    " + nn.networkJson.dropout
-      + "\nTNN | NODES:      " + nn.networkJson.nodes.length
-      + "\nTNN | CONNS:      " + nn.networkJson.connections.length
+      // + "\nTNN | NODES:      " + nn.networkJson.nodes.length
+      // + "\nTNN | CONNS:      " + nn.networkJson.connections.length
       + "\nTNN | ========================================================\n"
     ));
 
@@ -4836,7 +4836,9 @@ async function childCreate(p){
     childHashMap[childId].currentNetworkId = false;
     childHashMap[childId].messageQueue = [];
 
-    child = cp.fork(appPath, args, options);
+    // child = cp.fork(appPath, args, options);
+    // child = cp.fork(`${__dirname}/neuralNetworkChild.js`, args, options);
+    child = cp.fork(`${__dirname}/neuralNetworkChild.js`);
 
     childHashMap[childId].pid = child.pid;
 

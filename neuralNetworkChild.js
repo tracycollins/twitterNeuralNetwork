@@ -987,8 +987,19 @@ async function testNetworkData(params){
       binaryMode: binaryMode, 
       verbose: verbose
     };
+
+    let testOutput;
     
-    const testOutput = await nnTools.activateSingleNetwork(activateParams);
+    try{
+      testOutput = await nnTools.activateSingleNetwork(activateParams);
+    }
+    catch(err){
+      console.log(chalkError(MODULE_ID_PREFIX
+        + " | TEST NN ERROR "
+        + "\n" + jsonPrint(err)
+      ));
+      throw err;
+    }
 
     numTested += 1;
 
@@ -1465,7 +1476,7 @@ function createNetwork(){
 
             networkRaw = new brain.NeuralNetwork({
               inputSize: numInputs,
-              inputRange: numInputs,
+              // inputRange: numInputs,
               hiddenLayers: [childNetworkObj.hiddenLayerSize],
               outputSize: trainingSetObj.meta.numOutputs
             });
@@ -1478,7 +1489,7 @@ function createNetwork(){
             else if (childNetworkObj.networkTechnology === "brain"){
               networkRaw = new brain.NeuralNetwork({
                 inputSize: numInputs,
-                inputRange: numInputs,
+                // inputRange: numInputs,
                 outputSize: trainingSetObj.meta.numOutputs
               });
             }
@@ -1545,7 +1556,7 @@ function createNetwork(){
         if (childNetworkObj.networkTechnology === "brain"){
           networkRaw = new brain.NeuralNetwork({
             inputSize: numInputs,
-            inputRange: numInputs,
+            // inputRange: numInputs,
             outputSize: 3
           });
           resolve(networkRaw);
@@ -1957,6 +1968,11 @@ const fsmStates = {
             verbose: configuration.verbose
           });
 
+          if (childNetworkObj.networkTechnology === "brain"){
+            childNetworkObj.networkBuffer = childNetworkObj.networkRaw;
+            delete childNetworkObj.networkJson;
+          }
+
           delete childNetworkObj.inputsObj;
           delete childNetworkObj.network;
           delete childNetworkObj.networkRaw;
@@ -1967,7 +1983,14 @@ const fsmStates = {
 
           const nnDoc = new global.wordAssoDb.NeuralNetwork(childNetworkObj);
 
-          await nnDoc.save();
+          try{
+            // delete nnDoc.networkJson.layers;
+            await nnDoc.save();
+          }
+          catch(e){
+            console.trace(MODULE_ID_PREFIX + " | *** NN DB SAVE ERROR: ", e);
+            throw e;
+          }
 
           console.log(chalkGreen(MODULE_ID_PREFIX + " | +++ ADDED NN TO DB: " + childNetworkObj.networkId));
 
