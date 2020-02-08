@@ -40,8 +40,56 @@ let configuration = {};
 configuration.userArchiveFileExistsMaxWaitTime = DEFAULT_USER_ARCHIVE_FILE_EXITS_MAX_WAIT_TIME;
 configuration.testSetRatio = DEFAULT_TEST_RATIO;
 configuration.binaryMode = DEFAULT_BINARY_MODE;
+configuration.brainHiddenLayerSize = 9;
 configuration.neatapticHiddenLayerSize = 9;
 configuration.networkTechnology = DEFAULT_NETWORK_TECHNOLOGY;
+
+const brainTrainOptionsPickArray = [
+  // net.train(data, {
+  //   // Defaults values --> expected validation
+  //   iterations: 20000, // the maximum times to iterate the training data --> number greater than 0
+  //   errorThresh: 0.005, // the acceptable error percentage from training data --> number between 0 and 1
+  //   log: false, // true to use console.log, when a function is supplied it is used --> Either true or a function
+  //   logPeriod: 10, // iterations between logging out --> number greater than 0
+  //   learningRate: 0.3, // scales with delta to effect training rate --> number between 0 and 1
+  //   momentum: 0.1, // scales with next layer's change value --> number between 0 and 1
+  //   callback: null, // a periodic call back that can be triggered while training --> null or function
+  //   callbackPeriod: 10, // the number of iterations through the training data between callback calls --> number greater than 0
+  //   timeout: Infinity, // the max number of milliseconds to train for --> number greater than 0
+  // })
+
+  "iterations",
+  "errorThresh",
+  "log",
+  "logPeriod",
+  "learningRate",
+  "momentum",
+  "callback",
+  "callbackPeriod",
+  "timeout"
+];
+
+const neatapticEvolveOptionsPickArray = [
+  // "clear",
+  "cost",
+  "crossover",
+  "elitism",
+  "equal",
+  "error",
+  "growth",
+  "iterations",
+  // "log",
+  "mutation",
+  "mutationAmount",
+  "mutationRate",
+  "mutationSelection",
+  "network",
+  "popsize",
+  "provenance",
+  "schedule",
+  "selection",
+  "threads"
+];
 
 const carrotEvolveOptionsPickArray = [
   // "activation",
@@ -67,28 +115,6 @@ const carrotEvolveOptionsPickArray = [
   "network",
   "popsize",
   "population_size",
-  "provenance",
-  "schedule",
-  "selection",
-  "threads"
-];
-
-const neatapticEvolveOptionsPickArray = [
-  // "clear",
-  "cost",
-  "crossover",
-  "elitism",
-  "equal",
-  "error",
-  "growth",
-  "iterations",
-  // "log",
-  "mutation",
-  "mutationAmount",
-  "mutationRate",
-  "mutationSelection",
-  "network",
-  "popsize",
   "provenance",
   "schedule",
   "selection",
@@ -128,6 +154,7 @@ console.log("=========================================");
 // MODULE REQUIRES
 //=========================================================================
 const neataptic = require("neataptic");
+const brain = require("brain.js");
 const carrot = require("@liquid-carrot/carrot");
 
 const moment = require("moment");
@@ -1142,6 +1169,10 @@ function prepNetworkEvolve() {
     finalOptions = pick(options, carrotEvolveOptionsPickArray);
   }
 
+  if (childNetworkObj.networkTechnology === "brain"){
+    finalOptions = pick(options, brainTrainOptionsPickArray);
+  }
+
   if (childNetworkObj.networkTechnology === "neataptic"){
     finalOptions = pick(options, neatapticEvolveOptionsPickArray);
   }
@@ -1372,8 +1403,9 @@ function createNetwork(){
               networkRaw = carrot.Network.fromJSON(childNetworkObj.network);
               console.log(chalkLog(MODULE_ID_PREFIX + " | CHILD CARROT RAW NETWORK: " + childNetworkObj.seedNetworkId));
             }
-            else if (!empty(childNetworkObj.networkJson)){
-              networkRaw = neataptic.Network.fromJSON(childNetworkObj.networkJson);
+            if (childNetworkObj.networkTechnology === "brain" && !empty(childNetworkObj.network)){
+              networkRaw = new brain.NeuralNetwork();
+              networkRaw.fromJSON(childNetworkObj.networkJson);
               console.log(chalkLog(MODULE_ID_PREFIX + " | CHILD NEATAPTIC RAW NETWORK: " + childNetworkObj.seedNetworkId));
             }
             else if (!empty(childNetworkObj.network)){
@@ -1400,7 +1432,6 @@ function createNetwork(){
         ));
 
         resolve(networkRaw);
-
       break;
 
       case "perceptron":
@@ -1423,6 +1454,48 @@ function createNetwork(){
             + " | OUT: " + trainingSetObj.meta.numOutputs
             + " | HIDDEN LAYER NODES: " + childNetworkObj.hiddenLayerSize
           ));
+          resolve(networkRaw);
+        }
+        else if (childNetworkObj.networkTechnology === "brain"){
+
+          if (childNetworkObj.hiddenLayerSize && (childNetworkObj.hiddenLayerSize > 0)){
+
+            childNetworkObj.hiddenLayerSize = Math.min(configuration.brainHiddenLayerSize, childNetworkObj.hiddenLayerSize);
+            childNetworkObj.hiddenLayerSize = Math.max(childNetworkObj.hiddenLayerSize, trainingSetObj.meta.numOutputs);
+
+            networkRaw = new brain.NeuralNetwork({
+              inputSize: numInputs,
+              inputRange: numInputs,
+              hiddenLayers: [childNetworkObj.hiddenLayerSize],
+              outputSize: trainingSetObj.meta.numOutputs
+            });
+          }
+          else{
+            childNetworkObj.architecture = "random";
+            if (childNetworkObj.networkTechnology === "neataptic"){
+              networkRaw = new neataptic.Network(numInputs, 3);
+            }
+            else if (childNetworkObj.networkTechnology === "brain"){
+              networkRaw = new brain.NeuralNetwork({
+                inputSize: numInputs,
+                inputRange: numInputs,
+                outputSize: trainingSetObj.meta.numOutputs
+              });
+            }
+            else{
+              networkRaw = new carrot.Network(numInputs, 3);
+            }
+          }
+
+          console.log(chalkBlueBold(MODULE_ID_PREFIX
+            + " | " + configuration.childId
+            + " | " + childNetworkObj.networkTechnology.toUpperCase()
+            + " | " + childNetworkObj.architecture.toUpperCase()
+            + " | IN: " + numInputs 
+            + " | OUT: " + trainingSetObj.meta.numOutputs
+            + " | HIDDEN LAYER NODES: " + childNetworkObj.hiddenLayerSize
+          ));
+
           resolve(networkRaw);
         }
         else{
@@ -1454,7 +1527,6 @@ function createNetwork(){
           ));
 
           resolve(networkRaw);
-
         }
       break;
 
@@ -1470,6 +1542,14 @@ function createNetwork(){
           + " | OUTPUTS: " + trainingSetObj.meta.numOutputs
         ));
 
+        if (childNetworkObj.networkTechnology === "brain"){
+          networkRaw = new brain.NeuralNetwork({
+            inputSize: numInputs,
+            inputRange: numInputs,
+            outputSize: 3
+          });
+          resolve(networkRaw);
+        }
         if (childNetworkObj.networkTechnology === "carrot"){
           networkRaw = new carrot.Network(numInputs, 3);
           resolve(networkRaw);
@@ -1518,7 +1598,17 @@ async function evolve(params){
 
     const preppedOptions = await prepNetworkEvolve();
 
-    const evolveResults = await childNetworkRaw.evolve(trainingSet, preppedOptions);
+    let evolveResults;
+
+    if (childNetworkObj.networkTechnology === "brain"){
+      evolveResults = await childNetworkRaw.trainAsync(trainingSet, preppedOptions);
+      console.log(chalkAlert(MODULE_ID_PREFIX
+        + " | BRAIN TRAIN RESULTS\n" + jsonPrint(evolveResults)
+      ))
+    }
+    else{
+      evolveResults = await childNetworkRaw.evolve(trainingSet, preppedOptions);
+    }
 
     childNetworkObj.networkJson = childNetworkRaw.toJSON();
     childNetworkObj.networkRaw = childNetworkRaw;
@@ -1554,7 +1644,8 @@ async function evolve(params){
       + "\n======================================================="
     ));
 
-    if (evolveResults.iterations !== childNetworkObj.evolve.options.iterations) {
+    if ((childNetworkObj.networkTechnology !== "brain") 
+      && (evolveResults.iterations !== childNetworkObj.evolve.options.iterations)) {
       console.log(chalkError(MODULE_ID_PREFIX + " | *** EVOLVE ERROR: ITERATIONS"
         + " | EXPECTED: " + childNetworkObj.evolve.options.iterations
         + " | ACTUAL: " + evolveResults.iterations

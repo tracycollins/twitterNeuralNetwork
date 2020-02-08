@@ -173,7 +173,7 @@ const childHashMap = {};
 
 const chalk = require("chalk");
 const chalkNetwork = chalk.blue;
-const chalkInputs = chalk.black;
+// const chalkInputs = chalk.black;
 const chalkBlueBold = chalk.blue.bold;
 const chalkTwitter = chalk.blue;
 const chalkBlue = chalk.blue;
@@ -772,39 +772,39 @@ function networkDefaults(networkObj){
   });
 }
 
-function printInputsObj(title, inputsObj, format) {
+// function printInputsObj(title, inputsObj, format) {
 
-  let chalkFormat = (format !== undefined) ? format : chalkInputs;
+//   let chalkFormat = (format !== undefined) ? format : chalkInputs;
 
-  const numNetworks = (inputsObj.networks !== undefined) ? inputsObj.networks.length : 0;
-  const numFails = (inputsObj.failNetworks !== undefined) ? inputsObj.failNetworks.length : 0;
-  const totalAttempts = numNetworks + numFails;
-  const percentSuccess = (totalAttempts > 0) ? 100*(numNetworks/totalAttempts) : 0;
+//   const numNetworks = (inputsObj.networks !== undefined) ? inputsObj.networks.length : 0;
+//   const numFails = (inputsObj.failNetworks !== undefined) ? inputsObj.failNetworks.length : 0;
+//   const totalAttempts = numNetworks + numFails;
+//   const percentSuccess = (totalAttempts > 0) ? 100*(numNetworks/totalAttempts) : 0;
 
-  if (percentSuccess < 50 && totalAttempts > 0) { chalkFormat = chalkAlert; }
+//   if (percentSuccess < 50 && totalAttempts > 0) { chalkFormat = chalkAlert; }
 
-  console.log(chalkFormat(title
-    + " | NETWORKS: " + numNetworks
-    + " | P/F/T: " + numNetworks + "/" + numFails + "/" + totalAttempts
-    + " | SUCCESS: " + percentSuccess.toFixed(2) + "%"
-    + " | INPUTS: " + inputsObj.meta.numInputs
-    + " | " + inputsObj.inputsId
-  ));
-}
+//   console.log(chalkFormat(title
+//     + " | NETWORKS: " + numNetworks
+//     + " | P/F/T: " + numNetworks + "/" + numFails + "/" + totalAttempts
+//     + " | SUCCESS: " + percentSuccess.toFixed(2) + "%"
+//     + " | INPUTS: " + inputsObj.meta.numInputs
+//     + " | " + inputsObj.inputsId
+//   ));
+// }
 
 function printNetworkObj(title, networkObj, format) {
 
   const chalkFormat = (format !== undefined) ? format : chalkNetwork;
 
   console.log(chalkFormat(title
-    + " | TECH: " + networkObj.networkTechnology.slice(0,4).toUpperCase()
-    + " | OAMR: " + networkObj.overallMatchRate.toFixed(2) + "%"
-    + " | MR: " + networkObj.matchRate.toFixed(2) + "%"
+    + " | " + networkObj.networkTechnology.slice(0,4).toUpperCase()
     + " | SR: " + networkObj.successRate.toFixed(2) + "%"
-    + " | CR: " + getTimeStamp(networkObj.createdAt)
+    + " | MR: " + networkObj.matchRate.toFixed(2) + "%"
+    + " | OAMR: " + networkObj.overallMatchRate.toFixed(2) + "%"
+    // + " | CR: " + getTimeStamp(networkObj.createdAt)
     + " | TC:  " + networkObj.testCycles
-    + " | TCH: " + networkObj.testCycleHistory.length
-    + " | INPUTS: " + networkObj.numInputs
+    // + " | TCH: " + networkObj.testCycleHistory.length
+    + " | IN: " + networkObj.numInputs
     + " | IN ID:  " + networkObj.inputsId
     + " | " + networkObj.networkId
   ));
@@ -1543,7 +1543,11 @@ async function loadBestNetworkFolders (p){
     + "\n" + jsonPrint(params.folders)
   ));
 
-  const files = await tcUtils.listFolders({folders: params.folders});
+  let files = await tcUtils.listFolders({folders: params.folders});
+
+  if (configuration.testMode) {
+    files = files.slice(0,20);
+  }
 
   console.log(chalkNetwork(MODULE_ID_PREFIX + " | ... FOUND " + files.length + " FILES IN NN FOLDERS"));
 
@@ -4281,7 +4285,7 @@ async function evolveErrorHandler(params){
     await printResultsHashmap();
 
     let slackText = "\n*EVOLVE ERROR*";
-    slackText = slackText +  "\n" + jsonPrint(m.err);
+    slackText = slackText + "\n" + jsonPrint(m.err);
 
     await slackSendWebMessage({ channel: slackChannelError, text: slackText});
 
