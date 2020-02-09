@@ -326,6 +326,8 @@ async function initSlackRtmClient(){
       default: debug(chalkInfo("TNN | SLACK RTM EVENT | " + getTimeStamp() + " | " + eventType + "\n" + jsonPrint(event)));
     }
   });
+
+  return;
 }
 
 //=========================================================================
@@ -932,7 +934,7 @@ function printResultsHashmap(){
       error = (error > 1000) ? expo(error, 2) : Number.parseFloat(error).toFixed(5);
       fitness = (fitness < -1000) ? expo(fitness, 2) : Number.parseFloat(fitness).toFixed(5);
 
-      successRate = ((networkObj.successRate || (networkObj.successRate === 0)) && networkObj.successRate !== undefined) ? networkObj.successRate.toFixed(2) : 0;
+      successRate = ((networkObj.successRate || (networkObj.successRate === 0)) && networkObj.successRate !== undefined) ? networkObj.successRate.toFixed(3) : 0;
       elapsed = (networkObj.evolve.elapsed && networkObj.evolve.elapsed !== undefined) ? networkObj.evolve.elapsed : (moment().valueOf() - networkObj.evolve.startTime);
 
       if (networkObj.evolve.results && (networkObj.evolve.results !== undefined) && (iterations > 0)) {
@@ -5099,8 +5101,8 @@ setTimeout(async function(){
       console.log(chalkAlert(MODULE_ID_PREFIX + " | defaultUserArchiveFlagFile: " + configuration.defaultUserArchiveFlagFile));
     }
 
-    await initSlackRtmClient();
-    await initSlackWebClient();
+    // await initSlackRtmClient();
+    // await initSlackWebClient();
 
     try {
       dbConnection = await connectDb();

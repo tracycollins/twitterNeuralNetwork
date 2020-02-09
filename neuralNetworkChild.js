@@ -1,6 +1,10 @@
+const ONE_KILOBYTE = 1024;
+const ONE_MEGABYTE = 1024 * ONE_KILOBYTE;
 const ONE_SECOND = 1000;
 const ONE_MINUTE = 60*ONE_SECOND;
 const ONE_HOUR = 60*ONE_MINUTE;
+const DEFAULT_MAX_NETWORK_JSON_SIZE_MB = 15;
+
 const compactDateTimeFormat = "YYYYMMDD_HHmmss";
 
 let childNetworkObj; // this is the common, default nn object
@@ -9,7 +13,8 @@ let seedNetworkObj; // this is the common, default nn object
 const os = require("os");
 const _ = require("lodash");
 const omit = require("object.omit");
-const atob = require("atob");
+const jsonpack = require("jsonpack/main");
+const sizeof = require("object-sizeof");
 
 let hostname = os.hostname();
 if (hostname.startsWith("mbp3")){
@@ -37,7 +42,7 @@ const TEST_MODE_LENGTH = 1000;
 global.wordAssoDb = require("@threeceelabs/mongoose-twitter");
 
 let configuration = {};
-
+configuration.maxNetworkJsonSizeMB = DEFAULT_MAX_NETWORK_JSON_SIZE_MB;
 configuration.userArchiveFileExistsMaxWaitTime = DEFAULT_USER_ARCHIVE_FILE_EXITS_MAX_WAIT_TIME;
 configuration.testSetRatio = DEFAULT_TEST_RATIO;
 configuration.binaryMode = DEFAULT_BINARY_MODE;
@@ -65,7 +70,7 @@ const brainTrainOptionsPickArray = [
   "logPeriod",
   "learningRate",
   "momentum",
-  "callback",
+  "schedule",
   "callbackPeriod",
   "timeout"
 ];
@@ -1150,6 +1155,8 @@ function prepNetworkEvolve() {
       const iterationRate = elapsedInt/schedParams.iteration;
       const timeToComplete = iterationRate*(options.iterations - schedParams.iteration);
 
+      const fitness = schedParams.fitness || 0;
+
       statsObj.evolve.stats = schedParams;
 
       const sObj = {
@@ -1165,7 +1172,7 @@ function prepNetworkEvolve() {
         iterationRate: iterationRate,
         timeToComplete: timeToComplete,
         error: schedParams.error.toFixed(5) || Infinity,
-        fitness: schedParams.fitness.toFixed(5) || -Infinity
+        fitness: fitness.toFixed(5) || -Infinity
       };
 
       processSendQueue.push({op: "EVOLVE_SCHEDULE", childId: configuration.childId, childIdShort: configuration.childIdShort, stats: sObj});
@@ -1411,21 +1418,44 @@ function createNetwork(){
         }
         else{
           try {
-            if (childNetworkObj.networkTechnology === "carrot" && !empty(childNetworkObj.network)){
-              networkRaw = carrot.Network.fromJSON(childNetworkObj.network);
-              console.log(chalkLog(MODULE_ID_PREFIX + " | CHILD CARROT RAW NETWORK: " + childNetworkObj.seedNetworkId));
+            if (childNetworkObj.networkTechnology === "carrot"){
+              if (!empty(childNetworkObj.networkRaw)){
+                networkRaw = childNetworkObj.networkRaw;
+                console.log(chalkLog(MODULE_ID_PREFIX + " | CHILD CARROT RAW NETWORK: " + childNetworkObj.seedNetworkId));
+              }
+              else if (!empty(childNetworkObj.network)){
+                networkRaw = carrot.Network.fromJSON(childNetworkObj.network);
+                console.log(chalkLog(MODULE_ID_PREFIX + " | CHILD CARROT RAW NETWORK: " + childNetworkObj.seedNetworkId));
+              }
+              else if (!empty(childNetworkObj.networkJson)){
+                networkRaw = carrot.Network.fromJSON(childNetworkObj.networkJson);
+                console.log(chalkLog(MODULE_ID_PREFIX + " | CHILD CARROT RAW NETWORK: " + childNetworkObj.seedNetworkId));
+              }
             }
-            if (childNetworkObj.networkTechnology === "brain" && !empty(childNetworkObj.network)){
+            else if (childNetworkObj.networkTechnology === "neataptic"){
+              if (!empty(childNetworkObj.networkRaw)){
+                networkRaw = childNetworkObj.networkRaw;
+                console.log(chalkLog(MODULE_ID_PREFIX + " | CHILD NEATAPTIC RAW NETWORK: " + childNetworkObj.seedNetworkId));
+              }
+              else if (!empty(childNetworkObj.network)){
+                networkRaw = neataptic.Network.fromJSON(childNetworkObj.network);
+                console.log(chalkLog(MODULE_ID_PREFIX + " | CHILD NEATAPTIC RAW NETWORK: " + childNetworkObj.seedNetworkId));
+              }
+              else if (!empty(childNetworkObj.networkJson)){
+                networkRaw = neataptic.Network.fromJSON(childNetworkObj.networkJson);
+                console.log(chalkLog(MODULE_ID_PREFIX + " | CHILD NEATAPTIC RAW NETWORK: " + childNetworkObj.seedNetworkId));
+              }
+            }
+            else if (childNetworkObj.networkTechnology === "brain" && !empty(childNetworkObj.networkJson)){
               networkRaw = new brain.NeuralNetwork();
               networkRaw.fromJSON(childNetworkObj.networkJson);
               console.log(chalkLog(MODULE_ID_PREFIX + " | CHILD NEATAPTIC RAW NETWORK: " + childNetworkObj.seedNetworkId));
             }
-            else if (!empty(childNetworkObj.network)){
-              networkRaw = neataptic.Network.fromJSON(childNetworkObj.network);
-              console.log(chalkLog(MODULE_ID_PREFIX + " | CHILD NEATAPTIC RAW NETWORK: " + childNetworkObj.seedNetworkId));
-            }
             else{
-              console.log(chalkError(MODULE_ID_PREFIX + " | *** CHILD NO RAW NETWORK: " + childNetworkObj.seedNetworkId));
+              console.log(chalkError(MODULE_ID_PREFIX
+                + " | TECH: " + childNetworkObj.networkTechnology
+                + " | *** CHILD NO RAW NETWORK: " + childNetworkObj.seedNetworkId
+              ));
               return reject(new Error("NO RAW NETWORK: " + childNetworkObj.networkId));
             }
           }
@@ -1562,7 +1592,7 @@ function createNetwork(){
           });
           resolve(networkRaw);
         }
-        if (childNetworkObj.networkTechnology === "carrot"){
+        else if (childNetworkObj.networkTechnology === "carrot"){
           networkRaw = new carrot.Network(numInputs, 3);
           resolve(networkRaw);
         }
@@ -1613,32 +1643,93 @@ async function evolve(params){
     let evolveResults;
 
     if (childNetworkObj.networkTechnology === "brain"){
-      evolveResults = await childNetworkRaw.trainAsync(trainingSet, preppedOptions);
-      console.log(chalkAlert(MODULE_ID_PREFIX
-        + " | BRAIN TRAIN RESULTS\n" + jsonPrint(evolveResults)
-      ))
+
+      const schedStartTime = moment().valueOf();
+
+      const schedule = function(schedParams){
+
+        const elapsedInt = moment().valueOf() - schedStartTime;
+        const iterationRate = elapsedInt/(schedParams.iterations+1);
+        const timeToComplete = iterationRate*(preppedOptions.iterations - (schedParams.iterations+1));
+
+        const sObj = {
+          networkTechnology: "BRAIN",
+          binaryMode: false,
+          networkId: "nn_brain_test",
+          numInputs: inputsObj.meta.numInputs,
+          inputsId: inputsObj.inputsId,
+          evolveStart: schedStartTime,
+          evolveElapsed: elapsedInt,
+          totalIterations: preppedOptions.iterations,
+          iteration: schedParams.iterations+1,
+          iterationRate: iterationRate,
+          timeToComplete: timeToComplete,
+          error: schedParams.error.toFixed(5) || Infinity,
+          // fitness: schedParams.fitness.toFixed(5) || -Infinity
+        };
+
+        console.log(chalkLog(MODULE_ID_PREFIX 
+          + " | " + sObj.networkId 
+          + " | " + sObj.networkTechnology.slice(0,1).toUpperCase()
+          + " | " + sObj.networkId
+          + " | " + sObj.inputsId
+          + " | ERR " + sObj.error
+          // + " | FIT " + fitness
+          + " | R " + tcUtils.msToTime(sObj.evolveElapsed)
+          + " | ETC " + tcUtils.msToTime(sObj.timeToComplete) + " " + moment().add(sObj.timeToComplete).format(compactDateTimeFormat)
+          + " | " + (sObj.iterationRate/1000.0).toFixed(1) + " spi"
+          + " | I " + sObj.iteration + "/" + sObj.totalIterations
+        ));
+      };
+
+      evolveResults = await nnTools.streamTrainNetwork({
+        iterations: preppedOptions.iterations,
+        schedule: schedule,
+        network: childNetworkRaw, 
+        trainingSet: trainingSet
+      });
+
+      childNetworkObj.networkJson = childNetworkRaw.toJSON();
+      childNetworkObj.networkRaw = evolveResults.network;
+
+      delete evolveResults.network;
+
+      evolveResults.threads = 1;
+      evolveResults.fitness = 0;
+
+      statsObj.evolve.endTime = moment().valueOf();
+      statsObj.evolve.elapsed = moment().valueOf() - statsObj.evolve.startTime;
+      statsObj.evolve.results = evolveResults.stats;
+
+      childNetworkObj.evolve.results = {};
+      childNetworkObj.evolve.results = evolveResults.stats;
+
+      childNetworkObj.elapsed = statsObj.evolve.elapsed;
+      childNetworkObj.evolve.elapsed = statsObj.evolve.elapsed;
+      childNetworkObj.evolve.startTime = statsObj.evolve.startTime;
+      childNetworkObj.evolve.endTime = statsObj.evolve.endTime;
     }
     else{
       evolveResults = await childNetworkRaw.evolve(trainingSet, preppedOptions);
+
+      childNetworkObj.networkJson = childNetworkRaw.toJSON();
+      childNetworkObj.networkRaw = childNetworkRaw;
+
+      evolveResults.threads = preppedOptions.threads;
+      evolveResults.fitness = statsObj.evolve.stats.fitness;
+
+      statsObj.evolve.endTime = moment().valueOf();
+      statsObj.evolve.elapsed = moment().valueOf() - statsObj.evolve.startTime;
+      statsObj.evolve.results = evolveResults;
+
+      childNetworkObj.evolve.results = {};
+      childNetworkObj.evolve.results = evolveResults;
+
+      childNetworkObj.elapsed = statsObj.evolve.elapsed;
+      childNetworkObj.evolve.elapsed = statsObj.evolve.elapsed;
+      childNetworkObj.evolve.startTime = statsObj.evolve.startTime;
+      childNetworkObj.evolve.endTime = statsObj.evolve.endTime;
     }
-
-    childNetworkObj.networkJson = childNetworkRaw.toJSON();
-    childNetworkObj.networkRaw = childNetworkRaw;
-
-    evolveResults.threads = preppedOptions.threads;
-    evolveResults.fitness = statsObj.evolve.stats.fitness;
-
-    statsObj.evolve.endTime = moment().valueOf();
-    statsObj.evolve.elapsed = moment().valueOf() - statsObj.evolve.startTime;
-    statsObj.evolve.results = evolveResults;
-
-    childNetworkObj.evolve.results = {};
-    childNetworkObj.evolve.results = evolveResults;
-
-    childNetworkObj.elapsed = statsObj.evolve.elapsed;
-    childNetworkObj.evolve.elapsed = statsObj.evolve.elapsed;
-    childNetworkObj.evolve.startTime = statsObj.evolve.startTime;
-    childNetworkObj.evolve.endTime = statsObj.evolve.endTime;
 
     console.log(chalkBlueBold("=======================================================\n"
       + MODULE_ID_PREFIX
@@ -1692,7 +1783,9 @@ function networkEvolve(p){
     }
 
     if (!params.architecture || (params.architecture === undefined)) { params.architecture = "random"; }
-    if (!params.networkTechnology || (params.networkTechnology === undefined)) { params.networkTechnology = configuration.networkTechnology; }
+    if (!params.networkTechnology || (params.networkTechnology === undefined)) { 
+      params.networkTechnology = configuration.networkTechnology;
+    }
 
     const networkTech = (params.networkTechnology === "carrot") ? carrot : neataptic;
 
@@ -1757,12 +1850,16 @@ function networkEvolve(p){
     }, async function(err){
 
       try{
+
         if (err) {
           console.log(chalkError(MODULE_ID_PREFIX + " | *** networkEvolve ERROR: " + err));
           return reject(err);
         }
-        console.log(chalkGreen(MODULE_ID_PREFIX + " | END networkEvolve"));
+
         await evolve({binaryMode: binaryMode, verbose: p.verbose});
+
+        console.log(chalkGreen(MODULE_ID_PREFIX + " | END networkEvolve"));
+
         resolve();
       }
       catch(e){
@@ -1964,6 +2061,7 @@ const fsmStates = {
           await processSend({op: "STATS", childId: configuration.childId, fsmStatus: statsObj.fsmStatus});
 
           await networkEvolve({verbose: configuration.verbose});
+
           await testNetwork({
             binaryMode: configuration.binaryMode, 
             verbose: configuration.verbose
@@ -1975,12 +2073,58 @@ const fsmStates = {
           delete childNetworkObj.evolve.options.network;
           delete childNetworkObj.evolve.options.schedule;
 
-          console.log(chalkLog(MODULE_ID_PREFIX + " | ... SAVING NN TO DB: " + childNetworkObj.networkId));
+          console.log(chalkLog(MODULE_ID_PREFIX 
+            + " | ... SAVING NN TO DB: " + childNetworkObj.networkId
+            + " | INPUTS: " + childNetworkObj.inputsId
+          ));
+
+          const networkJsonSizeMBytes = sizeof(childNetworkObj.networkJson)/ONE_MEGABYTE;
+
+          if (networkJsonSizeMBytes > configuration.maxNetworkJsonSizeMB){
+
+            console.log(chalkLog(MODULE_ID_PREFIX + " | !!! COMPRESSING NETWORK JSON"
+              + " | " + networkJsonSizeMBytes.toFixed(3) + " MB"
+            ));
+
+            childNetworkObj.networkJson.layersCompressed = [];
+
+            for (let layerNum=0; layerNum < childNetworkObj.networkJson.layers.length; layerNum++){
+
+              const layer = childNetworkObj.networkJson.layers[layerNum];
+              const layerKeys = Object.keys(layer);
+
+              console.log("LAYER " + layerNum + " | SIZE: " + layerKeys.length);
+
+              childNetworkObj.networkJson.layersCompressed[layerNum] = [];
+
+              for (let layerNodeNum=0; layerNodeNum < layerKeys.length; layerNodeNum++){
+                if (empty(childNetworkObj.networkJson.layers[layerNum][layerNodeNum])){
+                  childNetworkObj.networkJson.layersCompressed[layerNum].push(layerNodeNum);
+                }
+                else{
+                  childNetworkObj.networkJson.layersCompressed[layerNum].push(childNetworkObj.networkJson.layers[layerNum][layerNodeNum]);
+                }
+              }
+
+            }
+            delete childNetworkObj.networkJson.layers;
+
+            const packedNetworkJson = jsonpack.pack(childNetworkObj.networkJson, { verbose: false });
+
+            const packedNetworkJsonSizeMBytes = sizeof(packedNetworkJson)/ONE_MEGABYTE;
+
+            console.log(chalkLog(MODULE_ID_PREFIX + " | -><- COMPRESSED NETWORK JSON"
+              + " | COMPRESSED: " + packedNetworkJsonSizeMBytes.toFixed(3) + " MB"
+              + " | ORG: " + networkJsonSizeMBytes.toFixed(3) + " MB"
+            ));
+
+            childNetworkObj.networkJson = packedNetworkJson;
+            childNetworkObj.networkJsonIsCompressed = true;
+          }
 
           const nnDoc = new global.wordAssoDb.NeuralNetwork(childNetworkObj);
 
           try{
-            // delete nnDoc.networkJson.layers;
             await nnDoc.save();
           }
           catch(e){
