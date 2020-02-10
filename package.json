@@ -5,7 +5,7 @@
   "main": "twitterNeuralNetwork.js",
   "dependencies": {
     "@davvo/drbx": "^2.1.0",
-    "@google-cloud/vision": "^1.8.0",
+    "@google-cloud/vision": "^1.9.0",
     "@liquid-carrot/carrot": "^0.3.18",
     "@slack/client": "^5.0.2",
     "@threeceelabs/histogram-parser": "^1.0.20",
