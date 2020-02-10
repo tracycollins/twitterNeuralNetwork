@@ -3,7 +3,8 @@ const MODULE_ID_PREFIX = "TNN";
 const CHILD_PREFIX = "tnc_node";
 const CHILD_PREFIX_SHORT = "NC";
 
-const DEFAULT_USER_PROFILE_CHAR_CODES_ONLY_FLAG = true;
+const DEFAULT_USER_PROFILE_CHAR_CODES_ONLY_FLAG = false;
+const DEFAULT_USER_PROFILE_CHAR_CODES_ONLY_PROBABILITY = 0.5;
 const DEFAULT_USER_PROFILE_CHAR_CODES_ONLY_INPUTS_ID = "inputs_25250101_000000_255_profilecharcodes";
 
 const DEFAULT_REMOVE_SEED_FROM_VIABLE_NN_SET_ON_FAIL = true;
@@ -202,10 +203,12 @@ let configuration = {};
 
 const childConfiguration = {};
 
-configuration.forceNetworkTechnology = DEFAULT_FORCE_NETWORK_TECHNOLOGY;
-configuration.networkIdPrefix = "nn_" + getTimeStamp() + "_" + hostname ;
+configuration.userProfileCharCodesOnlyProbability = DEFAULT_USER_PROFILE_CHAR_CODES_ONLY_PROBABILITY;
 configuration.userProfileCharCodesOnlyFlag = DEFAULT_USER_PROFILE_CHAR_CODES_ONLY_FLAG;
 configuration.userProfileCharCodesOnlyInputsId = DEFAULT_USER_PROFILE_CHAR_CODES_ONLY_INPUTS_ID;
+
+configuration.forceNetworkTechnology = DEFAULT_FORCE_NETWORK_TECHNOLOGY;
+configuration.networkIdPrefix = "nn_" + getTimeStamp() + "_" + hostname ;
 configuration.removeSeedFromViableNetworkOnFail = DEFAULT_REMOVE_SEED_FROM_VIABLE_NN_SET_ON_FAIL;
 configuration.binaryMode = DEFAULT_BINARY_MODE;
 configuration.userProfileOnlyFlag = DEFAULT_USER_PROFILE_ONLY_FLAG;
@@ -2023,9 +2026,12 @@ async function generateEvolveOptions(params){
           case "LEAKY_RELU":
             config.activation = "leaky-relu";
             break;
-          case "TAHN":
+          case "TANH":
             config.activation = "tahn";
             break;
+          default:
+            console.log(chalkError(MODULE_ID_PREFIX + " | *** generateEvolveOptions ERROR | UNKNOWN BRAIN ACTIVATION: " + config.activation));
+            throw new Error("generateRandomEvolveConfig UNKNOWN BRAIN ACTIVATION: " + config.activation);
         }
       }
       else{
@@ -2110,7 +2116,9 @@ async function generateRandomEvolveConfig(p){
 
   config.networkCreateMode = "evolve";
 
-  config.userProfileCharCodesOnlyFlag = configuration.userProfileCharCodesOnlyFlag || false;
+  config.userProfileCharCodesOnlyFlag = (Math.random() <= configuration.userProfileCharCodesOnlyProbability);
+
+  console.log(chalkBlue(MODULE_ID_PREFIX + " | USER PROFILE CHAR CODES: " + config.userProfileCharCodesOnlyFlag));
 
   config.binaryMode = (!config.userProfileCharCodesOnlyFlag && params.binaryMode !== undefined) ? params.binaryMode : configuration.binaryMode;
 
@@ -3179,6 +3187,21 @@ async function loadConfigFile(params) {
     if (loadedConfigObj.TNN_NETWORK_TECHNOLOGY !== undefined) {
       console.log(MODULE_ID_PREFIX + " | LOADED TNN_NETWORK_TECHNOLOGY: " + loadedConfigObj.TNN_NETWORK_TECHNOLOGY);
       newConfiguration.networkTechnology = loadedConfigObj.TNN_NETWORK_TECHNOLOGY;
+    }
+
+    if (loadedConfigObj.TNN_USER_PROFILE_CHAR_CODES_ONLY_FLAG !== undefined) {
+      console.log(MODULE_ID_PREFIX + " | LOADED TNN_USER_PROFILE_CHAR_CODES_ONLY_FLAG: " + loadedConfigObj.TNN_USER_PROFILE_CHAR_CODES_ONLY_FLAG);
+      if ((loadedConfigObj.TNN_USER_PROFILE_CHAR_CODES_ONLY_FLAG === true) || (loadedConfigObj.TNN_USER_PROFILE_CHAR_CODES_ONLY_FLAG === "true")) {
+        newConfiguration.userProfileCharCodesOnlyFlag = true;
+      }
+      if ((loadedConfigObj.TNN_USER_PROFILE_CHAR_CODES_ONLY_FLAG === false) || (loadedConfigObj.TNN_USER_PROFILE_CHAR_CODES_ONLY_FLAG === "false")) {
+        newConfiguration.userProfileCharCodesOnlyFlag = false;
+      }
+    }
+
+    if (loadedConfigObj.TNN_USER_PROFILE_CHAR_CODES_ONLY_PROBABILITY !== undefined) {
+      console.log(MODULE_ID_PREFIX + " | LOADED TNN_USER_PROFILE_CHAR_CODES_ONLY_PROBABILITY: " + loadedConfigObj.TNN_USER_PROFILE_CHAR_CODES_ONLY_PROBABILITY);
+      newConfiguration.userProfileCharCodesOnlyProbability = loadedConfigObj.TNN_USER_PROFILE_CHAR_CODES_ONLY_PROBABILITY;
     }
 
     if (loadedConfigObj.TNN_USER_PROFILE_CHAR_CODES_ONLY_INPUTS_ID !== undefined) {

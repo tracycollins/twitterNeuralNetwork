@@ -7,6 +7,7 @@ const DEFAULT_MAX_NETWORK_JSON_SIZE_MB = 15;
 
 const DEFAULT_BRAIN_HIDDEN_LAYER_SIZE = 9;
 const DEFAULT_NEATAPTIC_HIDDEN_LAYER_SIZE = 9;
+const DEFAULT_USER_PROFILE_CHAR_CODES_ONLY_INPUTS_ID = "inputs_25250101_000000_255_profilecharcodes";
 
 const compactDateTimeFormat = "YYYYMMDD_HHmmss";
 
@@ -45,7 +46,7 @@ const TEST_MODE_LENGTH = 1000;
 global.wordAssoDb = require("@threeceelabs/mongoose-twitter");
 
 let configuration = {};
-configuration.userProfileCharCodesOnlyFlag = true;
+configuration.userProfileCharCodesOnlyFlag = false;
 
 configuration.userCharCountScreenName = 15;
 configuration.userCharCountName = 50;
@@ -1439,7 +1440,7 @@ function createNetwork(){
 
         console.log(chalkBlueBold(MODULE_ID_PREFIX
           + " | " + configuration.childId
-          + " | EVOLVE ARCH | SEED: " + childNetworkObj.seedNetworkId
+          + " | EVOLVE ARCH: LOADED | SEED: " + childNetworkObj.seedNetworkId
           + " | " + childNetworkObj.networkTechnology.toUpperCase()
          ));
 
@@ -1639,10 +1640,23 @@ async function evolve(params){
     ));
 
     const inputsObj = await global.wordAssoDb.NetworkInputs.findOne({inputsId: childNetworkObj.inputsId}).lean();
+    childNetworkObj.numInputs = inputsObj.meta.numInputs;
 
     const binaryMode = (params.binaryMode !== undefined) ? params.binaryMode : configuration.binaryMode;
     const userProfileOnlyFlag = inputsObj.meta.userProfileOnlyFlag || false;
-    const userProfileCharCodesOnlyFlag = (params.userProfileCharCodesOnlyFlag !== undefined) ? params.userProfileCharCodesOnlyFlag : configuration.userProfileCharCodesOnlyFlag;
+    let userProfileCharCodesOnlyFlag = (params.userProfileCharCodesOnlyFlag !== undefined) ? params.userProfileCharCodesOnlyFlag : configuration.userProfileCharCodesOnlyFlag;
+
+    if (childNetworkObj.inputsId !== DEFAULT_USER_PROFILE_CHAR_CODES_ONLY_INPUTS_ID){
+
+      console.log(chalkAlert(MODULE_ID_PREFIX + " | XXX userProfileCharCodesOnlyFlag"
+        + " | ARCH: " + childNetworkObj.architecture
+        + " | TECH: " + childNetworkObj.networkTechnology
+        + " | NN: " + childNetworkObj.networkId
+        + " | IN: " + childNetworkObj.inputsId
+      ));
+
+      userProfileCharCodesOnlyFlag = false;
+    }
 
     if (childNetworkObj.meta === undefined) { childNetworkObj.meta = {}; }
     childNetworkObj.meta.userProfileOnlyFlag = userProfileOnlyFlag;
@@ -2313,8 +2327,8 @@ async function configNetworkEvolve(params){
   console.log(chalkInfo(MODULE_ID_PREFIX + " | CONFIG EVOLVE"
     + " | CHILD ID: " + params.childId
     + " | ARCH: " + params.architecture
-    + " | NETWORK TECH: " + params.networkTechnology
-    + " | INPUTS: " + params.numInputs
+    + " | TECH: " + params.networkTechnology
+    + " | IN: " + params.numInputs
     + " | SEED: " + params.seedNetworkId
     + " | SEED RES: " + params.seedNetworkRes
     + " | TEST SET RATIO: " + configuration.testSetRatio
