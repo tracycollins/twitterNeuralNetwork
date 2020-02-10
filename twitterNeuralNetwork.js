@@ -1535,7 +1535,7 @@ async function updateDbNetwork(params) {
 
     const networkObj = params.networkObj;
     const seedNetworkId = (networkObj.seedNetworkId && networkObj.seedNetworkId !== undefined && networkObj.seedNetworkId !== "false") ? networkObj.seedNetworkId : null;
-    const seedNetworkRes = (networkObj.seedNetworkRes && networkObj.seedNetworkRes !== undefined && networkObj.seedNetworkRes !== "false") ? networkObj.seedNetworkRes : 0;
+    const seedNetworkRes = (networkObj.seedNetworkRes !== undefined && networkObj.seedNetworkRes !== "false") ? networkObj.seedNetworkRes : 0;
     const incrementTestCycles = (params.incrementTestCycles !== undefined) ? params.incrementTestCycles : false;
     const testHistoryItem = (params.testHistoryItem !== undefined) ? params.testHistoryItem : false;
     const addToTestHistory = (params.addToTestHistory !== undefined) ? params.addToTestHistory : true;
@@ -2010,7 +2010,23 @@ async function generateEvolveOptions(params){
       console.log(chalkLog(MODULE_ID_PREFIX + " | ... GENERATE EVOLVE OPTIONS ... | ATTEMPTS: " + attempts + " | KEY: " + key));
 
       if (config.networkTechnology === "brain"){
+
         config.activation = randomItem(configuration.brainActivationArray);
+
+        switch (config.activation) {
+          case "SIGMOID":
+            config.activation = "sigmoid";
+            break;
+          case "RELU":
+            config.activation = "relu";
+            break;
+          case "LEAKY_RELU":
+            config.activation = "leaky-relu";
+            break;
+          case "TAHN":
+            config.activation = "tahn";
+            break;
+        }
       }
       else{
         config.activation = randomItem(configuration.activationArray);
@@ -2284,7 +2300,7 @@ async function initNetworkCreate(params){
     messageObj.betterChild = false;
 
     messageObj.seedNetworkId = (messageObj.seedNetworkId && messageObj.seedNetworkId !== undefined && messageObj.seedNetworkId !== "false") ? messageObj.seedNetworkId : false;
-    messageObj.seedNetworkRes = (messageObj.seedNetworkRes && messageObj.seedNetworkRes !== undefined && messageObj.seedNetworkRes !== "false") ? messageObj.seedNetworkRes : 0;
+    messageObj.seedNetworkRes = (messageObj.seedNetworkRes !== undefined && messageObj.seedNetworkRes !== "false") ? messageObj.seedNetworkRes : 0;
 
     console.log(chalkBlue("\nTNN | START NETWORK EVOLVE"));
 

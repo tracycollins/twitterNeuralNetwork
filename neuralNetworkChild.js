@@ -80,6 +80,7 @@ const brainTrainOptionsPickArray = [
   "logPeriod",
   "learningRate",
   "momentum",
+  "network",
   "schedule",
   "callbackPeriod",
   "timeout"
@@ -1173,6 +1174,9 @@ function prepNetworkEvolve() {
       const sObj = {
         networkTechnology: childNetworkObj.networkTechnology,
         binaryMode: childNetworkObj.binaryMode,
+        networkId: childNetworkObj.networkId,
+        seedNetworkId: childNetworkObj.seedNetworkId,
+        seedNetworkRes: childNetworkObj.seedNetworkRes,
         networkId: childNetworkObj.networkId,
         numInputs: childNetworkObj.numInputs,
         inputsId: childNetworkObj.inputsId,
