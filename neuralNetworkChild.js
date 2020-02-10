@@ -1,5 +1,5 @@
-const ONE_KILOBYTE = 1024;
-const ONE_MEGABYTE = 1024 * ONE_KILOBYTE;
+// const ONE_KILOBYTE = 1024;
+// const ONE_MEGABYTE = 1024 * ONE_KILOBYTE;
 const ONE_SECOND = 1000;
 const ONE_MINUTE = 60*ONE_SECOND;
 const ONE_HOUR = 60*ONE_MINUTE;
@@ -16,8 +16,8 @@ let seedNetworkObj; // this is the common, default nn object
 const os = require("os");
 const _ = require("lodash");
 const omit = require("object.omit");
-const jsonpack = require("jsonpack/main");
-const sizeof = require("object-sizeof");
+// const jsonpack = require("jsonpack/main");
+// const sizeof = require("object-sizeof");
 
 let hostname = os.hostname();
 if (hostname.startsWith("mbp3")){
@@ -1234,13 +1234,13 @@ function prepNetworkEvolve() {
   return finalOptions;
 }
 
-function datumPostProcess(p){
-  return new Promise(function(resolve, reject){
+// function datumPostProcess(p){
+//   return new Promise(function(resolve, reject){
 
-    const params = p || {};
+//     const params = p || {};
 
-  });
-}
+//   });
+// }
 
 function dataSetPrep(p){
 
@@ -1711,8 +1711,8 @@ async function evolve(params){
         trainingSet: trainingSet
       });
 
-      childNetworkObj.networkJson = childNetworkRaw.toJSON();
       childNetworkObj.networkRaw = evolveResults.network;
+      childNetworkObj.networkJson = childNetworkObj.networkRaw.toJSON();
 
       delete evolveResults.network;
 
@@ -2091,64 +2091,67 @@ const fsmStates = {
             verbose: configuration.verbose
           });
 
-          delete childNetworkObj.inputsObj;
-          delete childNetworkObj.network;
-          delete childNetworkObj.networkRaw;
-          delete childNetworkObj.evolve.options.network;
-          delete childNetworkObj.evolve.options.schedule;
-
           console.log(chalkLog(MODULE_ID_PREFIX 
             + " | ... SAVING NN TO DB: " + childNetworkObj.networkId
             + " | INPUTS: " + childNetworkObj.inputsId
           ));
 
-          const networkJsonSizeMBytes = sizeof(childNetworkObj.networkJson)/ONE_MEGABYTE;
+          // const networkJsonSizeMBytes = sizeof(childNetworkObj.networkJson)/ONE_MEGABYTE;
 
-          if (networkJsonSizeMBytes > configuration.maxNetworkJsonSizeMB){
+          // if (networkJsonSizeMBytes > configuration.maxNetworkJsonSizeMB){
 
-            console.log(chalkLog(MODULE_ID_PREFIX + " | !!! COMPRESSING NETWORK JSON"
-              + " | " + networkJsonSizeMBytes.toFixed(3) + " MB"
-            ));
+          //   console.log(chalkLog(MODULE_ID_PREFIX + " | !!! COMPRESSING NETWORK JSON"
+          //     + " | " + networkJsonSizeMBytes.toFixed(3) + " MB"
+          //   ));
 
-            childNetworkObj.networkJson.layersCompressed = [];
+          //   childNetworkObj.networkJson.layersCompressed = [];
 
-            for (let layerNum=0; layerNum < childNetworkObj.networkJson.layers.length; layerNum++){
+          //   for (let layerNum=0; layerNum < childNetworkObj.networkJson.layers.length; layerNum++){
 
-              const layer = childNetworkObj.networkJson.layers[layerNum];
-              const layerKeys = Object.keys(layer);
+          //     const layer = childNetworkObj.networkJson.layers[layerNum];
+          //     const layerKeys = Object.keys(layer);
 
-              console.log("LAYER " + layerNum + " | SIZE: " + layerKeys.length);
+          //     console.log("LAYER " + layerNum + " | SIZE: " + layerKeys.length);
 
-              childNetworkObj.networkJson.layersCompressed[layerNum] = [];
+          //     childNetworkObj.networkJson.layersCompressed[layerNum] = [];
 
-              for (let layerNodeNum=0; layerNodeNum < layerKeys.length; layerNodeNum++){
-                if (empty(childNetworkObj.networkJson.layers[layerNum][layerNodeNum])){
-                  childNetworkObj.networkJson.layersCompressed[layerNum].push(layerNodeNum);
-                }
-                else{
-                  childNetworkObj.networkJson.layersCompressed[layerNum].push(childNetworkObj.networkJson.layers[layerNum][layerNodeNum]);
-                }
-              }
+          //     for (let layerNodeNum=0; layerNodeNum < layerKeys.length; layerNodeNum++){
+          //       if (empty(childNetworkObj.networkJson.layers[layerNum][layerNodeNum])){
+          //         childNetworkObj.networkJson.layersCompressed[layerNum].push(layerNodeNum);
+          //       }
+          //       else{
+          //         childNetworkObj.networkJson.layersCompressed[layerNum].push(childNetworkObj.networkJson.layers[layerNum][layerNodeNum]);
+          //       }
+          //     }
 
-            }
-            delete childNetworkObj.networkJson.layers;
+          //   }
+          //   delete childNetworkObj.networkJson.layers;
 
-            const packedNetworkJson = jsonpack.pack(childNetworkObj.networkJson, { verbose: false });
+          //   const packedNetworkJson = jsonpack.pack(childNetworkObj.networkJson, { verbose: false });
 
-            const packedNetworkJsonSizeMBytes = sizeof(packedNetworkJson)/ONE_MEGABYTE;
+          //   const packedNetworkJsonSizeMBytes = sizeof(packedNetworkJson)/ONE_MEGABYTE;
 
-            console.log(chalkLog(MODULE_ID_PREFIX + " | -><- COMPRESSED NETWORK JSON"
-              + " | COMPRESSED: " + packedNetworkJsonSizeMBytes.toFixed(3) + " MB"
-              + " | ORG: " + networkJsonSizeMBytes.toFixed(3) + " MB"
-            ));
+          //   console.log(chalkLog(MODULE_ID_PREFIX + " | -><- COMPRESSED NETWORK JSON"
+          //     + " | COMPRESSED: " + packedNetworkJsonSizeMBytes.toFixed(3) + " MB"
+          //     + " | ORG: " + networkJsonSizeMBytes.toFixed(3) + " MB"
+          //   ));
 
-            childNetworkObj.networkJson = packedNetworkJson;
-            childNetworkObj.networkJsonIsCompressed = true;
-          }
+          //   childNetworkObj.networkJson = packedNetworkJson;
+          //   childNetworkObj.networkJsonIsCompressed = true;
+          // }
 
-          const nnDoc = new global.wordAssoDb.NeuralNetwork(childNetworkObj);
 
           try{
+
+            const childNetworkObjSmall = omit(childNetworkObj, ["inputsObj", "network", "networkRaw", "evolve.options.network", "evolve.options.schedule"]);
+            const nnDoc = new global.wordAssoDb.NeuralNetwork(childNetworkObjSmall);
+
+            // delete childNetworkObj.inputsObj;
+            // delete childNetworkObj.network;
+            // delete childNetworkObj.networkRaw;
+            // delete childNetworkObj.evolve.options.network;
+            // delete childNetworkObj.evolve.options.schedule;
+
             await nnDoc.save();
           }
           catch(e){

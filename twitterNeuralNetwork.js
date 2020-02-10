@@ -10,6 +10,7 @@ const DEFAULT_REMOVE_SEED_FROM_VIABLE_NN_SET_ON_FAIL = true;
 const DEFAULT_USER_PROFILE_ONLY_FLAG = false;
 const DEFAULT_BINARY_MODE = true;
 const DEFAULT_COMPARE_TECH = false;
+const DEFAULT_FORCE_NETWORK_TECHNOLOGY = false;
 
 const DEFAULT_MAX_FAIL_NETWORKS = 50;
 
@@ -47,20 +48,30 @@ const MODULE_ID = MODULE_ID_PREFIX + "_node_" + hostname;
 const wordAssoDb = require("@threeceelabs/mongoose-twitter");
 let dbConnection;
 
-const carrotEvolveOptionsPickArray = [
+const defaultEvolveOptionsPickArray = [
   "activation",
-  // "clear",
+  "architecture",
+  "error",
+  "hiddenLayerSize",
+  "inputs",
+  "inputsId",
+  "iterations",
+  "network",
+  "networkTechnology",
+  "schedule",
+  "seedNetworkId",
+  "seedInputsId",
+];
+
+const carrotEvolveOptionsPickArray = [
   "cost",
   "crossover",
   "efficient_mutation",
   "elitism",
   "equal",
-  "error",
   "fitness",
   "fitness_population",
   "growth",
-  "iterations",
-  // "log",
   "max_nodes",
   "maxConns",
   "maxGates",
@@ -68,40 +79,37 @@ const carrotEvolveOptionsPickArray = [
   "mutation_amount",
   "mutation_rate",
   "mutationSelection",
-  "network",
   "popsize",
   "population_size",
   "provenance",
-  "schedule",
   "selection",
   "threads",
 ];
 
 const neatapticEvolveOptionsPickArray = [
-  "activation",
-  // "clear",
   "cost",
   "crossover",
   "elitism",
   "equal",
-  "error",
   "fitnessPopulation",
   "growth",
-  "iterations",
-  // "log",
   "mutation",
   "mutationAmount",
   "mutationRate",
   "mutationSelection",
-  "network",
   "popsize",
   "provenance",
-  "schedule",
   "selection",
   "threads",
 ];
 
-const combinedEvolveOptionsPickArray = _.union(carrotEvolveOptionsPickArray, neatapticEvolveOptionsPickArray);
+const brainTrainOptionsPickArray = [
+  "learningRate",
+  "momentum",
+  "timeout",
+];
+
+const combinedEvolveOptionsPickArray = _.union(defaultEvolveOptionsPickArray, carrotEvolveOptionsPickArray, neatapticEvolveOptionsPickArray, brainTrainOptionsPickArray);
 
 let DROPBOX_ROOT_FOLDER;
 
@@ -194,6 +202,7 @@ let configuration = {};
 
 const childConfiguration = {};
 
+configuration.forceNetworkTechnology = DEFAULT_FORCE_NETWORK_TECHNOLOGY;
 configuration.networkIdPrefix = "nn_" + getTimeStamp() + "_" + hostname ;
 configuration.userProfileCharCodesOnlyFlag = DEFAULT_USER_PROFILE_CHAR_CODES_ONLY_FLAG;
 configuration.userProfileCharCodesOnlyInputsId = DEFAULT_USER_PROFILE_CHAR_CODES_ONLY_INPUTS_ID;
@@ -472,6 +481,7 @@ const EVOLVE_MUTATION_RATE_RANGE = { min: 0.35, max: 0.75 };
 const DEFAULT_GROWTH = { min: 0.00005, max: 0.00015 };
 const EVOLVE_GROWTH_RANGE = { min: DEFAULT_GROWTH.min, max: DEFAULT_GROWTH.max };
 const EVOLVE_ELITISM_RANGE = { min: 1, max: 5 };
+
 const DEFAULT_EVOLVE_COST_ARRAY = [
   "BINARY",
   "CROSS_ENTROPY",
@@ -481,11 +491,13 @@ const DEFAULT_EVOLVE_COST_ARRAY = [
   "MSE",
   "WAPE"
 ];
+
 const DEFAULT_EVOLVE_SELECTION_ARRAY = [
   "FITNESS_PROPORTIONATE",
   "POWER",
   "TOURNAMENT"
 ];
+
 const DEFAULT_EVOLVE_MOD_ACTIVATION_ARRAY = [
   "ABSOLUTE",
   "BENT_IDENTITY",
@@ -500,6 +512,21 @@ const DEFAULT_EVOLVE_MOD_ACTIVATION_ARRAY = [
   "SINUSOID",
   "SOFTSIGN",
   "STEP",
+  "TANH"
+];
+
+const DEFAULT_BRAIN_TRAIN_TIMEOUT = Infinity;
+
+const DEFAULT_BRAIN_TRAIN_MOMENTUM = 0.1;
+const BRAIN_TRAIN_MOMENTUM_RANGE = { min: 0.05, max: 0.5 };
+
+const DEFAULT_BRAIN_TRAIN_LEARNING_RATE = 0.3;
+const BRAIN_TRAIN_LEARNING_RATE_RANGE = { min: 0.15, max: 0.6 };
+
+const DEFAULT_BRAIN_TRAIN_ACTIVATION_ARRAY = [
+  "SIGMOID",
+  "RELU",
+  "LEAKY_RELU",
   "TANH"
 ];
 
@@ -665,6 +692,10 @@ configuration.activationArray = (process.env.TNN_EVOLVE_MOD_ACTIVATION_ARRAY !==
   ? process.env.TNN_EVOLVE_MOD_ACTIVATION_ARRAY 
   : DEFAULT_EVOLVE_MOD_ACTIVATION_ARRAY;
 
+configuration.brainActivationArray = (process.env.TNN_BRAIN_TRAIN_ACTIVATION_ARRAY !== undefined) 
+  ? process.env.TNN_BRAIN_TRAIN_ACTIVATION_ARRAY 
+  : DEFAULT_BRAIN_TRAIN_ACTIVATION_ARRAY;
+
 configuration.globalMinSuccessRate = (process.env.TNN_GLOBAL_MIN_SUCCESS_RATE !== undefined) 
   ? process.env.TNN_GLOBAL_MIN_SUCCESS_RATE 
   : DEFAULT_GLOBAL_MIN_SUCCESS_RATE;
@@ -719,6 +750,10 @@ configuration.evolve.provenance = DEFAULT_EVOLVE_PROVENANCE;
 configuration.evolve.selection = DEFAULT_EVOLVE_SELECTION;
 configuration.evolve.threads = DEFAULT_EVOLVE_THREADS;
 configuration.evolve.useBestNetwork = DEFAULT_EVOLVE_BEST_NETWORK;
+
+configuration.evolve.momentum = DEFAULT_BRAIN_TRAIN_MOMENTUM;
+configuration.evolve.learningRate = DEFAULT_BRAIN_TRAIN_LEARNING_RATE;
+configuration.evolve.timeout = DEFAULT_BRAIN_TRAIN_TIMEOUT;
 
 statsObj.evolveStats = {};
 statsObj.evolveStats.results = {};
@@ -909,7 +944,10 @@ function printResultsHashmap(){
       let snIdRes = 0;
       let iterations = 0;
       let secPerIteration = 0;
+      let cost = "";
       let error = 0;
+      let popsize = 0;
+      let elitism = 0;
       let fitness = 0;
       let successRate = 0;
       let elapsed = 0;
@@ -928,6 +966,10 @@ function printResultsHashmap(){
       hiddenLayerSize = (networkObj.hiddenLayerSize && (networkObj.hiddenLayerSize !== undefined)) ? networkObj.hiddenLayerSize : "---";
       seedNetworkId = (networkObj.seedNetworkId && networkObj.seedNetworkId !== undefined) ? networkObj.seedNetworkId : false;
       iterations = (networkObj.evolve.results && networkObj.evolve.results !== undefined) ? networkObj.evolve.results.iterations : 0;
+
+      cost = (networkObj.networkTechnology !== "brain") ? networkObj.evolve.options.cost.slice(0,4) : "---";
+      popsize = (networkObj.networkTechnology !== "brain") ? networkObj.evolve.options.popsize : "---";
+      elitism = (networkObj.networkTechnology !== "brain") ? networkObj.evolve.options.elitism : "---";
 
       error = ((networkObj.evolve.results && networkObj.evolve.results !== undefined) 
         && (networkObj.evolve.results.error !== undefined)
@@ -958,14 +1000,17 @@ function printResultsHashmap(){
         networkObj.inputsId,
         networkObj.evolve.options.activation.slice(0,6),
         formatBoolean(networkObj.evolve.options.clear),
-        networkObj.evolve.options.cost.slice(0,4),
+        // networkObj.evolve.options.cost.slice(0,4),
+        cost,
         selection,
         growth,
         formatBoolean(networkObj.evolve.options.equal),
         mutation_rate,
         formatBoolean(networkObj.evolve.options.efficient_mutation),
-        networkObj.evolve.options.population_size,
-        networkObj.evolve.options.elitism,
+        // networkObj.evolve.options.population_size,
+        popsize,
+        // networkObj.evolve.options.elitism,
+        elitism,
         getTimeStamp(networkObj.evolve.startTime),
         msToTime(elapsed),
         iterations,
@@ -1964,7 +2009,13 @@ async function generateEvolveOptions(params){
 
       console.log(chalkLog(MODULE_ID_PREFIX + " | ... GENERATE EVOLVE OPTIONS ... | ATTEMPTS: " + attempts + " | KEY: " + key));
 
-      config.activation = randomItem(configuration.activationArray);
+      if (config.networkTechnology === "brain"){
+        config.activation = randomItem(configuration.brainActivationArray);
+      }
+      else{
+        config.activation = randomItem(configuration.activationArray);
+      }
+
       config.clear = false;
 
       // neataptic doesn't have WAPE cost
@@ -1989,6 +2040,10 @@ async function generateEvolveOptions(params){
       config.selection = randomItem(configuration.selectionArray);
       config.threads = configuration.evolve.threads;
 
+      config.momentum = randomFloat(BRAIN_TRAIN_MOMENTUM_RANGE.min, BRAIN_TRAIN_MOMENTUM_RANGE.max);
+      config.learningRate = randomFloat(BRAIN_TRAIN_LEARNING_RATE_RANGE.min, BRAIN_TRAIN_LEARNING_RATE_RANGE.max);
+      config.timeout = configuration.evolve.timeout;
+
       key = config.activation + ":" + config.cost + ":" + config.selection;
 
       attempts += 1;
@@ -2005,6 +2060,28 @@ async function generateEvolveOptions(params){
   }
 }
 
+function pickTechnologyOptions(config){
+
+  let pickArray = [];
+
+  switch (config.networkTechnology){
+    case "brain": 
+      pickArray = _.union(defaultEvolveOptionsPickArray, brainTrainOptionsPickArray);
+      break;
+    case "carrot": 
+      pickArray = _.union(defaultEvolveOptionsPickArray, carrotEvolveOptionsPickArray);
+      break;
+    case "neataptic": 
+      pickArray = _.union(defaultEvolveOptionsPickArray, neatapticEvolveOptionsPickArray);
+      break;
+    default:
+      console.log(chalkError(MODULE_ID_PREFIX + " | *** generateRandomEvolveConfig ERROR | UNKNOWN NETWORK TECHNOLOGY: " + config.networkTechnology));
+      throw new Error("generateRandomEvolveConfig UNKNOWN NETWORK TECHNOLOGY: " + config.networkTechnology);
+  }
+  return pick(config, pickArray);
+}
+
+
 async function generateRandomEvolveConfig(p){
 
   const params = p || {};
@@ -2016,7 +2093,10 @@ async function generateRandomEvolveConfig(p){
   let config = {};
 
   config.networkCreateMode = "evolve";
-  config.binaryMode = (params.binaryMode !== undefined) ? params.binaryMode : configuration.binaryMode;
+
+  config.userProfileCharCodesOnlyFlag = configuration.userProfileCharCodesOnlyFlag || false;
+
+  config.binaryMode = (!config.userProfileCharCodesOnlyFlag && params.binaryMode !== undefined) ? params.binaryMode : configuration.binaryMode;
 
   if (configuration.forceNetworkTechnology && configuration.forceNetworkTechnology !== undefined){
     config.networkTechnology = configuration.forceNetworkTechnology;
@@ -2028,7 +2108,6 @@ async function generateRandomEvolveConfig(p){
 
   console.log(chalkBlue(MODULE_ID_PREFIX + " | NETWORK TECHNOLOGY: " + config.networkTechnology));
 
-  config.userProfileCharCodesOnlyFlag = configuration.userProfileCharCodesOnlyFlag || false;
 
   debug(chalkLog(MODULE_ID_PREFIX + " | NETWORK CREATE MODE: " + config.networkCreateMode));
 
@@ -2093,6 +2172,7 @@ async function generateRandomEvolveConfig(p){
         config.selection = dbNetworkObj.evolve.options.selection || dbNetworkObj.evolve.options.selection;
       }
 
+      config = pickTechnologyOptions(config);
       return config;
     }
     catch(err){
@@ -2129,6 +2209,7 @@ async function generateRandomEvolveConfig(p){
 
         console.log(MODULE_ID_PREFIX + " | " + config.architecture.toUpperCase() + " ARCH | SEED INPUTS ID: " + config.seedInputsId);
 
+        config = pickTechnologyOptions(config);
         return config;
       }
       catch(err){
@@ -2170,16 +2251,17 @@ async function initNetworkCreate(params){
 
     if (compareTech && configuration.previousChildConfig && configuration.enableRandomTechnology) {
 
-      console.log(chalkAlert("TNN | PREV CHILD CONF TECH: " + configuration.previousChildConfig.networkTechnology));
-
       childConf = configuration.previousChildConfig;
 
       if (configuration.previousChildConfig.networkTechnology === "neataptic") {
         childConf.networkTechnology = "carrot";
       }
-      else {
+      if (configuration.previousChildConfig.networkTechnology === "carrot") {
         childConf.networkTechnology = "neataptic";
       }
+
+      console.log(chalkAlert("TNN | PREV CHILD CONF TECH: " + configuration.previousChildConfig.networkTechnology));
+      console.log(chalkAlert("TNN | NEXT CHILD CONF TECH: " + configuration.networkTechnology));
 
       configuration.previousChildConfig = false;
     }
@@ -2210,17 +2292,31 @@ async function initNetworkCreate(params){
                MODULE_ID_PREFIX + " | NN ID:             " + networkId
       + "\n" + MODULE_ID_PREFIX + " | TECHNOLOGY:        " + messageObj.networkTechnology
       + "\n" + MODULE_ID_PREFIX + " | ARCHITECTURE:      " + messageObj.architecture
-      + "\n" + MODULE_ID_PREFIX + " | SEED:              " + messageObj.seedNetworkId
-      + "\n" + MODULE_ID_PREFIX + " | SEED RES:          " + messageObj.seedNetworkRes.toFixed(3) + "%"
+      // + "\n" + MODULE_ID_PREFIX + " | SEED:              " + messageObj.seedNetworkId
+      // + "\n" + MODULE_ID_PREFIX + " | SEED RES:          " + messageObj.seedNetworkRes.toFixed(3) + "%"
       + "\n" + MODULE_ID_PREFIX + " | INPUTS ID:         " + messageObj.inputsId
       + "\n" + MODULE_ID_PREFIX + " | INPUTS:            " + messageObj.numInputs
       + "\n" + MODULE_ID_PREFIX + " | HIDDEN LAYER SIZE: " + messageObj.hiddenLayerSize
-      + "\n" + MODULE_ID_PREFIX + " | EFF MUTATION:      " + messageObj.efficient_mutation
-      + "\n" + MODULE_ID_PREFIX + " | ACTIVATION:        " + messageObj.activation
-      + "\n" + MODULE_ID_PREFIX + " | COST:              " + messageObj.cost
-      + "\n" + MODULE_ID_PREFIX + " | SELECTION:         " + messageObj.selection
       + "\n" + MODULE_ID_PREFIX + " | ITERATIONS:        " + messageObj.iterations
+      + "\n" + MODULE_ID_PREFIX + " | ERROR:             " + messageObj.error
+      + "\n" + MODULE_ID_PREFIX + " | ACTIVATION:        " + messageObj.activation
     ));
+
+    if (messageObj.networkTechnology === "brain"){
+      console.log(chalkBlue(
+               MODULE_ID_PREFIX + " | TIMEOUT:           " + messageObj.timeout
+      + "\n" + MODULE_ID_PREFIX + " | MOMENTUM:          " + messageObj.momentum
+      + "\n" + MODULE_ID_PREFIX + " | LEARNING RATE:     " + messageObj.learningRate
+      ));
+    }
+
+    if (messageObj.networkTechnology !== "brain"){
+      console.log(chalkBlue(
+                 MODULE_ID_PREFIX + " | COST:              " + messageObj.cost
+        + "\n" + MODULE_ID_PREFIX + " | SELECTION:         " + messageObj.selection
+        + "\n" + MODULE_ID_PREFIX + " | EFF MUTATION:      " + messageObj.efficient_mutation
+      ));
+    }
 
     if (messageObj.seedNetworkId) {
       console.log(chalkBlue(MODULE_ID_PREFIX + " | SEED:                " + messageObj.seedNetworkId 
