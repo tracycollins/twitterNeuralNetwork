@@ -5,6 +5,9 @@ const ONE_MINUTE = 60*ONE_SECOND;
 const ONE_HOUR = 60*ONE_MINUTE;
 const DEFAULT_MAX_NETWORK_JSON_SIZE_MB = 15;
 
+const DEFAULT_BRAIN_HIDDEN_LAYER_SIZE = 9;
+const DEFAULT_NEATAPTIC_HIDDEN_LAYER_SIZE = 9;
+
 const compactDateTimeFormat = "YYYYMMDD_HHmmss";
 
 let childNetworkObj; // this is the common, default nn object
@@ -53,8 +56,8 @@ configuration.maxNetworkJsonSizeMB = DEFAULT_MAX_NETWORK_JSON_SIZE_MB;
 configuration.userArchiveFileExistsMaxWaitTime = DEFAULT_USER_ARCHIVE_FILE_EXITS_MAX_WAIT_TIME;
 configuration.testSetRatio = DEFAULT_TEST_RATIO;
 configuration.binaryMode = DEFAULT_BINARY_MODE;
-configuration.brainHiddenLayerSize = 9;
-configuration.neatapticHiddenLayerSize = 9;
+configuration.brainHiddenLayerSize = DEFAULT_BRAIN_HIDDEN_LAYER_SIZE;
+configuration.neatapticHiddenLayerSize = DEFAULT_NEATAPTIC_HIDDEN_LAYER_SIZE;
 configuration.networkTechnology = DEFAULT_NETWORK_TECHNOLOGY;
 
 const brainTrainOptionsPickArray = [
@@ -1056,7 +1059,6 @@ async function testNetworkData(params){
   ));
 
   return testResults;
-
 }
 
 async function testNetwork(p){
@@ -1068,10 +1070,11 @@ async function testNetwork(p){
   const userProfileCharCodesOnlyFlag = (params.userProfileCharCodesOnlyFlag !== undefined) ? params.userProfileCharCodesOnlyFlag : configuration.userProfileCharCodesOnlyFlag;
 
   const testSet = await dataSetPrep({
+    inputsId: params.inputsId,
     dataSetObj: testSetObj,
     userProfileCharCodesOnlyFlag: userProfileCharCodesOnlyFlag,
-    // userProfileOnlyFlag: userProfileOnlyFlag,
-    // binaryMode: binaryMode,
+    userProfileOnlyFlag: userProfileOnlyFlag,
+    binaryMode: binaryMode,
     verbose: params.verbose
   });
 
@@ -1101,7 +1104,6 @@ async function testNetwork(p){
   childNetworkObj.successRate = childNetworkObj.test.results.successRate;
 
   return;
-
 }
 
 let processSendQueueInterval;
@@ -1296,10 +1298,10 @@ function dataSetPrep(p){
         tcUtils.convertDatumOneNetwork({
           primaryInputsFlag: true, 
           user: user,
+          inputsId: params.inputsId,
           userProfileCharCodesOnlyFlag: userProfileCharCodesOnlyFlag,
-          // numCharInputs: numCharInputs,
-          // userProfileOnlyFlag: userProfileOnlyFlag,
-          // binaryMode: binaryMode, 
+          userProfileOnlyFlag: userProfileOnlyFlag,
+          binaryMode: binaryMode, 
           verbose: params.verbose
         }).
         then(function(results){
@@ -1542,12 +1544,17 @@ function createNetwork(){
         }
         else if (childNetworkObj.networkTechnology === "brain"){
 
-          childNetworkObj.hiddenLayerSize = Math.min(configuration.brainHiddenLayerSize, childNetworkObj.hiddenLayerSize);
-          childNetworkObj.hiddenLayerSize = Math.max(childNetworkObj.hiddenLayerSize, trainingSetObj.meta.numOutputs);
+          if (childNetworkObj.hiddenLayerSize){
+            childNetworkObj.hiddenLayerSize = Math.min(configuration.brainHiddenLayerSize, childNetworkObj.hiddenLayerSize);
+            childNetworkObj.hiddenLayerSize = Math.max(childNetworkObj.hiddenLayerSize, trainingSetObj.meta.numOutputs);
+          }
+          else{
+            childNetworkObj.hiddenLayerSize = configuration.brainHiddenLayerSize;
+          }
 
           networkRaw = new brain.NeuralNetwork({
             inputSize: numInputs,
-            hiddenLayers: [childNetworkObj.hiddenLayerSize],
+            // hiddenLayers: [childNetworkObj.hiddenLayerSize],
             outputSize: trainingSetObj.meta.numOutputs
           });
 
@@ -1564,8 +1571,13 @@ function createNetwork(){
         }
         else{
 
-          childNetworkObj.hiddenLayerSize = Math.min(configuration.neatapticHiddenLayerSize, childNetworkObj.hiddenLayerSize);
-          childNetworkObj.hiddenLayerSize = Math.max(childNetworkObj.hiddenLayerSize, trainingSetObj.meta.numOutputs);
+          if (childNetworkObj.hiddenLayerSize){
+            childNetworkObj.hiddenLayerSize = Math.min(configuration.neatapticHiddenLayerSize, childNetworkObj.hiddenLayerSize);
+            childNetworkObj.hiddenLayerSize = Math.max(childNetworkObj.hiddenLayerSize, trainingSetObj.meta.numOutputs);
+          }
+          else{
+            childNetworkObj.hiddenLayerSize = configuration.neatapticHiddenLayerSize;
+          }
 
           networkRaw = new neataptic.architect.Perceptron(numInputs, childNetworkObj.hiddenLayerSize, 3);
 
@@ -1635,15 +1647,17 @@ async function evolve(params){
     await tcUtils.setPrimaryInputs({inputsId: inputsObj.inputsId});
 
     const trainingSet = await dataSetPrep({
+      inputsId: inputsObj.inputsId,
       dataSetObj: trainingSetObj, 
       userProfileCharCodesOnlyFlag: userProfileCharCodesOnlyFlag,
-      // binaryMode: binaryMode,
+      userProfileOnlyFlag: userProfileOnlyFlag,
+      binaryMode: binaryMode,
       verbose: params.verbose
     });
 
-    const childNetworkRaw = await createNetwork();
+    const childNetworkRaw = await createNetwork({userProfileCharCodesOnlyFlag: userProfileCharCodesOnlyFlag});
 
-    const preppedOptions = await prepNetworkEvolve();
+    const preppedOptions = await prepNetworkEvolve({userProfileCharCodesOnlyFlag: userProfileCharCodesOnlyFlag});
 
     let evolveResults;
 
@@ -2072,6 +2086,7 @@ const fsmStates = {
           await networkEvolve({userProfileCharCodesOnlyFlag: configuration.userProfileCharCodesOnlyFlag, verbose: configuration.verbose});
 
           await testNetwork({
+            inputsId: childNetworkObj.inputsId,
             binaryMode: configuration.binaryMode, 
             verbose: configuration.verbose
           });

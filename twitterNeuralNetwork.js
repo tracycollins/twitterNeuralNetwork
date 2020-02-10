@@ -3,6 +3,9 @@ const MODULE_ID_PREFIX = "TNN";
 const CHILD_PREFIX = "tnc_node";
 const CHILD_PREFIX_SHORT = "NC";
 
+const DEFAULT_USER_PROFILE_CHAR_CODES_ONLY_FLAG = true;
+const DEFAULT_USER_PROFILE_CHAR_CODES_ONLY_INPUTS_ID = "inputs_25250101_000000_255_profilecharcodes";
+
 const DEFAULT_REMOVE_SEED_FROM_VIABLE_NN_SET_ON_FAIL = true;
 const DEFAULT_USER_PROFILE_ONLY_FLAG = false;
 const DEFAULT_BINARY_MODE = true;
@@ -192,6 +195,8 @@ let configuration = {};
 const childConfiguration = {};
 
 configuration.networkIdPrefix = "nn_" + getTimeStamp() + "_" + hostname ;
+configuration.userProfileCharCodesOnlyFlag = DEFAULT_USER_PROFILE_CHAR_CODES_ONLY_FLAG;
+configuration.userProfileCharCodesOnlyInputsId = DEFAULT_USER_PROFILE_CHAR_CODES_ONLY_INPUTS_ID;
 configuration.removeSeedFromViableNetworkOnFail = DEFAULT_REMOVE_SEED_FROM_VIABLE_NN_SET_ON_FAIL;
 configuration.binaryMode = DEFAULT_BINARY_MODE;
 configuration.userProfileOnlyFlag = DEFAULT_USER_PROFILE_ONLY_FLAG;
@@ -516,7 +521,12 @@ const betterChildSeedNetworkIdSet = new Set();
 const skipLoadNetworkSet = new Set();
 const zeroSuccessEvolveOptionsSet = new Set();
 
-const inputsIdHashMap = {};
+const inputsIdTechHashMap = {};
+inputsIdTechHashMap.networkTechnology = {};
+inputsIdTechHashMap.networkTechnology.brain = {};
+inputsIdTechHashMap.networkTechnology.carrot = {};
+inputsIdTechHashMap.networkTechnology.neataptic = {};
+
 const inputsViableSet = new Set();
 const inputsFailedSet = new Set();
 
@@ -1040,7 +1050,9 @@ function purgeInputs(inputsId){
         inputsSet.delete(inputsId);
         inputsViableSet.delete(inputsId);
         skipLoadInputsSet.add(inputsId);
-        delete inputsIdHashMap[inputsId];
+        delete inputsIdTechHashMap.networkTechnology.brain[inputsId];
+        delete inputsIdTechHashMap.networkTechnology.carrot[inputsId];
+        delete inputsIdTechHashMap.networkTechnology.neataptic[inputsId];
       }
       else {
         console.log(chalkInfo(MODULE_ID_PREFIX + " | --- NO PURGE INPUTS ... IN CONFIGURATION INPUTS ID ARRAY" 
@@ -1223,6 +1235,18 @@ async function loadNetworkFile(params){
 
   const inputsObj = dbInputsObj.toObject();
 
+  if (configuration.forceNetworkTechnology && (networkObj.networkTechnology !== configuration.forceNetworkTechnology)){
+    console.log(chalkInfo(MODULE_ID_PREFIX + " | --- NN TECH NOT FORCE NETWORK TECH ... SKIPPING"
+      + " | " + networkObj.networkId
+      + " | NN TECH: " + networkObj.networkTechnology
+      + " | FORCE TECH: " + configuration.forceNetworkTechnology
+      + " | " + filePath
+    ));
+
+    skipLoadNetworkSet.add(networkObj.networkId);
+    return;
+  }
+
   if (!configuration.inputsIdArray.includes(networkObj.inputsId)) {
 
     if (configuration.archiveNotInInputsIdArray && filePath.toLowerCase().includes(hostBestNetworkFolder.toLowerCase())){
@@ -1267,8 +1291,11 @@ async function loadNetworkFile(params){
 
     viableNetworkIdSet.add(networkObj.networkId);
 
-    if(empty(inputsIdHashMap[networkObj.inputsId])) { inputsIdHashMap[networkObj.inputsId] = new Set(); }
-    inputsIdHashMap[networkObj.inputsId].add(networkObj.networkId);
+    if(empty(inputsIdTechHashMap.networkTechnology[networkObj.networkTechnology][networkObj.inputsId])) {
+      inputsIdTechHashMap.networkTechnology[networkObj.networkTechnology][networkObj.inputsId] = new Set(); 
+    }
+
+    inputsIdTechHashMap.networkTechnology[networkObj.networkTechnology][networkObj.inputsId].add(networkObj.networkId);
 
     console.log(chalkGreen(MODULE_ID_PREFIX + " | ### MOVE NN FROM LOCAL TO GLOBAL BEST"
       + " | " + params.folder + "/" + params.file
@@ -1295,8 +1322,11 @@ async function loadNetworkFile(params){
 
     viableNetworkIdSet.add(networkObj.networkId);
 
-    if(empty(inputsIdHashMap[networkObj.inputsId])) { inputsIdHashMap[networkObj.inputsId] = new Set(); }
-    inputsIdHashMap[networkObj.inputsId].add(networkObj.networkId);
+    if(empty(inputsIdTechHashMap.networkTechnology[networkObj.networkTechnology][networkObj.inputsId])) { 
+      inputsIdTechHashMap.networkTechnology[networkObj.networkTechnology][networkObj.inputsId] = new Set();
+    }
+
+    inputsIdTechHashMap.networkTechnology[networkObj.networkTechnology][networkObj.inputsId].add(networkObj.networkId);
 
     printNetworkObj(MODULE_ID_PREFIX + " | +++ VIABLE NN [" + viableNetworkIdSet.size + "]", networkObj);
 
@@ -1351,8 +1381,11 @@ async function loadNetworkFile(params){
 
       viableNetworkIdSet.add(nnDb.networkId);
 
-      if(empty(inputsIdHashMap[nnDb.inputsId])) { inputsIdHashMap[nnDb.inputsId] = new Set(); }
-      inputsIdHashMap[nnDb.inputsId].add(nnDb.networkId);
+      if(empty(inputsIdTechHashMap.networkTechnology[nnDb.networkTechnology][nnDb.inputsId])) { 
+        inputsIdTechHashMap.networkTechnology[nnDb.networkTechnology][nnDb.inputsId] = new Set(); 
+      }
+
+      inputsIdTechHashMap.networkTechnology[nnDb.networkTechnology][nnDb.inputsId].add(nnDb.networkId);
 
     }
 
@@ -1764,13 +1797,38 @@ async function generateSeedInputsNetworkId(params){
     //
     
     const useRandomNetwork = (Math.random() <= configuration.seedNetworkProbability);
+    const randomTechnology = (config.forceNetworkTechnology) ? config.forceNetworkTechnology : randomItem(["brain", "carrot", "neataptic"]);
 
-    if (useRandomNetwork && (Object.keys(inputsIdHashMap).length > 0)) {
+    if (useRandomNetwork && (Object.keys(inputsIdTechHashMap.networkTechnology[randomTechnology]).length > 0)) {
 
-      console.log(chalkLog(MODULE_ID_PREFIX + " | USING RANDOM SEED NETWORK | AVAIL SEED NNs: " + Object.keys(inputsIdHashMap).length));
+      console.log(chalkLog(MODULE_ID_PREFIX + " | USING RANDOM SEED NETWORK | AVAIL SEED NNs: " + Object.keys(inputsIdTechHashMap.networkTechnology[randomTechnology]).length));
 
-      const randomInputsId = randomItem(Object.keys(inputsIdHashMap));
-      const randomNetworkIdSet = inputsIdHashMap[randomInputsId];
+      let randomInputsId;
+
+      if (config.userProfileCharCodesOnlyFlag){
+
+        randomInputsId = configuration.userProfileCharCodesOnlyInputsId;
+
+        if (empty(inputsIdTechHashMap.networkTechnology[randomTechnology][randomInputsId])){
+
+          console.log(chalkBlueBold(MODULE_ID_PREFIX
+            + " | generateSeedInputsNetworkId | NO RANDOM SEED NETWORKS WITH INPUTS ID " + randomInputsId + " IN SEED POOL"
+          ));
+
+          const inputsObj = await loadInputsFile({folder: defaultInputsFolder, file: configuration.userProfileCharCodesOnlyInputsId+".json"});
+          
+          config.numInputs = inputsObj.meta.numInputs;
+          config.seedInputsId = randomInputsId;
+          config.inputsId = randomInputsId;
+
+          return config;
+        }
+      }
+      else {
+        randomInputsId = randomItem(Object.keys(inputsIdTechHashMap.networkTechnology[randomTechnology]));
+      }
+
+      const randomNetworkIdSet = inputsIdTechHashMap.networkTechnology[randomTechnology][randomInputsId];
 
       console.log(chalkLog(MODULE_ID_PREFIX + " | RANDOM SEED: " + randomInputsId + " | INPUTS NN SET SIZE: " + randomNetworkIdSet.size));
 
@@ -1812,6 +1870,32 @@ async function generateSeedInputsNetworkId(params){
         return config;
       }
     }
+    else if (config.networkTechnology === "brain") {
+      config.inputsId = configuration.userProfileCharCodesOnlyInputsId;
+      config.seedInputsId = configuration.userProfileCharCodesOnlyInputsId;
+      // const inputsObj = await wordAssoDb.NetworkInputs.findOne({inputsId: config.inputsId}).lean();
+      const inputsObj = await loadInputsFile({folder: defaultInputsFolder, file: configuration.userProfileCharCodesOnlyInputsId+".json"});
+      config.numInputs = inputsObj.meta.numInputs;
+      console.log(chalkLog(MODULE_ID_PREFIX + " | BRAIN SEED INPUTS: " + config.seedInputsId));
+      return config;
+    }
+    else if (config.userProfileCharCodesOnlyFlag){
+
+      config.seedInputsId = configuration.userProfileCharCodesOnlyInputsId;
+      config.inputsId = config.seedInputsId;
+
+      console.log(chalkLog(MODULE_ID_PREFIX + " | SEED | CHAR CODES ONLY INPUTS ID: " + config.seedInputsId));
+
+      const inputsObj = await loadInputsFile({folder: defaultInputsFolder, file: configuration.userProfileCharCodesOnlyInputsId+".json"});
+      config.numInputs = inputsObj.meta.numInputs;
+
+      console.log(chalkBlueBold(MODULE_ID_PREFIX
+        + " | SEED | CHAR CODES ONLY INPUTS ID: " + config.seedInputsId
+        + " | NUM INPUTS: " + config.numInputs
+      ));
+
+      return config;
+    }
     else if (availableInputsIdArray.length > 0) {
 
       console.log(chalkLog(MODULE_ID_PREFIX + " | VIABLE NETWORKS INPUTS: " + availableInputsIdArray.length));
@@ -1821,7 +1905,7 @@ async function generateSeedInputsNetworkId(params){
       config.seedInputsId = availableInputsIdArray.pop(); // most recent input
       config.inputsId = config.seedInputsId;
 
-      console.log(chalkBlue(MODULE_ID_PREFIX + " | SEED INPUTS: " + config.inputsId));
+      console.log(chalkBlue(MODULE_ID_PREFIX + " | SEED | AVAILABLE INPUTS ID: " + config.inputsId));
 
       const inputsObj = await wordAssoDb.NetworkInputs.findOne({inputsId: config.inputsId}).lean();
       config.numInputs = inputsObj.meta.numInputs;
@@ -1830,7 +1914,7 @@ async function generateSeedInputsNetworkId(params){
         + " | VIABLE INPUT"
         + " | VIABLE INPUTS: " + inputsViableSet.size
         + " | AVAIL INPUTS: " + availableInputsIdArray.length
-        + " | SEED INPUTS: " + config.seedInputsId
+        + " | SEED INPUTS ID: " + config.seedInputsId
         + " | NUM INPUTS: " + config.numInputs
       ));
 
@@ -1933,9 +2017,18 @@ async function generateRandomEvolveConfig(p){
 
   config.networkCreateMode = "evolve";
   config.binaryMode = (params.binaryMode !== undefined) ? params.binaryMode : configuration.binaryMode;
-  config.networkTechnology = (configuration.enableRandomTechnology) ? randomItem(["neataptic", "carrot"]) : configuration.networkTechnology;
+
+  if (configuration.forceNetworkTechnology && configuration.forceNetworkTechnology !== undefined){
+    config.networkTechnology = configuration.forceNetworkTechnology;
+    config.forceNetworkTechnology = configuration.forceNetworkTechnology;
+  }
+  else{
+    config.networkTechnology = (configuration.enableRandomTechnology) ? randomItem(["brain", "neataptic", "carrot"]) : configuration.networkTechnology;
+  }
 
   console.log(chalkBlue(MODULE_ID_PREFIX + " | NETWORK TECHNOLOGY: " + config.networkTechnology));
+
+  config.userProfileCharCodesOnlyFlag = configuration.userProfileCharCodesOnlyFlag || false;
 
   debug(chalkLog(MODULE_ID_PREFIX + " | NETWORK CREATE MODE: " + config.networkCreateMode));
 
@@ -1972,7 +2065,7 @@ async function generateRandomEvolveConfig(p){
       console.log(MODULE_ID_PREFIX + " | SEED NETWORK:      " + dbNetworkObj.networkId);
       console.log(MODULE_ID_PREFIX + " | SEED NETWORK TECH: " + dbNetworkObj.networkTechnology);
       console.log(MODULE_ID_PREFIX + " | HIDDEN NODES:      " + dbNetworkObj.hiddenLayerSize);
-      console.log(MODULE_ID_PREFIX + " | SEED INPUTS:       " + dbNetworkObj.inputsId);
+      console.log(MODULE_ID_PREFIX + " | SEED INPUTS ID:    " + dbNetworkObj.inputsId);
 
       if (configuration.randomizeSeedOptions) {
         console.log(chalkLog(MODULE_ID_PREFIX + " | RANDOMIZE SEED NETWORK OPTIONS | " + config.seedNetworkId));
@@ -2034,7 +2127,7 @@ async function generateRandomEvolveConfig(p){
 
         config.inputsId = config.seedInputsId;
 
-        console.log(MODULE_ID_PREFIX + " | " + config.architecture.toUpperCase() + " ARCH | SEED INPUTS: " + config.seedInputsId);
+        console.log(MODULE_ID_PREFIX + " | " + config.architecture.toUpperCase() + " ARCH | SEED INPUTS ID: " + config.seedInputsId);
 
         return config;
       }
@@ -2976,6 +3069,11 @@ async function loadConfigFile(params) {
       newConfiguration.networkTechnology = loadedConfigObj.TNN_NETWORK_TECHNOLOGY;
     }
 
+    if (loadedConfigObj.TNN_USER_PROFILE_CHAR_CODES_ONLY_INPUTS_ID !== undefined) {
+      console.log(MODULE_ID_PREFIX + " | LOADED TNN_USER_PROFILE_CHAR_CODES_ONLY_INPUTS_ID: " + loadedConfigObj.TNN_USER_PROFILE_CHAR_CODES_ONLY_INPUTS_ID);
+      newConfiguration.userProfileCharCodesOnlyInputsId = loadedConfigObj.TNN_USER_PROFILE_CHAR_CODES_ONLY_INPUTS_ID;
+    }
+
     if (loadedConfigObj.TNN_ENABLE_RANDOM_NETWORK_TECHNOLOGY !== undefined) {
       console.log(MODULE_ID_PREFIX + " | LOADED TNN_ENABLE_RANDOM_NETWORK_TECHNOLOGY: " + loadedConfigObj.TNN_ENABLE_RANDOM_NETWORK_TECHNOLOGY);
       if ((loadedConfigObj.TNN_ENABLE_RANDOM_NETWORK_TECHNOLOGY === true) || (loadedConfigObj.TNN_ENABLE_RANDOM_NETWORK_TECHNOLOGY === "true")) {
@@ -3397,7 +3495,7 @@ const quitOnError = { name: "quitOnError", alias: "Q", type: Boolean, defaultVal
 const verbose = { name: "verbose", alias: "v", type: Boolean };
 const testMode = { name: "testMode", alias: "X", type: Boolean};
 
-const networkTechnology = { name: "networkTechnology", alias: "c", type: String};
+const forceNetworkTechnology = { name: "forceNetworkTechnology", alias: "c", type: String};
 const threads = { name: "threads", alias: "t", type: Number};
 const maxNumberChildren = { name: "maxNumberChildren", alias: "N", type: Number};
 const useLocalTrainingSets = { name: "useLocalTrainingSets", alias: "L", type: Boolean};
@@ -3413,7 +3511,7 @@ const useBestNetwork = { name: "useBestNetwork", alias: "b", type: Boolean };
 const evolveIterations = { name: "evolveIterations", alias: "I", type: Number};
 
 const optionDefinitions = [
-  networkTechnology,
+  forceNetworkTechnology,
   threads,
   maxNumberChildren,
   useLocalTrainingSets,
@@ -3474,8 +3572,9 @@ function loadCommandLineArgs(){
         console.log(MODULE_ID_PREFIX + " | --> COMMAND LINE CONFIG | " + arg + ": " + configuration.evolve.iterations);
       }
 
-      else if (arg === "networkTechnology"){
+      else if (arg === "forceNetworkTechnology"){
         configuration.networkTechnology = commandLineConfig[arg];
+        configuration.forceNetworkTechnology = commandLineConfig[arg];
         configuration.enableRandomTechnology = false;
         console.log(MODULE_ID_PREFIX + " | --> COMMAND LINE CONFIG | " + arg + ": " + configuration.networkTechnology);
       }
@@ -4389,9 +4488,11 @@ async function evolveCompleteHandler(params){
 
       viableNetworkIdSet.add(nn.networkId);
 
-      if(empty(inputsIdHashMap[nn.inputsId])) { inputsIdHashMap[nn.inputsId] = new Set(); }
+      if(empty(inputsIdTechHashMap.networkTechnology[nn.networkTechnology][nn.inputsId])) { 
+        inputsIdTechHashMap.networkTechnology[nn.networkTechnology][nn.inputsId] = new Set();
+      }
 
-      inputsIdHashMap[nn.inputsId].add(nn.networkId);
+      inputsIdTechHashMap.networkTechnology[nn.networkTechnology][nn.inputsId].add(nn.networkId);
 
       // nn seed but better than parent; add to nn child better than parent array
       if (nn.seedNetworkId 
@@ -4798,7 +4899,7 @@ async function childCreate(p){
     statsObj.status = "CHILD CREATE";
 
     const params = p || {};
-    const args = params.args || [];
+    // const args = params.args || [];
 
     const binaryMode = (params.binaryMode !== undefined) ? params.binaryMode : configuration.binaryMode;
     const compareTech = (params.compareTech !== undefined) ? params.compareTech : configuration.compareTech;
