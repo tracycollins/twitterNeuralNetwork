@@ -878,10 +878,6 @@ function printResultsHashmap(){
         return cb("UNDEFINED");
       }
       
-      // if(empty(networkObj.numInputs)) {
-      //   return cb("numInputs UNDEFINED");
-      // }
-      
       if(empty(networkObj.evolve)) {
         networkObj.evolve = {};
         networkObj.evolve.options = {};
@@ -5101,8 +5097,8 @@ setTimeout(async function(){
       console.log(chalkAlert(MODULE_ID_PREFIX + " | defaultUserArchiveFlagFile: " + configuration.defaultUserArchiveFlagFile));
     }
 
-    // await initSlackRtmClient();
-    // await initSlackWebClient();
+    await initSlackRtmClient();
+    await initSlackWebClient();
 
     try {
       dbConnection = await connectDb();

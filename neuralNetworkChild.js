@@ -42,6 +42,13 @@ const TEST_MODE_LENGTH = 1000;
 global.wordAssoDb = require("@threeceelabs/mongoose-twitter");
 
 let configuration = {};
+configuration.userProfileCharCodesOnlyFlag = true;
+
+configuration.userCharCountScreenName = 15;
+configuration.userCharCountName = 50;
+configuration.userCharCountDescription = 160;
+configuration.userCharCountLocation = 30;
+
 configuration.maxNetworkJsonSizeMB = DEFAULT_MAX_NETWORK_JSON_SIZE_MB;
 configuration.userArchiveFileExistsMaxWaitTime = DEFAULT_USER_ARCHIVE_FILE_EXITS_MAX_WAIT_TIME;
 configuration.testSetRatio = DEFAULT_TEST_RATIO;
@@ -1058,11 +1065,13 @@ async function testNetwork(p){
 
   const binaryMode = (params.binaryMode !== undefined) ? params.binaryMode : configuration.binaryMode;
   const userProfileOnlyFlag = (params.userProfileOnlyFlag !== undefined) ? params.userProfileOnlyFlag : configuration.userProfileOnlyFlag;
+  const userProfileCharCodesOnlyFlag = (params.userProfileCharCodesOnlyFlag !== undefined) ? params.userProfileCharCodesOnlyFlag : configuration.userProfileCharCodesOnlyFlag;
 
   const testSet = await dataSetPrep({
     dataSetObj: testSetObj,
-    userProfileOnlyFlag: userProfileOnlyFlag,
-    binaryMode: binaryMode,
+    userProfileCharCodesOnlyFlag: userProfileCharCodesOnlyFlag,
+    // userProfileOnlyFlag: userProfileOnlyFlag,
+    // binaryMode: binaryMode,
     verbose: params.verbose
   });
 
@@ -1223,6 +1232,14 @@ function prepNetworkEvolve() {
   return finalOptions;
 }
 
+function datumPostProcess(p){
+  return new Promise(function(resolve, reject){
+
+    const params = p || {};
+
+  });
+}
+
 function dataSetPrep(p){
 
   return new Promise(function(resolve, reject){
@@ -1230,6 +1247,7 @@ function dataSetPrep(p){
     const params = p || {};
     const dataSetObj = params.dataSetObj;
 
+    const userProfileCharCodesOnlyFlag = (params.userProfileCharCodesOnlyFlag !== undefined) ? params.userProfileCharCodesOnlyFlag : configuration.userProfileCharCodesOnlyFlag;
     const binaryMode = (params.binaryMode !== undefined) ? params.binaryMode : configuration.binaryMode;
     const userProfileOnlyFlag = (params.userProfileOnlyFlag !== undefined) ? params.userProfileOnlyFlag : configuration.userProfileOnlyFlag;
 
@@ -1237,12 +1255,22 @@ function dataSetPrep(p){
 
     let dataConverted = 0;
 
-    dataSetObj.meta.numInputs = childNetworkObj.numInputs;
+    // configuration.userCharCountScreenName = 15;
+    // configuration.userCharCountName = 50;
+    // configuration.userCharCountDescription = 160;
+    // configuration.userCharCountLocation = 30;
+
+    const numCharInputs = configuration.userCharCountScreenName + configuration.userCharCountName + configuration.userCharCountDescription + configuration.userCharCountLocation;
+
+    if (userProfileCharCodesOnlyFlag){
+      dataSetObj.meta.numInputs = numCharInputs;
+      childNetworkObj.numInputs = numCharInputs;
+    }
 
     console.log(chalkBlue(MODULE_ID_PREFIX
       + " | DATA SET preppedOptions"
       + " | DATA LENGTH: " + dataSetObj.data.length
-      + " | INPUTS: " + childNetworkObj.numInputs
+      + " | INPUTS: " + dataSetObj.meta.numInputs
       + " | USER PROFILE ONLY: " + userProfileOnlyFlag
       + " | BIN MODE: " + binaryMode
       + "\nDATA SET META\n" + jsonPrint(dataSetObj.meta)
@@ -1254,8 +1282,10 @@ function dataSetPrep(p){
 
       try {
 
-        if ((!user.profileHistograms || user.profileHistograms === undefined || user.profileHistograms === {}) 
-          && (!user.tweetHistograms || user.tweetHistograms === undefined || user.tweetHistograms === {})){
+        if (!userProfileCharCodesOnlyFlag
+          && (!user.profileHistograms || user.profileHistograms === undefined || user.profileHistograms === {}) 
+          && (!user.tweetHistograms || user.tweetHistograms === undefined || user.tweetHistograms === {}))
+        {
           console.log(chalkAlert(MODULE_ID_PREFIX + " | !!! EMPTY USER HISTOGRAMS ... SKIPPING | @" + user.screenName));
           return cb();
         }
@@ -1266,8 +1296,10 @@ function dataSetPrep(p){
         tcUtils.convertDatumOneNetwork({
           primaryInputsFlag: true, 
           user: user,
-          userProfileOnlyFlag: userProfileOnlyFlag,
-          binaryMode: binaryMode, 
+          userProfileCharCodesOnlyFlag: userProfileCharCodesOnlyFlag,
+          // numCharInputs: numCharInputs,
+          // userProfileOnlyFlag: userProfileOnlyFlag,
+          // binaryMode: binaryMode, 
           verbose: params.verbose
         }).
         then(function(results){
@@ -1333,14 +1365,13 @@ function dataSetPrep(p){
             inputMisses: results.inputMisses,
             inputHitRate: results.inputHitRate
           });
-          // dataSet.push({user: results.user, datum: results.datum, stats: results.stats});
-          // dataSet.push(results);
 
           if (configuration.verbose || (dataConverted % 1000 === 0) || configuration.testMode && (dataConverted % 100 === 0)){
             console.log(chalkLog(MODULE_ID_PREFIX + " | DATA CONVERTED: " + dataConverted + "/" + dataSetObj.data.length));
           }
 
           cb();
+
         }).
         catch(function(err){
           console.log(chalkError(MODULE_ID_PREFIX
@@ -1446,10 +1477,21 @@ function createNetwork(){
                 console.log(chalkLog(MODULE_ID_PREFIX + " | CHILD NEATAPTIC RAW NETWORK: " + childNetworkObj.seedNetworkId));
               }
             }
-            else if (childNetworkObj.networkTechnology === "brain" && !empty(childNetworkObj.networkJson)){
-              networkRaw = new brain.NeuralNetwork();
-              networkRaw.fromJSON(childNetworkObj.networkJson);
-              console.log(chalkLog(MODULE_ID_PREFIX + " | CHILD NEATAPTIC RAW NETWORK: " + childNetworkObj.seedNetworkId));
+            else if (childNetworkObj.networkTechnology === "brain"){
+              if (!empty(childNetworkObj.networkRaw)){
+                networkRaw = childNetworkObj.networkRaw;
+                console.log(chalkLog(MODULE_ID_PREFIX + " | CHILD BRAIN RAW NETWORK: " + childNetworkObj.seedNetworkId));
+              }
+              else if (!empty(childNetworkObj.network)){
+                networkRaw = new brain.NeuralNetwork();
+                networkRaw.fromJSON(childNetworkObj.network);
+                console.log(chalkLog(MODULE_ID_PREFIX + " | CHILD BRAIN RAW NETWORK: " + childNetworkObj.seedNetworkId));
+              }
+              else if (!empty(childNetworkObj.networkJson)){
+                networkRaw = new brain.NeuralNetwork();
+                networkRaw.fromJSON(childNetworkObj.networkJson);
+                console.log(chalkLog(MODULE_ID_PREFIX + " | CHILD BRAIN RAW NETWORK: " + childNetworkObj.seedNetworkId));
+              }
             }
             else{
               console.log(chalkError(MODULE_ID_PREFIX
@@ -1500,34 +1542,14 @@ function createNetwork(){
         }
         else if (childNetworkObj.networkTechnology === "brain"){
 
-          if (childNetworkObj.hiddenLayerSize && (childNetworkObj.hiddenLayerSize > 0)){
+          childNetworkObj.hiddenLayerSize = Math.min(configuration.brainHiddenLayerSize, childNetworkObj.hiddenLayerSize);
+          childNetworkObj.hiddenLayerSize = Math.max(childNetworkObj.hiddenLayerSize, trainingSetObj.meta.numOutputs);
 
-            childNetworkObj.hiddenLayerSize = Math.min(configuration.brainHiddenLayerSize, childNetworkObj.hiddenLayerSize);
-            childNetworkObj.hiddenLayerSize = Math.max(childNetworkObj.hiddenLayerSize, trainingSetObj.meta.numOutputs);
-
-            networkRaw = new brain.NeuralNetwork({
-              inputSize: numInputs,
-              // inputRange: numInputs,
-              hiddenLayers: [childNetworkObj.hiddenLayerSize],
-              outputSize: trainingSetObj.meta.numOutputs
-            });
-          }
-          else{
-            childNetworkObj.architecture = "random";
-            if (childNetworkObj.networkTechnology === "neataptic"){
-              networkRaw = new neataptic.Network(numInputs, 3);
-            }
-            else if (childNetworkObj.networkTechnology === "brain"){
-              networkRaw = new brain.NeuralNetwork({
-                inputSize: numInputs,
-                // inputRange: numInputs,
-                outputSize: trainingSetObj.meta.numOutputs
-              });
-            }
-            else{
-              networkRaw = new carrot.Network(numInputs, 3);
-            }
-          }
+          networkRaw = new brain.NeuralNetwork({
+            inputSize: numInputs,
+            hiddenLayers: [childNetworkObj.hiddenLayerSize],
+            outputSize: trainingSetObj.meta.numOutputs
+          });
 
           console.log(chalkBlueBold(MODULE_ID_PREFIX
             + " | " + configuration.childId
@@ -1542,22 +1564,10 @@ function createNetwork(){
         }
         else{
 
-          if (childNetworkObj.hiddenLayerSize && (childNetworkObj.hiddenLayerSize > 0)){
+          childNetworkObj.hiddenLayerSize = Math.min(configuration.neatapticHiddenLayerSize, childNetworkObj.hiddenLayerSize);
+          childNetworkObj.hiddenLayerSize = Math.max(childNetworkObj.hiddenLayerSize, trainingSetObj.meta.numOutputs);
 
-            childNetworkObj.hiddenLayerSize = Math.min(configuration.neatapticHiddenLayerSize, childNetworkObj.hiddenLayerSize);
-            childNetworkObj.hiddenLayerSize = Math.max(childNetworkObj.hiddenLayerSize, trainingSetObj.meta.numOutputs);
-
-            networkRaw = new neataptic.architect.Perceptron(numInputs, childNetworkObj.hiddenLayerSize, 3);
-          }
-          else{
-            childNetworkObj.architecture = "random";
-            if (childNetworkObj.networkTechnology === "neataptic"){
-              networkRaw = new neataptic.Network(numInputs, 3);
-            }
-            else{
-              networkRaw = new carrot.Network(numInputs, 3);
-            }
-          }
+          networkRaw = new neataptic.architect.Perceptron(numInputs, childNetworkObj.hiddenLayerSize, 3);
 
           console.log(chalkBlueBold(MODULE_ID_PREFIX
             + " | " + configuration.childId
@@ -1585,11 +1595,7 @@ function createNetwork(){
         ));
 
         if (childNetworkObj.networkTechnology === "brain"){
-          networkRaw = new brain.NeuralNetwork({
-            inputSize: numInputs,
-            // inputRange: numInputs,
-            outputSize: 3
-          });
+          networkRaw = new brain.NeuralNetwork({inputSize: numInputs, outputSize: 3});
           resolve(networkRaw);
         }
         else if (childNetworkObj.networkTechnology === "carrot"){
@@ -1600,7 +1606,6 @@ function createNetwork(){
           networkRaw = new neataptic.Network(numInputs, 3);
           resolve(networkRaw);
         }
-
     }
 
   });
@@ -1617,11 +1622,11 @@ async function evolve(params){
       + " | IN: " + childNetworkObj.inputsId
     ));
 
-
     const inputsObj = await global.wordAssoDb.NetworkInputs.findOne({inputsId: childNetworkObj.inputsId}).lean();
 
     const binaryMode = (params.binaryMode !== undefined) ? params.binaryMode : configuration.binaryMode;
     const userProfileOnlyFlag = inputsObj.meta.userProfileOnlyFlag || false;
+    const userProfileCharCodesOnlyFlag = (params.userProfileCharCodesOnlyFlag !== undefined) ? params.userProfileCharCodesOnlyFlag : configuration.userProfileCharCodesOnlyFlag;
 
     if (childNetworkObj.meta === undefined) { childNetworkObj.meta = {}; }
     childNetworkObj.meta.userProfileOnlyFlag = userProfileOnlyFlag;
@@ -1631,8 +1636,8 @@ async function evolve(params){
 
     const trainingSet = await dataSetPrep({
       dataSetObj: trainingSetObj, 
-      userProfileOnlyFlag: userProfileOnlyFlag,
-      binaryMode: binaryMode,
+      userProfileCharCodesOnlyFlag: userProfileCharCodesOnlyFlag,
+      // binaryMode: binaryMode,
       verbose: params.verbose
     });
 
@@ -1643,6 +1648,8 @@ async function evolve(params){
     let evolveResults;
 
     if (childNetworkObj.networkTechnology === "brain"){
+
+      childNetworkObj.numInputs = 255;
 
       const schedStartTime = moment().valueOf();
 
@@ -1656,7 +1663,8 @@ async function evolve(params){
           networkTechnology: "BRAIN",
           binaryMode: false,
           networkId: "nn_brain_test",
-          numInputs: inputsObj.meta.numInputs,
+          // numInputs: inputsObj.meta.numInputs,
+          numInputs: 255,
           inputsId: inputsObj.inputsId,
           evolveStart: schedStartTime,
           evolveElapsed: elapsedInt,
@@ -1773,7 +1781,8 @@ function networkEvolve(p){
     const params = childNetworkObj.evolve.options;
 
     const binaryMode = (params.binaryMode !== undefined) ? params.binaryMode : configuration.binaryMode;
-    
+    const userProfileCharCodesOnlyFlag = (params.userProfileCharCodesOnlyFlag !== undefined) ? params.userProfileCharCodesOnlyFlag : configuration.userProfileCharCodesOnlyFlag;
+
     const options = {};
 
     if (params.seedNetworkId) {
@@ -1856,7 +1865,7 @@ function networkEvolve(p){
           return reject(err);
         }
 
-        await evolve({binaryMode: binaryMode, verbose: p.verbose});
+        await evolve({userProfileCharCodesOnlyFlag: userProfileCharCodesOnlyFlag, binaryMode: binaryMode, verbose: p.verbose});
 
         console.log(chalkGreen(MODULE_ID_PREFIX + " | END networkEvolve"));
 
@@ -2060,7 +2069,7 @@ const fsmStates = {
           statsObj.fsmStatus = "EVOLVE";
           await processSend({op: "STATS", childId: configuration.childId, fsmStatus: statsObj.fsmStatus});
 
-          await networkEvolve({verbose: configuration.verbose});
+          await networkEvolve({userProfileCharCodesOnlyFlag: configuration.userProfileCharCodesOnlyFlag, verbose: configuration.verbose});
 
           await testNetwork({
             binaryMode: configuration.binaryMode, 
