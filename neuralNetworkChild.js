@@ -1178,7 +1178,6 @@ function prepNetworkEvolve() {
         networkId: childNetworkObj.networkId,
         seedNetworkId: childNetworkObj.seedNetworkId,
         seedNetworkRes: childNetworkObj.seedNetworkRes,
-        networkId: childNetworkObj.networkId,
         numInputs: childNetworkObj.numInputs,
         inputsId: childNetworkObj.inputsId,
         evolveStart: schedStartTime,
@@ -1640,7 +1639,9 @@ async function evolve(params){
     ));
 
     const inputsObj = await global.wordAssoDb.NetworkInputs.findOne({inputsId: childNetworkObj.inputsId}).lean();
+    
     childNetworkObj.numInputs = inputsObj.meta.numInputs;
+    trainingSetObj.meta.numInputs = inputsObj.meta.numInputs;
 
     const binaryMode = (params.binaryMode !== undefined) ? params.binaryMode : configuration.binaryMode;
     const userProfileOnlyFlag = inputsObj.meta.userProfileOnlyFlag || false;
