@@ -17,6 +17,7 @@ let seedNetworkObj; // this is the common, default nn object
 const os = require("os");
 const _ = require("lodash");
 const omit = require("object.omit");
+const path = require("path");
 // const jsonpack = require("jsonpack/main");
 // const sizeof = require("object-sizeof");
 
@@ -43,11 +44,20 @@ const DEFAULT_USER_ARCHIVE_FILE_EXITS_MAX_WAIT_TIME = 2*ONE_HOUR;
 
 const TEST_MODE_LENGTH = 1000;
 
+let DROPBOX_ROOT_FOLDER;
+
+if (hostname === "google") {
+  DROPBOX_ROOT_FOLDER = "/home/tc/Dropbox/Apps/wordAssociation";
+}
+else {
+  DROPBOX_ROOT_FOLDER = "/Users/tc/Dropbox/Apps/wordAssociation";
+}
+
 global.wordAssoDb = require("@threeceelabs/mongoose-twitter");
 
 let configuration = {};
 configuration.userProfileCharCodesOnlyFlag = false;
-
+configuration.defaultUserProfileCharCodesOnlyInputsId = DEFAULT_USER_PROFILE_CHAR_CODES_ONLY_INPUTS_ID 
 configuration.userCharCountScreenName = 15;
 configuration.userCharCountName = 50;
 configuration.userCharCountDescription = 160;
@@ -60,6 +70,8 @@ configuration.binaryMode = DEFAULT_BINARY_MODE;
 configuration.brainHiddenLayerSize = DEFAULT_BRAIN_HIDDEN_LAYER_SIZE;
 configuration.neatapticHiddenLayerSize = DEFAULT_NEATAPTIC_HIDDEN_LAYER_SIZE;
 configuration.networkTechnology = DEFAULT_NETWORK_TECHNOLOGY;
+
+const configDefaultFolder = path.join(DROPBOX_ROOT_FOLDER, "config/utility/default");
 
 const brainTrainOptionsPickArray = [
   // net.train(data, {
@@ -1377,7 +1389,6 @@ function dataSetPrep(p){
           }
 
           cb();
-
         }).
         catch(function(err){
           console.log(chalkError(MODULE_ID_PREFIX
@@ -1638,7 +1649,25 @@ async function evolve(params){
       + " | IN: " + childNetworkObj.inputsId
     ));
 
-    const inputsObj = await global.wordAssoDb.NetworkInputs.findOne({inputsId: childNetworkObj.inputsId}).lean();
+    let inputsObj = await global.wordAssoDb.NetworkInputs.findOne({inputsId: childNetworkObj.inputsId}).lean();
+
+    if (!inputsObj) {
+
+      const file = childNetworkObj.inputsId + ".json";
+
+      console.log(chalkAlert(MODULE_ID_PREFIX
+        + " | !!! INPUTS OBJ NOT IN DB: " + childNetworkObj.inputsId
+      ));
+
+      inputsObj = await tcUtils.loadFileRetry({
+        folder: configDefaultFolder, 
+        file: file
+      });
+
+      if (!inputsObj) {
+        throw new Error("evolve INPUTS OBJ NOT FOUND: " + childNetworkObj.inputsId);
+      }
+    }
     
     childNetworkObj.numInputs = inputsObj.meta.numInputs;
     trainingSetObj.meta.numInputs = inputsObj.meta.numInputs;
