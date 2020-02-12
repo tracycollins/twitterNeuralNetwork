@@ -1768,9 +1768,9 @@ async function evolve(params){
         const sObj = {
           networkTechnology: "BRAIN",
           binaryMode: false,
-          networkId: "nn_brain_test",
-          // numInputs: inputsObj.meta.numInputs,
-          numInputs: 255,
+          networkId: childNetworkObj.networkId,
+          numInputs: inputsObj.meta.numInputs,
+          // numInputs: 255,
           inputsId: inputsObj.inputsId,
           evolveStart: schedStartTime,
           evolveElapsed: elapsedInt,
