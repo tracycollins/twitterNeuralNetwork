@@ -957,9 +957,9 @@ async function loadUsersArchive(params){
     //   }
     // }
 
-    await waitFileExists(params);
-    await fileSize(params);
-    await unzipUsersToArray(params);
+    await waitFileExists(params.archiveFlagObj);
+    await fileSize(params.archiveFlagObj);
+    await unzipUsersToArray(params.archiveFlagObj);
     await updateTrainingSet();
     return;
   }

@@ -549,7 +549,7 @@ let currentBestNetwork;
 const viableNetworkIdSet = new Set();
 const betterChildSeedNetworkIdSet = new Set();
 const skipLoadNetworkSet = new Set();
-const zeroSuccessEvolveOptionsSet = new Set();
+let zeroSuccessEvolveOptionsSet = new Set();
 
 const inputsIdTechHashMap = {};
 inputsIdTechHashMap.networkTechnology = {};
@@ -609,6 +609,8 @@ const configHostFolder = path.join(DROPBOX_ROOT_FOLDER, "config/utility",hostnam
 
 const configDefaultFile = "default_" + configuration.DROPBOX.DROPBOX_CONFIG_FILE;
 const configHostFile = hostname + "_" + configuration.DROPBOX.DROPBOX_CONFIG_FILE;
+
+const defaultZeroSuccessEvolveOptionsFile = "default_zeroSuccessEvolveOptions.json";
 
 const childPidFolderLocal = path.join(DROPBOX_ROOT_FOLDER, "config/utility", hostname, "children");
 
@@ -1074,6 +1076,61 @@ function printResultsHashmap(){
 
   });
 }
+
+async function initZeroSuccessEvolveOptionsSet(p){
+
+  statsObj.status = "INIT ZERO SUCCESS EVOLVE OPTIONS SET";
+
+  const params = p || {};
+
+  const folder = params.folder || configDefaultFolder;
+  let file = params.file || defaultZeroSuccessEvolveOptionsFile;
+
+  if (configuration.testMode) {
+    file = file.replace(".json", "_test.json");
+  }
+
+  console.log(chalkBlue(MODULE_ID_PREFIX + " | INIT ZERO SUCCESS EVOLVE OPTIONS SET"
+    + " | " + folder + "/" + file
+  ));
+
+  try{
+
+    const result = await tcUtils.initSetFromFile({
+      folder: folder, 
+      file: file, 
+      objArrayKey: "evolveOptionsCombination", 
+      resolveOnNotFound: true
+    });
+
+    if (result) {
+      if (params.overwrite){
+        console.log(chalkAlert(MODULE_ID_PREFIX + " | !!! OVERWRITE INIT ZERO SUCCESS EVOLVE OPTIONS SET"));
+        zeroSuccessEvolveOptionsSet = result;
+        zeroSuccessEvolveOptionsSet.delete("");
+        zeroSuccessEvolveOptionsSet.delete(" ");
+      }
+      else{
+        console.log(chalkInfo(MODULE_ID_PREFIX + " | ... MERGE INIT ZERO SUCCESS EVOLVE OPTIONS SET"));
+        zeroSuccessEvolveOptionsSet = new Set([...result, ...zeroSuccessEvolveOptionsSet]);
+        zeroSuccessEvolveOptionsSet.delete("");
+        zeroSuccessEvolveOptionsSet.delete(" ");
+      }
+    }
+
+    console.log(chalkLog(MODULE_ID_PREFIX + " | LOADED ZERO SUCCESS EVOLVE OPTIONS FILE"
+      + " | " + zeroSuccessEvolveOptionsSet.size + " EVOLVE COMBINATIONS"
+      + " | " + folder + "/" + file
+    ));
+
+    return;
+  }
+  catch(err){
+    console.log(chalkError(MODULE_ID_PREFIX + " | *** INIT ZERO SUCCESS EVOLVE OPTIONS SET ERROR: " + err));
+    throw err;
+  }
+}
+
 
 function purgeNetwork(networkId){
 
@@ -2043,7 +2100,7 @@ async function generateEvolveOptions(params){
       // neataptic doesn't have WAPE cost
 
       const costArray = (config.networkTechnology === "neataptic") ? _.pull(configuration.costArray, "WAPE") : configuration.costArray;
-      config.cost = randomItem(costArray);
+      config.cost = (config.networkTechnology === "brain") ? "NONE" : randomItem(costArray);
 
       config.efficient_mutation = configuration.evolve.efficient_mutation;
       config.elitism = randomInt(EVOLVE_ELITISM_RANGE.min, EVOLVE_ELITISM_RANGE.max);
@@ -2059,7 +2116,7 @@ async function generateEvolveOptions(params){
       config.popsize = configuration.evolve.popsize;
       config.population_size = configuration.evolve.popsize;
       config.provenance = configuration.evolve.provenance;
-      config.selection = randomItem(configuration.selectionArray);
+      config.selection = (config.networkTechnology === "brain") ? "NONE" : randomItem(configuration.selectionArray);
       config.threads = configuration.evolve.threads;
 
       config.momentum = randomFloat(BRAIN_TRAIN_MOMENTUM_RANGE.min, BRAIN_TRAIN_MOMENTUM_RANGE.max);
@@ -2067,11 +2124,12 @@ async function generateEvolveOptions(params){
       config.timeout = configuration.evolve.timeout;
 
       key = config.activation + ":" + config.cost + ":" + config.selection;
+      key = key.toUpperCase();
 
       attempts += 1;
 
     }
-    while(zeroSuccessEvolveOptionsSet.has(key));
+    while(zeroSuccessEvolveOptionsSet.has(key) && (attempts < 20));
 
     return config;
 
@@ -2653,6 +2711,11 @@ async function initWatchAllConfigFolders(p){
           await loadNetworkInputsConfig({file: defaultUnionInputsConfigFile});
         }
 
+        if (f.endsWith(defaultZeroSuccessEvolveOptionsFile)){
+          await delay({period: 30*ONE_SECOND});
+          await initZeroSuccessEvolveOptionsSet();
+        }
+
       });
 
       monitorDefaultConfig.on("changed", async function(f){
@@ -2676,6 +2739,11 @@ async function initWatchAllConfigFolders(p){
         if (f.endsWith(defaultUnionInputsConfigFile)){
           await delay({period: 30*ONE_SECOND});
           await loadNetworkInputsConfig({file: defaultUnionInputsConfigFile});
+        }
+
+        if (f.endsWith(defaultZeroSuccessEvolveOptionsFile)){
+          await delay({period: 30*ONE_SECOND});
+          await initZeroSuccessEvolveOptionsSet();
         }
 
       });
@@ -4826,25 +4894,42 @@ async function evolveCompleteHandler(params){
       }
 
       // ZERO FAIL SET
-      if (nn.test.results.successRate <= 1.0){
+      if ((configuration.testMode && (nn.test.results.successRate < 50)) || (nn.test.results.successRate <= 1.0)){
 
-        const key = nn.evolve.options.activation + ":" + nn.evolve.options.cost + ":" + nn.evolve.options.selection;
-        zeroSuccessEvolveOptionsSet.add(key);
+        const cost = (nn.networkTechnology === "brain") ? "NONE" : nn.evolve.options.cost;
+        const selection = (nn.networkTechnology === "brain") ? "NONE" : nn.evolve.options.selection;
 
-        statsObj.evolveStats.zeroSuccessOptions = [...zeroSuccessEvolveOptionsSet];
+        const evolveOptionsCombination = nn.evolve.options.activation + ":" + cost + ":" + selection;
+
+        zeroSuccessEvolveOptionsSet.add(evolveOptionsCombination.toUpperCase());
 
         console.log(chalkAlert(MODULE_ID_PREFIX + " | XXX ZERO SUCCESS RATE - ADDED EVOLVE OPTIONS TO ZERO FAIL SET"
           + " [" + zeroSuccessEvolveOptionsSet.size + "]"
           + " | ACTIVATION: " + nn.evolve.options.activation
-          + " | COST: " + nn.evolve.options.cost
-          + " | SELECTION: " + nn.evolve.options.selection
+          + " | COST: " + cost
+          + " | SELECTION: " + selection
         ));
 
-        for(const key of [...zeroSuccessEvolveOptionsSet].sort()){
+        for(const evolveOptionsCombination of [...zeroSuccessEvolveOptionsSet].sort()){
           console.log(chalkAlert(MODULE_ID_PREFIX + " | XXX ZERO SUCCESS ACT/COST/SEL"
-            + " | " + key
+            + " | " + evolveOptionsCombination
           ));
         }
+
+        await initZeroSuccessEvolveOptionsSet();
+
+        const zeroSuccessOptionsObj = {};
+        zeroSuccessOptionsObj.evolveOptionsCombination = [...zeroSuccessEvolveOptionsSet];
+        statsObj.evolveStats.zeroSuccessOptions = zeroSuccessOptionsObj.evolveOptionsCombination;
+
+        let file = defaultZeroSuccessEvolveOptionsFile;
+
+        if (configuration.testMode) {
+          file = defaultZeroSuccessEvolveOptionsFile.replace(".json", "_test.json");
+        }
+
+        tcUtils.saveFile({folder: configDefaultFolder, file: file, obj: zeroSuccessOptionsObj});
+
       }
 
       slackText = "\n*FAIL | " + nn.test.results.successRate.toFixed(2) + "%*";
@@ -5338,6 +5423,7 @@ setTimeout(async function(){
 
     try {
       dbConnection = await connectDb();
+      await initZeroSuccessEvolveOptionsSet();
       await initFsmTickInterval(FSM_TICK_INTERVAL);
       await initWatch({rootFolder: configuration.userArchiveFolder});
     }
