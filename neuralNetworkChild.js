@@ -550,7 +550,7 @@ function unzipUsersToArray(params){
               entryNumber += 1;
               
               if (err) {
-                console.log(chalkError("TNN | *** UNZIP USERS ENTRY ERROR [" + entryNumber + "]: " + err));
+                console.log(chalkError(MODULE_ID_PREFIX + " | *** UNZIP USERS ENTRY ERROR [" + entryNumber + "]: " + err));
                 return reject(err);
               }
 
@@ -606,7 +606,6 @@ function unzipUsersToArray(params){
                       }
 
                       zipfile.readEntry();
-
                     }
                     else{
                       console.log(chalkAlert(MODULE_ID_PREFIX + " | ??? UNCAT UNZIPPED USER"
@@ -623,7 +622,6 @@ function unzipUsersToArray(params){
                       ));                      
 
                       zipfile.readEntry();
-
                     }
                   }
                 }
@@ -918,22 +916,46 @@ function fileSize(params){
 async function loadUsersArchive(params){
 
   try {
-    let file = params.file;
+    let file = params.archiveFlagObj.file;
 
     if (configuration.testMode) {
       file = file.replace(/users\.zip/, "users_test.zip");
     }
 
-    params.folder = params.folder || configuration.userArchiveFolder;
-    params.path = (params.path !== undefined) ? params.path : params.folder + "/" + file;
+    params.archiveFlagObj.folder = params.archiveFlagObj.folder || configuration.userArchiveFolder;
+    params.archiveFlagObj.path = (params.archiveFlagObj.path !== undefined) ? params.archiveFlagObj.path : params.archiveFlagObj.folder + "/" + file;
 
     console.log(chalkLog(MODULE_ID_PREFIX 
       + " | LOADING USERS ARCHIVE"
       + " | " + getTimeStamp() 
-      + "\n PATH:   " + params.path
-      + "\n FOLDER: " + params.folder
+      + "\n PATH:   " + params.archiveFlagObj.path
+      + "\n FOLDER: " + params.archiveFlagObj.folder
       + "\n FILE:   " + file
     ));
+
+    console.log(chalkLog(MODULE_ID_PREFIX 
+      + " | USER ARCHIVE FILE | FILE: " + params.archiveFlagObj.file 
+      + " | SIZE: " + params.archiveFlagObj.size
+      + " | TOTAL USERS: " + params.archiveFlagObj.histogram.total
+      + " | CAT: L/N/R: " + params.archiveFlagObj.histogram.left 
+      + "/" + params.archiveFlagObj.histogram.neutral 
+      + "/" + params.archiveFlagObj.histogram.right
+    ));
+
+    // defaultUserArchiveFlagFile
+    // {
+    //   "file": "google_20200211_130922_users.zip",
+    //   "size": 1109751363,
+    //   "histogram": {
+    //     "left": 25157,
+    //     "right": 25159,
+    //     "neutral": 1981,
+    //     "positive": 0,
+    //     "negative": 0,
+    //     "none": 0,
+    //     "total": 52297
+    //   }
+    // }
 
     await waitFileExists(params);
     await fileSize(params);
@@ -960,14 +982,36 @@ async function loadTrainingSet(){
     const archiveFlagObj = await tcUtils.loadFileRetry({folder: configuration.userArchiveFolder, file: configuration.defaultUserArchiveFlagFile});
     console.log(chalkNetwork(MODULE_ID_PREFIX + " | USERS ARCHIVE FLAG FILE\n" + jsonPrint(archiveFlagObj)));
 
-    console.log(chalkLog(MODULE_ID_PREFIX + " | USER ARCHIVE FILE | FILE: " + archiveFlagObj.file + " | SIZE: " + archiveFlagObj.size));
+    // defaultUserArchiveFlagFile
+    // {
+    //   "file": "google_20200211_130922_users.zip",
+    //   "size": 1109751363,
+    //   "histogram": {
+    //     "left": 25157,
+    //     "right": 25159,
+    //     "neutral": 1981,
+    //     "positive": 0,
+    //     "negative": 0,
+    //     "none": 0,
+    //     "total": 52297
+    //   }
+    // }
+
+    console.log(chalkLog(MODULE_ID_PREFIX 
+      + " | USER ARCHIVE FILE | FILE: " + archiveFlagObj.file 
+      + " | SIZE: " + archiveFlagObj.size
+      + " | TOTAL USERS: " + archiveFlagObj.histogram.total
+      + " | CAT: L/N/R: " + archiveFlagObj.histogram.left 
+      + "/" + archiveFlagObj.histogram.neutral 
+      + "/" + archiveFlagObj.histogram.right
+    ));
 
     if (archiveFlagObj.file !== statsObj.archiveFile) {
 
       statsObj.trainingSetReady = false;
       statsObj.loadUsersArchiveBusy = true;
 
-      await loadUsersArchive({file: archiveFlagObj.file, size: archiveFlagObj.size});
+      await loadUsersArchive({archiveFlagObj: archiveFlagObj});
 
       statsObj.archiveModified = getTimeStamp();
       statsObj.loadUsersArchiveBusy = false;
