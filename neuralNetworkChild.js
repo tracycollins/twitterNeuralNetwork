@@ -1216,42 +1216,87 @@ function prepNetworkEvolve() {
   const options = childNetworkObj.evolve.options;
   const schedStartTime = moment().valueOf();
 
-  options.schedule = {
+  switch (childNetworkObj.networkTechnology){
 
-    function: function(schedParams){
+    case "brain":
 
-      const elapsedInt = moment().valueOf() - schedStartTime;
-      const iterationRate = elapsedInt/schedParams.iteration;
-      const timeToComplete = iterationRate*(options.iterations - schedParams.iteration);
+      options.schedule = function(schedParams){
 
-      const fitness = schedParams.fitness || 0;
+        const elapsedInt = moment().valueOf() - schedStartTime;
+        const iterationRate = elapsedInt/(schedParams.iterations+1);
+        const timeToComplete = iterationRate*(options.iterations - (schedParams.iterations+1));
 
-      statsObj.evolve.stats = schedParams;
+        const sObj = {
+          networkTechnology: "BRAIN",
+          binaryMode: false,
+          networkId: childNetworkObj.networkId,
+          numInputs: childNetworkObj.numInputs,
+          inputsId: childNetworkObj.inputsId,
+          evolveStart: schedStartTime,
+          evolveElapsed: elapsedInt,
+          totalIterations: options.iterations,
+          iteration: schedParams.iterations+1,
+          iterationRate: iterationRate,
+          timeToComplete: timeToComplete,
+          error: schedParams.error.toFixed(5) || Infinity,
+        };
 
-      const sObj = {
-        networkTechnology: childNetworkObj.networkTechnology,
-        binaryMode: childNetworkObj.binaryMode,
-        networkId: childNetworkObj.networkId,
-        seedNetworkId: childNetworkObj.seedNetworkId,
-        seedNetworkRes: childNetworkObj.seedNetworkRes,
-        numInputs: childNetworkObj.numInputs,
-        inputsId: childNetworkObj.inputsId,
-        evolveStart: schedStartTime,
-        evolveElapsed: elapsedInt,
-        totalIterations: childNetworkObj.evolve.options.iterations,
-        iteration: schedParams.iteration,
-        iterationRate: iterationRate,
-        timeToComplete: timeToComplete,
-        error: schedParams.error.toFixed(5) || Infinity,
-        fitness: fitness.toFixed(5) || -Infinity
+        console.log(chalkLog(MODULE_ID_PREFIX 
+          + " | " + sObj.networkId 
+          + " | " + sObj.networkTechnology.slice(0,1).toUpperCase()
+          + " | " + sObj.networkId
+          + " | " + sObj.inputsId
+          + " | ERR " + sObj.error
+          + " | R " + tcUtils.msToTime(sObj.evolveElapsed)
+          + " | ETC " + tcUtils.msToTime(sObj.timeToComplete) + " " + moment().add(sObj.timeToComplete).format(compactDateTimeFormat)
+          + " | " + (sObj.iterationRate/1000.0).toFixed(1) + " spi"
+          + " | I " + sObj.iteration + "/" + sObj.totalIterations
+        ));
+
+        processSendQueue.push({op: "EVOLVE_SCHEDULE", childId: configuration.childId, childIdShort: configuration.childIdShort, stats: sObj});
+      };
+  
+    break;
+    default:
+      options.schedule = {
+
+        function: function(schedParams){
+
+          const elapsedInt = moment().valueOf() - schedStartTime;
+          const iterationRate = elapsedInt/schedParams.iteration;
+          const timeToComplete = iterationRate*(options.iterations - schedParams.iteration);
+
+          const fitness = schedParams.fitness || 0;
+
+          statsObj.evolve.stats = schedParams;
+
+          const sObj = {
+            networkTechnology: childNetworkObj.networkTechnology,
+            binaryMode: childNetworkObj.binaryMode,
+            networkId: childNetworkObj.networkId,
+            seedNetworkId: childNetworkObj.seedNetworkId,
+            seedNetworkRes: childNetworkObj.seedNetworkRes,
+            numInputs: childNetworkObj.numInputs,
+            inputsId: childNetworkObj.inputsId,
+            evolveStart: schedStartTime,
+            evolveElapsed: elapsedInt,
+            totalIterations: childNetworkObj.evolve.options.iterations,
+            iteration: schedParams.iteration,
+            iterationRate: iterationRate,
+            timeToComplete: timeToComplete,
+            error: schedParams.error.toFixed(5) || Infinity,
+            fitness: fitness.toFixed(5) || -Infinity
+          };
+
+          processSendQueue.push({op: "EVOLVE_SCHEDULE", childId: configuration.childId, childIdShort: configuration.childIdShort, stats: sObj});
+
+        },
+        
+        iterations: 1
       };
 
-      processSendQueue.push({op: "EVOLVE_SCHEDULE", childId: configuration.childId, childIdShort: configuration.childIdShort, stats: sObj});
 
-    },
-    
-    iterations: 1
-  };
+  }
 
   let finalOptions;
 
@@ -1755,50 +1800,54 @@ async function evolve(params){
 
     if (childNetworkObj.networkTechnology === "brain"){
 
-      childNetworkObj.numInputs = 255;
+      childNetworkObj.inputsId = inputsObj.inputsId;
+      childNetworkObj.numInputs = inputsObj.meta.numInputs;
 
-      const schedStartTime = moment().valueOf();
+      // const schedStartTime = moment().valueOf();
 
-      const schedule = function(schedParams){
+      // const schedule = function(schedParams){
 
-        const elapsedInt = moment().valueOf() - schedStartTime;
-        const iterationRate = elapsedInt/(schedParams.iterations+1);
-        const timeToComplete = iterationRate*(preppedOptions.iterations - (schedParams.iterations+1));
+      //   const elapsedInt = moment().valueOf() - schedStartTime;
+      //   const iterationRate = elapsedInt/(schedParams.iterations+1);
+      //   const timeToComplete = iterationRate*(preppedOptions.iterations - (schedParams.iterations+1));
 
-        const sObj = {
-          networkTechnology: "BRAIN",
-          binaryMode: false,
-          networkId: childNetworkObj.networkId,
-          numInputs: inputsObj.meta.numInputs,
-          // numInputs: 255,
-          inputsId: inputsObj.inputsId,
-          evolveStart: schedStartTime,
-          evolveElapsed: elapsedInt,
-          totalIterations: preppedOptions.iterations,
-          iteration: schedParams.iterations+1,
-          iterationRate: iterationRate,
-          timeToComplete: timeToComplete,
-          error: schedParams.error.toFixed(5) || Infinity,
-          // fitness: schedParams.fitness.toFixed(5) || -Infinity
-        };
+      //   const sObj = {
+      //     networkTechnology: "BRAIN",
+      //     binaryMode: false,
+      //     networkId: childNetworkObj.networkId,
+      //     numInputs: inputsObj.meta.numInputs,
+      //     // numInputs: 255,
+      //     inputsId: inputsObj.inputsId,
+      //     evolveStart: schedStartTime,
+      //     evolveElapsed: elapsedInt,
+      //     totalIterations: preppedOptions.iterations,
+      //     iteration: schedParams.iterations+1,
+      //     iterationRate: iterationRate,
+      //     timeToComplete: timeToComplete,
+      //     error: schedParams.error.toFixed(5) || Infinity,
+      //     // fitness: schedParams.fitness.toFixed(5) || -Infinity
+      //   };
 
-        console.log(chalkLog(MODULE_ID_PREFIX 
-          + " | " + sObj.networkId 
-          + " | " + sObj.networkTechnology.slice(0,1).toUpperCase()
-          + " | " + sObj.networkId
-          + " | " + sObj.inputsId
-          + " | ERR " + sObj.error
-          // + " | FIT " + fitness
-          + " | R " + tcUtils.msToTime(sObj.evolveElapsed)
-          + " | ETC " + tcUtils.msToTime(sObj.timeToComplete) + " " + moment().add(sObj.timeToComplete).format(compactDateTimeFormat)
-          + " | " + (sObj.iterationRate/1000.0).toFixed(1) + " spi"
-          + " | I " + sObj.iteration + "/" + sObj.totalIterations
-        ));
-      };
+      //   console.log(chalkLog(MODULE_ID_PREFIX 
+      //     + " | " + sObj.networkId 
+      //     + " | " + sObj.networkTechnology.slice(0,1).toUpperCase()
+      //     + " | " + sObj.networkId
+      //     + " | " + sObj.inputsId
+      //     + " | ERR " + sObj.error
+      //     // + " | FIT " + fitness
+      //     + " | R " + tcUtils.msToTime(sObj.evolveElapsed)
+      //     + " | ETC " + tcUtils.msToTime(sObj.timeToComplete) + " " + moment().add(sObj.timeToComplete).format(compactDateTimeFormat)
+      //     + " | " + (sObj.iterationRate/1000.0).toFixed(1) + " spi"
+      //     + " | I " + sObj.iteration + "/" + sObj.totalIterations
+      //   ));
+      // };
+
+      // preppedOptions.schedule = schedule;
 
       evolveResults = await nnTools.streamTrainNetwork({
-        iterations: preppedOptions.iterations,
-        schedule: schedule,
+        // iterations: preppedOptions.iterations,
+        // schedule: schedule,
+        options: preppedOptions,
         network: childNetworkRaw, 
         trainingSet: trainingSet
       });
@@ -2188,61 +2237,10 @@ const fsmStates = {
             + " | INPUTS: " + childNetworkObj.inputsId
           ));
 
-          // const networkJsonSizeMBytes = sizeof(childNetworkObj.networkJson)/ONE_MEGABYTE;
-
-          // if (networkJsonSizeMBytes > configuration.maxNetworkJsonSizeMB){
-
-          //   console.log(chalkLog(MODULE_ID_PREFIX + " | !!! COMPRESSING NETWORK JSON"
-          //     + " | " + networkJsonSizeMBytes.toFixed(3) + " MB"
-          //   ));
-
-          //   childNetworkObj.networkJson.layersCompressed = [];
-
-          //   for (let layerNum=0; layerNum < childNetworkObj.networkJson.layers.length; layerNum++){
-
-          //     const layer = childNetworkObj.networkJson.layers[layerNum];
-          //     const layerKeys = Object.keys(layer);
-
-          //     console.log("LAYER " + layerNum + " | SIZE: " + layerKeys.length);
-
-          //     childNetworkObj.networkJson.layersCompressed[layerNum] = [];
-
-          //     for (let layerNodeNum=0; layerNodeNum < layerKeys.length; layerNodeNum++){
-          //       if (empty(childNetworkObj.networkJson.layers[layerNum][layerNodeNum])){
-          //         childNetworkObj.networkJson.layersCompressed[layerNum].push(layerNodeNum);
-          //       }
-          //       else{
-          //         childNetworkObj.networkJson.layersCompressed[layerNum].push(childNetworkObj.networkJson.layers[layerNum][layerNodeNum]);
-          //       }
-          //     }
-
-          //   }
-          //   delete childNetworkObj.networkJson.layers;
-
-          //   const packedNetworkJson = jsonpack.pack(childNetworkObj.networkJson, { verbose: false });
-
-          //   const packedNetworkJsonSizeMBytes = sizeof(packedNetworkJson)/ONE_MEGABYTE;
-
-          //   console.log(chalkLog(MODULE_ID_PREFIX + " | -><- COMPRESSED NETWORK JSON"
-          //     + " | COMPRESSED: " + packedNetworkJsonSizeMBytes.toFixed(3) + " MB"
-          //     + " | ORG: " + networkJsonSizeMBytes.toFixed(3) + " MB"
-          //   ));
-
-          //   childNetworkObj.networkJson = packedNetworkJson;
-          //   childNetworkObj.networkJsonIsCompressed = true;
-          // }
-
-
           try{
 
             const childNetworkObjSmall = omit(childNetworkObj, ["inputsObj", "network", "networkRaw", "evolve.options.network", "evolve.options.schedule"]);
             const nnDoc = new global.wordAssoDb.NeuralNetwork(childNetworkObjSmall);
-
-            // delete childNetworkObj.inputsObj;
-            // delete childNetworkObj.network;
-            // delete childNetworkObj.networkRaw;
-            // delete childNetworkObj.evolve.options.network;
-            // delete childNetworkObj.evolve.options.schedule;
 
             await nnDoc.save();
           }
@@ -2443,11 +2441,14 @@ async function configNetworkEvolve(params){
       "elitism", 
       "equal", 
       "error",
+      "errorThresh",
       "fitness_population", 
       "growth",
       "hiddenLayerSize",
       "inputsId",
       "iterations",
+      "learningRate",
+      "momentum",
       "mutation", 
       "mutation_amount", 
       "mutation_rate",
