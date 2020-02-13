@@ -88,6 +88,7 @@ const brainTrainOptionsPickArray = [
   // })
 
   "iterations",
+  "error",
   "errorThresh",
   "log",
   "logPeriod",
@@ -1220,6 +1221,8 @@ function prepNetworkEvolve() {
 
     case "brain":
 
+      options.error = options.error || options.errorThresh;
+      
       options.schedule = function(schedParams){
 
         const elapsedInt = moment().valueOf() - schedStartTime;
@@ -1617,8 +1620,8 @@ function createNetwork(){
           + " | " + configuration.childId
           + " | " + childNetworkObj.networkTechnology.toUpperCase()
           + " | EVOLVE ARCH | LOADED: " + childNetworkObj.networkId
-          + " | IN: " + networkRaw.input
-          + " | OUT: " + networkRaw.output
+          + " | IN: " + numInputs
+          + " | OUT: " + childNetworkObj.numOutputs
         ));
 
         resolve(networkRaw);

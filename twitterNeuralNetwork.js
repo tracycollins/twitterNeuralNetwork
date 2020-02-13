@@ -59,6 +59,7 @@ const defaultEvolveOptionsPickArray = [
   "iterations",
   "network",
   "networkTechnology",
+  "numInputs",
   "schedule",
   "seedNetworkId",
   "seedInputsId",
@@ -741,7 +742,7 @@ configuration.evolve.cost = DEFAULT_EVOLVE_COST;
 configuration.evolve.efficient_mutation = DEFAULT_EVOLVE_MUTATION_EFFICIENT;
 configuration.evolve.elitism = DEFAULT_EVOLVE_ELITISM;
 configuration.evolve.equal = DEFAULT_EVOLVE_EQUAL;
-configuration.evolvef.error = DEFAULT_EVOLVE_ERROR;
+configuration.evolve.error = DEFAULT_EVOLVE_ERROR;
 configuration.evolve.errorThresh = DEFAULT_EVOLVE_ERROR;
 configuration.evolve.fitness_population = DEFAULT_EVOLVE_FITNESS_POPULATION;
 configuration.evolve.growth = DEFAULT_EVOLVE_GROWTH;
@@ -2221,6 +2222,7 @@ async function generateRandomEvolveConfig(p){
 
       config.architecture = "loadedNetwork";
       config.inputsId = dbNetworkObj.inputsId;
+      config.numInputs = dbNetworkObj.numInputs;
       config.seedNetworkId = dbNetworkObj.networkId;
       config.seedNetworkRes = dbNetworkObj.successRate;
 
