@@ -56,6 +56,7 @@ else {
 global.wordAssoDb = require("@threeceelabs/mongoose-twitter");
 
 let configuration = {};
+configuration.equalCategoriesFlag = true;
 configuration.userProfileCharCodesOnlyFlag = false;
 configuration.defaultUserProfileCharCodesOnlyInputsId = DEFAULT_USER_PROFILE_CHAR_CODES_ONLY_INPUTS_ID 
 configuration.userCharCountScreenName = 15;
@@ -663,9 +664,13 @@ function unzipUsersToArray(params){
   });
 }
 
-function updateTrainingSet(){
+function updateTrainingSet(p){
 
   console.log(chalkBlue(MODULE_ID_PREFIX + " | UPDATE TRAINING SET"));
+
+  const params = p || {};
+
+  const equalCategoriesFlag = (params.equalCategoriesFlag !== undefined) ? params.equalCategoriesFlag : configuration.equalCategoriesFlag;
 
   return new Promise(function(resolve, reject) {
 
@@ -685,18 +690,35 @@ function updateTrainingSet(){
       testSetObj.meta.setSize = 0;
       testSetObj.data = [];
 
+      const minCategorySize = Math.min(
+        trainingSetUsersHashMap.left.size, 
+        trainingSetUsersHashMap.neutral.size, 
+        trainingSetUsersHashMap.right.size
+      );
+
       async.eachSeries(["left", "neutral", "right"], function(category, cb){
 
-        const trainingSetSize = parseInt((1 - configuration.testSetRatio) * trainingSetUsersHashMap[category].size);
-        const testSetSize = parseInt(configuration.testSetRatio * trainingSetUsersHashMap[category].size);
+        const categorySize = (equalCategoriesFlag) ? minCategorySize : trainingSetUsersHashMap[category].size;
+
+        const trainingSetSize = parseInt((1 - configuration.testSetRatio) * categorySize);
+        const testSetSize = parseInt(configuration.testSetRatio * categorySize);
+
+        const shuffledTrainingSet = _.shuffle(trainingSetUsersHashMap[category].values());
+
+        const trainingSetData = shuffledTrainingSet.slice(0, trainingSetSize);
+        const testSetData = shuffledTrainingSet.slice(trainingSetSize, trainingSetSize+testSetSize);
+
+        trainingSetObj.data = trainingSetObj.data.concat(trainingSetData);
+        testSetObj.data = testSetObj.data.concat(testSetData);
 
         console.log(chalkLog(MODULE_ID_PREFIX + " | TRAINING SET | " + category.toUpperCase()
-          + " | SIZE: " + trainingSetSize
+          + " | EQ CATEGORIES FLAG: " + equalCategoriesFlag
+          + " | MIN CAT SIZE: " + minCategorySize
+          + " | CAT SIZE: " + categorySize
+          + " | TRAIN SIZE: " + trainingSetSize
           + " | TEST SIZE: " + testSetSize
+          + " | TRAIN SET DATA SIZE: " + trainingSetObj.data.length
         ));
-
-        trainingSetObj.data = trainingSetObj.data.concat(trainingSetUsersHashMap[category].values().slice(testSetSize));
-        testSetObj.data = testSetObj.data.concat(trainingSetUsersHashMap[category].values().slice(0, testSetSize-1));
 
         cb();
 
@@ -1370,7 +1392,10 @@ function dataSetPrep(p){
     // configuration.userCharCountDescription = 160;
     // configuration.userCharCountLocation = 30;
 
-    const numCharInputs = configuration.userCharCountScreenName + configuration.userCharCountName + configuration.userCharCountDescription + configuration.userCharCountLocation;
+    const numCharInputs = configuration.userCharCountScreenName 
+      + configuration.userCharCountName 
+      + configuration.userCharCountDescription 
+      + configuration.userCharCountLocation;
 
     if (userProfileCharCodesOnlyFlag){
       dataSetObj.meta.numInputs = numCharInputs;
@@ -2587,9 +2612,9 @@ process.on("message", async function(m) {
         if (m.testMode !== undefined) { configuration.testMode = m.testMode; }
         if (m.verbose !== undefined) { configuration.verbose = m.verbose; }
         if (m.testSetRatio !== undefined) { configuration.testSetRatio = m.testSetRatio; }
-        if (m.binaryMode !== undefined) { 
-          configuration.binaryMode = m.binaryMode;
-        }
+        if (m.binaryMode !== undefined) { configuration.binaryMode = m.binaryMode; }
+        if (m.equalCategoriesFlag !== undefined) { configuration.equalCategoriesFlag = m.equalCategoriesFlag; }
+        if (m.userProfileCharCodesOnlyFlag !== undefined) { configuration.userProfileCharCodesOnlyFlag = m.userProfileCharCodesOnlyFlag; }
         if (m.userArchiveFileExistsMaxWaitTime !== undefined) { 
           configuration.userArchiveFileExistsMaxWaitTime = m.userArchiveFileExistsMaxWaitTime;
         }

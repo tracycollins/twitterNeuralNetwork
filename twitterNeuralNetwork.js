@@ -3266,6 +3266,16 @@ async function loadConfigFile(params) {
       newConfiguration.networkTechnology = loadedConfigObj.TNN_NETWORK_TECHNOLOGY;
     }
 
+    if (loadedConfigObj.TNN_EQUAL_CATEGORIES_FLAG !== undefined) {
+      console.log(MODULE_ID_PREFIX + " | LOADED TNN_EQUAL_CATEGORIES_FLAG: " + loadedConfigObj.TNN_EQUAL_CATEGORIES_FLAG);
+      if ((loadedConfigObj.TNN_EQUAL_CATEGORIES_FLAG === true) || (loadedConfigObj.TNN_EQUAL_CATEGORIES_FLAG === "true")) {
+        newConfiguration.equalCategoriesFlag = true;
+      }
+      if ((loadedConfigObj.TNN_EQUAL_CATEGORIES_FLAG === false) || (loadedConfigObj.TNN_EQUAL_CATEGORIES_FLAG === "false")) {
+        newConfiguration.equalCategoriesFlag = false;
+      }
+    }
+
     if (loadedConfigObj.TNN_USER_PROFILE_CHAR_CODES_ONLY_FLAG !== undefined) {
       console.log(MODULE_ID_PREFIX + " | LOADED TNN_USER_PROFILE_CHAR_CODES_ONLY_FLAG: " + loadedConfigObj.TNN_USER_PROFILE_CHAR_CODES_ONLY_FLAG);
       if ((loadedConfigObj.TNN_USER_PROFILE_CHAR_CODES_ONLY_FLAG === true) || (loadedConfigObj.TNN_USER_PROFILE_CHAR_CODES_ONLY_FLAG === "true")) {
@@ -5427,8 +5437,8 @@ setTimeout(async function(){
       console.log(chalkAlert(MODULE_ID_PREFIX + " | defaultUserArchiveFlagFile: " + configuration.defaultUserArchiveFlagFile));
     }
 
-    await initSlackRtmClient();
-    await initSlackWebClient();
+    // await initSlackRtmClient();
+    // await initSlackWebClient();
 
     try {
       dbConnection = await connectDb();
