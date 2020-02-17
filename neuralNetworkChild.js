@@ -1,5 +1,3 @@
-// const ONE_KILOBYTE = 1024;
-// const ONE_MEGABYTE = 1024 * ONE_KILOBYTE;
 const ONE_SECOND = 1000;
 const ONE_MINUTE = 60*ONE_SECOND;
 const ONE_HOUR = 60*ONE_MINUTE;
@@ -18,8 +16,6 @@ const os = require("os");
 const _ = require("lodash");
 const omit = require("object.omit");
 const path = require("path");
-// const jsonpack = require("jsonpack/main");
-// const sizeof = require("object-sizeof");
 
 let hostname = os.hostname();
 if (hostname.startsWith("mbp3")){
@@ -1686,7 +1682,6 @@ function createNetwork(){
 
           networkRaw = new brain.NeuralNetwork({
             inputSize: numInputs,
-            // hiddenLayers: [childNetworkObj.hiddenLayerSize],
             outputSize: trainingSetObj.meta.numOutputs
           });
 
@@ -1831,50 +1826,7 @@ async function evolve(params){
       childNetworkObj.inputsId = inputsObj.inputsId;
       childNetworkObj.numInputs = inputsObj.meta.numInputs;
 
-      // const schedStartTime = moment().valueOf();
-
-      // const schedule = function(schedParams){
-
-      //   const elapsedInt = moment().valueOf() - schedStartTime;
-      //   const iterationRate = elapsedInt/(schedParams.iterations+1);
-      //   const timeToComplete = iterationRate*(preppedOptions.iterations - (schedParams.iterations+1));
-
-      //   const sObj = {
-      //     networkTechnology: "BRAIN",
-      //     binaryMode: false,
-      //     networkId: childNetworkObj.networkId,
-      //     numInputs: inputsObj.meta.numInputs,
-      //     // numInputs: 255,
-      //     inputsId: inputsObj.inputsId,
-      //     evolveStart: schedStartTime,
-      //     evolveElapsed: elapsedInt,
-      //     totalIterations: preppedOptions.iterations,
-      //     iteration: schedParams.iterations+1,
-      //     iterationRate: iterationRate,
-      //     timeToComplete: timeToComplete,
-      //     error: schedParams.error.toFixed(5) || Infinity,
-      //     // fitness: schedParams.fitness.toFixed(5) || -Infinity
-      //   };
-
-      //   console.log(chalkLog(MODULE_ID_PREFIX 
-      //     + " | " + sObj.networkId 
-      //     + " | " + sObj.networkTechnology.slice(0,1).toUpperCase()
-      //     + " | " + sObj.networkId
-      //     + " | " + sObj.inputsId
-      //     + " | ERR " + sObj.error
-      //     // + " | FIT " + fitness
-      //     + " | R " + tcUtils.msToTime(sObj.evolveElapsed)
-      //     + " | ETC " + tcUtils.msToTime(sObj.timeToComplete) + " " + moment().add(sObj.timeToComplete).format(compactDateTimeFormat)
-      //     + " | " + (sObj.iterationRate/1000.0).toFixed(1) + " spi"
-      //     + " | I " + sObj.iteration + "/" + sObj.totalIterations
-      //   ));
-      // };
-
-      // preppedOptions.schedule = schedule;
-
       evolveResults = await nnTools.streamTrainNetwork({
-        // iterations: preppedOptions.iterations,
-        // schedule: schedule,
         options: preppedOptions,
         network: childNetworkRaw, 
         trainingSet: trainingSet
@@ -1944,7 +1896,6 @@ async function evolve(params){
         + " | EXPECTED: " + childNetworkObj.evolve.options.iterations
         + " | ACTUAL: " + evolveResults.iterations
       ));
-      // throw new Error("EVOLVE ITERATIONS");
     }
     return;
   }

@@ -4,7 +4,7 @@ const CHILD_PREFIX = "tnc_node";
 const CHILD_PREFIX_SHORT = "NC";
 
 const DEFAULT_USER_PROFILE_CHAR_CODES_ONLY_FLAG = false;
-const DEFAULT_USER_PROFILE_CHAR_CODES_ONLY_PROBABILITY = 0.5;
+const DEFAULT_USER_PROFILE_CHAR_CODES_ONLY_PROBABILITY = 0.2;
 const DEFAULT_USER_PROFILE_CHAR_CODES_ONLY_INPUTS_ID = "inputs_25250101_000000_255_profilecharcodes";
 
 const DEFAULT_REMOVE_SEED_FROM_VIABLE_NN_SET_ON_FAIL = true;
@@ -533,12 +533,6 @@ const DEFAULT_BRAIN_TRAIN_ACTIVATION_ARRAY = [
   "LEAKY_RELU",
   "TANH"
 ];
-
-// const globalhistograms = {};
-
-// DEFAULT_INPUT_TYPES.forEach(function(type){
-//   globalhistograms[type] = {};
-// });
 
 let hostBestNetworkFile;
 let networkIndex = 0;
@@ -1980,7 +1974,6 @@ async function generateSeedInputsNetworkId(params){
     else if (config.networkTechnology === "brain") {
       config.inputsId = configuration.userProfileCharCodesOnlyInputsId;
       config.seedInputsId = configuration.userProfileCharCodesOnlyInputsId;
-      // const inputsObj = await wordAssoDb.NetworkInputs.findOne({inputsId: config.inputsId}).lean();
       const inputsObj = await loadInputsFile({folder: defaultInputsFolder, file: configuration.userProfileCharCodesOnlyInputsId+".json"});
       config.numInputs = inputsObj.meta.numInputs;
       console.log(chalkLog(MODULE_ID_PREFIX + " | BRAIN SEED INPUTS: " + config.seedInputsId));
@@ -2383,8 +2376,6 @@ async function initNetworkCreate(params){
                MODULE_ID_PREFIX + " | NN ID:             " + networkId
       + "\n" + MODULE_ID_PREFIX + " | TECHNOLOGY:        " + messageObj.networkTechnology
       + "\n" + MODULE_ID_PREFIX + " | ARCHITECTURE:      " + messageObj.architecture
-      // + "\n" + MODULE_ID_PREFIX + " | SEED:              " + messageObj.seedNetworkId
-      // + "\n" + MODULE_ID_PREFIX + " | SEED RES:          " + messageObj.seedNetworkRes.toFixed(3) + "%"
       + "\n" + MODULE_ID_PREFIX + " | INPUTS ID:         " + messageObj.inputsId
       + "\n" + MODULE_ID_PREFIX + " | INPUTS:            " + messageObj.numInputs
       + "\n" + MODULE_ID_PREFIX + " | HIDDEN LAYER SIZE: " + messageObj.hiddenLayerSize
