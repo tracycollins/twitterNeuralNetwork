@@ -1397,6 +1397,9 @@ function dataSetPrep(p){
       dataSetObj.meta.numInputs = numCharInputs;
       childNetworkObj.numInputs = numCharInputs;
     }
+    else{
+      dataSetObj.meta.numInputs = childNetworkObj.numInputs;
+    }
 
     console.log(chalkBlue(MODULE_ID_PREFIX
       + " | DATA SET preppedOptions"
