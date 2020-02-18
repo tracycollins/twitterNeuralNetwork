@@ -5428,8 +5428,8 @@ setTimeout(async function(){
       console.log(chalkAlert(MODULE_ID_PREFIX + " | defaultUserArchiveFlagFile: " + configuration.defaultUserArchiveFlagFile));
     }
 
-    // await initSlackRtmClient();
-    // await initSlackWebClient();
+    await initSlackRtmClient();
+    await initSlackWebClient();
 
     try {
       dbConnection = await connectDb();
