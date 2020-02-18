@@ -52,7 +52,7 @@ else {
 global.wordAssoDb = require("@threeceelabs/mongoose-twitter");
 
 let configuration = {};
-configuration.equalCategoriesFlag = true;
+configuration.equalCategoriesFlag = false;
 configuration.userProfileCharCodesOnlyFlag = false;
 configuration.defaultUserProfileCharCodesOnlyInputsId = DEFAULT_USER_PROFILE_CHAR_CODES_ONLY_INPUTS_ID 
 configuration.userCharCountScreenName = 15;
@@ -64,7 +64,7 @@ configuration.maxNetworkJsonSizeMB = DEFAULT_MAX_NETWORK_JSON_SIZE_MB;
 configuration.userArchiveFileExistsMaxWaitTime = DEFAULT_USER_ARCHIVE_FILE_EXITS_MAX_WAIT_TIME;
 configuration.testSetRatio = DEFAULT_TEST_RATIO;
 configuration.binaryMode = DEFAULT_BINARY_MODE;
-configuration.brainHiddenLayerSize = DEFAULT_BRAIN_HIDDEN_LAYER_SIZE;
+configuration.fHiddenLayerSize = DEFAULT_BRAIN_HIDDEN_LAYER_SIZE;
 configuration.neatapticHiddenLayerSize = DEFAULT_NEATAPTIC_HIDDEN_LAYER_SIZE;
 configuration.networkTechnology = DEFAULT_NETWORK_TECHNOLOGY;
 
