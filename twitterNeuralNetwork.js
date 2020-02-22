@@ -1960,9 +1960,8 @@ async function generateSeedInputsNetworkId(params){
           throw new Error("RANDOM NN NOT IN DB: " + randomNetworkId);
         }
 
-        // const networkObj = nnDoc.toObject();
-
         config.networkTechnology = networkObj.networkTechnology;
+        config.binaryMode = networkObj.binaryMode;
         config.seedNetworkId = randomNetworkId;
         config.seedNetworkRes = networkObj.successRate;
         config.seedInputsId = randomInputsId;
@@ -1988,6 +1987,7 @@ async function generateSeedInputsNetworkId(params){
       }
     }
     else if (config.networkTechnology === "brain") {
+      config.binaryMode = false;
       config.inputsId = configuration.userProfileCharCodesOnlyInputsId;
       config.seedInputsId = configuration.userProfileCharCodesOnlyInputsId;
       const inputsObj = await loadInputsFile({folder: defaultInputsFolder, file: configuration.userProfileCharCodesOnlyInputsId+".json"});
@@ -1999,6 +1999,7 @@ async function generateSeedInputsNetworkId(params){
 
       config.seedInputsId = configuration.userProfileCharCodesOnlyInputsId;
       config.inputsId = config.seedInputsId;
+      config.binaryMode = false;
 
       console.log(chalkLog(MODULE_ID_PREFIX + " | SEED | CHAR CODES ONLY INPUTS ID: " + config.seedInputsId));
 
@@ -2111,6 +2112,7 @@ async function generateEvolveOptions(params){
       // neataptic doesn't have WAPE cost
 
       const costArray = (config.networkTechnology === "neataptic") ? _.pull(configuration.costArray, "WAPE") : configuration.costArray;
+      config.binaryMode = (config.networkTechnology === "brain") ? false : randomItem(["true", "false"]);
       config.cost = (config.networkTechnology === "brain") ? "NONE" : randomItem(costArray);
 
       config.efficient_mutation = configuration.evolve.efficient_mutation;
@@ -2185,7 +2187,19 @@ async function generateRandomEvolveConfig(p){
 
   config.networkCreateMode = "evolve";
 
+  if (configuration.forceNetworkTechnology && configuration.forceNetworkTechnology !== undefined){
+    config.networkTechnology = configuration.forceNetworkTechnology;
+    config.forceNetworkTechnology = configuration.forceNetworkTechnology;
+  }
+  else{
+    config.networkTechnology = (configuration.enableRandomTechnology) ? randomItem(["brain", "neataptic", "carrot"]) : configuration.networkTechnology;
+  }
+
   if (configuration.userProfileCharCodesOnlyFlag){
+    config.userProfileCharCodesOnlyFlag = true;
+    config.binaryMode = false;
+  }
+  else if (config.networkTechnology === "brain"){
     config.userProfileCharCodesOnlyFlag = true;
     config.binaryMode = false;
   }
@@ -2199,18 +2213,10 @@ async function generateRandomEvolveConfig(p){
     }
   }
 
+
+  console.log(chalkBlue(MODULE_ID_PREFIX + " | NETWORK TECHNOLOGY:      " + config.networkTechnology));
   console.log(chalkBlue(MODULE_ID_PREFIX + " | USER PROFILE CHAR CODES: " + config.userProfileCharCodesOnlyFlag));
-  console.log(chalkBlue(MODULE_ID_PREFIX + " | BINARY MODE: " + config.binaryMode));
-
-  if (configuration.forceNetworkTechnology && configuration.forceNetworkTechnology !== undefined){
-    config.networkTechnology = configuration.forceNetworkTechnology;
-    config.forceNetworkTechnology = configuration.forceNetworkTechnology;
-  }
-  else{
-    config.networkTechnology = (configuration.enableRandomTechnology) ? randomItem(["brain", "neataptic", "carrot"]) : configuration.networkTechnology;
-  }
-
-  console.log(chalkBlue(MODULE_ID_PREFIX + " | NETWORK TECHNOLOGY: " + config.networkTechnology));
+  console.log(chalkBlue(MODULE_ID_PREFIX + " | BINARY MODE:             " + config.binaryMode));
 
 
   debug(chalkLog(MODULE_ID_PREFIX + " | NETWORK CREATE MODE: " + config.networkCreateMode));
@@ -2240,7 +2246,8 @@ async function generateRandomEvolveConfig(p){
 
       config.hiddenLayerSize = (dbNetworkObj.hiddenLayerSize && (dbNetworkObj.hiddenLayerSize !== undefined)) ? dbNetworkObj.hiddenLayerSize : 0;
 
-      config.architecture = "loadedNetwork";
+      config.architecture = "seed";
+      config.binaryMode = dbNetworkObj.binaryMode;
       config.inputsId = dbNetworkObj.inputsId;
       config.numInputs = dbNetworkObj.numInputs;
       config.seedNetworkId = dbNetworkObj.networkId;
@@ -2248,6 +2255,7 @@ async function generateRandomEvolveConfig(p){
 
       console.log(MODULE_ID_PREFIX + " | SEED NETWORK:      " + dbNetworkObj.networkId);
       console.log(MODULE_ID_PREFIX + " | SEED NETWORK TECH: " + dbNetworkObj.networkTechnology);
+      console.log(MODULE_ID_PREFIX + " | BINARY MODE:       " + dbNetworkObj.binaryMode);
       console.log(MODULE_ID_PREFIX + " | HIDDEN NODES:      " + dbNetworkObj.hiddenLayerSize);
       console.log(MODULE_ID_PREFIX + " | SEED INPUTS ID:    " + dbNetworkObj.inputsId);
 
@@ -2325,6 +2333,13 @@ async function generateRandomEvolveConfig(p){
         inputsSet.add(inputsObj.inputsId);
 
         config.inputsId = inputsObj.inputsId;
+
+        if(inputsObj.meta.userProfileCharCodesOnlyFlag){
+          config.binaryMode = false;
+        }
+        else{
+          config.binaryMode = (params.binaryMode !== undefined) ? params.binaryMode : configuration.binaryMode;
+        }
 
         config.hiddenLayerSize = parseInt((configuration.inputsToHiddenLayerSizeRatio * inputsObj.meta.numInputs) + 3);
         config.hiddenLayerSize = randomItem([0,config.hiddenLayerSize]);
@@ -2458,6 +2473,7 @@ async function initNetworkCreate(params){
     networkCreateObj = {};
     networkCreateObj.childId = childId;
     networkCreateObj.status = "EVOLVE";
+    networkCreateObj.binaryMode = messageObj.binaryMode;
     networkCreateObj.successRate = 0;
     networkCreateObj.matchRate = 0;
     networkCreateObj.overallMatchRate = 0;

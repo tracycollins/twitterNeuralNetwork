@@ -1562,7 +1562,7 @@ function createNetwork(){
 
     switch (childNetworkObj.architecture) {
 
-      case "loadedNetwork":
+      case "seed":
 
         console.log(chalkBlueBold(MODULE_ID_PREFIX
           + " | " + configuration.childId
@@ -1923,7 +1923,7 @@ function networkEvolve(p){
     const options = {};
 
     if (params.seedNetworkId) {
-      params.architecture = "loadedNetwork";
+      params.architecture = "seed";
       params.networkTechnology = (params.networkTechnology) ? params.networkTechnology : "neataptic";
       debug(chalkAlert(MODULE_ID_PREFIX + " | START NETWORK DEFINED: " + params.networkId));
     }
