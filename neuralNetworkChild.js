@@ -34,7 +34,7 @@ const MODULE_NAME = "tncChild";
 let MODULE_ID_PREFIX = "NNC";
 const DEFAULT_NETWORK_TECHNOLOGY = "carrot";
 const DEFAULT_BINARY_MODE = true;
-const DEFAULT_TEST_RATIO = 0.20;
+const DEFAULT_TEST_RATIO = 0.25;
 const QUIT_WAIT_INTERVAL = ONE_SECOND;
 const DEFAULT_USER_ARCHIVE_FILE_EXITS_MAX_WAIT_TIME = 2*ONE_HOUR;
 
@@ -54,7 +54,7 @@ global.wordAssoDb = require("@threeceelabs/mongoose-twitter");
 let configuration = {};
 configuration.equalCategoriesFlag = false;
 configuration.userProfileCharCodesOnlyFlag = false;
-configuration.defaultUserProfileCharCodesOnlyInputsId = DEFAULT_USER_PROFILE_CHAR_CODES_ONLY_INPUTS_ID 
+configuration.userProfileCharCodesOnlyInputsId = DEFAULT_USER_PROFILE_CHAR_CODES_ONLY_INPUTS_ID 
 configuration.userCharCountScreenName = 15;
 configuration.userCharCountName = 50;
 configuration.userCharCountDescription = 160;
@@ -1249,7 +1249,7 @@ function prepNetworkEvolve() {
 
         const sObj = {
           networkTechnology: "BRAIN",
-          binaryMode: false,
+          binaryMode: childNetworkObj.binaryMode,
           networkId: childNetworkObj.networkId,
           numInputs: childNetworkObj.numInputs,
           inputsId: childNetworkObj.inputsId,
@@ -1791,7 +1791,7 @@ async function evolve(params){
     const userProfileOnlyFlag = inputsObj.meta.userProfileOnlyFlag || false;
     let userProfileCharCodesOnlyFlag = (params.userProfileCharCodesOnlyFlag !== undefined) ? params.userProfileCharCodesOnlyFlag : configuration.userProfileCharCodesOnlyFlag;
 
-    if (childNetworkObj.inputsId !== DEFAULT_USER_PROFILE_CHAR_CODES_ONLY_INPUTS_ID){
+    if (childNetworkObj.inputsId !== configuration.userProfileCharCodesOnlyInputsId){
 
       console.log(chalkAlert(MODULE_ID_PREFIX + " | XXX userProfileCharCodesOnlyFlag"
         + " | ARCH: " + childNetworkObj.architecture
@@ -2400,7 +2400,6 @@ async function configNetworkEvolve(params){
   newNetObj.seedNetworkRes = params.seedNetworkRes;
   newNetObj.networkCreateMode = "evolve";
   newNetObj.testRunId = params.testRunId;
-  // newNetObj.network = {};
   newNetObj.inputsId = params.inputsId;
   newNetObj.numInputs = params.numInputs;
   newNetObj.numOutputs = 3;
@@ -2500,9 +2499,6 @@ async function configNetworkEvolve(params){
 
     return newNetObj;
 
-    // const nnConvertedObj = await nnTools.convertNetwork({networkObj: newNetObj});
-    // nnConvertedObj.evolve.options.network = nnConvertedObj.networkRaw;
-    // return nnConvertedObj;
   }
   else {
 
@@ -2558,7 +2554,8 @@ process.on("message", async function(m) {
 
         console.log(chalkBlueBold(MODULE_ID_PREFIX + " | <R INIT"
           + " | CHILD ID: " + m.childId
-          + "\nCONFIGURATION\n" + jsonPrint(configuration)
+          + "\nDEFAULT CONFIGURATION\n" + jsonPrint(configuration)
+          + "\nLOADED  CONFIGURATION\n" + jsonPrint(m.configuration)
         ));
 
         configuration = _.assign(configuration, m.configuration);
@@ -2582,7 +2579,7 @@ process.on("message", async function(m) {
         process.title = m.childId;
         process.name = m.childId;
 
-        console.log(chalkBlueBold(MODULE_ID_PREFIX + " | INIT CONFIGURATION"
+        console.log(chalkBlueBold(MODULE_ID_PREFIX + " | FINAL INIT CONFIGURATION"
           + "\n" + jsonPrint(configuration)
         ));
 

@@ -14,6 +14,7 @@ const DEFAULT_COMPARE_TECH = false;
 const DEFAULT_FORCE_NETWORK_TECHNOLOGY = false;
 
 const DEFAULT_MAX_FAIL_NETWORKS = 50;
+const DEFAULT_MIN_PASS_RATIO = 0.70;
 
 const os = require("os");
 let hostname = os.hostname();
@@ -52,6 +53,7 @@ let dbConnection;
 const defaultEvolveOptionsPickArray = [
   "activation",
   "architecture",
+  "binaryMode",
   "error",
   "hiddenLayerSize",
   "inputs",
@@ -61,8 +63,8 @@ const defaultEvolveOptionsPickArray = [
   "networkTechnology",
   "numInputs",
   "schedule",
-  "seedNetworkId",
   "seedInputsId",
+  "seedNetworkId",
 ];
 
 const carrotEvolveOptionsPickArray = [
@@ -226,8 +228,13 @@ configuration.globalTestMode = GLOBAL_TEST_MODE;
 configuration.quitOnComplete = QUIT_ON_COMPLETE;
 configuration.statsUpdateIntervalTime = STATS_UPDATE_INTERVAL;
 configuration.maxFailNetworks = DEFAULT_MAX_FAIL_NETWORKS;
+configuration.minPassRatio = DEFAULT_MIN_PASS_RATIO;
 
 childConfiguration.primaryHost = configuration.primaryHost;
+childConfiguration.binaryMode = configuration.binaryMode;
+childConfiguration.userProfileCharCodesOnlyFlag = configuration.userProfileCharCodesOnlyFlag;
+childConfiguration.userProfileCharCodesOnlyInputsId = configuration.userProfileCharCodesOnlyInputsId;
+childConfiguration.userProfileCharCodesOnlyProbability = configuration.userProfileCharCodesOnlyProbability;
 childConfiguration.userProfileOnlyFlag = configuration.userProfileOnlyFlag;
 childConfiguration.testMode = configuration.testMode;
 childConfiguration.updateUserDb = false;
@@ -445,7 +452,7 @@ const GLOBAL_TRAINING_SET_ID = "globalTrainingSet";
 const DEFAULT_SEED_RANDOMIZE_OPTIONS = false;
 const DEFAULT_USE_LOCAL_TRAINING_SETS = false;
 const DEFAULT_MAX_NEURAL_NETWORK_CHILDREN = 1;
-const DEFAULT_TEST_RATIO = 0.20;
+const DEFAULT_TEST_RATIO = 0.25;
 const DEFAULT_ITERATIONS = 10;
 const DEFAULT_SEED_NETWORK_ID = false;
 const DEFAULT_SEED_NETWORK_PROBABILITY = 0.5;
@@ -893,6 +900,7 @@ function printResultsHashmap(){
       "TECH",
       "STATUS",
       "BTR",
+      "BIN",
       "SEED",
       "RES %",
       "HL",
@@ -942,6 +950,7 @@ function printResultsHashmap(){
 
       let nnTech = "";
       let status = "";
+      let binaryMode = "F";
       let snIdRes = 0;
       let iterations = 0;
       let secPerIteration = 0;
@@ -964,8 +973,9 @@ function printResultsHashmap(){
       status = (networkObj.status && networkObj.status !== undefined) ? networkObj.status : "UNKNOWN";
       snIdRes = format(networkObj.seedNetworkRes);
       betterChild = (networkObj.betterChild && networkObj.betterChild !== undefined) ? formatBoolean(networkObj.betterChild) : "---";
+      binaryMode = (networkObj.binaryMode && networkObj.binaryMode !== undefined) ? formatBoolean(networkObj.binaryMode) : "F";
       hiddenLayerSize = (networkObj.hiddenLayerSize && (networkObj.hiddenLayerSize !== undefined)) ? networkObj.hiddenLayerSize : "---";
-      seedNetworkId = (networkObj.seedNetworkId && networkObj.seedNetworkId !== undefined) ? networkObj.seedNetworkId : false;
+      seedNetworkId = (networkObj.seedNetworkId && networkObj.seedNetworkId !== undefined) ? networkObj.seedNetworkId : "---";
       iterations = (networkObj.evolve.results && networkObj.evolve.results !== undefined) ? networkObj.evolve.results.iterations : 0;
 
       cost = (networkObj.networkTechnology !== "brain") ? networkObj.evolve.options.cost.slice(0,4) : "---";
@@ -995,6 +1005,7 @@ function printResultsHashmap(){
         nnTech,
         status,
         betterChild,
+        binaryMode,
         seedNetworkId,
         snIdRes,
         hiddenLayerSize,
@@ -1060,7 +1071,7 @@ function printResultsHashmap(){
       }
 
       const t = table(tableArray, { 
-        align: ["l", "l", "l", "l", "l", "l", "r", "l", "l", "l", "l", "l", "l", "l", "r", "l", "r", "r", "l", "l", "r", "r", "r", "r", "r"] 
+        align: ["l", "l", "l", "l", "l", "l", "l", "r", "l", "l", "l", "l", "l", "l", "l", "r", "l", "r", "r", "l", "l", "r", "r", "r", "r", "r"] 
       });
 
       console.log(chalkLog(MODULE_ID_PREFIX + " | === NETWORK RESULTS ========================================================================================================================"));
@@ -1268,13 +1279,16 @@ async function updateInputsViabilitySet(p){
   const params = p || {};
 
   const maxFailNetworks = params.maxFailNetworks || configuration.maxFailNetworks;
+  const minPassRatio = params.minPassRatio || configuration.minPassRatio;
+  const minPassRatioPercent = 100*minPassRatio;
   // const minNetworksTotal = params.minNetworksTotal || configuration.minNetworksTotal;
 
   const numPassNetworks = (params.inputsObj.networks) ? params.inputsObj.networks.length : 0;
   const numFailNetworks = (params.inputsObj.failNetworks) ? params.inputsObj.failNetworks.length : 0;
   const totalNetworks = numPassNetworks + numFailNetworks;
 
-  const inputsSuccess = (totalNetworks) ? 100*(numPassNetworks/totalNetworks) : 0;
+  const passRatio = (totalNetworks) ? (numPassNetworks/totalNetworks) : 0;
+  const passRatioPercent = 100*passRatio;
 
   let inputsViable = false;
 
@@ -1282,7 +1296,7 @@ async function updateInputsViabilitySet(p){
     inputsViable = true;
   }
 
-  if (numPassNetworks >= numFailNetworks){
+  if (passRatio >= minPassRatio){
     inputsViable = true;
   }
 
@@ -1293,7 +1307,8 @@ async function updateInputsViabilitySet(p){
     console.log(chalkGreen(MODULE_ID_PREFIX 
       + " | +++ VIABLE INPUTS [" + inputsViableSet.size + "]"
       + " | P/F/T: " + numPassNetworks + "/" + numFailNetworks + "/" + totalNetworks
-      + " | SUCCESS: " + inputsSuccess.toFixed(2) + "%"
+      + " | MIN: " + minPassRatioPercent.toFixed(2) + "%"
+      + " | SUCCESS: " + passRatioPercent.toFixed(2) + "%"
       + " | " + params.inputsObj.meta.numInputs
       + " | " + params.inputsObj.inputsId
     ));
@@ -1305,7 +1320,8 @@ async function updateInputsViabilitySet(p){
     console.log(chalkAlert(MODULE_ID_PREFIX 
       + " | XXX NOT VIABLE INPUTS [" + inputsViableSet.size + "]"
       + " | P/F/T: " + numPassNetworks + "/" + numFailNetworks + "/" + totalNetworks
-      + " | SUCCESS: " + inputsSuccess.toFixed(2) + "%"
+      + " | MIN: " + 100*minPassRatio.toFixed(2) + "%"
+      + " | SUCCESS: " + passRatioPercent.toFixed(2) + "%"
       + " | " + params.inputsObj.meta.numInputs
       + " | " + params.inputsObj.meta.numInputs
       + " | " + params.inputsObj.inputsId
@@ -2169,11 +2185,22 @@ async function generateRandomEvolveConfig(p){
 
   config.networkCreateMode = "evolve";
 
-  config.userProfileCharCodesOnlyFlag = (Math.random() <= configuration.userProfileCharCodesOnlyProbability);
+  if (configuration.userProfileCharCodesOnlyFlag){
+    config.userProfileCharCodesOnlyFlag = true;
+    config.binaryMode = false;
+  }
+  else{
+    config.userProfileCharCodesOnlyFlag = (Math.random() <= configuration.userProfileCharCodesOnlyProbability);
+    if (config.userProfileCharCodesOnlyFlag) { 
+      config.binaryMode = false;
+    }
+    else{
+      config.binaryMode = (params.binaryMode !== undefined) ? params.binaryMode : configuration.binaryMode;
+    }
+  }
 
   console.log(chalkBlue(MODULE_ID_PREFIX + " | USER PROFILE CHAR CODES: " + config.userProfileCharCodesOnlyFlag));
-
-  config.binaryMode = (!config.userProfileCharCodesOnlyFlag && params.binaryMode !== undefined) ? params.binaryMode : configuration.binaryMode;
+  console.log(chalkBlue(MODULE_ID_PREFIX + " | BINARY MODE: " + config.binaryMode));
 
   if (configuration.forceNetworkTechnology && configuration.forceNetworkTechnology !== undefined){
     config.networkTechnology = configuration.forceNetworkTechnology;
@@ -2267,20 +2294,35 @@ async function generateRandomEvolveConfig(p){
   // not seed network
   else { 
 
-    if (config.seedInputsId && (config.seedInputsId !== undefined) && inputsSet.has(config.seedInputsId)) {
+    // if (config.seedInputsId && (config.seedInputsId !== undefined) && inputsSet.has(config.seedInputsId)) {
+    if (config.seedInputsId && (config.seedInputsId !== undefined)) {
 
       console.log(chalkLog(MODULE_ID_PREFIX + " | USE SEED INPUTS ID | " + config.seedInputsId));
 
       try{
 
-        const inputsObj = await wordAssoDb.NetworkInputs.findOne({inputsId: config.seedInputsId}).lean();
+        let inputsObj;
+
+        inputsObj = await wordAssoDb.NetworkInputs.findOne({inputsId: config.seedInputsId}).lean();
 
         if (!inputsObj) {
-          console.log(chalkError("TNN | *** LOAD INPUTS ERROR | NOT FOUND"
+          console.log(chalkError(MODULE_ID_PREFIX + " | *** LOAD DB INPUTS ERROR | NOT FOUND"
+            + " | INPUTS ID: " + config.seedInputsId
+          ));
+          // throw new Error(config.seedInputsId + " NOT IN inputsSet");
+          const file = config.seedInputsId + ".json";
+
+          inputsObj = await loadInputsFile({folder: defaultInputsFolder, file: file});
+        }
+
+        if (!inputsObj) {
+          console.log(chalkError("TNN | *** LOAD FILE INPUTS ERROR | NOT FOUND"
             + " | INPUTS ID: " + config.seedInputsId
           ));
           throw new Error(config.seedInputsId + " NOT IN inputsSet");
         }
+
+        inputsSet.add(inputsObj.inputsId);
 
         config.inputsId = inputsObj.inputsId;
 
@@ -2297,7 +2339,7 @@ async function generateRandomEvolveConfig(p){
         return config;
       }
       catch(err){
-        console.log(chalkError("TNN | *** LOAD INPUTS ERROR"
+        console.log(chalkError(MODULE_ID_PREFIX + " | *** LOAD INPUTS ERROR"
           + " | INPUTS ID: " + config.seedInputsId
           + " | ERROR: " + err
         ));
@@ -2305,7 +2347,7 @@ async function generateRandomEvolveConfig(p){
       }
     }
     else {
-      console.log("TNN | *** ERROR *** | PERCEPTRON ARCH | seedInputsId " + config.seedInputsId + " NOT IN inputsSet");
+      console.log(MODULE_ID_PREFIX + " | *** ERROR *** | PERCEPTRON ARCH | seedInputsId " + config.seedInputsId + " NOT IN inputsSet");
       throw new Error(config.seedInputsId + " NOT IN inputsSet");
     }
   }
@@ -2375,6 +2417,7 @@ async function initNetworkCreate(params){
     console.log(chalkBlue(
                MODULE_ID_PREFIX + " | NN ID:             " + networkId
       + "\n" + MODULE_ID_PREFIX + " | TECHNOLOGY:        " + messageObj.networkTechnology
+      + "\n" + MODULE_ID_PREFIX + " | BIN MODE:          " + messageObj.binaryMode
       + "\n" + MODULE_ID_PREFIX + " | ARCHITECTURE:      " + messageObj.architecture
       + "\n" + MODULE_ID_PREFIX + " | INPUTS ID:         " + messageObj.inputsId
       + "\n" + MODULE_ID_PREFIX + " | INPUTS:            " + messageObj.numInputs
@@ -3275,11 +3318,14 @@ async function loadConfigFile(params) {
       if ((loadedConfigObj.TNN_USER_PROFILE_CHAR_CODES_ONLY_FLAG === false) || (loadedConfigObj.TNN_USER_PROFILE_CHAR_CODES_ONLY_FLAG === "false")) {
         newConfiguration.userProfileCharCodesOnlyFlag = false;
       }
+
+      childConfiguration.userProfileCharCodesOnlyFlag = newConfiguration.userProfileCharCodesOnlyFlag;
     }
 
     if (loadedConfigObj.TNN_USER_PROFILE_CHAR_CODES_ONLY_PROBABILITY !== undefined) {
       console.log(MODULE_ID_PREFIX + " | LOADED TNN_USER_PROFILE_CHAR_CODES_ONLY_PROBABILITY: " + loadedConfigObj.TNN_USER_PROFILE_CHAR_CODES_ONLY_PROBABILITY);
       newConfiguration.userProfileCharCodesOnlyProbability = loadedConfigObj.TNN_USER_PROFILE_CHAR_CODES_ONLY_PROBABILITY;
+      childConfiguration.userProfileCharCodesOnlyProbability = newConfiguration.userProfileCharCodesOnlyProbability;
     }
 
     if (loadedConfigObj.TNN_USER_PROFILE_CHAR_CODES_ONLY_INPUTS_ID !== undefined) {
@@ -3389,6 +3435,11 @@ async function loadConfigFile(params) {
     if (loadedConfigObj.TNN_MAX_NEURAL_NETWORK_CHILDREN !== undefined){
       console.log(MODULE_ID_PREFIX + " | LOADED TNN_MAX_NEURAL_NETWORK_CHILDREN: " + loadedConfigObj.TNN_MAX_NEURAL_NETWORK_CHILDREN);
       newConfiguration.maxNumberChildren = loadedConfigObj.TNN_MAX_NEURAL_NETWORK_CHILDREN;
+    }
+
+    if (loadedConfigObj.TNN_MIN_PASS_RATIO !== undefined){
+      console.log(MODULE_ID_PREFIX + " | LOADED TNN_MIN_PASS_RATIO: " + loadedConfigObj.TNN_MIN_PASS_RATIO);
+      newConfiguration.minPassRatio = loadedConfigObj.TNN_MIN_PASS_RATIO;
     }
 
     if (loadedConfigObj.TNN_MAX_FAIL_NETWORKS !== undefined){
@@ -3708,6 +3759,7 @@ const quitOnError = { name: "quitOnError", alias: "Q", type: Boolean, defaultVal
 const verbose = { name: "verbose", alias: "v", type: Boolean };
 const testMode = { name: "testMode", alias: "X", type: Boolean};
 
+const userProfileCharCodesOnlyFlag = { name: "userProfileCharCodesOnlyFlag", alias: "C", type: Boolean, defaultValue: false};
 const forceNetworkTechnology = { name: "forceNetworkTechnology", alias: "c", type: String};
 const threads = { name: "threads", alias: "t", type: Number};
 const maxNumberChildren = { name: "maxNumberChildren", alias: "N", type: Number};
@@ -3724,6 +3776,7 @@ const useBestNetwork = { name: "useBestNetwork", alias: "b", type: Boolean };
 const evolveIterations = { name: "evolveIterations", alias: "I", type: Number};
 
 const optionDefinitions = [
+  userProfileCharCodesOnlyFlag,
   forceNetworkTechnology,
   threads,
   maxNumberChildren,
@@ -4632,6 +4685,7 @@ async function evolveCompleteHandler(params){
       + "\nTNN | CHILD:      " + m.childId
       + "\nTNN | NID:        " + nn.networkId
       + "\nTNN | TECH:       " + nn.networkTechnology
+      + "\nTNN | BIN MODE:   " + nn.binaryMode
       + "\nTNN | SR%:        " + nn.test.results.successRate.toFixed(2) + "%"
       + "\nTNN | TEST [P/T]: " + nn.test.results.numPassed + "/" + nn.test.results.numTests
       + "\nTNN | SEED:       " + nn.seedNetworkId
