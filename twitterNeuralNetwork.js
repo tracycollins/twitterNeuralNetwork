@@ -468,6 +468,14 @@ const DEFAULT_HOST_PURGE_MIN_SUCCESS_RATE = 60; // percent
 const DEFAULT_DISABLE_CREATE_TEST_SET = false;
 const DEFAULT_INIT_MAIN_INTERVAL = process.env.TNN_INIT_MAIN_INTERVAL || 10*ONE_MINUTE;
 
+const DEFAULT_EVOLVE_TECH_ARRAY = [
+  "carrot",
+  "carrot",
+  "neataptic",
+  "neataptic",
+  "brain"
+];
+
 const DEFAULT_EVOLVE_THREADS = 4;
 const DEFAULT_EVOLVE_ARCHITECTURE = "random";
 const DEFAULT_EVOLVE_INPUTS_TO_HIDDEN_LAYER_SIZE_RATIO = 0.1;
@@ -736,9 +744,11 @@ configuration.normalization = null;
 configuration.testSetRatio = DEFAULT_TEST_RATIO;
 
 configuration.evolve = {};
-// configuration.evolve.amount = DEFAULT_EVOLVE_AMOUNT;
+
 configuration.evolve.architecture = DEFAULT_EVOLVE_ARCHITECTURE;
-// configuration.evolve.clear = DEFAULT_EVOLVE_CLEAR;
+
+configuration.evolve.randomEvolveTechArray = DEFAULT_EVOLVE_TECH_ARRAY;
+
 configuration.evolve.cost = DEFAULT_EVOLVE_COST;
 configuration.evolve.efficient_mutation = DEFAULT_EVOLVE_MUTATION_EFFICIENT;
 configuration.evolve.elitism = DEFAULT_EVOLVE_ELITISM;
@@ -1930,7 +1940,7 @@ async function generateSeedInputsNetworkId(params){
     //
     
     const useRandomNetwork = (Math.random() <= configuration.seedNetworkProbability);
-    const randomTechnology = (config.forceNetworkTechnology) ? config.forceNetworkTechnology : randomItem(["brain", "carrot", "neataptic"]);
+    const randomTechnology = (config.forceNetworkTechnology) ? config.forceNetworkTechnology : randomItem(configuration.evolve.randomEvolveTechArray);
 
     if (useRandomNetwork && (Object.keys(inputsIdTechHashMap.networkTechnology[randomTechnology]).length > 0)) {
 
@@ -2203,7 +2213,6 @@ function pickTechnologyOptions(config){
   return pick(config, pickArray);
 }
 
-
 async function generateRandomEvolveConfig(p){
 
   const params = p || {};
@@ -2219,9 +2228,18 @@ async function generateRandomEvolveConfig(p){
   if (configuration.forceNetworkTechnology && configuration.forceNetworkTechnology !== undefined){
     config.networkTechnology = configuration.forceNetworkTechnology;
     config.forceNetworkTechnology = configuration.forceNetworkTechnology;
+    console.log(chalkBlue(MODULE_ID_PREFIX + " | FORCE NETWORK TECHNOLOGY | " + config.networkTechnology));
   }
   else{
-    config.networkTechnology = (configuration.enableRandomTechnology) ? randomItem(["brain", "neataptic", "carrot"]) : configuration.networkTechnology;
+    if (configuration.enableRandomTechnology){
+      // config.networkTechnology =  ? randomItem(["brain", "neataptic", "carrot"]) : configuration.networkTechnology;
+      config.networkTechnology = randomItem(configuration.evolve.randomEvolveTechArray);
+      console.log(chalkBlue(MODULE_ID_PREFIX + " | RANDOM NETWORK TECHNOLOGY | " + config.networkTechnology));
+    }
+    else{
+      config.networkTechnology = configuration.networkTechnology;
+      console.log(chalkBlue(MODULE_ID_PREFIX + " | DEFAULT NETWORK TECHNOLOGY | " + config.networkTechnology));
+    }
   }
 
   if (configuration.userProfileCharCodesOnlyFlag){
