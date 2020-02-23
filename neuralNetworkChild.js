@@ -1061,7 +1061,7 @@ async function testNetworkData(params){
   const testSet = params.testSet;
 
   const convertDatumFlag = (params.convertDatumFlag !== undefined) ? params.convertDatumFlag : false;
-  const binaryMode = (params.binaryMode !== undefined) ? params.binaryMode : configuration.binaryMode;
+  // const binaryMode = (params.binaryMode !== undefined) ? params.binaryMode : configuration.binaryMode;
   const userProfileOnlyFlag = (params.userProfileOnlyFlag !== undefined) ? params.userProfileOnlyFlag : configuration.userProfileOnlyFlag;
 
   const verbose = params.verbose || false;
@@ -1077,7 +1077,7 @@ async function testNetworkData(params){
       datum: datum, // user, input, output
       convertDatumFlag: convertDatumFlag, 
       userProfileOnlyFlag: userProfileOnlyFlag,
-      binaryMode: binaryMode, 
+      // binaryMode: binaryMode, 
       verbose: verbose
     };
 
@@ -2210,7 +2210,7 @@ const fsmStates = {
 
           await testNetwork({
             inputsId: childNetworkObj.inputsId,
-            binaryMode: configuration.binaryMode, 
+            binaryMode: childNetworkObj.binaryMode, 
             verbose: configuration.verbose
           });
 
