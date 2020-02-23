@@ -468,7 +468,7 @@ const DEFAULT_HOST_PURGE_MIN_SUCCESS_RATE = 60; // percent
 const DEFAULT_DISABLE_CREATE_TEST_SET = false;
 const DEFAULT_INIT_MAIN_INTERVAL = process.env.TNN_INIT_MAIN_INTERVAL || 10*ONE_MINUTE;
 
-const DEFAULT_EVOLVE_TECH_ARRAY = [
+const DEFAULT_RANDOM_EVOLVE_TECH_ARRAY = [
   "carrot",
   "carrot",
   "neataptic",
@@ -747,7 +747,7 @@ configuration.evolve = {};
 
 configuration.evolve.architecture = DEFAULT_EVOLVE_ARCHITECTURE;
 
-configuration.evolve.randomEvolveTechArray = DEFAULT_EVOLVE_TECH_ARRAY;
+configuration.evolve.randomEvolveTechArray = DEFAULT_RANDOM_EVOLVE_TECH_ARRAY;
 
 configuration.evolve.cost = DEFAULT_EVOLVE_COST;
 configuration.evolve.efficient_mutation = DEFAULT_EVOLVE_MUTATION_EFFICIENT;
@@ -3407,6 +3407,11 @@ async function loadConfigFile(params) {
       if ((loadedConfigObj.TNN_ENABLE_RANDOM_NETWORK_TECHNOLOGY === false) || (loadedConfigObj.TNN_ENABLE_RANDOM_NETWORK_TECHNOLOGY === "false")) {
         newConfiguration.enableRandomTechnology = false;
       }
+    }
+
+    if (loadedConfigObj.TNN_RANDOM_EVOLVE_TECH_ARRAY !== undefined) {
+      console.log(MODULE_ID_PREFIX + " | LOADED TNN_RANDOM_EVOLVE_TECH_ARRAY: " + loadedConfigObj.TNN_RANDOM_EVOLVE_TECH_ARRAY);
+      newConfiguration.randomEvolveTechArray = loadedConfigObj.TNN_RANDOM_EVOLVE_TECH_ARRAY;
     }
 
     if (loadedConfigObj.TNN_REMOVE_SEED_FROM_VIABLE_NN_SET_ON_FAIL !== undefined) {
