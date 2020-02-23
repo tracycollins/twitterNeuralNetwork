@@ -1953,6 +1953,7 @@ async function generateSeedInputsNetworkId(params){
           config.numInputs = inputsObj.meta.numInputs;
           config.seedInputsId = randomInputsId;
           config.inputsId = randomInputsId;
+          config.binaryMode = false;
 
           return config;
         }
@@ -2037,6 +2038,9 @@ async function generateSeedInputsNetworkId(params){
 
       config.seedInputsId = availableInputsIdArray.pop(); // most recent input
       config.inputsId = config.seedInputsId;
+      if (config.seedInputsId === configuration.userProfileCharCodesOnlyInputsId){
+        config.binaryMode = false;
+      }
 
       console.log(chalkBlue(MODULE_ID_PREFIX + " | SEED | AVAILABLE INPUTS ID: " + config.inputsId));
 
@@ -2066,6 +2070,9 @@ async function generateSeedInputsNetworkId(params){
     }
     else{
       config.seedInputsId = randomItem([...inputsSet]);
+      if (config.seedInputsId === configuration.userProfileCharCodesOnlyInputsId){
+        config.binaryMode = false;
+      }
       const inputsObj = await wordAssoDb.NetworkInputs.findOne({inputsId: config.seedInputsId}).lean();
       config.numInputs = inputsObj.meta.numInputs;
 
@@ -2128,7 +2135,13 @@ async function generateEvolveOptions(params){
       // neataptic doesn't have WAPE cost
 
       const costArray = (config.networkTechnology === "neataptic") ? _.pull(configuration.costArray, "WAPE") : configuration.costArray;
+
       config.binaryMode = (config.networkTechnology === "brain") ? false : randomItem(["true", "false"]);
+
+      if (config.seedInputsId === configuration.userProfileCharCodesOnlyInputsId){
+        config.binaryMode = false;
+      }
+
       config.cost = (config.networkTechnology === "brain") ? "NONE" : randomItem(costArray);
 
       config.efficient_mutation = configuration.evolve.efficient_mutation;
@@ -2350,7 +2363,10 @@ async function generateRandomEvolveConfig(p){
 
         config.inputsId = inputsObj.inputsId;
 
-        if(inputsObj.meta.userProfileCharCodesOnlyFlag){
+        if(config.inputsId === configuration.userProfileCharCodesOnlyInputsId){
+          config.binaryMode = false;
+        }
+        else if(inputsObj.meta.userProfileCharCodesOnlyFlag){
           config.binaryMode = false;
         }
         else{
