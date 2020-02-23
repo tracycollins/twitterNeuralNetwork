@@ -1348,6 +1348,22 @@ async function loadNetworkFile(params){
 
   const networkObj = await tcUtils.loadFileRetry({folder: params.folder, file: params.file});
 
+  if (networkObj.evolve.options.networkTechnology && networkObj.evolve.options.networkTechnology !== networkObj.networkTechnology) {
+    console.log(chalkAlert(MODULE_ID_PREFIX
+      + " | !!! INCORRECT NETWORK TECH | CHANGE " + networkObj.networkTechnology + " <-- " + networkObj.evolve.options.networkTechnology
+      + " | " + networkObj.networkId 
+    ));
+    networkObj.networkTechnology = networkObj.evolve.options.networkTechnology;
+  } 
+
+  if (networkObj.evolve.options.binaryMode !== undefined && networkObj.evolve.options.binaryMode !== networkObj.binaryMode) {
+    console.log(chalkAlert(MODULE_ID_PREFIX
+      + " | !!! INCORRECT BINARY MODE | CHANGE " + networkObj.binaryMode + " <-- " + networkObj.evolve.options.binaryMode
+      + " | " + networkObj.networkId 
+    ));
+    networkObj.binaryMode = nnObj.evolve.options.binaryMode;
+  } 
+
   const dbInputsObj = await updateDbInputs({inputsId: networkObj.inputsId, networkId: networkObj.networkId});
 
   const inputsObj = dbInputsObj.toObject();
