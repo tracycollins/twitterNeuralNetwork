@@ -1361,7 +1361,7 @@ async function loadNetworkFile(params){
       + " | !!! INCORRECT BINARY MODE | CHANGE " + networkObj.binaryMode + " <-- " + networkObj.evolve.options.binaryMode
       + " | " + networkObj.networkId 
     ));
-    networkObj.binaryMode = nnObj.evolve.options.binaryMode;
+    networkObj.binaryMode = networkObj.evolve.options.binaryMode;
   } 
 
   const dbInputsObj = await updateDbInputs({inputsId: networkObj.inputsId, networkId: networkObj.networkId});
