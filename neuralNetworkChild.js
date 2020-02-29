@@ -986,7 +986,6 @@ async function loadUsersArchive(params){
     console.log(chalkError(MODULE_ID_PREFIX + " | *** LOAD USERS ARCHIVE ERROR | " + getTimeStamp() + " | " + err));
     throw err;
   }
-
 }
 
 async function loadTrainingSet(){
@@ -1053,7 +1052,6 @@ async function loadTrainingSet(){
     statsObj.trainingSetReady = false;
     throw err;
   }
-
 }
 
 async function testNetworkData(params){
@@ -1359,14 +1357,6 @@ function prepNetworkEvolve() {
 
   return finalOptions;
 }
-
-// function datumPostProcess(p){
-//   return new Promise(function(resolve, reject){
-
-//     const params = p || {};
-
-//   });
-// }
 
 function dataSetPrep(p){
 
