@@ -153,6 +153,7 @@ const ThreeceeUtilities = require("@threeceelabs/threecee-utilities");
 const tcUtils = new ThreeceeUtilities(tcuChildName);
 
 const msToTime = tcUtils.msToTime;
+const formatBoolean = tcUtils.formatBoolean;
 const jsonPrint = tcUtils.jsonPrint;
 const getTimeStamp = tcUtils.getTimeStamp;
 
@@ -873,13 +874,6 @@ function printNetworkObj(title, networkObj, format) {
     + " | IN ID:  " + networkObj.inputsId
     + " | " + networkObj.networkId
   ));
-}
-
-const formatBoolean = function(bool){
-  if (bool) {
-    return "T";
-  }
-  return "F";
 }
 
 const format = function(input){
@@ -1831,55 +1825,55 @@ async function loadInputsFolders (p){
   return;
 }
 
-const watchOptions = {
-  ignoreDotFiles: true,
-  ignoreUnreadableDir: true,
-  ignoreNotPermitted: true,
-}
+// const watchOptions = {
+//   ignoreDotFiles: true,
+//   ignoreUnreadableDir: true,
+//   ignoreNotPermitted: true,
+// }
 
-async function initWatch(params){
+// async function initWatch(params){
 
-  console.log(chalkLog(MODULE_ID_PREFIX + " | INIT WATCH\n" + jsonPrint(params)));
+//   console.log(chalkLog(MODULE_ID_PREFIX + " | INIT WATCH\n" + jsonPrint(params)));
 
-  watch.createMonitor(params.rootFolder, watchOptions, function (monitor) {
+//   watch.createMonitor(params.rootFolder, watchOptions, function (monitor) {
 
-    const loadArchive = async function (f) {
+//     const loadArchive = async function (f) {
 
-      console.log(chalkInfo(MODULE_ID_PREFIX + " | +++ FILE CREATED or CHANGED | " + getTimeStamp() + " | " + f));
+//       console.log(chalkInfo(MODULE_ID_PREFIX + " | +++ FILE CREATED or CHANGED | " + getTimeStamp() + " | " + f));
 
-      if (f.endsWith(configuration.defaultUserArchiveFlagFile)){
+//       if (f.endsWith(configuration.defaultUserArchiveFlagFile)){
 
-        console.log(chalkLog(MODULE_ID_PREFIX + " | LOAD USER ARCHIVE FLAG FILE: " + params.rootFolder + "/" + configuration.defaultUserArchiveFlagFile));
+//         console.log(chalkLog(MODULE_ID_PREFIX + " | LOAD USER ARCHIVE FLAG FILE: " + params.rootFolder + "/" + configuration.defaultUserArchiveFlagFile));
 
-        let archiveFlagObj;
+//         let archiveFlagObj;
 
-        try {
-          archiveFlagObj = await tcUtils.loadFileRetry({folder: configuration.userArchiveFolder, file: configuration.defaultUserArchiveFlagFile});
-          console.log(chalkLog(MODULE_ID_PREFIX + " | USER ARCHIVE FLAG FILE"
-            + " | " + archiveFlagObj.file 
-            + " | SIZE: " + archiveFlagObj.size
-            + "\nHISTOGRAM\n" + jsonPrint(archiveFlagObj.histogram)
-          ));
-        }
-        catch(err){
-          console.log(chalkError(MODULE_ID_PREFIX + " | *** WATCH CHANGE ERROR | " + getTimeStamp() + " | " + err));
-        }
+//         try {
+//           archiveFlagObj = await tcUtils.loadFileRetry({folder: configuration.userArchiveFolder, file: configuration.defaultUserArchiveFlagFile});
+//           console.log(chalkLog(MODULE_ID_PREFIX + " | USER ARCHIVE FLAG FILE"
+//             + " | " + archiveFlagObj.file 
+//             + " | SIZE: " + archiveFlagObj.size
+//             + "\nHISTOGRAM\n" + jsonPrint(archiveFlagObj.histogram)
+//           ));
+//         }
+//         catch(err){
+//           console.log(chalkError(MODULE_ID_PREFIX + " | *** WATCH CHANGE ERROR | " + getTimeStamp() + " | " + err));
+//         }
 
-      }
-    };
+//       }
+//     };
 
-    monitor.on("created", loadArchive);
+//     monitor.on("created", loadArchive);
 
-    monitor.on("changed", loadArchive);
+//     monitor.on("changed", loadArchive);
 
-    monitor.on("removed", function (f) {
-      console.log(chalkInfo(MODULE_ID_PREFIX + " | XXX FILE DELETED | " + getTimeStamp() + " | " + f));
-    });
+//     monitor.on("removed", function (f) {
+//       console.log(chalkInfo(MODULE_ID_PREFIX + " | XXX FILE DELETED | " + getTimeStamp() + " | " + f));
+//     });
 
-  });
+//   });
 
-  return;
-}
+//   return;
+// }
 
 async function generateSeedInputsNetworkId(params){
 
@@ -5560,7 +5554,7 @@ setTimeout(async function(){
       dbConnection = await connectDb();
       await initZeroSuccessEvolveOptionsSet();
       await initFsmTickInterval(FSM_TICK_INTERVAL);
-      await initWatch({rootFolder: configuration.userArchiveFolder});
+      // await initWatch({rootFolder: configuration.userArchiveFolder});
     }
     catch(err){
       console.log(chalkError(MODULE_ID_PREFIX + " | *** MONGO DB CONNECT ERROR: " + err + " | QUITTING ***"));
