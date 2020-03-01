@@ -1820,6 +1820,7 @@ async function evolve(params){
       childNetworkObj.numInputs = inputsObj.meta.numInputs;
 
       evolveResults = await nnTools.streamTrainNetwork({
+        networkId: childNetworkObj.networkId,
         options: preppedOptions,
         network: childNetworkRaw, 
         trainingSet: trainingSet

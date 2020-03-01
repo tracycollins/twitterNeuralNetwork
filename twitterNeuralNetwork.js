@@ -838,26 +838,6 @@ function networkDefaults(networkObj){
   });
 }
 
-// function printInputsObj(title, inputsObj, format) {
-
-//   let chalkFormat = (format !== undefined) ? format : chalkInputs;
-
-//   const numNetworks = (inputsObj.networks !== undefined) ? inputsObj.networks.length : 0;
-//   const numFails = (inputsObj.failNetworks !== undefined) ? inputsObj.failNetworks.length : 0;
-//   const totalAttempts = numNetworks + numFails;
-//   const percentSuccess = (totalAttempts > 0) ? 100*(numNetworks/totalAttempts) : 0;
-
-//   if (percentSuccess < 50 && totalAttempts > 0) { chalkFormat = chalkAlert; }
-
-//   console.log(chalkFormat(title
-//     + " | NETWORKS: " + numNetworks
-//     + " | P/F/T: " + numNetworks + "/" + numFails + "/" + totalAttempts
-//     + " | SUCCESS: " + percentSuccess.toFixed(2) + "%"
-//     + " | INPUTS: " + inputsObj.meta.numInputs
-//     + " | " + inputsObj.inputsId
-//   ));
-// }
-
 function printNetworkObj(title, networkObj, format) {
 
   const chalkFormat = (format !== undefined) ? format : chalkNetwork;
@@ -867,9 +847,7 @@ function printNetworkObj(title, networkObj, format) {
     + " | SR: " + networkObj.successRate.toFixed(2) + "%"
     + " | MR: " + networkObj.matchRate.toFixed(2) + "%"
     + " | OAMR: " + networkObj.overallMatchRate.toFixed(2) + "%"
-    // + " | CR: " + getTimeStamp(networkObj.createdAt)
     + " | TC:  " + networkObj.testCycles
-    // + " | TCH: " + networkObj.testCycleHistory.length
     + " | IN: " + networkObj.numInputs
     + " | IN ID:  " + networkObj.inputsId
     + " | " + networkObj.networkId
@@ -1242,8 +1220,6 @@ async function updateDbInputs(params){
 
       const niDbUpdated = await inputsObj.save();
 
-      // if (verbose) { printInputsObj(MODULE_ID_PREFIX + " | +++ INPUTS DB UPDATED", niDbUpdated); }
-
       return niDbUpdated;
     }
     else if (params.inputsObj && (params.inputsObj !== undefined)) {
@@ -1260,8 +1236,6 @@ async function updateDbInputs(params){
       const ni = new wordAssoDb.NetworkInputs(params.inputsObj);
 
       const niDbUpdated = await ni.save();
-
-      // if (verbose) { printInputsObj(MODULE_ID_PREFIX + " | +++ INPUTS DB UPDATED", niDbUpdated); }
 
       return niDbUpdated;
     }
@@ -1285,7 +1259,6 @@ async function updateInputsViabilitySet(p){
   const maxFailNetworks = params.maxFailNetworks || configuration.maxFailNetworks;
   const minPassRatio = params.minPassRatio || configuration.minPassRatio;
   const minPassRatioPercent = 100*minPassRatio;
-  // const minNetworksTotal = params.minNetworksTotal || configuration.minNetworksTotal;
 
   const numPassNetworks = (params.inputsObj.networks) ? params.inputsObj.networks.length : 0;
   const numFailNetworks = (params.inputsObj.failNetworks) ? params.inputsObj.failNetworks.length : 0;
