@@ -98,7 +98,6 @@ const brainTrainOptionsPickArray = [
 ];
 
 const neatapticEvolveOptionsPickArray = [
-  // "clear",
   "cost",
   "crossover",
   "elitism",
@@ -106,7 +105,6 @@ const neatapticEvolveOptionsPickArray = [
   "error",
   "growth",
   "iterations",
-  // "log",
   "mutation",
   "mutationAmount",
   "mutationRate",
@@ -120,29 +118,26 @@ const neatapticEvolveOptionsPickArray = [
 ];
 
 const carrotEvolveOptionsPickArray = [
-  // "activation",
-  // "clear",
   "cost",
   "crossover",
-  "efficient_mutation",
+  "efficientMutation",
   "elitism",
   "equal",
   "error",
   "fitness",
-  "fitness_population",
+  "fitnessPopulation",
   "growth",
   "iterations",
-  // "log",
-  "max_nodes",
+  "maxNodes",
   "maxConns",
   "maxGates",
   "mutation",
-  "mutation_amount",
-  "mutation_rate",
+  "mutationAmount",
+  "mutationRate",
   "mutationSelection",
   "network",
   "popsize",
-  "population_size",
+  "populationSize",
   "provenance",
   "schedule",
   "selection",
@@ -1246,18 +1241,19 @@ function prepNetworkEvolve() {
         const timeToComplete = iterationRate*(options.iterations - (schedParams.iterations+1));
 
         const sObj = {
-          networkTechnology: "BRAIN",
           binaryMode: childNetworkObj.binaryMode,
-          networkId: childNetworkObj.networkId,
-          numInputs: childNetworkObj.numInputs,
-          inputsId: childNetworkObj.inputsId,
-          evolveStart: schedStartTime,
+          error: schedParams.error.toFixed(5) || Infinity,
           evolveElapsed: elapsedInt,
-          totalIterations: options.iterations,
+          evolveStart: schedStartTime,
+          fitness: 0,
+          inputsId: childNetworkObj.inputsId,
           iteration: schedParams.iterations+1,
           iterationRate: iterationRate,
+          networkId: childNetworkObj.networkId,
+          networkTechnology: "BRAIN",
+          numInputs: childNetworkObj.numInputs,
           timeToComplete: timeToComplete,
-          error: schedParams.error.toFixed(5) || Infinity,
+          totalIterations: options.iterations
         };
 
         console.log(chalkLog(MODULE_ID_PREFIX 
@@ -1272,7 +1268,12 @@ function prepNetworkEvolve() {
           + " | I " + sObj.iteration + "/" + sObj.totalIterations
         ));
 
-        processSendQueue.push({op: "EVOLVE_SCHEDULE", childId: configuration.childId, childIdShort: configuration.childIdShort, stats: sObj});
+        processSendQueue.push({
+          op: "EVOLVE_SCHEDULE", 
+          childId: configuration.childId, 
+          childIdShort: configuration.childIdShort, 
+          stats: sObj
+        });
       };
   
     break;
@@ -1307,7 +1308,12 @@ function prepNetworkEvolve() {
             fitness: fitness.toFixed(5) || -Infinity
           };
 
-          processSendQueue.push({op: "EVOLVE_SCHEDULE", childId: configuration.childId, childIdShort: configuration.childIdShort, stats: sObj});
+          processSendQueue.push({
+            op: "EVOLVE_SCHEDULE", 
+            childId: configuration.childId, 
+            childIdShort: configuration.childIdShort, 
+            stats: sObj
+          });
 
         },
         
@@ -1754,6 +1760,8 @@ async function evolve(params){
       + " | IN: " + childNetworkObj.inputsId
     ));
 
+    if (childNetworkObj.meta === undefined) { childNetworkObj.meta = {}; }
+
     let inputsObj = await global.wordAssoDb.NetworkInputs.findOne({inputsId: childNetworkObj.inputsId}).lean();
 
     if (!inputsObj) {
@@ -1777,9 +1785,9 @@ async function evolve(params){
     childNetworkObj.numInputs = inputsObj.meta.numInputs;
     trainingSetObj.meta.numInputs = inputsObj.meta.numInputs;
 
-    const binaryMode = (params.binaryMode !== undefined) ? params.binaryMode : configuration.binaryMode;
-    const userProfileOnlyFlag = inputsObj.meta.userProfileOnlyFlag || false;
-    let userProfileCharCodesOnlyFlag = (params.userProfileCharCodesOnlyFlag !== undefined) ? params.userProfileCharCodesOnlyFlag : configuration.userProfileCharCodesOnlyFlag;
+    // const binaryMode = (params.binaryMode !== undefined) ? params.binaryMode : configuration.binaryMode;
+    childNetworkObj.meta.userProfileOnlyFlag = inputsObj.meta.userProfileOnlyFlag || false;
+    // let userProfileCharCodesOnlyFlag = (c.userProfileCharCodesOnlyFlag !== undefined) ? params.userProfileCharCodesOnlyFlag : configuration.userProfileCharCodesOnlyFlag;
 
     if (childNetworkObj.inputsId !== configuration.userProfileCharCodesOnlyInputsId){
 
@@ -1790,27 +1798,26 @@ async function evolve(params){
         + " | IN: " + childNetworkObj.inputsId
       ));
 
-      userProfileCharCodesOnlyFlag = false;
+      childNetworkObj.meta.userProfileCharCodesOnlyFlag = false;
     }
 
-    if (childNetworkObj.meta === undefined) { childNetworkObj.meta = {}; }
-    childNetworkObj.meta.userProfileOnlyFlag = userProfileOnlyFlag;
+    // childNetworkObj.meta.userProfileOnlyFlag = userProfileOnlyFlag;
 
     await tcUtils.loadInputs({inputsObj: inputsObj});
     await tcUtils.setPrimaryInputs({inputsId: inputsObj.inputsId});
 
     const trainingSet = await dataSetPrep({
-      inputsId: inputsObj.inputsId,
+      inputsId: childNetworkObj.inputsId,
       dataSetObj: trainingSetObj, 
-      userProfileCharCodesOnlyFlag: userProfileCharCodesOnlyFlag,
-      userProfileOnlyFlag: userProfileOnlyFlag,
-      binaryMode: binaryMode,
+      userProfileCharCodesOnlyFlag: params.userProfileCharCodesOnlyFlag,
+      userProfileOnlyFlag: childNetworkObj.userProfileOnlyFlag,
+      binaryMode: childNetworkObj.binaryMode,
       verbose: params.verbose
     });
 
-    const childNetworkRaw = await createNetwork({userProfileCharCodesOnlyFlag: userProfileCharCodesOnlyFlag});
+    const childNetworkRaw = await createNetwork();
 
-    const preppedOptions = await prepNetworkEvolve({userProfileCharCodesOnlyFlag: userProfileCharCodesOnlyFlag});
+    const preppedOptions = await prepNetworkEvolve();
 
     let evolveResults;
 
@@ -1908,8 +1915,8 @@ function networkEvolve(p){
 
     const params = childNetworkObj.evolve.options;
 
-    const binaryMode = (params.binaryMode !== undefined) ? params.binaryMode : configuration.binaryMode;
-    const userProfileCharCodesOnlyFlag = (params.userProfileCharCodesOnlyFlag !== undefined) ? params.userProfileCharCodesOnlyFlag : configuration.userProfileCharCodesOnlyFlag;
+    // const binaryMode = (params.binaryMode !== undefined) ? params.binaryMode : configuration.binaryMode;
+    // const userProfileCharCodesOnlyFlag = (params.userProfileCharCodesOnlyFlag !== undefined) ? params.userProfileCharCodesOnlyFlag : configuration.userProfileCharCodesOnlyFlag;
 
     const options = {};
 
@@ -1993,7 +2000,8 @@ function networkEvolve(p){
           return reject(err);
         }
 
-        await evolve({userProfileCharCodesOnlyFlag: userProfileCharCodesOnlyFlag, binaryMode: binaryMode, verbose: p.verbose});
+        // await evolve({userProfileCharCodesOnlyFlag: userProfileCharCodesOnlyFlag, binaryMode: binaryMode, verbose: p.verbose});
+        await evolve({verbose: p.verbose});
 
         console.log(chalkGreen(MODULE_ID_PREFIX + " | END networkEvolve"));
 
@@ -2197,7 +2205,7 @@ const fsmStates = {
           statsObj.fsmStatus = "EVOLVE";
           await processSend({op: "STATS", childId: configuration.childId, fsmStatus: statsObj.fsmStatus});
 
-          await networkEvolve({userProfileCharCodesOnlyFlag: configuration.userProfileCharCodesOnlyFlag, verbose: configuration.verbose});
+          await networkEvolve({verbose: configuration.verbose});
 
           await testNetwork({
             inputsId: childNetworkObj.inputsId,
@@ -2381,8 +2389,8 @@ async function configNetworkEvolve(params){
 
   configuration.childId = params.childId;
 
-  newNetObj.binaryMode = (params.binaryMode !== undefined) ? params.binaryMode : configuration.binaryMode;
-
+  // newNetObj.binaryMode = (params.binaryMode !== undefined) ? params.binaryMode : configuration.binaryMode;
+  newNetObj.binaryMode = params.binaryMode;
   newNetObj.networkTechnology = params.networkTechnology || "neataptic";
 
   newNetObj.networkId = params.testRunId;
@@ -2409,12 +2417,12 @@ async function configNetworkEvolve(params){
       "binaryMode",
       "clear", 
       "cost", 
-      "efficient_mutation", 
+      "efficientMutation", 
       "elitism", 
       "equal", 
       "error",
       "errorThresh",
-      "fitness_population", 
+      "fitnessPopulation", 
       "growth",
       "hiddenLayerSize",
       "inputsId",
@@ -2422,12 +2430,12 @@ async function configNetworkEvolve(params){
       "learningRate",
       "momentum",
       "mutation", 
-      "mutation_amount", 
-      "mutation_rate",
+      "mutationAmount", 
+      "mutationRate",
       "networkTechnology",
       "outputs",
       "popsize", 
-      "population_size", 
+      "populationSize", 
       "provenance",
       "runId",
       "seedNetworkId",
