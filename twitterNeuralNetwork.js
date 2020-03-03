@@ -11,7 +11,9 @@ const DEFAULT_USER_PROFILE_CHAR_CODES_ONLY_INPUTS_ID = "inputs_25250101_000000_2
 
 const DEFAULT_REMOVE_SEED_FROM_VIABLE_NN_SET_ON_FAIL = true;
 const DEFAULT_USER_PROFILE_ONLY_FLAG = false;
-const DEFAULT_BINARY_MODE = true;
+const DEFAULT_BINARY_MODE = false;
+const DEFAULT_BINARY_MODE_PROBABILITY = 0.5;
+const DEFAULT_ENABLE_RANDOM_BINARY_MODE = true; // enableRandomBinaryMode
 const DEFAULT_COMPARE_TECH = false;
 const DEFAULT_FORCE_NETWORK_TECHNOLOGY = false;
 
@@ -223,6 +225,7 @@ configuration.previousChildConfig = false;
 configuration.offlineMode = OFFLINE_MODE;
 configuration.primaryHost = PRIMARY_HOST;
 configuration.networkTechnology = DEFAULT_NETWORK_TECHNOLOGY;
+configuration.enableRandomBinaryMode = DEFAULT_ENABLE_RANDOM_BINARY_MODE;
 configuration.enableRandomTechnology = DEFAULT_ENABLE_RANDOM_NETWORK_TECHNOLOGY;
 configuration.purgeMin = DEFAULT_PURGE_MIN;
 configuration.testMode = TEST_MODE;
@@ -393,7 +396,6 @@ statsObj.networkResults = {};
 const DEFAULT_LOAD_ALL_INPUTS = false;
 const DEFAULT_ARCHIVE_NOT_IN_INPUTS_ID_ARRAY = true;
 const DEFAULT_DELETE_NOT_IN_INPUTS_ID_ARRAY = false;
-// const TEST_DROPBOX_NN_LOAD = 15;
 const DEFAULT_CHILD_ID_PREFIX = "tnc_node_";
 
 if (hostname === "google") {
@@ -419,35 +421,6 @@ categorizedUserHistogram.neutral = 0;
 categorizedUserHistogram.positive = 0;
 categorizedUserHistogram.negative = 0;
 categorizedUserHistogram.none = 0;
-
-// statsObj.normalization = {};
-// statsObj.normalization.score = {};
-// statsObj.normalization.magnitude = {};
-// statsObj.normalization.comp = {};
-
-// statsObj.normalization.score.min = 1.0;
-// statsObj.normalization.score.max = -1.0;
-// statsObj.normalization.magnitude.min = 0;
-// statsObj.normalization.magnitude.max = -Infinity;
-// statsObj.normalization.comp.min = Infinity;
-// statsObj.normalization.comp.max = -Infinity;
-
-// const DEFAULT_INPUT_TYPES = [
-//   "emoji",
-//   "friends",
-//   "hashtags",  
-//   "images", 
-//   "locations", 
-//   "media", 
-//   "mentions", 
-//   "places", 
-//   "sentiment", 
-//   "urls", 
-//   "userMentions", 
-//   "words"
-// ];
-
-// DEFAULT_INPUT_TYPES.sort();
 
 const GLOBAL_TRAINING_SET_ID = "globalTrainingSet";
 
@@ -529,6 +502,7 @@ const DEFAULT_EVOLVE_EQUAL = true;
 const DEFAULT_EVOLVE_ERROR = 0.05;
 
 const DEFAULT_EVOLVE_FITNESS_POPULATION = true;
+const DEFAULT_EVOLVE_FITNESS_POPULATION_PROBABILITY = 0.5; // carrot only
 
 const DEFAULT_EVOLVE_GROWTH = 0.0001;
 const DEFAULT_EVOLVE_GROWTH_RANGE = { min: 0.00005, max: 0.00015 };
@@ -538,13 +512,24 @@ const DEFAULT_EVOLVE_LEARNING_RATE_RANGE = { min: 0.0, max: 1.0 };
 
 const DEFAULT_EVOLVE_LOG = 1;
 
-const DEFAULT_EVOLVE_MOMENTUM = 0.1;
-const DEFAULT_EVOLVE_MOMENTUM_RANGE = { min: 0.05, max: 0.5 };
+const DEFAULT_EVOLVE_MOMENTUM = 0.1; // brain only
+const DEFAULT_EVOLVE_MOMENTUM_RANGE = { min: 0.05, max: 0.5 }; // brain only
 
-const DEFAULT_EVOLVE_EFFICIENT_MUTATION = false; // carrot only efficientMutation
-const DEFAULT_EVOLVE_MUTATION = "FFW";
+const DEFAULT_EVOLVE_EFFICIENT_MUTATION_PROBABILITY = 0.5; // carrot only
+const DEFAULT_EVOLVE_EFFICIENT_MUTATION = false; // carrot only
+const DEFAULT_EVOLVE_MUTATION = "FFW"; // carrot and neataptic, specifies an array of possible mutations
 const DEFAULT_EVOLVE_MUTATION_RATE = 0.4;
-const DEFAULT_EVOLVE_MUTATION_RATE_RANGE = { min: 0.35, max: 0.75 };
+const DEFAULT_EVOLVE_MUTATION_RATE_RANGE = { min: 0.3, max: 0.75 };
+const DEFAULT_EVOLVE_MUTATION_ARRAY = [ // carrot only
+  "ADD_NODE",
+  "SUB_NODE",
+  "ADD_CONN",
+  "SUB_CONN",
+  "MOD_WEIGHT",
+  "MOD_BIAS",
+  "MOD_ACTIVATION",
+  "SWAP_NODES",
+];
 
 const DEFAULT_EVOLVE_POPSIZE = 20;
 
@@ -680,8 +665,6 @@ childConfiguration.trainingSetsFolder = configuration.trainingSetsFolder;
 childConfiguration.trainingSetFile = configuration.trainingSetFile;
 childConfiguration.archiveFileUploadCompleteFlagFolder = configuration.archiveFileUploadCompleteFlagFolder;
 
-configuration.randomizeSeedOptions = true;
-
 configuration.globalMinSuccessRate = DEFAULT_GLOBAL_MIN_SUCCESS_RATE;
 configuration.localMinSuccessRate = DEFAULT_LOCAL_MIN_SUCCESS_RATE;
 configuration.hostMinSuccessRate = DEFAULT_HOST_MIN_SUCCESS_RATE;
@@ -709,6 +692,8 @@ configuration.evolve = {};
 configuration.evolve.activation = DEFAULT_EVOLVE_ACTIVATION;
 configuration.evolve.activationArray = DEFAULT_EVOLVE_ACTIVATION_ARRAY;
 configuration.evolve.architecture = DEFAULT_EVOLVE_ARCHITECTURE;
+configuration.evolve.binaryMode = DEFAULT_BINARY_MODE;
+configuration.evolve.binaryModeProbability = DEFAULT_BINARY_MODE_PROBABILITY;
 configuration.evolve.brainActivationArray = DEFAULT_BRAIN_TRAIN_ACTIVATION_ARRAY;
 configuration.evolve.learningRate = DEFAULT_EVOLVE_LEARNING_RATE;
 configuration.evolve.learningRateRange = DEFAULT_EVOLVE_LEARNING_RATE_RANGE;
@@ -716,6 +701,7 @@ configuration.evolve.brainTrainTimeout = DEFAULT_BRAIN_TRAIN_TIMEOUT;
 configuration.evolve.cost = DEFAULT_EVOLVE_COST;
 configuration.evolve.costArray = DEFAULT_EVOLVE_COST_ARRAY;
 configuration.evolve.efficientMutation = DEFAULT_EVOLVE_EFFICIENT_MUTATION;
+configuration.evolve.efficientMutationProbability = DEFAULT_EVOLVE_EFFICIENT_MUTATION_PROBABILITY;
 configuration.evolve.elitism = DEFAULT_EVOLVE_ELITISM;
 configuration.evolve.elitismRange = DEFAULT_EVOLVE_ELITISM_RANGE;
 configuration.evolve.equal = DEFAULT_EVOLVE_EQUAL;
@@ -723,6 +709,7 @@ configuration.evolve.error = DEFAULT_EVOLVE_ERROR;
 configuration.evolve.errorThresh = DEFAULT_EVOLVE_ERROR_THRESHOLD;
 configuration.evolve.errorThreshRange = DEFAULT_EVOLVE_ERROR_THRESHOLD_RANGE;
 configuration.evolve.fitnessPopulation = DEFAULT_EVOLVE_FITNESS_POPULATION;
+configuration.evolve.fitnessPopulationProbability = DEFAULT_EVOLVE_FITNESS_POPULATION_PROBABILITY;
 configuration.evolve.growth = DEFAULT_EVOLVE_GROWTH;
 configuration.evolve.growthRange = DEFAULT_EVOLVE_GROWTH_RANGE;
 configuration.evolve.inputsToHiddenLayerSizeRatio = DEFAULT_EVOLVE_INPUTS_TO_HIDDEN_LAYER_SIZE_RATIO;
@@ -731,6 +718,7 @@ configuration.evolve.log = DEFAULT_EVOLVE_LOG;
 configuration.evolve.momentum = DEFAULT_EVOLVE_MOMENTUM;
 configuration.evolve.momentumRange = DEFAULT_EVOLVE_MOMENTUM_RANGE;
 configuration.evolve.mutation = DEFAULT_EVOLVE_MUTATION;
+configuration.evolve.mutationArray = DEFAULT_EVOLVE_MUTATION_ARRAY;
 configuration.evolve.mutationRate = DEFAULT_EVOLVE_MUTATION_RATE;
 configuration.evolve.mutationRateRange = DEFAULT_EVOLVE_MUTATION_RATE_RANGE
 configuration.evolve.networkId = DEFAULT_SEED_NETWORK_ID;
@@ -2029,18 +2017,16 @@ async function generateEvolveOptions(params){
 
       const costArray = (config.networkTechnology === "neataptic") ? _.pull(configuration.costArray, "WAPE") : configuration.costArray;
 
-      // config.binaryMode = (config.networkTechnology === "brain") ? false : randomItem(["true", "false"]);
-
       if (config.seedInputsId === configuration.userProfileCharCodesOnlyInputsId){
         config.binaryMode = false;
       }
 
       config.cost = (config.networkTechnology === "brain") ? "NONE" : randomItem(costArray);
-      config.efficientMutation = configuration.evolve.efficientMutation;
+      config.efficientMutation = (Math.random() <= configuration.evolve.efficientMutationProbability)
       config.elitism = randomInt(configuration.evolve.elitismRange.min, configuration.evolve.elitismRange.max);
       config.equal = true;
       config.error = configuration.evolve.error;
-      config.fitnessPopulation = configuration.evolve.fitnessPopulation;
+      config.fitnessPopulation = (Math.random() <= configuration.evolve.fitnessPopulationProbability)
       config.growth = randomFloat(configuration.evolve.growthRange.min, configuration.evolve.growthRange.max);
       config.iterations = configuration.evolve.iterations;
       config.learningRate = randomFloat(configuration.evolve.learningRateRange.min, configuration.evolve.learningRateRange.max);
@@ -2137,7 +2123,8 @@ async function generateRandomEvolveConfig(p){
     }
     else{
       if (configuration.enableRandomBinaryMode){
-        config.binaryMode = (Math.random() <= configuration.binaryModeProbability);
+        config.binaryMode = (Math.random() <= configuration.evolve.binaryModeProbability);
+        console.log(chalkBlue(MODULE_ID_PREFIX + " | RANDOM BINARY MODE: " + config.binaryMode));
       }
       else{
         config.binaryMode = params.binaryMode || configuration.binaryMode;
@@ -2271,9 +2258,9 @@ async function generateRandomEvolveConfig(p){
         else if(inputsObj.meta.userProfileCharCodesOnlyFlag){
           config.binaryMode = false;
         }
-        else{
-          config.binaryMode = (params.binaryMode !== undefined) ? params.binaryMode : configuration.binaryMode;
-        }
+        // else{
+        //   config.binaryMode = (params.binaryMode !== undefined) ? params.binaryMode : configuration.binaryMode;
+        // }
 
         config.hiddenLayerSize = parseInt((configuration.inputsToHiddenLayerSizeRatio * inputsObj.meta.numInputs) + 3);
         config.hiddenLayerSize = randomItem([0,config.hiddenLayerSize]);
@@ -2307,7 +2294,7 @@ async function initNetworkCreate(params){
   try {
 
     const childId = params.childId;
-    const binaryMode = (params.binaryMode !== undefined) ? params.binaryMode : configuration.binaryMode;
+    // const binaryMode = (params.binaryMode !== undefined) ? params.binaryMode : configuration.binaryMode;
     const networkId = params.networkId;
     const compareTech = (params.compareTech !== undefined) ? params.compareTech : configuration.compareTech;
 
@@ -2341,7 +2328,7 @@ async function initNetworkCreate(params){
       configuration.previousChildConfig = false;
     }
     else {
-      childConf = await generateRandomEvolveConfig({binaryMode: binaryMode});
+      childConf = await generateRandomEvolveConfig();
       configuration.previousChildConfig = childConf;
     }
 
@@ -4389,7 +4376,7 @@ async function startNetworkCreate(params){
 
   childHashMap[params.childId].currentNetworkId = networkId;
 
-  await initNetworkCreate({childId: params.childId, networkId: networkId, binaryMode: binaryMode, compareTech: compareTech});
+  await initNetworkCreate({childId: params.childId, networkId: networkId, compareTech: compareTech});
 
   return;
 }

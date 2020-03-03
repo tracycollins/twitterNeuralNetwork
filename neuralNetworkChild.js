@@ -1854,6 +1854,15 @@ async function evolve(params){
       childNetworkObj.evolve.endTime = statsObj.evolve.endTime;
     }
     else{
+
+      if (childNetworkObj.networkTechnology === "carrot"){
+        preppedOptions.population_size = preppedOptions.populationSize;
+        preppedOptions.mutation_rate = preppedOptions.mutationRate;
+        preppedOptions.mutation_amount = preppedOptions.mutationAmount;
+        preppedOptions.fitness_population = preppedOptions.fitnessPopulation;
+        preppedOptions.max_nodes = preppedOptions.maxNodes;
+      }
+      
       evolveResults = await childNetworkRaw.evolve(trainingSet, preppedOptions);
 
       childNetworkObj.networkJson = childNetworkRaw.toJSON();
