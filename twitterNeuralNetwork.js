@@ -2124,7 +2124,7 @@ async function generateRandomEvolveConfig(p){
     else{
       if (configuration.enableRandomBinaryMode){
         config.binaryMode = (Math.random() <= configuration.evolve.binaryModeProbability);
-        console.log(chalkBlue(MODULE_ID_PREFIX + " | RANDOM BINARY MODE: " + config.binaryMode));
+        console.log(chalkAlert(MODULE_ID_PREFIX + " | RANDOM BINARY MODE: " + config.binaryMode));
       }
       else{
         config.binaryMode = params.binaryMode || configuration.binaryMode;
@@ -2173,8 +2173,8 @@ async function generateRandomEvolveConfig(p){
 
       console.log(MODULE_ID_PREFIX + " | SEED NETWORK:      " + dbNetworkObj.networkId);
       console.log(MODULE_ID_PREFIX + " | SEED NETWORK TECH: " + dbNetworkObj.networkTechnology);
-      console.log(MODULE_ID_PREFIX + " | BINARY MODE:       " + dbNetworkObj.binaryMode);
-      console.log(MODULE_ID_PREFIX + " | HIDDEN NODES:      " + dbNetworkObj.hiddenLayerSize);
+      console.log(MODULE_ID_PREFIX + " | SEED BINARY MODE:  " + dbNetworkObj.binaryMode);
+      console.log(MODULE_ID_PREFIX + " | SEED HIDDEN NODES: " + dbNetworkObj.hiddenLayerSize);
       console.log(MODULE_ID_PREFIX + " | SEED INPUTS ID:    " + dbNetworkObj.inputsId);
 
       if (configuration.randomizeSeedOptions) {

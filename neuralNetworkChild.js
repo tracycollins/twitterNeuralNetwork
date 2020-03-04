@@ -1054,7 +1054,6 @@ async function testNetworkData(params){
   const testSet = params.testSet;
 
   const convertDatumFlag = (params.convertDatumFlag !== undefined) ? params.convertDatumFlag : false;
-  // const binaryMode = (params.binaryMode !== undefined) ? params.binaryMode : configuration.binaryMode;
   const userProfileOnlyFlag = (params.userProfileOnlyFlag !== undefined) ? params.userProfileOnlyFlag : configuration.userProfileOnlyFlag;
 
   const verbose = params.verbose || false;
@@ -1070,7 +1069,6 @@ async function testNetworkData(params){
       datum: datum, // user, input, output
       convertDatumFlag: convertDatumFlag, 
       userProfileOnlyFlag: userProfileOnlyFlag,
-      // binaryMode: binaryMode, 
       verbose: verbose
     };
 
@@ -1135,16 +1133,19 @@ async function testNetwork(p){
 
   const params = p || {};
 
-  const binaryMode = (params.binaryMode !== undefined) ? params.binaryMode : configuration.binaryMode;
   const userProfileOnlyFlag = (params.userProfileOnlyFlag !== undefined) ? params.userProfileOnlyFlag : configuration.userProfileOnlyFlag;
   const userProfileCharCodesOnlyFlag = (params.userProfileCharCodesOnlyFlag !== undefined) ? params.userProfileCharCodesOnlyFlag : configuration.userProfileCharCodesOnlyFlag;
+
+  await nnTools.loadNetwork({networkObj: childNetworkObj});
+  await nnTools.setPrimaryNeuralNetwork(childNetworkObj.networkId);
+  await nnTools.setBinaryMode(childNetworkObj.binaryMode);
 
   const testSet = await dataSetPrep({
     inputsId: params.inputsId,
     dataSetObj: testSetObj,
     userProfileCharCodesOnlyFlag: userProfileCharCodesOnlyFlag,
     userProfileOnlyFlag: userProfileOnlyFlag,
-    binaryMode: binaryMode,
+    binaryMode: childNetworkObj.binaryMode,
     verbose: params.verbose
   });
 
@@ -1155,9 +1156,6 @@ async function testNetwork(p){
     + " | VERBOSE: " + params.verbose
   ));
 
-  await nnTools.loadNetwork({networkObj: childNetworkObj});
-  await nnTools.setPrimaryNeuralNetwork(childNetworkObj.networkId);
-  await nnTools.setBinaryMode(binaryMode);
 
   childNetworkObj.test = {};
   childNetworkObj.test.results = {};
@@ -1167,7 +1165,7 @@ async function testNetwork(p){
     testSet: testSet, 
     convertDatumFlag: false,
     userProfileOnlyFlag: userProfileOnlyFlag,
-    binaryMode: binaryMode,
+    binaryMode: childNetworkObj.binaryMode,
     verbose: params.verbose
   });
 
@@ -1262,8 +1260,8 @@ function prepNetworkEvolve() {
           + " | " + sObj.networkId
           + " | " + sObj.inputsId
           + " | ERR " + sObj.error
-          + " | R " + tcUtils.msToTime(sObj.evolveElapsed)
-          + " | ETC " + tcUtils.msToTime(sObj.timeToComplete) + " " + moment().add(sObj.timeToComplete).format(compactDateTimeFormat)
+          + " | R " + msToTime(sObj.evolveElapsed)
+          + " | ETC " + msToTime(sObj.timeToComplete) + " " + moment().add(sObj.timeToComplete).format(compactDateTimeFormat)
           + " | " + (sObj.iterationRate/1000.0).toFixed(1) + " spi"
           + " | I " + sObj.iteration + "/" + sObj.totalIterations
         ));
@@ -1785,9 +1783,7 @@ async function evolve(params){
     childNetworkObj.numInputs = inputsObj.meta.numInputs;
     trainingSetObj.meta.numInputs = inputsObj.meta.numInputs;
 
-    // const binaryMode = (params.binaryMode !== undefined) ? params.binaryMode : configuration.binaryMode;
     childNetworkObj.meta.userProfileOnlyFlag = inputsObj.meta.userProfileOnlyFlag || false;
-    // let userProfileCharCodesOnlyFlag = (c.userProfileCharCodesOnlyFlag !== undefined) ? params.userProfileCharCodesOnlyFlag : configuration.userProfileCharCodesOnlyFlag;
 
     if (childNetworkObj.inputsId !== configuration.userProfileCharCodesOnlyInputsId){
 
@@ -1800,8 +1796,6 @@ async function evolve(params){
 
       childNetworkObj.meta.userProfileCharCodesOnlyFlag = false;
     }
-
-    // childNetworkObj.meta.userProfileOnlyFlag = userProfileOnlyFlag;
 
     await tcUtils.loadInputs({inputsObj: inputsObj});
     await tcUtils.setPrimaryInputs({inputsId: inputsObj.inputsId});
@@ -1924,9 +1918,6 @@ function networkEvolve(p){
 
     const params = childNetworkObj.evolve.options;
 
-    // const binaryMode = (params.binaryMode !== undefined) ? params.binaryMode : configuration.binaryMode;
-    // const userProfileCharCodesOnlyFlag = (params.userProfileCharCodesOnlyFlag !== undefined) ? params.userProfileCharCodesOnlyFlag : configuration.userProfileCharCodesOnlyFlag;
-
     const options = {};
 
     if (params.seedNetworkId) {
@@ -2009,7 +2000,6 @@ function networkEvolve(p){
           return reject(err);
         }
 
-        // await evolve({userProfileCharCodesOnlyFlag: userProfileCharCodesOnlyFlag, binaryMode: binaryMode, verbose: p.verbose});
         await evolve({verbose: p.verbose});
 
         console.log(chalkGreen(MODULE_ID_PREFIX + " | END networkEvolve"));
@@ -2398,7 +2388,6 @@ async function configNetworkEvolve(params){
 
   configuration.childId = params.childId;
 
-  // newNetObj.binaryMode = (params.binaryMode !== undefined) ? params.binaryMode : configuration.binaryMode;
   newNetObj.binaryMode = params.binaryMode;
   newNetObj.networkTechnology = params.networkTechnology || "neataptic";
 
@@ -2494,7 +2483,7 @@ async function configNetworkEvolve(params){
     console.log(chalkBlueBold(MODULE_ID_PREFIX + " | EVOLVE | " + getTimeStamp()
       + " | " + configuration.childId
       + " | " + newNetObj.networkId
-      + " | BIN MODE: " + newNetObj.evolve.options.binaryMode
+      + " | BIN MODE: " + newNetObj.binaryMode
       + " | ARCH: " + newNetObj.architecture
       + " | TECH: " + newNetObj.networkTechnology
       + " | INPUTS: " + newNetObj.numInputs
@@ -2516,9 +2505,9 @@ async function configNetworkEvolve(params){
     console.log(chalkBlueBold(MODULE_ID_PREFIX + " | EVOLVE | " + getTimeStamp()
       + " | " + configuration.childId
       + " | " + newNetObj.networkId
-      + " | BIN MODE: " + newNetObj.evolve.options.binaryMode
+      + " | BIN MODE: " + newNetObj.binaryMode
       + " | ARCH: " + newNetObj.architecture
-      + " | TECH: " + newNetObj.evolve.options.networkTechnology
+      + " | TECH: " + newNetObj.networkTechnology
       + " | INPUTS: " + newNetObj.numInputs
       + " | HIDDEN: " + newNetObj.evolve.options.hiddenLayerSize
       + " | THREADs: " + newNetObj.evolve.options.threads
