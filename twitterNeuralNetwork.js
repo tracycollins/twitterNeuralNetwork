@@ -5,6 +5,7 @@ const CHILD_PREFIX_SHORT = "NC";
 
 const DEFAULT_QUIT_ON_COMPLETE = false;
 
+const DEFAULT_ENABLE_ZERO_SUCCESS_EVOLVE_OPTIONS = false;
 const DEFAULT_USER_PROFILE_CHAR_CODES_ONLY_FLAG = false;
 const DEFAULT_USER_PROFILE_CHAR_CODES_ONLY_PROBABILITY = 0.2;
 const DEFAULT_USER_PROFILE_CHAR_CODES_ONLY_INPUTS_ID = "inputs_25250101_000000_255_profilecharcodes";
@@ -214,6 +215,7 @@ configuration.userProfileCharCodesOnlyProbability = DEFAULT_USER_PROFILE_CHAR_CO
 configuration.userProfileCharCodesOnlyFlag = DEFAULT_USER_PROFILE_CHAR_CODES_ONLY_FLAG;
 configuration.userProfileCharCodesOnlyInputsId = DEFAULT_USER_PROFILE_CHAR_CODES_ONLY_INPUTS_ID;
 
+configuration.enableZeroSuccessEvolveOptions = DEFAULT_ENABLE_ZERO_SUCCESS_EVOLVE_OPTIONS;
 configuration.forceNetworkTechnology = DEFAULT_FORCE_NETWORK_TECHNOLOGY;
 configuration.networkIdPrefix = "nn_" + getTimeStamp() + "_" + hostname ;
 configuration.removeSeedFromViableNetworkOnFail = DEFAULT_REMOVE_SEED_FROM_VIABLE_NN_SET_ON_FAIL;
@@ -2048,7 +2050,7 @@ async function generateEvolveOptions(params){
       attempts += 1;
 
     }
-    while(zeroSuccessEvolveOptionsSet.has(key) && (attempts < 20));
+    while(configuration.enableZeroSuccessEvolveOptions && zeroSuccessEvolveOptionsSet.has(key) && (attempts < 20));
 
     return config;
 
@@ -3244,6 +3246,16 @@ async function loadConfigFile(params) {
       }
       if ((loadedConfigObj.TNN_EQUAL_CATEGORIES_FLAG === false) || (loadedConfigObj.TNN_EQUAL_CATEGORIES_FLAG === "false")) {
         newConfiguration.equalCategoriesFlag = false;
+      }
+    }
+
+    if (loadedConfigObj.TNN_ENABLE_ZERO_SUCCESS_EVOLVE_OPTIONS !== undefined) {
+      console.log(MODULE_ID_PREFIX + " | LOADED TNN_ENABLE_ZERO_SUCCESS_EVOLVE_OPTIONS: " + loadedConfigObj.TNN_ENABLE_ZERO_SUCCESS_EVOLVE_OPTIONS);
+      if ((loadedConfigObj.TNN_ENABLE_ZERO_SUCCESS_EVOLVE_OPTIONS === true) || (loadedConfigObj.TNN_ENABLE_ZERO_SUCCESS_EVOLVE_OPTIONS === "true")) {
+        newConfiguration.enableZeroSuccessEvolveOptions = true;
+      }
+      if ((loadedConfigObj.TNN_ENABLE_ZERO_SUCCESS_EVOLVE_OPTIONS === false) || (loadedConfigObj.TNN_ENABLE_ZERO_SUCCESS_EVOLVE_OPTIONS === "false")) {
+        newConfiguration.enableZeroSuccessEvolveOptions = false;
       }
     }
 
