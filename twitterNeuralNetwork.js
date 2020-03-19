@@ -17,6 +17,7 @@ const DEFAULT_BINARY_MODE_PROBABILITY = 0.5;
 const DEFAULT_ENABLE_RANDOM_BINARY_MODE = true; // enableRandomBinaryMode
 const DEFAULT_COMPARE_TECH = false;
 const DEFAULT_FORCE_NETWORK_TECHNOLOGY = false;
+const DEFAULT_VIABLE_NETWORK_TECHNOLOGY_ARRAY = ["carrot", "neataptic"];
 
 const DEFAULT_MAX_FAIL_NETWORKS = 50;
 const DEFAULT_MIN_PASS_RATIO = 0.70;
@@ -216,6 +217,7 @@ configuration.userProfileCharCodesOnlyFlag = DEFAULT_USER_PROFILE_CHAR_CODES_ONL
 configuration.userProfileCharCodesOnlyInputsId = DEFAULT_USER_PROFILE_CHAR_CODES_ONLY_INPUTS_ID;
 
 configuration.enableZeroSuccessEvolveOptions = DEFAULT_ENABLE_ZERO_SUCCESS_EVOLVE_OPTIONS;
+configuration.viableNetworkTechArray = DEFAULT_VIABLE_NETWORK_TECHNOLOGY_ARRAY;
 configuration.forceNetworkTechnology = DEFAULT_FORCE_NETWORK_TECHNOLOGY;
 configuration.networkIdPrefix = "nn_" + getTimeStamp() + "_" + hostname ;
 configuration.removeSeedFromViableNetworkOnFail = DEFAULT_REMOVE_SEED_FROM_VIABLE_NN_SET_ON_FAIL;
@@ -447,10 +449,7 @@ const DEFAULT_INIT_MAIN_INTERVAL = process.env.TNN_INIT_MAIN_INTERVAL || 10*ONE_
 
 const DEFAULT_RANDOM_EVOLVE_TECH_ARRAY = [
   "carrot",
-  "carrot",
-  "neataptic",
-  "neataptic",
-  "brain"
+  "neataptic"
 ];
 
 const DEFAULT_EVOLVE_THREADS = 4;
@@ -1287,7 +1286,7 @@ async function loadNetworkFile(params){
       + " | " + networkObj.networkId 
     ));
     networkObj.networkTechnology = networkObj.evolve.options.networkTechnology;
-  } 
+  }
 
   if (networkObj.evolve.options.binaryMode !== undefined && networkObj.evolve.options.binaryMode !== networkObj.binaryMode) {
     console.log(chalkAlert(MODULE_ID_PREFIX
@@ -1312,6 +1311,18 @@ async function loadNetworkFile(params){
     skipLoadNetworkSet.add(networkObj.networkId);
     return;
   }
+
+  if (!configuration.viableNetworkTechArray.includes(networkObj.networkTechnology)){
+    console.log(chalkAlert(MODULE_ID_PREFIX + " | --- NN TECH NOT VIABLE NETWORK TECH ... SKIPPING"
+      + " | VIABLE TECH: " + configuration.viableNetworkTechArray
+      + " | NN TECH: " + networkObj.networkTechnology
+      + " | " + networkObj.networkId
+    ));
+
+    skipLoadNetworkSet.add(networkObj.networkId);
+    return;
+  }
+
 
   if (!configuration.inputsIdArray.includes(networkObj.inputsId)) {
 
@@ -3381,6 +3392,11 @@ async function loadConfigFile(params) {
       }
     }
 
+    if (loadedConfigObj.TNN_VIABLE_NETWORK_TECHNOLOGY_ARRAY !== undefined) {
+      console.log(MODULE_ID_PREFIX + " | LOADED TNN_VIABLE_NETWORK_TECHNOLOGY_ARRAY: " + loadedConfigObj.TNN_VIABLE_NETWORK_TECHNOLOGY_ARRAY);
+      newConfiguration.viableNetworkTechArray = loadedConfigObj.TNN_VIABLE_NETWORK_TECHNOLOGY_ARRAY;
+    }
+
     if (loadedConfigObj.ENABLE_STDIN !== undefined) {
       console.log(MODULE_ID_PREFIX + " | LOADED ENABLE_STDIN: " + loadedConfigObj.ENABLE_STDIN);
       newConfiguration.enableStdin = loadedConfigObj.ENABLE_STDIN;
@@ -4133,7 +4149,10 @@ const fsmStates = {
           await loadNetworkInputsConfig({file: defaultNetworkInputsConfigFile});
           await loadNetworkInputsConfig({file: defaultUnionInputsConfigFile});
           await loadInputsFolders({folders: [defaultInputsFolder]});
-          await loadBestNetworkFolders({folders: [globalBestNetworkFolder, localBestNetworkFolder, hostBestNetworkFolder], purgeMin: configuration.hostPurgeMinSuccessRate});
+          await loadBestNetworkFolders({
+            folders: [globalBestNetworkFolder, localBestNetworkFolder, hostBestNetworkFolder], 
+            purgeMin: configuration.hostPurgeMinSuccessRate
+          });
 
           await childStartAll();
 
@@ -4377,7 +4396,7 @@ function getNewNetworkId(p){
 
 async function startNetworkCreate(params){
 
-  const binaryMode = (params.binaryMode !== undefined) ? params.binaryMode : configuration.binaryMode;
+  // const binaryMode = (params.binaryMode !== undefined) ? params.binaryMode : configuration.binaryMode;
   const compareTech = (params.compareTech !== undefined) ? params.compareTech : configuration.compareTech;
   const networkId = getNewNetworkId();
 
