@@ -13,6 +13,7 @@ let childNetworkObj; // this is the common, default nn object
 let seedNetworkObj; // this is the common, default nn object
 
 const os = require("os");
+const cp = require("child_process");
 const _ = require("lodash");
 const omit = require("object.omit");
 const path = require("path");
@@ -1031,6 +1032,9 @@ async function loadTrainingSet(){
       statsObj.archiveFile = archiveFlagObj.file;
       statsObj.trainingSetReady = true;
       console.log(chalkGreenBold(MODULE_ID_PREFIX + " | TRAINING SET LOADED: " + archiveFlagObj.file));
+
+      console.log(chalkAlert(MODULE_ID_PREFIX + " | UPDATE DB USERS archiveLoadChild"));
+      cp.fork(`${__dirname}/archiveLoadChild.js`);
       return;
     }
     else {
