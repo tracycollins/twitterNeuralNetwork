@@ -2363,6 +2363,7 @@ async function networkDefaults(nnObj){
     if(empty(nnObj.testCycles)) { nnObj.testCycles = 0; }
     if(empty(nnObj.testCycleHistory)) { nnObj.testCycleHistory = []; }
     if(empty(nnObj.overallMatchRate)) { nnObj.overallMatchRate = 0; }
+    if(empty(nnObj.runtimeMatchRate)) { nnObj.runtimeMatchRate = 0; }
     if(empty(nnObj.matchRate)) { nnObj.matchRate = 0; }
     if(empty(nnObj.successRate)) { nnObj.successRate = 0; }
 

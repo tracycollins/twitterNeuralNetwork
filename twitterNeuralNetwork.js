@@ -788,6 +788,7 @@ function networkDefaults(networkObj){
     if(empty(networkObj.testCycles)) { networkObj.testCycles = 0; }
     if(empty(networkObj.testCycleHistory)) { networkObj.testCycleHistory = []; }
     if(empty(networkObj.overallMatchRate)) { networkObj.overallMatchRate = 0; }
+    if(empty(networkObj.runtimeMatchRate)) { networkObj.runtimeMatchRate = 0; }
     if(empty(networkObj.matchRate)) { networkObj.matchRate = 0; }
     if(empty(networkObj.successRate)) { networkObj.successRate = 0; }
 
@@ -805,26 +806,13 @@ function printNetworkObj(title, networkObj, format) {
     + " | SR: " + networkObj.successRate.toFixed(2) + "%"
     + " | MR: " + networkObj.matchRate.toFixed(2) + "%"
     + " | OAMR: " + networkObj.overallMatchRate.toFixed(2) + "%"
+    + " | RMR: " + networkObj.runtimeMatchRate.toFixed(2) + "%"
     + " | TC:  " + networkObj.testCycles
     + " | IN: " + networkObj.numInputs
     + " | IN ID:  " + networkObj.inputsId
     + " | " + networkObj.networkId
   ));
 }
-
-// const format = function(input){
-//   if (empty(input)){
-//     return "---";
-//   }
-//   if (typeof input === "number"){
-//     return input.toFixed(3);
-//   }
-//   if (typeof input === "string"){
-//     return parseFloat(input).toFixed(3);
-//   }
-
-//   return input;
-// }
 
 function printResultsHashmap(){
 
@@ -2411,6 +2399,7 @@ async function initNetworkCreate(params){
     networkCreateObj.successRate = 0;
     networkCreateObj.matchRate = 0;
     networkCreateObj.overallMatchRate = 0;
+    networkCreateObj.runtimeMatchRate = 0;
     networkCreateObj.networkId = messageObj.testRunId;
     networkCreateObj.networkTechnology = messageObj.networkTechnology;
     networkCreateObj.hiddenLayerSize = messageObj.hiddenLayerSize;
