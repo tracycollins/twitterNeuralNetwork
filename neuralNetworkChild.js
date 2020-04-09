@@ -2213,6 +2213,7 @@ const fsmStates = {
           await testNetwork({
             inputsId: childNetworkObj.inputsId,
             binaryMode: childNetworkObj.binaryMode, 
+            userProfileOnlyFlag: childNetworkObj.meta.userProfileOnlyFlag, 
             verbose: configuration.verbose
           });
 
