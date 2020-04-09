@@ -1808,7 +1808,7 @@ async function evolve(params){
       inputsId: childNetworkObj.inputsId,
       dataSetObj: trainingSetObj, 
       userProfileCharCodesOnlyFlag: params.userProfileCharCodesOnlyFlag,
-      userProfileOnlyFlag: childNetworkObj.userProfileOnlyFlag,
+      userProfileOnlyFlag: childNetworkObj.meta.userProfileOnlyFlag,
       binaryMode: childNetworkObj.binaryMode,
       verbose: params.verbose
     });
