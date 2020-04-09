@@ -38,6 +38,7 @@ hostname = hostname.replace(/word-1/g, "google");
 hostname = hostname.replace(/word/g, "google");
 
 const _ = require("lodash");
+const dotProp = require("dot-prop");
 
 const PRIMARY_HOST = process.env.PRIMARY_HOST || "google";
 const HOST = (hostname === PRIMARY_HOST) ? "default" : "local";
@@ -1197,300 +1198,316 @@ async function updateDbInputs(params){
 
 async function updateInputsViabilitySet(p){
 
-  const params = p || {};
+  try{
+    const params = p || {};
 
-  const maxFailNetworks = params.maxFailNetworks || configuration.maxFailNetworks;
-  const minPassRatio = params.minPassRatio || configuration.minPassRatio;
-  const minPassRatioPercent = 100*minPassRatio;
+    const maxFailNetworks = (params.maxFailNetworks !== undefined) ? params.maxFailNetworks : configuration.maxFailNetworks;
+    const minPassRatio = (params.minPassRatio !== undefined) ? params.minPassRatio : configuration.minPassRatio;
+    const minPassRatioPercent = 100*minPassRatio;
 
-  const numPassNetworks = (params.inputsObj.networks) ? params.inputsObj.networks.length : 0;
-  const numFailNetworks = (params.inputsObj.failNetworks) ? params.inputsObj.failNetworks.length : 0;
-  const totalNetworks = numPassNetworks + numFailNetworks;
+    const numPassNetworks = (params.inputsObj.networks) ? params.inputsObj.networks.length : 0;
+    const numFailNetworks = (params.inputsObj.failNetworks) ? params.inputsObj.failNetworks.length : 0;
+    const totalNetworks = numPassNetworks + numFailNetworks;
 
-  const passRatio = (totalNetworks) ? (numPassNetworks/totalNetworks) : 0;
-  const passRatioPercent = 100*passRatio;
+    const passRatio = (totalNetworks) ? (numPassNetworks/totalNetworks) : 0;
+    const passRatioPercent = 100*passRatio;
 
-  let inputsViable = false;
+    let inputsViable = false;
 
-  if (numFailNetworks <= maxFailNetworks){
-    inputsViable = true;
+    if (numFailNetworks <= maxFailNetworks){
+      inputsViable = true;
+    }
+
+    if (passRatio >= minPassRatio){
+      inputsViable = true;
+    }
+
+    if (inputsViable){
+
+      inputsViableSet.add(params.inputsObj.inputsId);
+
+      console.log(chalkGreen(MODULE_ID_PREFIX 
+        + " | +++ VIABLE INPUTS [" + inputsViableSet.size + "]"
+        + " | P/F/T: " + numPassNetworks + "/" + numFailNetworks + "/" + totalNetworks
+        + " | MIN: " + minPassRatioPercent.toFixed(2) + "%"
+        + " | SUCCESS: " + passRatioPercent.toFixed(2) + "%"
+        + " | " + params.inputsObj.meta.numInputs
+        + " | " + params.inputsObj.inputsId
+      ));
+    }
+    else {
+
+      inputsViableSet.delete(params.inputsObj.inputsId);
+
+      console.log(chalkAlert(MODULE_ID_PREFIX 
+        + " | XXX NOT VIABLE INPUTS [" + inputsViableSet.size + "]"
+        + " | P/F/T: " + numPassNetworks + "/" + numFailNetworks + "/" + totalNetworks
+        + " | MIN: " + 100*minPassRatio.toFixed(2) + "%"
+        + " | SUCCESS: " + passRatioPercent.toFixed(2) + "%"
+        + " | " + params.inputsObj.meta.numInputs
+        + " | " + params.inputsObj.meta.numInputs
+        + " | " + params.inputsObj.inputsId
+      ));
+    }
+
+    return inputsViable;
   }
-
-  if (passRatio >= minPassRatio){
-    inputsViable = true;
+  catch(err){
+    throw err;
   }
-
-  if (inputsViable){
-
-    inputsViableSet.add(params.inputsObj.inputsId);
-
-    console.log(chalkGreen(MODULE_ID_PREFIX 
-      + " | +++ VIABLE INPUTS [" + inputsViableSet.size + "]"
-      + " | P/F/T: " + numPassNetworks + "/" + numFailNetworks + "/" + totalNetworks
-      + " | MIN: " + minPassRatioPercent.toFixed(2) + "%"
-      + " | SUCCESS: " + passRatioPercent.toFixed(2) + "%"
-      + " | " + params.inputsObj.meta.numInputs
-      + " | " + params.inputsObj.inputsId
-    ));
-  }
-  else {
-
-    inputsViableSet.delete(params.inputsObj.inputsId);
-
-    console.log(chalkAlert(MODULE_ID_PREFIX 
-      + " | XXX NOT VIABLE INPUTS [" + inputsViableSet.size + "]"
-      + " | P/F/T: " + numPassNetworks + "/" + numFailNetworks + "/" + totalNetworks
-      + " | MIN: " + 100*minPassRatio.toFixed(2) + "%"
-      + " | SUCCESS: " + passRatioPercent.toFixed(2) + "%"
-      + " | " + params.inputsObj.meta.numInputs
-      + " | " + params.inputsObj.meta.numInputs
-      + " | " + params.inputsObj.inputsId
-    ));
-  }
-
-  return inputsViable;
 }
 
 async function loadNetworkFile(params){
 
-  let filePath;
+  try{
+    let filePath;
 
-  if (params.path) {
-    filePath = params.path;
-  }
-  else {
-    filePath = params.folder + "/" + params.file;
-  }
+    if (params.path) {
+      filePath = params.path;
+    }
+    else {
+      filePath = params.folder + "/" + params.file;
+    }
 
-  console.log(chalkLog(MODULE_ID_PREFIX + " | <<< LOAD NN FILE"
-    + " | " + filePath
-  ));
-
-  const networkObj = await tcUtils.loadFileRetry({folder: params.folder, file: params.file});
-
-  if (networkObj.evolve.options.networkTechnology && networkObj.evolve.options.networkTechnology !== networkObj.networkTechnology) {
-    console.log(chalkAlert(MODULE_ID_PREFIX
-      + " | !!! INCORRECT NETWORK TECH | CHANGE " + networkObj.networkTechnology + " <-- " + networkObj.evolve.options.networkTechnology
-      + " | " + networkObj.networkId 
-    ));
-    networkObj.networkTechnology = networkObj.evolve.options.networkTechnology;
-  }
-
-  if (networkObj.evolve.options.binaryMode !== undefined && networkObj.evolve.options.binaryMode !== networkObj.binaryMode) {
-    console.log(chalkAlert(MODULE_ID_PREFIX
-      + " | !!! INCORRECT BINARY MODE | CHANGE " + networkObj.binaryMode + " <-- " + networkObj.evolve.options.binaryMode
-      + " | " + networkObj.networkId 
-    ));
-    networkObj.binaryMode = networkObj.evolve.options.binaryMode;
-  } 
-
-  const dbInputsObj = await updateDbInputs({inputsId: networkObj.inputsId, networkId: networkObj.networkId});
-
-  const inputsObj = dbInputsObj.toObject();
-
-  if (configuration.forceNetworkTechnology && (networkObj.networkTechnology !== configuration.forceNetworkTechnology)){
-    console.log(chalkInfo(MODULE_ID_PREFIX + " | --- NN TECH NOT FORCE NETWORK TECH ... SKIPPING"
-      + " | " + networkObj.networkId
-      + " | NN TECH: " + networkObj.networkTechnology
-      + " | FORCE TECH: " + configuration.forceNetworkTechnology
+    console.log(chalkLog(MODULE_ID_PREFIX + " | <<< LOAD NN FILE"
       + " | " + filePath
     ));
 
-    skipLoadNetworkSet.add(networkObj.networkId);
-    return;
-  }
+    const networkObj = await tcUtils.loadFile({folder: params.folder, file: params.file});
 
-  if (!configuration.viableNetworkTechArray.includes(networkObj.networkTechnology)){
-    console.log(chalkAlert(MODULE_ID_PREFIX + " | --- NN TECH NOT VIABLE NETWORK TECH ... SKIPPING"
-      + " | VIABLE TECH: " + configuration.viableNetworkTechArray
-      + " | NN TECH: " + networkObj.networkTechnology
-      + " | " + networkObj.networkId
-    ));
+    networkObj.runtimeMatchRate = networkObj.runtimeMatchRate || 0;
 
-    skipLoadNetworkSet.add(networkObj.networkId);
-    return;
-  }
+    if (dotProp.has(networkObj, "evolve.options.networkTechnology")
+      && networkObj.evolve.options.networkTechnology !== networkObj.networkTechnology
+    ){
+      console.log(chalkAlert(MODULE_ID_PREFIX
+        + " | !!! INCORRECT NETWORK TECH | CHANGE " + networkObj.networkTechnology + " <-- " + networkObj.evolve.options.networkTechnology
+        + " | " + networkObj.networkId 
+      ));
+      networkObj.networkTechnology = networkObj.evolve.options.networkTechnology;
+    }
+
+    if (dotProp.has(networkObj, "evolve.options.binaryMode")
+      && networkObj.evolve.options.binaryMode !== networkObj.binaryMode
+    ){
+      console.log(chalkAlert(MODULE_ID_PREFIX
+        + " | !!! INCORRECT BINARY MODE | CHANGE " + networkObj.binaryMode + " <-- " + networkObj.evolve.options.binaryMode
+        + " | " + networkObj.networkId 
+      ));
+      networkObj.binaryMode = networkObj.evolve.options.binaryMode;
+    } 
+
+    const dbInputsObj = await updateDbInputs({inputsId: networkObj.inputsId, networkId: networkObj.networkId});
+
+    const inputsObj = dbInputsObj.toObject();
+
+    if (configuration.forceNetworkTechnology && (networkObj.networkTechnology !== configuration.forceNetworkTechnology)){
+      console.log(chalkInfo(MODULE_ID_PREFIX + " | --- NN TECH NOT FORCE NETWORK TECH ... SKIPPING"
+        + " | " + networkObj.networkId
+        + " | NN TECH: " + networkObj.networkTechnology
+        + " | FORCE TECH: " + configuration.forceNetworkTechnology
+        + " | " + filePath
+      ));
+
+      skipLoadNetworkSet.add(networkObj.networkId);
+      return;
+    }
+
+    if (!configuration.viableNetworkTechArray.includes(networkObj.networkTechnology)){
+      console.log(chalkAlert(MODULE_ID_PREFIX + " | --- NN TECH NOT VIABLE NETWORK TECH ... SKIPPING"
+        + " | VIABLE TECH: " + configuration.viableNetworkTechArray
+        + " | NN TECH: " + networkObj.networkTechnology
+        + " | " + networkObj.networkId
+      ));
+
+      skipLoadNetworkSet.add(networkObj.networkId);
+      return;
+    }
 
 
-  if (!configuration.inputsIdArray.includes(networkObj.inputsId)) {
+    if (!configuration.inputsIdArray.includes(networkObj.inputsId)) {
 
-    if (configuration.archiveNotInInputsIdArray && filePath.toLowerCase().includes(hostBestNetworkFolder.toLowerCase())){
-      
-      console.log(chalkInfo(MODULE_ID_PREFIX + " | 000 HOST BEST NN INPUTS NOT IN INPUTS ID ARRAY ... ARCHIVING"
+      if (configuration.archiveNotInInputsIdArray && filePath.toLowerCase().includes(hostBestNetworkFolder.toLowerCase())){
+        
+        console.log(chalkInfo(MODULE_ID_PREFIX + " | 000 HOST BEST NN INPUTS NOT IN INPUTS ID ARRAY ... ARCHIVING"
+          + " | NUM INPUTS: " + networkObj.numInputs
+          + " | INPUTS ID: " + networkObj.inputsId
+          + " | " + filePath
+        ));
+
+        await renameFileAsync(path.join(hostBestNetworkFolder, params.file), path.join(localArchiveNetworkFolder, params.file));
+        return;
+      }
+      else if (configuration.deleteNotInInputsIdArray && filePath.toLowerCase().includes(hostBestNetworkFolder.toLowerCase())){
+        console.log(chalkInfo(MODULE_ID_PREFIX + " | XXX HOST BEST NN INPUTS NOT IN INPUTS ID ARRAY ... DELETING"
+          + " | NUM INPUTS: " + networkObj.numInputs
+          + " | INPUTS ID: " + networkObj.inputsId
+          + " | " + filePath
+        ));
+        await unlinkFileAsync(path.join(hostBestNetworkFolder, params.file));
+        return;
+      }
+
+      console.log(chalkInfo(MODULE_ID_PREFIX + " | --- HOST BEST NN INPUTS NOT IN INPUTS ID ARRAY ... SKIPPING"
         + " | NUM INPUTS: " + networkObj.numInputs
         + " | INPUTS ID: " + networkObj.inputsId
         + " | " + filePath
       ));
 
-      await renameFileAsync(path.join(hostBestNetworkFolder, params.file), path.join(localArchiveNetworkFolder, params.file));
+      skipLoadNetworkSet.add(networkObj.networkId);
       return;
     }
-    else if (configuration.deleteNotInInputsIdArray && filePath.toLowerCase().includes(hostBestNetworkFolder.toLowerCase())){
-      console.log(chalkInfo(MODULE_ID_PREFIX + " | XXX HOST BEST NN INPUTS NOT IN INPUTS ID ARRAY ... DELETING"
-        + " | NUM INPUTS: " + networkObj.numInputs
-        + " | INPUTS ID: " + networkObj.inputsId
-        + " | " + filePath
+
+    //========================
+    // SAVE LOCAL NETWORK TO GLOBAL
+    //========================
+
+    if ((params.folder.toLowerCase() !== globalBestNetworkFolder.toLowerCase())
+      && !viableNetworkIdSet.has(networkObj.networkId)
+      && ((networkObj.successRate >= configuration.globalMinSuccessRate) 
+      || (networkObj.overallMatchRate >= configuration.globalMinSuccessRate))) {
+
+      viableNetworkIdSet.add(networkObj.networkId);
+
+      if(empty(inputsIdTechHashMap.networkTechnology[networkObj.networkTechnology][networkObj.inputsId])) {
+        inputsIdTechHashMap.networkTechnology[networkObj.networkTechnology][networkObj.inputsId] = new Set(); 
+      }
+
+      inputsIdTechHashMap.networkTechnology[networkObj.networkTechnology][networkObj.inputsId].add(networkObj.networkId);
+
+      console.log(chalkGreen(MODULE_ID_PREFIX + " | ### MOVE NN FROM LOCAL TO GLOBAL BEST"
+        + " | " + params.folder + "/" + params.file
       ));
-      await unlinkFileAsync(path.join(hostBestNetworkFolder, params.file));
+
+      printNetworkObj(MODULE_ID_PREFIX 
+        + " | LOCAL > GLOBAL"
+        + " | " + params.folder, 
+        networkObj, 
+        chalkGreen
+      );
+
+      saveFileQueue.push({folder: globalBestNetworkFolder, file: params.file, obj: networkObj});
+      await unlinkFileAsync(path.join(params.folder, params.file));
+    }
+
+    //========================
+    // NETWORK PASS SUCCESS or MATCH MIN
+    //========================
+
+    const passed = networkPass({folder: params.folder, purgeMin: params.purgeMin, networkObj: networkObj});
+
+    if (passed) {
+
+      viableNetworkIdSet.add(networkObj.networkId);
+
+      if(empty(inputsIdTechHashMap.networkTechnology[networkObj.networkTechnology][networkObj.inputsId])) { 
+        inputsIdTechHashMap.networkTechnology[networkObj.networkTechnology][networkObj.inputsId] = new Set();
+      }
+
+      inputsIdTechHashMap.networkTechnology[networkObj.networkTechnology][networkObj.inputsId].add(networkObj.networkId);
+
+      printNetworkObj(MODULE_ID_PREFIX + " | +++ VIABLE NN [" + viableNetworkIdSet.size + "]", networkObj);
+
+      if (!currentBestNetwork
+        || (networkObj.overallMatchRate > currentBestNetwork.overallMatchRate)
+        || (!networkObj.overallMatchRate && !currentBestNetwork.overallMatchRate && (networkObj.successRate > currentBestNetwork.successRate))
+      ) {
+        currentBestNetwork = networkObj;
+        printNetworkObj(MODULE_ID_PREFIX + " | ===> NEW BEST NN <===", networkObj, chalkGreen);
+      }
+
+      //========================
+      // UPDATE INPUTS HASHMAP
+      //========================
+
+      const inObj = {};
+
+      inObj.inputsObj = {};
+      inObj.inputsObj = inputsObj;
+      inObj.entry = {};
+      inObj.entry.name = inputsObj.inputsId + ".json";
+      inObj.entry.content_hash = false;
+      inObj.entry.client_modified = moment();
+
+      inputsSet.add(networkObj.inputsId);
+
+      if(empty(inputsNetworksHashMap[networkObj.inputsId])) {
+        inputsNetworksHashMap[networkObj.inputsId] = new Set();
+      }
+
+      inputsNetworksHashMap[networkObj.inputsId].add(networkObj.networkId);
+
+      //========================
+      // UPDATE DB
+      //========================
+      let nnDb;
+
+      try {
+        nnDb = await updateDbNetwork({networkObj: networkObj, addToTestHistory: true});
+      }
+      catch(err){
+        console.log(chalkError("*** ERROR: DB NN FIND ONE ERROR | "+ networkObj.networkId + " | " + err));
+        throw err;
+      }
+
+      if (nnDb) {
+
+        if (!currentBestNetwork || (nnDb.overallMatchRate > currentBestNetwork.overallMatchRate)) {
+          currentBestNetwork = nnDb;
+          printNetworkObj(MODULE_ID_PREFIX + " | *** NEW BEST NN (DB)", nnDb, chalkGreen);
+        }
+
+        viableNetworkIdSet.add(nnDb.networkId);
+
+        if(empty(inputsIdTechHashMap.networkTechnology[nnDb.networkTechnology][nnDb.inputsId])) { 
+          inputsIdTechHashMap.networkTechnology[nnDb.networkTechnology][nnDb.inputsId] = new Set(); 
+        }
+
+        inputsIdTechHashMap.networkTechnology[nnDb.networkTechnology][nnDb.inputsId].add(nnDb.networkId);
+
+      }
+
+      return nnDb;
+    }
+
+    //========================
+    // PURGE FAILING NETWORKS
+    //========================
+
+    if (((hostname === PRIMARY_HOST) && (params.folder.toLowerCase() === globalBestNetworkFolder.toLowerCase()))
+      || ((hostname !== PRIMARY_HOST) && (params.folder.toLowerCase() === hostBestNetworkFolder.toLowerCase())) ) {
+
+      printNetworkObj(
+        MODULE_ID_PREFIX 
+          + " | XXX DELETING NN [" + viableNetworkIdSet.size + " IN SET]"
+          + " | FOLDER: " + params.folder, 
+        networkObj, 
+        chalkAlert
+      );
+
+      purgeNetwork(networkObj.networkId);
+      await purgeInputs(networkObj.inputsId);
+      await unlinkFileAsync(path.join(params.folder, params.file));
+
       return;
     }
-
-    console.log(chalkInfo(MODULE_ID_PREFIX + " | --- HOST BEST NN INPUTS NOT IN INPUTS ID ARRAY ... SKIPPING"
-      + " | NUM INPUTS: " + networkObj.numInputs
-      + " | INPUTS ID: " + networkObj.inputsId
-      + " | " + filePath
-    ));
-
-    skipLoadNetworkSet.add(networkObj.networkId);
-    return;
-  }
-
-  //========================
-  // SAVE LOCAL NETWORK TO GLOBAL
-  //========================
-
-  if ((params.folder.toLowerCase() !== globalBestNetworkFolder.toLowerCase())
-    && !viableNetworkIdSet.has(networkObj.networkId)
-    && ((networkObj.successRate >= configuration.globalMinSuccessRate) 
-    || (networkObj.overallMatchRate >= configuration.globalMinSuccessRate))) {
-
-    viableNetworkIdSet.add(networkObj.networkId);
-
-    if(empty(inputsIdTechHashMap.networkTechnology[networkObj.networkTechnology][networkObj.inputsId])) {
-      inputsIdTechHashMap.networkTechnology[networkObj.networkTechnology][networkObj.inputsId] = new Set(); 
-    }
-
-    inputsIdTechHashMap.networkTechnology[networkObj.networkTechnology][networkObj.inputsId].add(networkObj.networkId);
-
-    console.log(chalkGreen(MODULE_ID_PREFIX + " | ### MOVE NN FROM LOCAL TO GLOBAL BEST"
-      + " | " + params.folder + "/" + params.file
-    ));
-
-    printNetworkObj(MODULE_ID_PREFIX 
-      + " | LOCAL > GLOBAL"
-      + " | " + params.folder, 
-      networkObj, 
-      chalkGreen
-    );
-
-    saveFileQueue.push({folder: globalBestNetworkFolder, file: params.file, obj: networkObj});
-    await unlinkFileAsync(path.join(params.folder, params.file));
-  }
-
-  //========================
-  // NETWORK PASS SUCCESS or MATCH MIN
-  //========================
-
-  const passed = networkPass({folder: params.folder, purgeMin: params.purgeMin, networkObj: networkObj});
-
-  if (passed) {
-
-    viableNetworkIdSet.add(networkObj.networkId);
-
-    if(empty(inputsIdTechHashMap.networkTechnology[networkObj.networkTechnology][networkObj.inputsId])) { 
-      inputsIdTechHashMap.networkTechnology[networkObj.networkTechnology][networkObj.inputsId] = new Set();
-    }
-
-    inputsIdTechHashMap.networkTechnology[networkObj.networkTechnology][networkObj.inputsId].add(networkObj.networkId);
-
-    printNetworkObj(MODULE_ID_PREFIX + " | +++ VIABLE NN [" + viableNetworkIdSet.size + "]", networkObj);
-
-    if (!currentBestNetwork
-      || (networkObj.overallMatchRate > currentBestNetwork.overallMatchRate)
-      || (!networkObj.overallMatchRate && !currentBestNetwork.overallMatchRate && (networkObj.successRate > currentBestNetwork.successRate))
-    ) {
-      currentBestNetwork = networkObj;
-      printNetworkObj(MODULE_ID_PREFIX + " | ===> NEW BEST NN <===", networkObj, chalkGreen);
-    }
-
-    //========================
-    // UPDATE INPUTS HASHMAP
-    //========================
-
-    const inObj = {};
-
-    inObj.inputsObj = {};
-    inObj.inputsObj = inputsObj;
-    inObj.entry = {};
-    inObj.entry.name = inputsObj.inputsId + ".json";
-    inObj.entry.content_hash = false;
-    inObj.entry.client_modified = moment();
-
-    inputsSet.add(networkObj.inputsId);
-
-    if(empty(inputsNetworksHashMap[networkObj.inputsId])) {
-      inputsNetworksHashMap[networkObj.inputsId] = new Set();
-    }
-
-    inputsNetworksHashMap[networkObj.inputsId].add(networkObj.networkId);
-
-    //========================
-    // UPDATE DB
-    //========================
-    let nnDb;
-
-    try {
-      nnDb = await updateDbNetwork({networkObj: networkObj, addToTestHistory: true});
-    }
-    catch(err){
-      console.log(chalkError("*** ERROR: DB NN FIND ONE ERROR | "+ networkObj.networkId + " | " + err));
-      throw err;
-    }
-
-    if (nnDb) {
-
-      if (!currentBestNetwork || (nnDb.overallMatchRate > currentBestNetwork.overallMatchRate)) {
-        currentBestNetwork = nnDb;
-        printNetworkObj(MODULE_ID_PREFIX + " | *** NEW BEST NN (DB)", nnDb, chalkGreen);
-      }
-
-      viableNetworkIdSet.add(nnDb.networkId);
-
-      if(empty(inputsIdTechHashMap.networkTechnology[nnDb.networkTechnology][nnDb.inputsId])) { 
-        inputsIdTechHashMap.networkTechnology[nnDb.networkTechnology][nnDb.inputsId] = new Set(); 
-      }
-
-      inputsIdTechHashMap.networkTechnology[nnDb.networkTechnology][nnDb.inputsId].add(nnDb.networkId);
-
-    }
-
-    return nnDb;
-  }
-
-  //========================
-  // PURGE FAILING NETWORKS
-  //========================
-
-  if (((hostname === PRIMARY_HOST) && (params.folder.toLowerCase() === globalBestNetworkFolder.toLowerCase()))
-    || ((hostname !== PRIMARY_HOST) && (params.folder.toLowerCase() === hostBestNetworkFolder.toLowerCase())) ) {
 
     printNetworkObj(
       MODULE_ID_PREFIX 
-        + " | XXX DELETING NN [" + viableNetworkIdSet.size + " IN SET]"
-        + " | FOLDER: " + params.folder, 
+        + " | --- NN HASH MAP [" + viableNetworkIdSet.size + " IN SET]"
+        + " | PRI HOST: " + PRIMARY_HOST
+        + " | FOLDER: " + params.folder
+        + "\n" + MODULE_ID_PREFIX
+        + " | --- NN HASH MAP [" + viableNetworkIdSet.size + " IN SET]",
       networkObj, 
-      chalkAlert
+      chalkLog
     );
 
-    purgeNetwork(networkObj.networkId);
-    await purgeInputs(networkObj.inputsId);
-    await unlinkFileAsync(path.join(params.folder, params.file));
-
-    return;
+    return networkObj;
   }
-
-  printNetworkObj(
-    MODULE_ID_PREFIX 
-      + " | --- NN HASH MAP [" + viableNetworkIdSet.size + " IN SET]"
-      + " | PRI HOST: " + PRIMARY_HOST
-      + " | FOLDER: " + params.folder
-      + "\n" + MODULE_ID_PREFIX
-      + " | --- NN HASH MAP [" + viableNetworkIdSet.size + " IN SET]",
-    networkObj, 
-    chalkLog
-  );
-
-  return networkObj;
+  catch(err){
+    throw err;
+  }
 }
 
 async function loadInputsFile(params){
