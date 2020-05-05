@@ -378,7 +378,7 @@ async function initSlackRtmClient(){
   const { RTMClient } = require("@slack/client");
   slackRtmClient = new RTMClient(slackRtmToken);
 
-  await slackRtmClient.start();
+  slackRtmClient.start();
 
   slackRtmClient.on("slack_event", async function(eventType, event){
     switch (eventType) {
