@@ -1514,7 +1514,7 @@ async function loadInputsFile(params){
 
   try {
 
-    const inputsObj = await tcUtils.loadFileRetry({folder: params.folder, file: params.file});
+    const inputsObj = await tcUtils.loadFile({folder: params.folder, file: params.file});
 
     if (empty(inputsObj)) {
       console.log(chalkError(MODULE_ID_PREFIX + " | INPUTS LOAD FILE ERROR | JSON UNDEFINED ??? "));
@@ -3843,7 +3843,7 @@ async function loadNetworkInputsConfig(params){
       + " | LOAD NETWORK INPUTS CONFIG FILE: " + configDefaultFolder + "/" + params.file
     ));
 
-    const networkInputsObj = await tcUtils.loadFileRetry({folder: configDefaultFolder, file: params.file});
+    const networkInputsObj = await tcUtils.loadFile({folder: configDefaultFolder, file: params.file});
 
     configuration.inputsIdArray = _.union(configuration.inputsIdArray, networkInputsObj.INPUTS_IDS);
 
