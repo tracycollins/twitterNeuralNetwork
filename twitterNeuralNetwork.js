@@ -1756,6 +1756,7 @@ async function loadInputsFolders (p){
       }
       catch(e){
         console.log(chalkError(MODULE_ID_PREFIX + " | *** LOAD INPUTS FILE ERROR | ... SKIPPING: " + fileObj.folder + "/" + fileObj.file + " | ERROR: " + e));
+        continue;
       }
 
       if (inputsObj.inputsId || (inputsObj.inputsId !== undefined)) {
@@ -1764,6 +1765,7 @@ async function loadInputsFolders (p){
       }
       else{
         console.log(chalkError(MODULE_ID_PREFIX + " | *** INPUTS OBJ ERROR | UNDEFINED INPUTS ID\n" + jsonPrint(inputsObj)));
+        continue;
       }
     }
     catch(err){
