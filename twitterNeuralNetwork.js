@@ -269,6 +269,33 @@ const slackRtmToken = "xoxb-209434353623-bNIoT4Dxu1vv8JZNgu7CDliy";
 let slackRtmClient;
 let slackWebClient;
 
+let slackSendQueueInterval;
+let slackSendQueueReady = true;
+const slackSendQueue = [];
+
+async function initSlackSendQueue(){
+
+  clearInterval(slackSendQueueInterval);
+
+  slackSendQueueReady = true;
+
+  slackSendQueueInterval = setInterval(async function(){
+
+    if (slackSendQueueReady && (slackSendQueue.length > 0)){
+      slackSendQueueReady = false;
+
+      const slackSendObj = slackSendQueue.shift();
+
+      await slackSendWebMessage(slackSendObj);
+
+      slackSendQueueReady = true;
+    }
+
+  }, ONE_SECOND);
+
+  return;
+}
+
 async function slackSendWebMessage(msgObj){
   try{
     const token = msgObj.token || slackOAuthAccessToken;
@@ -3655,7 +3682,7 @@ async function quit(opts) {
   const forceQuitFlag = options.force || false;
 
   try{
-    await slackSendWebMessage({channel: slackChannel, text: slackText});
+    slackSendQueue.push({channel: slackChannel, text: slackText});
     fsm.fsm_quit();
     await childQuitAll();
     await killAll();
@@ -4636,7 +4663,7 @@ async function evolveErrorHandler(params){
     let slackText = "\n*EVOLVE ERROR*";
     slackText = slackText + "\n" + jsonPrint(m.err);
 
-    await slackSendWebMessage({ channel: slackChannelError, text: slackText});
+    slackSendQueue.push({channel: slackChannelError, text: slackText});
 
     return;
 
@@ -4831,7 +4858,7 @@ async function evolveCompleteHandler(params){
         slackText = slackText + "\nBETTER CHILD: " + nn.betterChild;
         slackText = slackText + "\nELAPSED: " + msToTime(nn.evolve.elapsed);
 
-        await slackSendWebMessage({ channel: slackChannelPassGlobal, text: slackText});
+        slackSendQueue.push({ channel: slackChannelPassGlobal, text: slackText});
 
         printNetworkObj(MODULE_ID_PREFIX + " | " + nn.networkId, nn);
 
@@ -4868,7 +4895,7 @@ async function evolveCompleteHandler(params){
         slackText = slackText + "\nBETTER CHILD: " + nn.betterChild;
         slackText = slackText + "\nELAPSED: " + msToTime(nn.evolve.elapsed);
 
-        await slackSendWebMessage({ channel: slackChannelPassLocal, text: slackText});
+        slackSendQueue.push({ channel: slackChannelPassLocal, text: slackText});
 
         printNetworkObj(MODULE_ID_PREFIX + " | " + nn.networkId, nn);
 
@@ -4909,7 +4936,7 @@ async function evolveCompleteHandler(params){
         slackText = slackText + "\nBETTER CHILD: " + nn.betterChild;
         slackText = slackText + "\nELAPSED: " + msToTime(nn.evolve.elapsed);
 
-        await slackSendWebMessage({ channel: slackChannelPassHost, text: slackText });
+        slackSendQueue.push({ channel: slackChannelPassHost, text: slackText });
 
         saveFileQueue.push({folder: hostBestNetworkFolder, file: hostBestNetworkFile, obj: nn});
       }
@@ -4990,7 +5017,7 @@ async function evolveCompleteHandler(params){
       slackText = slackText + "\nBETTER CHILD: " + nn.betterChild;
       slackText = slackText + "\nELAPSED: " + msToTime(nn.evolve.elapsed);
 
-      await slackSendWebMessage({ channel: slackChannelFail, text: slackText });
+      slackSendQueue.push({ channel: slackChannelFail, text: slackText });
 
       statsObj.evolveStats.fail += 1;
 
@@ -5468,6 +5495,7 @@ setTimeout(async function(){
       console.log(chalkAlert(MODULE_ID_PREFIX + " | defaultUserArchiveFlagFile: " + configuration.defaultUserArchiveFlagFile));
     }
 
+    await initSlackSendQueue();
     await initSlackRtmClient();
     await initSlackWebClient();
 
