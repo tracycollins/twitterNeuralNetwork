@@ -1749,7 +1749,14 @@ async function loadInputsFolders (p){
         ));
       }
 
-      const inputsObj = await loadInputsFile({folder: fileObj.folder, file: fileObj.file});
+      let inputsObj;
+
+      try{
+        inputsObj = await loadInputsFile({folder: fileObj.folder, file: fileObj.file});
+      }
+      catch(e){
+        console.log(chalkError(MODULE_ID_PREFIX + " | *** LOAD INPUTS FILE ERROR | ... SKIPPING: " + fileObj.folder + "/" + fileObj.file + " | ERROR: " + e));
+      }
 
       if (inputsObj.inputsId || (inputsObj.inputsId !== undefined)) {
         inputsSet.add(inputsObj.inputsId);
