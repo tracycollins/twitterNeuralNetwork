@@ -39,7 +39,7 @@
     "dropbox-streaming-upload": "^1.0.4",
     "emoji-regex": "^9.0.0",
     "eventemitter2": "^6.4.0",
-    "eventemitter3": "^4.0.0",
+    "eventemitter3": "^4.0.3",
     "fs": "0.0.2",
     "get-urls": "^9.2.0",
     "hashmap": "^2.4.0",
