@@ -35,6 +35,7 @@ const MODULE_NAME = "tncChild";
 let MODULE_ID_PREFIX = "NNC";
 const DEFAULT_NETWORK_TECHNOLOGY = "carrot";
 const DEFAULT_BINARY_MODE = true;
+const DEFAULT_LOGSCALE_MODE = false;
 const DEFAULT_TEST_RATIO = 0.25;
 const QUIT_WAIT_INTERVAL = ONE_SECOND;
 const DEFAULT_USER_ARCHIVE_FILE_EXITS_MAX_WAIT_TIME = 2*ONE_HOUR;
@@ -65,6 +66,7 @@ configuration.maxNetworkJsonSizeMB = DEFAULT_MAX_NETWORK_JSON_SIZE_MB;
 configuration.userArchiveFileExistsMaxWaitTime = DEFAULT_USER_ARCHIVE_FILE_EXITS_MAX_WAIT_TIME;
 configuration.testSetRatio = DEFAULT_TEST_RATIO;
 configuration.binaryMode = DEFAULT_BINARY_MODE;
+configuration.logScaleMode = DEFAULT_LOGSCALE_MODE;
 configuration.fHiddenLayerSize = DEFAULT_BRAIN_HIDDEN_LAYER_SIZE;
 configuration.neatapticHiddenLayerSize = DEFAULT_NEATAPTIC_HIDDEN_LAYER_SIZE;
 configuration.networkTechnology = DEFAULT_NETWORK_TECHNOLOGY;
@@ -1143,6 +1145,7 @@ async function testNetwork(p){
   await nnTools.loadNetwork({networkObj: childNetworkObj});
   await nnTools.setPrimaryNeuralNetwork(childNetworkObj.networkId);
   await nnTools.setBinaryMode(childNetworkObj.binaryMode);
+  await nnTools.setLogScaleMode(childNetworkObj.logScaleMode);
 
   const testSet = await dataSetPrep({
     inputsId: params.inputsId,
@@ -1150,6 +1153,7 @@ async function testNetwork(p){
     userProfileCharCodesOnlyFlag: userProfileCharCodesOnlyFlag,
     userProfileOnlyFlag: userProfileOnlyFlag,
     binaryMode: childNetworkObj.binaryMode,
+    logScaleMode: childNetworkObj.logScaleMode,
     verbose: params.verbose
   });
 
@@ -1170,6 +1174,7 @@ async function testNetwork(p){
     convertDatumFlag: false,
     userProfileOnlyFlag: userProfileOnlyFlag,
     binaryMode: childNetworkObj.binaryMode,
+    logScaleMode: childNetworkObj.logScaleMode,
     verbose: params.verbose
   });
 
@@ -1244,6 +1249,7 @@ function prepNetworkEvolve() {
 
         const sObj = {
           binaryMode: childNetworkObj.binaryMode,
+          logScaleMode: childNetworkObj.logScaleMode,
           error: schedParams.error.toFixed(5) || Infinity,
           evolveElapsed: elapsedInt,
           evolveStart: schedStartTime,
@@ -1295,6 +1301,7 @@ function prepNetworkEvolve() {
           const sObj = {
             networkTechnology: childNetworkObj.networkTechnology,
             binaryMode: childNetworkObj.binaryMode,
+            logScaleMode: childNetworkObj.logScaleMode,
             networkId: childNetworkObj.networkId,
             seedNetworkId: childNetworkObj.seedNetworkId,
             seedNetworkRes: childNetworkObj.seedNetworkRes,
@@ -1375,6 +1382,7 @@ function dataSetPrep(p){
 
     const userProfileCharCodesOnlyFlag = (params.userProfileCharCodesOnlyFlag !== undefined) ? params.userProfileCharCodesOnlyFlag : configuration.userProfileCharCodesOnlyFlag;
     const binaryMode = (params.binaryMode !== undefined) ? params.binaryMode : configuration.binaryMode;
+    const logScaleMode = (params.logScaleMode !== undefined) ? params.logScaleMode : configuration.logScaleMode;
     const userProfileOnlyFlag = (params.userProfileOnlyFlag !== undefined) ? params.userProfileOnlyFlag : configuration.userProfileOnlyFlag;
 
     const dataSet = [];
@@ -1405,6 +1413,7 @@ function dataSetPrep(p){
       + " | INPUTS: " + dataSetObj.meta.numInputs
       + " | USER PROFILE ONLY: " + userProfileOnlyFlag
       + " | BIN MODE: " + binaryMode
+      + " | LOG SCALE MODE: " + logScaleMode
       + "\nDATA SET META\n" + jsonPrint(dataSetObj.meta)
     ));
 
@@ -1432,6 +1441,7 @@ function dataSetPrep(p){
           userProfileCharCodesOnlyFlag: userProfileCharCodesOnlyFlag,
           userProfileOnlyFlag: userProfileOnlyFlag,
           binaryMode: binaryMode, 
+          logScaleMode: logScaleMode, 
           verbose: params.verbose
         }).
         then(function(results){
@@ -1810,6 +1820,7 @@ async function evolve(params){
       userProfileCharCodesOnlyFlag: params.userProfileCharCodesOnlyFlag,
       userProfileOnlyFlag: childNetworkObj.meta.userProfileOnlyFlag,
       binaryMode: childNetworkObj.binaryMode,
+      logScaleMode: childNetworkObj.logScaleMode,
       verbose: params.verbose
     });
 
@@ -2213,6 +2224,7 @@ const fsmStates = {
           await testNetwork({
             inputsId: childNetworkObj.inputsId,
             binaryMode: childNetworkObj.binaryMode, 
+            logScaleMode: childNetworkObj.logScaleMode, 
             userProfileOnlyFlag: childNetworkObj.meta.userProfileOnlyFlag, 
             verbose: configuration.verbose
           });
@@ -2395,6 +2407,7 @@ async function configNetworkEvolve(params){
   configuration.childId = params.childId;
 
   newNetObj.binaryMode = params.binaryMode;
+  newNetObj.logScaleMode = params.logScaleMode;
   newNetObj.networkTechnology = params.networkTechnology || "neataptic";
 
   newNetObj.networkId = params.testRunId;
@@ -2419,6 +2432,7 @@ async function configNetworkEvolve(params){
       "activation",
       "architecture",
       "binaryMode",
+      "logScaleMode",
       "clear", 
       "cost", 
       "efficientMutation", 
@@ -2490,6 +2504,7 @@ async function configNetworkEvolve(params){
       + " | " + configuration.childId
       + " | " + newNetObj.networkId
       + " | BIN MODE: " + newNetObj.binaryMode
+      + " | LOG SCALE MODE: " + newNetObj.logScaleMode
       + " | ARCH: " + newNetObj.architecture
       + " | TECH: " + newNetObj.networkTechnology
       + " | INPUTS: " + newNetObj.numInputs
@@ -2512,6 +2527,7 @@ async function configNetworkEvolve(params){
       + " | " + configuration.childId
       + " | " + newNetObj.networkId
       + " | BIN MODE: " + newNetObj.binaryMode
+      + " | LOG SCALE MODE: " + newNetObj.logScaleMode
       + " | ARCH: " + newNetObj.architecture
       + " | TECH: " + newNetObj.networkTechnology
       + " | INPUTS: " + newNetObj.numInputs
@@ -2567,6 +2583,7 @@ process.on("message", async function(m) {
         if (m.verbose !== undefined) { configuration.verbose = m.verbose; }
         if (m.testSetRatio !== undefined) { configuration.testSetRatio = m.testSetRatio; }
         if (m.binaryMode !== undefined) { configuration.binaryMode = m.binaryMode; }
+        if (m.logScaleMode !== undefined) { configuration.logScaleMode = m.logScaleMode; }
         if (m.equalCategoriesFlag !== undefined) { configuration.equalCategoriesFlag = m.equalCategoriesFlag; }
         if (m.userProfileCharCodesOnlyFlag !== undefined) { configuration.userProfileCharCodesOnlyFlag = m.userProfileCharCodesOnlyFlag; }
         if (m.userArchiveFileExistsMaxWaitTime !== undefined) { 

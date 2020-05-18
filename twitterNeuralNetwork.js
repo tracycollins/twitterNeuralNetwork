@@ -6,15 +6,22 @@ const CHILD_PREFIX_SHORT = "NC";
 const DEFAULT_QUIT_ON_COMPLETE = false;
 
 const DEFAULT_ENABLE_ZERO_SUCCESS_EVOLVE_OPTIONS = false;
+
 const DEFAULT_USER_PROFILE_CHAR_CODES_ONLY_FLAG = false;
 const DEFAULT_USER_PROFILE_CHAR_CODES_ONLY_PROBABILITY = 0.2;
 const DEFAULT_USER_PROFILE_CHAR_CODES_ONLY_INPUTS_ID = "inputs_25250101_000000_255_profilecharcodes";
 
 const DEFAULT_REMOVE_SEED_FROM_VIABLE_NN_SET_ON_FAIL = true;
 const DEFAULT_USER_PROFILE_ONLY_FLAG = false;
+
+const DEFAULT_LOGSCALE_MODE = false;
+const DEFAULT_LOGSCALE_MODE_PROBABILITY = 0.5;
+const DEFAULT_ENABLE_RANDOM_LOGSCALE_MODE = true;
+
 const DEFAULT_BINARY_MODE = false;
 const DEFAULT_BINARY_MODE_PROBABILITY = 0.5;
 const DEFAULT_ENABLE_RANDOM_BINARY_MODE = true; // enableRandomBinaryMode
+
 const DEFAULT_COMPARE_TECH = false;
 const DEFAULT_FORCE_NETWORK_TECHNOLOGY = false;
 const DEFAULT_VIABLE_NETWORK_TECHNOLOGY_ARRAY = ["carrot", "neataptic"];
@@ -61,6 +68,7 @@ const defaultEvolveOptionsPickArray = [
   "activation",
   "architecture",
   "binaryMode",
+  "logScaleMode",
   "error",
   "hiddenLayerSize",
   "inputs",
@@ -222,16 +230,23 @@ configuration.viableNetworkTechArray = DEFAULT_VIABLE_NETWORK_TECHNOLOGY_ARRAY;
 configuration.forceNetworkTechnology = DEFAULT_FORCE_NETWORK_TECHNOLOGY;
 configuration.networkIdPrefix = "nn_" + getTimeStamp() + "_" + hostname ;
 configuration.removeSeedFromViableNetworkOnFail = DEFAULT_REMOVE_SEED_FROM_VIABLE_NN_SET_ON_FAIL;
+
 configuration.binaryMode = DEFAULT_BINARY_MODE;
+configuration.enableRandomBinaryMode = DEFAULT_ENABLE_RANDOM_BINARY_MODE;
+
+configuration.logScaleMode = DEFAULT_LOGSCALE_MODE;
+configuration.enableRandomLogScaleMode = DEFAULT_ENABLE_RANDOM_LOGSCALE_MODE;
+
 configuration.userProfileOnlyFlag = DEFAULT_USER_PROFILE_ONLY_FLAG;
+
 configuration.compareTech = DEFAULT_COMPARE_TECH;
+configuration.networkTechnology = DEFAULT_NETWORK_TECHNOLOGY;
+configuration.enableRandomTechnology = DEFAULT_ENABLE_RANDOM_NETWORK_TECHNOLOGY;
 
 configuration.previousChildConfig = false;
 configuration.offlineMode = OFFLINE_MODE;
 configuration.primaryHost = PRIMARY_HOST;
-configuration.networkTechnology = DEFAULT_NETWORK_TECHNOLOGY;
-configuration.enableRandomBinaryMode = DEFAULT_ENABLE_RANDOM_BINARY_MODE;
-configuration.enableRandomTechnology = DEFAULT_ENABLE_RANDOM_NETWORK_TECHNOLOGY;
+
 configuration.purgeMin = DEFAULT_PURGE_MIN;
 configuration.testMode = TEST_MODE;
 configuration.globalTestMode = GLOBAL_TEST_MODE;
@@ -242,6 +257,7 @@ configuration.minPassRatio = DEFAULT_MIN_PASS_RATIO;
 
 childConfiguration.primaryHost = configuration.primaryHost;
 childConfiguration.binaryMode = configuration.binaryMode;
+childConfiguration.logScaleMode = configuration.logScaleMode;
 childConfiguration.userProfileCharCodesOnlyFlag = configuration.userProfileCharCodesOnlyFlag;
 childConfiguration.userProfileCharCodesOnlyInputsId = configuration.userProfileCharCodesOnlyInputsId;
 childConfiguration.userProfileCharCodesOnlyProbability = configuration.userProfileCharCodesOnlyProbability;
@@ -723,6 +739,10 @@ configuration.evolve.activationArray = DEFAULT_EVOLVE_ACTIVATION_ARRAY;
 configuration.evolve.architecture = DEFAULT_EVOLVE_ARCHITECTURE;
 configuration.evolve.binaryMode = DEFAULT_BINARY_MODE;
 configuration.evolve.binaryModeProbability = DEFAULT_BINARY_MODE_PROBABILITY;
+
+configuration.evolve.logScaleMode = DEFAULT_LOGSCALE_MODE
+configuration.evolve.logScaleModeProbability = DEFAULT_LOGSCALE_MODE_PROBABILITY
+
 configuration.evolve.brainActivationArray = DEFAULT_BRAIN_TRAIN_ACTIVATION_ARRAY;
 configuration.evolve.learningRate = DEFAULT_EVOLVE_LEARNING_RATE;
 configuration.evolve.learningRateRange = DEFAULT_EVOLVE_LEARNING_RATE_RANGE;
@@ -907,6 +927,7 @@ function printResultsHashmap(){
       let nnTech = "";
       let status = "";
       let binaryMode = "F";
+      let logScaleMode = "F";
       let snIdRes = 0;
       let iterations = 0;
       let secPerIteration = 0;
@@ -930,6 +951,7 @@ function printResultsHashmap(){
       snIdRes = (networkObj.seedNetworkRes && networkObj.seedNetworkRes !== undefined) ? networkObj.seedNetworkRes.toFixed(3) : "---";
       betterChild = (networkObj.betterChild && networkObj.betterChild !== undefined) ? formatBoolean(networkObj.betterChild) : "---";
       binaryMode = (networkObj.binaryMode && networkObj.binaryMode !== undefined) ? formatBoolean(networkObj.binaryMode) : "F";
+      logScaleMode = (networkObj.logScaleMode && networkObj.logScaleMode !== undefined) ? formatBoolean(networkObj.logScaleMode) : "F";
       hiddenLayerSize = (networkObj.hiddenLayerSize && (networkObj.hiddenLayerSize !== undefined)) ? networkObj.hiddenLayerSize : "---";
       seedNetworkId = (networkObj.seedNetworkId && networkObj.seedNetworkId !== undefined) ? networkObj.seedNetworkId : "---";
       iterations = (networkObj.evolve.results && networkObj.evolve.results !== undefined) ? networkObj.evolve.results.iterations : 0;
@@ -962,6 +984,7 @@ function printResultsHashmap(){
         status,
         betterChild,
         binaryMode,
+        logScaleMode,
         seedNetworkId,
         snIdRes,
         hiddenLayerSize,
@@ -1014,7 +1037,6 @@ function printResultsHashmap(){
       statsObj.networkResults[networkId].fitness = fitness;
       statsObj.networkResults[networkId].successRate = successRate;
 
-      // async.setImmediate(function() { cb(); });
       cb();
 
     }, function(err){
@@ -1024,7 +1046,7 @@ function printResultsHashmap(){
       }
 
       const t = table(tableArray, { 
-        align: ["l", "l", "l", "l", "l", "l", "l", "r", "l", "l", "l", "l", "l", "l", "l", "r", "l", "r", "r", "l", "l", "r", "r", "r", "r", "r"] 
+        align: ["l", "l", "l", "l", "l", "l", "l", "l", "r", "l", "l", "l", "l", "l", "l", "l", "r", "l", "r", "r", "l", "l", "r", "r", "r", "r", "r"] 
       });
 
       console.log(chalkLog(MODULE_ID_PREFIX + " | === NETWORK RESULTS ========================================================================================================================"));
@@ -1322,6 +1344,16 @@ async function loadNetworkFile(params){
         + " | " + networkObj.networkId 
       ));
       networkObj.binaryMode = networkObj.evolve.options.binaryMode;
+    } 
+
+    if (dotProp.has(networkObj, "evolve.options.logScaleMode")
+      && networkObj.evolve.options.logScaleMode !== networkObj.logScaleMode
+    ){
+      console.log(chalkAlert(MODULE_ID_PREFIX
+        + " | !!! INCORRECT LOGSCALE MODE | CHANGE " + networkObj.logScaleMode + " <-- " + networkObj.evolve.options.logScaleMode
+        + " | " + networkObj.networkId 
+      ));
+      networkObj.logScaleMode = networkObj.evolve.options.logScaleMode;
     } 
 
     const dbInputsObj = await updateDbInputs({inputsId: networkObj.inputsId, networkId: networkObj.networkId});
@@ -1889,6 +1921,7 @@ async function generateSeedInputsNetworkId(params){
           config.seedInputsId = randomInputsId;
           config.inputsId = randomInputsId;
           config.binaryMode = false;
+          config.logScaleMode = false;
 
           return config;
         }
@@ -1914,6 +1947,7 @@ async function generateSeedInputsNetworkId(params){
 
         config.networkTechnology = networkObj.networkTechnology;
         config.binaryMode = networkObj.binaryMode;
+        config.logScaleMode = networkObj.logScaleMode;
         config.seedNetworkId = randomNetworkId;
         config.seedNetworkRes = networkObj.successRate;
         config.seedInputsId = randomInputsId;
@@ -1940,6 +1974,7 @@ async function generateSeedInputsNetworkId(params){
     }
     else if (config.networkTechnology === "brain") {
       config.binaryMode = false;
+      config.logScaleMode = false;
       config.inputsId = configuration.userProfileCharCodesOnlyInputsId;
       config.seedInputsId = configuration.userProfileCharCodesOnlyInputsId;
       const inputsObj = await loadInputsFile({folder: defaultInputsFolder, file: configuration.userProfileCharCodesOnlyInputsId+".json"});
@@ -1952,6 +1987,7 @@ async function generateSeedInputsNetworkId(params){
       config.seedInputsId = configuration.userProfileCharCodesOnlyInputsId;
       config.inputsId = config.seedInputsId;
       config.binaryMode = false;
+      config.logScaleMode = false;
 
       console.log(chalkLog(MODULE_ID_PREFIX + " | SEED | CHAR CODES ONLY INPUTS ID: " + config.seedInputsId));
 
@@ -1975,6 +2011,7 @@ async function generateSeedInputsNetworkId(params){
       config.inputsId = config.seedInputsId;
       if (config.seedInputsId === configuration.userProfileCharCodesOnlyInputsId){
         config.binaryMode = false;
+        config.logScaleMode = false;
       }
 
       console.log(chalkBlue(MODULE_ID_PREFIX + " | SEED | AVAILABLE INPUTS ID: " + config.inputsId));
@@ -2005,9 +2042,12 @@ async function generateSeedInputsNetworkId(params){
     }
     else{
       config.seedInputsId = randomItem([...inputsSet]);
+
       if (config.seedInputsId === configuration.userProfileCharCodesOnlyInputsId){
         config.binaryMode = false;
+        config.logScaleMode = false;
       }
+      
       const inputsObj = await wordAssoDb.NetworkInputs.findOne({inputsId: config.seedInputsId}).lean();
       config.numInputs = inputsObj.meta.numInputs;
 
@@ -2073,6 +2113,7 @@ async function generateEvolveOptions(params){
 
       if (config.seedInputsId === configuration.userProfileCharCodesOnlyInputsId){
         config.binaryMode = false;
+        config.logScaleMode = false;
       }
 
       config.cost = (config.networkTechnology === "brain") ? "NONE" : randomItem(costArray);
@@ -2165,23 +2206,46 @@ async function generateRandomEvolveConfig(p){
   if (configuration.userProfileCharCodesOnlyFlag){
     config.userProfileCharCodesOnlyFlag = true;
     config.binaryMode = false;
+    config.logScaleMode = false;
   }
   else if (config.networkTechnology === "brain"){
     config.userProfileCharCodesOnlyFlag = true;
     config.binaryMode = false;
+    config.logScaleMode = false;
   }
   else{
+
     config.userProfileCharCodesOnlyFlag = (Math.random() <= configuration.userProfileCharCodesOnlyProbability);
+
     if (config.userProfileCharCodesOnlyFlag) { 
       config.binaryMode = false;
+      config.logScaleMode = false;
     }
     else{
       if (configuration.enableRandomBinaryMode){
+
         config.binaryMode = (Math.random() <= configuration.evolve.binaryModeProbability);
+
+        if (config.binaryMode) { config.logScaleMode = false; }
+
         console.log(chalkAlert(MODULE_ID_PREFIX + " | RANDOM BINARY MODE: " + config.binaryMode));
+      }
+      else if (configuration.enableRandomLogScaleMode){
+
+        config.logScaleMode = (Math.random() <= configuration.evolve.logScaleModeProbability);
+
+        if (config.logScaleMode) { config.binaryMode = false; }
+
+        console.log(chalkAlert(MODULE_ID_PREFIX + " | RANDOM LOG SCALE MODE: " + config.logScaleMode));
       }
       else{
         config.binaryMode = params.binaryMode || configuration.binaryMode;
+        if (config.binaryMode) { 
+          config.logScaleMode = false;
+        }
+        else{
+          config.logScaleMode = params.logScaleMode || configuration.logScaleMode;
+        }
       }
     }
   }
@@ -2189,7 +2253,7 @@ async function generateRandomEvolveConfig(p){
   console.log(chalkBlue(MODULE_ID_PREFIX + " | NETWORK TECHNOLOGY:      " + config.networkTechnology));
   console.log(chalkBlue(MODULE_ID_PREFIX + " | USER PROFILE CHAR CODES: " + config.userProfileCharCodesOnlyFlag));
   console.log(chalkBlue(MODULE_ID_PREFIX + " | BINARY MODE:             " + config.binaryMode));
-
+  console.log(chalkBlue(MODULE_ID_PREFIX + " | LOG SCALE MODE:          " + config.logScaleMode));
 
   debug(chalkLog(MODULE_ID_PREFIX + " | NETWORK CREATE MODE: " + config.networkCreateMode));
 
@@ -2220,6 +2284,7 @@ async function generateRandomEvolveConfig(p){
 
       config.architecture = "seed";
       config.binaryMode = dbNetworkObj.binaryMode;
+      config.logScaleMode = dbNetworkObj.logScaleMode;
       config.inputsId = dbNetworkObj.inputsId;
       config.numInputs = dbNetworkObj.numInputs;
       config.seedNetworkId = dbNetworkObj.networkId;
@@ -2228,6 +2293,7 @@ async function generateRandomEvolveConfig(p){
       console.log(MODULE_ID_PREFIX + " | SEED NETWORK:      " + dbNetworkObj.networkId);
       console.log(MODULE_ID_PREFIX + " | SEED NETWORK TECH: " + dbNetworkObj.networkTechnology);
       console.log(MODULE_ID_PREFIX + " | SEED BINARY MODE:  " + dbNetworkObj.binaryMode);
+      console.log(MODULE_ID_PREFIX + " | SEED LOG SCALE MODE:  " + dbNetworkObj.logScaleMode);
       console.log(MODULE_ID_PREFIX + " | SEED HIDDEN NODES: " + dbNetworkObj.hiddenLayerSize);
       console.log(MODULE_ID_PREFIX + " | SEED INPUTS ID:    " + dbNetworkObj.inputsId);
 
@@ -2308,13 +2374,12 @@ async function generateRandomEvolveConfig(p){
 
         if(config.inputsId === configuration.userProfileCharCodesOnlyInputsId){
           config.binaryMode = false;
+          config.logScaleMode = false;
         }
         else if(inputsObj.meta.userProfileCharCodesOnlyFlag){
           config.binaryMode = false;
+          config.logScaleMode = false;
         }
-        // else{
-        //   config.binaryMode = (params.binaryMode !== undefined) ? params.binaryMode : configuration.binaryMode;
-        // }
 
         config.hiddenLayerSize = parseInt((configuration.inputsToHiddenLayerSizeRatio * inputsObj.meta.numInputs) + 3);
         config.hiddenLayerSize = randomItem([0,config.hiddenLayerSize]);
@@ -2348,7 +2413,6 @@ async function initNetworkCreate(params){
   try {
 
     const childId = params.childId;
-    // const binaryMode = (params.binaryMode !== undefined) ? params.binaryMode : configuration.binaryMode;
     const networkId = params.networkId;
     const compareTech = (params.compareTech !== undefined) ? params.compareTech : configuration.compareTech;
 
@@ -2408,6 +2472,7 @@ async function initNetworkCreate(params){
                MODULE_ID_PREFIX + " | NN ID:             " + networkId
       + "\n" + MODULE_ID_PREFIX + " | TECHNOLOGY:        " + messageObj.networkTechnology
       + "\n" + MODULE_ID_PREFIX + " | BIN MODE:          " + messageObj.binaryMode
+      + "\n" + MODULE_ID_PREFIX + " | LOG SCALE MODE:    " + messageObj.logScaleMode
       + "\n" + MODULE_ID_PREFIX + " | ARCHITECTURE:      " + messageObj.architecture
       + "\n" + MODULE_ID_PREFIX + " | INPUTS ID:         " + messageObj.inputsId
       + "\n" + MODULE_ID_PREFIX + " | INPUTS:            " + messageObj.numInputs
@@ -2449,6 +2514,7 @@ async function initNetworkCreate(params){
     networkCreateObj.childId = childId;
     networkCreateObj.status = "EVOLVE";
     networkCreateObj.binaryMode = messageObj.binaryMode;
+    networkCreateObj.logScaleMode = messageObj.logScaleMode;
     networkCreateObj.successRate = 0;
     networkCreateObj.matchRate = 0;
     networkCreateObj.overallMatchRate = 0;
@@ -3384,6 +3450,18 @@ async function loadConfigFile(params) {
       childConfiguration.binaryMode = newConfiguration.binaryMode;
     }
 
+    if (loadedConfigObj.TNN_LOGSCALE_MODE !== undefined) {
+      console.log(MODULE_ID_PREFIX + " | LOADED TNN_BINARY_MODE: " + loadedConfigObj.TNN_LOGSCALE_MODE);
+      if ((loadedConfigObj.TNN_LOGSCALE_MODE === true) || (loadedConfigObj.TNN_LOGSCALE_MODE === "true")) {
+        newConfiguration.logScaleMode = true;
+      }
+      if ((loadedConfigObj.TNN_LOGSCALE_MODE === false) || (loadedConfigObj.TNN_LOGSCALE_MODE === "false")) {
+        newConfiguration.logScaleMode = false;
+      }
+
+      childConfiguration.logScaleMode = newConfiguration.logScaleMode;
+    }
+
     if (loadedConfigObj.TNN_COMPARE_TECH !== undefined) {
       console.log(MODULE_ID_PREFIX + " | LOADED TNN_COMPARE_TECH: " + loadedConfigObj.TNN_COMPARE_TECH);
       if ((loadedConfigObj.TNN_COMPARE_TECH === true) || (loadedConfigObj.TNN_COMPARE_TECH === "true")) {
@@ -4240,7 +4318,12 @@ const fsmStates = {
             then(function(childIdArray){
               console.log(chalkBlue(MODULE_ID_PREFIX + " | CREATED ALL CHILDREN: " + childIdArray.length));
               childIdArray.forEach(async function(childId){
-                await startNetworkCreate({childId: childId, binaryMode: configuration.binaryMode, compareTech: configuration.compareTech});
+                await startNetworkCreate({
+                  childId: childId, 
+                  binaryMode: configuration.binaryMode, 
+                  logScaleMode: configuration.logScaleMode, 
+                  compareTech: configuration.compareTech
+                });
               });
               createChildrenInProgress = false;
             }).
@@ -4438,7 +4521,6 @@ function getNewNetworkId(p){
 
 async function startNetworkCreate(params){
 
-  // const binaryMode = (params.binaryMode !== undefined) ? params.binaryMode : configuration.binaryMode;
   const compareTech = (params.compareTech !== undefined) ? params.compareTech : configuration.compareTech;
   const networkId = getNewNetworkId();
 
@@ -4460,6 +4542,7 @@ function childStartAll(p){
 
     const params = p || {};
     const binaryMode = (params.binaryMode !== undefined) ? params.binaryMode : configuration.binaryMode;
+    const logScaleMode = (params.logScaleMode !== undefined) ? params.logScaleMode : configuration.logScaleMode;
     const compareTech = (params.compareTech !== undefined) ? params.compareTech : configuration.compareTech;
 
     console.log(chalkBlue(MODULE_ID_PREFIX + " | START EVOLVE ALL CHILDREN: compareTech: " + compareTech + " | NUM CH: " + Object.keys(childHashMap).length));
@@ -4468,7 +4551,12 @@ function childStartAll(p){
 
       try{
         if (childHashMap[childId] !== undefined){
-          await startNetworkCreate({childId: childId, binaryMode: binaryMode, compareTech: compareTech});
+          await startNetworkCreate({
+            childId: childId, 
+            binaryMode: binaryMode, 
+            logScaleMode: logScaleMode, 
+            compareTech: compareTech
+          });
           return;
         }
         else{
@@ -4695,25 +4783,24 @@ async function evolveCompleteHandler(params){
         "\nTNN | ========================================================"
       + "\nTNN | NETWORK EVOLVE + TEST COMPLETE"
       + "\nTNN | ========================================================"
-      + "\nTNN | CHILD:      " + m.childId
-      + "\nTNN | NID:        " + nn.networkId
-      + "\nTNN | TECH:       " + nn.networkTechnology
-      + "\nTNN | BIN MODE:   " + nn.binaryMode
-      + "\nTNN | SR%:        " + nn.test.results.successRate.toFixed(2) + "%"
-      + "\nTNN | TEST [P/T]: " + nn.test.results.numPassed + "/" + nn.test.results.numTests
-      + "\nTNN | SEED:       " + nn.seedNetworkId
-      + "\nTNN | SEED SR%:   " + snIdRes
-      + "\nTNN | ELAPSED:    " + msToTime(nn.evolve.elapsed)
-      + "\nTNN | ITERTNS:    " + m.statsObj.iterations
-      + "\nTNN | ERROR:      " + m.statsObj.error
-      + "\nTNN | FITNESS:    " + m.statsObj.fitness
-      + "\nTNN | INPUTS ID:  " + nn.inputsId
-      + "\nTNN | INPUTS:     " + nn.networkJson.input
-      + "\nTNN | HIDDEN:     " + nn.networkJson.hiddenLayerSize
-      + "\nTNN | OUTPUTS:    " + nn.networkJson.output
-      + "\nTNN | DROPOUT:    " + nn.networkJson.dropout
-      // + "\nTNN | NODES:      " + nn.networkJson.nodes.length
-      // + "\nTNN | CONNS:      " + nn.networkJson.connections.length
+      + "\nTNN | CHILD:            " + m.childId
+      + "\nTNN | NID:              " + nn.networkId
+      + "\nTNN | TECH:             " + nn.networkTechnology
+      + "\nTNN | BIN MODE:         " + nn.binaryMode
+      + "\nTNN | LOG SCALE MODE:   " + nn.logScaleMode
+      + "\nTNN | SR%:              " + nn.test.results.successRate.toFixed(2) + "%"
+      + "\nTNN | TEST [P/T]:       " + nn.test.results.numPassed + "/" + nn.test.results.numTests
+      + "\nTNN | SEED:             " + nn.seedNetworkId
+      + "\nTNN | SEED SR%:         " + snIdRes
+      + "\nTNN | ELAPSED:          " + msToTime(nn.evolve.elapsed)
+      + "\nTNN | ITERTNS:          " + m.statsObj.iterations
+      + "\nTNN | ERROR:            " + m.statsObj.error
+      + "\nTNN | FITNESS:          " + m.statsObj.fitness
+      + "\nTNN | INPUTS ID:        " + nn.inputsId
+      + "\nTNN | INPUTS:           " + nn.networkJson.input
+      + "\nTNN | HIDDEN:           " + nn.networkJson.hiddenLayerSize
+      + "\nTNN | OUTPUTS:          " + nn.networkJson.output
+      + "\nTNN | DROPOUT:          " + nn.networkJson.dropout
       + "\nTNN | ========================================================\n"
     ));
 
@@ -5055,6 +5142,7 @@ async function childMessageHandler(params){
     const childId = params.childId;
     const m = params.message;
     const binaryMode = params.binaryMode;
+    const logScaleMode = params.logScaleMode;
     const compareTech = params.compareTech;
 
     let error = 0;
@@ -5073,7 +5161,12 @@ async function childMessageHandler(params){
           console.error(m.err);
           await evolveErrorHandler({m: m, childId: childId});
           if (!configuration.quitOnComplete) {
-            await startNetworkCreate({childId: childId, binaryMode: binaryMode, compareTech: compareTech});
+            await startNetworkCreate({
+              childId: childId, 
+              binaryMode: binaryMode, 
+              logScaleMode: logScaleMode, 
+              compareTech: compareTech
+            });
           }
         }
         catch(e){
@@ -5133,7 +5226,12 @@ async function childMessageHandler(params){
         try{
           await evolveCompleteHandler({m: m, childId: childId});
           if (!configuration.quitOnComplete) {
-            await startNetworkCreate({childId: childId, binaryMode: binaryMode, compareTech: compareTech});
+            await startNetworkCreate({
+              childId: childId, 
+              binaryMode: binaryMode, 
+              logScaleMode: logScaleMode, 
+              compareTech: compareTech
+            });
           }
         }
         catch(e){
@@ -5153,7 +5251,12 @@ async function childMessageHandler(params){
           console.error(m.err);
           await evolveErrorHandler({m: m, childId: childId});
           if (!configuration.quitOnComplete) {
-            await startNetworkCreate({childId: childId, binaryMode: binaryMode, compareTech: compareTech});
+            await startNetworkCreate({
+              childId: childId, 
+              binaryMode: binaryMode, 
+              logScaleMode: logScaleMode, 
+              compareTech: compareTech
+            });
           }
         }
         catch(e){
@@ -5196,9 +5299,9 @@ async function childCreate(p){
     statsObj.status = "CHILD CREATE";
 
     const params = p || {};
-    // const args = params.args || [];
 
     const binaryMode = (params.binaryMode !== undefined) ? params.binaryMode : configuration.binaryMode;
+    const logScaleMode = (params.logScaleMode !== undefined) ? params.logScaleMode : configuration.logScaleMode;
     const compareTech = (params.compareTech !== undefined) ? params.compareTech : configuration.compareTech;
 
     const childId = params.childId;
@@ -5288,7 +5391,13 @@ async function childCreate(p){
 
     childHashMap[childId].child.on("message", async function(message){
 
-      await childMessageHandler({childId: childId, message: message, binaryMode: binaryMode, compareTech: compareTech});
+      await childMessageHandler({
+        childId: childId, 
+        message: message, 
+        binaryMode: binaryMode, 
+        logScaleMode: logScaleMode, 
+        compareTech: compareTech
+      });
 
       if (configuration.verbose) { 
         console.log(chalkLog(MODULE_ID_PREFIX 
