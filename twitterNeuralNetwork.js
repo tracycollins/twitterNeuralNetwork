@@ -481,7 +481,7 @@ const DEFAULT_SEED_NETWORK_ID = false;
 const DEFAULT_SEED_NETWORK_PROBABILITY = 0.5;
 
 const DEFAULT_GLOBAL_MIN_SUCCESS_RATE = 90; // percent
-
+const DEFAULT_GLOBAL_VIABLE_SUCCESS_RATE = 90;
 const DEFAULT_LOCAL_MIN_SUCCESS_RATE = 80; // percent
 
 const DEFAULT_HOST_MIN_SUCCESS_RATE = 50; // percent
@@ -710,6 +710,7 @@ childConfiguration.trainingSetsFolder = configuration.trainingSetsFolder;
 childConfiguration.trainingSetFile = configuration.trainingSetFile;
 childConfiguration.archiveFileUploadCompleteFlagFolder = configuration.archiveFileUploadCompleteFlagFolder;
 
+configuration.globalViableSuccessRate = DEFAULT_GLOBAL_VIABLE_SUCCESS_RATE;
 configuration.globalMinSuccessRate = DEFAULT_GLOBAL_MIN_SUCCESS_RATE;
 configuration.localMinSuccessRate = DEFAULT_LOCAL_MIN_SUCCESS_RATE;
 configuration.hostMinSuccessRate = DEFAULT_HOST_MIN_SUCCESS_RATE;
@@ -1696,8 +1697,10 @@ async function updateDbNetwork(params) {
 
 function networkPass(params) {
   const pass = 
-       ((params.folder.toLowerCase() === globalBestNetworkFolder.toLowerCase()) && (params.networkObj.successRate >= configuration.globalMinSuccessRate))
-    || ((params.folder.toLowerCase() === globalBestNetworkFolder.toLowerCase()) && (params.networkObj.matchRate >= configuration.globalMinSuccessRate))
+    //    ((params.folder.toLowerCase() === globalBestNetworkFolder.toLowerCase()) && (params.networkObj.successRate >= configuration.globalMinSuccessRate))
+    // || ((params.folder.toLowerCase() === globalBestNetworkFolder.toLowerCase()) && (params.networkObj.matchRate >= configuration.globalMinSuccessRate))
+       ((params.folder.toLowerCase() === globalBestNetworkFolder.toLowerCase()) && (params.networkObj.successRate >= configuration.globalViableSuccessRate))
+    || ((params.folder.toLowerCase() === globalBestNetworkFolder.toLowerCase()) && (params.networkObj.matchRate >= configuration.globalViableSuccessRate))
     || (params.purgeMin && (params.folder.toLowerCase() !== globalBestNetworkFolder.toLowerCase()) && (params.networkObj.overallMatchRate === 0) && (params.networkObj.matchRate === 0) && (params.networkObj.successRate >= configuration.hostPurgeMinSuccessRate))
     || (params.purgeMin && (params.folder.toLowerCase() !== globalBestNetworkFolder.toLowerCase()) && (params.networkObj.overallMatchRate === 0) && (params.networkObj.matchRate >= configuration.hostPurgeMinSuccessRate))
     || (!params.purgeMin && (params.folder.toLowerCase() !== globalBestNetworkFolder.toLowerCase()) && (params.networkObj.successRate >= configuration.hostMinSuccessRate))
@@ -2236,7 +2239,10 @@ async function generateRandomEvolveConfig(p){
 
         if (config.logScaleMode) { config.binaryMode = false; }
 
-        console.log(chalkAlert(MODULE_ID_PREFIX + " | RANDOM LOG SCALE MODE: " + config.logScaleMode));
+        console.log(chalkAlert(MODULE_ID_PREFIX
+          + " | RANDOM LOG SCALE MODE PROBABILITY: " + configuration.evolve.logScaleModeProbability
+          + " | SCALE MODE: " + config.logScaleMode
+        ));
       }
       else{
         config.binaryMode = params.binaryMode || configuration.binaryMode;
@@ -3454,8 +3460,24 @@ async function loadConfigFile(params) {
       childConfiguration.binaryMode = newConfiguration.binaryMode;
     }
 
+    if (loadedConfigObj.TNN_ENABLE_RANDOM_BINARY_MODE !== undefined) {
+      console.log(MODULE_ID_PREFIX + " | LOADED TNN_ENABLE_RANDOM_BINARY_MODE: " + loadedConfigObj.TNN_ENABLE_RANDOM_BINARY_MODE);
+      if ((loadedConfigObj.TNN_ENABLE_RANDOM_BINARY_MODE === true) || (loadedConfigObj.TNN_ENABLE_RANDOM_BINARY_MODE === "true")) {
+        newConfiguration.enableRandomBinaryMode = true;
+      }
+      if ((loadedConfigObj.TNN_ENABLE_RANDOM_BINARY_MODE === false) || (loadedConfigObj.TNN_ENABLE_RANDOM_BINARY_MODE === "false")) {
+        newConfiguration.enableRandomBinaryMode = false;
+      }
+    }
+
+    if (loadedConfigObj.TNN_BINARY_MODE_PROBABILITY !== undefined){
+      console.log(MODULE_ID_PREFIX + " | LOADED TNN_BINARY_MODE_PROBABILITY: " + loadedConfigObj.TNN_BINARY_MODE_PROBABILITY);
+      newConfiguration.evolve.binaryModeProbability = loadedConfigObj.TNN_BINARY_MODE_PROBABILITY;
+
+    }
+
     if (loadedConfigObj.TNN_LOGSCALE_MODE !== undefined) {
-      console.log(MODULE_ID_PREFIX + " | LOADED TNN_BINARY_MODE: " + loadedConfigObj.TNN_LOGSCALE_MODE);
+      console.log(MODULE_ID_PREFIX + " | LOADED TNN_LOGSCALE_MODE: " + loadedConfigObj.TNN_LOGSCALE_MODE);
       if ((loadedConfigObj.TNN_LOGSCALE_MODE === true) || (loadedConfigObj.TNN_LOGSCALE_MODE === "true")) {
         newConfiguration.logScaleMode = true;
       }
@@ -3464,6 +3486,21 @@ async function loadConfigFile(params) {
       }
 
       childConfiguration.logScaleMode = newConfiguration.logScaleMode;
+    }
+
+    if (loadedConfigObj.TNN_ENABLE_RANDOM_LOGSCALE_MODE !== undefined) {
+      console.log(MODULE_ID_PREFIX + " | LOADED TNN_ENABLE_RANDOM_LOGSCALE_MODE: " + loadedConfigObj.TNN_ENABLE_RANDOM_LOGSCALE_MODE);
+      if ((loadedConfigObj.TNN_ENABLE_RANDOM_LOGSCALE_MODE === true) || (loadedConfigObj.TNN_ENABLE_RANDOM_LOGSCALE_MODE === "true")) {
+        newConfiguration.enableRandomLogScaleMode = true;
+      }
+      if ((loadedConfigObj.TNN_ENABLE_RANDOM_LOGSCALE_MODE === false) || (loadedConfigObj.TNN_ENABLE_RANDOM_LOGSCALE_MODE === "false")) {
+        newConfiguration.enableRandomLogScaleMode = false;
+      }
+    }
+
+    if (loadedConfigObj.TNN_LOGSCALE_MODE_PROBABILITY !== undefined){
+      console.log(MODULE_ID_PREFIX + " | LOADED TNN_LOGSCALE_MODE_PROBABILITY: " + loadedConfigObj.TNN_LOGSCALE_MODE_PROBABILITY);
+      newConfiguration.evolve.logScaleModeProbability = loadedConfigObj.TNN_LOGSCALE_MODE_PROBABILITY;
     }
 
     if (loadedConfigObj.TNN_COMPARE_TECH !== undefined) {
@@ -3554,6 +3591,11 @@ async function loadConfigFile(params) {
     if (loadedConfigObj.TNN_EVOLVE_SELECTION_ARRAY !== undefined){
       console.log(MODULE_ID_PREFIX + " | LOADED TNN_EVOLVE_SELECTION_ARRAY: " + loadedConfigObj.TNN_EVOLVE_SELECTION_ARRAY);
       newConfiguration.selectionArray = loadedConfigObj.TNN_EVOLVE_SELECTION_ARRAY;
+    }
+
+    if (loadedConfigObj.TNN_GLOBAL_VIABLE_SUCCESS_RATE !== undefined){
+      console.log(MODULE_ID_PREFIX + " | LOADED TNN_GLOBAL_VIABLE_SUCCESS_RATE: " + loadedConfigObj.TNN_GLOBAL_VIABLE_SUCCESS_RATE);
+      newConfiguration.globalViableSuccessRate = loadedConfigObj.TNN_GLOBAL_VIABLE_SUCCESS_RATE;
     }
 
     if (loadedConfigObj.TNN_GLOBAL_MIN_SUCCESS_RATE !== undefined){
@@ -4786,14 +4828,13 @@ async function evolveCompleteHandler(params){
 
     console.log(chalkBlueBold(
         "\nTNN | ========================================================"
-      + "\nTNN | NETWORK EVOLVE + TEST COMPLETE"
+      + "\nTNN | NETWORK EVOLVE + TEST COMPLETE | SUCCESS: " + nn.test.results.successRate.toFixed(2) + "%"
       + "\nTNN | ========================================================"
       + "\nTNN | CHILD:            " + m.childId
       + "\nTNN | NID:              " + nn.networkId
       + "\nTNN | TECH:             " + nn.networkTechnology
       + "\nTNN | BIN MODE:         " + nn.binaryMode
       + "\nTNN | LOG SCALE MODE:   " + nn.logScaleMode
-      + "\nTNN | SR%:              " + nn.test.results.successRate.toFixed(2) + "%"
       + "\nTNN | TEST [P/T]:       " + nn.test.results.numPassed + "/" + nn.test.results.numTests
       + "\nTNN | SEED:             " + nn.seedNetworkId
       + "\nTNN | SEED SR%:         " + snIdRes

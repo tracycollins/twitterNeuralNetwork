@@ -204,7 +204,8 @@ const chalkInfo = chalk.black;
 //=========================================================================
 // HOST
 //=========================================================================
-// let preppedTrainingSet = [];
+let preppedTrainingSet = [];
+let preppedTestSet = [];
 let trainingSetObj = {};
 let testSetObj = {};
 
@@ -672,6 +673,7 @@ function updateTrainingSet(p){
 
       trainingSetObj = {};
       trainingSetObj.meta = {};
+      trainingSetObj.meta.archiveId = statsObj.archiveFile;
       trainingSetObj.meta.numInputs = 0;
       trainingSetObj.meta.numOutputs = 3;
       trainingSetObj.meta.setSize = 0;
@@ -933,7 +935,7 @@ function fileSize(params){
 async function loadUsersArchive(params){
 
   try {
-    let file = params.archiveFlagObj.file;
+    const file = params.archiveFlagObj.file;
 
     // if (configuration.testMode) {
     //   file = file.replace(/users\.zip/, "users_test.zip");
@@ -1140,27 +1142,16 @@ async function testNetwork(p){
   const params = p || {};
 
   const userProfileOnlyFlag = (params.userProfileOnlyFlag !== undefined) ? params.userProfileOnlyFlag : configuration.userProfileOnlyFlag;
-  const userProfileCharCodesOnlyFlag = (params.userProfileCharCodesOnlyFlag !== undefined) ? params.userProfileCharCodesOnlyFlag : configuration.userProfileCharCodesOnlyFlag;
 
   await nnTools.loadNetwork({networkObj: childNetworkObj});
   await nnTools.setPrimaryNeuralNetwork(childNetworkObj.networkId);
   await nnTools.setBinaryMode(childNetworkObj.binaryMode);
   await nnTools.setLogScaleMode(childNetworkObj.logScaleMode);
 
-  const testSet = await dataSetPrep({
-    inputsId: params.inputsId,
-    dataSetObj: testSetObj,
-    userProfileCharCodesOnlyFlag: userProfileCharCodesOnlyFlag,
-    userProfileOnlyFlag: userProfileOnlyFlag,
-    binaryMode: childNetworkObj.binaryMode,
-    logScaleMode: childNetworkObj.logScaleMode,
-    verbose: params.verbose
-  });
-
   console.log(chalkBlue(MODULE_ID_PREFIX + " | TEST NETWORK"
     + " | NETWORK ID: " + childNetworkObj.networkId
     + " | USER PROFILE ONLY: " + userProfileOnlyFlag
-    + " | " + testSet.length + " TEST DATA LENGTH"
+    + " | " + preppedTestSet.length + " TEST DATA LENGTH"
     + " | VERBOSE: " + params.verbose
   ));
 
@@ -1170,7 +1161,7 @@ async function testNetwork(p){
 
   childNetworkObj.test.results = await testNetworkData({
     networkId: childNetworkObj.networkId, 
-    testSet: testSet, 
+    testSet: preppedTestSet, 
     convertDatumFlag: false,
     userProfileOnlyFlag: userProfileOnlyFlag,
     binaryMode: childNetworkObj.binaryMode,
@@ -1373,14 +1364,14 @@ function prepNetworkEvolve() {
   return finalOptions;
 }
 
-function dataSetPrep(p){
+function dataSetPrep(params, dataSetObj){
 
   return new Promise(function(resolve, reject){
 
-    const params = p || {};
-    const dataSetObj = params.dataSetObj;
+    // const params = ;
+    // const dataSetObj = params.dataSetObj;
 
-    const userProfileCharCodesOnlyFlag = (params.userProfileCharCodesOnlyFlag !== undefined) ? params.userProfileCharCodesOnlyFlag : configuration.userProfileCharCodesOnlyFlag;
+    const userProfileCharCodesOnlyFlag = (params.userProfileCharCodesOnlyFlag !== undefined) ? params.userProfileCharCodesOnlyFlag : false;
     const binaryMode = (params.binaryMode !== undefined) ? params.binaryMode : configuration.binaryMode;
     const logScaleMode = (params.logScaleMode !== undefined) ? params.logScaleMode : configuration.logScaleMode;
     const userProfileOnlyFlag = (params.userProfileOnlyFlag !== undefined) ? params.userProfileOnlyFlag : configuration.userProfileOnlyFlag;
@@ -1761,6 +1752,30 @@ function createNetwork(){
   });
 }
 
+const setPrepRequired = function(preppedSetsConfig){
+  if (empty(statsObj.preppedSetsConfig)) { 
+    console.log(chalkAlert(MODULE_ID_PREFIX + " | setPrepRequired | EMPTY PREPPED SETS CONFIG"));
+    return true;
+  }
+
+  for (const prop in preppedSetsConfig){
+    if (statsObj.preppedSetsConfig[prop] === undefined) { 
+      console.log(chalkAlert(MODULE_ID_PREFIX + " | setPrepRequired | UNDEFINED PROP: " + prop));
+      return true;
+    }
+    if (statsObj.preppedSetsConfig[prop] !== preppedSetsConfig[prop]) { 
+      console.log(chalkAlert(MODULE_ID_PREFIX + " | setPrepRequired | CHANGED PROP"
+        + " | " + prop
+        + " | PREV: " + statsObj.preppedSetsConfig[prop]
+        + " | CURR: " + preppedSetsConfig[prop]
+      ));
+      return true;
+    }
+  }
+
+  return false;
+}
+
 async function evolve(params){
 
   try {
@@ -1797,7 +1812,7 @@ async function evolve(params){
     childNetworkObj.numInputs = inputsObj.meta.numInputs;
     trainingSetObj.meta.numInputs = inputsObj.meta.numInputs;
 
-    childNetworkObj.meta.userProfileOnlyFlag = inputsObj.meta.userProfileOnlyFlag || false;
+    childNetworkObj.meta.userProfileOnlyFlag = (inputsObj.meta.userProfileOnlyFlag !== undefined) ? inputsObj.meta.userProfileOnlyFlag : false;
 
     if (childNetworkObj.inputsId !== configuration.userProfileCharCodesOnlyInputsId){
 
@@ -1814,15 +1829,29 @@ async function evolve(params){
     await tcUtils.loadInputs({inputsObj: inputsObj});
     await tcUtils.setPrimaryInputs({inputsId: inputsObj.inputsId});
 
-    const trainingSet = await dataSetPrep({
-      inputsId: childNetworkObj.inputsId,
-      dataSetObj: trainingSetObj, 
-      userProfileCharCodesOnlyFlag: params.userProfileCharCodesOnlyFlag,
-      userProfileOnlyFlag: childNetworkObj.meta.userProfileOnlyFlag,
+    const preppedSetsConfig = {
+      archiveId: statsObj.archiveFile,
       binaryMode: childNetworkObj.binaryMode,
+      inputsId: childNetworkObj.inputsId,
       logScaleMode: childNetworkObj.logScaleMode,
+      userProfileCharCodesOnlyFlag: childNetworkObj.meta.userProfileCharCodesOnlyFlag,
+      userProfileOnlyFlag: childNetworkObj.meta.userProfileOnlyFlag,
       verbose: params.verbose
-    });
+    };
+
+    if (setPrepRequired(preppedSetsConfig)) {
+
+      console.log(chalkLog(MODULE_ID_PREFIX
+        + "\npreppedSetsConfig\n" + jsonPrint(preppedSetsConfig)
+        + "\nstatsObj.preppedSetsConfig\n" + jsonPrint(statsObj.preppedSetsConfig)
+      ));
+
+      statsObj.preppedSetsConfig = {};
+      statsObj.preppedSetsConfig = preppedSetsConfig;
+
+      preppedTrainingSet = await dataSetPrep(preppedSetsConfig, trainingSetObj);
+      preppedTestSet = await dataSetPrep(preppedSetsConfig, testSetObj);
+    }
 
     const childNetworkRaw = await createNetwork();
 
@@ -1839,7 +1868,7 @@ async function evolve(params){
         networkId: childNetworkObj.networkId,
         options: preppedOptions,
         network: childNetworkRaw, 
-        trainingSet: trainingSet
+        trainingSet: preppedTrainingSet
       });
 
       childNetworkObj.networkRaw = evolveResults.network;
@@ -1872,7 +1901,7 @@ async function evolve(params){
         preppedOptions.max_nodes = preppedOptions.maxNodes;
       }
       
-      evolveResults = await childNetworkRaw.evolve(trainingSet, preppedOptions);
+      evolveResults = await childNetworkRaw.evolve(preppedTrainingSet, preppedOptions);
 
       childNetworkObj.networkJson = childNetworkRaw.toJSON();
       childNetworkObj.networkRaw = childNetworkRaw;
