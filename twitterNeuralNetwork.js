@@ -877,6 +877,7 @@ function printResultsHashmap(){
       "STATUS",
       "BTR",
       "BIN",
+      "LSM",
       "SEED",
       "RES %",
       "HL",
@@ -1868,6 +1869,7 @@ async function generateSeedInputsNetworkId(params){
       betterChildSeedNetworkIdSet.delete(config.seedNetworkId);
 
       config.numInputs = networkObj.numInputs;
+      config.logScaleMode = networkObj.logScaleMode || false;
       config.networkTechnology = networkObj.networkTechnology;
       config.seedInputsId = networkObj.inputsId;
       config.seedNetworkRes = networkObj.successRate;
@@ -2216,6 +2218,8 @@ async function generateRandomEvolveConfig(p){
   else{
 
     config.userProfileCharCodesOnlyFlag = (Math.random() <= configuration.userProfileCharCodesOnlyProbability);
+    config.binaryMode = configuration.enableRandomBinaryMode && (Math.random() <= configuration.evolve.binaryModeProbability);
+    config.logScaleMode = configuration.enableRandomLogScaleMode && (Math.random() <= configuration.evolve.logScaleModeProbability);
 
     if (config.userProfileCharCodesOnlyFlag) { 
       config.binaryMode = false;
@@ -2224,15 +2228,11 @@ async function generateRandomEvolveConfig(p){
     else{
       if (configuration.enableRandomBinaryMode){
 
-        config.binaryMode = (Math.random() <= configuration.evolve.binaryModeProbability);
-
         if (config.binaryMode) { config.logScaleMode = false; }
 
         console.log(chalkAlert(MODULE_ID_PREFIX + " | RANDOM BINARY MODE: " + config.binaryMode));
       }
       else if (configuration.enableRandomLogScaleMode){
-
-        config.logScaleMode = (Math.random() <= configuration.evolve.logScaleModeProbability);
 
         if (config.logScaleMode) { config.binaryMode = false; }
 
@@ -2465,6 +2465,10 @@ async function initNetworkCreate(params){
 
     messageObj.seedNetworkId = (messageObj.seedNetworkId && messageObj.seedNetworkId !== undefined && messageObj.seedNetworkId !== "false") ? messageObj.seedNetworkId : false;
     messageObj.seedNetworkRes = (messageObj.seedNetworkRes !== undefined && messageObj.seedNetworkRes !== "false") ? messageObj.seedNetworkRes : 0;
+
+    if (messageObj.seedNetworkId){
+      messageObj.logScaleMode = (messageObj.logScaleMode !== undefined) ? messageObj.logScaleMode : configuration.logScaleMode;
+    }
 
     console.log(chalkBlue("\nTNN | START NETWORK EVOLVE"));
 
@@ -4773,6 +4777,7 @@ async function evolveCompleteHandler(params){
     const nn = nnDoc.toObject();
 
     nn.seedNetworkId = (nn.seedNetworkId && nn.seedNetworkId !== undefined && nn.seedNetworkId !== "false") ? nn.seedNetworkId : false;
+    nn.logScaleMode = (nn.logScaleMode && nn.logScaleMode !== undefined && nn.logScaleMode !== "false") ? nn.logScaleMode : false;
 
     m.statsObj.fitness = statsObj.networkResults[nn.networkId].fitness;
     statsObj.evolveStats.total += 1;

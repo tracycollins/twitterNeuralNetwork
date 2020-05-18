@@ -935,9 +935,9 @@ async function loadUsersArchive(params){
   try {
     let file = params.archiveFlagObj.file;
 
-    if (configuration.testMode) {
-      file = file.replace(/users\.zip/, "users_test.zip");
-    }
+    // if (configuration.testMode) {
+    //   file = file.replace(/users\.zip/, "users_test.zip");
+    // }
 
     params.archiveFlagObj.folder = params.archiveFlagObj.folder || configuration.userArchiveFolder;
     params.archiveFlagObj.path = (params.archiveFlagObj.path !== undefined) ? params.archiveFlagObj.path : params.archiveFlagObj.folder + "/" + file;
