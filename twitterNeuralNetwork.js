@@ -685,16 +685,19 @@ const localArchiveNetworkFolder = path.join(configHostFolder, "neuralNetworks/ar
 
 configuration.local = {};
 configuration.local.trainingSetsFolder = configHostFolder + "/trainingSets";
-configuration.local.userArchiveFolder = configHostFolder + "/trainingSets/users";
+// configuration.local.userArchiveFolder = configHostFolder + "/trainingSets/users";
+configuration.local.userDataFolder = configHostFolder + "/trainingSets/users/data";
 
 configuration.default = {};
 configuration.default.trainingSetsFolder = configDefaultFolder + "/trainingSets";
-configuration.default.userArchiveFolder = configDefaultFolder + "/trainingSets/users";
+// configuration.default.userArchiveFolder = configDefaultFolder + "/trainingSets/users";
+configuration.default.userDataFolder = configDefaultFolder + "/trainingSets/users/data";
 
 configuration.trainingSetsFolder = configuration[HOST].trainingSetsFolder;
 configuration.archiveFileUploadCompleteFlagFolder = configuration[HOST].trainingSetsFolder + "/users";
 
-configuration.userArchiveFolder = configuration.default.userArchiveFolder;
+// configuration.userArchiveFolder = configuration.default.userArchiveFolder;
+configuration.userDataFolder = configuration.default.userDataFolder;
 
 configuration.defaultUserArchiveFlagFile = "usersZipUploadComplete.json";
 configuration.trainingSetFile = "trainingSet.json";
@@ -704,7 +707,9 @@ configuration.maxNumberChildren = (process.env.TNN_MAX_NEURAL_NETWORK_CHILDREN !
   ? process.env.TNN_MAX_NEURAL_NETWORK_CHILDREN 
   : DEFAULT_MAX_NEURAL_NETWORK_CHILDREN;
 
-childConfiguration.userArchiveFolder = configuration.userArchiveFolder;
+childConfiguration.userDataFolder = configuration.userDataFolder;
+// childConfiguration.userArchiveFolder = configuration.userArchiveFolder;
+
 childConfiguration.defaultUserArchiveFlagFile = configuration.defaultUserArchiveFlagFile;
 childConfiguration.trainingSetsFolder = configuration.trainingSetsFolder;
 childConfiguration.trainingSetFile = configuration.trainingSetFile;
