@@ -2866,7 +2866,7 @@ async function initWatchAllConfigFolders(p){
       });
 
       monitorDefaultConfig.on("removed", function (f) {
-        console.log(chalkInfo(MODULE_ID_PREFIX + " | XXX FILE DELETED | " + getTimeStamp() + " | " + f));
+        debug(chalkInfo(MODULE_ID_PREFIX + " | XXX FILE DELETED | " + getTimeStamp() + " | " + f));
       });
     });
 
@@ -2893,7 +2893,7 @@ async function initWatchAllConfigFolders(p){
       });
 
       monitorHostConfig.on("removed", function (f) {
-        console.log(chalkInfo(MODULE_ID_PREFIX + " | XXX FILE DELETED | " + getTimeStamp() + " | " + f));
+        debug(chalkInfo(MODULE_ID_PREFIX + " | XXX FILE DELETED | " + getTimeStamp() + " | " + f));
       });
     });
 
@@ -3027,7 +3027,7 @@ function delay(p) {
         ));
       }
 
-      if (moment().isAfter(delayEndMoment)){
+      if (verbose && moment().isAfter(delayEndMoment)){
         console.log(chalkLog(MODULE_ID_PREFIX 
           + " | XXX DELAY END "
           + " | PERIOD: " + msToTime(period)
