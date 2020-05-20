@@ -862,6 +862,7 @@ function printNetworkObj(title, networkObj, format) {
     + " | OAMR: " + networkObj.overallMatchRate.toFixed(2) + "%"
     + " | RMR: " + networkObj.runtimeMatchRate.toFixed(2) + "%"
     + " | TC:  " + networkObj.testCycles
+    + " | TCH:  " + networkObj.testCycleHistory.length
     + " | IN: " + networkObj.numInputs
     + " | IN ID:  " + networkObj.inputsId
     + " | " + networkObj.networkId
@@ -1597,7 +1598,7 @@ async function loadInputsFile(params){
 
     const inputsViable = await updateInputsViabilitySet({inputsObj: inputsObj});
 
-    const dbInputsObj = await updateDbInputs({inputsObj: inputsObj});
+    const dbInputsObj = await updateDbInputs({inputsId: inputsObj.inputsId});
 
     inputsSet.add(dbInputsObj.inputsId);
 
