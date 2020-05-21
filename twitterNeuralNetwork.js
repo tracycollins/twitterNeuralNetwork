@@ -693,10 +693,11 @@ configuration.default.trainingSetsFolder = configDefaultFolder + "/trainingSets"
 // configuration.default.userArchiveFolder = configDefaultFolder + "/trainingSets/users";
 configuration.default.userDataFolder = configDefaultFolder + "/trainingSets/users/data";
 
-configuration.trainingSetsFolder = configuration[HOST].trainingSetsFolder;
+// configuration.trainingSetsFolder = configuration[HOST].trainingSetsFolder;
 configuration.archiveFileUploadCompleteFlagFolder = configuration[HOST].trainingSetsFolder + "/users";
 
 // configuration.userArchiveFolder = configuration.default.userArchiveFolder;
+configuration.trainingSetsFolder = configuration.default.trainingSetsFolder;
 configuration.userDataFolder = configuration.default.userDataFolder;
 
 configuration.defaultUserArchiveFlagFile = "usersZipUploadComplete.json";
@@ -1054,7 +1055,35 @@ function printResultsHashmap(){
       }
 
       const t = table(tableArray, { 
-        align: ["l", "l", "l", "l", "l", "l", "l", "l", "r", "l", "l", "l", "l", "l", "l", "l", "r", "l", "r", "r", "l", "l", "r", "r", "r", "r", "r"] 
+        align: [
+          "l", 
+          "l", 
+          "l", 
+          "l", 
+          "l", 
+          "l", 
+          "l", 
+          "l", 
+          "r", 
+          "l", 
+          "l", 
+          "l", 
+          "l", 
+          "l", 
+          "l", 
+          "l", 
+          "r", 
+          "l", 
+          "r", 
+          "r", 
+          "l", 
+          "l", 
+          "r", 
+          "r", 
+          "r", 
+          "r", 
+          "r"
+        ] 
       });
 
       console.log(chalkLog(MODULE_ID_PREFIX + " | === NETWORK RESULTS ========================================================================================================================"));
