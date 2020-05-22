@@ -18,6 +18,9 @@ const _ = require("lodash");
 const omit = require("object.omit");
 const path = require("path");
 const watch = require("watch");
+const { promisify } = require("util");
+const fs = require("fs");
+const unlinkFileAsync = promisify(fs.unlink);
 
 let hostname = os.hostname();
 if (hostname.startsWith("mbp3")){
@@ -561,9 +564,21 @@ async function initWatchUserDataFolder(p){
       console.log(chalkBlue(MODULE_ID_PREFIX + " | INIT WATCH TRAINING SET USER DATA FOLDER: " + configuration.userDataFolder));
 
       monitorUserData.on("created", async function(f){
+
         const fileNameArray = f.split("/");
         const file = fileNameArray[fileNameArray.length-1];
-        if (file.endsWith(".json") && !file.includes("conflicted copy")) { // DROPBOX MADNESS!!  KLUDGE
+        
+        if (file.endsWith(".json") && file.includes("conflicted copy")) { // DROPBOX MADNESS!!  KLUDGE
+          console.log(chalkLog(MODULE_ID_PREFIX + " | XXX USER FILE CREATED - DELETING : " + f));
+          try{
+            await delay({period: 30*ONE_SECOND});
+            await unlinkFileAsync(f);
+          }
+          catch(err){
+            console.log(chalkBlue(MODULE_ID_PREFIX + " | *** DELETE USER FILE ERROR | " + f + ": " + err));
+          }
+        }
+        else if (file.endsWith(".json") && !file.includes("conflicted copy")) { // DROPBOX MADNESS!!  KLUDGE
           console.log(chalkLog(MODULE_ID_PREFIX + " | +++ USER FILE CREATED: " + f));
           try{
             await delay({period: 30*ONE_SECOND});
