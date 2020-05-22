@@ -563,8 +563,8 @@ async function initWatchUserDataFolder(p){
       monitorUserData.on("created", async function(f){
         const fileNameArray = f.split("/");
         const file = fileNameArray[fileNameArray.length-1];
-        if (file.endsWith(".json")) {
-          console.log(chalkBlue(MODULE_ID_PREFIX + " | +++ USER FILE CREATED: " + f));
+        if (file.endsWith(".json") && !file.includes("conflicted copy")) { // DROPBOX MADNESS!!  KLUDGE
+          console.log(chalklog(MODULE_ID_PREFIX + " | +++ USER FILE CREATED: " + f));
           try{
             await delay({period: 30*ONE_SECOND});
             await loadUserDataFile({folder: configuration.userDataFolder, file: file});
@@ -579,8 +579,8 @@ async function initWatchUserDataFolder(p){
       monitorUserData.on("changed", async function(f){
         const fileNameArray = f.split("/");
         const file = fileNameArray[fileNameArray.length-1];
-        if (file.endsWith(".json")) {
-          console.log(chalkBlue(MODULE_ID_PREFIX + " | -/- USER FILE CHANGED: " + f));
+        if (file.endsWith(".json") && !file.includes("conflicted copy")) {
+          console.log(chalklog(MODULE_ID_PREFIX + " | -/- USER FILE CHANGED: " + f));
           try{
             await delay({period: 30*ONE_SECOND});
             await loadUserDataFile({folder: configuration.userDataFolder, file: file});
@@ -592,12 +592,14 @@ async function initWatchUserDataFolder(p){
       });
 
       monitorUserData.on("removed", function (f) {
-        const fileNameArray = f.split("/");
-        const nodeId = fileNameArray[fileNameArray.length-1].replace(".json", "");
-        console.log(chalkAlert(MODULE_ID_PREFIX + " | XXX USER FILE DELETED | " + getTimeStamp() 
-          + " | " + nodeId 
-          + "\n" + f
-        ));
+        if (f.includes("conflicted copy")){
+          const fileNameArray = f.split("/");
+          const nodeId = fileNameArray[fileNameArray.length-1].replace(".json", "");
+          console.log(chalkAlert(MODULE_ID_PREFIX + " | XXX USER FILE DELETED | " + getTimeStamp() 
+            + " | " + nodeId 
+            + "\n" + f
+          ));
+        }
       });
     });
   }
@@ -1202,7 +1204,7 @@ function dataSetPrep(params, dataSetObj){
 
     const shuffledData = _.shuffle(dataSetObj.data);
 
-    async.eachSeries(shuffledData, function(user, cb){
+    async.eachSeries(shuffledData, async function(user, cb){
 
       try {
 
@@ -1214,7 +1216,7 @@ function dataSetPrep(params, dataSetObj){
           return cb();
         }
 
-        tcUtils.convertDatumOneNetwork({
+        const results = await tcUtils.convertDatumOneNetwork({
           primaryInputsFlag: true, 
           user: user,
           inputsId: params.inputsId,
@@ -1223,83 +1225,163 @@ function dataSetPrep(params, dataSetObj){
           binaryMode: binaryMode, 
           logScaleMode: logScaleMode, 
           verbose: params.verbose
-        }).
-        then(function(results){
-
-          if (results.emptyFlag) {
-            debug(chalkAlert(MODULE_ID_PREFIX + " | !!! EMPTY CONVERTED DATUM ... SKIPPING | @" + user.screenName));
-            return cb();
-          }
-
-          dataConverted += 1;
-
-          if (results.datum.input.length !== childNetworkObj.numInputs) { 
-            console.log(chalkError(MODULE_ID_PREFIX
-              + " | *** ERROR DATA SET PREP ERROR" 
-              + " | INPUT NUMBER MISMATCH" 
-              + " | INPUTS NUM IN: " + childNetworkObj.numInputs
-              + " | DATUM NUM IN: " + results.datum.input.length
-            ));
-            return cb(new Error("INPUT NUMBER MISMATCH"));
-          }
-
-          if (results.datum.output.length !== 3) { 
-            console.log(chalkError(MODULE_ID_PREFIX
-              + " | *** ERROR DATA SET PREP ERROR" 
-              + " | OUTPUT NUMBER MISMATCH" 
-              + " | OUTPUTS NUM IN: " + childNetworkObj.numOutputs
-              + " | DATUM NUM IN: " + results.datum.output.length
-            ));
-            return cb(new Error("OUTPUT NUMBER MISMATCH"));
-          }
-
-          for(const inputValue of results.datum.input){
-            if (typeof inputValue !== "number") {
-              return cb(new Error("INPUT VALUE NOT TYPE NUMBER | @" + results.user.screenName + " | INPUT TYPE: " + typeof inputValue));
-            }
-            if (inputValue < 0) {
-              return cb(new Error("INPUT VALUE LESS THAN ZERO | @" + results.user.screenName + " | INPUT: " + inputValue));
-            }
-            if (inputValue > 1) {
-              return cb(new Error("INPUT VALUE GREATER THAN ONE | @" + results.user.screenName + " | INPUT: " + inputValue));
-            }
-          }
-
-          for(const outputValue of results.datum.output){
-            if (typeof outputValue !== "number") {
-              return cb(new Error("OUTPUT VALUE NOT TYPE NUMBER | @" + results.user.screenName + " | OUTPUT TYPE: " + typeof outputValue));
-            }
-            if (outputValue < 0) {
-              return cb(new Error("OUTPUT VALUE LESS THAN ZERO | @" + results.user.screenName + " | OUTPUT: " + outputValue));
-            }
-            if (outputValue > 1) {
-              return cb(new Error("OUTPUT VALUE GREATER THAN ONE | @" + results.user.screenName + " | OUTPUT: " + outputValue));
-            }
-          }
-
-          dataSet.push({
-            user: results.user, 
-            screenName: user.screenName, 
-            name: results.datum.name, 
-            input: results.datum.input, 
-            output: results.datum.output,
-            inputHits: results.inputHits,
-            inputMisses: results.inputMisses,
-            inputHitRate: results.inputHitRate
-          });
-
-          if (configuration.verbose || (dataConverted % 1000 === 0) || configuration.testMode && (dataConverted % 100 === 0)){
-            console.log(chalkLog(MODULE_ID_PREFIX + " | DATA CONVERTED: " + dataConverted + "/" + dataSetObj.data.length));
-          }
-
-          cb();
-        }).
-        catch(function(err){
-          console.log(chalkError(MODULE_ID_PREFIX
-            + " | *** ERROR convertDatumOneNetwork: " + err 
-          ));
-          cb(err);
         });
+
+
+       if (results.emptyFlag) {
+          debug(chalkAlert(MODULE_ID_PREFIX + " | !!! EMPTY CONVERTED DATUM ... SKIPPING | @" + user.screenName));
+          return cb();
+        }
+
+        dataConverted += 1;
+
+        if (results.datum.input.length !== childNetworkObj.numInputs) { 
+          console.log(chalkError(MODULE_ID_PREFIX
+            + " | *** ERROR DATA SET PREP ERROR" 
+            + " | INPUT NUMBER MISMATCH" 
+            + " | INPUTS NUM IN: " + childNetworkObj.numInputs
+            + " | DATUM NUM IN: " + results.datum.input.length
+          ));
+          return cb(new Error("INPUT NUMBER MISMATCH"));
+        }
+
+        if (results.datum.output.length !== 3) { 
+          console.log(chalkError(MODULE_ID_PREFIX
+            + " | *** ERROR DATA SET PREP ERROR" 
+            + " | OUTPUT NUMBER MISMATCH" 
+            + " | OUTPUTS NUM IN: " + childNetworkObj.numOutputs
+            + " | DATUM NUM IN: " + results.datum.output.length
+          ));
+          return cb(new Error("OUTPUT NUMBER MISMATCH"));
+        }
+
+        for(const inputValue of results.datum.input){
+          if (typeof inputValue !== "number") {
+            return cb(new Error("INPUT VALUE NOT TYPE NUMBER | @" + results.user.screenName + " | INPUT TYPE: " + typeof inputValue));
+          }
+          if (inputValue < 0) {
+            return cb(new Error("INPUT VALUE LESS THAN ZERO | @" + results.user.screenName + " | INPUT: " + inputValue));
+          }
+          if (inputValue > 1) {
+            return cb(new Error("INPUT VALUE GREATER THAN ONE | @" + results.user.screenName + " | INPUT: " + inputValue));
+          }
+        }
+
+        for(const outputValue of results.datum.output){
+          if (typeof outputValue !== "number") {
+            return cb(new Error("OUTPUT VALUE NOT TYPE NUMBER | @" + results.user.screenName + " | OUTPUT TYPE: " + typeof outputValue));
+          }
+          if (outputValue < 0) {
+            return cb(new Error("OUTPUT VALUE LESS THAN ZERO | @" + results.user.screenName + " | OUTPUT: " + outputValue));
+          }
+          if (outputValue > 1) {
+            return cb(new Error("OUTPUT VALUE GREATER THAN ONE | @" + results.user.screenName + " | OUTPUT: " + outputValue));
+          }
+        }
+
+        dataSet.push({
+          user: results.user, 
+          screenName: user.screenName, 
+          name: results.datum.name, 
+          input: results.datum.input, 
+          output: results.datum.output,
+          inputHits: results.inputHits,
+          inputMisses: results.inputMisses,
+          inputHitRate: results.inputHitRate
+        });
+
+        if (configuration.verbose || (dataConverted % 1000 === 0) || configuration.testMode && (dataConverted % 100 === 0)){
+          console.log(chalkLog(MODULE_ID_PREFIX + " | DATA CONVERTED: " + dataConverted + "/" + dataSetObj.data.length));
+        }
+
+
+
+        // tcUtils.convertDatumOneNetwork({
+        //   primaryInputsFlag: true, 
+        //   user: user,
+        //   inputsId: params.inputsId,
+        //   userProfileCharCodesOnlyFlag: userProfileCharCodesOnlyFlag,
+        //   userProfileOnlyFlag: userProfileOnlyFlag,
+        //   binaryMode: binaryMode, 
+        //   logScaleMode: logScaleMode, 
+        //   verbose: params.verbose
+        // }).
+        // then(function(results){
+
+        //   if (results.emptyFlag) {
+        //     debug(chalkAlert(MODULE_ID_PREFIX + " | !!! EMPTY CONVERTED DATUM ... SKIPPING | @" + user.screenName));
+        //     return cb();
+        //   }
+
+        //   dataConverted += 1;
+
+        //   if (results.datum.input.length !== childNetworkObj.numInputs) { 
+        //     console.log(chalkError(MODULE_ID_PREFIX
+        //       + " | *** ERROR DATA SET PREP ERROR" 
+        //       + " | INPUT NUMBER MISMATCH" 
+        //       + " | INPUTS NUM IN: " + childNetworkObj.numInputs
+        //       + " | DATUM NUM IN: " + results.datum.input.length
+        //     ));
+        //     return cb(new Error("INPUT NUMBER MISMATCH"));
+        //   }
+
+        //   if (results.datum.output.length !== 3) { 
+        //     console.log(chalkError(MODULE_ID_PREFIX
+        //       + " | *** ERROR DATA SET PREP ERROR" 
+        //       + " | OUTPUT NUMBER MISMATCH" 
+        //       + " | OUTPUTS NUM IN: " + childNetworkObj.numOutputs
+        //       + " | DATUM NUM IN: " + results.datum.output.length
+        //     ));
+        //     return cb(new Error("OUTPUT NUMBER MISMATCH"));
+        //   }
+
+        //   for(const inputValue of results.datum.input){
+        //     if (typeof inputValue !== "number") {
+        //       return cb(new Error("INPUT VALUE NOT TYPE NUMBER | @" + results.user.screenName + " | INPUT TYPE: " + typeof inputValue));
+        //     }
+        //     if (inputValue < 0) {
+        //       return cb(new Error("INPUT VALUE LESS THAN ZERO | @" + results.user.screenName + " | INPUT: " + inputValue));
+        //     }
+        //     if (inputValue > 1) {
+        //       return cb(new Error("INPUT VALUE GREATER THAN ONE | @" + results.user.screenName + " | INPUT: " + inputValue));
+        //     }
+        //   }
+
+        //   for(const outputValue of results.datum.output){
+        //     if (typeof outputValue !== "number") {
+        //       return cb(new Error("OUTPUT VALUE NOT TYPE NUMBER | @" + results.user.screenName + " | OUTPUT TYPE: " + typeof outputValue));
+        //     }
+        //     if (outputValue < 0) {
+        //       return cb(new Error("OUTPUT VALUE LESS THAN ZERO | @" + results.user.screenName + " | OUTPUT: " + outputValue));
+        //     }
+        //     if (outputValue > 1) {
+        //       return cb(new Error("OUTPUT VALUE GREATER THAN ONE | @" + results.user.screenName + " | OUTPUT: " + outputValue));
+        //     }
+        //   }
+
+        //   dataSet.push({
+        //     user: results.user, 
+        //     screenName: user.screenName, 
+        //     name: results.datum.name, 
+        //     input: results.datum.input, 
+        //     output: results.datum.output,
+        //     inputHits: results.inputHits,
+        //     inputMisses: results.inputMisses,
+        //     inputHitRate: results.inputHitRate
+        //   });
+
+        //   if (configuration.verbose || (dataConverted % 1000 === 0) || configuration.testMode && (dataConverted % 100 === 0)){
+        //     console.log(chalkLog(MODULE_ID_PREFIX + " | DATA CONVERTED: " + dataConverted + "/" + dataSetObj.data.length));
+        //   }
+
+        //   cb();
+        // }).
+        // catch(function(err){
+        //   console.log(chalkError(MODULE_ID_PREFIX
+        //     + " | *** ERROR convertDatumOneNetwork: " + err 
+        //   ));
+        //   cb(err);
+        // });
 
       }
       catch(err){
@@ -1619,7 +1701,6 @@ async function evolve(params){
     await tcUtils.setPrimaryInputs({inputsId: inputsObj.inputsId});
 
     const preppedSetsConfig = {
-      archiveId: statsObj.archiveFile,
       binaryMode: childNetworkObj.binaryMode,
       inputsId: childNetworkObj.inputsId,
       logScaleMode: childNetworkObj.logScaleMode,

@@ -685,18 +685,14 @@ const localArchiveNetworkFolder = path.join(configHostFolder, "neuralNetworks/ar
 
 configuration.local = {};
 configuration.local.trainingSetsFolder = configHostFolder + "/trainingSets";
-// configuration.local.userArchiveFolder = configHostFolder + "/trainingSets/users";
 configuration.local.userDataFolder = configHostFolder + "/trainingSets/users/data";
 
 configuration.default = {};
 configuration.default.trainingSetsFolder = configDefaultFolder + "/trainingSets";
-// configuration.default.userArchiveFolder = configDefaultFolder + "/trainingSets/users";
 configuration.default.userDataFolder = configDefaultFolder + "/trainingSets/users/data";
 
-// configuration.trainingSetsFolder = configuration[HOST].trainingSetsFolder;
 configuration.archiveFileUploadCompleteFlagFolder = configuration[HOST].trainingSetsFolder + "/users";
 
-// configuration.userArchiveFolder = configuration.default.userArchiveFolder;
 configuration.trainingSetsFolder = configuration.default.trainingSetsFolder;
 configuration.userDataFolder = configuration.default.userDataFolder;
 
@@ -709,7 +705,6 @@ configuration.maxNumberChildren = (process.env.TNN_MAX_NEURAL_NETWORK_CHILDREN !
   : DEFAULT_MAX_NEURAL_NETWORK_CHILDREN;
 
 childConfiguration.userDataFolder = configuration.userDataFolder;
-// childConfiguration.userArchiveFolder = configuration.userArchiveFolder;
 
 childConfiguration.defaultUserArchiveFlagFile = configuration.defaultUserArchiveFlagFile;
 childConfiguration.trainingSetsFolder = configuration.trainingSetsFolder;
@@ -723,7 +718,6 @@ configuration.hostMinSuccessRate = DEFAULT_HOST_MIN_SUCCESS_RATE;
 configuration.hostMinSuccessRateMSE = DEFAULT_HOST_MIN_SUCCESS_RATE_MSE;
 configuration.hostPurgeMinSuccessRate = DEFAULT_HOST_PURGE_MIN_SUCCESS_RATE;
 
-// configuration.normalization = null;
 configuration.testSetRatio = DEFAULT_TEST_RATIO;
 
 // BRAIN
@@ -820,7 +814,6 @@ const statsPickArray = [
   "status", 
   "authenticated", 
   "numChildren", 
-  // "socketError", 
   "userReadyAck", 
   "userReadyAckWait", 
   "userReadyTransmitted",
