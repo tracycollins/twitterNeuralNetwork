@@ -564,7 +564,7 @@ async function initWatchUserDataFolder(p){
         const fileNameArray = f.split("/");
         const file = fileNameArray[fileNameArray.length-1];
         if (file.endsWith(".json") && !file.includes("conflicted copy")) { // DROPBOX MADNESS!!  KLUDGE
-          console.log(chalklog(MODULE_ID_PREFIX + " | +++ USER FILE CREATED: " + f));
+          console.log(chalkLog(MODULE_ID_PREFIX + " | +++ USER FILE CREATED: " + f));
           try{
             await delay({period: 30*ONE_SECOND});
             await loadUserDataFile({folder: configuration.userDataFolder, file: file});
@@ -580,7 +580,7 @@ async function initWatchUserDataFolder(p){
         const fileNameArray = f.split("/");
         const file = fileNameArray[fileNameArray.length-1];
         if (file.endsWith(".json") && !file.includes("conflicted copy")) {
-          console.log(chalklog(MODULE_ID_PREFIX + " | -/- USER FILE CHANGED: " + f));
+          console.log(chalkLog(MODULE_ID_PREFIX + " | -/- USER FILE CHANGED: " + f));
           try{
             await delay({period: 30*ONE_SECOND});
             await loadUserDataFile({folder: configuration.userDataFolder, file: file});
