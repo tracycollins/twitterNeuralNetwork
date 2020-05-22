@@ -23,6 +23,7 @@ const HashMap = require("hashmap").HashMap;
 const { promisify } = require("util");
 const fs = require("fs");
 const unlinkFileAsync = promisify(fs.unlink);
+const shell = require("shelljs");
 
 let hostname = os.hostname();
 if (hostname.startsWith("mbp3")){
@@ -569,7 +570,8 @@ async function initWatchUserDataFolder(p){
           console.log(chalkLog(MODULE_ID_PREFIX + " | XXX USER FILE CREATED - DELETING : " + f));
           try{
             await delay({period: 30*ONE_SECOND});
-            const results = await unlinkFileAsync(f);
+            // const results = await unlinkFileAsync(f);
+            shell.rm(f);
             console.log(chalkLog(MODULE_ID_PREFIX + " | XXX USER FILE RESULTS : " + results));
           }
           catch(err){
@@ -809,8 +811,8 @@ async function loadUserDataFolders(params){
   for (const fileObj of files) {
 
     if (fileObj.file.includes("conflicted copy")) {
-      console.log(chalkInfo(MODULE_ID_PREFIX + " | XXX DELETING ... " + fileObj.file));
-      await unlinkFileAsync(fileObj.file);
+      console.log(chalkInfo(MODULE_ID_PREFIX + " | XXX DELETING ... " + fileObj.path));
+      shell.rm(fileObj.path);
       continue;
     }
 
@@ -856,8 +858,10 @@ async function loadTrainingSet(){
     await nnTools.setNormalization(maxInputAndNormalizationObj.normalization);
 
     if (!statsObj.userDataInitialized){
+
       await loadUserDataFolders({folders: [configuration.userDataFolder]});
       statsObj.userDataInitialized = true;
+
     }
     else{
       console.log(chalkLog(MODULE_ID_PREFIX

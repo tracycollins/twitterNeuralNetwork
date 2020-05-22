@@ -1318,7 +1318,7 @@ async function updateInputsViabilitySet(p){
 
       inputsViableSet.delete(params.inputsObj.inputsId);
 
-      console.log(chalkAlert(MODULE_ID_PREFIX 
+      console.log(chalkInfo(MODULE_ID_PREFIX 
         + " | XXX NOT VIABLE INPUTS [" + inputsViableSet.size + "]"
         + " | P/F/T: " + numPassNetworks + "/" + numFailNetworks + "/" + totalNetworks
         + " | MIN: " + 100*minPassRatio.toFixed(2) + "%"
@@ -1403,7 +1403,7 @@ async function loadNetworkFile(params){
     }
 
     if (!configuration.viableNetworkTechArray.includes(networkObj.networkTechnology)){
-      console.log(chalkAlert(MODULE_ID_PREFIX + " | --- NN TECH NOT VIABLE NETWORK TECH ... SKIPPING"
+      console.log(chalkInfo(MODULE_ID_PREFIX + " | --- NN TECH NOT VIABLE NETWORK TECH ... SKIPPING"
         + " | VIABLE TECH: " + configuration.viableNetworkTechArray
         + " | NN TECH: " + networkObj.networkTechnology
         + " | " + networkObj.networkId
