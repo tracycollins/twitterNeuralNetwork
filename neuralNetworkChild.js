@@ -570,9 +570,7 @@ async function initWatchUserDataFolder(p){
           console.log(chalkLog(MODULE_ID_PREFIX + " | XXX USER FILE CREATED - DELETING : " + f));
           try{
             await delay({period: 30*ONE_SECOND});
-            // const results = await unlinkFileAsync(f);
             shell.rm(f);
-            console.log(chalkLog(MODULE_ID_PREFIX + " | XXX USER FILE RESULTS : " + results));
           }
           catch(err){
             console.log(chalkBlue(MODULE_ID_PREFIX + " | *** DELETE USER FILE ERROR | " + f + ": " + err));
@@ -789,7 +787,7 @@ async function loadUserDataFile(params){
 
 async function loadUserDataFolders(params){
 
-  console.log(chalkNetwork(MODULE_ID_PREFIX + " | ... LOADING USER DATA FOLDERS"
+  console.log(chalkNetwork(MODULE_ID_PREFIX + " | loadUserDataFolders | LOADING USER DATA FOLDERS"
     + " | " + params.folders.length + " FOLDERS"
     + "\n" + jsonPrint(params.folders)
   ));
@@ -800,7 +798,7 @@ async function loadUserDataFolders(params){
     files = files.slice(0,configuration.testModeDataSetSize);
   }
 
-  console.log(chalkNetwork(MODULE_ID_PREFIX + " | ... FOUND " + files.length + " FILES IN USER DATA FOLDERS"));
+  console.log(chalkNetwork(MODULE_ID_PREFIX + " | loadUserDataFolders | FOUND " + files.length + " FILES IN USER DATA FOLDERS"));
 
   trainingSetUsersHashMap.left.clear();
   trainingSetUsersHashMap.neutral.clear();
@@ -811,13 +809,13 @@ async function loadUserDataFolders(params){
   for (const fileObj of files) {
 
     if (fileObj.file.includes("conflicted copy")) {
-      console.log(chalkInfo(MODULE_ID_PREFIX + " | XXX DELETING ... " + fileObj.path));
+      console.log(chalkInfo(MODULE_ID_PREFIX + " | loadUserDataFolders | XXX DELETING | " + fileObj.path));
       shell.rm(fileObj.path);
       continue;
     }
 
     if (!fileObj.file.endsWith(".json")) {
-      console.log(chalkInfo(MODULE_ID_PREFIX + " | ... SKIPPING LOAD OF " + fileObj.file));
+      console.log(chalkInfo(MODULE_ID_PREFIX + " | loadUserDataFolders | --- SKIPPING | " + fileObj.file));
       continue;
     }
 
@@ -825,7 +823,7 @@ async function loadUserDataFolders(params){
     const userNodeId = fileNameArray[0];
 
     if (configuration.verbose) {
-      console.log(chalkInfo(MODULE_ID_PREFIX + " | USER FOUND"
+      console.log(chalkInfo(MODULE_ID_PREFIX + " | loadUserDataFolders | +++ USER FOUND"
         + " | " + fileObj.path
         + " | NID: " + userNodeId
       ));
