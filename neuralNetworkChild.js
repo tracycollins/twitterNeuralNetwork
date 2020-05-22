@@ -18,6 +18,8 @@ const _ = require("lodash");
 const omit = require("object.omit");
 const path = require("path");
 const watch = require("watch");
+const empty = require("is-empty");
+const HashMap = require("hashmap").HashMap;
 const { promisify } = require("util");
 const fs = require("fs");
 const unlinkFileAsync = promisify(fs.unlink);
@@ -161,11 +163,6 @@ const getTimeStamp = tcUtils.getTimeStamp;
 
 const NeuralNetworkTools = require("@threeceelabs/neural-network-tools");
 const nnTools = new NeuralNetworkTools("NNC_NNT");
-
-// const fs = require("fs");
-const empty = require("is-empty");
-const HashMap = require("hashmap").HashMap;
-// const yauzl = require("yauzl");
 
 const MODULE_ID = MODULE_ID_PREFIX + "_" + hostname;
 
@@ -567,12 +564,13 @@ async function initWatchUserDataFolder(p){
 
         const fileNameArray = f.split("/");
         const file = fileNameArray[fileNameArray.length-1];
-        
+
         if (file.endsWith(".json") && file.includes("conflicted copy")) { // DROPBOX MADNESS!!  KLUDGE
           console.log(chalkLog(MODULE_ID_PREFIX + " | XXX USER FILE CREATED - DELETING : " + f));
           try{
             await delay({period: 30*ONE_SECOND});
-            await unlinkFileAsync(f);
+            const results = await unlinkFileAsync(f);
+            console.log(chalkLog(MODULE_ID_PREFIX + " | XXX USER FILE RESULTS : " + results));
           }
           catch(err){
             console.log(chalkBlue(MODULE_ID_PREFIX + " | *** DELETE USER FILE ERROR | " + f + ": " + err));
@@ -809,6 +807,12 @@ async function loadUserDataFolders(params){
   statsObj.users.loaded = 0;
 
   for (const fileObj of files) {
+
+    if (fileObj.file.includes("conflicted copy")) {
+      console.log(chalkInfo(MODULE_ID_PREFIX + " | XXX DELETING ... " + fileObj.file));
+      await unlinkFileAsync(fileObj.file);
+      continue;
+    }
 
     if (!fileObj.file.endsWith(".json")) {
       console.log(chalkInfo(MODULE_ID_PREFIX + " | ... SKIPPING LOAD OF " + fileObj.file));
