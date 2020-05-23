@@ -1,4 +1,4 @@
-const DEFAULT_TESTMODE_DATA_SET_SIZE = 5000;
+const DEFAULT_TESTMODE_DATA_SET_SIZE = 20000;
 const ONE_SECOND = 1000;
 const ONE_MINUTE = 60*ONE_SECOND;
 const ONE_HOUR = 60*ONE_MINUTE;
@@ -46,8 +46,6 @@ const DEFAULT_LOGSCALE_MODE = false;
 const DEFAULT_TEST_RATIO = 0.25;
 const QUIT_WAIT_INTERVAL = ONE_SECOND;
 const DEFAULT_USER_ARCHIVE_FILE_EXITS_MAX_WAIT_TIME = 2*ONE_HOUR;
-
-const TEST_MODE_LENGTH = 1000;
 
 let DROPBOX_ROOT_FOLDER;
 
@@ -2054,7 +2052,7 @@ const fsmStates = {
 
           if (configuration.testMode) {
             trainingSetObj.data = _.shuffle(trainingSetObj.data);
-            trainingSetObj.data.length = Math.min(trainingSetObj.data.length, TEST_MODE_LENGTH);
+            trainingSetObj.data.length = Math.min(trainingSetObj.data.length, configuration.testModeDataSetSize);
             testSetObj.data.length = parseInt(configuration.testSetRatio * trainingSetObj.data.length);
             trainingSetObj.meta.setSize = trainingSetObj.data.length;
             testSetObj.meta.setSize = testSetObj.data.length;
