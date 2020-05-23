@@ -813,7 +813,7 @@ function loadUserDataFolders(params){
 
       // for (const fileObj of files) {
 
-      async.each(async function(fileObj){
+      async.eachLimit(files, 10, async function(fileObj){
 
         try{
           if (fileObj.file.includes("conflicted copy")) {
