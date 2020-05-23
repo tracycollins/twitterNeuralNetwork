@@ -1256,7 +1256,7 @@ function dataSetPrep(params, dataSetObj){
     const shuffledData = _.shuffle(dataSetObj.data);
 
     // async.eachSeries(shuffledData, async function(user){
-    async.eachLimit(shuffledData, 10, async function(user){
+    async.eachLimit(shuffledData, 20, async function(user){
 
       try {
 
