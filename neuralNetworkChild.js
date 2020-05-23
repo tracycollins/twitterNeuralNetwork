@@ -20,9 +20,9 @@ const path = require("path");
 const watch = require("watch");
 const empty = require("is-empty");
 const HashMap = require("hashmap").HashMap;
-const { promisify } = require("util");
-const fs = require("fs");
-const unlinkFileAsync = promisify(fs.unlink);
+// const { promisify } = require("util");
+// const fs = require("fs");
+// const unlinkFileAsync = promisify(fs.unlink);
 const shell = require("shelljs");
 
 let hostname = os.hostname();
@@ -785,55 +785,87 @@ async function loadUserDataFile(params){
 }
 
 
-async function loadUserDataFolders(params){
+function loadUserDataFolders(params){
 
-  console.log(chalkNetwork(MODULE_ID_PREFIX + " | loadUserDataFolders | LOADING USER DATA FOLDERS"
-    + " | " + params.folders.length + " FOLDERS"
-    + "\n" + jsonPrint(params.folders)
-  ));
+  return new Promise(function(resolve, reject){
 
-  let files = await tcUtils.listFolders({folders: params.folders});
+    console.log(chalkNetwork(MODULE_ID_PREFIX + " | loadUserDataFolders | LOADING USER DATA FOLDERS"
+      + " | " + params.folders.length + " FOLDERS"
+      + "\n" + jsonPrint(params.folders)
+    ));
 
-  if (configuration.testMode) {
-    files = files.slice(0,configuration.testModeDataSetSize);
-  }
+    // let files = await tcUtils.listFolders({folders: params.folders});
 
-  console.log(chalkNetwork(MODULE_ID_PREFIX + " | loadUserDataFolders | FOUND " + files.length + " FILES IN USER DATA FOLDERS"));
+    tcUtils.listFolders({folders: params.folders})
+    .then(function(files){
 
-  trainingSetUsersHashMap.left.clear();
-  trainingSetUsersHashMap.neutral.clear();
-  trainingSetUsersHashMap.right.clear();
+      if (configuration.testMode) {
+        files = files.slice(0,configuration.testModeDataSetSize);
+      }
 
-  statsObj.users.loaded = 0;
+      console.log(chalkNetwork(MODULE_ID_PREFIX + " | loadUserDataFolders | FOUND " + files.length + " FILES IN USER DATA FOLDERS"));
 
-  for (const fileObj of files) {
+      trainingSetUsersHashMap.left.clear();
+      trainingSetUsersHashMap.neutral.clear();
+      trainingSetUsersHashMap.right.clear();
 
-    if (fileObj.file.includes("conflicted copy")) {
-      console.log(chalkInfo(MODULE_ID_PREFIX + " | loadUserDataFolders | XXX DELETING | " + fileObj.path));
-      shell.rm(fileObj.path);
-      continue;
-    }
+      statsObj.users.loaded = 0;
 
-    if (!fileObj.file.endsWith(".json")) {
-      console.log(chalkInfo(MODULE_ID_PREFIX + " | loadUserDataFolders | --- SKIPPING | " + fileObj.file));
-      continue;
-    }
+      // for (const fileObj of files) {
 
-    const fileNameArray = fileObj.file.split(".");
-    const userNodeId = fileNameArray[0];
+      async.each(async function(fileObj){
 
-    if (configuration.verbose) {
-      console.log(chalkInfo(MODULE_ID_PREFIX + " | loadUserDataFolders | +++ USER FOUND"
-        + " | " + fileObj.path
-        + " | NID: " + userNodeId
-      ));
-    }
+        try{
+          if (fileObj.file.includes("conflicted copy")) {
+            console.log(chalkInfo(MODULE_ID_PREFIX + " | loadUserDataFolders | XXX DELETING | " + fileObj.path));
+            shell.rm(fileObj.path);
+            return;
+          }
 
-    await loadUserDataFile(fileObj);
+          if (!fileObj.file.endsWith(".json")) {
+            console.log(chalkInfo(MODULE_ID_PREFIX + " | loadUserDataFolders | --- SKIPPING | " + fileObj.file));
+            return;
+          }
 
-  }
+          if (configuration.verbose) {
+            const fileNameArray = fileObj.file.split(".");
+            const userNodeId = fileNameArray[0];
+            console.log(chalkInfo(MODULE_ID_PREFIX + " | loadUserDataFolders | +++ USER FOUND"
+              + " | " + fileObj.path
+              + " | NID: " + userNodeId
+            ));
+          }
 
-  return;
+          await loadUserDataFile(fileObj);
+
+          return;
+        }
+        catch(err){
+          return reject(err);
+        }
+
+      }, function(err){
+
+        if (err) {
+          console.log(chalkError(MODULE_ID_PREFIX + " | *** loadUserDataFolders ERROR: " + err));
+          return reject(err);
+        }
+
+        console.log(chalkBlue(MODULE_ID_PREFIX + " | loadUserDataFolders COMPLETE"));
+
+        resolve();
+
+      });
+
+      return;
+
+    })
+    .catch(function(err){
+      console.log(chalkError(MODULE_ID_PREFIX + " | *** loadUserDataFolders ERROR: " + err));
+    });
+
+  });
+
 }
 
 async function loadTrainingSet(){
@@ -1225,7 +1257,7 @@ function dataSetPrep(params, dataSetObj){
 
     const shuffledData = _.shuffle(dataSetObj.data);
 
-    async.eachSeries(shuffledData, async function(user, cb){
+    async.eachSeries(shuffledData, async function(user){
 
       try {
 
@@ -1234,7 +1266,7 @@ function dataSetPrep(params, dataSetObj){
           && (!user.tweetHistograms || user.tweetHistograms === undefined || user.tweetHistograms === {}))
         {
           console.log(chalkAlert(MODULE_ID_PREFIX + " | !!! EMPTY USER HISTOGRAMS ... SKIPPING | @" + user.screenName));
-          return cb();
+          return;
         }
 
         const results = await tcUtils.convertDatumOneNetwork({
@@ -1251,7 +1283,7 @@ function dataSetPrep(params, dataSetObj){
 
        if (results.emptyFlag) {
           debug(chalkAlert(MODULE_ID_PREFIX + " | !!! EMPTY CONVERTED DATUM ... SKIPPING | @" + user.screenName));
-          return cb();
+          return;
         }
 
         dataConverted += 1;
@@ -1263,7 +1295,7 @@ function dataSetPrep(params, dataSetObj){
             + " | INPUTS NUM IN: " + childNetworkObj.numInputs
             + " | DATUM NUM IN: " + results.datum.input.length
           ));
-          return cb(new Error("INPUT NUMBER MISMATCH"));
+          throw new Error("INPUT NUMBER MISMATCH");
         }
 
         if (results.datum.output.length !== 3) { 
@@ -1273,30 +1305,36 @@ function dataSetPrep(params, dataSetObj){
             + " | OUTPUTS NUM IN: " + childNetworkObj.numOutputs
             + " | DATUM NUM IN: " + results.datum.output.length
           ));
-          return cb(new Error("OUTPUT NUMBER MISMATCH"));
+          throw new Error("OUTPUT NUMBER MISMATCH");
         }
 
         for(const inputValue of results.datum.input){
           if (typeof inputValue !== "number") {
-            return cb(new Error("INPUT VALUE NOT TYPE NUMBER | @" + results.user.screenName + " | INPUT TYPE: " + typeof inputValue));
+            console.log(chalkAlert("INPUT VALUE NOT TYPE NUMBER | @" + results.user.screenName + " | INPUT TYPE: " + typeof inputValue));
+            return;
           }
           if (inputValue < 0) {
-            return cb(new Error("INPUT VALUE LESS THAN ZERO | @" + results.user.screenName + " | INPUT: " + inputValue));
+            console.log(chalkAlert("INPUT VALUE LESS THAN ZERO | @" + results.user.screenName + " | INPUT: " + inputValue));
+            return;
           }
           if (inputValue > 1) {
-            return cb(new Error("INPUT VALUE GREATER THAN ONE | @" + results.user.screenName + " | INPUT: " + inputValue));
+            console.log(chalkAlert("INPUT VALUE GREATER THAN ONE | @" + results.user.screenName + " | INPUT: " + inputValue));
+            return;
           }
         }
 
         for(const outputValue of results.datum.output){
           if (typeof outputValue !== "number") {
-            return cb(new Error("OUTPUT VALUE NOT TYPE NUMBER | @" + results.user.screenName + " | OUTPUT TYPE: " + typeof outputValue));
+            console.log(chalkAlert("OUTPUT VALUE NOT TYPE NUMBER | @" + results.user.screenName + " | OUTPUT TYPE: " + typeof outputValue));
+            return;
           }
           if (outputValue < 0) {
-            return cb(new Error("OUTPUT VALUE LESS THAN ZERO | @" + results.user.screenName + " | OUTPUT: " + outputValue));
+            console.log(chalkAlert("OUTPUT VALUE LESS THAN ZERO | @" + results.user.screenName + " | OUTPUT: " + outputValue));
+            return;
           }
           if (outputValue > 1) {
-            return cb(new Error("OUTPUT VALUE GREATER THAN ONE | @" + results.user.screenName + " | OUTPUT: " + outputValue));
+            console.log(chalkAlert("OUTPUT VALUE GREATER THAN ONE | @" + results.user.screenName + " | OUTPUT: " + outputValue));
+            return;
           }
         }
 
@@ -1315,106 +1353,18 @@ function dataSetPrep(params, dataSetObj){
           console.log(chalkLog(MODULE_ID_PREFIX + " | DATA CONVERTED: " + dataConverted + "/" + dataSetObj.data.length));
         }
 
-
-
-        // tcUtils.convertDatumOneNetwork({
-        //   primaryInputsFlag: true, 
-        //   user: user,
-        //   inputsId: params.inputsId,
-        //   userProfileCharCodesOnlyFlag: userProfileCharCodesOnlyFlag,
-        //   userProfileOnlyFlag: userProfileOnlyFlag,
-        //   binaryMode: binaryMode, 
-        //   logScaleMode: logScaleMode, 
-        //   verbose: params.verbose
-        // }).
-        // then(function(results){
-
-        //   if (results.emptyFlag) {
-        //     debug(chalkAlert(MODULE_ID_PREFIX + " | !!! EMPTY CONVERTED DATUM ... SKIPPING | @" + user.screenName));
-        //     return cb();
-        //   }
-
-        //   dataConverted += 1;
-
-        //   if (results.datum.input.length !== childNetworkObj.numInputs) { 
-        //     console.log(chalkError(MODULE_ID_PREFIX
-        //       + " | *** ERROR DATA SET PREP ERROR" 
-        //       + " | INPUT NUMBER MISMATCH" 
-        //       + " | INPUTS NUM IN: " + childNetworkObj.numInputs
-        //       + " | DATUM NUM IN: " + results.datum.input.length
-        //     ));
-        //     return cb(new Error("INPUT NUMBER MISMATCH"));
-        //   }
-
-        //   if (results.datum.output.length !== 3) { 
-        //     console.log(chalkError(MODULE_ID_PREFIX
-        //       + " | *** ERROR DATA SET PREP ERROR" 
-        //       + " | OUTPUT NUMBER MISMATCH" 
-        //       + " | OUTPUTS NUM IN: " + childNetworkObj.numOutputs
-        //       + " | DATUM NUM IN: " + results.datum.output.length
-        //     ));
-        //     return cb(new Error("OUTPUT NUMBER MISMATCH"));
-        //   }
-
-        //   for(const inputValue of results.datum.input){
-        //     if (typeof inputValue !== "number") {
-        //       return cb(new Error("INPUT VALUE NOT TYPE NUMBER | @" + results.user.screenName + " | INPUT TYPE: " + typeof inputValue));
-        //     }
-        //     if (inputValue < 0) {
-        //       return cb(new Error("INPUT VALUE LESS THAN ZERO | @" + results.user.screenName + " | INPUT: " + inputValue));
-        //     }
-        //     if (inputValue > 1) {
-        //       return cb(new Error("INPUT VALUE GREATER THAN ONE | @" + results.user.screenName + " | INPUT: " + inputValue));
-        //     }
-        //   }
-
-        //   for(const outputValue of results.datum.output){
-        //     if (typeof outputValue !== "number") {
-        //       return cb(new Error("OUTPUT VALUE NOT TYPE NUMBER | @" + results.user.screenName + " | OUTPUT TYPE: " + typeof outputValue));
-        //     }
-        //     if (outputValue < 0) {
-        //       return cb(new Error("OUTPUT VALUE LESS THAN ZERO | @" + results.user.screenName + " | OUTPUT: " + outputValue));
-        //     }
-        //     if (outputValue > 1) {
-        //       return cb(new Error("OUTPUT VALUE GREATER THAN ONE | @" + results.user.screenName + " | OUTPUT: " + outputValue));
-        //     }
-        //   }
-
-        //   dataSet.push({
-        //     user: results.user, 
-        //     screenName: user.screenName, 
-        //     name: results.datum.name, 
-        //     input: results.datum.input, 
-        //     output: results.datum.output,
-        //     inputHits: results.inputHits,
-        //     inputMisses: results.inputMisses,
-        //     inputHitRate: results.inputHitRate
-        //   });
-
-        //   if (configuration.verbose || (dataConverted % 1000 === 0) || configuration.testMode && (dataConverted % 100 === 0)){
-        //     console.log(chalkLog(MODULE_ID_PREFIX + " | DATA CONVERTED: " + dataConverted + "/" + dataSetObj.data.length));
-        //   }
-
-        //   cb();
-        // }).
-        // catch(function(err){
-        //   console.log(chalkError(MODULE_ID_PREFIX
-        //     + " | *** ERROR convertDatumOneNetwork: " + err 
-        //   ));
-        //   cb(err);
-        // });
-
       }
       catch(err){
         console.log(chalkError(MODULE_ID_PREFIX
           + " | *** ERROR DATA SET PREP: " + err 
         ));
-        return cb(err);
+        return reject(err);
       }
 
     }, function(err){
 
       if (err) {
+        console.log(chalkError(MODULE_ID_PREFIX + " | *** DATA SET PREP ERROR: " + err));
         return reject(err);
       }
 
