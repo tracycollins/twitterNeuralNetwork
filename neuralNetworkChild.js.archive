@@ -1,3 +1,4 @@
+const DEFAULT_TESTMODE_DATA_SET_SIZE = 20000;
 const ONE_SECOND = 1000;
 const ONE_MINUTE = 60*ONE_SECOND;
 const ONE_HOUR = 60*ONE_MINUTE;
@@ -13,10 +14,16 @@ let childNetworkObj; // this is the common, default nn object
 let seedNetworkObj; // this is the common, default nn object
 
 const os = require("os");
-const cp = require("child_process");
 const _ = require("lodash");
 const omit = require("object.omit");
 const path = require("path");
+const watch = require("watch");
+const empty = require("is-empty");
+const HashMap = require("hashmap").HashMap;
+// const { promisify } = require("util");
+// const fs = require("fs");
+// const unlinkFileAsync = promisify(fs.unlink);
+const shell = require("shelljs");
 
 let hostname = os.hostname();
 if (hostname.startsWith("mbp3")){
@@ -40,8 +47,6 @@ const DEFAULT_TEST_RATIO = 0.25;
 const QUIT_WAIT_INTERVAL = ONE_SECOND;
 const DEFAULT_USER_ARCHIVE_FILE_EXITS_MAX_WAIT_TIME = 2*ONE_HOUR;
 
-const TEST_MODE_LENGTH = 1000;
-
 let DROPBOX_ROOT_FOLDER;
 
 if (hostname === "google") {
@@ -54,6 +59,7 @@ else {
 global.wordAssoDb = require("@threeceelabs/mongoose-twitter");
 
 let configuration = {};
+configuration.testModeDataSetSize = DEFAULT_TESTMODE_DATA_SET_SIZE;
 configuration.equalCategoriesFlag = false;
 configuration.userProfileCharCodesOnlyFlag = false;
 configuration.userProfileCharCodesOnlyInputsId = DEFAULT_USER_PROFILE_CHAR_CODES_ONLY_INPUTS_ID 
@@ -71,7 +77,7 @@ configuration.fHiddenLayerSize = DEFAULT_BRAIN_HIDDEN_LAYER_SIZE;
 configuration.neatapticHiddenLayerSize = DEFAULT_NEATAPTIC_HIDDEN_LAYER_SIZE;
 configuration.networkTechnology = DEFAULT_NETWORK_TECHNOLOGY;
 
-// const configDefaultFolder = path.join(DROPBOX_ROOT_FOLDER, "config/utility/default");
+const configDefaultFolder = path.join(DROPBOX_ROOT_FOLDER, "config/utility/default");
 
 const brainTrainOptionsPickArray = [
   // net.train(data, {
@@ -157,11 +163,6 @@ const getTimeStamp = tcUtils.getTimeStamp;
 const NeuralNetworkTools = require("@threeceelabs/neural-network-tools");
 const nnTools = new NeuralNetworkTools("NNC_NNT");
 
-const fs = require("fs");
-const empty = require("is-empty");
-const HashMap = require("hashmap").HashMap;
-const yauzl = require("yauzl");
-
 const MODULE_ID = MODULE_ID_PREFIX + "_" + hostname;
 
 const PRIMARY_HOST = process.env.PRIMARY_HOST || "google";
@@ -204,29 +205,6 @@ const chalkInfo = chalk.black;
 //=========================================================================
 // HOST
 //=========================================================================
-const configDefaultFolder = path.join(DROPBOX_ROOT_FOLDER, "config/utility/default");
-const configHostFolder = path.join(DROPBOX_ROOT_FOLDER, "config/utility", hostname);
-
-configuration.archiveFileUploadCompleteFlagFile = "usersZipUploadComplete.json";
-configuration.trainingSetFile = "trainingSet.json";
-configuration.requiredTrainingSetFile = "requiredTrainingSet.txt";
-
-configuration.local = {};
-configuration.local.trainingSetsFolder = path.join(configHostFolder, "trainingSets");
-configuration.local.userArchiveFolder = path.join(configHostFolder, "trainingSets/users");
-
-configuration.default = {};
-configuration.default.trainingSetsFolder = path.join(configDefaultFolder, "trainingSets");
-configuration.default.userArchiveFolder = path.join(configDefaultFolder, "trainingSets/users");
-
-configuration.trainingSetsFolder = configuration[HOST].trainingSetsFolder;
-configuration.archiveFileUploadCompleteFlagFolder = path.join(configuration[HOST].trainingSetsFolder, "users");
-configuration.userArchiveFolder = configuration[HOST].userArchiveFolder;
-configuration.userTempArchiveFolder = configuration[HOST].userTempArchiveFolder;
-configuration.userArchivePath = configuration[HOST].userArchivePath;
-configuration.userTempArchivePath = configuration[HOST].userTempArchivePath;
-
-
 let preppedTrainingSet = [];
 let preppedTestSet = [];
 let trainingSetObj = {};
@@ -240,9 +218,8 @@ const startTimeMoment = moment();
 
 const statsObj = {};
 
-statsObj.archiveFlagObj = {};
-
 statsObj.trainingSetReady = false;
+statsObj.userDataInitialized = false;
 
 let statsObjSmall = {};
 
@@ -271,7 +248,6 @@ statsObj.training.seedNetworkRes = 0;
 statsObj.training.iterations = 0;
 
 statsObj.inputsId = "";
-// statsObj.inputsObj = {};
 statsObj.outputs = [];
 
 const statsPickArray = [
@@ -513,174 +489,140 @@ async function quit(opts) {
   }, QUIT_WAIT_INTERVAL);
 }
 
+function delay(p) {
+
+  const params = p || {};
+  const period = params.period || 10*ONE_SECOND;
+  const interval = ONE_SECOND;
+  const verbose = params.verbose || false;
+  let delayInterval;
+
+  const delayStartMoment = moment();
+  const delayEndMoment = moment().add(period, "ms");
+
+  return new Promise(function(resolve){
+
+    if (verbose) {
+      console.log(chalkLog(MODULE_ID_PREFIX + " | +++ DELAY START | NOW: " + getTimeStamp() + " | PERIOD: " + msToTime(period)));
+    }
+
+    delayInterval = setInterval(function(){
+
+      if (verbose) {
+        console.log(chalkLog(MODULE_ID_PREFIX 
+          + " | ... DELAY ... "
+          + " | PERIOD: " + msToTime(period)
+          + " | INTERVAL: " + interval + " MS"
+          + " | START: " + getTimeStamp(delayStartMoment) 
+          + " | END: " + getTimeStamp(delayEndMoment) 
+          + " | NOW: " + getTimeStamp() 
+        ));
+      }
+
+      if (verbose && moment().isAfter(delayEndMoment)){
+        console.log(chalkLog(MODULE_ID_PREFIX 
+          + " | XXX DELAY END "
+          + " | PERIOD: " + msToTime(period)
+          + " | INTERVAL: " + msToTime(interval)
+          + " | START: " + getTimeStamp(delayStartMoment) 
+          + " | END: " + getTimeStamp(delayEndMoment) 
+          + " | NOW: " + getTimeStamp() 
+        ));
+        clearInterval(delayInterval);
+        resolve();
+      }
+
+    }, interval);
+
+  });
+}
+
+async function initWatchUserDataFolder(p){
+
+  try{
+
+    const params = p || {};
+
+    console.log(chalkBlue(MODULE_ID_PREFIX + " | INIT TRAINING SET USER DATA FOLDER\n" + jsonPrint(params)));
+
+    const options = {
+      ignoreDotFiles: true,
+      ignoreUnreadableDir: true,
+      ignoreNotPermitted: true,
+    }
+
+    //========================
+    // WATCH TRAINING SET USER DATA
+    //========================
+
+    watch.createMonitor(configuration.userDataFolder, options, function (monitorUserData) {
+
+      console.log(chalkBlue(MODULE_ID_PREFIX + " | INIT WATCH TRAINING SET USER DATA FOLDER: " + configuration.userDataFolder));
+
+      monitorUserData.on("created", async function(f){
+
+        const fileNameArray = f.split("/");
+        const file = fileNameArray[fileNameArray.length-1];
+
+        if (file.endsWith(".json") && file.includes("conflicted copy")) { // DROPBOX MADNESS!!  KLUDGE
+          console.log(chalkLog(MODULE_ID_PREFIX + " | XXX USER FILE CREATED - DELETING : " + f));
+          try{
+            await delay({period: 30*ONE_SECOND});
+            shell.rm(f);
+          }
+          catch(err){
+            console.log(chalkBlue(MODULE_ID_PREFIX + " | *** DELETE USER FILE ERROR | " + f + ": " + err));
+          }
+        }
+        else if (file.endsWith(".json") && !file.includes("conflicted copy")) { // DROPBOX MADNESS!!  KLUDGE
+          console.log(chalkLog(MODULE_ID_PREFIX + " | +++ USER FILE CREATED: " + f));
+          try{
+            await delay({period: 30*ONE_SECOND});
+            await loadUserDataFile({folder: configuration.userDataFolder, file: file});
+          }
+          catch(err){
+            console.log(chalkBlue(MODULE_ID_PREFIX + " | *** LOAD USER FILE CREATED ERROR | " + f + ": " + err));
+          }
+        }
+
+      });
+
+      monitorUserData.on("changed", async function(f){
+        const fileNameArray = f.split("/");
+        const file = fileNameArray[fileNameArray.length-1];
+        if (file.endsWith(".json") && !file.includes("conflicted copy")) {
+          console.log(chalkLog(MODULE_ID_PREFIX + " | -/- USER FILE CHANGED: " + f));
+          try{
+            await delay({period: 30*ONE_SECOND});
+            await loadUserDataFile({folder: configuration.userDataFolder, file: file});
+          }
+          catch(err){
+            console.log(chalkBlue(MODULE_ID_PREFIX + " | *** LOAD USER FILE CREATED ERROR | " + f + ": " + err));
+          }
+        }
+      });
+
+      monitorUserData.on("removed", function (f) {
+        if (f.includes("conflicted copy")){
+          const fileNameArray = f.split("/");
+          const nodeId = fileNameArray[fileNameArray.length-1].replace(".json", "");
+          console.log(chalkAlert(MODULE_ID_PREFIX + " | XXX USER FILE DELETED | " + getTimeStamp() 
+            + " | " + nodeId 
+            + "\n" + f
+          ));
+        }
+      });
+    });
+  }
+  catch(err){
+    throw err;
+  }
+}
+
 
 //=========================================================================
 // EVOLVE
 //=========================================================================
-
-function unzipUsersToArray(params){
-
-  console.log(chalkBlue(MODULE_ID_PREFIX + " | UNZIP USERS TO TRAINING SET: " + params.path));
-
-  return new Promise(function(resolve, reject) {
-
-    try {
-
-      trainingSetUsersHashMap.left.clear();
-      trainingSetUsersHashMap.neutral.clear();
-      trainingSetUsersHashMap.right.clear();
-
-      let entryNumber = 0;
-
-      statsObj.users.zipHashMapHit = 0;
-      statsObj.users.zipHashMapMiss = 0;
-      statsObj.users.unzipped = 0;
-
-      yauzl.open(params.path, {lazyEntries: true}, function(err, zipfile) {
-
-        if (err) {
-          return reject(err);
-        }
-
-        zipfile.on("error", function(err) {
-          console.log(chalkError(MODULE_ID_PREFIX + " | *** UNZIP ERROR: " + err));
-          reject(err);
-        });
-
-        zipfile.on("close", function() {
-          console.log(chalkLog(MODULE_ID_PREFIX + " | UNZIP CLOSE"));
-          resolve(true);
-        });
-
-        zipfile.on("end", function() {
-          console.log(chalkLog(MODULE_ID_PREFIX + " | UNZIP END"));
-          resolve(true);
-        });
-
-        let hmHit = MODULE_ID_PREFIX + " | --> UNZIP";
-
-        zipfile.on("entry", function(entry) {
-          
-          if ((/\/$/).test(entry.fileName)) { 
-            zipfile.readEntry(); 
-          } 
-          else {
-            zipfile.openReadStream(entry, function(err, readStream) {
-
-              entryNumber += 1;
-              
-              if (err) {
-                console.log(chalkError(MODULE_ID_PREFIX + " | *** UNZIP USERS ENTRY ERROR [" + entryNumber + "]: " + err));
-                return reject(err);
-              }
-
-              let userString = "";
-
-              readStream.on("end", async function() {
-
-                try {
-                  const userObj = JSON.parse(userString);
-
-                  if (entry.fileName.includes("maxInputHashMap")) {
-
-                    console.log(chalkLog(MODULE_ID_PREFIX + " | UNZIPPED MAX INPUT"));
-
-                    await nnTools.setMaxInputHashMap(userObj.maxInputHashMap);
-                    await nnTools.setNormalization(userObj.normalization);
-
-                    zipfile.readEntry();
-                  }
-                  else {
-
-                    statsObj.users.unzipped += 1;
-
-                    hmHit = MODULE_ID_PREFIX + " | UNZIP";
-
-                    if ( trainingSetUsersHashMap.left.has(userObj.userId)
-                      || trainingSetUsersHashMap.neutral.has(userObj.userId) 
-                      || trainingSetUsersHashMap.right.has(userObj.userId)
-                      ) 
-                    {
-                      hmHit = MODULE_ID_PREFIX + " | **> UNZIP";
-                    }
-
-                    if ((userObj.category === "left") || (userObj.category === "right") || (userObj.category === "neutral")) {
-
-                      trainingSetUsersHashMap[userObj.category].set(userObj.nodeId, userObj);
-
-                      if ((configuration.testMode && (statsObj.users.unzipped % 100 === 0)) || configuration.verbose || (statsObj.users.unzipped % 1000 === 0)) {
-
-                        console.log(chalkLog(hmHit
-                          + " [" + statsObj.users.unzipped + "]"
-                          + " USERS - L: " + trainingSetUsersHashMap.left.size
-                          + " N: " + trainingSetUsersHashMap.neutral.size
-                          + " R: " + trainingSetUsersHashMap.right.size
-                          + " | " + userObj.userId
-                          + " | @" + userObj.screenName
-                          + " | " + userObj.name
-                          + " | FLWRs: " + userObj.followersCount
-                          + " | FRNDs: " + userObj.friendsCount
-                          + " | FRNDs DB: " + userObj.friends.length
-                          + " | CAT M: " + userObj.category + " A: " + userObj.categoryAuto
-                        ));
-                      }
-
-                      zipfile.readEntry();
-                    }
-                    else{
-                      console.log(chalkAlert(MODULE_ID_PREFIX + " | ??? UNCAT UNZIPPED USER"
-                        + " [" + statsObj.users.unzipped + "]"
-                        + " USERS - L: " + trainingSetUsersHashMap.left.size
-                        + " N: " + trainingSetUsersHashMap.neutral.size
-                        + " R: " + trainingSetUsersHashMap.right.size
-                        + " | " + userObj.userId
-                        + " | @" + userObj.screenName
-                        + " | " + userObj.name
-                        + " | FLWRs: " + userObj.followersCount
-                        + " | FRNDs: " + userObj.friendsCount
-                        + " | CAT M: " + userObj.category + " A: " + userObj.categoryAuto
-                      ));                      
-
-                      zipfile.readEntry();
-                    }
-                  }
-                }
-                catch (e){
-                  console.log(chalkError(MODULE_ID_PREFIX + " | *** UNZIP READ STREAM ERROR: " + err));
-                  return reject(e);
-                }
-              });
-
-              readStream.on("data",function(chunk){
-                const part = chunk.toString();
-                userString += part;
-              });
-
-              readStream.on("close", function(){
-                console.log(chalkBlueBold(MODULE_ID_PREFIX + " | UNZIP STREAM CLOSED"));
-                resolve();
-              });
-
-              readStream.on("error", function(err){
-                console.log(chalkError(MODULE_ID_PREFIX + " | *** UNZIP READ STREAM ERROR EVENT: " + err));
-                reject(err);
-              });
-            });
-          }
-        });
-
-        zipfile.readEntry();
-
-      });
-
-    }
-    catch(err){
-      console.log(chalkError(MODULE_ID_PREFIX + " | *** USER ARCHIVE READ ERROR: " + err));
-      return reject(new Error("USER ARCHIVE READ ERROR"));
-    }
-
-  });
-}
 
 function updateTrainingSet(p){
 
@@ -696,7 +638,7 @@ function updateTrainingSet(p){
 
       trainingSetObj = {};
       trainingSetObj.meta = {};
-      trainingSetObj.meta.runId = statsObj.archiveFlagObj.runId;
+      // trainingSetObj.meta.archiveId = statsObj.archiveFile;
       trainingSetObj.meta.numInputs = 0;
       trainingSetObj.meta.numOutputs = 3;
       trainingSetObj.meta.setSize = 0;
@@ -784,238 +726,141 @@ function updateTrainingSet(p){
   });
 }
 
-let existsInterval;
-
-function waitFileExists(params){
-
-  return new Promise(function(resolve, reject){
-
-    clearInterval(existsInterval);
-
-    const interval = params.interval || 5*ONE_MINUTE;
-    const maxWaitTime = params.maxWaitTime || configuration.userArchiveFileExistsMaxWaitTime;
-
-    const endWaitTimeMoment = moment().add(maxWaitTime, "ms");
-
-    let exists = fs.existsSync(params.path);
-
-    if (exists) {
-
-      console.log(chalkLog(MODULE_ID_PREFIX
-        + " | FILE EXISTS"
-        // + " | MAX WAIT TIME: " + msToTime(maxWaitTime)
-        + " | NOW: " + getTimeStamp()
-        // + " | END WAIT TIME: " + endWaitTimeMoment.format(compactDateTimeFormat)
-        + " | PATH: " + params.path
-      ));
-
-      return resolve();
-    }
-
-    console.log(chalkAlert(MODULE_ID_PREFIX
-      + " | !!! FILE DOES NOT EXIST | START WAIT"
-      + " | MAX WAIT TIME: " + msToTime(maxWaitTime)
-      + " | NOW: " + getTimeStamp()
-      + " | END WAIT TIME: " + endWaitTimeMoment.format(compactDateTimeFormat)
-      + " | PATH: " + params.path
-    ));
-
-    existsInterval = setInterval(function(){
-
-      exists = fs.existsSync(params.path);
-
-      if (exists) {
-        clearInterval(existsInterval);
-        console.log(chalkGreenBold(MODULE_ID_PREFIX
-          + " | FILE EXISTS"
-          + " | MAX WAIT TIME: " + msToTime(maxWaitTime)
-          + " | NOW: " + getTimeStamp()
-          + " | END WAIT TIME: " + endWaitTimeMoment.format(compactDateTimeFormat)
-          + " | PATH: " + params.path
-        ));
-        return resolve();
-      }
-      else if (moment().isAfter(endWaitTimeMoment)){
-        clearInterval(existsInterval);
-        console.log(chalkError(MODULE_ID_PREFIX
-          + " | *** WAIT FILE EXISTS EXPIRED"
-          + " | MAX WAIT TIME: " + msToTime(maxWaitTime)
-          + " | NOW: " + getTimeStamp()
-          + " | END WAIT TIME: " + endWaitTimeMoment.format(compactDateTimeFormat)
-          + " | PATH: " + params.path
-        ));
-        return reject(new Error("WAIT FILE EXISTS EXPIRED: " + msToTime(maxWaitTime)));
-      }
-      else{
-        console.log(chalkAlert(MODULE_ID_PREFIX
-          + " | ... WAIT FILE EXISTS"
-          + " | MAX WAIT TIME: " + msToTime(maxWaitTime)
-          + " | NOW: " + getTimeStamp()
-          + " | END WAIT TIME: " + endWaitTimeMoment.format(compactDateTimeFormat)
-          + " | PATH: " + params.path
-        ));
-      }
-
-    }, interval);
-
-  });
-}
-
-let sizeInterval;
-
-function fileSize(params){
-
-  return new Promise(function(resolve, reject){
-
-    clearInterval(sizeInterval);
-
-    const interval = params.interval || 10*ONE_SECOND;
-
-    console.log(chalkLog(MODULE_ID_PREFIX + " | WAIT FILE SIZE: " + params.path + " | EXPECTED SIZE: " + params.size));
-
-    let stats;
-    let size = 0;
-    let prevSize = 0;
-
-    let exists = fs.existsSync(params.path);
-
-    if (exists) {
-
-      try {
-        stats = fs.statSync(params.path);
-        size = stats.size;
-        prevSize = stats.size;
-
-        if (params.size && (size === params.size)) {
-          console.log(chalkGreen(MODULE_ID_PREFIX + " | FILE SIZE EXPECTED | " + getTimeStamp()
-            + " | EXISTS: " + exists
-            + " | CUR: " + size
-            + " | EXPECTED: " + params.size
-            + " | " + params.path
-          ));
-          return resolve();
-        }
-
-        sizeInterval = setInterval(function(){
-
-          console.log(chalkInfo(MODULE_ID_PREFIX + " | FILE SIZE | " + getTimeStamp()
-            + " | EXISTS: " + exists
-            + " | CUR: " + size
-            + " | PREV: " + prevSize
-            + " | EXPECTED: " + params.size
-            + " | " + params.path
-          ));
-
-          exists = fs.existsSync(params.path);
-
-          if (exists) {
-            fs.stat(params.path, function(err, stats){
-
-              if (err) {
-                return reject(err);
-              }
-
-              prevSize = size;
-              size = stats.size;
-
-              if ((size > 0) && ((params.size && (size === params.size)) || (size === prevSize))) {
-
-                clearInterval(sizeInterval);
-
-                console.log(chalkGreen(MODULE_ID_PREFIX + " | FILE SIZE STABLE | " + getTimeStamp()
-                  + " | EXISTS: " + exists
-                  + " | CUR: " + size
-                  + " | PREV: " + prevSize
-                  + " | EXPECTED: " + params.size
-                  + " | " + params.path
-                ));
-
-                return resolve();
-              }
-            });
-          }
-
-        }, interval);
-
-      }
-      catch(err){
-        return reject(err);
-      }
-    }
-    else {
-      console.log(chalkAlert(MODULE_ID_PREFIX + " | ??? FILE SIZE | NON-EXISTENT FILE | " + getTimeStamp()
-        + " | EXISTS: " + exists
-        + " | EXPECTED: " + params.size
-        + " | " + params.path
-      ));
-
-      return reject(new Error("NON-EXISTENT FILE: " + params.path));
-    }
-
-  });
-}
-
-async function loadUsersArchive(params){
+async function loadUserDataFile(params){
 
   try {
 
-    let maxInputHashMapFile = "maxInputHashMap.json";
+    const userObj = await tcUtils.loadFile({folder: params.folder, file: params.file});
 
-    if (configuration.testMode) { maxInputHashMapFile = "maxInputHashMapFile_test.json"; }
+    if ((userObj.category !== "left") && (userObj.category !== "right") && (userObj.category !== "neutral")) {
 
-    const maxInputObj = await tcUtils.loadFileRetry({
-      folder: configuration.trainingSetsFolder,
-      file: maxInputHashMapFile
-    });
+      console.log(chalkAlert(MODULE_ID_PREFIX + " | ??? UNCAT LOADED USER"
+        + " [" + statsObj.users.loaded + "]"
+        + " USERS - L: " + trainingSetUsersHashMap.left.size
+        + " N: " + trainingSetUsersHashMap.neutral.size
+        + " R: " + trainingSetUsersHashMap.right.size
+        + " | " + userObj.userId
+        + " | @" + userObj.screenName
+        + " | " + userObj.name
+        + " | FLWRs: " + userObj.followersCount
+        + " | FRNDs: " + userObj.friendsCount
+        + " | CAT M: " + userObj.category + " A: " + userObj.categoryAuto
+      ));                      
 
-    await nnTools.setMaxInputHashMap(maxInputObj.maxInputHashMap);
-    await nnTools.setNormalization(maxInputObj.normalization);
-
-    const files = params.archiveFlagObj.files;
-
-    // if (configuration.testMode) {
-    //   file = file.replace(/users\.zip/, "users_test.zip");
-    // }
-
-    params.archiveFlagObj.folder = params.archiveFlagObj.folder || configuration.userArchiveFolder;
-    // params.archiveFlagObj.path = (params.archiveFlagObj.path !== undefined) ? params.archiveFlagObj.path : params.archiveFlagObj.folder + "/" + file;
-
-    console.log(chalkLog(MODULE_ID_PREFIX 
-      + " | LOADING USERS ARCHIVE"
-      + " | " + getTimeStamp() 
-      // + "\n PATH:   " + params.archiveFlagObj.path
-      + "\n FOLDER: " + params.archiveFlagObj.folder
-      + "\n FILES:   " + files.length
-    ));
-
-    // defaultUserArchiveFlagFile
-    // {
-    //   "file": "google_20200211_130922_users.zip",
-    //   "size": 1109751363,
-    //   "histogram": {
-    //     "left": 25157,
-    //     "right": 25159,
-    //     "neutral": 1981,
-    //     "positive": 0,
-    //     "negative": 0,
-    //     "none": 0,
-    //     "total": 52297
-    //   }
-    // }
-
-    for (const fileObj of params.archiveFlagObj.files){
-      console.log(chalkInfo(MODULE_ID_PREFIX + " | ... LOAD ARCHIVE | " + fileObj.path));
-      await waitFileExists(fileObj);
-      await fileSize(fileObj);
-      await unzipUsersToArray(fileObj);
+      return;
     }
-    await updateTrainingSet();
+
+    trainingSetUsersHashMap[userObj.category].set(userObj.nodeId, userObj);
+
+    statsObj.users.loaded += 1;
+
+    if ((configuration.testMode && (statsObj.users.loaded % 100 === 0)) 
+      || configuration.verbose || (statsObj.users.loaded % 1000 === 0)) {
+
+      console.log(chalkLog(MODULE_ID_PREFIX
+        + " [" + statsObj.users.loaded + "]"
+        + " USERS - L: " + trainingSetUsersHashMap.left.size
+        + " N: " + trainingSetUsersHashMap.neutral.size
+        + " R: " + trainingSetUsersHashMap.right.size
+        + " | " + userObj.userId
+        + " | @" + userObj.screenName
+        + " | " + userObj.name
+        + " | FLWRs: " + userObj.followersCount
+        + " | FRNDs: " + userObj.friendsCount
+        + " | FRNDs DB: " + userObj.friends.length
+        + " | CAT M: " + userObj.category + " A: " + userObj.categoryAuto
+      ));
+    }
+
     return;
+
   }
   catch(err){
-    console.log(chalkError(MODULE_ID_PREFIX + " | *** LOAD USERS ARCHIVE ERROR | " + getTimeStamp() + " | " + err));
-    throw err;
+    console.log(chalkError(MODULE_ID_PREFIX + " | *** USER ARCHIVE READ ERROR: " + err));
+    throw new Error("USER ARCHIVE READ ERROR");
   }
+}
+
+function loadUserDataFolders(params){
+
+  return new Promise(function(resolve, reject){
+
+    console.log(chalkNetwork(MODULE_ID_PREFIX + " | loadUserDataFolders | LOADING USER DATA FOLDERS"
+      + " | " + params.folders.length + " FOLDERS"
+      + "\n" + jsonPrint(params.folders)
+    ));
+
+    // let files = await tcUtils.listFolders({folders: params.folders});
+
+    tcUtils.listFolders({folders: params.folders})
+    .then(function(files){
+
+      if (configuration.testMode) {
+        files = files.slice(0,configuration.testModeDataSetSize);
+      }
+
+      console.log(chalkNetwork(MODULE_ID_PREFIX + " | loadUserDataFolders | FOUND " + files.length + " FILES IN USER DATA FOLDERS"));
+
+      trainingSetUsersHashMap.left.clear();
+      trainingSetUsersHashMap.neutral.clear();
+      trainingSetUsersHashMap.right.clear();
+
+      statsObj.users.loaded = 0;
+
+      // for (const fileObj of files) {
+
+      async.eachLimit(files, 10, async function(fileObj){
+
+        try{
+          if (fileObj.file.includes("conflicted copy")) {
+            console.log(chalkInfo(MODULE_ID_PREFIX + " | loadUserDataFolders | XXX DELETING | " + fileObj.path));
+            shell.rm(fileObj.path);
+            return;
+          }
+
+          if (!fileObj.file.endsWith(".json")) {
+            console.log(chalkInfo(MODULE_ID_PREFIX + " | loadUserDataFolders | --- SKIPPING | " + fileObj.file));
+            return;
+          }
+
+          if (configuration.verbose) {
+            const fileNameArray = fileObj.file.split(".");
+            const userNodeId = fileNameArray[0];
+            console.log(chalkInfo(MODULE_ID_PREFIX + " | loadUserDataFolders | +++ USER FOUND"
+              + " | " + fileObj.path
+              + " | NID: " + userNodeId
+            ));
+          }
+
+          await loadUserDataFile(fileObj);
+
+          return;
+        }
+        catch(err){
+          return reject(err);
+        }
+
+      }, function(err){
+
+        if (err) {
+          console.log(chalkError(MODULE_ID_PREFIX + " | *** loadUserDataFolders ERROR: " + err));
+          return reject(err);
+        }
+
+        console.log(chalkBlue(MODULE_ID_PREFIX + " | loadUserDataFolders COMPLETE"));
+
+        resolve();
+
+      });
+
+      return;
+
+    })
+    .catch(function(err){
+      console.log(chalkError(MODULE_ID_PREFIX + " | *** loadUserDataFolders ERROR: " + err));
+    });
+
+  });
 }
 
 async function loadTrainingSet(){
@@ -1023,61 +868,35 @@ async function loadTrainingSet(){
   try{
     statsObj.status = "LOAD TRAINING SET";
 
+    statsObj.trainingSetReady = false;
+
     console.log(chalkLog(MODULE_ID_PREFIX
-      + " | LOAD ARCHIVE FLAG FILE: " + configuration.trainingSetsFolder + "/" + configuration.defaultUserArchiveFlagFile
+      + " | LOAD USER DATA FOLDER: " + configuration.userDataFolder
     ));
 
-    const archiveFlagObj = await tcUtils.loadFileRetry({folder: configuration.trainingSetsFolder, file: configuration.defaultUserArchiveFlagFile});
-    console.log(chalkNetwork(MODULE_ID_PREFIX + " | USERS ARCHIVE FLAG FILE\n" + jsonPrint(archiveFlagObj)));
+    const maxInputAndNormalizationObj = await tcUtils.loadFileRetry({
+      folder: configuration.trainingSetsFolder, 
+      file: "maxInputHashMap.json"
+    });
 
-    // defaultUserArchiveFlagFile
-    // {
-    //   "runId": mbp3_XXXX,
-    //   "files": [{path: "google_20200211_130922_users.zip", size: 111}],
-    //   "size": 1109751363,
-    //   "histograms": {
-    //     "left": 25157,
-    //     "right": 25159,
-    //     "neutral": 1981,
-    //     "positive": 0,
-    //     "negative": 0,
-    //     "none": 0,
-    //     "total": 52297
-    //   }
-    // }
+    await nnTools.setMaxInputHashMap(maxInputAndNormalizationObj.maxInputHashMap);
+    await nnTools.setNormalization(maxInputAndNormalizationObj.normalization);
 
-    console.log(chalkLog(MODULE_ID_PREFIX 
-      + " | USER ARCHIVE FILE | FILE: " + archiveFlagObj.file 
-      + " | SIZE: " + archiveFlagObj.size
-      + " | TOTAL USERS: " + archiveFlagObj.histograms.total
-      + " | CAT: L/N/R: " + archiveFlagObj.histograms.left 
-      + "/" + archiveFlagObj.histograms.neutral 
-      + "/" + archiveFlagObj.histograms.right
-    ));
+    if (!statsObj.userDataInitialized){
 
-    if (archiveFlagObj.runId !== statsObj.archiveFlagObj.runId) {
+      await loadUserDataFolders({folders: [configuration.userDataFolder]});
+      statsObj.userDataInitialized = true;
 
-      statsObj.trainingSetReady = false;
-      statsObj.loadUsersArchiveBusy = true;
-
-      await loadUsersArchive({archiveFlagObj: archiveFlagObj});
-
-      statsObj.archiveModified = getTimeStamp();
-      statsObj.loadUsersArchiveBusy = false;
-      statsObj.archiveFlagObj = archiveFlagObj;
-      statsObj.trainingSetReady = true;
-      console.log(chalkGreenBold(MODULE_ID_PREFIX + " | TRAINING SET LOADED: " + archiveFlagObj.file));
-
-      console.log(chalkAlert(MODULE_ID_PREFIX + " | UPDATE DB USERS archiveLoadChild"));
-      cp.fork(`${__dirname}/archiveLoadChild.js`);
-      return;
     }
-    else {
-      console.log(chalkLog(MODULE_ID_PREFIX + " | USERS ARCHIVE SAME ... SKIPPING | " + archiveFlagObj.file + " | SIZE: " + archiveFlagObj.size));
-      statsObj.loadUsersArchiveBusy = false;
-      statsObj.trainingSetReady = true;
-      return;
+    else{
+      console.log(chalkLog(MODULE_ID_PREFIX
+        + " | --- USER DATA ALREADY INITIALIZED ... SKIP LOAD FOLDER: " + configuration.userDataFolder
+      ));
     }
+
+    await updateTrainingSet();
+
+    statsObj.trainingSetReady = true;
 
   }
   catch(err){
@@ -1399,9 +1218,6 @@ function dataSetPrep(params, dataSetObj){
 
   return new Promise(function(resolve, reject){
 
-    // const params = ;
-    // const dataSetObj = params.dataSetObj;
-
     const userProfileCharCodesOnlyFlag = (params.userProfileCharCodesOnlyFlag !== undefined) ? params.userProfileCharCodesOnlyFlag : false;
     const binaryMode = (params.binaryMode !== undefined) ? params.binaryMode : configuration.binaryMode;
     const logScaleMode = (params.logScaleMode !== undefined) ? params.logScaleMode : configuration.logScaleMode;
@@ -1410,11 +1226,6 @@ function dataSetPrep(params, dataSetObj){
     const dataSet = [];
 
     let dataConverted = 0;
-
-    // configuration.userCharCountScreenName = 15;
-    // configuration.userCharCountName = 50;
-    // configuration.userCharCountDescription = 160;
-    // configuration.userCharCountLocation = 30;
 
     const numCharInputs = configuration.userCharCountScreenName 
       + configuration.userCharCountName 
@@ -1441,7 +1252,8 @@ function dataSetPrep(params, dataSetObj){
 
     const shuffledData = _.shuffle(dataSetObj.data);
 
-    async.eachSeries(shuffledData, function(user, cb){
+    // async.eachSeries(shuffledData, async function(user){
+    async.eachLimit(shuffledData, 20, async function(user){
 
       try {
 
@@ -1450,13 +1262,10 @@ function dataSetPrep(params, dataSetObj){
           && (!user.tweetHistograms || user.tweetHistograms === undefined || user.tweetHistograms === {}))
         {
           console.log(chalkAlert(MODULE_ID_PREFIX + " | !!! EMPTY USER HISTOGRAMS ... SKIPPING | @" + user.screenName));
-          return cb();
+          return;
         }
 
-        //convertDatumOneNetwork
-        // results = {user: user, datum: datum, inputHits: inputHits, inputMisses: inputMisses, inputHitRate: inputHitRate};
-
-        tcUtils.convertDatumOneNetwork({
+        const results = await tcUtils.convertDatumOneNetwork({
           primaryInputsFlag: true, 
           user: user,
           inputsId: params.inputsId,
@@ -1465,95 +1274,93 @@ function dataSetPrep(params, dataSetObj){
           binaryMode: binaryMode, 
           logScaleMode: logScaleMode, 
           verbose: params.verbose
-        }).
-        then(function(results){
-
-          if (results.emptyFlag) {
-            debug(chalkAlert(MODULE_ID_PREFIX + " | !!! EMPTY CONVERTED DATUM ... SKIPPING | @" + user.screenName));
-            return cb();
-          }
-
-          dataConverted += 1;
-
-          if (results.datum.input.length !== childNetworkObj.numInputs) { 
-            console.log(chalkError(MODULE_ID_PREFIX
-              + " | *** ERROR DATA SET PREP ERROR" 
-              + " | INPUT NUMBER MISMATCH" 
-              + " | INPUTS NUM IN: " + childNetworkObj.numInputs
-              + " | DATUM NUM IN: " + results.datum.input.length
-            ));
-            return cb(new Error("INPUT NUMBER MISMATCH"));
-          }
-
-          if (results.datum.output.length !== 3) { 
-            console.log(chalkError(MODULE_ID_PREFIX
-              + " | *** ERROR DATA SET PREP ERROR" 
-              + " | OUTPUT NUMBER MISMATCH" 
-              + " | OUTPUTS NUM IN: " + childNetworkObj.numOutputs
-              + " | DATUM NUM IN: " + results.datum.output.length
-            ));
-            return cb(new Error("OUTPUT NUMBER MISMATCH"));
-          }
-
-          for(const inputValue of results.datum.input){
-            if (typeof inputValue !== "number") {
-              return cb(new Error("INPUT VALUE NOT TYPE NUMBER | @" + results.user.screenName + " | INPUT TYPE: " + typeof inputValue));
-            }
-            if (inputValue < 0) {
-              return cb(new Error("INPUT VALUE LESS THAN ZERO | @" + results.user.screenName + " | INPUT: " + inputValue));
-            }
-            if (inputValue > 1) {
-              return cb(new Error("INPUT VALUE GREATER THAN ONE | @" + results.user.screenName + " | INPUT: " + inputValue));
-            }
-          }
-
-          for(const outputValue of results.datum.output){
-            if (typeof outputValue !== "number") {
-              return cb(new Error("OUTPUT VALUE NOT TYPE NUMBER | @" + results.user.screenName + " | OUTPUT TYPE: " + typeof outputValue));
-            }
-            if (outputValue < 0) {
-              return cb(new Error("OUTPUT VALUE LESS THAN ZERO | @" + results.user.screenName + " | OUTPUT: " + outputValue));
-            }
-            if (outputValue > 1) {
-              return cb(new Error("OUTPUT VALUE GREATER THAN ONE | @" + results.user.screenName + " | OUTPUT: " + outputValue));
-            }
-          }
-
-          dataSet.push({
-            user: results.user, 
-            screenName: user.screenName, 
-            name: results.datum.name, 
-            input: results.datum.input, 
-            output: results.datum.output,
-            inputHits: results.inputHits,
-            inputMisses: results.inputMisses,
-            inputHitRate: results.inputHitRate
-          });
-
-          if (configuration.verbose || (dataConverted % 1000 === 0) || configuration.testMode && (dataConverted % 100 === 0)){
-            console.log(chalkLog(MODULE_ID_PREFIX + " | DATA CONVERTED: " + dataConverted + "/" + dataSetObj.data.length));
-          }
-
-          cb();
-        }).
-        catch(function(err){
-          console.log(chalkError(MODULE_ID_PREFIX
-            + " | *** ERROR convertDatumOneNetwork: " + err 
-          ));
-          cb(err);
         });
+
+
+       if (results.emptyFlag) {
+          debug(chalkAlert(MODULE_ID_PREFIX + " | !!! EMPTY CONVERTED DATUM ... SKIPPING | @" + user.screenName));
+          return;
+        }
+
+        dataConverted += 1;
+
+        if (results.datum.input.length !== childNetworkObj.numInputs) { 
+          console.log(chalkError(MODULE_ID_PREFIX
+            + " | *** ERROR DATA SET PREP ERROR" 
+            + " | INPUT NUMBER MISMATCH" 
+            + " | INPUTS NUM IN: " + childNetworkObj.numInputs
+            + " | DATUM NUM IN: " + results.datum.input.length
+          ));
+          throw new Error("INPUT NUMBER MISMATCH");
+        }
+
+        if (results.datum.output.length !== 3) { 
+          console.log(chalkError(MODULE_ID_PREFIX
+            + " | *** ERROR DATA SET PREP ERROR" 
+            + " | OUTPUT NUMBER MISMATCH" 
+            + " | OUTPUTS NUM IN: " + childNetworkObj.numOutputs
+            + " | DATUM NUM IN: " + results.datum.output.length
+          ));
+          throw new Error("OUTPUT NUMBER MISMATCH");
+        }
+
+        for(const inputValue of results.datum.input){
+          if (typeof inputValue !== "number") {
+            console.log(chalkAlert("INPUT VALUE NOT TYPE NUMBER | @" + results.user.screenName + " | INPUT TYPE: " + typeof inputValue));
+            return;
+          }
+          if (inputValue < 0) {
+            console.log(chalkAlert("INPUT VALUE LESS THAN ZERO | @" + results.user.screenName + " | INPUT: " + inputValue));
+            return;
+          }
+          if (inputValue > 1) {
+            console.log(chalkAlert("INPUT VALUE GREATER THAN ONE | @" + results.user.screenName + " | INPUT: " + inputValue));
+            return;
+          }
+        }
+
+        for(const outputValue of results.datum.output){
+          if (typeof outputValue !== "number") {
+            console.log(chalkAlert("OUTPUT VALUE NOT TYPE NUMBER | @" + results.user.screenName + " | OUTPUT TYPE: " + typeof outputValue));
+            return;
+          }
+          if (outputValue < 0) {
+            console.log(chalkAlert("OUTPUT VALUE LESS THAN ZERO | @" + results.user.screenName + " | OUTPUT: " + outputValue));
+            return;
+          }
+          if (outputValue > 1) {
+            console.log(chalkAlert("OUTPUT VALUE GREATER THAN ONE | @" + results.user.screenName + " | OUTPUT: " + outputValue));
+            return;
+          }
+        }
+
+        dataSet.push({
+          user: results.user, 
+          screenName: user.screenName, 
+          name: results.datum.name, 
+          input: results.datum.input, 
+          output: results.datum.output,
+          inputHits: results.inputHits,
+          inputMisses: results.inputMisses,
+          inputHitRate: results.inputHitRate
+        });
+
+        if (configuration.verbose || (dataConverted % 1000 === 0) || configuration.testMode && (dataConverted % 100 === 0)){
+          console.log(chalkLog(MODULE_ID_PREFIX + " | DATA CONVERTED: " + dataConverted + "/" + dataSetObj.data.length));
+        }
 
       }
       catch(err){
         console.log(chalkError(MODULE_ID_PREFIX
           + " | *** ERROR DATA SET PREP: " + err 
         ));
-        return cb(err);
+        return reject(err);
       }
 
     }, function(err){
 
       if (err) {
+        console.log(chalkError(MODULE_ID_PREFIX + " | *** DATA SET PREP ERROR: " + err));
         return reject(err);
       }
 
@@ -1789,9 +1596,7 @@ const setPrepRequired = function(preppedSetsConfig){
     return true;
   }
 
-  const preppedSetsConfigProps = Object.keys(preppedSetsConfig);
-
-  for (const prop of preppedSetsConfigProps){
+  for (const prop in preppedSetsConfig){
     if (statsObj.preppedSetsConfig[prop] === undefined) { 
       console.log(chalkAlert(MODULE_ID_PREFIX + " | setPrepRequired | UNDEFINED PROP: " + prop));
       return true;
@@ -1863,7 +1668,6 @@ async function evolve(params){
     await tcUtils.setPrimaryInputs({inputsId: inputsObj.inputsId});
 
     const preppedSetsConfig = {
-      runId: statsObj.archiveFlagObj.runId,
       binaryMode: childNetworkObj.binaryMode,
       inputsId: childNetworkObj.inputsId,
       logScaleMode: childNetworkObj.logScaleMode,
@@ -2246,7 +2050,7 @@ const fsmStates = {
 
           if (configuration.testMode) {
             trainingSetObj.data = _.shuffle(trainingSetObj.data);
-            trainingSetObj.data.length = Math.min(trainingSetObj.data.length, TEST_MODE_LENGTH);
+            trainingSetObj.data.length = Math.min(trainingSetObj.data.length, configuration.testModeDataSetSize);
             testSetObj.data.length = parseInt(configuration.testSetRatio * trainingSetObj.data.length);
             trainingSetObj.meta.setSize = trainingSetObj.data.length;
             testSetObj.meta.setSize = testSetObj.data.length;
@@ -2783,6 +2587,7 @@ setTimeout(async function(){
 
     try {
       await connectDb();
+      await initWatchUserDataFolder();
       await initProcessSendQueue();
       initFsmTickInterval(FSM_TICK_INTERVAL);
     }
