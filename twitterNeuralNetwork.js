@@ -47,7 +47,7 @@ hostname = hostname.replace(/word/g, "google");
 const _ = require("lodash");
 const dotProp = require("dot-prop");
 
-const PRIMARY_HOST = process.env.PRIMARY_HOST || "google";
+const PRIMARY_HOST = process.env.PRIMARY_HOST || "mms1";
 const HOST = (hostname === PRIMARY_HOST) ? "default" : "local";
 
 console.log("=========================================");
