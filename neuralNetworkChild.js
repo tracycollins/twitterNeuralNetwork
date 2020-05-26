@@ -526,7 +526,7 @@ function unzipUsersToArray(params){
 
     try {
 
-      if (reset){
+      if (params.resetFlag){
         trainingSetUsersHashMap.left.clear();
         trainingSetUsersHashMap.neutral.clear();
         trainingSetUsersHashMap.right.clear();
