@@ -23,7 +23,7 @@ hostname = hostname.replace(/word-1/g, "google");
 hostname = hostname.replace(/word/g, "google");
 
 const MODULE_ID = MODULE_ID_PREFIX + "_" + hostname;
-const PRIMARY_HOST = process.env.PRIMARY_HOST || "google";
+const PRIMARY_HOST = process.env.PRIMARY_HOST || "mms1";
 const HOST = (hostname === PRIMARY_HOST) ? "default" : "local";
 
 global.wordAssoDb = require("@threeceelabs/mongoose-twitter");
@@ -688,33 +688,93 @@ function fileSize(params){
   });
 }
 
+// async function loadUsersArchive(params){
+
+//   try {
+
+//     let file = params.archiveFlagObj.file;
+
+//     if (configuration.testMode) {
+//       file = file.replace(/users\.zip/, "users_test.zip");
+//     }
+
+//     params.archiveFlagObj.folder = params.archiveFlagObj.folder || configuration.userArchiveFolder;
+//     params.archiveFlagObj.path = (params.archiveFlagObj.path !== undefined) ? params.archiveFlagObj.path : params.archiveFlagObj.folder + "/" + file;
+
+//     console.log(chalkLog(MODULE_ID_PREFIX 
+//       + " | LOADING USERS ARCHIVE"
+//       + " | " + getTimeStamp() 
+//       + "\n PATH:   " + params.archiveFlagObj.path
+//       + "\n FOLDER: " + params.archiveFlagObj.folder
+//       + "\n FILE:   " + file
+//     ));
+
+//     console.log(chalkLog(MODULE_ID_PREFIX 
+//       + " | USER ARCHIVE FILE | FILE: " + params.archiveFlagObj.file 
+//       + " | SIZE: " + params.archiveFlagObj.size
+//       + " | TOTAL USERS: " + params.archiveFlagObj.histogram.total
+//       + " | CAT: L/N/R: " + params.archiveFlagObj.histogram.left 
+//       + "/" + params.archiveFlagObj.histogram.neutral 
+//       + "/" + params.archiveFlagObj.histogram.right
+//     ));
+
+//     // defaultUserArchiveFlagFile
+//     // {
+//     //   "file": "google_20200211_130922_users.zip",
+//     //   "size": 1109751363,
+//     //   "histogram": {
+//     //     "left": 25157,
+//     //     "right": 25159,
+//     //     "neutral": 1981,
+//     //     "positive": 0,
+//     //     "negative": 0,
+//     //     "none": 0,
+//     //     "total": 52297
+//     //   }
+//     // }
+
+//     await waitFileExists(params.archiveFlagObj);
+//     await fileSize(params.archiveFlagObj);
+//     await unzipUsers(params.archiveFlagObj);
+//     return;
+//   }
+//   catch(err){
+//     console.log(chalkError(MODULE_ID_PREFIX + " | *** LOAD USERS ARCHIVE ERROR | " + getTimeStamp() + " | " + err));
+//     throw err;
+//   }
+// }
+
 async function loadUsersArchive(params){
 
   try {
-    let file = params.archiveFlagObj.file;
 
-    if (configuration.testMode) {
-      file = file.replace(/users\.zip/, "users_test.zip");
-    }
+    let maxInputHashMapFile = "maxInputHashMap.json";
+
+    if (configuration.testMode) { maxInputHashMapFile = "maxInputHashMapFile_test.json"; }
+
+    const maxInputObj = await tcUtils.loadFileRetry({
+      folder: configuration.trainingSetsFolder,
+      file: maxInputHashMapFile
+    });
+
+    await nnTools.setMaxInputHashMap(maxInputObj.maxInputHashMap);
+    await nnTools.setNormalization(maxInputObj.normalization);
+
+    const files = params.archiveFlagObj.files;
+
+    // if (configuration.testMode) {
+    //   file = file.replace(/users\.zip/, "users_test.zip");
+    // }
 
     params.archiveFlagObj.folder = params.archiveFlagObj.folder || configuration.userArchiveFolder;
-    params.archiveFlagObj.path = (params.archiveFlagObj.path !== undefined) ? params.archiveFlagObj.path : params.archiveFlagObj.folder + "/" + file;
+    // params.archiveFlagObj.path = (params.archiveFlagObj.path !== undefined) ? params.archiveFlagObj.path : params.archiveFlagObj.folder + "/" + file;
 
     console.log(chalkLog(MODULE_ID_PREFIX 
       + " | LOADING USERS ARCHIVE"
       + " | " + getTimeStamp() 
-      + "\n PATH:   " + params.archiveFlagObj.path
+      // + "\n PATH:   " + params.archiveFlagObj.path
       + "\n FOLDER: " + params.archiveFlagObj.folder
-      + "\n FILE:   " + file
-    ));
-
-    console.log(chalkLog(MODULE_ID_PREFIX 
-      + " | USER ARCHIVE FILE | FILE: " + params.archiveFlagObj.file 
-      + " | SIZE: " + params.archiveFlagObj.size
-      + " | TOTAL USERS: " + params.archiveFlagObj.histogram.total
-      + " | CAT: L/N/R: " + params.archiveFlagObj.histogram.left 
-      + "/" + params.archiveFlagObj.histogram.neutral 
-      + "/" + params.archiveFlagObj.histogram.right
+      + "\n FILES:   " + files.length
     ));
 
     // defaultUserArchiveFlagFile
@@ -732,9 +792,13 @@ async function loadUsersArchive(params){
     //   }
     // }
 
-    await waitFileExists(params.archiveFlagObj);
-    await fileSize(params.archiveFlagObj);
-    await unzipUsers(params.archiveFlagObj);
+    for (const fileObj of params.archiveFlagObj.files){
+      console.log(chalkInfo(MODULE_ID_PREFIX + " | ... LOAD ARCHIVE | " + fileObj.path));
+      await waitFileExists(fileObj);
+      await fileSize(fileObj);
+      await unzipUsersToArray(fileObj);
+    }
+    await updateTrainingSet();
     return;
   }
   catch(err){
