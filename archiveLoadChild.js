@@ -51,7 +51,10 @@ configuration.userArchiveFolder = configuration.default.userArchiveFolder;
 configuration.defaultUserArchiveFlagFile = "usersZipUploadComplete.json";
 
 const ThreeceeUtilities = require("@threeceelabs/threecee-utilities");
-const tcUtils = new ThreeceeUtilities("NNC_TCU");
+const tcUtils = new ThreeceeUtilities("ALC_TCU");
+
+const NeuralNetworkTools = require("@threeceelabs/neural-network-tools");
+const nnTools = new NeuralNetworkTools("ALC_NNT");
 
 const CONSTANTS = tcUtils.constants;
 const msToTime = tcUtils.msToTime;
@@ -714,10 +717,10 @@ function fileSize(params){
 //     console.log(chalkLog(MODULE_ID_PREFIX 
 //       + " | USER ARCHIVE FILE | FILE: " + params.archiveFlagObj.file 
 //       + " | SIZE: " + params.archiveFlagObj.size
-//       + " | TOTAL USERS: " + params.archiveFlagObj.histogram.total
-//       + " | CAT: L/N/R: " + params.archiveFlagObj.histogram.left 
-//       + "/" + params.archiveFlagObj.histogram.neutral 
-//       + "/" + params.archiveFlagObj.histogram.right
+//       + " | TOTAL USERS: " + params.archiveFlagObj.histograms.total
+//       + " | CAT: L/N/R: " + params.archiveFlagObj.histograms.left 
+//       + "/" + params.archiveFlagObj.histograms.neutral 
+//       + "/" + params.archiveFlagObj.histograms.right
 //     ));
 
 //     // defaultUserArchiveFlagFile
@@ -746,6 +749,7 @@ function fileSize(params){
 //   }
 // }
 
+
 async function loadUsersArchive(params){
 
   try {
@@ -768,7 +772,7 @@ async function loadUsersArchive(params){
     //   file = file.replace(/users\.zip/, "users_test.zip");
     // }
 
-    params.archiveFlagObj.folder = params.archiveFlagObj.folder || configuration.userArchiveFolder;
+    params.archiveFlagObj.folder = params.archiveFlagObj.folder || configuration.trainingSetsFolder;
     // params.archiveFlagObj.path = (params.archiveFlagObj.path !== undefined) ? params.archiveFlagObj.path : params.archiveFlagObj.folder + "/" + file;
 
     console.log(chalkLog(MODULE_ID_PREFIX 
@@ -798,9 +802,9 @@ async function loadUsersArchive(params){
       console.log(chalkInfo(MODULE_ID_PREFIX + " | ... LOAD ARCHIVE | " + fileObj.path));
       await waitFileExists(fileObj);
       await fileSize(fileObj);
-      await unzipUsersToArray(fileObj);
+      await unzipUsers(fileObj);
     }
-    await updateTrainingSet();
+    // await updateTrainingSet();
     return;
   }
   catch(err){
@@ -815,10 +819,10 @@ async function loadArchive(){
     statsObj.status = "LOAD ARCHIVE";
 
     console.log(chalkLog(MODULE_ID_PREFIX
-      + " | LOAD USERS ARCHIVE FLAG FILE: " + configuration.userArchiveFolder + "/" + configuration.defaultUserArchiveFlagFile
+      + " | LOAD USERS ARCHIVE FLAG FILE: " + configuration.trainingSetsFolder + "/" + configuration.defaultUserArchiveFlagFile
     ));
 
-    const archiveFlagObj = await tcUtils.loadFileRetry({folder: configuration.userArchiveFolder, file: configuration.defaultUserArchiveFlagFile});
+    const archiveFlagObj = await tcUtils.loadFileRetry({folder: configuration.trainingSetsFolder, file: configuration.defaultUserArchiveFlagFile});
     console.log(chalkNetwork(MODULE_ID_PREFIX + " | USERS ARCHIVE FLAG FILE\n" + jsonPrint(archiveFlagObj)));
 
     // defaultUserArchiveFlagFile
@@ -837,12 +841,12 @@ async function loadArchive(){
     // }
 
     console.log(chalkLog(MODULE_ID_PREFIX 
-      + " | USER ARCHIVE FILE | FILE: " + archiveFlagObj.file 
-      + " | SIZE: " + archiveFlagObj.size
-      + " | TOTAL USERS: " + archiveFlagObj.histogram.total
-      + " | CAT: L/N/R: " + archiveFlagObj.histogram.left 
-      + "/" + archiveFlagObj.histogram.neutral 
-      + "/" + archiveFlagObj.histogram.right
+      + " | USER ARCHIVE | FILES: " + archiveFlagObj.files.length 
+      // + " | SIZE: " + archiveFlagObj.size
+      + " | TOTAL USERS: " + archiveFlagObj.histograms.total
+      + " | CAT: L/N/R: " + archiveFlagObj.histograms.left 
+      + "/" + archiveFlagObj.histograms.neutral 
+      + "/" + archiveFlagObj.histograms.right
     ));
 
     if (archiveFlagObj.file !== statsObj.archiveFile) {
