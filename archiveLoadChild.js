@@ -45,6 +45,8 @@ let configuration = {};
 configuration.default = {};
 configuration.default.trainingSetsFolder = configDefaultFolder + "/trainingSets";
 configuration.default.userArchiveFolder = configDefaultFolder + "/trainingSets/users";
+
+configuration.trainingSetsFolder = configuration.default.trainingSetsFolder;
 configuration.userArchiveFolder = configuration.default.userArchiveFolder;
 configuration.defaultUserArchiveFlagFile = "usersZipUploadComplete.json";
 
