@@ -798,7 +798,13 @@ async function loadUsersArchive(params){
     //   }
     // }
 
+    let resetFlag = true;
+
     for (const fileObj of params.archiveFlagObj.files){
+      if (resetFlag) { 
+        fileObj.resetFlag = true;
+        resetFlag = false;
+      }
       console.log(chalkInfo(MODULE_ID_PREFIX + " | ... LOAD ARCHIVE | " + fileObj.path));
       await waitFileExists(fileObj);
       await fileSize(fileObj);

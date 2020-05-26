@@ -526,15 +526,17 @@ function unzipUsersToArray(params){
 
     try {
 
-      trainingSetUsersHashMap.left.clear();
-      trainingSetUsersHashMap.neutral.clear();
-      trainingSetUsersHashMap.right.clear();
+      if (reset){
+        trainingSetUsersHashMap.left.clear();
+        trainingSetUsersHashMap.neutral.clear();
+        trainingSetUsersHashMap.right.clear();
+
+        statsObj.users.zipHashMapHit = 0;
+        statsObj.users.zipHashMapMiss = 0;
+        statsObj.users.unzipped = 0;
+      }
 
       let entryNumber = 0;
-
-      statsObj.users.zipHashMapHit = 0;
-      statsObj.users.zipHashMapMiss = 0;
-      statsObj.users.unzipped = 0;
 
       yauzl.open(params.path, {lazyEntries: true}, function(err, zipfile) {
 
@@ -1003,7 +1005,13 @@ async function loadUsersArchive(params){
     //   }
     // }
 
+    let resetFlag = true;
+
     for (const fileObj of params.archiveFlagObj.files){
+      if (resetFlag) { 
+        fileObj.resetFlag = true;
+        resetFlag = false;
+      }
       console.log(chalkInfo(MODULE_ID_PREFIX + " | ... LOAD ARCHIVE | " + fileObj.path));
       await waitFileExists(fileObj);
       await fileSize(fileObj);
