@@ -1037,10 +1037,11 @@ async function loadTrainingSet(){
       statsObj.loadUsersArchiveBusy = false;
       statsObj.archiveFlagObj = archiveFlagObj;
       statsObj.trainingSetReady = true;
-      console.log(chalkGreenBold(MODULE_ID_PREFIX + " | TRAINING SET LOADED: RUN ID: " + archiveFlagObj.runId));
+      console.log(chalkGreenBold(MODULE_ID_PREFIX + " | TRAINING SET LOADED | RUN ID: " + archiveFlagObj.runId));
 
       console.log(chalkAlert(MODULE_ID_PREFIX + " | UPDATE DB USERS archiveLoadChild"));
-      cp.fork(`${__dirname}/archiveLoadChild.js`);
+      // cp.fork(`${__dirname}/archiveLoadChild.js`);
+      cp.fork(`/Volumes/RAID1/projects/loadArchive/loadArchive.js`);
       return;
     }
     else {
