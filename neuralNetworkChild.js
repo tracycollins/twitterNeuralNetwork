@@ -240,7 +240,7 @@ configuration.userArchiveFolder = configuration[HOST].userArchiveFolder;
 configuration.userTempArchiveFolder = configuration[HOST].userTempArchiveFolder;
 configuration.userArchivePath = configuration[HOST].userArchivePath;
 configuration.userTempArchivePath = configuration[HOST].userTempArchivePath;
-configuration.maxInputHashMapsFolder = configuration[HOST].maxInputHashMapsFolder;
+configuration.maxInputHashMapsFolder = configuration.default.maxInputHashMapsFolder;
 
 let preppedTrainingSet = [];
 let preppedTestSet = [];
@@ -979,7 +979,8 @@ function loadMaxInputHashMap(){
   return new Promise(function(resolve, reject){
 
     const filePrefix = "maxInputHashMap_";
-    const fileSufffix = (configuration.testMode) ? "_test.json" : ".json";
+    // const fileSufffix = (configuration.testMode) ? "_test.json" : ".json";
+    const fileSufffix = ".json";
 
     console.log(chalkBlue(MODULE_ID_PREFIX
       + " | >>> LOADING MAX INPUT HASHMAPS ..."
@@ -989,7 +990,7 @@ function loadMaxInputHashMap(){
 
       const maxInputHashMapFile = filePrefix + type + fileSufffix;
 
-      console.log(chalkBlue(MODULE_ID_PREFIX
+      console.log(chalkLog(MODULE_ID_PREFIX
         + " | ... LOADING MAX INPUT HASHMAP FILE"
         + " | " + configuration.maxInputHashMapsFolder + "/" + maxInputHashMapFile
       ));
@@ -1005,6 +1006,13 @@ function loadMaxInputHashMap(){
 
     }, function(err){
       if (err) { return reject(err); }
+
+      console.log(chalkBlue(MODULE_ID_PREFIX
+        + " | LOADED MAX INPUT HASHMAPS"
+        + " | " + configuration.maxInputHashMapsFolder
+        + " | MAX INPUT HM KEYS: " + Object.keys(maxInputHashMap)
+      ));
+
       resolve();
     });
 
@@ -1017,6 +1025,7 @@ async function loadUsersArchive(params){
   try {
 
     await loadMaxInputHashMap();
+
     await nnTools.setMaxInputHashMap(maxInputHashMap);
 
     const normalization = await tcUtils.loadFileRetry({

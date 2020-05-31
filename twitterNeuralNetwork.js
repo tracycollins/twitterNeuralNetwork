@@ -1263,6 +1263,8 @@ async function updateDbInputs(params){
       return niDbUpdated;
     }
     else {
+      inputsViableSet.delete(inputsId);
+      inputsSet.delete(inputsId);
       throw new Error("updateDbInputs | INPUTS NOT IN DB + no INPUTS OBJ PARAM");
     }
   }
@@ -2042,6 +2044,7 @@ async function generateSeedInputsNetworkId(params){
 
       config.seedInputsId = availableInputsIdArray.pop(); // most recent input
       config.inputsId = config.seedInputsId;
+
       if (config.seedInputsId === configuration.userProfileCharCodesOnlyInputsId){
         config.binaryMode = false;
         config.logScaleMode = false;
@@ -2049,7 +2052,16 @@ async function generateSeedInputsNetworkId(params){
 
       console.log(chalkBlue(MODULE_ID_PREFIX + " | SEED | AVAILABLE INPUTS ID: " + config.inputsId));
 
-      const inputsObj = await wordAssoDb.NetworkInputs.findOne({inputsId: config.inputsId}).lean();
+      const inputsObj = await wordAssoDb.NetworkInputs.findOne({inputsId: config.inputsId}).lean().exec();
+
+      if (!inputsObj) {
+        console.log(chalkError(MODULE_ID_PREFIX
+          + " | *** INPUTS NOT FOUND IN DB"
+          + " | INPUTS ID: " + config.inputsId
+        ));
+        throw new Error("INPUTS NOT FOUND: " + config.inputsId);
+      }
+
       config.numInputs = inputsObj.meta.numInputs;
 
       console.log(chalkBlueBold(MODULE_ID_PREFIX
