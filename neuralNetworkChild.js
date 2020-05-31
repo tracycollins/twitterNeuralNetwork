@@ -40,6 +40,21 @@ const DEFAULT_TEST_RATIO = 0.25;
 const QUIT_WAIT_INTERVAL = ONE_SECOND;
 const DEFAULT_USER_ARCHIVE_FILE_EXITS_MAX_WAIT_TIME = 2*ONE_HOUR;
 
+const DEFAULT_INPUT_TYPES = [
+  "emoji",
+  "friends",
+  "hashtags",  
+  "images", 
+  "locations", 
+  "media", 
+  "ngrams",
+  "places", 
+  "sentiment", 
+  "urls", 
+  "userMentions", 
+  "words"
+];
+
 const TEST_MODE_LENGTH = 1000;
 
 let DROPBOX_ROOT_FOLDER;
@@ -70,8 +85,6 @@ configuration.logScaleMode = DEFAULT_LOGSCALE_MODE;
 configuration.fHiddenLayerSize = DEFAULT_BRAIN_HIDDEN_LAYER_SIZE;
 configuration.neatapticHiddenLayerSize = DEFAULT_NEATAPTIC_HIDDEN_LAYER_SIZE;
 configuration.networkTechnology = DEFAULT_NETWORK_TECHNOLOGY;
-
-// const configDefaultFolder = path.join(DROPBOX_ROOT_FOLDER, "config/utility/default");
 
 const brainTrainOptionsPickArray = [
   // net.train(data, {
@@ -214,10 +227,12 @@ configuration.requiredTrainingSetFile = "requiredTrainingSet.txt";
 configuration.local = {};
 configuration.local.trainingSetsFolder = path.join(configHostFolder, "trainingSets");
 configuration.local.userArchiveFolder = path.join(configHostFolder, "trainingSets/users");
+configuration.local.maxInputHashMapsFolder = path.join(configHostFolder, "trainingSets/maxInputHashMaps");
 
 configuration.default = {};
 configuration.default.trainingSetsFolder = path.join(configDefaultFolder, "trainingSets");
 configuration.default.userArchiveFolder = path.join(configDefaultFolder, "trainingSets/users");
+configuration.default.maxInputHashMapsFolder = path.join(configDefaultFolder, "trainingSets/maxInputHashMaps");
 
 configuration.trainingSetsFolder = configuration[HOST].trainingSetsFolder;
 configuration.archiveFileUploadCompleteFlagFolder = path.join(configuration[HOST].trainingSetsFolder, "users");
@@ -225,7 +240,7 @@ configuration.userArchiveFolder = configuration[HOST].userArchiveFolder;
 configuration.userTempArchiveFolder = configuration[HOST].userTempArchiveFolder;
 configuration.userArchivePath = configuration[HOST].userArchivePath;
 configuration.userTempArchivePath = configuration[HOST].userTempArchivePath;
-
+configuration.maxInputHashMapsFolder = configuration[HOST].maxInputHashMapsFolder;
 
 let preppedTrainingSet = [];
 let preppedTestSet = [];
@@ -957,21 +972,60 @@ function fileSize(params){
   });
 }
 
+const maxInputHashMap = {};
+
+function loadMaxInputHashMap(){
+
+  return new Promise(function(resolve, reject){
+
+    const filePrefix = "maxInputHashMap_";
+    const fileSufffix = (configuration.testMode) ? "_test.json" : ".json";
+
+    console.log(chalkBlue(MODULE_ID_PREFIX
+      + " | >>> LOADING MAX INPUT HASHMAPS ..."
+    ));
+
+    async.each(DEFAULT_INPUT_TYPES, async function(type){
+
+      const maxInputHashMapFile = filePrefix + type + fileSufffix;
+
+      console.log(chalkBlue(MODULE_ID_PREFIX
+        + " | ... LOADING MAX INPUT HASHMAP FILE"
+        + " | " + configuration.maxInputHashMapsFolder + "/" + maxInputHashMapFile
+      ));
+
+      maxInputHashMap[type] = await tcUtils.loadFileRetry({
+        folder: configuration.maxInputHashMapsFolder, 
+        file: maxInputHashMapFile,
+        resolveOnNotFound: true,
+        verbose: true
+      });
+
+      return;
+
+    }, function(err){
+      if (err) { return reject(err); }
+      resolve();
+    });
+
+  });
+
+}
+
 async function loadUsersArchive(params){
 
   try {
 
-    let maxInputHashMapFile = "maxInputHashMap.json";
+    await loadMaxInputHashMap();
+    await nnTools.setMaxInputHashMap(maxInputHashMap);
 
-    if (configuration.testMode) { maxInputHashMapFile = "maxInputHashMapFile_test.json"; }
-
-    const maxInputObj = await tcUtils.loadFileRetry({
-      folder: configuration.trainingSetsFolder,
-      file: maxInputHashMapFile
+    const normalization = await tcUtils.loadFileRetry({
+      folder: configuration.trainingSetsFolder, 
+      file: "normalization.json",
+      resolveOnNotFound: true
     });
 
-    await nnTools.setMaxInputHashMap(maxInputObj.maxInputHashMap);
-    await nnTools.setNormalization(maxInputObj.normalization);
+    if (normalization) { await nnTools.setNormalization(normalization); }
 
     const files = params.archiveFlagObj.files;
 
