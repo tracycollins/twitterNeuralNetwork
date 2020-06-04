@@ -926,6 +926,11 @@ function printResultsHashmap(){
         networkObj.evolve.options.elitism = 0;
       }
 
+      if (networkObj.inputsId === undefined) {
+        console.log("INPUTS ID UNDEFINED\n" + jsonPrint(networkObj));
+        return cb("INPUTS ID UNDEFINED");
+      }
+
       let nnTech = "";
       let status = "";
       let binaryMode = "F";
