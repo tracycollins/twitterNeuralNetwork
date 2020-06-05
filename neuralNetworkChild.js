@@ -1176,26 +1176,26 @@ async function loadTrainingSet(){
   try{
     statsObj.status = "LOAD TRAINING SET";
 
-    console.log(chalkLog(MODULE_ID_PREFIX
-      + " | LOAD ARCHIVE FLAG FILE: " + configuration.trainingSetsFolder + "/" + configuration.defaultUserArchiveFlagFile
-    ));
+    // console.log(chalkLog(MODULE_ID_PREFIX
+    //   + " | LOAD ARCHIVE FLAG FILE: " + configuration.trainingSetsFolder + "/" + configuration.defaultUserArchiveFlagFile
+    // ));
 
-    const archiveFlagObj = await tcUtils.loadFileRetry({folder: configuration.trainingSetsFolder, file: configuration.defaultUserArchiveFlagFile});
-    console.log(chalkNetwork(MODULE_ID_PREFIX + " | USERS ARCHIVE FLAG FILE\n" + jsonPrint(archiveFlagObj)));
+    // const archiveFlagObj = await tcUtils.loadFileRetry({folder: configuration.trainingSetsFolder, file: configuration.defaultUserArchiveFlagFile});
+    // console.log(chalkNetwork(MODULE_ID_PREFIX + " | USERS ARCHIVE FLAG FILE\n" + jsonPrint(archiveFlagObj)));
 
-    console.log(chalkLog(MODULE_ID_PREFIX 
-      + " | USER ARCHIVE FILE | RUN ID: " + archiveFlagObj.runId 
-      // + " | SIZE: " + archiveFlagObj.size
-      + " | TOTAL USERS: " + archiveFlagObj.histograms.total
-      + " | CAT: L/N/R: " + archiveFlagObj.histograms.left 
-      + "/" + archiveFlagObj.histograms.neutral 
-      + "/" + archiveFlagObj.histograms.right
-    ));
+    // console.log(chalkLog(MODULE_ID_PREFIX 
+    //   + " | USER ARCHIVE FILE | RUN ID: " + archiveFlagObj.runId 
+    //   // + " | SIZE: " + archiveFlagObj.size
+    //   + " | TOTAL USERS: " + archiveFlagObj.histograms.total
+    //   + " | CAT: L/N/R: " + archiveFlagObj.histograms.left 
+    //   + "/" + archiveFlagObj.histograms.neutral 
+    //   + "/" + archiveFlagObj.histograms.right
+    // ));
 
-    if (archiveFlagObj.runId !== statsObj.archiveFlagObj.runId) {
+    // if (archiveFlagObj.runId !== statsObj.archiveFlagObj.runId) {
 
       statsObj.trainingSetReady = false;
-      statsObj.loadUsersArchiveBusy = true;
+      statsObj.loadUsersFoldersBusy = true;
 
       // await loadMaxInputHashMap();
 
@@ -1214,28 +1214,29 @@ async function loadTrainingSet(){
 
       // await loadUsersArchive({archiveFlagObj: archiveFlagObj});
 
-      statsObj.archiveModified = getTimeStamp();
-      statsObj.loadUsersArchiveBusy = false;
-      statsObj.archiveFlagObj = archiveFlagObj;
+      // statsObj.archiveModified = getTimeStamp();
+      // statsObj.archiveFlagObj = archiveFlagObj;
+      statsObj.loadUsersFoldersBusy = false;
       statsObj.trainingSetReady = true;
-      console.log(chalkGreenBold(MODULE_ID_PREFIX + " | TRAINING SET LOADED | RUN ID: " + archiveFlagObj.runId));
+      // console.log(chalkGreenBold(MODULE_ID_PREFIX + " | TRAINING SET LOADED | RUN ID: " + archiveFlagObj.runId));
+      console.log(chalkGreenBold(MODULE_ID_PREFIX + " | TRAINING SET LOADED"));
 
       // console.log(chalkAlert(MODULE_ID_PREFIX + " | UPDATE DB USERS archiveLoadChild"));
       // // cp.fork(`${__dirname}/archiveLoadChild.js`);
       // cp.fork(`/Volumes/RAID1/projects/loadArchive/loadArchive.js`);
       return;
-    }
-    else {
-      console.log(chalkLog(MODULE_ID_PREFIX + " | USERS ARCHIVE SAME ... SKIPPING | " + archiveFlagObj.runId));
-      statsObj.loadUsersArchiveBusy = false;
-      statsObj.trainingSetReady = true;
-      return;
-    }
+    // }
+    // else {
+    //   console.log(chalkLog(MODULE_ID_PREFIX + " | USERS ARCHIVE SAME ... SKIPPING | " + archiveFlagObj.runId));
+    //   statsObj.loadUsersArchiveBusy = false;
+    //   statsObj.trainingSetReady = true;
+    //   return;
+    // }
 
   }
   catch(err){
     console.log(chalkError(MODULE_ID_PREFIX + " | *** USERS ARCHIVE FLAG FILE LOAD ERROR: " + err));
-    statsObj.loadUsersArchiveBusy = false;
+    statsObj.loadUsersFoldersBusy = false;
     statsObj.trainingSetReady = false;
     throw err;
   }
@@ -2391,11 +2392,19 @@ const fsmStates = {
       if (event !== "fsm_tick") {
 
         try{
+
           reporter(event, oldState, newState);
           statsObj.fsmStatus = "CONFIG_EVOLVE";
 
-          await processSend({op: "STATS", childId: configuration.childId, fsmStatus: statsObj.fsmStatus});
-          await loadTrainingSet();
+          await processSend({
+            op: "STATS", 
+            childId: configuration.childId, 
+            fsmStatus: statsObj.fsmStatus
+          });
+
+          if (!statsObj.trainingSetReady) { 
+            await loadTrainingSet();
+          }
 
           if (configuration.testMode) {
             trainingSetObj.data = _.shuffle(trainingSetObj.data);
