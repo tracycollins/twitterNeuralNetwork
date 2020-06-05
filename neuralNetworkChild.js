@@ -1091,7 +1091,7 @@ function loadUsersFolders(params){
       console.log(chalkBlue(MODULE_ID_PREFIX
         + " [" + statsObj.users.folders.total + "]"
         + " | LOAD USERS FOLDERS COMPLETE"
-        + " USERS - L: " + trainingSetUsersHashMap.left.size
+        + " | L: " + trainingSetUsersHashMap.left.size
         + " N: " + trainingSetUsersHashMap.neutral.size
         + " R: " + trainingSetUsersHashMap.right.size
       ));
@@ -1169,7 +1169,7 @@ function loadUsersFolders(params){
   });
 }
 
-const nas3dataFolder = "/Volumes/nas3/data";
+const nas3dataUsersFolder = "/Volumes/nas3/data/users";
 
 async function loadTrainingSet(){
 
@@ -1209,7 +1209,7 @@ async function loadTrainingSet(){
 
       if (normalization) { await nnTools.setNormalization(normalization); }
 
-      await loadUsersFolders({folders: [nas3dataFolder]});
+      await loadUsersFolders({folders: [nas3dataUsersFolder]});
       await updateTrainingSet();
 
       // await loadUsersArchive({archiveFlagObj: archiveFlagObj});
