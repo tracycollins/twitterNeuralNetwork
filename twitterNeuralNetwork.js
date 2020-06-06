@@ -168,6 +168,7 @@ const tcuChildName = MODULE_ID_PREFIX + "_TCU";
 const ThreeceeUtilities = require("@threeceelabs/threecee-utilities");
 const tcUtils = new ThreeceeUtilities(tcuChildName);
 
+const delay = tcUtils.delay;
 const msToTime = tcUtils.msToTime;
 const formatBoolean = tcUtils.formatBoolean;
 const jsonPrint = tcUtils.jsonPrint;
@@ -3036,53 +3037,7 @@ async function connectDb(){
 //=========================================================================
 // MISC FUNCTIONS (own module?)
 //=========================================================================
-function delay(p) {
 
-  const params = p || {};
-  const period = params.period || 10*ONE_SECOND;
-  const interval = ONE_SECOND;
-  const verbose = params.verbose || false;
-  let delayInterval;
-
-  const delayStartMoment = moment();
-  const delayEndMoment = moment().add(period, "ms");
-
-  return new Promise(function(resolve){
-
-    if (verbose) {
-      console.log(chalkLog(MODULE_ID_PREFIX + " | +++ DELAY START | NOW: " + getTimeStamp() + " | PERIOD: " + msToTime(period)));
-    }
-
-    delayInterval = setInterval(function(){
-
-      if (verbose) {
-        console.log(chalkLog(MODULE_ID_PREFIX 
-          + " | ... DELAY ... "
-          + " | PERIOD: " + msToTime(period)
-          + " | INTERVAL: " + interval + " MS"
-          + " | START: " + getTimeStamp(delayStartMoment) 
-          + " | END: " + getTimeStamp(delayEndMoment) 
-          + " | NOW: " + getTimeStamp() 
-        ));
-      }
-
-      if (verbose && moment().isAfter(delayEndMoment)){
-        console.log(chalkLog(MODULE_ID_PREFIX 
-          + " | XXX DELAY END "
-          + " | PERIOD: " + msToTime(period)
-          + " | INTERVAL: " + msToTime(interval)
-          + " | START: " + getTimeStamp(delayStartMoment) 
-          + " | END: " + getTimeStamp(delayEndMoment) 
-          + " | NOW: " + getTimeStamp() 
-        ));
-        clearInterval(delayInterval);
-        resolve();
-      }
-
-    }, interval);
-
-  });
-}
 
 function getElapsedTimeStamp(){
   statsObj.elapsedMS = moment().valueOf() - startTimeMoment.valueOf();
