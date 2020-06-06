@@ -71,6 +71,9 @@ else {
 global.wordAssoDb = require("@threeceelabs/mongoose-twitter");
 
 let configuration = {};
+
+configuration.parallelLoadMax = 16;
+configuration.updateDbUser = true; // updates user in db from training set
 configuration.equalCategoriesFlag = false;
 configuration.userProfileCharCodesOnlyFlag = false;
 configuration.userProfileCharCodesOnlyInputsId = DEFAULT_USER_PROFILE_CHAR_CODES_ONLY_INPUTS_ID 
@@ -216,6 +219,7 @@ const chalkError = chalk.bold.red;
 const chalkAlert = chalk.red;
 const chalkLog = chalk.gray;
 const chalkInfo = chalk.black;
+const chalkWarn = chalk.red;
 
 //=========================================================================
 // HOST
@@ -268,6 +272,21 @@ statsObj.trainingSetReady = false;
 let statsObjSmall = {};
 
 statsObj.users = {};
+statsObj.users.grandTotal = 0;
+statsObj.users.notCategorized = 0;
+statsObj.users.notFound = 0;
+statsObj.users.screenNameUndefined = 0;
+statsObj.users.processed = {};
+statsObj.users.processed.total = 0;
+statsObj.users.processed.percent = 0;
+statsObj.users.processed.empty = 0;
+statsObj.users.processed.errors = 0;
+statsObj.users.processed.elapsed = 0;
+statsObj.users.processed.rate = 0;
+statsObj.users.processed.remain = 0;
+statsObj.users.processed.remainMS = 0;
+statsObj.users.processed.startMoment = 0;
+statsObj.users.processed.endMoment = moment();
 
 statsObj.pid = process.pid;
 statsObj.runId = MODULE_ID.toLowerCase() + "_" + getTimeStamp();
@@ -276,6 +295,8 @@ statsObj.hostname = hostname;
 statsObj.startTime = getTimeStamp();
 statsObj.elapsedMS = 0;
 statsObj.elapsed = getElapsedTimeStamp();
+
+statsObj.usersFolderLoaded = false;
 
 statsObj.status = "START";
 
@@ -534,165 +555,6 @@ async function quit(opts) {
   }, QUIT_WAIT_INTERVAL);
 }
 
-
-//=========================================================================
-// EVOLVE
-//=========================================================================
-
-// function unzipUsersToArray(params){
-
-//   console.log(chalkBlue(MODULE_ID_PREFIX + " | UNZIP USERS TO TRAINING SET: " + params.path));
-
-//   return new Promise(function(resolve, reject) {
-
-//     try {
-
-//       if (params.resetFlag){
-//         trainingSetUsersHashMap.left.clear();
-//         trainingSetUsersHashMap.neutral.clear();
-//         trainingSetUsersHashMap.right.clear();
-
-//         statsObj.users.zipHashMapHit = 0;
-//         statsObj.users.zipHashMapMiss = 0;
-//         statsObj.users.unzipped = 0;
-//       }
-
-//       let entryNumber = 0;
-
-//       yauzl.open(params.path, {lazyEntries: true}, function(err, zipfile) {
-
-//         if (err) {
-//           return reject(err);
-//         }
-
-//         zipfile.on("error", function(err) {
-//           console.log(chalkError(MODULE_ID_PREFIX + " | *** UNZIP ERROR: " + err));
-//           reject(err);
-//         });
-
-//         zipfile.on("close", function() {
-//           console.log(chalkLog(MODULE_ID_PREFIX + " | UNZIP CLOSE"));
-//           resolve(true);
-//         });
-
-//         zipfile.on("end", function() {
-//           console.log(chalkLog(MODULE_ID_PREFIX + " | UNZIP END"));
-//           resolve(true);
-//         });
-
-//         let hmHit = MODULE_ID_PREFIX + " | --> UNZIP";
-
-//         zipfile.on("entry", function(entry) {
-          
-//           if ((/\/$/).test(entry.fileName)) { 
-//             zipfile.readEntry(); 
-//           } 
-//           else {
-//             zipfile.openReadStream(entry, function(err, readStream) {
-
-//               entryNumber += 1;
-              
-//               if (err) {
-//                 console.log(chalkError(MODULE_ID_PREFIX + " | *** UNZIP USERS ENTRY ERROR [" + entryNumber + "]: " + err));
-//                 return reject(err);
-//               }
-
-//               let userString = "";
-
-//               readStream.on("end", async function() {
-
-//                 try {
-//                   const userObj = JSON.parse(userString);
-
-//                   statsObj.users.unzipped += 1;
-
-//                   hmHit = MODULE_ID_PREFIX + " | UNZIP";
-
-//                   if ( trainingSetUsersHashMap.left.has(userObj.userId)
-//                     || trainingSetUsersHashMap.neutral.has(userObj.userId) 
-//                     || trainingSetUsersHashMap.right.has(userObj.userId)
-//                     ) 
-//                   {
-//                     hmHit = MODULE_ID_PREFIX + " | **> UNZIP";
-//                   }
-
-//                   if ((userObj.category === "left") || (userObj.category === "right") || (userObj.category === "neutral")) {
-
-//                     trainingSetUsersHashMap[userObj.category].set(userObj.nodeId, userObj);
-
-//                     if ((configuration.testMode && (statsObj.users.unzipped % 100 === 0)) || configuration.verbose || (statsObj.users.unzipped % 1000 === 0)) {
-
-//                       console.log(chalkLog(hmHit
-//                         + " [" + statsObj.users.unzipped + "]"
-//                         + " USERS - L: " + trainingSetUsersHashMap.left.size
-//                         + " N: " + trainingSetUsersHashMap.neutral.size
-//                         + " R: " + trainingSetUsersHashMap.right.size
-//                         + " | " + userObj.userId
-//                         + " | @" + userObj.screenName
-//                         + " | " + userObj.name
-//                         + " | FLWRs: " + userObj.followersCount
-//                         + " | FRNDs: " + userObj.friendsCount
-//                         + " | FRNDs DB: " + userObj.friends.length
-//                         + " | CAT M: " + userObj.category + " A: " + userObj.categoryAuto
-//                       ));
-//                     }
-
-//                     zipfile.readEntry();
-//                   }
-//                   else{
-//                     console.log(chalkAlert(MODULE_ID_PREFIX + " | ??? UNCAT UNZIPPED USER"
-//                       + " [" + statsObj.users.unzipped + "]"
-//                       + " USERS - L: " + trainingSetUsersHashMap.left.size
-//                       + " N: " + trainingSetUsersHashMap.neutral.size
-//                       + " R: " + trainingSetUsersHashMap.right.size
-//                       + " | " + userObj.userId
-//                       + " | @" + userObj.screenName
-//                       + " | " + userObj.name
-//                       + " | FLWRs: " + userObj.followersCount
-//                       + " | FRNDs: " + userObj.friendsCount
-//                       + " | CAT M: " + userObj.category + " A: " + userObj.categoryAuto
-//                     ));                      
-
-//                     zipfile.readEntry();
-//                   }
-//                 }
-//                 catch (e){
-//                   console.log(chalkError(MODULE_ID_PREFIX + " | *** UNZIP READ STREAM ERROR: " + err));
-//                   return reject(e);
-//                 }
-//               });
-
-//               readStream.on("data",function(chunk){
-//                 const part = chunk.toString();
-//                 userString += part;
-//               });
-
-//               readStream.on("close", function(){
-//                 console.log(chalkBlueBold(MODULE_ID_PREFIX + " | UNZIP STREAM CLOSED"));
-//                 resolve();
-//               });
-
-//               readStream.on("error", function(err){
-//                 console.log(chalkError(MODULE_ID_PREFIX + " | *** UNZIP READ STREAM ERROR EVENT: " + err));
-//                 reject(err);
-//               });
-//             });
-//           }
-//         });
-
-//         zipfile.readEntry();
-
-//       });
-
-//     }
-//     catch(err){
-//       console.log(chalkError(MODULE_ID_PREFIX + " | *** USER ARCHIVE READ ERROR: " + err));
-//       return reject(new Error("USER ARCHIVE READ ERROR"));
-//     }
-
-//   });
-// }
-
 function updateTrainingSet(p){
 
   console.log(chalkBlue(MODULE_ID_PREFIX + " | UPDATE TRAINING SET"));
@@ -733,6 +595,11 @@ function updateTrainingSet(p){
         const trainingSetSize = parseInt((1 - configuration.testSetRatio) * categorySize);
         const testSetSize = parseInt(configuration.testSetRatio * categorySize);
 
+        console.log(chalkLog(MODULE_ID_PREFIX + " | UPDATE TRAINING SET | " + category.toUpperCase()
+          + " | trainingSetSize: " + trainingSetSize
+          + " | testSetSize: " + testSetSize
+        ));
+
         const shuffledTrainingSet = _.shuffle(trainingSetUsersHashMap[category].values());
 
         const trainingSetData = shuffledTrainingSet.slice(0, trainingSetSize);
@@ -756,6 +623,13 @@ function updateTrainingSet(p){
 
         if (err) {
           console.log(chalkError(MODULE_ID_PREFIX + " | *** UPDATE TRAINING SET ERROR: " + err));
+          return reject(err);
+        }
+
+        if (trainingSetObj.data.length === 0){
+          console.log(chalkError(MODULE_ID_PREFIX + " | *** EMPTY TRAINING SET"
+            + " | SIZE: " + trainingSetObj.data.length
+          ));
           return reject(err);
         }
 
@@ -966,29 +840,82 @@ function updateTrainingSet(p){
 //   });
 // }
 
+const defaultUserUpdatePropArray = [
+  "ageDays",
+  "category",
+  "categoryAuto",
+  "categorizeNetwork",
+  "description",
+  "followersCount",
+  "following",
+  "friends",
+  "friendsCount",
+  "lang",
+  "languageAnalysis",
+  "location",
+  "name",
+  "profileHistograms",
+  "rate",
+  "mentions",
+  "screenName",
+  "statusesCount",
+  "tweetHistograms",
+  "tweetsPerDay"
+];
+
+const defaultDbUpdateOptions = {
+  new: true,
+  upsert: true
+};
+
 async function loadUserFile(params){
 
   try{
 
+    const updateDbUser = params.updateDbUser || configuration.updateDbUser;
     const folder = params.folder || path.dirname(params.path);
     const file = params.file || path.basename(params.path);
 
-    const userObj = await tcUtils.loadFile({
+    let userObj = await tcUtils.loadFile({
       folder: folder, 
       file: file, 
       verbose: params.verbose
     });
 
-    statsObj.users.folders.total += 1;
+    statsObj.users.folder.total += 1;
 
     if ((userObj.category === "left") || (userObj.category === "right") || (userObj.category === "neutral")) {
 
+
+      if (updateDbUser){
+
+        const update = pick(userObj, defaultUserUpdatePropArray);
+
+        const userDoc = await global.wordAssoDb.User.findOneAndUpdate(
+          {nodeId: userObj.nodeId}, 
+          update, 
+          defaultDbUpdateOptions
+        );
+
+        if (userDoc) {
+          userObj = userDoc.toObject();
+        }
+      }
+
+      if (empty(userObj.tweetHistograms) || !userObj.tweetHistograms || userObj.tweetHistograms === undefined){
+        userObj.tweetHistograms = {};
+      }
+      
+      if (empty(userObj.profileHistograms) || !userObj.profileHistograms || userObj.profileHistograms === undefined){
+        userObj.profileHistograms = {};
+      }
+      
       trainingSetUsersHashMap[userObj.category].set(userObj.nodeId, userObj);
 
-      if ((configuration.testMode && (statsObj.users.folders.total % 10 === 0)) || configuration.verbose || (statsObj.users.folders.total % 1000 === 0)) {
+      if (((configuration.testMode || configuration.verbose) && (statsObj.users.folder.total % 100 === 0)) || (statsObj.users.folder.total % 1000 === 0)) {
 
         console.log(chalkLog(MODULE_ID_PREFIX
-          + " [" + statsObj.users.folders.total + "]"
+          + " [" + statsObj.users.folder.total + "]"
           + " USERS - L: " + trainingSetUsersHashMap.left.size
           + " N: " + trainingSetUsersHashMap.neutral.size
           + " R: " + trainingSetUsersHashMap.right.size
@@ -1002,13 +929,13 @@ async function loadUserFile(params){
         ));
       }
 
-      if (configuration.testMode && statsObj.users.folders.total >= TEST_MODE_LENGTH){
+      if (configuration.testMode && statsObj.users.folder.total >= TEST_MODE_LENGTH){
         return;
       }
     }
     else{
       console.log(chalkAlert(MODULE_ID_PREFIX + " | ??? UNCAT UNZIPPED USER"
-        + " [" + statsObj.users.folders.total + "]"
+        + " [" + statsObj.users.folder.total + "]"
         + " USERS - L: " + trainingSetUsersHashMap.left.size
         + " N: " + trainingSetUsersHashMap.neutral.size
         + " R: " + trainingSetUsersHashMap.right.size
@@ -1027,24 +954,28 @@ async function loadUserFile(params){
   }
 }
 
-function loadUsersFolders(params){
+function loadUsersFolder(params){
 
   return new Promise(function(resolve, reject){
 
     const verbose = params.verbose || configuration.verbose;
-    const folders = params.folders || [configuration.userDataFolder];
+    const folder = params.folder || configuration.userDataFolder;
+    let folderStreamEnd = false;
+    const userFileArray = [];
+    const parallelLoadMax = params.parallelLoadMax || configuration.parallelLoadMax;
 
     console.log(chalkLog(MODULE_ID_PREFIX 
       + " | LOADING USERS FOLDER"
       + " | " + getTimeStamp() 
-      + " | FOLDERS: " + folders
+      + " | parallelLoadMax: " + parallelLoadMax
+      + " | FOLDER: " + folder
     ));
 
-    if (statsObj.users.folders === undefined) { 
-      statsObj.users.folders = {};
-      statsObj.users.folders.total = 0;
-      statsObj.users.folders.hits = 0;
-      statsObj.users.folders.misses = 0;
+    if (statsObj.users.folder === undefined) { 
+      statsObj.users.folder = {};
+      statsObj.users.folder.total = 0;
+      statsObj.users.folder.hits = 0;
+      statsObj.users.folder.misses = 0;
     }
 
     if (params.resetFlag){
@@ -1052,32 +983,95 @@ function loadUsersFolders(params){
       trainingSetUsersHashMap.neutral.clear();
       trainingSetUsersHashMap.right.clear();
 
-      statsObj.users.folders.hits = 0;
-      statsObj.users.folders.misses = 0;
-      statsObj.users.folders.total = 0;
+      statsObj.users.folder.hits = 0;
+      statsObj.users.folder.misses = 0;
+      statsObj.users.folder.total = 0;
     }
 
-    const folderStream = walker(folders);
+    let ready = true;
+    const userFileInterval = setInterval(async function(){
+
+      const loadUserFilePromiseArray = [];
+
+      if (ready && userFileArray.length > 8){
+
+        ready = false;
+
+        while (userFileArray.length > 0 && loadUserFilePromiseArray.length < parallelLoadMax){
+          const fileObj = userFileArray.shift();
+          if (fileObj){
+            loadUserFilePromiseArray.push(loadUserFile({folder: fileObj.root, file: fileObj.relname, verbose: verbose}))
+          }
+        }
+
+        try{
+          await Promise.all(loadUserFilePromiseArray);
+          ready = true;
+        }
+        catch(err){
+          console.log(chalkLog(MODULE_ID_PREFIX 
+            + " | *** LOAD USER FILE ERROR"
+            + " | ERR: " + err
+          ));
+          ready = true;
+        }
+
+      }
+      else if (ready && userFileArray.length > 0){
+
+        const fileObj = userFileArray.shift();
+
+        try{
+          await loadUserFile({folder: fileObj.root, file: fileObj.relname, verbose: verbose});
+          ready = true;
+        }
+        catch(err){
+          console.log(chalkLog(MODULE_ID_PREFIX 
+            + " | *** LOAD USER FILE ERROR"
+            + " | ERR: " + err
+            + " | fileObj\n: " + jsonPrint(fileObj)
+          ));
+          ready = true;
+        }
+      }
+      else if (folderStreamEnd && ready && userFileArray.length === 0) {
+        clearInterval(userFileInterval);
+        resolve(statsObj.users.folder.total);
+      }
+
+    }, 100);
+
+    const folderStream = walker([folder]);
 
     folderStream.on("error", function (err) {
-      console.log(chalkError(MODULE_ID_PREFIX
-        + " | *** LOAD USERS FOLDERS ERROR: " + err
-        + " | FOLDERS: " + folders
-      ));
-      return reject(err);
+      if (err.code === "ENOENT"){
+        console.log(chalkAlert(MODULE_ID_PREFIX
+          + " | ... LOAD USERS FOLDER | FILE NOT FOUND | SKIPPING | " + err.path
+        ));
+      }
+      else{
+        console.log(chalkError(MODULE_ID_PREFIX
+          + " | *** LOAD USERS FOLDER ERROR: " + err
+          + " | FOLDER: " + folder
+        ));
+        clearInterval(userFileInterval);
+        return reject(err);
+      }
+
     });
 
     folderStream.on("end", function () {
 
       console.log(chalkBlue(MODULE_ID_PREFIX
-        + " [" + statsObj.users.folders.total + "]"
+        + " [" + statsObj.users.folder.total + "]"
         + " | LOAD USERS FOLDERS COMPLETE"
         + " | L: " + trainingSetUsersHashMap.left.size
         + " N: " + trainingSetUsersHashMap.neutral.size
         + " R: " + trainingSetUsersHashMap.right.size
       ));
 
-      resolve(statsObj.users.folders.total);
+      folderStreamEnd = true;
+
     });
 
     let loadFileEnable = true;
@@ -1087,69 +1081,184 @@ function loadUsersFolders(params){
       loadFileEnable = (configuration.testMode) ? (Math.random() > 0.5) : true;
 
       if (fileObj.basename.endsWith(".json") && loadFileEnable){
-
-        await loadUserFile({folder: fileObj.root, file: fileObj.relname, verbose: verbose});
-
-        // debug("fileObj\n" + jsonPrint(fileObj));
-  
-        // const userObj = await tcUtils.loadFile({folder: fileObj.root, file: fileObj.relname, verbose: verbose});
-
-        // statsObj.users.folders.total += 1;
-
-        // // {
-        // //   basename: 'index.js',
-        // //   relname: 'test/index.js',
-        // //   root: '/Users/karissa/dev/node_modules/folder-walker',
-        // //   filepath: '/Users/karissa/dev/node_modules/folder-walker/test/index.js',
-        // //   stat: [fs.Stat Object],
-        // //   type: 'file' // or 'directory'
-        // // }
-
-        // if ((userObj.category === "left") || (userObj.category === "right") || (userObj.category === "neutral")) {
-
-        //   trainingSetUsersHashMap[userObj.category].set(userObj.nodeId, userObj);
-
-        //   if ((configuration.testMode && (statsObj.users.folders.total % 10 === 0)) || configuration.verbose || (statsObj.users.folders.total % 1000 === 0)) {
-
-        //     console.log(chalkLog(MODULE_ID_PREFIX
-        //       + " [" + statsObj.users.folders.total + "]"
-        //       + " USERS - L: " + trainingSetUsersHashMap.left.size
-        //       + " N: " + trainingSetUsersHashMap.neutral.size
-        //       + " R: " + trainingSetUsersHashMap.right.size
-        //       + " | " + userObj.userId
-        //       + " | @" + userObj.screenName
-        //       + " | " + userObj.name
-        //       + " | FLWRs: " + userObj.followersCount
-        //       + " | FRNDs: " + userObj.friendsCount
-        //       + " | FRNDs DB: " + userObj.friends.length
-        //       + " | CAT M: " + userObj.category + " A: " + userObj.categoryAuto
-        //     ));
-        //   }
-
-        //   if (configuration.testMode && statsObj.users.folders.total >= TEST_MODE_LENGTH){
-        //     return resolve(statsObj.users.folders.total);
-        //   }
-        // }
-        // else{
-        //   console.log(chalkAlert(MODULE_ID_PREFIX + " | ??? UNCAT UNZIPPED USER"
-        //     + " [" + statsObj.users.folders.total + "]"
-        //     + " USERS - L: " + trainingSetUsersHashMap.left.size
-        //     + " N: " + trainingSetUsersHashMap.neutral.size
-        //     + " R: " + trainingSetUsersHashMap.right.size
-        //     + " | " + userObj.userId
-        //     + " | @" + userObj.screenName
-        //     + " | " + userObj.name
-        //     + " | FLWRs: " + userObj.followersCount
-        //     + " | FRNDs: " + userObj.friendsCount
-        //     + " | CAT M: " + userObj.category + " A: " + userObj.categoryAuto
-        //   ));                      
-        // }
-
+        userFileArray.push(fileObj);
       }
+    });
 
+
+  });
+}
+
+async function initLoadUsersFolder(params){
+  loadUsersFolder(params);
+  return;
+}
+
+async function cursorDataHandler(user){
+
+  try{
+
+    if (!user.screenName){
+      console.log(chalkWarn(MODULE_ID_PREFIX + " | !!! USER SCREENNAME UNDEFINED\n" + jsonPrint(user)));
+      statsObj.users.processed.errors += 1;
+      return;
+    }
+    
+    if (empty(user.friends) && empty(user.profileHistograms) && empty(user.tweetHistograms)){
+
+      statsObj.users.processed.empty += 1;
+
+      if (statsObj.users.processed.empty % 100 === 0){
+        console.log(chalkWarn(MODULE_ID_PREFIX 
+          + " | --- EMPTY HISTOGRAMS"
+          + " | SKIPPING"
+          + " | PRCSD/REM/MT/ERR/TOT: " 
+          + statsObj.users.processed.total 
+          + "/" + statsObj.users.processed.remain 
+          + "/" + statsObj.users.processed.empty 
+          + "/" + statsObj.users.processed.errors
+          + "/" + statsObj.users.grandTotal
+          + " | @" + user.screenName 
+        )); 
+      }
+      return;
+    }
+
+    if (!user.profileHistograms || user.profileHistograms === undefined || empty(user.profileHistograms)){
+      user.profileHistograms = {};
+    }
+
+    if (!user.tweetHistograms || user.tweetHistograms === undefined || empty(user.tweetHistograms)){
+      user.tweetHistograms = {};
+    }
+
+    if (!user.friends || user.friends == undefined) {
+      user.friends = [];
+    }
+    else{
+      user.friends = _.slice(user.friends, 0,5000);
+    }
+
+    trainingSetUsersHashMap[user.category].set(user.nodeId, user);
+
+    categorizedUsers[user.category] += 1;
+    statsObj.categorizedCount += 1;
+
+    if (statsObj.categorizedCount > 0 && statsObj.categorizedCount % 100 === 0){
+      console.log(chalkInfo(MODULE_ID_PREFIX
+        + " | CATEGORIZED: " + statsObj.categorizedCount
+        + " | L: " + categorizedUsers.left
+        + " | N: " + categorizedUsers.neutral
+        + " | R: " + categorizedUsers.right
+      ));
+    }
+
+    return;
+
+  }
+  catch(err){
+    throw err;
+  }
+}
+
+function cursorDataHandlerPromise(user){
+
+  return new Promise(function(resolve, reject){
+
+    cursorDataHandler(user)
+    .then(function(){
+
+      statsObj.users.processed.total += 1;
+      statsObj.users.processed.elapsed = (moment().valueOf() - statsObj.users.processed.startMoment.valueOf()); // mseconds
+      statsObj.users.processed.rate = (statsObj.users.processed.total >0) ? statsObj.users.processed.elapsed/statsObj.users.processed.total : 0; // msecs/usersArchived
+      statsObj.users.processed.remain = statsObj.users.grandTotal - (statsObj.users.processed.total + statsObj.users.processed.errors);
+      statsObj.users.processed.remainMS = statsObj.users.processed.remain * statsObj.users.processed.rate; // mseconds
+      statsObj.users.processed.endMoment = moment();
+      statsObj.users.processed.endMoment.add(statsObj.users.processed.remainMS, "ms");
+      statsObj.users.processed.percent = 100 * (statsObj.users.notCategorized + statsObj.users.processed.total)/statsObj.users.grandTotal;
+
+      resolve();
+    })
+    .catch(function(err){
+      reject(err);
     });
 
   });
+}
+
+const categorizedUsers = {};
+
+async function loadTrainingSetUsersHashMapFromDb(p) {
+  try{
+
+    const params = p || {};
+
+    statsObj.status = "LOAD TRAINING SET FROM DB";
+    statsObj.trainingSetReady = false;
+
+    statsObj.categorizedCount = 0;
+
+    categorizedUsers.left = 0;
+    categorizedUsers.neutral = 0;
+    categorizedUsers.right = 0;
+
+    const query = params.query || {categorized: true};
+    const batchSize = params.batchSize || 1000;
+    const cursorParallel = params.cursorParallel || 8;
+    const limit = params.limit || 1000;
+
+    let cursor;
+
+    console.log(chalkBlue(MODULE_ID_PREFIX
+      + " | LOADING TRAINING SET FROM DB ..."
+      + " | batchSize: " + batchSize
+      + " | cursorParallel: " + cursorParallel
+    ));
+
+    if (configuration.testMode) {
+      cursor = global.wordAssoDb.User
+      .find(query, {timeout: false})
+      .lean()
+      .batchSize(batchSize)
+      .limit(limit)
+      .cursor()
+      .addCursorFlag("noCursorTimeout", true);
+    }
+    else{
+      cursor = global.wordAssoDb.User
+      .find(query, {timeout: false})
+      .lean()
+      .batchSize(batchSize)
+      .cursor()
+      .addCursorFlag("noCursorTimeout", true);
+    }
+
+    cursor.on("end", function() {
+      console.log(chalkAlert(MODULE_ID_PREFIX + " | --- loadTrainingSetUsersHashMapFromDb CURSOR END"));
+    });
+
+    cursor.on("error", function(err) {
+      console.log(chalkError(MODULE_ID_PREFIX + " | *** ERROR loadTrainingSetUsersHashMapFromDb: CURSOR ERROR: " + err));
+      throw err;
+    });
+
+    cursor.on("close", function() {
+      console.log(chalkAlert(MODULE_ID_PREFIX + " | XXX loadTrainingSetUsersHashMapFromDb CURSOR CLOSE"));
+    });
+
+    await cursor.eachAsync(async function(user){
+      await cursorDataHandlerPromise(user);
+    }, {parallel: cursorParallel});
+
+    console.log(chalkBlueBold(MODULE_ID_PREFIX
+      + " | +++ LOAD TRAINING SET FROM DB COMPLETE"
+    ));
+
+    return; 
+  }
+  catch(err){
+    throw err;
+  }
 }
 
 async function loadTrainingSet(){
@@ -1157,7 +1266,6 @@ async function loadTrainingSet(){
   try{
     statsObj.status = "LOAD TRAINING SET";
     statsObj.trainingSetReady = false;
-    statsObj.loadUsersFoldersBusy = true;
 
     const normalization = await tcUtils.loadFileRetry({
       folder: configuration.trainingSetsFolder, 
@@ -1167,18 +1275,27 @@ async function loadTrainingSet(){
 
     if (normalization) { await nnTools.setNormalization(normalization); }
 
-    await loadUsersFolders({folders: [configuration.userDataFolder]});
+    if (!statsObj.usersFolderLoaded && !statsObj.loadUsersFolderBusy){
+      statsObj.loadUsersFolderBusy = true;
+      await initLoadUsersFolder({folder: configuration.userDataFolder});
+      statsObj.usersFolderLoaded = true;
+      statsObj.loadUsersFolderBusy = false;
+    }
+    // else {
+    await loadTrainingSetUsersHashMapFromDb();
+    // }
+
     await updateTrainingSet();
 
-    statsObj.loadUsersFoldersBusy = false;
+    statsObj.loadUsersFolderBusy = false;
     statsObj.trainingSetReady = true;
     console.log(chalkGreenBold(MODULE_ID_PREFIX + " | TRAINING SET LOADED"));
 
     return;
   }
   catch(err){
-    console.log(chalkError(MODULE_ID_PREFIX + " | *** USERS ARCHIVE FLAG FILE LOAD ERROR: " + err));
-    statsObj.loadUsersFoldersBusy = false;
+    console.log(chalkError(MODULE_ID_PREFIX + " | *** USERS TRAINING SET LOAD ERROR: " + err));
+    statsObj.loadUsersFolderBusy = false;
     statsObj.trainingSetReady = false;
     throw err;
   }
@@ -1909,7 +2026,7 @@ async function evolve(params){
 
   try {
 
-    console.log(chalkBlue(MODULE_ID_PREFIX + " | >>> START NETWORK EVOLVE"
+    console.log(chalkLog(MODULE_ID_PREFIX + " | PREPARE NETWORK EVOLVE"
       + " | TECH: " + childNetworkObj.networkTechnology
       + " | NN: " + childNetworkObj.networkId
       + " | SEED: " + childNetworkObj.seedNetworkId
@@ -1993,6 +2110,15 @@ async function evolve(params){
       childNetworkObj.inputsId = inputsObj.inputsId;
       childNetworkObj.numInputs = inputsObj.meta.numInputs;
 
+      console.log(chalkBlueBold(MODULE_ID_PREFIX + " | ==============================================="));
+      console.log(chalkBlueBold(MODULE_ID_PREFIX + " | >>> START NETWORK EVOLVE"
+        + " | ARCH: " + childNetworkObj.architecture
+        + " | TECH: " + childNetworkObj.networkTechnology
+        + " | NN: " + childNetworkObj.networkId
+        + " | IN: " + childNetworkObj.inputsId
+      ));
+      console.log(chalkBlueBold(MODULE_ID_PREFIX + " | ==============================================="));
+
       evolveResults = await nnTools.streamTrainNetwork({
         networkId: childNetworkObj.networkId,
         options: preppedOptions,
@@ -2029,6 +2155,15 @@ async function evolve(params){
         preppedOptions.fitness_population = preppedOptions.fitnessPopulation;
         preppedOptions.max_nodes = preppedOptions.maxNodes;
       }
+
+      console.log(chalkBlueBold(MODULE_ID_PREFIX + " | ==============================================="));
+      console.log(chalkBlueBold(MODULE_ID_PREFIX + " | >>> START NETWORK EVOLVE"
+        + " | ARCH: " + childNetworkObj.architecture
+        + " | TECH: " + childNetworkObj.networkTechnology
+        + " | NN: " + childNetworkObj.networkId
+        + " | IN: " + childNetworkObj.inputsId
+      ));
+      console.log(chalkBlueBold(MODULE_ID_PREFIX + " | ==============================================="));
       
       evolveResults = await childNetworkRaw.evolve(preppedTrainingSet, preppedOptions);
 

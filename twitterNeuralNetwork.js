@@ -690,12 +690,14 @@ configuration.local.userDataFolder = configHostFolder + "/trainingSets/users/dat
 
 configuration.default = {};
 configuration.default.trainingSetsFolder = configDefaultFolder + "/trainingSets";
-configuration.default.userDataFolder = configDefaultFolder + "/trainingSets/users/data";
+// configuration.default.userDataFolder = configDefaultFolder + "/trainingSets/users/data";
 
 configuration.archiveFileUploadCompleteFlagFolder = configuration[HOST].trainingSetsFolder + "/users";
 
 configuration.trainingSetsFolder = configuration.default.trainingSetsFolder;
-configuration.userDataFolder = configuration.default.userDataFolder;
+
+const defaultDataFolder = "/Volumes/nas4/data";
+configuration.userDataFolder = path.join(defaultDataFolder, "users");
 
 configuration.defaultUserArchiveFlagFile = "usersZipUploadComplete.json";
 configuration.trainingSetFile = "trainingSet.json";
