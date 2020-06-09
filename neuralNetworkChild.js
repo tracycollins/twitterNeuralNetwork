@@ -1681,6 +1681,12 @@ function dataSetPrep(params, dataSetObj){
         //convertDatumOneNetwork
         // results = {user: user, datum: datum, inputHits: inputHits, inputMisses: inputMisses, inputHitRate: inputHitRate};
 
+        // !!! CURRENTLY ONLY 2 DATA INPUT MODES:
+        // - BINARY
+        // - LOG SCALE
+        // 
+        // logScaleMode parameter is essentially ignored for now; only binaryMode matters
+
         tcUtils.convertDatumOneNetwork({
           primaryInputsFlag: true, 
           user: user,
