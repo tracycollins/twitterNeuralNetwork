@@ -1385,7 +1385,9 @@ async function testNetwork(p){
 
   const params = p || {};
 
-  const userProfileOnlyFlag = (params.userProfileOnlyFlag !== undefined) ? params.userProfileOnlyFlag : configuration.userProfileOnlyFlag;
+  const userProfileOnlyFlag = (params.userProfileOnlyFlag !== undefined) 
+    ? params.userProfileOnlyFlag 
+    : configuration.userProfileOnlyFlag;
 
   await nnTools.loadNetwork({networkObj: childNetworkObj});
   await nnTools.setPrimaryNeuralNetwork(childNetworkObj.networkId);
@@ -1614,20 +1616,30 @@ function dataSetPrep(params, dataSetObj){
 
     // const params = ;
     // const dataSetObj = params.dataSetObj;
-
-    const userProfileCharCodesOnlyFlag = (params.userProfileCharCodesOnlyFlag !== undefined) ? params.userProfileCharCodesOnlyFlag : false;
-    const binaryMode = (params.binaryMode !== undefined) ? params.binaryMode : configuration.binaryMode;
-    const logScaleMode = (params.logScaleMode !== undefined) ? params.logScaleMode : configuration.logScaleMode;
-    const userProfileOnlyFlag = (params.userProfileOnlyFlag !== undefined) ? params.userProfileOnlyFlag : configuration.userProfileOnlyFlag;
-
-    const dataSet = [];
-
-    let dataConverted = 0;
-
     // configuration.userCharCountScreenName = 15;
     // configuration.userCharCountName = 50;
     // configuration.userCharCountDescription = 160;
     // configuration.userCharCountLocation = 30;
+
+    const userProfileCharCodesOnlyFlag = (params.userProfileCharCodesOnlyFlag !== undefined) 
+      ? params.userProfileCharCodesOnlyFlag 
+      : false;
+
+    const binaryMode = (params.binaryMode !== undefined) 
+      ? params.binaryMode 
+      : configuration.binaryMode;
+
+    const logScaleMode = (params.logScaleMode !== undefined) 
+      ? params.logScaleMode 
+      : configuration.logScaleMode;
+
+    const userProfileOnlyFlag = (params.userProfileOnlyFlag !== undefined) 
+      ? params.userProfileOnlyFlag 
+      : configuration.userProfileOnlyFlag;
+
+    const dataSet = [];
+
+    let dataConverted = 0;
 
     const numCharInputs = configuration.userCharCountScreenName 
       + configuration.userCharCountName 
@@ -2076,7 +2088,7 @@ async function evolve(params){
     await tcUtils.setPrimaryInputs({inputsId: inputsObj.inputsId});
 
     const preppedSetsConfig = {
-      runId: statsObj.archiveFlagObj.runId,
+      // runId: statsObj.archiveFlagObj.runId,
       binaryMode: childNetworkObj.binaryMode,
       inputsId: childNetworkObj.inputsId,
       logScaleMode: childNetworkObj.logScaleMode,
