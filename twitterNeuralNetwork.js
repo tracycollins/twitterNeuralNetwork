@@ -866,6 +866,11 @@ function printNetworkObj(title, networkObj, format) {
   ));
 }
 
+const shortInputsId = function(inputsId){
+  // inputs_20200519_004028_1384_all_mms3_26627
+  return inputsId.replace(/inputs_\d+_\d+_/g, "");
+}
+
 function printResultsHashmap(){
 
   return new Promise(function(resolve, reject){
@@ -998,7 +1003,7 @@ function printResultsHashmap(){
         seedNetworkId,
         snIdRes,
         hiddenLayerSize,
-        networkObj.inputsId,
+        shortInputsId(networkObj.inputsId),
         networkObj.evolve.options.activation.slice(0,6),
         formatBoolean(networkObj.evolve.options.clear),
         cost,

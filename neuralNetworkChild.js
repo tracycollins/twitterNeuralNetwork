@@ -3,6 +3,10 @@ const TEST_MODE_LENGTH = 100;
 const ONE_SECOND = 1000;
 const ONE_MINUTE = 60*ONE_SECOND;
 const ONE_HOUR = 60*ONE_MINUTE;
+
+// const ONE_KILOBYTE = 1024;
+// const ONE_MEGABYTE = 1024 * ONE_KILOBYTE;
+
 const DEFAULT_MAX_NETWORK_JSON_SIZE_MB = 15;
 
 const DEFAULT_BRAIN_HIDDEN_LAYER_SIZE = 9;
@@ -21,6 +25,7 @@ const omit = require("object.omit");
 const path = require("path");
 const walker = require("folder-walker");
 const watch = require("watch");
+// const sizeof = require("object-sizeof");
 
 let hostname = os.hostname();
 if (hostname.startsWith("mbp3")){
@@ -172,13 +177,14 @@ const delay = tcUtils.delay;
 const msToTime = tcUtils.msToTime;
 const jsonPrint = tcUtils.jsonPrint;
 const getTimeStamp = tcUtils.getTimeStamp;
+const formatBoolean = tcUtils.formatBoolean;
 
 const NeuralNetworkTools = require("@threeceelabs/neural-network-tools");
 const nnTools = new NeuralNetworkTools("NNC_NNT");
 
 // const fs = require("fs");
 const empty = require("is-empty");
-const HashMap = require("hashmap").HashMap;
+// const HashMap = require("hashmap").HashMap;
 // const yauzl = require("yauzl");
 
 const MODULE_ID = MODULE_ID_PREFIX + "_" + hostname;
@@ -386,10 +392,15 @@ process.on("unhandledRejection", function(err, promise) {
   process.exit(1);
 });
 
-const trainingSetUsersHashMap = {};
-trainingSetUsersHashMap.left = new HashMap();
-trainingSetUsersHashMap.neutral = new HashMap();
-trainingSetUsersHashMap.right = new HashMap();
+// const trainingSetUsersHashMap = {};
+// trainingSetUsersHashMap.left = new HashMap();
+// trainingSetUsersHashMap.neutral = new HashMap();
+// trainingSetUsersHashMap.right = new HashMap();
+
+const trainingSetUsersSet = {};
+trainingSetUsersSet.left = new Set();
+trainingSetUsersSet.neutral = new Set();
+trainingSetUsersSet.right = new Set();
 
 function initConfig(cnf) {
 
@@ -573,24 +584,28 @@ function updateTrainingSet(p){
       trainingSetObj.meta.numInputs = 0;
       trainingSetObj.meta.numOutputs = 3;
       trainingSetObj.meta.setSize = 0;
-      trainingSetObj.data = [];
+      trainingSetObj.nodeIdArray = [];
 
       testSetObj = {};
       testSetObj.meta = {};
       testSetObj.meta.numInputs = 0;
       testSetObj.meta.numOutputs = 3;
       testSetObj.meta.setSize = 0;
-      testSetObj.data = [];
+      testSetObj.nodeIdArray = [];
 
       const minCategorySize = Math.min(
-        trainingSetUsersHashMap.left.size, 
-        trainingSetUsersHashMap.neutral.size, 
-        trainingSetUsersHashMap.right.size
+        // trainingSetUsersHashMap.left.size, 
+        // trainingSetUsersHashMap.neutral.size, 
+        // trainingSetUsersHashMap.right.size
+        trainingSetUsersSet.left.size, 
+        trainingSetUsersSet.neutral.size, 
+        trainingSetUsersSet.right.size
       );
 
       async.eachSeries(["left", "neutral", "right"], function(category, cb){
 
-        const categorySize = (equalCategoriesFlag) ? minCategorySize : trainingSetUsersHashMap[category].size;
+        // const categorySize = (equalCategoriesFlag) ? minCategorySize : trainingSetUsersHashMap[category].size;
+        const categorySize = (equalCategoriesFlag) ? minCategorySize : trainingSetUsersSet[category].size;
 
         const trainingSetSize = parseInt((1 - configuration.testSetRatio) * categorySize);
         const testSetSize = parseInt(configuration.testSetRatio * categorySize);
@@ -600,13 +615,14 @@ function updateTrainingSet(p){
           + " | testSetSize: " + testSetSize
         ));
 
-        const shuffledTrainingSet = _.shuffle(trainingSetUsersHashMap[category].values());
+        // const shuffledTrainingSet = _.shuffle(trainingSetUsersHashMap[category].values());
+        const shuffledTrainingSetNodeIdArray = _.shuffle([...trainingSetUsersSet[category]]);
 
-        const trainingSetData = shuffledTrainingSet.slice(0, trainingSetSize);
-        const testSetData = shuffledTrainingSet.slice(trainingSetSize, trainingSetSize+testSetSize);
+        const trainingSetNodeIdArray = shuffledTrainingSetNodeIdArray.slice(0, trainingSetSize);
+        const testSetNodeIdArray = shuffledTrainingSetNodeIdArray.slice(trainingSetSize, trainingSetSize+testSetSize);
 
-        trainingSetObj.data = trainingSetObj.data.concat(trainingSetData);
-        testSetObj.data = testSetObj.data.concat(testSetData);
+        trainingSetObj.nodeIdArray = trainingSetObj.nodeIdArray.concat(trainingSetNodeIdArray);
+        testSetObj.nodeIdArray = testSetObj.nodeIdArray.concat(testSetNodeIdArray);
 
         console.log(chalkLog(MODULE_ID_PREFIX + " | TRAINING SET | " + category.toUpperCase()
           + " | EQ CATEGORIES FLAG: " + equalCategoriesFlag
@@ -614,7 +630,7 @@ function updateTrainingSet(p){
           + " | CAT SIZE: " + categorySize
           + " | TRAIN SIZE: " + trainingSetSize
           + " | TEST SIZE: " + testSetSize
-          + " | TRAIN SET DATA SIZE: " + trainingSetObj.data.length
+          + " | TRAIN SET DATA SIZE: " + trainingSetObj.nodeIdArray.length
         ));
 
         cb();
@@ -626,18 +642,18 @@ function updateTrainingSet(p){
           return reject(err);
         }
 
-        if (trainingSetObj.data.length === 0){
+        if (trainingSetObj.nodeIdArray.length === 0){
           console.log(chalkError(MODULE_ID_PREFIX + " | *** EMPTY TRAINING SET"
-            + " | SIZE: " + trainingSetObj.data.length
+            + " | SIZE: " + trainingSetObj.nodeIdArray.length
           ));
           return reject(err);
         }
 
-        trainingSetObj.data = _.shuffle(trainingSetObj.data);
-        testSetObj.data = _.shuffle(testSetObj.data);
+        trainingSetObj.nodeIdArray = _.shuffle(trainingSetObj.nodeIdArray);
+        testSetObj.nodeIdArray = _.shuffle(testSetObj.nodeIdArray);
 
-        trainingSetObj.meta.setSize = trainingSetObj.data.length;
-        testSetObj.meta.setSize = testSetObj.data.length;
+        trainingSetObj.meta.setSize = trainingSetObj.nodeIdArray.length;
+        testSetObj.meta.setSize = testSetObj.nodeIdArray.length;
 
         // if (nnTools.getMaxInputHashMap()) {
         //   console.log(chalkLog(MODULE_ID_PREFIX + " | maxInputHashMap"
@@ -870,88 +886,92 @@ const defaultDbUpdateOptions = {
 
 async function loadUserFile(params){
 
-  try{
+// try{
 
-    const updateDbUser = params.updateDbUser || configuration.updateDbUser;
-    const folder = params.folder || path.dirname(params.path);
-    const file = params.file || path.basename(params.path);
+  const updateDbUser = params.updateDbUser || configuration.updateDbUser;
+  const folder = params.folder || path.dirname(params.path);
+  const file = params.file || path.basename(params.path);
 
-    let userObj = await tcUtils.loadFile({
-      folder: folder, 
-      file: file, 
-      verbose: params.verbose
-    });
+  let userObj = await tcUtils.loadFile({
+    folder: folder, 
+    file: file, 
+    verbose: params.verbose
+  });
 
-    statsObj.users.folder.total += 1;
+  statsObj.users.folder.total += 1;
 
-    if ((userObj.category === "left") || (userObj.category === "right") || (userObj.category === "neutral")) {
+  if ((userObj.category === "left") || (userObj.category === "right") || (userObj.category === "neutral")) {
 
 
-      if (updateDbUser){
+    if (updateDbUser){
 
-        const update = pick(userObj, defaultUserUpdatePropArray);
+      const update = pick(userObj, defaultUserUpdatePropArray);
 
-        const userDoc = await global.wordAssoDb.User.findOneAndUpdate(
-          {nodeId: userObj.nodeId}, 
-          update, 
-          defaultDbUpdateOptions
-        );
+      const userDoc = await global.wordAssoDb.User.findOneAndUpdate(
+        {nodeId: userObj.nodeId}, 
+        update, 
+        defaultDbUpdateOptions
+      );
 
-        if (userDoc) {
-          userObj = userDoc.toObject();
-        }
-      }
-
-      if (empty(userObj.tweetHistograms) || !userObj.tweetHistograms || userObj.tweetHistograms === undefined){
-        userObj.tweetHistograms = {};
-      }
-      
-      if (empty(userObj.profileHistograms) || !userObj.profileHistograms || userObj.profileHistograms === undefined){
-        userObj.profileHistograms = {};
-      }
-      
-      trainingSetUsersHashMap[userObj.category].set(userObj.nodeId, userObj);
-
-      if (((configuration.testMode || configuration.verbose) && (statsObj.users.folder.total % 100 === 0)) || (statsObj.users.folder.total % 1000 === 0)) {
-
-        console.log(chalkLog(MODULE_ID_PREFIX
-          + " [" + statsObj.users.folder.total + "]"
-          + " USERS - L: " + trainingSetUsersHashMap.left.size
-          + " N: " + trainingSetUsersHashMap.neutral.size
-          + " R: " + trainingSetUsersHashMap.right.size
-          + " | " + userObj.userId
-          + " | @" + userObj.screenName
-          + " | " + userObj.name
-          + " | FLWRs: " + userObj.followersCount
-          + " | FRNDs: " + userObj.friendsCount
-          + " | FRNDs DB: " + userObj.friends.length
-          + " | CAT M: " + userObj.category + " A: " + userObj.categoryAuto
-        ));
-      }
-
-      if (configuration.testMode && statsObj.users.folder.total >= TEST_MODE_LENGTH){
-        return;
+      if (userDoc) {
+        userObj = userDoc.toObject();
       }
     }
-    else{
-      console.log(chalkAlert(MODULE_ID_PREFIX + " | ??? UNCAT UNZIPPED USER"
+
+    if (empty(userObj.tweetHistograms) || !userObj.tweetHistograms || userObj.tweetHistograms === undefined){
+      userObj.tweetHistograms = {};
+    }
+    
+    if (empty(userObj.profileHistograms) || !userObj.profileHistograms || userObj.profileHistograms === undefined){
+      userObj.profileHistograms = {};
+    }
+    
+    // trainingSetUsersHashMap[userObj.category].set(userObj.nodeId, userObj);
+    trainingSetUsersSet[userObj.category].add(userObj.nodeId);
+
+    if (((configuration.testMode || configuration.verbose) && (statsObj.users.folder.total % 100 === 0)) || (statsObj.users.folder.total % 1000 === 0)) {
+
+      console.log(chalkLog(MODULE_ID_PREFIX
         + " [" + statsObj.users.folder.total + "]"
-        + " USERS - L: " + trainingSetUsersHashMap.left.size
-        + " N: " + trainingSetUsersHashMap.neutral.size
-        + " R: " + trainingSetUsersHashMap.right.size
+        // + " USERS - L: " + trainingSetUsersHashMap.left.size
+        // + " N: " + trainingSetUsersHashMap.neutral.size
+        // + " R: " + trainingSetUsersHashMap.right.size
+        + " USERS - L: " + trainingSetUsersSet.left.size
+        + " N: " + trainingSetUsersSet.neutral.size
+        + " R: " + trainingSetUsersSet.right.size
         + " | " + userObj.userId
         + " | @" + userObj.screenName
         + " | " + userObj.name
         + " | FLWRs: " + userObj.followersCount
         + " | FRNDs: " + userObj.friendsCount
+        + " | FRNDs DB: " + userObj.friends.length
         + " | CAT M: " + userObj.category + " A: " + userObj.categoryAuto
-      ));                      
+      ));
     }
-    return;
+
+    if (configuration.testMode && statsObj.users.folder.total >= TEST_MODE_LENGTH){
+      return;
+    }
   }
-  catch(err){
-    throw err;
+  else{
+    console.log(chalkAlert(MODULE_ID_PREFIX + " | ??? UNCAT UNZIPPED USER"
+      + " [" + statsObj.users.folder.total + "]"
+      + " USERS - L: " + trainingSetUsersSet.left.size
+      + " N: " + trainingSetUsersSet.neutral.size
+      + " R: " + trainingSetUsersSet.right.size
+      + " | " + userObj.userId
+      + " | @" + userObj.screenName
+      + " | " + userObj.name
+      + " | FLWRs: " + userObj.followersCount
+      + " | FRNDs: " + userObj.friendsCount
+      + " | CAT M: " + userObj.category + " A: " + userObj.categoryAuto
+    ));                      
   }
+  return;
+// }
+// catch(err){
+//   throw err;
+// }
 }
 
 function loadUsersFolder(params){
@@ -979,9 +999,9 @@ function loadUsersFolder(params){
     }
 
     if (params.resetFlag){
-      trainingSetUsersHashMap.left.clear();
-      trainingSetUsersHashMap.neutral.clear();
-      trainingSetUsersHashMap.right.clear();
+      trainingSetUsersSet.left.clear();
+      trainingSetUsersSet.neutral.clear();
+      trainingSetUsersSet.right.clear();
 
       statsObj.users.folder.hits = 0;
       statsObj.users.folder.misses = 0;
@@ -1065,9 +1085,9 @@ function loadUsersFolder(params){
       console.log(chalkBlue(MODULE_ID_PREFIX
         + " [" + statsObj.users.folder.total + "]"
         + " | LOAD USERS FOLDERS COMPLETE"
-        + " | L: " + trainingSetUsersHashMap.left.size
-        + " N: " + trainingSetUsersHashMap.neutral.size
-        + " R: " + trainingSetUsersHashMap.right.size
+        + " | L: " + trainingSetUsersSet.left.size
+        + " N: " + trainingSetUsersSet.neutral.size
+        + " R: " + trainingSetUsersSet.right.size
       ));
 
       folderStreamEnd = true;
@@ -1096,69 +1116,70 @@ async function initLoadUsersFolder(params){
 
 async function cursorDataHandler(user){
 
-  try{
+// try{
 
-    if (!user.screenName){
-      console.log(chalkWarn(MODULE_ID_PREFIX + " | !!! USER SCREENNAME UNDEFINED\n" + jsonPrint(user)));
-      statsObj.users.processed.errors += 1;
-      return;
-    }
-    
-    if (empty(user.friends) && empty(user.profileHistograms) && empty(user.tweetHistograms)){
-
-      statsObj.users.processed.empty += 1;
-
-      if (statsObj.users.processed.empty % 100 === 0){
-        console.log(chalkWarn(MODULE_ID_PREFIX 
-          + " | --- EMPTY HISTOGRAMS"
-          + " | SKIPPING"
-          + " | PRCSD/REM/MT/ERR/TOT: " 
-          + statsObj.users.processed.total 
-          + "/" + statsObj.users.processed.remain 
-          + "/" + statsObj.users.processed.empty 
-          + "/" + statsObj.users.processed.errors
-          + "/" + statsObj.users.grandTotal
-          + " | @" + user.screenName 
-        )); 
-      }
-      return;
-    }
-
-    if (!user.profileHistograms || user.profileHistograms === undefined || empty(user.profileHistograms)){
-      user.profileHistograms = {};
-    }
-
-    if (!user.tweetHistograms || user.tweetHistograms === undefined || empty(user.tweetHistograms)){
-      user.tweetHistograms = {};
-    }
-
-    if (!user.friends || user.friends == undefined) {
-      user.friends = [];
-    }
-    else{
-      user.friends = _.slice(user.friends, 0,5000);
-    }
-
-    trainingSetUsersHashMap[user.category].set(user.nodeId, user);
-
-    categorizedUsers[user.category] += 1;
-    statsObj.categorizedCount += 1;
-
-    if (statsObj.categorizedCount > 0 && statsObj.categorizedCount % 100 === 0){
-      console.log(chalkInfo(MODULE_ID_PREFIX
-        + " | CATEGORIZED: " + statsObj.categorizedCount
-        + " | L: " + categorizedUsers.left
-        + " | N: " + categorizedUsers.neutral
-        + " | R: " + categorizedUsers.right
-      ));
-    }
-
+  if (!user.screenName){
+    console.log(chalkWarn(MODULE_ID_PREFIX + " | !!! USER SCREENNAME UNDEFINED\n" + jsonPrint(user)));
+    statsObj.users.processed.errors += 1;
     return;
+  }
+  
+  if (empty(user.friends) && empty(user.profileHistograms) && empty(user.tweetHistograms)){
 
+    statsObj.users.processed.empty += 1;
+
+    if (statsObj.users.processed.empty % 100 === 0){
+      console.log(chalkWarn(MODULE_ID_PREFIX 
+        + " | --- EMPTY HISTOGRAMS"
+        + " | SKIPPING"
+        + " | PRCSD/REM/MT/ERR/TOT: " 
+        + statsObj.users.processed.total 
+        + "/" + statsObj.users.processed.remain 
+        + "/" + statsObj.users.processed.empty 
+        + "/" + statsObj.users.processed.errors
+        + "/" + statsObj.users.grandTotal
+        + " | @" + user.screenName 
+      )); 
+    }
+    return;
   }
-  catch(err){
-    throw err;
+
+  if (!user.profileHistograms || user.profileHistograms === undefined || empty(user.profileHistograms)){
+    user.profileHistograms = {};
   }
+
+  if (!user.tweetHistograms || user.tweetHistograms === undefined || empty(user.tweetHistograms)){
+    user.tweetHistograms = {};
+  }
+
+  if (!user.friends || user.friends == undefined) {
+    user.friends = [];
+  }
+  else{
+    user.friends = _.slice(user.friends, 0,5000);
+  }
+
+  // trainingSetUsersHashMap[user.category].set(user.nodeId, user);
+  trainingSetUsersSet[user.category].add(user.nodeId);
+
+  categorizedUsers[user.category] += 1;
+  statsObj.categorizedCount += 1;
+
+
+  if (statsObj.categorizedCount > 0 && statsObj.categorizedCount % 100 === 0){
+    console.log(chalkInfo(MODULE_ID_PREFIX
+      + " | CATEGORIZED: " + statsObj.categorizedCount
+      + " | L: " + categorizedUsers.left
+      + " | N: " + categorizedUsers.neutral
+      + " | R: " + categorizedUsers.right
+    ));
+  }
+
+  return;
+// }
+// catch(err){
+//   throw err;
+// }
 }
 
 function cursorDataHandlerPromise(user){
@@ -1189,81 +1210,87 @@ function cursorDataHandlerPromise(user){
 const categorizedUsers = {};
 
 async function loadTrainingSetUsersHashMapFromDb(p) {
-  try{
 
-    const params = p || {};
+  // try{
 
-    statsObj.status = "LOAD TRAINING SET FROM DB";
-    statsObj.trainingSetReady = false;
+  const params = p || {};
 
-    statsObj.categorizedCount = 0;
+  statsObj.status = "LOAD TRAINING SET FROM DB";
+  statsObj.trainingSetReady = false;
 
-    categorizedUsers.left = 0;
-    categorizedUsers.neutral = 0;
-    categorizedUsers.right = 0;
+  statsObj.categorizedCount = 0;
 
-    const query = params.query || {categorized: true};
-    const batchSize = params.batchSize || 1000;
-    const cursorParallel = params.cursorParallel || 8;
-    const limit = params.limit || 1000;
+  categorizedUsers.left = 0;
+  categorizedUsers.neutral = 0;
+  categorizedUsers.right = 0;
 
-    let cursor;
+  const query = params.query || {categorized: true};
+  const batchSize = params.batchSize || 1000;
+  const cursorParallel = params.cursorParallel || 8;
+  const limit = params.limit || 1000;
 
-    console.log(chalkBlue(MODULE_ID_PREFIX
-      + " | LOADING TRAINING SET FROM DB ..."
-      + " | batchSize: " + batchSize
-      + " | cursorParallel: " + cursorParallel
-    ));
+  let cursor;
 
-    if (configuration.testMode) {
-      cursor = global.wordAssoDb.User
-      .find(query, {timeout: false})
-      .lean()
-      .batchSize(batchSize)
-      .limit(limit)
-      .cursor()
-      .addCursorFlag("noCursorTimeout", true);
-    }
-    else{
-      cursor = global.wordAssoDb.User
-      .find(query, {timeout: false})
-      .lean()
-      .batchSize(batchSize)
-      .cursor()
-      .addCursorFlag("noCursorTimeout", true);
-    }
+  console.log(chalkBlue(MODULE_ID_PREFIX
+    + " | LOADING TRAINING SET FROM DB ..."
+    + " | batchSize: " + batchSize
+    + " | cursorParallel: " + cursorParallel
+  ));
 
-    cursor.on("end", function() {
-      console.log(chalkAlert(MODULE_ID_PREFIX + " | --- loadTrainingSetUsersHashMapFromDb CURSOR END"));
-    });
-
-    cursor.on("error", function(err) {
-      console.log(chalkError(MODULE_ID_PREFIX + " | *** ERROR loadTrainingSetUsersHashMapFromDb: CURSOR ERROR: " + err));
-      throw err;
-    });
-
-    cursor.on("close", function() {
-      console.log(chalkAlert(MODULE_ID_PREFIX + " | XXX loadTrainingSetUsersHashMapFromDb CURSOR CLOSE"));
-    });
-
-    await cursor.eachAsync(async function(user){
-      await cursorDataHandlerPromise(user);
-    }, {parallel: cursorParallel});
-
-    console.log(chalkBlueBold(MODULE_ID_PREFIX
-      + " | +++ LOAD TRAINING SET FROM DB COMPLETE"
-    ));
-
-    return; 
+  if (configuration.testMode) {
+    cursor = global.wordAssoDb.User
+    .find(query, {timeout: false})
+    .lean()
+    .batchSize(batchSize)
+    .limit(limit)
+    .cursor()
+    .addCursorFlag("noCursorTimeout", true);
   }
-  catch(err){
+  else{
+    cursor = global.wordAssoDb.User
+    .find(query, {timeout: false})
+    .lean()
+    .batchSize(batchSize)
+    .cursor()
+    .addCursorFlag("noCursorTimeout", true);
+  }
+
+  cursor.on("end", function() {
+    console.log(chalkAlert(MODULE_ID_PREFIX + " | --- loadTrainingSetUsersHashMapFromDb CURSOR END"));
+  });
+
+  cursor.on("error", function(err) {
+    console.log(chalkError(MODULE_ID_PREFIX + " | *** ERROR loadTrainingSetUsersHashMapFromDb: CURSOR ERROR: " + err));
     throw err;
-  }
+  });
+
+  cursor.on("close", function() {
+    console.log(chalkAlert(MODULE_ID_PREFIX + " | XXX loadTrainingSetUsersHashMapFromDb CURSOR CLOSE"));
+  });
+
+  await cursor.eachAsync(async function(user){
+    await cursorDataHandlerPromise(user);
+  }, {parallel: cursorParallel});
+
+  console.log(chalkBlueBold(MODULE_ID_PREFIX
+    + " | +++ LOAD TRAINING SET FROM DB COMPLETE"
+  ));
+
+  return; 
+// }
+// catch(err){
+//   throw err;
+// }
 }
 
 async function loadTrainingSet(){
 
   try{
+
+    console.log(chalkLog(MODULE_ID_PREFIX
+      + " | LOAD TRAINING SET ..."
+    ));
+
     statsObj.status = "LOAD TRAINING SET";
     statsObj.trainingSetReady = false;
 
@@ -1281,10 +1308,8 @@ async function loadTrainingSet(){
       statsObj.usersFolderLoaded = true;
       statsObj.loadUsersFolderBusy = false;
     }
-    // else {
-    await loadTrainingSetUsersHashMapFromDb();
-    // }
 
+    await loadTrainingSetUsersHashMapFromDb();
     await updateTrainingSet();
 
     statsObj.loadUsersFolderBusy = false;
@@ -1610,191 +1635,148 @@ function prepNetworkEvolve() {
   return finalOptions;
 }
 
-function dataSetPrep(params, dataSetObj){
+async function dataSetPrep(params, setObj){
 
-  return new Promise(function(resolve, reject){
+  const nodeIdArray = setObj.nodeIdArray; // array
 
-    // const params = ;
-    // const dataSetObj = params.dataSetObj;
-    // configuration.userCharCountScreenName = 15;
-    // configuration.userCharCountName = 50;
-    // configuration.userCharCountDescription = 160;
-    // configuration.userCharCountLocation = 30;
+  const userProfileCharCodesOnlyFlag = (params.userProfileCharCodesOnlyFlag !== undefined) 
+    ? params.userProfileCharCodesOnlyFlag 
+    : false;
 
-    const userProfileCharCodesOnlyFlag = (params.userProfileCharCodesOnlyFlag !== undefined) 
-      ? params.userProfileCharCodesOnlyFlag 
-      : false;
+  const binaryMode = (params.binaryMode !== undefined) 
+    ? params.binaryMode 
+    : configuration.binaryMode;
 
-    const binaryMode = (params.binaryMode !== undefined) 
-      ? params.binaryMode 
-      : configuration.binaryMode;
+  const logScaleMode = (params.logScaleMode !== undefined) 
+    ? params.logScaleMode 
+    : configuration.logScaleMode;
 
-    const logScaleMode = (params.logScaleMode !== undefined) 
-      ? params.logScaleMode 
-      : configuration.logScaleMode;
+  const userProfileOnlyFlag = (params.userProfileOnlyFlag !== undefined) 
+    ? params.userProfileOnlyFlag 
+    : configuration.userProfileOnlyFlag;
 
-    const userProfileOnlyFlag = (params.userProfileOnlyFlag !== undefined) 
-      ? params.userProfileOnlyFlag 
-      : configuration.userProfileOnlyFlag;
+  const dataSet = [];
 
-    const dataSet = [];
+  let dataConverted = 0;
 
-    let dataConverted = 0;
+  const numCharInputs = configuration.userCharCountScreenName 
+    + configuration.userCharCountName 
+    + configuration.userCharCountDescription 
+    + configuration.userCharCountLocation;
 
-    const numCharInputs = configuration.userCharCountScreenName 
-      + configuration.userCharCountName 
-      + configuration.userCharCountDescription 
-      + configuration.userCharCountLocation;
+  if (userProfileCharCodesOnlyFlag){
+    childNetworkObj.numInputs = numCharInputs;
+  }
 
-    if (userProfileCharCodesOnlyFlag){
-      dataSetObj.meta.numInputs = numCharInputs;
-      childNetworkObj.numInputs = numCharInputs;
+  console.log(chalkBlue(MODULE_ID_PREFIX
+    + " | DATA SET preppedOptions"
+    + " | DATA LENGTH: " + nodeIdArray.length
+    + " | USER PROFILE ONLY: " + formatBoolean(userProfileOnlyFlag)
+    + " | BIN MODE: " + formatBoolean(binaryMode)
+    + " | LOG SCALE MODE: " + formatBoolean(logScaleMode)
+    + " | INPUTS ID: " + params.inputsId
+  ));
+
+  for(const nodeId of nodeIdArray){
+
+    const user = await global.wordAssoDb.User.findOne({nodeId: nodeId}).lean().exec();
+
+    if (!userProfileCharCodesOnlyFlag
+      && (!user.profileHistograms || user.profileHistograms === undefined || user.profileHistograms === {}) 
+      && (!user.tweetHistograms || user.tweetHistograms === undefined || user.tweetHistograms === {}))
+    {
+      console.log(chalkAlert(MODULE_ID_PREFIX + " | !!! EMPTY USER HISTOGRAMS ... SKIPPING | @" + user.screenName));
+      continue;
     }
-    else{
-      dataSetObj.meta.numInputs = childNetworkObj.numInputs;
-    }
 
-    console.log(chalkBlue(MODULE_ID_PREFIX
-      + " | DATA SET preppedOptions"
-      + " | DATA LENGTH: " + dataSetObj.data.length
-      + " | INPUTS: " + dataSetObj.meta.numInputs
-      + " | USER PROFILE ONLY: " + userProfileOnlyFlag
-      + " | BIN MODE: " + binaryMode
-      + " | LOG SCALE MODE: " + logScaleMode
-      + "\nDATA SET META\n" + jsonPrint(dataSetObj.meta)
-    ));
+    //convertDatumOneNetwork
+    // results = {user: user, datum: datum, inputHits: inputHits, inputMisses: inputMisses, inputHitRate: inputHitRate};
 
-    const shuffledData = _.shuffle(dataSetObj.data);
+    // !!! CURRENTLY ONLY 2 DATA INPUT MODES:
+    // - BINARY
+    // - LOG SCALE
+    // 
+    // logScaleMode parameter is essentially ignored for now; only binaryMode matters
 
-    async.eachSeries(shuffledData, function(user, cb){
-
-      try {
-
-        if (!userProfileCharCodesOnlyFlag
-          && (!user.profileHistograms || user.profileHistograms === undefined || user.profileHistograms === {}) 
-          && (!user.tweetHistograms || user.tweetHistograms === undefined || user.tweetHistograms === {}))
-        {
-          console.log(chalkAlert(MODULE_ID_PREFIX + " | !!! EMPTY USER HISTOGRAMS ... SKIPPING | @" + user.screenName));
-          return cb();
-        }
-
-        //convertDatumOneNetwork
-        // results = {user: user, datum: datum, inputHits: inputHits, inputMisses: inputMisses, inputHitRate: inputHitRate};
-
-        // !!! CURRENTLY ONLY 2 DATA INPUT MODES:
-        // - BINARY
-        // - LOG SCALE
-        // 
-        // logScaleMode parameter is essentially ignored for now; only binaryMode matters
-
-        tcUtils.convertDatumOneNetwork({
-          primaryInputsFlag: true, 
-          user: user,
-          inputsId: params.inputsId,
-          userProfileCharCodesOnlyFlag: userProfileCharCodesOnlyFlag,
-          userProfileOnlyFlag: userProfileOnlyFlag,
-          binaryMode: binaryMode, 
-          logScaleMode: logScaleMode, 
-          verbose: params.verbose
-        }).
-        then(function(results){
-
-          if (results.emptyFlag) {
-            debug(chalkAlert(MODULE_ID_PREFIX + " | !!! EMPTY CONVERTED DATUM ... SKIPPING | @" + user.screenName));
-            return cb();
-          }
-
-          dataConverted += 1;
-
-          if (results.datum.input.length !== childNetworkObj.numInputs) { 
-            console.log(chalkError(MODULE_ID_PREFIX
-              + " | *** ERROR DATA SET PREP ERROR" 
-              + " | INPUT NUMBER MISMATCH" 
-              + " | INPUTS NUM IN: " + childNetworkObj.numInputs
-              + " | DATUM NUM IN: " + results.datum.input.length
-            ));
-            return cb(new Error("INPUT NUMBER MISMATCH"));
-          }
-
-          if (results.datum.output.length !== 3) { 
-            console.log(chalkError(MODULE_ID_PREFIX
-              + " | *** ERROR DATA SET PREP ERROR" 
-              + " | OUTPUT NUMBER MISMATCH" 
-              + " | OUTPUTS NUM IN: " + childNetworkObj.numOutputs
-              + " | DATUM NUM IN: " + results.datum.output.length
-            ));
-            return cb(new Error("OUTPUT NUMBER MISMATCH"));
-          }
-
-          for(const inputValue of results.datum.input){
-            if (typeof inputValue !== "number") {
-              return cb(new Error("INPUT VALUE NOT TYPE NUMBER | @" + results.user.screenName + " | INPUT TYPE: " + typeof inputValue));
-            }
-            if (inputValue < 0) {
-              return cb(new Error("INPUT VALUE LESS THAN ZERO | @" + results.user.screenName + " | INPUT: " + inputValue));
-            }
-            if (inputValue > 1) {
-              return cb(new Error("INPUT VALUE GREATER THAN ONE | @" + results.user.screenName + " | INPUT: " + inputValue));
-            }
-          }
-
-          for(const outputValue of results.datum.output){
-            if (typeof outputValue !== "number") {
-              return cb(new Error("OUTPUT VALUE NOT TYPE NUMBER | @" + results.user.screenName + " | OUTPUT TYPE: " + typeof outputValue));
-            }
-            if (outputValue < 0) {
-              return cb(new Error("OUTPUT VALUE LESS THAN ZERO | @" + results.user.screenName + " | OUTPUT: " + outputValue));
-            }
-            if (outputValue > 1) {
-              return cb(new Error("OUTPUT VALUE GREATER THAN ONE | @" + results.user.screenName + " | OUTPUT: " + outputValue));
-            }
-          }
-
-          dataSet.push({
-            user: results.user, 
-            screenName: user.screenName, 
-            name: results.datum.name, 
-            input: results.datum.input, 
-            output: results.datum.output,
-            inputHits: results.inputHits,
-            inputMisses: results.inputMisses,
-            inputHitRate: results.inputHitRate
-          });
-
-          if (configuration.verbose || (dataConverted % 1000 === 0) || configuration.testMode && (dataConverted % 100 === 0)){
-            console.log(chalkLog(MODULE_ID_PREFIX + " | DATA CONVERTED: " + dataConverted + "/" + dataSetObj.data.length));
-          }
-
-          cb();
-        }).
-        catch(function(err){
-          console.log(chalkError(MODULE_ID_PREFIX
-            + " | *** ERROR convertDatumOneNetwork: " + err 
-          ));
-          cb(err);
-        });
-
-      }
-      catch(err){
-        console.log(chalkError(MODULE_ID_PREFIX
-          + " | *** ERROR DATA SET PREP: " + err 
-        ));
-        return cb(err);
-      }
-
-    }, function(err){
-
-      if (err) {
-        return reject(err);
-      }
-
-      console.log(chalkBlue(MODULE_ID_PREFIX + " | DATA SET PREP COMPLETE | DATA SET LENGTH: " + dataSet.length));
-
-      resolve(dataSet);
-
+    const results = await tcUtils.convertDatumOneNetwork({
+      primaryInputsFlag: true, 
+      user: user,
+      inputsId: params.inputsId,
+      userProfileCharCodesOnlyFlag: userProfileCharCodesOnlyFlag,
+      userProfileOnlyFlag: userProfileOnlyFlag,
+      binaryMode: binaryMode, 
+      logScaleMode: logScaleMode, 
+      verbose: params.verbose
     });
 
-  });
+    if (results.emptyFlag) {
+      debug(chalkAlert(MODULE_ID_PREFIX + " | !!! EMPTY CONVERTED DATUM ... SKIPPING | @" + user.screenName));
+      continue;
+    }
+
+    dataConverted += 1;
+
+    if (results.datum.input.length !== childNetworkObj.numInputs) { 
+      console.log(chalkError(MODULE_ID_PREFIX
+        + " | *** ERROR DATA SET PREP ERROR" 
+        + " | INPUT NUMBER MISMATCH" 
+        + " | INPUTS NUM IN: " + childNetworkObj.numInputs
+        + " | DATUM NUM IN: " + results.datum.input.length
+      ));
+      throw new Error("INPUT NUMBER MISMATCH");
+    }
+
+    if (results.datum.output.length !== 3) { 
+      console.log(chalkError(MODULE_ID_PREFIX
+        + " | *** ERROR DATA SET PREP ERROR" 
+        + " | OUTPUT NUMBER MISMATCH" 
+        + " | OUTPUTS NUM IN: " + childNetworkObj.numOutputs
+        + " | DATUM NUM IN: " + results.datum.output.length
+      ));
+      throw new Error("OUTPUT NUMBER MISMATCH");
+    }
+
+    for(const inputValue of results.datum.input){
+      if (typeof inputValue !== "number") {
+        throw new Error("INPUT VALUE NOT TYPE NUMBER | @" + results.user.screenName + " | INPUT TYPE: " + typeof inputValue);
+      }
+      if (inputValue < 0) {
+        throw new Error("INPUT VALUE LESS THAN ZERO | @" + results.user.screenName + " | INPUT: " + inputValue);
+      }
+      if (inputValue > 1) {
+        throw new Error("INPUT VALUE GREATER THAN ONE | @" + results.user.screenName + " | INPUT: " + inputValue);
+      }
+    }
+
+    for(const outputValue of results.datum.output){
+      if (typeof outputValue !== "number") {
+        throw new Error("OUTPUT VALUE NOT TYPE NUMBER | @" + results.user.screenName + " | OUTPUT TYPE: " + typeof outputValue);
+      }
+      if (outputValue < 0) {
+        throw new Error("OUTPUT VALUE LESS THAN ZERO | @" + results.user.screenName + " | OUTPUT: " + outputValue);
+      }
+      if (outputValue > 1) {
+        throw new Error("OUTPUT VALUE GREATER THAN ONE | @" + results.user.screenName + " | OUTPUT: " + outputValue);
+      }
+    }
+
+    dataSet.push({
+      user: results.user, 
+      screenName: user.screenName, 
+      name: results.datum.name, 
+      input: results.datum.input, 
+      output: results.datum.output,
+      inputHits: results.inputHits,
+      inputMisses: results.inputMisses,
+      inputHitRate: results.inputHitRate
+    });
+
+    if (configuration.verbose || (dataConverted % 1000 === 0) || configuration.testMode && (dataConverted % 100 === 0)){
+      console.log(chalkLog(MODULE_ID_PREFIX + " | DATA CONVERTED: " + dataConverted + "/" + nodeIdArray.length));
+    }
+  }
+
+  return dataSet;
 }
 
 const ignoreKeyArray = [
@@ -1842,63 +1824,63 @@ function createNetwork(){
           delete childNetworkObj.network;
         }
         else{
-          try {
-            if (childNetworkObj.networkTechnology === "carrot"){
-              if (!empty(childNetworkObj.networkRaw)){
-                networkRaw = childNetworkObj.networkRaw;
-                console.log(chalkLog(MODULE_ID_PREFIX + " | CHILD CARROT RAW NETWORK: " + childNetworkObj.seedNetworkId));
-              }
-              else if (!empty(childNetworkObj.network)){
-                networkRaw = carrot.Network.fromJSON(childNetworkObj.network);
-                console.log(chalkLog(MODULE_ID_PREFIX + " | CHILD CARROT RAW NETWORK: " + childNetworkObj.seedNetworkId));
-              }
-              else if (!empty(childNetworkObj.networkJson)){
-                networkRaw = carrot.Network.fromJSON(childNetworkObj.networkJson);
-                console.log(chalkLog(MODULE_ID_PREFIX + " | CHILD CARROT RAW NETWORK: " + childNetworkObj.seedNetworkId));
-              }
+        // try {
+          if (childNetworkObj.networkTechnology === "carrot"){
+            if (!empty(childNetworkObj.networkRaw)){
+              networkRaw = childNetworkObj.networkRaw;
+              console.log(chalkLog(MODULE_ID_PREFIX + " | CHILD CARROT RAW NETWORK: " + childNetworkObj.seedNetworkId));
             }
-            else if (childNetworkObj.networkTechnology === "neataptic"){
-              if (!empty(childNetworkObj.networkRaw)){
-                networkRaw = childNetworkObj.networkRaw;
-                console.log(chalkLog(MODULE_ID_PREFIX + " | CHILD NEATAPTIC RAW NETWORK: " + childNetworkObj.seedNetworkId));
-              }
-              else if (!empty(childNetworkObj.network)){
-                networkRaw = neataptic.Network.fromJSON(childNetworkObj.network);
-                console.log(chalkLog(MODULE_ID_PREFIX + " | CHILD NEATAPTIC RAW NETWORK: " + childNetworkObj.seedNetworkId));
-              }
-              else if (!empty(childNetworkObj.networkJson)){
-                networkRaw = neataptic.Network.fromJSON(childNetworkObj.networkJson);
-                console.log(chalkLog(MODULE_ID_PREFIX + " | CHILD NEATAPTIC RAW NETWORK: " + childNetworkObj.seedNetworkId));
-              }
+            else if (!empty(childNetworkObj.network)){
+              networkRaw = carrot.Network.fromJSON(childNetworkObj.network);
+              console.log(chalkLog(MODULE_ID_PREFIX + " | CHILD CARROT RAW NETWORK: " + childNetworkObj.seedNetworkId));
             }
-            else if (childNetworkObj.networkTechnology === "brain"){
-              if (!empty(childNetworkObj.networkRaw)){
-                networkRaw = childNetworkObj.networkRaw;
-                console.log(chalkLog(MODULE_ID_PREFIX + " | CHILD BRAIN RAW NETWORK: " + childNetworkObj.seedNetworkId));
-              }
-              else if (!empty(childNetworkObj.network)){
-                networkRaw = new brain.NeuralNetwork();
-                networkRaw.fromJSON(childNetworkObj.network);
-                console.log(chalkLog(MODULE_ID_PREFIX + " | CHILD BRAIN RAW NETWORK: " + childNetworkObj.seedNetworkId));
-              }
-              else if (!empty(childNetworkObj.networkJson)){
-                networkRaw = new brain.NeuralNetwork();
-                networkRaw.fromJSON(childNetworkObj.networkJson);
-                console.log(chalkLog(MODULE_ID_PREFIX + " | CHILD BRAIN RAW NETWORK: " + childNetworkObj.seedNetworkId));
-              }
-            }
-            else{
-              console.log(chalkError(MODULE_ID_PREFIX
-                + " | TECH: " + childNetworkObj.networkTechnology
-                + " | *** CHILD NO RAW NETWORK: " + childNetworkObj.seedNetworkId
-              ));
-              return reject(new Error("NO RAW NETWORK: " + childNetworkObj.networkId));
+            else if (!empty(childNetworkObj.networkJson)){
+              networkRaw = carrot.Network.fromJSON(childNetworkObj.networkJson);
+              console.log(chalkLog(MODULE_ID_PREFIX + " | CHILD CARROT RAW NETWORK: " + childNetworkObj.seedNetworkId));
             }
           }
-          catch(err){
-            console.log(chalkError(MODULE_ID_PREFIX + " | *** ERROR CREATE NETWORK | " + childNetworkObj.networkTechnology + " fromJSON: " + err));
-            return reject(err);
+          else if (childNetworkObj.networkTechnology === "neataptic"){
+            if (!empty(childNetworkObj.networkRaw)){
+              networkRaw = childNetworkObj.networkRaw;
+              console.log(chalkLog(MODULE_ID_PREFIX + " | CHILD NEATAPTIC RAW NETWORK: " + childNetworkObj.seedNetworkId));
+            }
+            else if (!empty(childNetworkObj.network)){
+              networkRaw = neataptic.Network.fromJSON(childNetworkObj.network);
+              console.log(chalkLog(MODULE_ID_PREFIX + " | CHILD NEATAPTIC RAW NETWORK: " + childNetworkObj.seedNetworkId));
+            }
+            else if (!empty(childNetworkObj.networkJson)){
+              networkRaw = neataptic.Network.fromJSON(childNetworkObj.networkJson);
+              console.log(chalkLog(MODULE_ID_PREFIX + " | CHILD NEATAPTIC RAW NETWORK: " + childNetworkObj.seedNetworkId));
+            }
           }
+          else if (childNetworkObj.networkTechnology === "brain"){
+            if (!empty(childNetworkObj.networkRaw)){
+              networkRaw = childNetworkObj.networkRaw;
+              console.log(chalkLog(MODULE_ID_PREFIX + " | CHILD BRAIN RAW NETWORK: " + childNetworkObj.seedNetworkId));
+            }
+            else if (!empty(childNetworkObj.network)){
+              networkRaw = new brain.NeuralNetwork();
+              networkRaw.fromJSON(childNetworkObj.network);
+              console.log(chalkLog(MODULE_ID_PREFIX + " | CHILD BRAIN RAW NETWORK: " + childNetworkObj.seedNetworkId));
+            }
+            else if (!empty(childNetworkObj.networkJson)){
+              networkRaw = new brain.NeuralNetwork();
+              networkRaw.fromJSON(childNetworkObj.networkJson);
+              console.log(chalkLog(MODULE_ID_PREFIX + " | CHILD BRAIN RAW NETWORK: " + childNetworkObj.seedNetworkId));
+            }
+          }
+          else{
+            console.log(chalkError(MODULE_ID_PREFIX
+              + " | TECH: " + childNetworkObj.networkTechnology
+              + " | *** CHILD NO RAW NETWORK: " + childNetworkObj.seedNetworkId
+            ));
+            return reject(new Error("NO RAW NETWORK: " + childNetworkObj.networkId));
+          }
+        // }
+        // catch(err){
+        //   console.log(chalkError(MODULE_ID_PREFIX + " | *** ERROR CREATE NETWORK | " + childNetworkObj.networkTechnology + " fromJSON: " + err));
+        //   return reject(err);
+        // }
         }
 
         console.log(chalkBlueBold(MODULE_ID_PREFIX
@@ -2115,6 +2097,7 @@ async function evolve(params){
 
       preppedTrainingSet = await dataSetPrep(preppedSetsConfig, trainingSetObj);
       preppedTestSet = await dataSetPrep(preppedSetsConfig, testSetObj);
+
     }
 
     const childNetworkRaw = await createNetwork();
@@ -2502,11 +2485,11 @@ const fsmStates = {
           }
 
           if (configuration.testMode) {
-            trainingSetObj.data = _.shuffle(trainingSetObj.data);
-            trainingSetObj.data.length = Math.min(trainingSetObj.data.length, TEST_MODE_LENGTH);
-            testSetObj.data.length = parseInt(configuration.testSetRatio * trainingSetObj.data.length);
-            trainingSetObj.meta.setSize = trainingSetObj.data.length;
-            testSetObj.meta.setSize = testSetObj.data.length;
+            trainingSetObj.nodeIdArray = _.shuffle(trainingSetObj.nodeIdArray);
+            trainingSetObj.nodeIdArray.length = Math.min(trainingSetObj.nodeIdArray.length, TEST_MODE_LENGTH);
+            testSetObj.nodeIdArray.length = parseInt(configuration.testSetRatio * trainingSetObj.nodeIdArray.length);
+            trainingSetObj.meta.setSize = trainingSetObj.nodeIdArray.length;
+            testSetObj.meta.setSize = testSetObj.nodeIdArray.length;
           }
 
           fsm.fsm_evolve();
@@ -2992,7 +2975,7 @@ async function connectDb(){
 
     db.on("error", async function(err){
       statsObj.status = "MONGO ERROR";
-      console.log(chalkError(MODULE_ID_PREFIX + " | *** MONGO DB CONNECTION ERROR"));
+      console.log(chalkError(MODULE_ID_PREFIX + " | *** MONGO DB CONNECTION ERROR: " + err));
       // db.close();
       // quit({cause: "MONGO DB ERROR: " + err});
     });
@@ -3086,9 +3069,12 @@ async function initWatchUserDataFolders(p){
         
         try{
           await delay({period: 30*ONE_SECOND});
-          trainingSetUsersHashMap.left.delete(nodeId);
-          trainingSetUsersHashMap.neutral.delete(nodeId);
-          trainingSetUsersHashMap.right.delete(nodeId);
+          // trainingSetUsersHashMap.left.delete(nodeId);
+          // trainingSetUsersHashMap.neutral.delete(nodeId);
+          // trainingSetUsersHashMap.right.delete(nodeId);
+          trainingSetUsersSet.left.delete(nodeId);
+          trainingSetUsersSet.neutral.delete(nodeId);
+          trainingSetUsersSet.right.delete(nodeId);
         }
         catch(err){
           console.log(chalkBlue(MODULE_ID_PREFIX 
