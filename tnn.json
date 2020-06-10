@@ -4,7 +4,7 @@
     "name": "tnn",
     "script": "twitterNeuralNetwork.js",
     "cwd": "/Volumes/RAID1/projects/twitterNeuralNetwork",
-    "node_args": "--max-old-space-size=24576",
+    "node_args": "--max-old-space-size=8192",
     "autorestart": false,
     "restart_delay": 300000,
     "env": {
