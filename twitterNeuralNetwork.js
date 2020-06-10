@@ -3015,14 +3015,14 @@ async function connectDb(){
     db.on("error", async function(err){
       statsObj.status = "MONGO ERROR";
       console.log(chalkError(MODULE_ID_PREFIX + " | *** MONGO DB CONNECTION ERROR"));
-      db.close();
-      quit({cause: "MONGO DB ERROR: " + err});
+      // db.close();
+      // quit({cause: "MONGO DB ERROR: " + err});
     });
 
     db.on("disconnected", async function(){
       statsObj.status = "MONGO DISCONNECTED";
       console.log(chalkAlert(MODULE_ID_PREFIX + " | *** MONGO DB DISCONNECTED"));
-      quit({cause: "MONGO DB DISCONNECTED"});
+      // quit({cause: "MONGO DB DISCONNECTED"});
     });
 
     console.log(chalk.green(MODULE_ID_PREFIX + " | MONGOOSE DEFAULT CONNECTION OPEN"));
