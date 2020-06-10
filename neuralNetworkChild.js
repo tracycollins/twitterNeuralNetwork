@@ -78,7 +78,7 @@ global.wordAssoDb = require("@threeceelabs/mongoose-twitter");
 let configuration = {};
 
 configuration.parallelLoadMax = 16;
-configuration.updateDbUser = true; // updates user in db from training set
+configuration.updateDbUser = false; // updates user in db from training set
 configuration.equalCategoriesFlag = false;
 configuration.userProfileCharCodesOnlyFlag = false;
 configuration.userProfileCharCodesOnlyInputsId = DEFAULT_USER_PROFILE_CHAR_CODES_ONLY_INPUTS_ID 
@@ -892,7 +892,7 @@ async function loadUserFile(params){
 
 // try{
 
-  const updateDbUser = params.updateDbUser || configuration.updateDbUser;
+  const updateDbUser = params.updateDbUser || false;
   const folder = params.folder || path.dirname(params.path);
   const file = params.file || path.basename(params.path);
 
