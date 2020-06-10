@@ -1,4 +1,4 @@
-const TEST_MODE_LENGTH = 100;
+const TEST_MODE_LENGTH = 1000;
 
 const ONE_SECOND = 1000;
 const ONE_MINUTE = 60*ONE_SECOND;
@@ -273,7 +273,11 @@ const statsObj = {};
 
 statsObj.archiveFlagObj = {};
 
+statsObj.loadUsersFolderBusy = false;
 statsObj.trainingSetReady = false;
+
+statsObj.trainingSet = {};
+statsObj.trainingSet.total = 0;
 
 let statsObjSmall = {};
 
@@ -978,6 +982,7 @@ function loadUsersFolder(params){
 
   return new Promise(function(resolve, reject){
 
+    const updateDbUser = params.updateDbUser || configuration.updateDbUser;
     const verbose = params.verbose || configuration.verbose;
     const folder = params.folder || configuration.userDataFolder;
     let folderStreamEnd = false;
@@ -1020,7 +1025,12 @@ function loadUsersFolder(params){
         while (userFileArray.length > 0 && loadUserFilePromiseArray.length < parallelLoadMax){
           const fileObj = userFileArray.shift();
           if (fileObj){
-            loadUserFilePromiseArray.push(loadUserFile({folder: fileObj.root, file: fileObj.relname, verbose: verbose}))
+            loadUserFilePromiseArray.push(loadUserFile({
+              folder: fileObj.root, 
+              file: fileObj.relname,
+              updateDbUser: updateDbUser,
+              verbose: verbose
+            }));
           }
         }
 
@@ -1042,7 +1052,12 @@ function loadUsersFolder(params){
         const fileObj = userFileArray.shift();
 
         try{
-          await loadUserFile({folder: fileObj.root, file: fileObj.relname, verbose: verbose});
+          await loadUserFile({
+            folder: fileObj.root, 
+            file: fileObj.relname,
+            updateDbUser: updateDbUser,
+            verbose: verbose
+          });
           ready = true;
         }
         catch(err){
@@ -1209,7 +1224,7 @@ function cursorDataHandlerPromise(user){
 
 const categorizedUsers = {};
 
-async function loadTrainingSetUsersHashMapFromDb(p) {
+async function loadTrainingSetUsersFromDb(p) {
 
   // try{
 
@@ -1256,24 +1271,30 @@ async function loadTrainingSetUsersHashMapFromDb(p) {
   }
 
   cursor.on("end", function() {
-    console.log(chalkAlert(MODULE_ID_PREFIX + " | --- loadTrainingSetUsersHashMapFromDb CURSOR END"));
+    console.log(chalkAlert(MODULE_ID_PREFIX + " | --- loadTrainingSetUsersFromDb CURSOR END"));
   });
 
   cursor.on("error", function(err) {
-    console.log(chalkError(MODULE_ID_PREFIX + " | *** ERROR loadTrainingSetUsersHashMapFromDb: CURSOR ERROR: " + err));
+    console.log(chalkError(MODULE_ID_PREFIX + " | *** ERROR loadTrainingSetUsersFromDb: CURSOR ERROR: " + err));
     throw err;
   });
 
   cursor.on("close", function() {
-    console.log(chalkAlert(MODULE_ID_PREFIX + " | XXX loadTrainingSetUsersHashMapFromDb CURSOR CLOSE"));
+    console.log(chalkAlert(MODULE_ID_PREFIX + " | XXX loadTrainingSetUsersFromDb CURSOR CLOSE"));
   });
 
   await cursor.eachAsync(async function(user){
     await cursorDataHandlerPromise(user);
   }, {parallel: cursorParallel});
 
+  statsObj.trainingSet.total = trainingSetUsersSet.left.size + trainingSetUsersSet.neutral.size + trainingSetUsersSet.right.size;
+
   console.log(chalkBlueBold(MODULE_ID_PREFIX
     + " | +++ LOAD TRAINING SET FROM DB COMPLETE"
+    + " | SET SIZE: L: " + statsObj.trainingSet.tota
+    + " / L: " + trainingSetUsersSet.left.size
+    + " / N: " + trainingSetUsersSet.neutral.size
+    + " / R: " + trainingSetUsersSet.right.size
   ));
 
   return; 
@@ -1287,12 +1308,16 @@ async function loadTrainingSet(){
 
   try{
 
-    console.log(chalkLog(MODULE_ID_PREFIX
-      + " | LOAD TRAINING SET ..."
+    console.log(chalk.black.bold(MODULE_ID_PREFIX
+      + " | loadTrainingSet | LOAD TRAINING SET ..."
     ));
 
     statsObj.status = "LOAD TRAINING SET";
     statsObj.trainingSetReady = false;
+
+    console.log(chalk.black.bold(MODULE_ID_PREFIX
+      + " | loadTrainingSet | LOAD NORMALIZATION ..."
+    ));
 
     const normalization = await tcUtils.loadFileRetry({
       folder: configuration.trainingSetsFolder, 
@@ -1300,16 +1325,37 @@ async function loadTrainingSet(){
       resolveOnNotFound: true
     });
 
-    if (normalization) { await nnTools.setNormalization(normalization); }
+    if (normalization) { 
+
+      console.log(chalk.black.bold(MODULE_ID_PREFIX
+        + " | loadTrainingSet | SET NORMALIZATION ..."
+      ));
+
+      await nnTools.setNormalization(normalization);
+    }
 
     if (!statsObj.usersFolderLoaded && !statsObj.loadUsersFolderBusy){
+
+      console.log(chalk.black.bold(MODULE_ID_PREFIX
+        + " | loadTrainingSet | LOAD USERS FOLDER: " + configuration.userDataFolder
+      ));
+
       statsObj.loadUsersFolderBusy = true;
       await initLoadUsersFolder({folder: configuration.userDataFolder});
       statsObj.usersFolderLoaded = true;
       statsObj.loadUsersFolderBusy = false;
     }
 
-    await loadTrainingSetUsersHashMapFromDb();
+    console.log(chalk.black.bold(MODULE_ID_PREFIX
+      + " | loadTrainingSet | LOAD TRAINING SET USERS FROM DB"
+    ));
+
+    await loadTrainingSetUsersFromDb();
+
+    console.log(chalk.black.bold(MODULE_ID_PREFIX
+      + " | loadTrainingSet | UPDATE TRAINING SET"
+    ));
+
     await updateTrainingSet();
 
     statsObj.loadUsersFolderBusy = false;
@@ -1681,12 +1727,27 @@ async function dataSetPrep(params, setObj){
 
     const user = await global.wordAssoDb.User.findOne({nodeId: nodeId}).lean().exec();
 
+    if (!user) {
+      console.log(chalkAlert(MODULE_ID_PREFIX + " | dataSetPrep | !!! USER NOT IN DB ... SKIPPING | @" + nodeId));
+      continue;
+    }
+
     if (!userProfileCharCodesOnlyFlag
       && (!user.profileHistograms || user.profileHistograms === undefined || user.profileHistograms === {}) 
       && (!user.tweetHistograms || user.tweetHistograms === undefined || user.tweetHistograms === {}))
     {
-      console.log(chalkAlert(MODULE_ID_PREFIX + " | !!! EMPTY USER HISTOGRAMS ... SKIPPING | @" + user.screenName));
+      console.log(chalkAlert(MODULE_ID_PREFIX + " | dataSetPrep | !!! EMPTY USER HISTOGRAMS ... SKIPPING | @" + user.screenName));
       continue;
+    }
+
+    if (!user.profileHistograms || user.profileHistograms === undefined || user.profileHistograms === {}){
+      console.log(chalkAlert(MODULE_ID_PREFIX + " | dataSetPrep | !!! EMPTY USER PROFILE HISTOGRAM | @" + user.screenName));
+      user.profileHistograms = {};
+    }
+
+    if (!user.tweetHistograms || user.tweetHistograms === undefined || user.tweetHistograms === {}){
+      console.log(chalkAlert(MODULE_ID_PREFIX + " | dataSetPrep | !!! EMPTY USER TWEETS HISTOGRAM | @" + user.screenName));
+      user.tweetHistograms = {};
     }
 
     //convertDatumOneNetwork
@@ -3003,6 +3064,7 @@ async function initWatchUserDataFolders(p){
 
     const params = p || {};
     const folder = params.folder || configuration.userDataFolder;
+    const updateDbUser = params.updateDbUser || configuration.updateDbUser;
 
     console.log(chalkBlue(MODULE_ID_PREFIX + " | +++ INIT WATCH USER DATA"
       + "\nPARAMS\n" + jsonPrint(params)
@@ -3029,7 +3091,7 @@ async function initWatchUserDataFolders(p){
 
         try{
           await delay({period: 30*ONE_SECOND});
-          await loadUserFile({path: filepath});
+          await loadUserFile({path: filepath, updateDbUser: updateDbUser});
         }
         catch(err){
           console.log(chalkBlue(MODULE_ID_PREFIX 
@@ -3045,7 +3107,7 @@ async function initWatchUserDataFolders(p){
         
         try{
           await delay({period: 30*ONE_SECOND});
-          await loadUserFile({path: filepath});
+          await loadUserFile({path: filepath, updateDbUser: updateDbUser});
         }
         catch(err){
           console.log(chalkBlue(MODULE_ID_PREFIX 

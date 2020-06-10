@@ -901,12 +901,12 @@ function printResultsHashmap(){
       "ME",
       "POP",
       "EL",
-      "START",
+      // "START",
       "ELPSD",
       "ITRS",
       "SPI",
-      "ERROR",
-      "FIT",
+      // "ERROR",
+      // "FIT",
       "RES %"
     ]);
 
@@ -1014,12 +1014,12 @@ function printResultsHashmap(){
         formatBoolean(networkObj.evolve.options.efficientMutation),
         popsize,
         elitism,
-        getTimeStamp(networkObj.evolve.startTime),
+        // getTimeStamp(networkObj.evolve.startTime),
         msToTime(elapsed),
         iterations,
         secPerIteration.toFixed(1),
-        error,
-        fitness,
+        // error,
+        // fitness,
         successRate
       ];
 
@@ -1082,12 +1082,12 @@ function printResultsHashmap(){
           "l", 
           "r", 
           "r", 
+          // "l", 
           "l", 
-          "l", 
           "r", 
           "r", 
-          "r", 
-          "r", 
+          // "r", 
+          // "r", 
           "r"
         ] 
       });
