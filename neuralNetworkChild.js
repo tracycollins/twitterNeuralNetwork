@@ -1098,7 +1098,7 @@ function loadUsersFolder(params){
 
     folderStream.on("end", function () {
 
-      console.log(chalkBlue(MODULE_ID_PREFIX
+      debug(chalkBlue(MODULE_ID_PREFIX
         + " [" + statsObj.users.folder.total + "]"
         + " | LOAD USERS FOLDERS COMPLETE"
         + " | L: " + trainingSetUsersSet.left.size
@@ -1114,16 +1114,7 @@ function loadUsersFolder(params){
       loadFileEnable = (configuration.testMode) ? (Math.random() > 0.5) : true;
 
       if (fileObj.basename.endsWith(".json") && loadFileEnable){
-
         userFileArray.push(fileObj);
-
-        console.log(chalkBlue(MODULE_ID_PREFIX
-          + " [" + statsObj.users.folder.total + "]"
-          + " | LOAD USERS FOLDERS COMPLETE"
-          + " | L: " + trainingSetUsersSet.left.size
-          + " N: " + trainingSetUsersSet.neutral.size
-          + " R: " + trainingSetUsersSet.right.size
-        ));
       }
     });
 
