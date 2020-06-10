@@ -993,6 +993,7 @@ function loadUsersFolder(params){
       + " | LOADING USERS FOLDER"
       + " | " + getTimeStamp() 
       + " | parallelLoadMax: " + parallelLoadMax
+      + " | updateDbUser: " + formatBoolean(updateDbUser)
       + " | FOLDER: " + folder
     ));
 
@@ -1076,6 +1077,7 @@ function loadUsersFolder(params){
 
     }, 100);
 
+    let loadFileEnable = true;
     const folderStream = walker([folder]);
 
     folderStream.on("error", function (err) {
@@ -1092,7 +1094,6 @@ function loadUsersFolder(params){
         clearInterval(userFileInterval);
         return reject(err);
       }
-
     });
 
     folderStream.on("end", function () {
@@ -1106,26 +1107,31 @@ function loadUsersFolder(params){
       ));
 
       folderStreamEnd = true;
-
     });
-
-    let loadFileEnable = true;
 
     folderStream.on("data", async function (fileObj) {
 
       loadFileEnable = (configuration.testMode) ? (Math.random() > 0.5) : true;
 
       if (fileObj.basename.endsWith(".json") && loadFileEnable){
+
         userFileArray.push(fileObj);
+
+        console.log(chalkBlue(MODULE_ID_PREFIX
+          + " [" + statsObj.users.folder.total + "]"
+          + " | LOAD USERS FOLDERS COMPLETE"
+          + " | L: " + trainingSetUsersSet.left.size
+          + " N: " + trainingSetUsersSet.neutral.size
+          + " R: " + trainingSetUsersSet.right.size
+        ));
       }
     });
-
 
   });
 }
 
 async function initLoadUsersFolder(params){
-  loadUsersFolder(params);
+  await loadUsersFolder(params);
   return;
 }
 
