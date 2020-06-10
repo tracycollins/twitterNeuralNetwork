@@ -3021,10 +3021,12 @@ async function initWatchUserDataFolders(p){
     const params = p || {};
     const folder = params.folder || configuration.userDataFolder;
 
-    console.log(chalkBlue(MODULE_ID_PREFIX + " | INIT WATCH USER DATA FOLDER\n" + jsonPrint(params)));
+    console.log(chalkBlue(MODULE_ID_PREFIX + " | +++ INIT WATCH USER DATA"
+      + "\nPARAMS\n" + jsonPrint(params)
+    ));
 
     const options = {
-      filter: function(filepath){ return filepath.endsWith(".json"); },
+      // filter: function(filepath){ return filepath.endsWith(".json"); },
       ignoreDotFiles: true,
       ignoreUnreadableDir: true,
       ignoreNotPermitted: true,
