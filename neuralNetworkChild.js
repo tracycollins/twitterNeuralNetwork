@@ -982,7 +982,7 @@ function loadUsersFolder(params){
 
   return new Promise(function(resolve, reject){
 
-    const updateDbUser = params.updateDbUser || configuration.updateDbUser;
+    const updateDbUser = params.updateDbUser || false;
     const verbose = params.verbose || configuration.verbose;
     const folder = params.folder || configuration.userDataFolder;
     let folderStreamEnd = false;
