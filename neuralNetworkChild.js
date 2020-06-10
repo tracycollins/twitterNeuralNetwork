@@ -1331,12 +1331,12 @@ async function loadTrainingSet(){
       await nnTools.setNormalization(normalization);
     }
 
-    if (!statsObj.usersFolderLoaded && !statsObj.loadUsersFolderBusy){
+    if (configuration.loadUsersFolderOnStart && !statsObj.usersFolderLoaded && !statsObj.loadUsersFolderBusy){
 
       console.log(chalk.black.bold(MODULE_ID_PREFIX
         + " | loadTrainingSet | LOAD USERS FOLDER: " + configuration.userDataFolder
       ));
-
+      
       statsObj.loadUsersFolderBusy = true;
       await initLoadUsersFolder({folder: configuration.userDataFolder});
       statsObj.usersFolderLoaded = true;
