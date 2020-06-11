@@ -19,13 +19,12 @@ let childNetworkObj; // this is the common, default nn object
 let seedNetworkObj; // this is the common, default nn object
 
 const os = require("os");
-// const cp = require("child_process");
 const _ = require("lodash");
 const omit = require("object.omit");
 const path = require("path");
 const walker = require("folder-walker");
 const watch = require("watch");
-// const sizeof = require("object-sizeof");
+const empty = require("is-empty");
 
 let hostname = os.hostname();
 if (hostname.startsWith("mbp3")){
@@ -184,11 +183,6 @@ const formatBoolean = tcUtils.formatBoolean;
 const NeuralNetworkTools = require("@threeceelabs/neural-network-tools");
 const nnTools = new NeuralNetworkTools("NNC_NNT");
 
-// const fs = require("fs");
-const empty = require("is-empty");
-// const HashMap = require("hashmap").HashMap;
-// const yauzl = require("yauzl");
-
 const MODULE_ID = MODULE_ID_PREFIX + "_" + hostname;
 
 const PRIMARY_HOST = process.env.PRIMARY_HOST || "google";
@@ -242,12 +236,10 @@ configuration.requiredTrainingSetFile = "requiredTrainingSet.txt";
 configuration.local = {};
 configuration.local.trainingSetsFolder = path.join(configHostFolder, "trainingSets");
 configuration.local.userArchiveFolder = path.join(configHostFolder, "trainingSets/users");
-// configuration.local.maxInputHashMapsFolder = path.join(configHostFolder, "trainingSets/maxInputHashMaps");
 
 configuration.default = {};
 configuration.default.trainingSetsFolder = path.join(configDefaultFolder, "trainingSets");
 configuration.default.userArchiveFolder = path.join(configDefaultFolder, "trainingSets/users");
-// configuration.default.maxInputHashMapsFolder = path.join(configDefaultFolder, "trainingSets/maxInputHashMaps");
 
 configuration.trainingSetsFolder = configuration[HOST].trainingSetsFolder;
 configuration.archiveFileUploadCompleteFlagFolder = path.join(configuration[HOST].trainingSetsFolder, "users");
@@ -255,7 +247,6 @@ configuration.userArchiveFolder = configuration[HOST].userArchiveFolder;
 configuration.userTempArchiveFolder = configuration[HOST].userTempArchiveFolder;
 configuration.userArchivePath = configuration[HOST].userArchivePath;
 configuration.userTempArchivePath = configuration[HOST].userTempArchivePath;
-// configuration.maxInputHashMapsFolder = configuration.default.maxInputHashMapsFolder;
 
 const defaultDataFolder = "/Volumes/nas4/data";
 configuration.userDataFolder = path.join(defaultDataFolder, "users");
@@ -329,7 +320,6 @@ statsObj.training.seedNetworkRes = 0;
 statsObj.training.iterations = 0;
 
 statsObj.inputsId = "";
-// statsObj.inputsObj = {};
 statsObj.outputs = [];
 
 const statsPickArray = [
@@ -401,11 +391,6 @@ process.on("unhandledRejection", function(err, promise) {
   quit("unhandledRejection");
   process.exit(1);
 });
-
-// const trainingSetUsersHashMap = {};
-// trainingSetUsersHashMap.left = new HashMap();
-// trainingSetUsersHashMap.neutral = new HashMap();
-// trainingSetUsersHashMap.right = new HashMap();
 
 const trainingSetUsersSet = {};
 trainingSetUsersSet.left = new Set();
@@ -604,9 +589,6 @@ function updateTrainingSet(p){
       testSetObj.nodeIdArray = [];
 
       const minCategorySize = Math.min(
-        // trainingSetUsersHashMap.left.size, 
-        // trainingSetUsersHashMap.neutral.size, 
-        // trainingSetUsersHashMap.right.size
         trainingSetUsersSet.left.size, 
         trainingSetUsersSet.neutral.size, 
         trainingSetUsersSet.right.size
@@ -614,7 +596,6 @@ function updateTrainingSet(p){
 
       async.eachSeries(["left", "neutral", "right"], function(category, cb){
 
-        // const categorySize = (equalCategoriesFlag) ? minCategorySize : trainingSetUsersHashMap[category].size;
         const categorySize = (equalCategoriesFlag) ? minCategorySize : trainingSetUsersSet[category].size;
 
         const trainingSetSize = parseInt((1 - configuration.testSetRatio) * categorySize);
@@ -625,7 +606,6 @@ function updateTrainingSet(p){
           + " | testSetSize: " + testSetSize
         ));
 
-        // const shuffledTrainingSet = _.shuffle(trainingSetUsersHashMap[category].values());
         const shuffledTrainingSetNodeIdArray = _.shuffle([...trainingSetUsersSet[category]]);
 
         const trainingSetNodeIdArray = shuffledTrainingSetNodeIdArray.slice(0, trainingSetSize);
@@ -665,12 +645,6 @@ function updateTrainingSet(p){
         trainingSetObj.meta.setSize = trainingSetObj.nodeIdArray.length;
         testSetObj.meta.setSize = testSetObj.nodeIdArray.length;
 
-        // if (nnTools.getMaxInputHashMap()) {
-        //   console.log(chalkLog(MODULE_ID_PREFIX + " | maxInputHashMap"
-        //     + "\n" + jsonPrint(Object.keys(nnTools.getMaxInputHashMap()))
-        //   ));
-        // }
-
         if (nnTools.getNormalization()) {
           console.log(chalkLog(MODULE_ID_PREFIX + " | NORMALIZATION"
             + "\n" + jsonPrint(nnTools.getNormalization())
@@ -694,177 +668,6 @@ function updateTrainingSet(p){
 
   });
 }
-
-// let existsInterval;
-
-// function waitFileExists(params){
-
-//   return new Promise(function(resolve, reject){
-
-//     clearInterval(existsInterval);
-
-//     const interval = params.interval || 5*ONE_MINUTE;
-//     const maxWaitTime = params.maxWaitTime || configuration.userArchiveFileExistsMaxWaitTime;
-
-//     const endWaitTimeMoment = moment().add(maxWaitTime, "ms");
-
-//     let exists = fs.existsSync(params.path);
-
-//     if (exists) {
-
-//       console.log(chalkLog(MODULE_ID_PREFIX
-//         + " | FILE EXISTS"
-//         // + " | MAX WAIT TIME: " + msToTime(maxWaitTime)
-//         + " | NOW: " + getTimeStamp()
-//         // + " | END WAIT TIME: " + endWaitTimeMoment.format(compactDateTimeFormat)
-//         + " | PATH: " + params.path
-//       ));
-
-//       return resolve();
-//     }
-
-//     console.log(chalkAlert(MODULE_ID_PREFIX
-//       + " | !!! FILE DOES NOT EXIST | START WAIT"
-//       + " | MAX WAIT TIME: " + msToTime(maxWaitTime)
-//       + " | NOW: " + getTimeStamp()
-//       + " | END WAIT TIME: " + endWaitTimeMoment.format(compactDateTimeFormat)
-//       + " | PATH: " + params.path
-//     ));
-
-//     existsInterval = setInterval(function(){
-
-//       exists = fs.existsSync(params.path);
-
-//       if (exists) {
-//         clearInterval(existsInterval);
-//         console.log(chalkGreenBold(MODULE_ID_PREFIX
-//           + " | FILE EXISTS"
-//           + " | MAX WAIT TIME: " + msToTime(maxWaitTime)
-//           + " | NOW: " + getTimeStamp()
-//           + " | END WAIT TIME: " + endWaitTimeMoment.format(compactDateTimeFormat)
-//           + " | PATH: " + params.path
-//         ));
-//         return resolve();
-//       }
-//       else if (moment().isAfter(endWaitTimeMoment)){
-//         clearInterval(existsInterval);
-//         console.log(chalkError(MODULE_ID_PREFIX
-//           + " | *** WAIT FILE EXISTS EXPIRED"
-//           + " | MAX WAIT TIME: " + msToTime(maxWaitTime)
-//           + " | NOW: " + getTimeStamp()
-//           + " | END WAIT TIME: " + endWaitTimeMoment.format(compactDateTimeFormat)
-//           + " | PATH: " + params.path
-//         ));
-//         return reject(new Error("WAIT FILE EXISTS EXPIRED: " + msToTime(maxWaitTime)));
-//       }
-//       else{
-//         console.log(chalkAlert(MODULE_ID_PREFIX
-//           + " | ... WAIT FILE EXISTS"
-//           + " | MAX WAIT TIME: " + msToTime(maxWaitTime)
-//           + " | NOW: " + getTimeStamp()
-//           + " | END WAIT TIME: " + endWaitTimeMoment.format(compactDateTimeFormat)
-//           + " | PATH: " + params.path
-//         ));
-//       }
-
-//     }, interval);
-
-//   });
-// }
-
-// let sizeInterval;
-
-// function fileSize(params){
-
-//   return new Promise(function(resolve, reject){
-
-//     clearInterval(sizeInterval);
-
-//     const interval = params.interval || 10*ONE_SECOND;
-
-//     console.log(chalkLog(MODULE_ID_PREFIX + " | WAIT FILE SIZE: " + params.path + " | EXPECTED SIZE: " + params.size));
-
-//     let stats;
-//     let size = 0;
-//     let prevSize = 0;
-
-//     let exists = fs.existsSync(params.path);
-
-//     if (exists) {
-
-//       try {
-//         stats = fs.statSync(params.path);
-//         size = stats.size;
-//         prevSize = stats.size;
-
-//         if (params.size && (size === params.size)) {
-//           console.log(chalkGreen(MODULE_ID_PREFIX + " | FILE SIZE EXPECTED | " + getTimeStamp()
-//             + " | EXISTS: " + exists
-//             + " | CUR: " + size
-//             + " | EXPECTED: " + params.size
-//             + " | " + params.path
-//           ));
-//           return resolve();
-//         }
-
-//         sizeInterval = setInterval(function(){
-
-//           console.log(chalkInfo(MODULE_ID_PREFIX + " | FILE SIZE | " + getTimeStamp()
-//             + " | EXISTS: " + exists
-//             + " | CUR: " + size
-//             + " | PREV: " + prevSize
-//             + " | EXPECTED: " + params.size
-//             + " | " + params.path
-//           ));
-
-//           exists = fs.existsSync(params.path);
-
-//           if (exists) {
-//             fs.stat(params.path, function(err, stats){
-
-//               if (err) {
-//                 return reject(err);
-//               }
-
-//               prevSize = size;
-//               size = stats.size;
-
-//               if ((size > 0) && ((params.size && (size === params.size)) || (size === prevSize))) {
-
-//                 clearInterval(sizeInterval);
-
-//                 console.log(chalkGreen(MODULE_ID_PREFIX + " | FILE SIZE STABLE | " + getTimeStamp()
-//                   + " | EXISTS: " + exists
-//                   + " | CUR: " + size
-//                   + " | PREV: " + prevSize
-//                   + " | EXPECTED: " + params.size
-//                   + " | " + params.path
-//                 ));
-
-//                 return resolve();
-//               }
-//             });
-//           }
-
-//         }, interval);
-
-//       }
-//       catch(err){
-//         return reject(err);
-//       }
-//     }
-//     else {
-//       console.log(chalkAlert(MODULE_ID_PREFIX + " | ??? FILE SIZE | NON-EXISTENT FILE | " + getTimeStamp()
-//         + " | EXISTS: " + exists
-//         + " | EXPECTED: " + params.size
-//         + " | " + params.path
-//       ));
-
-//       return reject(new Error("NON-EXISTENT FILE: " + params.path));
-//     }
-
-//   });
-// }
 
 const defaultUserUpdatePropArray = [
   "ageDays",
@@ -895,8 +698,6 @@ const defaultDbUpdateOptions = {
 };
 
 async function loadUserFile(params){
-
-// try{
 
   const updateDbUser = params.updateDbUser || false;
   const folder = params.folder || path.dirname(params.path);
@@ -936,16 +737,12 @@ async function loadUserFile(params){
       userObj.profileHistograms = {};
     }
     
-    // trainingSetUsersHashMap[userObj.category].set(userObj.nodeId, userObj);
     trainingSetUsersSet[userObj.category].add(userObj.nodeId);
 
     if (((configuration.testMode || configuration.verbose) && (statsObj.users.folder.total % 100 === 0)) || (statsObj.users.folder.total % 1000 === 0)) {
 
       console.log(chalkLog(MODULE_ID_PREFIX
         + " [" + statsObj.users.folder.total + "]"
-        // + " USERS - L: " + trainingSetUsersHashMap.left.size
-        // + " N: " + trainingSetUsersHashMap.neutral.size
-        // + " R: " + trainingSetUsersHashMap.right.size
         + " USERS - L: " + trainingSetUsersSet.left.size
         + " N: " + trainingSetUsersSet.neutral.size
         + " R: " + trainingSetUsersSet.right.size
@@ -978,10 +775,6 @@ async function loadUserFile(params){
     ));                      
   }
   return;
-// }
-// catch(err){
-//   throw err;
-// }
 }
 
 function loadUsersFolder(params){
@@ -1134,8 +927,6 @@ async function initLoadUsersFolder(params){
 
 async function cursorDataHandler(user){
 
-// try{
-
   if (!user.screenName){
     console.log(chalkWarn(MODULE_ID_PREFIX + " | !!! USER SCREENNAME UNDEFINED\n" + jsonPrint(user)));
     statsObj.users.processed.errors += 1;
@@ -1177,14 +968,13 @@ async function cursorDataHandler(user){
     user.friends = _.slice(user.friends, 0,5000);
   }
 
-  // trainingSetUsersHashMap[user.category].set(user.nodeId, user);
   trainingSetUsersSet[user.category].add(user.nodeId);
 
   categorizedUsers[user.category] += 1;
   statsObj.categorizedCount += 1;
 
 
-  if (statsObj.categorizedCount > 0 && statsObj.categorizedCount % 100 === 0){
+  if (statsObj.categorizedCount > 0 && statsObj.categorizedCount % 1000 === 0){
     console.log(chalkInfo(MODULE_ID_PREFIX
       + " | cursorDataHandler"
       + " | CATEGORIZED: " + statsObj.categorizedCount
@@ -1195,10 +985,6 @@ async function cursorDataHandler(user){
   }
 
   return;
-// }
-// catch(err){
-//   throw err;
-// }
 }
 
 function cursorDataHandlerPromise(user){
@@ -1308,10 +1094,6 @@ async function loadTrainingSetUsersFromDb(p) {
   ));
 
   return; 
-// }
-// catch(err){
-//   throw err;
-// }
 }
 
 async function loadTrainingSet(){
@@ -3154,9 +2936,6 @@ async function initWatchUserDataFolders(p){
         
         try{
           await delay({period: 30*ONE_SECOND});
-          // trainingSetUsersHashMap.left.delete(nodeId);
-          // trainingSetUsersHashMap.neutral.delete(nodeId);
-          // trainingSetUsersHashMap.right.delete(nodeId);
           trainingSetUsersSet.left.delete(nodeId);
           trainingSetUsersSet.neutral.delete(nodeId);
           trainingSetUsersSet.right.delete(nodeId);
