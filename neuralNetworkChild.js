@@ -73,6 +73,8 @@ else {
   DROPBOX_ROOT_FOLDER = "/Users/tc/Dropbox/Apps/wordAssociation";
 }
 
+let mongooseDb;
+
 global.wordAssoDb = require("@threeceelabs/mongoose-twitter");
 
 let configuration = {};
@@ -282,6 +284,10 @@ statsObj.trainingSet.total = 0;
 let statsObjSmall = {};
 
 statsObj.users = {};
+statsObj.users.files = {};
+statsObj.users.files.added = 0;
+statsObj.users.files.changed = 0;
+statsObj.users.files.deleted = 0;
 statsObj.users.grandTotal = 0;
 statsObj.users.notCategorized = 0;
 statsObj.users.notFound = 0;
@@ -1180,6 +1186,7 @@ async function cursorDataHandler(user){
 
   if (statsObj.categorizedCount > 0 && statsObj.categorizedCount % 100 === 0){
     console.log(chalkInfo(MODULE_ID_PREFIX
+      + " | cursorDataHandler"
       + " | CATEGORIZED: " + statsObj.categorizedCount
       + " | L: " + categorizedUsers.left
       + " | N: " + categorizedUsers.neutral
@@ -1243,6 +1250,10 @@ async function loadTrainingSetUsersFromDb(p) {
 
   let cursor;
 
+  const session = await mongooseDb.startSession();
+
+  debug("MONGO DB SESSION\n" + session.id);
+
   console.log(chalkBlue(MODULE_ID_PREFIX
     + " | LOADING TRAINING SET FROM DB ..."
     + " | batchSize: " + batchSize
@@ -1255,6 +1266,7 @@ async function loadTrainingSetUsersFromDb(p) {
     .lean()
     .batchSize(batchSize)
     .limit(limit)
+    .session(session)
     .cursor()
     .addCursorFlag("noCursorTimeout", true);
   }
@@ -1263,6 +1275,7 @@ async function loadTrainingSetUsersFromDb(p) {
     .find(query, {timeout: false})
     .lean()
     .batchSize(batchSize)
+    .session(session)
     .cursor()
     .addCursorFlag("noCursorTimeout", true);
   }
@@ -3060,6 +3073,7 @@ async function initWatchUserDataFolders(p){
   try{
 
     const params = p || {};
+    const verbose = params.verbose || configuration.verbose;
     const folder = params.folder || configuration.userDataFolder;
     const updateDbUser = params.updateDbUser || configuration.updateDbUser;
 
@@ -3084,7 +3098,11 @@ async function initWatchUserDataFolders(p){
 
       monitorUserData.on("created", async function(filepath){
 
-        console.log(chalkBlue(MODULE_ID_PREFIX + " | +++ USER FILE CREATED: " + filepath));
+        statsObj.users.files.added += 1;
+
+        if (verbose || statsObj.users.files.added % 100 === 0){
+          console.log(chalkBlue(MODULE_ID_PREFIX + " | +++ USER FILE CREATED: " + filepath));
+        }
 
         try{
           await delay({period: 30*ONE_SECOND});
@@ -3100,7 +3118,11 @@ async function initWatchUserDataFolders(p){
 
       monitorUserData.on("changed", async function(filepath){
 
-        console.log(chalkBlue(MODULE_ID_PREFIX + " | -/- USER FILE CHANGED: " + filepath));
+        statsObj.users.files.changed += 1;
+
+        if (verbose || statsObj.users.files.changed % 100 === 0){
+          console.log(chalkBlue(MODULE_ID_PREFIX + " | -/- USER FILE CHANGED: " + filepath));
+        }
         
         try{
           await delay({period: 30*ONE_SECOND});
@@ -3116,15 +3138,19 @@ async function initWatchUserDataFolders(p){
 
       monitorUserData.on("removed", async function(filepath){
 
+        statsObj.users.files.deleted += 1;
+
         const fileNameArray = filepath.split("/");
         const file = fileNameArray[fileNameArray.length-1];
         const nodeId = file.replace(".json", "");
 
-        console.log(chalkBlue(MODULE_ID_PREFIX
-          + " | XXX USER FILE DELETED"
-          + " | NID: " + nodeId
-          + " | FILE: " + filepath
-        ));
+        if (verbose || statsObj.users.files.deleted % 100 === 0){
+          console.log(chalkBlue(MODULE_ID_PREFIX
+            + " | XXX USER FILE DELETED"
+            + " | NID: " + nodeId
+            + " | FILE: " + filepath
+          ));
+        }
         
         try{
           await delay({period: 30*ONE_SECOND});
@@ -3179,7 +3205,7 @@ setTimeout(async function(){
     ));
 
     try {
-      await connectDb();
+      mongooseDb = await connectDb();
       await initWatchUserDataFolders();
       await initProcessSendQueue();
       initFsmTickInterval(FSM_TICK_INTERVAL);
