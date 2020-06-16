@@ -1096,9 +1096,12 @@ async function loadTrainingSetUsersFromDb(p) {
   return; 
 }
 
-async function loadTrainingSet(){
+async function loadTrainingSet(p){
 
   try{
+
+    const params = p || {};
+    const verbose = params.verbose || configuration.verbose;
 
     console.log(chalk.black.bold(MODULE_ID_PREFIX
       + " | loadTrainingSet | LOAD TRAINING SET ..."
@@ -1114,7 +1117,8 @@ async function loadTrainingSet(){
     const normalization = await tcUtils.loadFileRetry({
       folder: configuration.trainingSetsFolder, 
       file: "normalization.json",
-      resolveOnNotFound: true
+      resolveOnNotFound: true,
+      verbose: verbose
     });
 
     if (normalization) { 
