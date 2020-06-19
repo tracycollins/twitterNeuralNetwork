@@ -78,6 +78,7 @@ global.wordAssoDb = require("@threeceelabs/mongoose-twitter");
 
 let configuration = {};
 
+configuration.dataSetPrepMaxParallel = 16;
 configuration.parallelLoadMax = 16;
 configuration.updateDbUser = false; // updates user in db from training set
 configuration.equalCategoriesFlag = false;
@@ -1112,25 +1113,32 @@ async function loadTrainingSet(p){
     statsObj.status = "LOAD TRAINING SET";
     statsObj.trainingSetReady = false;
 
-    console.log(chalk.black.bold(MODULE_ID_PREFIX
-      + " | loadTrainingSet | LOAD NORMALIZATION ..."
-    ));
+    // console.log(chalk.black.bold(MODULE_ID_PREFIX
+    //   + " | loadTrainingSet | LOAD NORMALIZATION"
+    //   + " | " + configuration.trainingSetsFolder + "/normalization.json"
+    // ));
 
-    const normalization = await tcUtils.loadFileRetry({
-      folder: configuration.trainingSetsFolder, 
-      file: "normalization.json",
-      resolveOnNotFound: true,
-      verbose: verbose
-    });
+    // const normalization = await tcUtils.loadFile({
+    //   folder: configuration.trainingSetsFolder, 
+    //   file: "normalization.json",
+    //   noErrorNotFound: true,
+    //   verbose: verbose
+    // });
 
-    if (normalization) { 
+    // if (normalization) { 
 
-      console.log(chalk.black.bold(MODULE_ID_PREFIX
-        + " | loadTrainingSet | SET NORMALIZATION ..."
-      ));
+    //   console.log(chalk.black.bold(MODULE_ID_PREFIX
+    //     + " | loadTrainingSet | SET NORMALIZATION ..."
+    //   ));
 
-      await nnTools.setNormalization(normalization);
-    }
+    //   await nnTools.setNormalization(normalization);
+    // }
+    // else{
+    //   console.log(chalkAlert(MODULE_ID_PREFIX
+    //     + " | loadTrainingSet | !!! NORMALIZATION NOT LOADED"
+    //     + " | " + configuration.trainingSetsFolder + "/normalization.json"
+    //   ));
+    // }
 
     if (configuration.loadUsersFolderOnStart && !statsObj.usersFolderLoaded && !statsObj.loadUsersFolderBusy){
 
@@ -1479,163 +1487,164 @@ function prepNetworkEvolve() {
   return finalOptions;
 }
 
-async function dataSetPrep(params, setObj){
+function dataSetPrep(params){
 
-  const nodeIdArray = setObj.nodeIdArray; // array
+  return new Promise(function(resolve, reject){
 
-  const userProfileCharCodesOnlyFlag = (params.userProfileCharCodesOnlyFlag !== undefined) 
-    ? params.userProfileCharCodesOnlyFlag 
-    : false;
+    const maxParallel = params.maxParallel || configuration.dataSetPrepMaxParallel;
 
-  const binaryMode = (params.binaryMode !== undefined) 
-    ? params.binaryMode 
-    : configuration.binaryMode;
+    const nodeIdArray = params.setObj.nodeIdArray; // array
 
-  // const logScaleMode = (params.logScaleMode !== undefined) 
-  //   ? params.logScaleMode 
-  //   : configuration.logScaleMode;
+    const userProfileCharCodesOnlyFlag = (params.userProfileCharCodesOnlyFlag !== undefined) 
+      ? params.userProfileCharCodesOnlyFlag 
+      : false;
 
-  const userProfileOnlyFlag = (params.userProfileOnlyFlag !== undefined) 
-    ? params.userProfileOnlyFlag 
-    : configuration.userProfileOnlyFlag;
+    const binaryMode = (params.binaryMode !== undefined) 
+      ? params.binaryMode 
+      : configuration.binaryMode;
 
-  const dataSet = [];
+    const userProfileOnlyFlag = (params.userProfileOnlyFlag !== undefined) 
+      ? params.userProfileOnlyFlag 
+      : configuration.userProfileOnlyFlag;
 
-  let dataConverted = 0;
+    const dataSet = [];
 
-  const numCharInputs = configuration.userCharCountScreenName 
-    + configuration.userCharCountName 
-    + configuration.userCharCountDescription 
-    + configuration.userCharCountLocation;
+    let dataConverted = 0;
 
-  if (userProfileCharCodesOnlyFlag){
-    childNetworkObj.numInputs = numCharInputs;
-  }
+    const numCharInputs = configuration.userCharCountScreenName 
+      + configuration.userCharCountName 
+      + configuration.userCharCountDescription 
+      + configuration.userCharCountLocation;
 
-  console.log(chalkBlue(MODULE_ID_PREFIX
-    + " | DATA SET preppedOptions"
-    + " | DATA LENGTH: " + nodeIdArray.length
-    + " | USER PROFILE ONLY: " + formatBoolean(userProfileOnlyFlag)
-    + " | BIN MODE: " + formatBoolean(binaryMode)
-    // + " | LOG SCALE MODE: " + formatBoolean(logScaleMode)
-    + " | INPUTS ID: " + params.inputsId
-  ));
-
-  for(const nodeId of nodeIdArray){
-
-    const user = await global.wordAssoDb.User.findOne({nodeId: nodeId}).lean().exec();
-
-    if (!user) {
-      console.log(chalkAlert(MODULE_ID_PREFIX + " | dataSetPrep | !!! USER NOT IN DB ... SKIPPING | @" + nodeId));
-      continue;
+    if (userProfileCharCodesOnlyFlag){
+      childNetworkObj.numInputs = numCharInputs;
     }
 
-    if (!userProfileCharCodesOnlyFlag
-      && (!user.profileHistograms || user.profileHistograms === undefined || user.profileHistograms === {}) 
-      && (!user.tweetHistograms || user.tweetHistograms === undefined || user.tweetHistograms === {}))
-    {
-      console.log(chalkAlert(MODULE_ID_PREFIX + " | dataSetPrep | !!! EMPTY USER HISTOGRAMS ... SKIPPING | @" + user.screenName));
-      continue;
-    }
+    console.log(chalkBlue(MODULE_ID_PREFIX
+      + " | DATA SET preppedOptions"
+      + " | DATA LENGTH: " + nodeIdArray.length
+      + " | USER PROFILE ONLY: " + formatBoolean(userProfileOnlyFlag)
+      + " | BIN MODE: " + formatBoolean(binaryMode)
+      + " | INPUTS ID: " + params.inputsId
+    ));
 
-    if (!user.profileHistograms || user.profileHistograms === undefined || user.profileHistograms === {}){
-      console.log(chalkAlert(MODULE_ID_PREFIX + " | dataSetPrep | !!! EMPTY USER PROFILE HISTOGRAM | @" + user.screenName));
-      user.profileHistograms = {};
-    }
+    async.eachLimit(nodeIdArray, maxParallel, async function(nodeId){
 
-    if (!user.tweetHistograms || user.tweetHistograms === undefined || user.tweetHistograms === {}){
-      console.log(chalkAlert(MODULE_ID_PREFIX + " | dataSetPrep | !!! EMPTY USER TWEETS HISTOGRAM | @" + user.screenName));
-      user.tweetHistograms = {};
-    }
+      const user = await global.wordAssoDb.User.findOne({nodeId: nodeId}).lean().exec();
 
-    //convertDatumOneNetwork
-    // results = {user: user, datum: datum, inputHits: inputHits, inputMisses: inputMisses, inputHitRate: inputHitRate};
+      if (!user) {
+        console.log(chalkAlert(MODULE_ID_PREFIX + " | dataSetPrep | !!! USER NOT IN DB ... SKIPPING | @" + nodeId));
+        return;
+      }
 
-    // !!! CURRENTLY ONLY 2 DATA INPUT MODES:
-    // - BINARY
-    // - LOG SCALE
-    // 
-    // logScaleMode parameter is essentially ignored for now; only binaryMode matters
+      if (!userProfileCharCodesOnlyFlag
+        && (!user.profileHistograms || user.profileHistograms === undefined || user.profileHistograms === {}) 
+        && (!user.tweetHistograms || user.tweetHistograms === undefined || user.tweetHistograms === {}))
+      {
+        console.log(chalkAlert(MODULE_ID_PREFIX + " | dataSetPrep | !!! EMPTY USER HISTOGRAMS ... SKIPPING | @" + user.screenName));
+        return;
+      }
 
-    const results = await tcUtils.convertDatumOneNetwork({
-      primaryInputsFlag: true, 
-      user: user,
-      inputsId: params.inputsId,
-      userProfileCharCodesOnlyFlag: userProfileCharCodesOnlyFlag,
-      userProfileOnlyFlag: userProfileOnlyFlag,
-      binaryMode: binaryMode, 
-      // logScaleMode: logScaleMode, 
-      verbose: params.verbose
+      if (!user.profileHistograms || user.profileHistograms === undefined || user.profileHistograms === {}){
+        console.log(chalkAlert(MODULE_ID_PREFIX + " | dataSetPrep | !!! EMPTY USER PROFILE HISTOGRAM | @" + user.screenName));
+        user.profileHistograms = {};
+      }
+
+      if (!user.tweetHistograms || user.tweetHistograms === undefined || user.tweetHistograms === {}){
+        console.log(chalkAlert(MODULE_ID_PREFIX + " | dataSetPrep | !!! EMPTY USER TWEETS HISTOGRAM | @" + user.screenName));
+        user.tweetHistograms = {};
+      }
+
+      const results = await tcUtils.convertDatumOneNetwork({
+        primaryInputsFlag: true, 
+        user: user,
+        inputsId: params.inputsId,
+        userProfileCharCodesOnlyFlag: userProfileCharCodesOnlyFlag,
+        userProfileOnlyFlag: userProfileOnlyFlag,
+        binaryMode: binaryMode, 
+        verbose: params.verbose
+      });
+
+      if (results.emptyFlag) {
+        debug(chalkAlert(MODULE_ID_PREFIX + " | !!! EMPTY CONVERTED DATUM ... SKIPPING | @" + user.screenName));
+        return;
+      }
+
+      dataConverted += 1;
+
+      if (results.datum.input.length !== childNetworkObj.numInputs) { 
+        console.log(chalkError(MODULE_ID_PREFIX
+          + " | *** ERROR DATA SET PREP ERROR" 
+          + " | INPUT NUMBER MISMATCH" 
+          + " | INPUTS NUM IN: " + childNetworkObj.numInputs
+          + " | DATUM NUM IN: " + results.datum.input.length
+        ));
+        return new Error("INPUT NUMBER MISMATCH");
+      }
+
+      if (results.datum.output.length !== 3) { 
+        console.log(chalkError(MODULE_ID_PREFIX
+          + " | *** ERROR DATA SET PREP ERROR" 
+          + " | OUTPUT NUMBER MISMATCH" 
+          + " | OUTPUTS NUM IN: " + childNetworkObj.numOutputs
+          + " | DATUM NUM IN: " + results.datum.output.length
+        ));
+        return new Error("OUTPUT NUMBER MISMATCH");
+      }
+
+      for(const inputValue of results.datum.input){
+        if (typeof inputValue !== "number") {
+          return new Error("INPUT VALUE NOT TYPE NUMBER | @" + results.user.screenName + " | INPUT TYPE: " + typeof inputValue);
+        }
+        if (inputValue < 0) {
+          return new Error("INPUT VALUE LESS THAN ZERO | @" + results.user.screenName + " | INPUT: " + inputValue);
+        }
+        if (inputValue > 1) {
+          return new Error("INPUT VALUE GREATER THAN ONE | @" + results.user.screenName + " | INPUT: " + inputValue);
+        }
+      }
+
+      for(const outputValue of results.datum.output){
+        if (typeof outputValue !== "number") {
+          return new Error("OUTPUT VALUE NOT TYPE NUMBER | @" + results.user.screenName + " | OUTPUT TYPE: " + typeof outputValue);
+        }
+        if (outputValue < 0) {
+          return new Error("OUTPUT VALUE LESS THAN ZERO | @" + results.user.screenName + " | OUTPUT: " + outputValue);
+        }
+        if (outputValue > 1) {
+          return new Error("OUTPUT VALUE GREATER THAN ONE | @" + results.user.screenName + " | OUTPUT: " + outputValue);
+        }
+      }
+
+      dataSet.push({
+        user: results.user, 
+        screenName: user.screenName, 
+        name: results.datum.name, 
+        input: results.datum.input, 
+        output: results.datum.output,
+        inputHits: results.inputHits,
+        inputMisses: results.inputMisses,
+        inputHitRate: results.inputHitRate
+      });
+
+      if (configuration.verbose || (dataConverted % 1000 === 0) || configuration.testMode && (dataConverted % 100 === 0)){
+        console.log(chalkLog(MODULE_ID_PREFIX + " | DATA CONVERTED: " + dataConverted + "/" + nodeIdArray.length));
+      }
+
+      return;
+
+    }, function(err){
+
+      if (err){
+        console.log(chalkError(MODULE_ID_PREFIX + " | *** dataSetPrep ERROR: " + err));
+        return reject(err);
+      }
+
+      resolve(dataSet);
     });
 
-    if (results.emptyFlag) {
-      debug(chalkAlert(MODULE_ID_PREFIX + " | !!! EMPTY CONVERTED DATUM ... SKIPPING | @" + user.screenName));
-      continue;
-    }
+  });
 
-    dataConverted += 1;
-
-    if (results.datum.input.length !== childNetworkObj.numInputs) { 
-      console.log(chalkError(MODULE_ID_PREFIX
-        + " | *** ERROR DATA SET PREP ERROR" 
-        + " | INPUT NUMBER MISMATCH" 
-        + " | INPUTS NUM IN: " + childNetworkObj.numInputs
-        + " | DATUM NUM IN: " + results.datum.input.length
-      ));
-      throw new Error("INPUT NUMBER MISMATCH");
-    }
-
-    if (results.datum.output.length !== 3) { 
-      console.log(chalkError(MODULE_ID_PREFIX
-        + " | *** ERROR DATA SET PREP ERROR" 
-        + " | OUTPUT NUMBER MISMATCH" 
-        + " | OUTPUTS NUM IN: " + childNetworkObj.numOutputs
-        + " | DATUM NUM IN: " + results.datum.output.length
-      ));
-      throw new Error("OUTPUT NUMBER MISMATCH");
-    }
-
-    for(const inputValue of results.datum.input){
-      if (typeof inputValue !== "number") {
-        throw new Error("INPUT VALUE NOT TYPE NUMBER | @" + results.user.screenName + " | INPUT TYPE: " + typeof inputValue);
-      }
-      if (inputValue < 0) {
-        throw new Error("INPUT VALUE LESS THAN ZERO | @" + results.user.screenName + " | INPUT: " + inputValue);
-      }
-      if (inputValue > 1) {
-        throw new Error("INPUT VALUE GREATER THAN ONE | @" + results.user.screenName + " | INPUT: " + inputValue);
-      }
-    }
-
-    for(const outputValue of results.datum.output){
-      if (typeof outputValue !== "number") {
-        throw new Error("OUTPUT VALUE NOT TYPE NUMBER | @" + results.user.screenName + " | OUTPUT TYPE: " + typeof outputValue);
-      }
-      if (outputValue < 0) {
-        throw new Error("OUTPUT VALUE LESS THAN ZERO | @" + results.user.screenName + " | OUTPUT: " + outputValue);
-      }
-      if (outputValue > 1) {
-        throw new Error("OUTPUT VALUE GREATER THAN ONE | @" + results.user.screenName + " | OUTPUT: " + outputValue);
-      }
-    }
-
-    dataSet.push({
-      user: results.user, 
-      screenName: user.screenName, 
-      name: results.datum.name, 
-      input: results.datum.input, 
-      output: results.datum.output,
-      inputHits: results.inputHits,
-      inputMisses: results.inputMisses,
-      inputHitRate: results.inputHitRate
-    });
-
-    if (configuration.verbose || (dataConverted % 1000 === 0) || configuration.testMode && (dataConverted % 100 === 0)){
-      console.log(chalkLog(MODULE_ID_PREFIX + " | DATA CONVERTED: " + dataConverted + "/" + nodeIdArray.length));
-    }
-  }
-
-  return dataSet;
 }
 
 const ignoreKeyArray = [
@@ -1954,8 +1963,11 @@ async function evolve(params){
       statsObj.preppedSetsConfig = {};
       statsObj.preppedSetsConfig = preppedSetsConfig;
 
-      preppedTrainingSet = await dataSetPrep(preppedSetsConfig, trainingSetObj);
-      preppedTestSet = await dataSetPrep(preppedSetsConfig, testSetObj);
+      preppedSetsConfig.setObj = trainingSetObj;
+      preppedTrainingSet = await dataSetPrep(preppedSetsConfig);
+
+      preppedSetsConfig.setObj = testSetObj;
+      preppedTestSet = await dataSetPrep(preppedSetsConfig);
 
     }
 
