@@ -78,6 +78,7 @@ global.wordAssoDb = require("@threeceelabs/mongoose-twitter");
 
 let configuration = {};
 
+configuration.verbose = false;
 configuration.dataSetPrepMaxParallel = 16;
 configuration.parallelLoadMax = 16;
 configuration.updateDbUser = false; // updates user in db from training set
@@ -1113,32 +1114,32 @@ async function loadTrainingSet(p){
     statsObj.status = "LOAD TRAINING SET";
     statsObj.trainingSetReady = false;
 
-    // console.log(chalk.black.bold(MODULE_ID_PREFIX
-    //   + " | loadTrainingSet | LOAD NORMALIZATION"
-    //   + " | " + configuration.trainingSetsFolder + "/normalization.json"
-    // ));
+    console.log(chalk.black.bold(MODULE_ID_PREFIX
+      + " | loadTrainingSet | LOAD NORMALIZATION"
+      + " | " + configuration.trainingSetsFolder + "/normalization.json"
+    ));
 
-    // const normalization = await tcUtils.loadFile({
-    //   folder: configuration.trainingSetsFolder, 
-    //   file: "normalization.json",
-    //   noErrorNotFound: true,
-    //   verbose: verbose
-    // });
+    const normalization = await tcUtils.loadFile({
+      folder: configuration.trainingSetsFolder, 
+      file: "normalization.json",
+      noErrorNotFound: true,
+      verbose: verbose
+    });
 
-    // if (normalization) { 
+    if (normalization) { 
 
-    //   console.log(chalk.black.bold(MODULE_ID_PREFIX
-    //     + " | loadTrainingSet | SET NORMALIZATION ..."
-    //   ));
+      console.log(chalk.black.bold(MODULE_ID_PREFIX
+        + " | loadTrainingSet | SET NORMALIZATION ..."
+      ));
 
-    //   await nnTools.setNormalization(normalization);
-    // }
-    // else{
-    //   console.log(chalkAlert(MODULE_ID_PREFIX
-    //     + " | loadTrainingSet | !!! NORMALIZATION NOT LOADED"
-    //     + " | " + configuration.trainingSetsFolder + "/normalization.json"
-    //   ));
-    // }
+      await nnTools.setNormalization(normalization);
+    }
+    else{
+      console.log(chalkAlert(MODULE_ID_PREFIX
+        + " | loadTrainingSet | !!! NORMALIZATION NOT LOADED"
+        + " | " + configuration.trainingSetsFolder + "/normalization.json"
+      ));
+    }
 
     if (configuration.loadUsersFolderOnStart && !statsObj.usersFolderLoaded && !statsObj.loadUsersFolderBusy){
 
