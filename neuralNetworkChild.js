@@ -1080,7 +1080,9 @@ async function loadTrainingSetUsersFromDb(p) {
   });
 
   await cursor.eachAsync(async function(user){
-    await cursorDataHandlerPromise(user);
+    if (["left", "neutral", "right"].includes(user.category)){
+      await cursorDataHandlerPromise(user);
+    }
   }, {parallel: cursorParallel});
 
   statsObj.trainingSet.total = trainingSetUsersSet.left.size + trainingSetUsersSet.neutral.size + trainingSetUsersSet.right.size;
