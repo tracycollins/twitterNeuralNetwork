@@ -1082,11 +1082,7 @@ async function loadTrainingSetUsersFromDb(p) {
   });
 
   await cursor.eachAsync(async function(user){
-
-    if (["left", "neutral", "right"].includes(user.category)){
-      await cursorDataHandlerPromise(user);
-    }
-    
+    await cursorDataHandlerPromise(user);
     return;
 
   }, {parallel: cursorParallel});
