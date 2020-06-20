@@ -1031,7 +1031,7 @@ async function loadTrainingSetUsersFromDb(p) {
   categorizedUsers.neutral = 0;
   categorizedUsers.right = 0;
 
-  const query = params.query || {categorized: true};
+  const query = params.query || {category: { "$in": ["left", "right", "neutral"]}};
   const batchSize = params.batchSize || 1000;
   const cursorParallel = params.cursorParallel || 8;
   const limit = params.limit || 1000;
@@ -1082,9 +1082,13 @@ async function loadTrainingSetUsersFromDb(p) {
   });
 
   await cursor.eachAsync(async function(user){
+
     if (["left", "neutral", "right"].includes(user.category)){
       await cursorDataHandlerPromise(user);
     }
+    
+    return;
+
   }, {parallel: cursorParallel});
 
   statsObj.trainingSet.total = trainingSetUsersSet.left.size + trainingSetUsersSet.neutral.size + trainingSetUsersSet.right.size;
