@@ -43,7 +43,6 @@ const MODULE_NAME = "tncChild";
 let MODULE_ID_PREFIX = "NNC";
 const DEFAULT_NETWORK_TECHNOLOGY = "carrot";
 const DEFAULT_BINARY_MODE = true;
-// const DEFAULT_LOGSCALE_MODE = false;
 const DEFAULT_TEST_RATIO = 0.25;
 const QUIT_WAIT_INTERVAL = ONE_SECOND;
 const DEFAULT_USER_ARCHIVE_FILE_EXITS_MAX_WAIT_TIME = 2*ONE_HOUR;
@@ -1105,10 +1104,11 @@ async function loadTrainingSet(p){
   try{
 
     const params = p || {};
-    const verbose = params.verbose || configuration.verbose;
+    const verbose = (params.verbose !== undefined) ? params.verbose : configuration.verbose;
 
     console.log(chalk.black.bold(MODULE_ID_PREFIX
-      + " | loadTrainingSet | LOAD TRAINING SET ..."
+      + " | loadTrainingSet | LOAD TRAINING SET"
+      + " | VERBOSE: " + verbose
     ));
 
     statsObj.status = "LOAD TRAINING SET";
@@ -1123,7 +1123,7 @@ async function loadTrainingSet(p){
       folder: configuration.trainingSetsFolder, 
       file: "normalization.json",
       noErrorNotFound: true,
-      verbose: verbose
+      verbose: true
     });
 
     if (normalization) { 

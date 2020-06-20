@@ -830,7 +830,7 @@ function networkDefaults(networkObj){
   return new Promise(function(resolve){
 
     if (empty(networkObj)) {
-      console.trace(chalkError("networkDefaults ERROR: networkObj UNDEFINED"));
+      console.log(chalkError("networkDefaults ERROR: networkObj UNDEFINED"));
       throw new Error("networkDefaults ERROR: networkObj UNDEFINED");
     }
 
@@ -1216,11 +1216,13 @@ async function updateDbInputs(params){
       throw new Error("undefined params.inputsId AND params.inputsObj");
     }
 
+    console.log("typeof inputsId: " + typeof inputsId);
+
     const query = { inputsId: inputsId };
 
-    const inputsObj = await wordAssoDb.NetworkInputs.findOne(query);
+    const inputsObj = await wordAssoDb.NetworkInputs.findOne(query).exec();
 
-    if (inputsObj) {
+    if (inputsObj && inputsObj !== undefined) {
 
       if(empty(inputsObj.networks)) {
         inputsObj.networks = [];
@@ -1279,7 +1281,7 @@ async function updateDbInputs(params){
     console.log(chalkError("*** updateDbInputs | INPUTS FIND ONE ERROR: " + e
       + "\nINPUTS ID: " + inputsId
     ));
-    console.log(e);
+    // console.log(e);
     throw e;
   }
 }
@@ -1797,7 +1799,7 @@ async function loadBestNetworkFolders (p){
 
     }
     catch(err){
-      console.trace(chalkError(MODULE_ID_PREFIX + " | *** LOAD NN ENTRY ERROR: " + err
+      console.log(chalkError(MODULE_ID_PREFIX + " | *** LOAD NN ENTRY ERROR: " + err
         + " | " + fileObj.folder + "/" + fileObj.file
         + " | " + networkId
       ));
@@ -2598,7 +2600,7 @@ async function initNetworkCreate(params){
 
   }
   catch(err){
-    console.trace(MODULE_ID_PREFIX + " | INIT CREATE NETWORK ERROR ", err);
+    console.log(MODULE_ID_PREFIX + " | INIT CREATE NETWORK ERROR ", err);
     throw err;
   }
 }
@@ -2648,7 +2650,7 @@ process.on( "SIGINT", function(code, signal) {
 });
 
 process.on("unhandledRejection", function(err, promise) {
-  console.trace(MODULE_ID_PREFIX + " | *** Unhandled rejection (promise: ", promise, ", reason: ", err, ").");
+  console.log(MODULE_ID_PREFIX + " | *** Unhandled rejection (promise: ", promise, ", reason: ", err, ").");
   quit({cause: "unhandledRejection"});
   process.exit(1);
 });
@@ -4329,7 +4331,7 @@ const fsmStates = {
 
         }
         catch(err){
-          console.trace(chalkError(MODULE_ID_PREFIX + " | *** RUN ERROR: " + err));
+          console.log(chalkError(MODULE_ID_PREFIX + " | *** RUN ERROR: " + err));
         }
       }
 
