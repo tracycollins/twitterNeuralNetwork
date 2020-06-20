@@ -1216,8 +1216,6 @@ async function updateDbInputs(params){
       throw new Error("undefined params.inputsId AND params.inputsObj");
     }
 
-    console.log("typeof inputsId: " + typeof inputsId);
-
     const query = { inputsId: inputsId };
 
     const inputsObj = await wordAssoDb.NetworkInputs.findOne(query).exec();
