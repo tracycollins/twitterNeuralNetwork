@@ -1218,7 +1218,19 @@ async function updateDbInputs(params){
 
     const query = { inputsId: inputsId };
 
-    const inputsObj = await wordAssoDb.NetworkInputs.findOne(query).exec();
+    let inputsObj = await wordAssoDb.NetworkInputs.findOne(query).exec();
+
+    if (inputsObj === undefined && params.inputsObj !== undefined){
+
+      const options = {
+        new: true,
+        returnOriginal: false,
+        upsert: true,
+        setDefaultsOnInsert: true
+      };
+
+      inputsObj = await wordAssoDb.NetworkInputs.findOneAndUpdate(query, params.inputsObj, options).exec();
+    }
 
     if (inputsObj && inputsObj !== undefined) {
 
@@ -1624,7 +1636,7 @@ async function loadInputsFile(params){
 
     const inputsViable = await updateInputsViabilitySet({inputsObj: inputsObj});
 
-    const dbInputsObj = await updateDbInputs({inputsId: inputsObj.inputsId});
+    const dbInputsObj = await updateDbInputs({inputsObj: inputsObj});
 
     inputsSet.add(dbInputsObj.inputsId);
 
@@ -5354,7 +5366,6 @@ async function childCreate(p){
     const params = p || {};
 
     const binaryMode = (params.binaryMode !== undefined) ? params.binaryMode : configuration.binaryMode;
-    // const logScaleMode = (params.logScaleMode !== undefined) ? params.logScaleMode : configuration.logScaleMode;
     const compareTech = (params.compareTech !== undefined) ? params.compareTech : configuration.compareTech;
 
     const childId = params.childId;
@@ -5388,8 +5399,6 @@ async function childCreate(p){
     childHashMap[childId].currentNetworkId = false;
     childHashMap[childId].messageQueue = [];
 
-    // child = cp.fork(appPath, args, options);
-    // child = cp.fork(`${__dirname}/neuralNetworkChild.js`, args, options);
     child = cp.fork(`${__dirname}/neuralNetworkChild.js`);
 
     childHashMap[childId].pid = child.pid;
