@@ -61,7 +61,7 @@ console.log("=========================================");
 
 const MODULE_ID = MODULE_ID_PREFIX + "_node_" + hostname;
 
-const wordAssoDb = require("@threeceelabs/mongoose-twitter");
+global.wordAssoDb = require("@threeceelabs/mongoose-twitter");
 let dbConnection;
 
 const defaultEvolveOptionsPickArray = [
@@ -1218,7 +1218,7 @@ async function updateDbInputs(params){
 
     const query = { inputsId: inputsId };
 
-    let inputsObj = await wordAssoDb.NetworkInputs.findOne(query).exec();
+    let inputsObj = await global.wordAssoDb.NetworkInputs.findOne(query).exec();
 
     if (inputsObj === undefined && params.inputsObj !== undefined){
 
@@ -1229,7 +1229,7 @@ async function updateDbInputs(params){
         setDefaultsOnInsert: true
       };
 
-      inputsObj = await wordAssoDb.NetworkInputs.findOneAndUpdate(query, params.inputsObj, options).exec();
+      inputsObj = await global.wordAssoDb.NetworkInputs.findOneAndUpdate(query, params.inputsObj, options).exec();
     }
 
     if (inputsObj && inputsObj !== undefined) {
@@ -1275,7 +1275,7 @@ async function updateDbInputs(params){
 
       await updateInputsViabilitySet({inputsObj: params.inputsObj});
 
-      const ni = new wordAssoDb.NetworkInputs(params.inputsObj);
+      const ni = new global.wordAssoDb.NetworkInputs(params.inputsObj);
 
       const niDbUpdated = await ni.save();
 
@@ -1722,7 +1722,7 @@ async function updateDbNetwork(params) {
       setDefaultsOnInsert: true
     };
 
-    wordAssoDb.NeuralNetwork.findOneAndUpdate(query, update, options, async function(err, nnDbUpdated){
+    global.wordAssoDb.NeuralNetwork.findOneAndUpdate(query, update, options, async function(err, nnDbUpdated){
 
       if (err) {
         console.log(chalkError("*** updateDbNetwork | NETWORK FIND ONE ERROR: " + err));
@@ -1904,7 +1904,7 @@ async function generateSeedInputsNetworkId(params){
 
       console.log(chalkLog(MODULE_ID_PREFIX + " | ... SEARCH DB FOR BETTER CHILD SEED NETWORK: " + config.seedNetworkId));
 
-      const networkObj = await wordAssoDb.NeuralNetwork.findOne({networkId: config.seedNetworkId}).lean();
+      const networkObj = await global.wordAssoDb.NeuralNetwork.findOne({networkId: config.seedNetworkId}).lean().exec();
 
       if (!networkObj) {
         console.log(chalkError(MODULE_ID_PREFIX + " | *** BETTER CHILD SEED NETWORK ERROR: NN NOT IN DB | SEED NN ID: " + config.seedNetworkId));
@@ -1989,7 +1989,7 @@ async function generateSeedInputsNetworkId(params){
 
         const randomNetworkId = randomItem([...randomNetworkIdSet]);
 
-        const networkObj = await wordAssoDb.NeuralNetwork.findOne({networkId: randomNetworkId}).lean();
+        const networkObj = await global.wordAssoDb.NeuralNetwork.findOne({networkId: randomNetworkId}).lean().exec();
 
         if (!networkObj) {
           console.log(chalkError(MODULE_ID_PREFIX + " | *** GENERATE SEED INPUTS NETWORK ID ERROR: NN NOT IN DB | RANDOM NN ID: " + randomNetworkId));
@@ -2068,7 +2068,7 @@ async function generateSeedInputsNetworkId(params){
 
       console.log(chalkBlue(MODULE_ID_PREFIX + " | SEED | AVAILABLE INPUTS ID: " + config.inputsId));
 
-      const inputsObj = await wordAssoDb.NetworkInputs.findOne({inputsId: config.inputsId}).lean().exec();
+      const inputsObj = await global.wordAssoDb.NetworkInputs.findOne({inputsId: config.inputsId}).lean().exec();
 
       if (!inputsObj) {
         console.log(chalkError(MODULE_ID_PREFIX
@@ -2109,7 +2109,7 @@ async function generateSeedInputsNetworkId(params){
         // config.logScaleMode = false;
       }
       
-      const inputsObj = await wordAssoDb.NetworkInputs.findOne({inputsId: config.seedInputsId}).lean();
+      const inputsObj = await global.wordAssoDb.NetworkInputs.findOne({inputsId: config.seedInputsId}).lean().exec();
       config.numInputs = inputsObj.meta.numInputs;
 
       console.log(chalkLog(MODULE_ID_PREFIX
@@ -2331,7 +2331,7 @@ async function generateRandomEvolveConfig(p){
 
     try{
 
-      const networkObj = await wordAssoDb.NeuralNetwork.findOne({ networkId: config.seedNetworkId }).lean();
+      const networkObj = await global.wordAssoDb.NeuralNetwork.findOne({ networkId: config.seedNetworkId }).lean().exec();
 
       if (!networkObj) {
         console.log(chalkError(MODULE_ID_PREFIX + " | *** DB FIND SEED NN ERROR | " + config.seedNetworkId));
@@ -2411,7 +2411,7 @@ async function generateRandomEvolveConfig(p){
 
         let inputsObj;
 
-        inputsObj = await wordAssoDb.NetworkInputs.findOne({inputsId: config.seedInputsId}).lean();
+        inputsObj = await global.wordAssoDb.NetworkInputs.findOne({inputsId: config.seedInputsId}).lean().exec();
 
         if (!inputsObj) {
           console.log(chalkError(MODULE_ID_PREFIX + " | *** LOAD DB INPUTS ERROR | NOT FOUND"
@@ -3018,7 +3018,7 @@ async function connectDb(){
 
     console.log(chalkBlueBold(MODULE_ID_PREFIX + " | CONNECT MONGO DB ..."));
 
-    const db = await wordAssoDb.connect(MODULE_ID + "_" + process.pid);
+    const db = await global.wordAssoDb.connect(MODULE_ID + "_" + process.pid);
 
     db.on("error", async function(err){
       statsObj.status = "MONGO ERROR";
@@ -4831,9 +4831,9 @@ async function evolveCompleteHandler(params){
 
     const m = params.m;
 
-    const nnDoc = await wordAssoDb.NeuralNetwork.findOne({networkId: m.networkId});
+    const nn = await global.wordAssoDb.NeuralNetwork.findOne({networkId: m.networkId}).lean().exec();
 
-    const nn = nnDoc.toObject();
+    // const nn = nnDoc.toObject();
 
     nn.seedNetworkId = (nn.seedNetworkId && nn.seedNetworkId !== undefined && nn.seedNetworkId !== "false") ? nn.seedNetworkId : false;
     // nn.logScaleMode = (nn.logScaleMode && nn.logScaleMode !== undefined && nn.logScaleMode !== "false") ? nn.logScaleMode : false;

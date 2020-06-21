@@ -723,7 +723,7 @@ async function loadUserFile(params){
         {nodeId: userObj.nodeId}, 
         update, 
         defaultDbUpdateOptions
-      );
+      ).exec();
 
       if (userDoc) {
         userObj = userDoc.toObject();
@@ -1904,7 +1904,7 @@ async function evolve(params){
 
     if (childNetworkObj.meta === undefined) { childNetworkObj.meta = {}; }
 
-    let inputsObj = await global.wordAssoDb.NetworkInputs.findOne({inputsId: childNetworkObj.inputsId}).lean();
+    let inputsObj = await global.wordAssoDb.NetworkInputs.findOne({inputsId: childNetworkObj.inputsId}).lean().exec();
 
     if (!inputsObj) {
 
@@ -2581,7 +2581,6 @@ async function configNetworkEvolve(params){
   configuration.childId = params.childId;
 
   newNetObj.binaryMode = params.binaryMode;
-  // newNetObj.logScaleMode = params.logScaleMode;
   newNetObj.networkTechnology = params.networkTechnology || "neataptic";
 
   newNetObj.networkId = params.testRunId;
@@ -2606,7 +2605,6 @@ async function configNetworkEvolve(params){
       "activation",
       "architecture",
       "binaryMode",
-      // "logScaleMode",
       "clear", 
       "cost", 
       "efficientMutation", 
@@ -2643,7 +2641,7 @@ async function configNetworkEvolve(params){
 
   if (newNetObj.evolve.options.seedNetworkId) {
 
-    const seedNetworkDoc = await global.wordAssoDb.NeuralNetwork.findOne({networkId: newNetObj.seedNetworkId});
+    const seedNetworkDoc = await global.wordAssoDb.NeuralNetwork.findOne({networkId: newNetObj.seedNetworkId}).exec();
 
     seedNetworkObj = seedNetworkDoc.toObject();
 
