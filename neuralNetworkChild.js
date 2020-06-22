@@ -1907,7 +1907,7 @@ const setPrepRequired = function(preppedSetsConfig){
 
   const preppedSetsConfigProps = Object.keys(preppedSetsConfig);
 
-  for (const prop of preppedSetsConfigProps){
+  for (const prop of preppedSetsConfigPickArray){
     if (statsObj.preppedSetsConfig[prop] === undefined) { 
       console.log(chalkAlert(MODULE_ID_PREFIX + " | setPrepRequired | UNDEFINED PROP: " + prop));
       return true;
@@ -1924,6 +1924,13 @@ const setPrepRequired = function(preppedSetsConfig){
 
   return false;
 }
+
+const preppedSetsConfigPickArray = [
+  "binaryMode", 
+  "inputsId", 
+  "userProfileCharCodesOnlyFlag",
+  "userProfileOnlyFlag"
+];
 
 async function evolve(params){
 
@@ -1998,7 +2005,7 @@ async function evolve(params){
       ));
 
       statsObj.preppedSetsConfig = {};
-      statsObj.preppedSetsConfig = preppedSetsConfig;
+      statsObj.preppedSetsConfig = pick(preppedSetsConfig, preppedSetsConfigPickArray);
 
       preppedSetsConfig.setObj = trainingSetObj;
       preppedTrainingSet = await dataSetPrep(preppedSetsConfig);
