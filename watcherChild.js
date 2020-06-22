@@ -937,9 +937,10 @@ function initWatchUserDataFolders(p){
   return new Promise(function(resolve){
 
     const params = p || {};
-    const verbose = params.verbose || configuration.verbose;
     let folder = params.folder || configuration.userDataFolder;
-    const updateDbUser = params.updateDbUser || configuration.updateDbUser;
+
+    const updateDbUser = (params.updateDbUser !== undefined) ? params.updateDbUser : configuration.updateDbUser;
+    const verbose = (params.verbose !== undefined) ? params.verbose : configuration.verbose;
 
     console.log(chalkBlue(MODULE_ID_PREFIX + " | +++ INIT WATCH USER DATA"
       + " | userDataFolder: " + folder
