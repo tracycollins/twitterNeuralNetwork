@@ -738,6 +738,8 @@ async function initFsmTickInterval(interval) {
     fsm.fsm_tick();
   }, FSM_TICK_INTERVAL);
 
+  intervalsSet.add("fsmTickInterval");
+
   return;
 }
 
