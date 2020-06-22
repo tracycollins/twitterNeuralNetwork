@@ -999,8 +999,10 @@ function initWatchUserDataFolders(p){
       if (filePath.endsWith(".json")){
         statsObj.users.files.added += 1;
 
-        if (verbose || statsObj.users.files.added % 100 === 0){
-          console.log(chalkBlue(MODULE_ID_PREFIX + " | +++ USER FILE CREATED: " + filePath));
+        if (verbose || statsObj.users.files.added % 1000 === 0){
+          console.log(chalkBlue(MODULE_ID_PREFIX
+            + " [" + statsObj.users.files.added + "] +++ USER FILE CREATED: " + filePath
+          ));
         }
 
         try{
