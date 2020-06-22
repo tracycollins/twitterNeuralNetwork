@@ -2709,17 +2709,6 @@ async function configNetworkEvolve(params){
 
     if (newNetObj.evolve.options.seedNetworkId) {
 
-      console.log("search db maga ...");
-
-      // const hashtag = await global.wordAssoDb.Hashtag.find({nodeId: "maga"}).exec();
-
-      // global.wordAssoDb.Hashtag.findOne({nodeId: "maga"}, function(err, hashtag){
-      //   if (err) { console.log(err); }
-      //   console.log("maga: " + hashtag.nodeId);
-      // });
-
-      // console.log("maga: " + hashtag.nodeId);
-
       let seedNetworkObj = await global.wordAssoDb.NeuralNetwork.findOne({networkId: newNetObj.seedNetworkId}).exec();
 
       if(!seedNetworkObj || seedNetworkObj === undefined) {
@@ -2729,13 +2718,6 @@ async function configNetworkEvolve(params){
         ));
 
         const file = newNetObj.seedNetworkId + ".json";
-
-        // seedNetworkObj = await tcUtils.loadFile({
-        //   folder: "/Users/tc/Dropbox/Apps/wordAssociation/config/utility/best/neuralNetworks", 
-        //   file: file, 
-        //   verbose: true
-        // });
-
         const filePath = path.join("/Users/tc/Dropbox/Apps/wordAssociation/config/utility/best/neuralNetworks", file);
 
         seedNetworkObj = await fs.readJson(filePath);

@@ -992,39 +992,43 @@ function initWatchUserDataFolders(p){
       }
     });
 
-    watcher.on("add", async function(filepath){
-      statsObj.users.files.added += 1;
+    watcher.on("add", async function(filePath){
+      if (filePath.endsWith(".json")){
+        statsObj.users.files.added += 1;
 
-      if (verbose || statsObj.users.files.added % 100 === 0){
-        console.log(chalkBlue(MODULE_ID_PREFIX + " | +++ USER FILE CREATED: " + filepath));
-      }
+        if (verbose || statsObj.users.files.added % 100 === 0){
+          console.log(chalkBlue(MODULE_ID_PREFIX + " | +++ USER FILE CREATED: " + filePath));
+        }
 
-      try{
-        await delay({period: 30*ONE_SECOND});
-        await loadUserFile({path: filepath, updateDbUser: updateDbUser});
-      }
-      catch(err){
-        console.log(chalkBlue(MODULE_ID_PREFIX 
-          + " | *** LOAD USER FILE CREATED ERROR | " + filepath + ": " + err
-        ));
+        try{
+          await delay({period: 30*ONE_SECOND});
+          await loadUserFile({path: filePath, updateDbUser: updateDbUser});
+        }
+        catch(err){
+          console.log(chalkBlue(MODULE_ID_PREFIX 
+            + " | *** LOAD USER FILE CREATED ERROR | " + filePath + ": " + err
+          ));
+        }
       }
     });  
 
-    watcher.on("change", async function(filepath){
-      statsObj.users.files.added += 1;
+    watcher.on("change", async function(filePath){
+      if (filePath.endsWith(".json")){
+        statsObj.users.files.added += 1;
 
-      if (verbose || statsObj.users.files.added % 100 === 0){
-        console.log(chalkBlue(MODULE_ID_PREFIX + " | +++ USER FILE CHANGED: " + filepath));
-      }
+        if (verbose || statsObj.users.files.added % 100 === 0){
+          console.log(chalkBlue(MODULE_ID_PREFIX + " | +++ USER FILE CHANGED: " + filePath));
+        }
 
-      try{
-        await delay({period: 30*ONE_SECOND});
-        await loadUserFile({path: filepath, updateDbUser: updateDbUser});
-      }
-      catch(err){
-        console.log(chalkBlue(MODULE_ID_PREFIX 
-          + " | *** LOAD USER FILE CHANGED ERROR | " + filepath + ": " + err
-        ));
+        try{
+          await delay({period: 30*ONE_SECOND});
+          await loadUserFile({path: filePath, updateDbUser: updateDbUser});
+        }
+        catch(err){
+          console.log(chalkBlue(MODULE_ID_PREFIX 
+            + " | *** LOAD USER FILE CHANGED ERROR | " + filePath + ": " + err
+          ));
+        }
       }
     });  
 
