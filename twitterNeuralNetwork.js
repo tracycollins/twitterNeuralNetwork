@@ -47,8 +47,9 @@ hostname = hostname.replace(/word/g, "google");
 const _ = require("lodash");
 const dotProp = require("dot-prop");
 
-const PRIMARY_HOST = process.env.PRIMARY_HOST || "mms1";
-const HOST = (hostname === PRIMARY_HOST) ? "default" : "local";
+const PRIMARY_HOST = process.env.PRIMARY_HOST || "google";
+const DATABASE_HOST = process.env.DATABASE_HOST || "macpro2";
+const HOST = (hostname === PRIMARY_HOST || hostname === DATABASE_HOST) ? "default" : "local";
 
 console.log("=========================================");
 console.log("=========================================");
@@ -234,10 +235,6 @@ configuration.removeSeedFromViableNetworkOnFail = DEFAULT_REMOVE_SEED_FROM_VIABL
 
 configuration.binaryMode = DEFAULT_BINARY_MODE;
 configuration.enableRandomBinaryMode = DEFAULT_ENABLE_RANDOM_BINARY_MODE;
-
-// configuration.logScaleMode = DEFAULT_LOGSCALE_MODE;
-// configuration.enableRandomLogScaleMode = DEFAULT_ENABLE_RANDOM_LOGSCALE_MODE;
-
 configuration.userProfileOnlyFlag = DEFAULT_USER_PROFILE_ONLY_FLAG;
 
 configuration.compareTech = DEFAULT_COMPARE_TECH;
@@ -258,7 +255,6 @@ configuration.minPassRatio = DEFAULT_MIN_PASS_RATIO;
 
 childConfiguration.primaryHost = configuration.primaryHost;
 childConfiguration.binaryMode = configuration.binaryMode;
-// childConfiguration.logScaleMode = configuration.logScaleMode;
 childConfiguration.userProfileCharCodesOnlyFlag = configuration.userProfileCharCodesOnlyFlag;
 childConfiguration.userProfileCharCodesOnlyInputsId = configuration.userProfileCharCodesOnlyInputsId;
 childConfiguration.userProfileCharCodesOnlyProbability = configuration.userProfileCharCodesOnlyProbability;
@@ -3492,33 +3488,6 @@ async function loadConfigFile(params) {
       newConfiguration.evolve.binaryModeProbability = loadedConfigObj.TNN_BINARY_MODE_PROBABILITY;
 
     }
-
-    // if (loadedConfigObj.TNN_LOGSCALE_MODE !== undefined) {
-    //   console.log(MODULE_ID_PREFIX + " | LOADED TNN_LOGSCALE_MODE: " + loadedConfigObj.TNN_LOGSCALE_MODE);
-    //   if ((loadedConfigObj.TNN_LOGSCALE_MODE === true) || (loadedConfigObj.TNN_LOGSCALE_MODE === "true")) {
-    //     newConfiguration.logScaleMode = true;
-    //   }
-    //   if ((loadedConfigObj.TNN_LOGSCALE_MODE === false) || (loadedConfigObj.TNN_LOGSCALE_MODE === "false")) {
-    //     newConfiguration.logScaleMode = false;
-    //   }
-
-    //   childConfiguration.logScaleMode = newConfiguration.logScaleMode;
-    // }
-
-    // if (loadedConfigObj.TNN_ENABLE_RANDOM_LOGSCALE_MODE !== undefined) {
-    //   console.log(MODULE_ID_PREFIX + " | LOADED TNN_ENABLE_RANDOM_LOGSCALE_MODE: " + loadedConfigObj.TNN_ENABLE_RANDOM_LOGSCALE_MODE);
-    //   if ((loadedConfigObj.TNN_ENABLE_RANDOM_LOGSCALE_MODE === true) || (loadedConfigObj.TNN_ENABLE_RANDOM_LOGSCALE_MODE === "true")) {
-    //     newConfiguration.enableRandomLogScaleMode = true;
-    //   }
-    //   if ((loadedConfigObj.TNN_ENABLE_RANDOM_LOGSCALE_MODE === false) || (loadedConfigObj.TNN_ENABLE_RANDOM_LOGSCALE_MODE === "false")) {
-    //     newConfiguration.enableRandomLogScaleMode = false;
-    //   }
-    // }
-
-    // if (loadedConfigObj.TNN_LOGSCALE_MODE_PROBABILITY !== undefined){
-    //   console.log(MODULE_ID_PREFIX + " | LOADED TNN_LOGSCALE_MODE_PROBABILITY: " + loadedConfigObj.TNN_LOGSCALE_MODE_PROBABILITY);
-    //   newConfiguration.evolve.logScaleModeProbability = loadedConfigObj.TNN_LOGSCALE_MODE_PROBABILITY;
-    // }
 
     if (loadedConfigObj.TNN_COMPARE_TECH !== undefined) {
       console.log(MODULE_ID_PREFIX + " | LOADED TNN_COMPARE_TECH: " + loadedConfigObj.TNN_COMPARE_TECH);
