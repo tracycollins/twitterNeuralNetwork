@@ -1948,10 +1948,14 @@ async function evolve(params){
         + " | !!! INPUTS OBJ NOT IN DB: " + childNetworkObj.inputsId
       ));
 
-      inputsObj = await tcUtils.loadFileRetry({
-        folder: configDefaultFolder, 
-        file: file
-      });
+      // inputsObj = await tcUtils.loadFileRetry({
+      //   folder: configDefaultFolder, 
+      //   file: file
+      // });
+
+      const filePath = path.join(configDefaultFolder, file);
+
+      inputsObj = await fs.readJson(filePath);
 
       if (!inputsObj) {
         throw new Error("evolve INPUTS OBJ NOT FOUND: " + childNetworkObj.inputsId);
@@ -2686,11 +2690,15 @@ async function configNetworkEvolve(params){
 
         const file = newNetObj.seedNetworkId + ".json";
 
-        seedNetworkObj = await tcUtils.loadFile({
-          folder: "/Users/tc/Dropbox/Apps/wordAssociation/config/utility/best/neuralNetworks", 
-          file: file, 
-          verbose: true
-        });
+        // seedNetworkObj = await tcUtils.loadFile({
+        //   folder: "/Users/tc/Dropbox/Apps/wordAssociation/config/utility/best/neuralNetworks", 
+        //   file: file, 
+        //   verbose: true
+        // });
+
+        const filePath = path.join("/Users/tc/Dropbox/Apps/wordAssociation/config/utility/best/neuralNetworks", file);
+
+        seedNetworkObj = await fs.readJson(filePath);
       }
       
       if (seedNetworkObj && seedNetworkObj.networkTechnology !== newNetObj.networkTechnology){
