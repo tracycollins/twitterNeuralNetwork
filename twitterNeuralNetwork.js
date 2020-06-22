@@ -3,31 +3,44 @@ const MODULE_ID_PREFIX = "TNN";
 const CHILD_PREFIX = "tnc_node";
 const CHILD_PREFIX_SHORT = "NC";
 
+const DEFAULT_PURGE_MIN = true; // applies only to parent
+const TEST_MODE = false; // applies only to parent
+const GLOBAL_TEST_MODE = false; // applies to parent and all children
+const QUIT_ON_COMPLETE = false;
+
+const ONE_SECOND = 1000;
+const ONE_MINUTE = ONE_SECOND*60;
+
+// const ONE_KILOBYTE = 1024;
+// const ONE_MEGABYTE = 1024 * ONE_KILOBYTE;
+
+const SAVE_FILE_QUEUE_INTERVAL = 5*ONE_SECOND;
+const QUIT_WAIT_INTERVAL = 5*ONE_SECOND;
+const STATS_UPDATE_INTERVAL = 5*ONE_MINUTE;
+const DEFAULT_CHILD_PING_INTERVAL = ONE_MINUTE;
+const SAVE_CACHE_DEFAULT_TTL = 60;
+
+const DEFAULT_DISABLE_CREATE_TEST_SET = false;
+const DEFAULT_GLOBAL_MIN_SUCCESS_RATE = 90; // percent
+const DEFAULT_GLOBAL_VIABLE_SUCCESS_RATE = 90;
+const DEFAULT_HOST_MIN_SUCCESS_RATE = 50; // percent
+const DEFAULT_HOST_MIN_SUCCESS_RATE_MSE = 40; // Harder to past with cost === MSE
+const DEFAULT_HOST_PURGE_MIN_SUCCESS_RATE = 60; // percent
+const DEFAULT_INIT_MAIN_INTERVAL = process.env.TNN_INIT_MAIN_INTERVAL || 10*ONE_MINUTE;
+const DEFAULT_LOCAL_MIN_SUCCESS_RATE = 80; // percent
+const DEFAULT_MAX_NEURAL_NETWORK_CHILDREN = 1;
 const DEFAULT_QUIT_ON_COMPLETE = false;
+const DEFAULT_SEED_RANDOMIZE_OPTIONS = false;
+const DEFAULT_SEED_NETWORK_PROBABILITY = 0.5;
+const DEFAULT_TEST_RATIO = 0.25;
+const DEFAULT_USE_LOCAL_TRAINING_SETS = false;
 
-const DEFAULT_ENABLE_ZERO_SUCCESS_EVOLVE_OPTIONS = false;
+const DEFAULT_LOAD_ALL_INPUTS = false;
+const DEFAULT_ARCHIVE_NOT_IN_INPUTS_ID_ARRAY = true;
+const DEFAULT_DELETE_NOT_IN_INPUTS_ID_ARRAY = false;
+const DEFAULT_CHILD_ID_PREFIX = "tnc_node_";
 
-const DEFAULT_USER_PROFILE_CHAR_CODES_ONLY_FLAG = false;
-const DEFAULT_USER_PROFILE_CHAR_CODES_ONLY_PROBABILITY = 0.2;
-const DEFAULT_USER_PROFILE_CHAR_CODES_ONLY_INPUTS_ID = "inputs_25250101_000000_255_profilecharcodes";
-
-const DEFAULT_REMOVE_SEED_FROM_VIABLE_NN_SET_ON_FAIL = true;
-const DEFAULT_USER_PROFILE_ONLY_FLAG = false;
-
-// const DEFAULT_LOGSCALE_MODE = false;
-// const DEFAULT_LOGSCALE_MODE_PROBABILITY = 0.5;
-// const DEFAULT_ENABLE_RANDOM_LOGSCALE_MODE = true;
-
-const DEFAULT_BINARY_MODE = false;
-const DEFAULT_BINARY_MODE_PROBABILITY = 0.5;
-const DEFAULT_ENABLE_RANDOM_BINARY_MODE = true; // enableRandomBinaryMode
-
-const DEFAULT_COMPARE_TECH = false;
-const DEFAULT_FORCE_NETWORK_TECHNOLOGY = false;
-const DEFAULT_VIABLE_NETWORK_TECHNOLOGY_ARRAY = ["carrot", "neataptic"];
-
-const DEFAULT_MAX_FAIL_NETWORKS = 50;
-const DEFAULT_MIN_PASS_RATIO = 0.70;
+const EVOVLE_DEFAULTS = require("./config/evolveConfig.js");
 
 const os = require("os");
 let hostname = os.hostname();
@@ -69,7 +82,6 @@ const defaultEvolveOptionsPickArray = [
   "activation",
   "architecture",
   "binaryMode",
-  // "logScaleMode",
   "error",
   "hiddenLayerSize",
   "inputs",
@@ -141,25 +153,7 @@ else {
   DROPBOX_ROOT_FOLDER = "/Users/tc/Dropbox/Apps/wordAssociation";
 }
 
-const DEFAULT_NETWORK_TECHNOLOGY = "carrot";
-const DEFAULT_ENABLE_RANDOM_NETWORK_TECHNOLOGY = false;
-
-const DEFAULT_PURGE_MIN = true; // applies only to parent
-const TEST_MODE = false; // applies only to parent
-const GLOBAL_TEST_MODE = false; // applies to parent and all children
-const QUIT_ON_COMPLETE = false;
-
-const ONE_SECOND = 1000;
-const ONE_MINUTE = ONE_SECOND*60;
-
-// const ONE_KILOBYTE = 1024;
-// const ONE_MEGABYTE = 1024 * ONE_KILOBYTE;
-
-const SAVE_FILE_QUEUE_INTERVAL = 5*ONE_SECOND;
-const QUIT_WAIT_INTERVAL = 5*ONE_SECOND;
-const STATS_UPDATE_INTERVAL = 5*ONE_MINUTE;
-const DEFAULT_CHILD_PING_INTERVAL = ONE_MINUTE;
-const SAVE_CACHE_DEFAULT_TTL = 60;
+const DEFAULT_DATA_ROOT = "/Volumes/nas4/data";
 
 const compactDateTimeFormat = "YYYYMMDD_HHmmss";
 
@@ -223,23 +217,31 @@ let configuration = {};
 
 const childConfiguration = {};
 
-configuration.userProfileCharCodesOnlyProbability = DEFAULT_USER_PROFILE_CHAR_CODES_ONLY_PROBABILITY;
-configuration.userProfileCharCodesOnlyFlag = DEFAULT_USER_PROFILE_CHAR_CODES_ONLY_FLAG;
-configuration.userProfileCharCodesOnlyInputsId = DEFAULT_USER_PROFILE_CHAR_CODES_ONLY_INPUTS_ID;
+const watcherChildConfiguration = {};
+watcherChildConfiguration.primaryHost = configuration.primaryHost;
+watcherChildConfiguration.testMode = configuration.testMode;
+watcherChildConfiguration.updateUserDb = false;
 
-configuration.enableZeroSuccessEvolveOptions = DEFAULT_ENABLE_ZERO_SUCCESS_EVOLVE_OPTIONS;
-configuration.viableNetworkTechArray = DEFAULT_VIABLE_NETWORK_TECHNOLOGY_ARRAY;
-configuration.forceNetworkTechnology = DEFAULT_FORCE_NETWORK_TECHNOLOGY;
+
+configuration.userProfileCharCodesOnlyProbability = EVOVLE_DEFAULTS.DEFAULT_USER_PROFILE_CHAR_CODES_ONLY_PROBABILITY;
+configuration.userProfileCharCodesOnlyFlag = EVOVLE_DEFAULTS.DEFAULT_USER_PROFILE_CHAR_CODES_ONLY_FLAG;
+configuration.userProfileCharCodesOnlyInputsId = EVOVLE_DEFAULTS.DEFAULT_USER_PROFILE_CHAR_CODES_ONLY_INPUTS_ID;
+
+configuration.enableZeroSuccessEvolveOptions = EVOVLE_DEFAULTS.DEFAULT_ENABLE_ZERO_SUCCESS_EVOLVE_OPTIONS;
+configuration.viableNetworkTechArray = EVOVLE_DEFAULTS.DEFAULT_VIABLE_NETWORK_TECHNOLOGY_ARRAY;
+configuration.forceNetworkTechnology = EVOVLE_DEFAULTS.DEFAULT_FORCE_NETWORK_TECHNOLOGY;
 configuration.networkIdPrefix = "nn_" + getTimeStamp() + "_" + hostname ;
-configuration.removeSeedFromViableNetworkOnFail = DEFAULT_REMOVE_SEED_FROM_VIABLE_NN_SET_ON_FAIL;
+configuration.removeSeedFromViableNetworkOnFail = EVOVLE_DEFAULTS.DEFAULT_REMOVE_SEED_FROM_VIABLE_NN_SET_ON_FAIL;
 
-configuration.binaryMode = DEFAULT_BINARY_MODE;
-configuration.enableRandomBinaryMode = DEFAULT_ENABLE_RANDOM_BINARY_MODE;
-configuration.userProfileOnlyFlag = DEFAULT_USER_PROFILE_ONLY_FLAG;
+configuration.binaryMode = EVOVLE_DEFAULTS.DEFAULT_BINARY_MODE;
+configuration.enableRandomBinaryMode = EVOVLE_DEFAULTS.DEFAULT_ENABLE_RANDOM_BINARY_MODE;
+configuration.userProfileOnlyFlag = EVOVLE_DEFAULTS.DEFAULT_USER_PROFILE_ONLY_FLAG;
 
-configuration.compareTech = DEFAULT_COMPARE_TECH;
-configuration.networkTechnology = DEFAULT_NETWORK_TECHNOLOGY;
-configuration.enableRandomTechnology = DEFAULT_ENABLE_RANDOM_NETWORK_TECHNOLOGY;
+configuration.compareTech = EVOVLE_DEFAULTS.DEFAULT_COMPARE_TECH;
+configuration.networkTechnology = EVOVLE_DEFAULTS.DEFAULT_NETWORK_TECHNOLOGY;
+configuration.enableRandomTechnology = EVOVLE_DEFAULTS.DEFAULT_ENABLE_RANDOM_NETWORK_TECHNOLOGY;
+
+configuration.costArray = EVOVLE_DEFAULTS.DEFAULT_EVOLVE_COST_ARRAY;
 
 configuration.previousChildConfig = false;
 configuration.offlineMode = OFFLINE_MODE;
@@ -250,8 +252,50 @@ configuration.testMode = TEST_MODE;
 configuration.globalTestMode = GLOBAL_TEST_MODE;
 configuration.quitOnComplete = QUIT_ON_COMPLETE;
 configuration.statsUpdateIntervalTime = STATS_UPDATE_INTERVAL;
-configuration.maxFailNetworks = DEFAULT_MAX_FAIL_NETWORKS;
-configuration.minPassRatio = DEFAULT_MIN_PASS_RATIO;
+configuration.maxFailNetworks = EVOVLE_DEFAULTS.DEFAULT_MAX_FAIL_NETWORKS;
+configuration.minPassRatio = EVOVLE_DEFAULTS.DEFAULT_MIN_PASS_RATIO;
+
+configuration.quitOnComplete = DEFAULT_QUIT_ON_COMPLETE;
+
+configuration.processName = process.env.TNN_PROCESS_NAME || "tnn_node";
+configuration.networkCreateMode = "evole";
+
+configuration.childPingAllInterval = DEFAULT_CHILD_PING_INTERVAL;
+
+configuration.archiveNotInInputsIdArray = DEFAULT_ARCHIVE_NOT_IN_INPUTS_ID_ARRAY;
+configuration.deleteNotInInputsIdArray = DEFAULT_DELETE_NOT_IN_INPUTS_ID_ARRAY;
+
+configuration.disableCreateTestSet = DEFAULT_DISABLE_CREATE_TEST_SET;
+
+configuration.inputsIdArray = [];
+configuration.saveFileQueueInterval = SAVE_FILE_QUEUE_INTERVAL;
+
+configuration.useLocalTrainingSets = DEFAULT_USE_LOCAL_TRAINING_SETS;
+configuration.loadAllInputs = DEFAULT_LOAD_ALL_INPUTS;
+
+configuration.interruptFlag = false;
+configuration.useLocalNetworksOnly = false;
+configuration.networkCreateIntervalTime = 15000;
+configuration.enableSeedNetwork = true;
+
+configuration.randomizeSeedOptions = DEFAULT_SEED_RANDOMIZE_OPTIONS;
+
+configuration.seedNetworkProbability = DEFAULT_SEED_NETWORK_PROBABILITY;
+
+configuration.initMainIntervalTime = DEFAULT_INIT_MAIN_INTERVAL;
+configuration.enableRequiredTrainingSet = false;
+
+if (hostname === "google") {
+  configuration.cwd = "/home/tc/twitterNeuralNetwork";
+}
+else {
+  configuration.cwd = "/Volumes/RAID1/projects/twitterNeuralNetwork";
+}
+
+configuration.childAppPath = path.join(configuration.cwd, "neuralNetworkChild.js");
+configuration.childIdPrefix = DEFAULT_CHILD_ID_PREFIX;
+configuration.childIndex = 0;
+
 
 childConfiguration.primaryHost = configuration.primaryHost;
 childConfiguration.binaryMode = configuration.binaryMode;
@@ -438,21 +482,6 @@ statsObj.networkResults = {};
 //=========================================================================
 // TNN SPECIFIC
 //=========================================================================
-const DEFAULT_LOAD_ALL_INPUTS = false;
-const DEFAULT_ARCHIVE_NOT_IN_INPUTS_ID_ARRAY = true;
-const DEFAULT_DELETE_NOT_IN_INPUTS_ID_ARRAY = false;
-const DEFAULT_CHILD_ID_PREFIX = "tnc_node_";
-
-if (hostname === "google") {
-  configuration.cwd = "/home/tc/twitterNeuralNetwork";
-}
-else {
-  configuration.cwd = "/Volumes/RAID1/projects/twitterNeuralNetwork";
-}
-
-configuration.childAppPath = path.join(configuration.cwd, "neuralNetworkChild.js");
-configuration.childIdPrefix = DEFAULT_CHILD_ID_PREFIX;
-configuration.childIndex = 0;
 
 let childPingAllInterval;
 
@@ -467,124 +496,6 @@ categorizedUserHistogram.positive = 0;
 categorizedUserHistogram.negative = 0;
 categorizedUserHistogram.none = 0;
 
-const GLOBAL_TRAINING_SET_ID = "globalTrainingSet";
-
-const DEFAULT_SEED_RANDOMIZE_OPTIONS = false;
-const DEFAULT_USE_LOCAL_TRAINING_SETS = false;
-const DEFAULT_MAX_NEURAL_NETWORK_CHILDREN = 1;
-const DEFAULT_TEST_RATIO = 0.25;
-const DEFAULT_ITERATIONS = 10;
-const DEFAULT_SEED_NETWORK_ID = false;
-const DEFAULT_SEED_NETWORK_PROBABILITY = 0.5;
-
-const DEFAULT_GLOBAL_MIN_SUCCESS_RATE = 90; // percent
-const DEFAULT_GLOBAL_VIABLE_SUCCESS_RATE = 90;
-const DEFAULT_LOCAL_MIN_SUCCESS_RATE = 80; // percent
-
-const DEFAULT_HOST_MIN_SUCCESS_RATE = 50; // percent
-const DEFAULT_HOST_MIN_SUCCESS_RATE_MSE = 40; // Harder to past with cost === MSE
-const DEFAULT_HOST_PURGE_MIN_SUCCESS_RATE = 60; // percent
-
-const DEFAULT_DISABLE_CREATE_TEST_SET = false;
-const DEFAULT_INIT_MAIN_INTERVAL = process.env.TNN_INIT_MAIN_INTERVAL || 10*ONE_MINUTE;
-
-const DEFAULT_RANDOM_EVOLVE_TECH_ARRAY = [
-  "carrot",
-  "neataptic"
-];
-
-const DEFAULT_EVOLVE_THREADS = 4;
-const DEFAULT_EVOLVE_ARCHITECTURE = "random";
-const DEFAULT_EVOLVE_INPUTS_TO_HIDDEN_LAYER_SIZE_RATIO = 0.1;
-const DEFAULT_EVOLVE_BEST_NETWORK = false;
-const DEFAULT_EVOLVE_ERROR_THRESHOLD = 0.005;
-const DEFAULT_EVOLVE_ERROR_THRESHOLD_RANGE = { min: 0.0, max: 1.0 };
-
-const DEFAULT_BRAIN_TRAIN_ACTIVATION_ARRAY = [
-  "SIGMOID",
-  "RELU",
-  "LEAKY_RELU",
-  "TANH"
-];
-
-const DEFAULT_EVOLVE_ACTIVATION = "LOGISTIC";
-const DEFAULT_EVOLVE_ACTIVATION_ARRAY = [
-  "ABSOLUTE",
-  "BENT_IDENTITY",
-  "BIPOLAR",
-  "BIPOLAR_SIGMOID",
-  "GAUSSIAN",
-  "HARD_TANH",
-  "IDENTITY",
-  "LOGISTIC",
-  "RELU",
-  "SELU",
-  "SINUSOID",
-  "SOFTSIGN",
-  "STEP",
-  "TANH"
-];
-
-const DEFAULT_EVOLVE_COST = "MSE";
-const DEFAULT_EVOLVE_COST_ARRAY = [
-  "BINARY",
-  "CROSS_ENTROPY",
-  "HINGE",
-  "MAE",
-  "MAPE",
-  "MSE",
-  "WAPE"
-];
-
-const DEFAULT_EVOLVE_ELITISM = 1;
-const DEFAULT_EVOLVE_ELITISM_RANGE = { min: 1, max: 5 };
-
-const DEFAULT_EVOLVE_EQUAL = true;
-
-const DEFAULT_EVOLVE_ERROR = 0.05;
-
-const DEFAULT_EVOLVE_FITNESS_POPULATION = true;
-const DEFAULT_EVOLVE_FITNESS_POPULATION_PROBABILITY = 0.5; // carrot only
-
-const DEFAULT_EVOLVE_GROWTH = 0.0001;
-const DEFAULT_EVOLVE_GROWTH_RANGE = { min: 0.00005, max: 0.00015 };
-
-const DEFAULT_EVOLVE_LEARNING_RATE = 0.3;
-const DEFAULT_EVOLVE_LEARNING_RATE_RANGE = { min: 0.0, max: 1.0 };
-
-const DEFAULT_EVOLVE_LOG = 1;
-
-const DEFAULT_EVOLVE_MOMENTUM = 0.1; // brain only
-const DEFAULT_EVOLVE_MOMENTUM_RANGE = { min: 0.05, max: 0.5 }; // brain only
-
-const DEFAULT_EVOLVE_EFFICIENT_MUTATION_PROBABILITY = 0.5; // carrot only
-const DEFAULT_EVOLVE_EFFICIENT_MUTATION = false; // carrot only
-const DEFAULT_EVOLVE_MUTATION = "FFW"; // carrot and neataptic, specifies an array of possible mutations
-const DEFAULT_EVOLVE_MUTATION_RATE = 0.4;
-const DEFAULT_EVOLVE_MUTATION_RATE_RANGE = { min: 0.3, max: 0.75 };
-const DEFAULT_EVOLVE_MUTATION_ARRAY = [ // carrot only
-  "ADD_NODE",
-  "SUB_NODE",
-  "ADD_CONN",
-  "SUB_CONN",
-  "MOD_WEIGHT",
-  "MOD_BIAS",
-  "MOD_ACTIVATION",
-  "SWAP_NODES",
-];
-
-const DEFAULT_EVOLVE_POPSIZE = 20;
-
-const DEFAULT_EVOLVE_SELECTION = "FITNESS_PROPORTIONATE";
-const DEFAULT_EVOLVE_SELECTION_ARRAY = [
-  "FITNESS_PROPORTIONATE",
-  "POWER",
-  "TOURNAMENT"
-];
-
-const DEFAULT_EVOLVE_PROVENANCE = 0;
-
-const DEFAULT_BRAIN_TRAIN_TIMEOUT = Infinity;
 
 let hostBestNetworkFile;
 let networkIndex = 0;
@@ -610,38 +521,6 @@ const inputsFailedSet = new Set();
 const inputsSet = new Set();
 const inputsNetworksHashMap = {};
 const skipLoadInputsSet = new Set();
-
-configuration.quitOnComplete = DEFAULT_QUIT_ON_COMPLETE;
-
-configuration.processName = process.env.TNN_PROCESS_NAME || "tnn_node";
-configuration.networkCreateMode = "evole";
-
-configuration.childPingAllInterval = DEFAULT_CHILD_PING_INTERVAL;
-
-configuration.archiveNotInInputsIdArray = DEFAULT_ARCHIVE_NOT_IN_INPUTS_ID_ARRAY;
-configuration.deleteNotInInputsIdArray = DEFAULT_DELETE_NOT_IN_INPUTS_ID_ARRAY;
-
-configuration.globalTrainingSetId = GLOBAL_TRAINING_SET_ID;
-
-configuration.disableCreateTestSet = DEFAULT_DISABLE_CREATE_TEST_SET;
-
-configuration.inputsIdArray = [];
-configuration.saveFileQueueInterval = SAVE_FILE_QUEUE_INTERVAL;
-
-configuration.useLocalTrainingSets = DEFAULT_USE_LOCAL_TRAINING_SETS;
-configuration.loadAllInputs = DEFAULT_LOAD_ALL_INPUTS;
-
-configuration.interruptFlag = false;
-configuration.useLocalNetworksOnly = false;
-configuration.networkCreateIntervalTime = 15000;
-configuration.enableSeedNetwork = true;
-
-configuration.randomizeSeedOptions = DEFAULT_SEED_RANDOMIZE_OPTIONS;
-
-configuration.seedNetworkProbability = DEFAULT_SEED_NETWORK_PROBABILITY;
-
-configuration.initMainIntervalTime = DEFAULT_INIT_MAIN_INTERVAL;
-configuration.enableRequiredTrainingSet = false;
 
 // ==================================================================
 // DROPBOX
@@ -682,18 +561,15 @@ const localArchiveNetworkFolder = path.join(configHostFolder, "neuralNetworks/ar
 
 configuration.local = {};
 configuration.local.trainingSetsFolder = configHostFolder + "/trainingSets";
-configuration.local.userDataFolder = configHostFolder + "/trainingSets/users/data";
+configuration.local.userDataFolder = path.join(DEFAULT_DATA_ROOT, "users");
 
 configuration.default = {};
 configuration.default.trainingSetsFolder = configDefaultFolder + "/trainingSets";
-// configuration.default.userDataFolder = configDefaultFolder + "/trainingSets/users/data";
+configuration.default.userDataFolder = path.join(DEFAULT_DATA_ROOT, "users");
 
 configuration.archiveFileUploadCompleteFlagFolder = configuration[HOST].trainingSetsFolder + "/users";
 
 configuration.trainingSetsFolder = configuration.default.trainingSetsFolder;
-
-const defaultDataFolder = "/Volumes/nas4/data";
-configuration.userDataFolder = path.join(defaultDataFolder, "users");
 
 configuration.defaultUserArchiveFlagFile = "usersZipUploadComplete.json";
 configuration.trainingSetFile = "trainingSet.json";
@@ -703,7 +579,7 @@ configuration.maxNumberChildren = (process.env.TNN_MAX_NEURAL_NETWORK_CHILDREN !
   ? process.env.TNN_MAX_NEURAL_NETWORK_CHILDREN 
   : DEFAULT_MAX_NEURAL_NETWORK_CHILDREN;
 
-childConfiguration.userDataFolder = configuration.userDataFolder;
+childConfiguration.userDataFolder = configuration.default.userDataFolder;
 
 childConfiguration.defaultUserArchiveFlagFile = configuration.defaultUserArchiveFlagFile;
 childConfiguration.trainingSetsFolder = configuration.trainingSetsFolder;
@@ -734,51 +610,48 @@ configuration.testSetRatio = DEFAULT_TEST_RATIO;
 // })
 
 configuration.evolve = {};
-configuration.evolve.activation = DEFAULT_EVOLVE_ACTIVATION;
-configuration.evolve.activationArray = DEFAULT_EVOLVE_ACTIVATION_ARRAY;
-configuration.evolve.architecture = DEFAULT_EVOLVE_ARCHITECTURE;
-configuration.evolve.binaryMode = DEFAULT_BINARY_MODE;
-configuration.evolve.binaryModeProbability = DEFAULT_BINARY_MODE_PROBABILITY;
+configuration.evolve.activation = EVOVLE_DEFAULTS.DEFAULT_EVOLVE_ACTIVATION;
+configuration.evolve.activationArray = EVOVLE_DEFAULTS.DEFAULT_EVOLVE_ACTIVATION_ARRAY;
+configuration.evolve.architecture = EVOVLE_DEFAULTS.DEFAULT_EVOLVE_ARCHITECTURE;
+configuration.evolve.binaryMode = EVOVLE_DEFAULTS.DEFAULT_BINARY_MODE;
+configuration.evolve.binaryModeProbability = EVOVLE_DEFAULTS.DEFAULT_BINARY_MODE_PROBABILITY;
 
-// configuration.evolve.logScaleMode = DEFAULT_LOGSCALE_MODE
-// configuration.evolve.logScaleModeProbability = DEFAULT_LOGSCALE_MODE_PROBABILITY
-
-configuration.evolve.brainActivationArray = DEFAULT_BRAIN_TRAIN_ACTIVATION_ARRAY;
-configuration.evolve.learningRate = DEFAULT_EVOLVE_LEARNING_RATE;
-configuration.evolve.learningRateRange = DEFAULT_EVOLVE_LEARNING_RATE_RANGE;
-configuration.evolve.brainTrainTimeout = DEFAULT_BRAIN_TRAIN_TIMEOUT;
-configuration.evolve.cost = DEFAULT_EVOLVE_COST;
-configuration.evolve.costArray = DEFAULT_EVOLVE_COST_ARRAY;
-configuration.evolve.efficientMutation = DEFAULT_EVOLVE_EFFICIENT_MUTATION;
-configuration.evolve.efficientMutationProbability = DEFAULT_EVOLVE_EFFICIENT_MUTATION_PROBABILITY;
-configuration.evolve.elitism = DEFAULT_EVOLVE_ELITISM;
-configuration.evolve.elitismRange = DEFAULT_EVOLVE_ELITISM_RANGE;
-configuration.evolve.equal = DEFAULT_EVOLVE_EQUAL;
-configuration.evolve.error = DEFAULT_EVOLVE_ERROR;
-configuration.evolve.errorThresh = DEFAULT_EVOLVE_ERROR_THRESHOLD;
-configuration.evolve.errorThreshRange = DEFAULT_EVOLVE_ERROR_THRESHOLD_RANGE;
-configuration.evolve.fitnessPopulation = DEFAULT_EVOLVE_FITNESS_POPULATION;
-configuration.evolve.fitnessPopulationProbability = DEFAULT_EVOLVE_FITNESS_POPULATION_PROBABILITY;
-configuration.evolve.growth = DEFAULT_EVOLVE_GROWTH;
-configuration.evolve.growthRange = DEFAULT_EVOLVE_GROWTH_RANGE;
-configuration.evolve.inputsToHiddenLayerSizeRatio = DEFAULT_EVOLVE_INPUTS_TO_HIDDEN_LAYER_SIZE_RATIO;
-configuration.evolve.iterations = DEFAULT_ITERATIONS;
-configuration.evolve.log = DEFAULT_EVOLVE_LOG;
-configuration.evolve.momentum = DEFAULT_EVOLVE_MOMENTUM;
-configuration.evolve.momentumRange = DEFAULT_EVOLVE_MOMENTUM_RANGE;
-configuration.evolve.mutation = DEFAULT_EVOLVE_MUTATION;
-configuration.evolve.mutationArray = DEFAULT_EVOLVE_MUTATION_ARRAY;
-configuration.evolve.mutationRate = DEFAULT_EVOLVE_MUTATION_RATE;
-configuration.evolve.mutationRateRange = DEFAULT_EVOLVE_MUTATION_RATE_RANGE
-configuration.evolve.networkId = DEFAULT_SEED_NETWORK_ID;
+configuration.evolve.brainActivationArray = EVOVLE_DEFAULTS.DEFAULT_BRAIN_TRAIN_ACTIVATION_ARRAY;
+configuration.evolve.learningRate = EVOVLE_DEFAULTS.DEFAULT_EVOLVE_LEARNING_RATE;
+configuration.evolve.learningRateRange = EVOVLE_DEFAULTS.DEFAULT_EVOLVE_LEARNING_RATE_RANGE;
+configuration.evolve.brainTrainTimeout = EVOVLE_DEFAULTS.DEFAULT_BRAIN_TRAIN_TIMEOUT;
+configuration.evolve.cost = EVOVLE_DEFAULTS.DEFAULT_EVOLVE_COST;
+configuration.evolve.costArray = EVOVLE_DEFAULTS.DEFAULT_EVOLVE_COST_ARRAY;
+configuration.evolve.efficientMutation = EVOVLE_DEFAULTS.DEFAULT_EVOLVE_EFFICIENT_MUTATION;
+configuration.evolve.efficientMutationProbability = EVOVLE_DEFAULTS.DEFAULT_EVOLVE_EFFICIENT_MUTATION_PROBABILITY;
+configuration.evolve.elitism = EVOVLE_DEFAULTS.DEFAULT_EVOLVE_ELITISM;
+configuration.evolve.elitismRange = EVOVLE_DEFAULTS.DEFAULT_EVOLVE_ELITISM_RANGE;
+configuration.evolve.equal = EVOVLE_DEFAULTS.DEFAULT_EVOLVE_EQUAL;
+configuration.evolve.error = EVOVLE_DEFAULTS.DEFAULT_EVOLVE_ERROR;
+configuration.evolve.errorThresh = EVOVLE_DEFAULTS.DEFAULT_EVOLVE_ERROR_THRESHOLD;
+configuration.evolve.errorThreshRange = EVOVLE_DEFAULTS.DEFAULT_EVOLVE_ERROR_THRESHOLD_RANGE;
+configuration.evolve.fitnessPopulation = EVOVLE_DEFAULTS.DEFAULT_EVOLVE_FITNESS_POPULATION;
+configuration.evolve.fitnessPopulationProbability = EVOVLE_DEFAULTS.DEFAULT_EVOLVE_FITNESS_POPULATION_PROBABILITY;
+configuration.evolve.growth = EVOVLE_DEFAULTS.DEFAULT_EVOLVE_GROWTH;
+configuration.evolve.growthRange = EVOVLE_DEFAULTS.DEFAULT_EVOLVE_GROWTH_RANGE;
+configuration.evolve.inputsToHiddenLayerSizeRatio = EVOVLE_DEFAULTS.DEFAULT_EVOLVE_INPUTS_TO_HIDDEN_LAYER_SIZE_RATIO;
+configuration.evolve.iterations = EVOVLE_DEFAULTS.DEFAULT_ITERATIONS;
+configuration.evolve.log = EVOVLE_DEFAULTS.DEFAULT_EVOLVE_LOG;
+configuration.evolve.momentum = EVOVLE_DEFAULTS.DEFAULT_EVOLVE_MOMENTUM;
+configuration.evolve.momentumRange = EVOVLE_DEFAULTS.DEFAULT_EVOLVE_MOMENTUM_RANGE;
+configuration.evolve.mutation = EVOVLE_DEFAULTS.DEFAULT_EVOLVE_MUTATION;
+configuration.evolve.mutationArray = EVOVLE_DEFAULTS.DEFAULT_EVOLVE_MUTATION_ARRAY;
+configuration.evolve.mutationRate = EVOVLE_DEFAULTS.DEFAULT_EVOLVE_MUTATION_RATE;
+configuration.evolve.mutationRateRange = EVOVLE_DEFAULTS.DEFAULT_EVOLVE_MUTATION_RATE_RANGE
+configuration.evolve.networkId = EVOVLE_DEFAULTS.DEFAULT_SEED_NETWORK_ID;
 configuration.evolve.networkObj = null;
-configuration.evolve.popsize = DEFAULT_EVOLVE_POPSIZE;
-configuration.evolve.provenance = DEFAULT_EVOLVE_PROVENANCE;
-configuration.evolve.randomEvolveTechArray = DEFAULT_RANDOM_EVOLVE_TECH_ARRAY;
-configuration.evolve.selection = DEFAULT_EVOLVE_SELECTION;
-configuration.evolve.selectionArray = DEFAULT_EVOLVE_SELECTION_ARRAY;
-configuration.evolve.threads = DEFAULT_EVOLVE_THREADS;
-configuration.evolve.useBestNetwork = DEFAULT_EVOLVE_BEST_NETWORK;
+configuration.evolve.popsize = EVOVLE_DEFAULTS.DEFAULT_EVOLVE_POPSIZE;
+configuration.evolve.provenance = EVOVLE_DEFAULTS.DEFAULT_EVOLVE_PROVENANCE;
+configuration.evolve.randomEvolveTechArray = EVOVLE_DEFAULTS.DEFAULT_RANDOM_EVOLVE_TECH_ARRAY;
+configuration.evolve.selection = EVOVLE_DEFAULTS.DEFAULT_EVOLVE_SELECTION;
+configuration.evolve.selectionArray = EVOVLE_DEFAULTS.DEFAULT_EVOLVE_SELECTION_ARRAY;
+configuration.evolve.threads = EVOVLE_DEFAULTS.DEFAULT_EVOLVE_THREADS;
+configuration.evolve.useBestNetwork = EVOVLE_DEFAULTS.DEFAULT_EVOLVE_BEST_NETWORK;
 
 statsObj.evolveStats = {};
 statsObj.evolveStats.results = {};
@@ -2166,7 +2039,9 @@ async function generateEvolveOptions(params){
 
       // neataptic doesn't have WAPE cost
 
-      const costArray = (config.networkTechnology === "neataptic") ? _.pull(configuration.costArray, "WAPE") : configuration.costArray;
+      const costArray = (config.networkTechnology === "neataptic") 
+        ? _.pull(configuration.evolve.costArray, "WAPE") 
+        : configuration.evolve.costArray;
 
       if (config.seedInputsId === configuration.userProfileCharCodesOnlyInputsId){
         config.binaryMode = false;
@@ -2190,7 +2065,7 @@ async function generateEvolveOptions(params){
       config.popsize = configuration.evolve.popsize;
       config.populationSize = configuration.evolve.popsize;
       config.provenance = configuration.evolve.provenance;
-      config.selection = (config.networkTechnology === "brain") ? "NONE" : randomItem(configuration.selectionArray);
+      config.selection = (config.networkTechnology === "brain") ? "NONE" : randomItem(configuration.evolve.selectionArray);
       config.threads = configuration.evolve.threads;
       config.timeout = configuration.evolve.timeout;
 
@@ -2943,6 +2818,68 @@ async function initWatchAllConfigFolders(p){
       });
     });
 
+    //========================
+    // WATCH USER DATA CONFIG
+    //========================
+
+    // watch.createMonitor(configuration.default.userDataFolder, options, function (userData) {
+
+    //   const command = {
+    //     op: "USER_DATA",
+    //     testMode: testMode,
+    //     verbose: verbose,
+    //     user: userData
+    //   };
+
+    //   console.log(chalkBlue(MODULE_ID_PREFIX 
+    //     + " | INIT WATCH USER DATA FOLDER: " + configuration.default.userDataFolder));
+
+    //   monitorHostConfig.on("created", async function(f){
+    //     if (f.endsWith(".json")){
+
+    //       const command = {
+    //         op: "USER_DATA_ADD",
+    //         testMode: configuration.testMode,
+    //         verbose: configuration.verbose,
+    //         user: userData
+    //       };
+
+    //       const response = await childSendAll({command: command});
+
+    //     }
+    //   });
+
+    //   monitorHostConfig.on("changed", async function(f){
+    //     if (f.endsWith(".json")){
+
+    //       const command = {
+    //         op: "USER_DATA_CHANGE",
+    //         testMode: configuration.testMode,
+    //         verbose: configuration.verbose,
+    //         user: userData
+    //       };
+
+    //       const response = await childSendAll({command: command});
+          
+    //     }
+    //   });
+
+    //   monitorHostConfig.on("removed", async function (f) {
+    //     if (f.endsWith(".json")){
+
+    //       const command = {
+    //         op: "USER_DATA_DELETE",
+    //         testMode: configuration.testMode,
+    //         verbose: configuration.verbose,
+    //         userId: f.replace(".json", "")
+    //       };
+
+    //       const response = await childSendAll({command: command});
+          
+    //     }
+    //   });
+    // });
+
     return;
   }
   catch(err){
@@ -3434,11 +3371,6 @@ async function loadConfigFile(params) {
       }
     }
 
-    if (loadedConfigObj.TNN_RANDOM_EVOLVE_TECH_ARRAY !== undefined) {
-      console.log(MODULE_ID_PREFIX + " | LOADED TNN_RANDOM_EVOLVE_TECH_ARRAY: " + loadedConfigObj.TNN_RANDOM_EVOLVE_TECH_ARRAY);
-      newConfiguration.randomEvolveTechArray = loadedConfigObj.TNN_RANDOM_EVOLVE_TECH_ARRAY;
-    }
-
     if (loadedConfigObj.TNN_REMOVE_SEED_FROM_VIABLE_NN_SET_ON_FAIL !== undefined) {
       console.log(MODULE_ID_PREFIX + " | LOADED TNN_REMOVE_SEED_FROM_VIABLE_NN_SET_ON_FAIL: " + loadedConfigObj.TNN_REMOVE_SEED_FROM_VIABLE_NN_SET_ON_FAIL);
       if ((loadedConfigObj.TNN_REMOVE_SEED_FROM_VIABLE_NN_SET_ON_FAIL === true) || (loadedConfigObj.TNN_REMOVE_SEED_FROM_VIABLE_NN_SET_ON_FAIL === "true")) {
@@ -3569,16 +3501,6 @@ async function loadConfigFile(params) {
       newConfiguration.seedNetworkProbability = loadedConfigObj.TNN_SEED_NETWORK_PROBABILITY;
     }
 
-    if (loadedConfigObj.TNN_EVOLVE_COST_ARRAY !== undefined){
-      console.log(MODULE_ID_PREFIX + " | LOADED TNN_EVOLVE_COST_ARRAY: " + loadedConfigObj.TNN_EVOLVE_COST_ARRAY);
-      newConfiguration.costArray = loadedConfigObj.TNN_EVOLVE_COST_ARRAY;
-    }
-
-    if (loadedConfigObj.TNN_EVOLVE_SELECTION_ARRAY !== undefined){
-      console.log(MODULE_ID_PREFIX + " | LOADED TNN_EVOLVE_SELECTION_ARRAY: " + loadedConfigObj.TNN_EVOLVE_SELECTION_ARRAY);
-      newConfiguration.selectionArray = loadedConfigObj.TNN_EVOLVE_SELECTION_ARRAY;
-    }
-
     if (loadedConfigObj.TNN_GLOBAL_VIABLE_SUCCESS_RATE !== undefined){
       console.log(MODULE_ID_PREFIX + " | LOADED TNN_GLOBAL_VIABLE_SUCCESS_RATE: " + loadedConfigObj.TNN_GLOBAL_VIABLE_SUCCESS_RATE);
       newConfiguration.globalViableSuccessRate = loadedConfigObj.TNN_GLOBAL_VIABLE_SUCCESS_RATE;
@@ -3609,19 +3531,37 @@ async function loadConfigFile(params) {
       newConfiguration.hostPurgeMinSuccessRate = loadedConfigObj.TNN_HOST_PURGE_MIN_SUCCESS_RATE;
     }
 
+    if (loadedConfigObj.TNN_INPUTS_IDS !== undefined){
+      console.log(MODULE_ID_PREFIX + " | LOADED TNN_INPUTS_IDS: " + loadedConfigObj.TNN_INPUTS_IDS);
+      newConfiguration.inputsIdArray = loadedConfigObj.TNN_INPUTS_IDS;
+    }
+
+
+    // EVOLVE CONFIG
+
+    if (loadedConfigObj.TNN_RANDOM_EVOLVE_TECH_ARRAY !== undefined) {
+      console.log(MODULE_ID_PREFIX + " | LOADED TNN_RANDOM_EVOLVE_TECH_ARRAY: " + loadedConfigObj.TNN_RANDOM_EVOLVE_TECH_ARRAY);
+      newConfiguration.evolve.randomEvolveTechArray = loadedConfigObj.TNN_RANDOM_EVOLVE_TECH_ARRAY;
+    }
+
     if (loadedConfigObj.TNN_EVOLVE_POPSIZE !== undefined){
       console.log(MODULE_ID_PREFIX + " | LOADED TNN_EVOLVE_POPSIZE: " + loadedConfigObj.TNN_EVOLVE_POPSIZE);
       newConfiguration.evolve.popsize = loadedConfigObj.TNN_EVOLVE_POPSIZE;
     }
 
+    if (loadedConfigObj.TNN_EVOLVE_COST_ARRAY !== undefined){
+      console.log(MODULE_ID_PREFIX + " | LOADED TNN_EVOLVE_COST_ARRAY: " + loadedConfigObj.TNN_EVOLVE_COST_ARRAY);
+      newConfiguration.evolve.costArray = loadedConfigObj.TNN_EVOLVE_COST_ARRAY;
+    }
+
+    if (loadedConfigObj.TNN_EVOLVE_SELECTION_ARRAY !== undefined){
+      console.log(MODULE_ID_PREFIX + " | LOADED TNN_EVOLVE_SELECTION_ARRAY: " + loadedConfigObj.TNN_EVOLVE_SELECTION_ARRAY);
+      newConfiguration.evolve.selectionArray = loadedConfigObj.TNN_EVOLVE_SELECTION_ARRAY;
+    }
+
     if (loadedConfigObj.TNN_EVOLVE_THREADS !== undefined){
       console.log(MODULE_ID_PREFIX + " | LOADED TNN_EVOLVE_THREADS: " + loadedConfigObj.TNN_EVOLVE_THREADS);
       newConfiguration.evolve.threads = loadedConfigObj.TNN_EVOLVE_THREADS;
-    }
-
-    if (loadedConfigObj.TNN_INPUTS_IDS !== undefined){
-      console.log(MODULE_ID_PREFIX + " | LOADED TNN_INPUTS_IDS: " + loadedConfigObj.TNN_INPUTS_IDS);
-      newConfiguration.inputsIdArray = loadedConfigObj.TNN_INPUTS_IDS;
     }
 
     if (loadedConfigObj.TNN_EVOLVE_ITERATIONS !== undefined){
@@ -4209,6 +4149,8 @@ const fsmStates = {
 
         try {
           await childCreateAll();
+          await watcherChildCreate();
+
           console.log(chalkBlue(MODULE_ID_PREFIX + " | CREATED ALL CHILDREN: " + Object.keys(childHashMap).length));
         }
         catch(err){
@@ -4479,7 +4421,6 @@ function childCreateAll(p){
     createParams.options = params.options || options;
     createParams.config = params.config || {};
 
-
     async.whilst(
 
       function test(cbTest) {
@@ -4696,6 +4637,7 @@ async function childInit(p){
     const childIdShort = params.childIdShort;
     const verbose = params.verbose || false;
     const testMode = params.testMode || false;
+    const config = params.configuration || childConfiguration;
 
     statsObj.status = "INIT CHILD | CH ID: " + childId;
 
@@ -4706,7 +4648,7 @@ async function childInit(p){
       childIdShort: childIdShort,
       testMode: testMode,
       verbose: verbose,
-      configuration: childConfiguration
+      configuration: config
     };
 
     const response = await childSend({childId: childId, command: command});
@@ -5319,6 +5261,153 @@ async function childMessageHandler(params){
   }
   catch(err){
     console.log(chalkError(MODULE_ID_PREFIX + " | *** childMessageHandler ERROR: " + err));
+    throw err;
+  }
+}
+
+async function watcherChildCreate(p){
+
+  let config;
+  const options = {};
+
+  try {
+
+    statsObj.status = "WATCHER CHILD CREATE";
+
+    const params = p || {};
+
+    const childId = "twc_" + hostname + "_" + process.pid;
+    const childIdShort = "WC0";
+    const appPath = path.join(configuration.cwd, "watcherChild.js");
+
+    let env = {};
+
+    env = configuration.DROPBOX;
+    env.DROPBOX_STATS_FILE = statsObj.runId + "_" + childId + ".json";
+    env.CHILD_ID = childId;
+    env.CHILD_ID_SHORT = childIdShort;
+    env.NODE_ENV = "production";
+
+    config = params.config || {};
+
+    let child = {};
+
+    options.cwd = params.cwd || configuration.cwd;
+
+    statsObj.status = "WATCHER CHILD CREATE | CH ID: " + childId + " | APP: " + appPath;
+
+    console.log(chalkBlueBold(MODULE_ID_PREFIX + " | CREATE WATCHER CHILD | " + childId));
+
+    if (env) {
+      options.env = env;
+    }
+    else {
+      options.env = {};
+      options.env = configuration.DROPBOX;
+      options.env.DROPBOX_STATS_FILE = statsObj.runId + "_" + childId + ".json";
+      options.env.CHILD_ID = childId;
+      options.env.NODE_ENV = "production";
+    }
+
+    childHashMap[childId] = {};
+    childHashMap[childId].status = "NEW";
+    childHashMap[childId].messageQueue = [];
+
+    child = cp.fork(`${__dirname}/watcherChild.js`);
+
+    childHashMap[childId].pid = child.pid;
+
+    const childPidFile = await touchChildPidFile({ childId: childId, pid: child.pid });
+
+    childHashMap[childId].childPidFile = childPidFile;
+    childHashMap[childId].child = child;
+
+    childHashMap[childId].child.on("disconnect", function(){
+
+      console.log(chalkAlert(MODULE_ID_PREFIX + " | *** WATCHER CHILD DISCONNECT | " + childId));
+
+      shell.cd(childPidFolderLocal);
+      shell.rm(childPidFile);
+
+      delete childHashMap[childId];
+    });
+
+    childHashMap[childId].child.on("close", function(){
+
+      console.log(chalkAlert(MODULE_ID_PREFIX + " | *** WATCHER CHILD CLOSED | " + childId));
+
+      shell.cd(childPidFolderLocal);
+      shell.rm(childPidFile);
+
+      delete childHashMap[childId];
+    });
+
+    childHashMap[childId].child.on("exit", function(){
+
+      console.log(chalkAlert(MODULE_ID_PREFIX + " | *** WATCHER CHILD EXITED | " + childId));
+
+      shell.cd(childPidFolderLocal);
+      shell.rm(childPidFile);
+
+      delete childHashMap[childId];
+
+      quit({cause: "WATCHER CHILD EXIT", force: true});
+    });
+
+    childHashMap[childId].child.on("error", function(err){
+      console.log(chalkError(MODULE_ID_PREFIX + " | *** WATCHER CHILD ERROR: " + err));
+
+      shell.cd(childPidFolderLocal);
+      shell.rm(childPidFile);
+
+      delete childHashMap[childId];
+
+      quit({cause: "WATCHER CHILD ERROR: " + err});
+    })
+
+    childHashMap[childId].child.on("message", async function(message){
+
+      await childMessageHandler({
+        childId: childId, 
+        message: message
+      });
+
+      if (configuration.verbose) { 
+        console.log(chalkLog(MODULE_ID_PREFIX 
+          + " | <R MESSAGE | " + getTimeStamp()
+          + " | OP: " + message.op
+        )); 
+      }
+    });
+
+    if (quitFlag) {
+      console.log(chalkAlert(MODULE_ID_PREFIX
+        + " | KILL WATCHER CHILD IN CREATE ON QUIT FLAG"
+        + " | " + getTimeStamp()
+        + " | " + childId
+      ));
+      childHashMap[childId].child.kill();
+    }
+
+    const childInitParams = {};
+    childInitParams.childId = childId;
+    childInitParams.childIdShort = childIdShort;
+    childInitParams.configuration = watcherChildConfiguration;
+    childInitParams.testMode = configuration.testMode;
+    childInitParams.verbose = configuration.verbose;
+
+    const initResponse = await childInit(childInitParams);
+
+    console.log(chalkBlueBold(MODULE_ID_PREFIX + " | CREATE WATCHER CHILD | " + childId));
+
+    return initResponse;
+  }
+  catch(err){
+    console.log(chalkError(MODULE_ID_PREFIX + " | *** WATCHER CHILD INIT ERROR"
+      + " | ERR: " + err
+      + "\nCONFIG\n" + jsonPrint(config)
+      + "\nENV\n" + jsonPrint(options.env)
+    ));
     throw err;
   }
 }
