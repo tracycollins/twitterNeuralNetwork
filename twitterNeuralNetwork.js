@@ -4523,7 +4523,7 @@ function childStartAll(p){
     async.eachSeries(Object.keys(childHashMap), async function(childId) {
 
       try{
-        if (childHashMap[childId] !== undefined){
+        if (childHashMap[childId] !== undefined && childHashMap[childId].type === "EVOLVE"){
           await startNetworkCreate({
             childId: childId, 
             binaryMode: binaryMode, 
@@ -5310,6 +5310,7 @@ async function watcherChildCreate(p){
     }
 
     childHashMap[childId] = {};
+    childHashMap[childId].type = "WATCHER";
     childHashMap[childId].status = "NEW";
     childHashMap[childId].messageQueue = [];
 
@@ -5453,6 +5454,7 @@ async function childCreate(p){
     }
 
     childHashMap[childId] = {};
+    childHashMap[childId].type = "EVOLVE";
     childHashMap[childId].status = "NEW";
     childHashMap[childId].currentNetworkId = false;
     childHashMap[childId].messageQueue = [];
