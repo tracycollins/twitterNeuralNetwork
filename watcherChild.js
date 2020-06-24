@@ -947,9 +947,19 @@ function initUserUpdateQueue(params){
 
         const filePath = userUpdateQueue.shift();
 
-        await loadUserFile({path: filePath});
+        try{
+          await loadUserFile({path: filePath});
+          userUpdateQueueReady = true;
+        }
+        catch(err){
+          console.log(chalkError(MODULE_ID_PREFIX
+            + " | *** LOAD USER FILE"
+            + " | PATH: " + filePath
+            + " | ERROR: " + err
+          ));
+          userUpdateQueueReady = true;
+        }
 
-        userUpdateQueueReady = true;
 
       }
 
