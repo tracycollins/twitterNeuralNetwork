@@ -117,6 +117,7 @@ statsObj.loadUsersFolderBusy = false;
 
 let statsObjSmall = {};
 
+statsObj.userUpdateQueue = 0;
 statsObj.users = {};
 statsObj.users.folder = {};
 statsObj.users.folder.total = 0;
@@ -159,6 +160,7 @@ const statsPickArray = [
   "startTime", 
   "elapsed", 
   "elapsedMS", 
+  "userUpdateQueue",
   "status"
 ];
 
@@ -296,6 +298,7 @@ function showStats(options) {
 
     console.log(chalkLog(MODULE_ID_PREFIX + " | STATUS"
       + " | FSM: " + fsm.getMachineState()
+      + " | UUQ: " + userUpdateQueue.length
       + " | START: " + statsObj.startTime
       + " | NOW: " + getTimeStamp()
       + " | ELAPSED: " + statsObj.elapsed
@@ -948,6 +951,7 @@ function initUserUpdateQueue(params){
         userUpdateQueueReady = false;
 
         const filePath = userUpdateQueue.shift();
+        statsObj.userUpdateQueue = userUpdateQueue.length;
 
         try{
           await loadUserFile({path: filePath});
