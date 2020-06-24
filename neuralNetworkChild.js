@@ -733,12 +733,6 @@ async function loadUserFile(params){
 
   const filePath = params.path || path.join(folder, file);
 
-  // let userObj = await tcUtils.loadFile({
-  //   folder: folder, 
-  //   file: file, 
-  //   verbose: params.verbose
-  // });
-
   let userObj = await fs.readJson(filePath);
 
   statsObj.users.folder.total += 1;
@@ -1152,20 +1146,7 @@ async function loadTrainingSet(p){
       + " | " + configuration.trainingSetsFolder + "/normalization.json"
     ));
 
-    // const normalization = await tcUtils.loadFile({
-    //   folder: configuration.trainingSetsFolder, 
-    //   file: "normalization.json",
-    //   noErrorNotFound: true,
-    //   verbose: true
-    // });
-
     const filePath = path.join(configuration.trainingSetsFolder, "normalization.json");
-
-    // let userObj = await tcUtils.loadFile({
-    //   folder: folder, 
-    //   file: file, 
-    //   verbose: params.verbose
-    // });
 
     const normalization = await fs.readJson(filePath);
 
@@ -1184,7 +1165,16 @@ async function loadTrainingSet(p){
       ));
     }
 
-    if (configuration.loadUsersFolderOnStart && !statsObj.usersFolderLoaded && !statsObj.loadUsersFolderBusy){
+    if (hostname === DATABASE_HOST){
+      console.log(chalk.black.bold(MODULE_ID_PREFIX
+        + " | loadTrainingSet | !!! SKIP LOAD USERS FOLDER | DATABASE_HOST: " + DATABASE_HOST
+      ));
+    }
+    else if (hostname !== DATABASE_HOST
+      && configuration.loadUsersFolderOnStart 
+      && !statsObj.usersFolderLoaded 
+      && !statsObj.loadUsersFolderBusy
+    ){
 
       console.log(chalk.black.bold(MODULE_ID_PREFIX
         + " | loadTrainingSet | LOAD USERS FOLDER: " + configuration.userDataFolder
@@ -1957,11 +1947,6 @@ async function evolve(params){
       console.log(chalkAlert(MODULE_ID_PREFIX
         + " | !!! INPUTS OBJ NOT IN DB: " + childNetworkObj.inputsId
       ));
-
-      // inputsObj = await tcUtils.loadFileRetry({
-      //   folder: configDefaultFolder, 
-      //   file: file
-      // });
 
       const filePath = path.join(configDefaultFolder, file);
 
