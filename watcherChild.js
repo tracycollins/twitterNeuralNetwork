@@ -1,6 +1,6 @@
 const DATA_ROOT_FOLDER = "/Volumes/nas4/data";
 
-const DEFAULT_STAND_ALONE = true;
+const DEFAULT_STAND_ALONE = false;
 const DEFAULT_TEST_MODE = false;
 const DEFAULT_VERBOSE = false;
 const DEFAULT_UPDATE_DB_USER = true;
@@ -57,7 +57,7 @@ configuration.userArchiveFileExistsMaxWaitTime = DEFAULT_USER_ARCHIVE_FILE_EXITS
 const ThreeceeUtilities = require("@threeceelabs/threecee-utilities");
 const tcUtils = new ThreeceeUtilities("NNC_TCU");
 
-const delay = tcUtils.delay;
+// const delay = tcUtils.delay;
 const msToTime = tcUtils.msToTime;
 const jsonPrint = tcUtils.jsonPrint;
 const getTimeStamp = tcUtils.getTimeStamp;
@@ -1095,8 +1095,8 @@ setTimeout(async function(){
   try {
     await initFsmTickInterval(FSM_TICK_INTERVAL);
     await initUserUpdateQueue();
-    await delay({period: 10*ONE_SECOND, verbose: true});
-    fsm.fsm_init();
+    // await delay({period: 10*ONE_SECOND, verbose: true});
+    // fsm.fsm_init();
   }
   catch(err){
     console.log(chalkError(MODULE_ID_PREFIX + " | **** INIT CONFIG ERROR *****\n" + jsonPrint(err)));
