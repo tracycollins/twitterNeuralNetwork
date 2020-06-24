@@ -4,6 +4,7 @@ const ONE_SECOND = 1000;
 const ONE_MINUTE = 60*ONE_SECOND;
 const ONE_HOUR = 60*ONE_MINUTE;
 
+const DEFAULT_QUEUE_INTERVAL = 10;
 const DEFAULT_SEND_QUEUE_INTERVAL = 100;
 const DEFAULT_STAND_ALONE = true;
 const DEFAULT_TEST_MODE = true;
@@ -438,17 +439,11 @@ const defaultDbUpdateOptions = {
 
 async function loadUserFile(params){
 
-  const updateDbUser = params.updateDbUser || false;
+  const updateDbUser = params.updateDbUser || true;
   const folder = params.folder || path.dirname(params.path);
   const file = params.file || path.basename(params.path);
 
   const filePath = params.path || path.join(folder, file);
-
-  // let userObj = await tcUtils.loadFile({
-  //   folder: folder, 
-  //   file: file, 
-  //   verbose: params.verbose
-  // });
 
   let userObj = await fs.readJson(filePath);
 
@@ -926,6 +921,45 @@ async function connectDb(){
   }
 }
 
+
+let userUpdateQueueInterval;
+const userUpdateQueue = [];
+let userUpdateQueueReady = true;
+
+function initUserUpdateQueue(params){
+
+  const interval = (params) ? params.interval : DEFAULT_QUEUE_INTERVAL;
+
+  return new Promise(function(resolve){
+
+    statsObj.status = "INIT USER UPDATE QUEUE";
+
+    clearInterval(userUpdateQueueInterval);
+
+    userUpdateQueueInterval = setInterval(async function(){
+
+      if (userUpdateQueueReady && (userUpdateQueue.length > 0)){
+
+        userUpdateQueueReady = false;
+
+        const filePath = userUpdateQueue.shift();
+
+        await loadUserFile({path: filePath});
+
+        userUpdateQueueReady = true;
+
+      }
+
+    }, interval);
+
+    intervalsSet.add("userUpdateQueueInterval");
+
+    resolve();
+
+  });
+}
+
+
 const directoriesAdded = new Set();
 
 function initWatchUserDataFolders(p){
@@ -941,7 +975,7 @@ function initWatchUserDataFolders(p){
     console.log(chalkBlue(MODULE_ID_PREFIX + " | +++ INIT WATCH USER DATA"
       + " | userDataFolder: " + folder
       + " | updateDbUser: " + updateDbUser
-      + "\nINPUT PARAMS\n" + jsonPrint(params)
+      // + "\nINPUT PARAMS\n" + jsonPrint(params)
     ));
 
     const options = {
@@ -958,7 +992,7 @@ function initWatchUserDataFolders(p){
       console.log(chalkAlert(MODULE_ID_PREFIX + " | +++ INIT WATCH USER DATA"
         + " | userDataFolder: " + folder
         + " | updateDbUser: " + updateDbUser
-        + "\nINPUT PARAMS\n" + jsonPrint(params)
+        // + "\nINPUT PARAMS\n" + jsonPrint(params)
       ));
 
     }
@@ -1000,8 +1034,9 @@ function initWatchUserDataFolders(p){
         }
 
         try{
-          await delay({period: 30*ONE_SECOND});
-          await loadUserFile({path: filePath, updateDbUser: updateDbUser});
+          // await delay({period: 30*ONE_SECOND});
+          // await loadUserFile({path: filePath, updateDbUser: updateDbUser});
+          userUpdateQueue.push(filePath);
         }
         catch(err){
           console.log(chalkBlue(MODULE_ID_PREFIX 
@@ -1020,8 +1055,8 @@ function initWatchUserDataFolders(p){
         }
 
         try{
-          await delay({period: 30*ONE_SECOND});
-          await loadUserFile({path: filePath, updateDbUser: updateDbUser});
+          // await delay({period: 30*ONE_SECOND});
+          userUpdateQueue.push(filePath);
         }
         catch(err){
           console.log(chalkBlue(MODULE_ID_PREFIX 
@@ -1040,6 +1075,7 @@ setTimeout(async function(){
 
   try {
     await initFsmTickInterval(FSM_TICK_INTERVAL);
+    await initUserUpdateQueue();
     await delay({period: 10*ONE_SECOND, verbose: true});
     fsm.fsm_init();
   }

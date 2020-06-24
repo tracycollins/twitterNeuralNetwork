@@ -18,7 +18,7 @@ const SAVE_FILE_QUEUE_INTERVAL = 5*ONE_SECOND;
 const QUIT_WAIT_INTERVAL = 5*ONE_SECOND;
 const STATS_UPDATE_INTERVAL = 5*ONE_MINUTE;
 const DEFAULT_CHILD_PING_INTERVAL = ONE_MINUTE;
-const SAVE_CACHE_DEFAULT_TTL = 60;
+// const SAVE_CACHE_DEFAULT_TTL = 60;
 
 const DEFAULT_DISABLE_CREATE_TEST_SET = false;
 const DEFAULT_GLOBAL_MIN_SUCCESS_RATE = 90; // percent
@@ -3620,17 +3620,17 @@ statsObj.queues.saveFileQueue.busy = false;
 statsObj.queues.saveFileQueue.size = 0;
 
 
-let saveCacheTtl = process.env.SAVE_CACHE_DEFAULT_TTL;
+// let saveCacheTtl = process.env.SAVE_CACHE_DEFAULT_TTL;
 
-if(empty(saveCacheTtl)) { saveCacheTtl = SAVE_CACHE_DEFAULT_TTL; }
+// if(empty(saveCacheTtl)) { saveCacheTtl = SAVE_CACHE_DEFAULT_TTL; }
 
-console.log(MODULE_ID_PREFIX + " | SAVE CACHE TTL: " + saveCacheTtl + " SECONDS");
+// console.log(MODULE_ID_PREFIX + " | SAVE CACHE TTL: " + saveCacheTtl + " SECONDS");
 
-let saveCacheCheckPeriod = process.env.SAVE_CACHE_CHECK_PERIOD;
+// let saveCacheCheckPeriod = process.env.SAVE_CACHE_CHECK_PERIOD;
 
-if(empty(saveCacheCheckPeriod)) { saveCacheCheckPeriod = 10; }
+// if(empty(saveCacheCheckPeriod)) { saveCacheCheckPeriod = 10; }
 
-console.log(MODULE_ID_PREFIX + " | SAVE CACHE CHECK PERIOD: " + saveCacheCheckPeriod + " SECONDS");
+// console.log(MODULE_ID_PREFIX + " | SAVE CACHE CHECK PERIOD: " + saveCacheCheckPeriod + " SECONDS");
 
 function initSaveFileQueue(cnf) {
 
