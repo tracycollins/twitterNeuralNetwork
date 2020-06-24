@@ -5,7 +5,10 @@ const ONE_MINUTE = 60*ONE_SECOND;
 const ONE_HOUR = 60*ONE_MINUTE;
 
 const DEFAULT_SEND_QUEUE_INTERVAL = 100;
-
+const DEFAULT_STAND_ALONE = true;
+const DEFAULT_TEST_MODE = true;
+const DEFAULT_VERBOSE = true;
+const DEFAULT_UPDATE_DB_USER = true;
 // const compactDateTimeFormat = "YYYYMMDD_HHmmss";
 
 const util = require("util");
@@ -16,7 +19,6 @@ const fs = require("fs-extra");
 const path = require("path");
 const debug = require("debug");
 const _ = require("lodash");
-// const walker = require("folder-walker");
 const chokidar = require("chokidar");
 const empty = require("is-empty");
 
@@ -38,24 +40,16 @@ let MODULE_ID_PREFIX = "NWC";
 const QUIT_WAIT_INTERVAL = ONE_SECOND;
 const DEFAULT_USER_ARCHIVE_FILE_EXITS_MAX_WAIT_TIME = 2*ONE_HOUR;
 
-// let DROPBOX_ROOT_FOLDER;
-
-// if (hostname === "google") {
-//   DROPBOX_ROOT_FOLDER = "/home/tc/Dropbox/Apps/wordAssociation";
-// }
-// else {
-//   DROPBOX_ROOT_FOLDER = "/Users/tc/Dropbox/Apps/wordAssociation";
-// }
-
 let dbConnection;
 
 global.wordAssoDb = require("@threeceelabs/mongoose-twitter");
 
 let configuration = {};
 
-configuration.testMode = false;
-configuration.verbose = false;
-configuration.updateDbUser = false; // updates user in db from training set
+configuration.standAlone = DEFAULT_STAND_ALONE;
+configuration.testMode = DEFAULT_TEST_MODE;
+configuration.verbose = DEFAULT_VERBOSE;
+configuration.updateDbUser = DEFAULT_UPDATE_DB_USER; // updates user in db from training set
 
 configuration.userArchiveFileExistsMaxWaitTime = DEFAULT_USER_ARCHIVE_FILE_EXITS_MAX_WAIT_TIME;
 const ThreeceeUtilities = require("@threeceelabs/threecee-utilities");
@@ -336,7 +330,7 @@ function processSend(message){
     }
 
     try{
-      process.send(message);
+      if (!configuration.standAlone) { process.send(message); }
     }
     catch(err){
       return reject(err);
@@ -1046,6 +1040,8 @@ setTimeout(async function(){
 
   try {
     await initFsmTickInterval(FSM_TICK_INTERVAL);
+    await delay({period: 10*ONE_SECOND, verbose: true});
+    fsm.fsm_init();
   }
   catch(err){
     console.log(chalkError(MODULE_ID_PREFIX + " | **** INIT CONFIG ERROR *****\n" + jsonPrint(err)));
