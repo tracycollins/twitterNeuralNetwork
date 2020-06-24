@@ -1,15 +1,16 @@
 const DATA_ROOT_FOLDER = "/Volumes/nas4/data";
 
+const DEFAULT_STAND_ALONE = true;
+const DEFAULT_TEST_MODE = false;
+const DEFAULT_VERBOSE = true;
+const DEFAULT_UPDATE_DB_USER = true;
+
 const ONE_SECOND = 1000;
 const ONE_MINUTE = 60*ONE_SECOND;
 const ONE_HOUR = 60*ONE_MINUTE;
 
 const DEFAULT_QUEUE_INTERVAL = 10;
 const DEFAULT_SEND_QUEUE_INTERVAL = 100;
-const DEFAULT_STAND_ALONE = true;
-const DEFAULT_TEST_MODE = true;
-const DEFAULT_VERBOSE = true;
-const DEFAULT_UPDATE_DB_USER = true;
 // const compactDateTimeFormat = "YYYYMMDD_HHmmss";
 
 const util = require("util");
