@@ -27,7 +27,7 @@ const omit = require("object.omit");
 const path = require("path");
 const walker = require("folder-walker");
 // const watch = require("watch");
-const chokidar = require("chokidar");
+// const chokidar = require("chokidar");
 const empty = require("is-empty");
 
 let hostname = os.hostname();
@@ -181,7 +181,7 @@ const carrotEvolveOptionsPickArray = [
 const ThreeceeUtilities = require("@threeceelabs/threecee-utilities");
 const tcUtils = new ThreeceeUtilities("NNC_TCU");
 
-const delay = tcUtils.delay;
+// const delay = tcUtils.delay;
 const msToTime = tcUtils.msToTime;
 const jsonPrint = tcUtils.jsonPrint;
 const getTimeStamp = tcUtils.getTimeStamp;
@@ -3001,7 +3001,7 @@ async function connectDb(){
 }
 
 // !!!KLUDGE !!!BUG??? watch fucks up loading user data and I don't know why! :(
-const directoriesAdded = new Set();
+// const directoriesAdded = new Set();
 
 setTimeout(async function(){
 
