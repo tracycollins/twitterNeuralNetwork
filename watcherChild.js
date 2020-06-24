@@ -57,7 +57,7 @@ configuration.userArchiveFileExistsMaxWaitTime = DEFAULT_USER_ARCHIVE_FILE_EXITS
 const ThreeceeUtilities = require("@threeceelabs/threecee-utilities");
 const tcUtils = new ThreeceeUtilities("NNC_TCU");
 
-// const delay = tcUtils.delay;
+const delay = tcUtils.delay;
 const msToTime = tcUtils.msToTime;
 const jsonPrint = tcUtils.jsonPrint;
 const getTimeStamp = tcUtils.getTimeStamp;
