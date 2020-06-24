@@ -1095,8 +1095,8 @@ setTimeout(async function(){
   try {
     await initFsmTickInterval(FSM_TICK_INTERVAL);
     await initUserUpdateQueue();
-    // await delay({period: 10*ONE_SECOND, verbose: true});
-    // fsm.fsm_init();
+    await delay({period: 10*ONE_SECOND, verbose: true});
+    fsm.fsm_init();
   }
   catch(err){
     console.log(chalkError(MODULE_ID_PREFIX + " | **** INIT CONFIG ERROR *****\n" + jsonPrint(err)));
