@@ -5,6 +5,7 @@ const ONE_MINUTE = 60*ONE_SECOND;
 const ONE_HOUR = 60*ONE_MINUTE;
 
 const DEFAULT_SEND_QUEUE_INTERVAL = 100;
+const DEFAULT_LOAD_USERS_FOLDER_ON_START = false;
 
 // const ONE_KILOBYTE = 1024;
 // const ONE_MEGABYTE = 1024 * ONE_KILOBYTE;
@@ -81,7 +82,7 @@ global.wordAssoDb = require("@threeceelabs/mongoose-twitter");
 
 let configuration = {};
 
-configuration.loadUsersFolderOnStart = true;
+configuration.loadUsersFolderOnStart = DEFAULT_LOAD_USERS_FOLDER_ON_START;
 configuration.testMode = false;
 configuration.verbose = false;
 configuration.dataSetPrepMaxParallel = 16;
