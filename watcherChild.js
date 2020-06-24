@@ -117,6 +117,8 @@ statsObj.loadUsersFolderBusy = false;
 let statsObjSmall = {};
 
 statsObj.users = {};
+statsObj.users.folder = {};
+statsObj.users.folder.total = 0;
 statsObj.users.files = {};
 statsObj.users.files.added = 0;
 statsObj.users.files.changed = 0;
