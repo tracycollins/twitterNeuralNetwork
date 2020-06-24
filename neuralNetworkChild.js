@@ -1572,7 +1572,7 @@ function dataSetPrep(params){
       const user = await global.wordAssoDb.User.findOne({nodeId: nodeId}).lean().exec();
 
       if (!user) {
-        console.log(chalkAlert(MODULE_ID_PREFIX + " | dataSetPrep | !!! USER NOT IN DB ... SKIPPING | @" + nodeId));
+        console.log(chalkAlert(MODULE_ID_PREFIX + " | dataSetPrep | !!! USER NOT IN DB ... SKIPPING | NID: " + nodeId));
         return;
       }
 
