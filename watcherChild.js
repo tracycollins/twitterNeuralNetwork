@@ -1,6 +1,6 @@
 const DATA_ROOT_FOLDER = "/Volumes/nas4/data";
 
-const DEFAULT_STAND_ALONE = false;
+const DEFAULT_STAND_ALONE = true;
 const DEFAULT_TEST_MODE = false;
 const DEFAULT_VERBOSE = false;
 const DEFAULT_UPDATE_DB_USER = true;
