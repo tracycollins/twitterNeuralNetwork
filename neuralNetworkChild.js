@@ -81,6 +81,7 @@ global.wordAssoDb = require("@threeceelabs/mongoose-twitter");
 
 let configuration = {};
 
+configuration.loadUsersFolderOnStart = true;
 configuration.testMode = false;
 configuration.verbose = false;
 configuration.dataSetPrepMaxParallel = 16;
@@ -2829,6 +2830,8 @@ process.on("message", async function(m) {
 
         configuration = _.assign(configuration, m.configuration);
 
+        
+        if (m.loadUsersFolderOnStart !== undefined) { configuration.loadUsersFolderOnStart = m.loadUsersFolderOnStart; }
         if (m.testMode !== undefined) { configuration.testMode = m.testMode; }
         if (m.verbose !== undefined) { configuration.verbose = m.verbose; }
         if (m.testSetRatio !== undefined) { configuration.testSetRatio = m.testSetRatio; }
