@@ -934,9 +934,11 @@ let userUpdateQueueInterval;
 const userUpdateQueue = [];
 let userUpdateQueueReady = true;
 
-function initUserUpdateQueue(params){
+function initUserUpdateQueue(p){
 
-  const interval = (params) ? params.interval : DEFAULT_QUEUE_INTERVAL;
+  const params = p || {};
+
+  const interval = (params.interval !== undefined) ? params.interval : DEFAULT_QUEUE_INTERVAL;
 
   return new Promise(function(resolve){
 
