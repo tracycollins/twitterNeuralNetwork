@@ -85,7 +85,7 @@ let configuration = {};
 configuration.loadUsersFolderOnStart = DEFAULT_LOAD_USERS_FOLDER_ON_START;
 configuration.testMode = false;
 configuration.verbose = false;
-configuration.dataSetPrepMaxParallel = 16;
+configuration.dataSetPrepMaxParallel = 32;
 configuration.parallelLoadMax = 16;
 configuration.updateDbUser = false; // updates user in db from training set
 configuration.equalCategoriesFlag = false;
@@ -727,80 +727,96 @@ const defaultDbUpdateOptions = {
 
 async function loadUserFile(params){
 
-  const updateDbUser = params.updateDbUser || false;
-  const folder = params.folder || path.dirname(params.path);
-  const file = params.file || path.basename(params.path);
+    const updateDbUser = params.updateDbUser || false;
+    const returnOnError = params.returnOnError || false;
+    const folder = params.folder || path.dirname(params.path);
+    const file = params.file || path.basename(params.path);
 
-  const filePath = params.path || path.join(folder, file);
+    const filePath = params.path || path.join(folder, file);
 
-  let userObj = await fs.readJson(filePath);
+    try{
+      let userObj = await fs.readJson(filePath);
 
-  statsObj.users.folder.total += 1;
+      statsObj.users.folder.total += 1;
 
-  if ((userObj.category === "left") || (userObj.category === "right") || (userObj.category === "neutral")) {
+      if ((userObj.category === "left") || (userObj.category === "right") || (userObj.category === "neutral")) {
 
+        userObj.categorized = true;
 
-    if (updateDbUser){
+        if (updateDbUser){
 
-      const update = pick(userObj, defaultUserUpdatePropArray);
+          const update = pick(userObj, defaultUserUpdatePropArray);
 
-      const userDoc = await global.wordAssoDb.User.findOneAndUpdate(
-        {nodeId: userObj.nodeId}, 
-        update, 
-        defaultDbUpdateOptions
-      ).exec();
+          const userDoc = await global.wordAssoDb.User.findOneAndUpdate(
+            {nodeId: userObj.nodeId}, 
+            update, 
+            defaultDbUpdateOptions
+          ).exec();
 
-      if (userDoc) {
-        userObj = userDoc.toObject();
+          if (userDoc) {
+            userObj = userDoc.toObject();
+          }
+        }
+
+        if (empty(userObj.tweetHistograms) || !userObj.tweetHistograms || userObj.tweetHistograms === undefined){
+          userObj.tweetHistograms = {};
+        }
+        
+        if (empty(userObj.profileHistograms) || !userObj.profileHistograms || userObj.profileHistograms === undefined){
+          userObj.profileHistograms = {};
+        }
+        
+        trainingSetUsersSet[userObj.category].add(userObj.nodeId);
+
+        if (((configuration.testMode || configuration.verbose) && (statsObj.users.folder.total % 100 === 0)) || (statsObj.users.folder.total % 1000 === 0)) {
+
+          console.log(chalkLog(MODULE_ID_PREFIX
+            + " [" + statsObj.users.folder.total + "]"
+            + " USERS - L: " + trainingSetUsersSet.left.size
+            + " N: " + trainingSetUsersSet.neutral.size
+            + " R: " + trainingSetUsersSet.right.size
+            + " | " + userObj.userId
+            + " | @" + userObj.screenName
+            + " | " + userObj.name
+            + " | FLWRs: " + userObj.followersCount
+            + " | FRNDs: " + userObj.friendsCount
+            + " | FRNDs DB: " + userObj.friends.length
+            + " | CAT M: " + userObj.category + " A: " + userObj.categoryAuto
+          ));
+        }
+
+        if (configuration.testMode && statsObj.users.folder.total >= TEST_MODE_LENGTH){
+          return;
+        }
       }
-    }
-
-    if (empty(userObj.tweetHistograms) || !userObj.tweetHistograms || userObj.tweetHistograms === undefined){
-      userObj.tweetHistograms = {};
-    }
-    
-    if (empty(userObj.profileHistograms) || !userObj.profileHistograms || userObj.profileHistograms === undefined){
-      userObj.profileHistograms = {};
-    }
-    
-    trainingSetUsersSet[userObj.category].add(userObj.nodeId);
-
-    if (((configuration.testMode || configuration.verbose) && (statsObj.users.folder.total % 100 === 0)) || (statsObj.users.folder.total % 1000 === 0)) {
-
-      console.log(chalkLog(MODULE_ID_PREFIX
-        + " [" + statsObj.users.folder.total + "]"
-        + " USERS - L: " + trainingSetUsersSet.left.size
-        + " N: " + trainingSetUsersSet.neutral.size
-        + " R: " + trainingSetUsersSet.right.size
-        + " | " + userObj.userId
-        + " | @" + userObj.screenName
-        + " | " + userObj.name
-        + " | FLWRs: " + userObj.followersCount
-        + " | FRNDs: " + userObj.friendsCount
-        + " | FRNDs DB: " + userObj.friends.length
-        + " | CAT M: " + userObj.category + " A: " + userObj.categoryAuto
-      ));
-    }
-
-    if (configuration.testMode && statsObj.users.folder.total >= TEST_MODE_LENGTH){
+      else{
+        console.log(chalkAlert(MODULE_ID_PREFIX + " | ??? UNCAT UNZIPPED USER"
+          + " [" + statsObj.users.folder.total + "]"
+          + " USERS - L: " + trainingSetUsersSet.left.size
+          + " N: " + trainingSetUsersSet.neutral.size
+          + " R: " + trainingSetUsersSet.right.size
+          + " | " + userObj.userId
+          + " | @" + userObj.screenName
+          + " | " + userObj.name
+          + " | FLWRs: " + userObj.followersCount
+          + " | FRNDs: " + userObj.friendsCount
+          + " | CAT M: " + userObj.category + " A: " + userObj.categoryAuto
+        ));                      
+      }
       return;
     }
-  }
-  else{
-    console.log(chalkAlert(MODULE_ID_PREFIX + " | ??? UNCAT UNZIPPED USER"
-      + " [" + statsObj.users.folder.total + "]"
-      + " USERS - L: " + trainingSetUsersSet.left.size
-      + " N: " + trainingSetUsersSet.neutral.size
-      + " R: " + trainingSetUsersSet.right.size
-      + " | " + userObj.userId
-      + " | @" + userObj.screenName
-      + " | " + userObj.name
-      + " | FLWRs: " + userObj.followersCount
-      + " | FRNDs: " + userObj.friendsCount
-      + " | CAT M: " + userObj.category + " A: " + userObj.categoryAuto
-    ));                      
-  }
-  return;
+    catch(err){
+      console.log(chalkError(MODULE_ID_PREFIX + " | *** loadUserFile USER"
+        + " | PATH: " + filePath
+        + " | ERROR: " + err
+      ));
+
+      if (returnOnError) {
+        return;
+      }
+
+      throw err;               
+    }
 }
 
 function loadUsersFolder(params){
@@ -855,6 +871,7 @@ function loadUsersFolder(params){
               folder: fileObj.root, 
               file: fileObj.relname,
               updateDbUser: updateDbUser,
+              returnOnError: true, // don't throw error; just return on errors
               verbose: verbose
             }));
           }
@@ -882,6 +899,7 @@ function loadUsersFolder(params){
             folder: fileObj.root, 
             file: fileObj.relname,
             updateDbUser: updateDbUser,
+            returnOnError: true, // don't throw error; just return on errors
             verbose: verbose
           });
           ready = true;
