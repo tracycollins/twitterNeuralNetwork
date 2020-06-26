@@ -1,3 +1,4 @@
+const DEFAULT_DATA_ROOT = process.env.DATA_ROOT_FOLDER || "/Volumes/nas4/data";
 const TEST_MODE_LENGTH = 1000;
 
 const ONE_SECOND = 1000;
@@ -6,8 +7,6 @@ const ONE_HOUR = 60*ONE_MINUTE;
 
 const DEFAULT_SEND_QUEUE_INTERVAL = 100;
 const DEFAULT_LOAD_USERS_FOLDER_ON_START = true;
-
-const DEFAULT_DATA_ROOT = process.env.DATA_ROOT_FOLDER || "/Volumes/gDrive4TB/data";
 
 // const ONE_KILOBYTE = 1024;
 // const ONE_MEGABYTE = 1024 * ONE_KILOBYTE;

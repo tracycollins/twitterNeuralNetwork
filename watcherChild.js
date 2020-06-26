@@ -1,4 +1,4 @@
-const DEFAULT_DATA_ROOT = process.env.DATA_ROOT_FOLDER || "/Volumes/gDrive4TB/data";
+const DEFAULT_DATA_ROOT = process.env.DATA_ROOT_FOLDER || "/Volumes/nas4/data";
 
 const DEFAULT_STAND_ALONE = false;
 const DEFAULT_TEST_MODE = false;

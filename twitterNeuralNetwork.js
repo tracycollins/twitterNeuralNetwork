@@ -4093,7 +4093,15 @@ const fsmStates = {
 
         try {
           await childCreateAll();
-          await watcherChildCreate();
+
+          if (hostname !== DATABASE_HOST){
+            await watcherChildCreate();
+          }
+          else{
+            console.log(chalkAlert(MODULE_ID_PREFIX
+              + " | !!! DATABASE_HOST ... SKIP CREATE USER DATA WATCHER CHILD"
+            ));
+          }
 
           console.log(chalkBlue(MODULE_ID_PREFIX + " | CREATED ALL CHILDREN: " + Object.keys(childHashMap).length));
         }
