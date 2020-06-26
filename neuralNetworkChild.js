@@ -6,7 +6,8 @@ const ONE_HOUR = 60*ONE_MINUTE;
 
 const DEFAULT_SEND_QUEUE_INTERVAL = 100;
 const DEFAULT_LOAD_USERS_FOLDER_ON_START = true;
-const DEFAULT_DATA_ROOT = "/Volumes/nas3/data";
+
+const DEFAULT_DATA_ROOT = process.env.DATA_ROOT_FOLDER || "/Volumes/gDrive4TB/data";
 
 // const ONE_KILOBYTE = 1024;
 // const ONE_MEGABYTE = 1024 * ONE_KILOBYTE;
@@ -76,7 +77,6 @@ else {
   DROPBOX_ROOT_FOLDER = "/Users/tc/Dropbox/Apps/wordAssociation";
 }
 
-// let mongooseDb;
 let dbConnection;
 
 global.wordAssoDb = require("@threeceelabs/mongoose-twitter");
@@ -768,7 +768,9 @@ async function loadUserFile(params){
         
         trainingSetUsersSet[userObj.category].add(userObj.nodeId);
 
-        if (((configuration.testMode || configuration.verbose) && (statsObj.users.folder.total % 100 === 0)) || (statsObj.users.folder.total % 1000 === 0)) {
+        if (((configuration.testMode || configuration.verbose) 
+          && (statsObj.users.folder.total % 100 === 0)) || (statsObj.users.folder.total % 1000 === 0)
+        ) {
 
           console.log(chalkLog(MODULE_ID_PREFIX
             + " [" + statsObj.users.folder.total + "]"
@@ -856,6 +858,7 @@ function loadUsersFolder(params){
     }
 
     let ready = true;
+
     const userFileInterval = setInterval(async function(){
 
       const loadUserFilePromiseArray = [];
@@ -865,7 +868,9 @@ function loadUsersFolder(params){
         ready = false;
 
         while (userFileArray.length > 0 && loadUserFilePromiseArray.length < parallelLoadMax){
+
           const fileObj = userFileArray.shift();
+
           if (fileObj){
             loadUserFilePromiseArray.push(loadUserFile({
               folder: fileObj.root, 
@@ -874,6 +879,7 @@ function loadUsersFolder(params){
               returnOnError: true, // don't throw error; just return on errors
               verbose: verbose
             }));
+
           }
         }
 
@@ -1060,8 +1066,6 @@ const categorizedUsers = {};
 
 async function loadTrainingSetUsersFromDb(p) {
 
-  // try{
-
   const params = p || {};
 
   statsObj.status = "LOAD TRAINING SET FROM DB";
@@ -1080,9 +1084,9 @@ async function loadTrainingSetUsersFromDb(p) {
 
   let cursor;
 
-  // const session = await mongooseDb.startSession();
+  const session = await dbConnection.startSession();
 
-  // console.log("MONGO DB SESSION\n" + session.id);
+  debug("MONGO DB SESSION\n" + session.id);
 
   console.log(chalkBlue(MODULE_ID_PREFIX
     + " | LOADING TRAINING SET FROM DB ..."
@@ -1092,24 +1096,24 @@ async function loadTrainingSetUsersFromDb(p) {
 
   if (configuration.testMode) {
     cursor = global.wordAssoDb.User
-    // .find(query, {timeout: false})
-    .find(query)
+    .find(query, {timeout: false})
+    // .find(query)
     .lean()
     .batchSize(batchSize)
     .limit(limit)
-    // .session(session)
-    .cursor();
-    // .addCursorFlag("noCursorTimeout", true);
+    .session(session)
+    .cursor()
+    .addCursorFlag("noCursorTimeout", true);
   }
   else{
     cursor = global.wordAssoDb.User
-    // .find(query, {timeout: false})
-    .find(query)
+    .find(query, {timeout: false})
+    // .find(query)
     .lean()
     .batchSize(batchSize)
-    // .session(session)
-    .cursor();
-    // .addCursorFlag("noCursorTimeout", true);
+    .session(session)
+    .cursor()
+    .addCursorFlag("noCursorTimeout", true);
   }
 
   cursor.on("end", function() {

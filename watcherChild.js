@@ -1,4 +1,4 @@
-const DATA_ROOT_FOLDER = "/Volumes/gDrive4TB/data";
+const DEFAULT_DATA_ROOT = process.env.DATA_ROOT_FOLDER || "/Volumes/gDrive4TB/data";
 
 const DEFAULT_STAND_ALONE = false;
 const DEFAULT_TEST_MODE = false;
@@ -101,7 +101,7 @@ const chalkInfo = chalk.black;
 
 configuration.archiveFileUploadCompleteFlagFile = "usersZipUploadComplete.json";
 
-configuration.userDataFolder = path.join(DATA_ROOT_FOLDER, "users");
+configuration.userDataFolder = path.join(DEFAULT_DATA_ROOT, "users");
 
 //=========================================================================
 // STATS

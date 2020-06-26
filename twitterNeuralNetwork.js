@@ -62,9 +62,10 @@ const dotProp = require("dot-prop");
 
 const PRIMARY_HOST = process.env.PRIMARY_HOST || "google";
 const DATABASE_HOST = process.env.DATABASE_HOST || "macpro2";
+const DEFAULT_DATA_ROOT = process.env.DATA_ROOT_FOLDER || "/Volumes/gDrive4TB/data";
+
 const HOST = (hostname === PRIMARY_HOST || hostname === DATABASE_HOST) ? "default" : "local";
 
-const DATA_ROOT_FOLDER = "/Volumes/gDrive4TB/data";
 
 console.log("=========================================");
 console.log("=========================================");
@@ -561,11 +562,11 @@ const localArchiveNetworkFolder = path.join(configHostFolder, "neuralNetworks/ar
 
 configuration.local = {};
 configuration.local.trainingSetsFolder = configHostFolder + "/trainingSets";
-configuration.local.userDataFolder = path.join(DATA_ROOT_FOLDER, "users");
+configuration.local.userDataFolder = path.join(DEFAULT_DATA_ROOT, "users");
 
 configuration.default = {};
 configuration.default.trainingSetsFolder = configDefaultFolder + "/trainingSets";
-configuration.default.userDataFolder = path.join(DATA_ROOT_FOLDER, "users");
+configuration.default.userDataFolder = path.join(DEFAULT_DATA_ROOT, "users");
 
 configuration.archiveFileUploadCompleteFlagFolder = configuration[HOST].trainingSetsFolder + "/users";
 
@@ -5250,6 +5251,7 @@ async function watcherChildCreate(p){
       options.env.DROPBOX_STATS_FILE = statsObj.runId + "_" + childId + ".json";
       options.env.CHILD_ID = childId;
       options.env.NODE_ENV = "production";
+      options.env.DEFAULT_DATA_ROOT = configuration.defaultDataRoot;
     }
 
     childHashMap[childId] = {};
