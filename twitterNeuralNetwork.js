@@ -64,6 +64,8 @@ const PRIMARY_HOST = process.env.PRIMARY_HOST || "google";
 const DATABASE_HOST = process.env.DATABASE_HOST || "macpro2";
 const HOST = (hostname === PRIMARY_HOST || hostname === DATABASE_HOST) ? "default" : "local";
 
+const DATA_ROOT_FOLDER = "/Volumes/gDrive4TB/data";
+
 console.log("=========================================");
 console.log("=========================================");
 console.log("MODULE_NAME:  " + MODULE_NAME);
@@ -152,8 +154,6 @@ if (hostname === "google") {
 else {
   DROPBOX_ROOT_FOLDER = "/Users/tc/Dropbox/Apps/wordAssociation";
 }
-
-const DEFAULT_DATA_ROOT = "/Volumes/nas3/data";
 
 const compactDateTimeFormat = "YYYYMMDD_HHmmss";
 
@@ -561,11 +561,11 @@ const localArchiveNetworkFolder = path.join(configHostFolder, "neuralNetworks/ar
 
 configuration.local = {};
 configuration.local.trainingSetsFolder = configHostFolder + "/trainingSets";
-configuration.local.userDataFolder = path.join(DEFAULT_DATA_ROOT, "users");
+configuration.local.userDataFolder = path.join(DATA_ROOT_FOLDER, "users");
 
 configuration.default = {};
 configuration.default.trainingSetsFolder = configDefaultFolder + "/trainingSets";
-configuration.default.userDataFolder = path.join(DEFAULT_DATA_ROOT, "users");
+configuration.default.userDataFolder = path.join(DATA_ROOT_FOLDER, "users");
 
 configuration.archiveFileUploadCompleteFlagFolder = configuration[HOST].trainingSetsFolder + "/users";
 
@@ -2818,68 +2818,6 @@ async function initWatchAllConfigFolders(p){
       });
     });
 
-    //========================
-    // WATCH USER DATA CONFIG
-    //========================
-
-    // watch.createMonitor(configuration.default.userDataFolder, options, function (userData) {
-
-    //   const command = {
-    //     op: "USER_DATA",
-    //     testMode: testMode,
-    //     verbose: verbose,
-    //     user: userData
-    //   };
-
-    //   console.log(chalkBlue(MODULE_ID_PREFIX 
-    //     + " | INIT WATCH USER DATA FOLDER: " + configuration.default.userDataFolder));
-
-    //   monitorHostConfig.on("created", async function(f){
-    //     if (f.endsWith(".json")){
-
-    //       const command = {
-    //         op: "USER_DATA_ADD",
-    //         testMode: configuration.testMode,
-    //         verbose: configuration.verbose,
-    //         user: userData
-    //       };
-
-    //       const response = await childSendAll({command: command});
-
-    //     }
-    //   });
-
-    //   monitorHostConfig.on("changed", async function(f){
-    //     if (f.endsWith(".json")){
-
-    //       const command = {
-    //         op: "USER_DATA_CHANGE",
-    //         testMode: configuration.testMode,
-    //         verbose: configuration.verbose,
-    //         user: userData
-    //       };
-
-    //       const response = await childSendAll({command: command});
-          
-    //     }
-    //   });
-
-    //   monitorHostConfig.on("removed", async function (f) {
-    //     if (f.endsWith(".json")){
-
-    //       const command = {
-    //         op: "USER_DATA_DELETE",
-    //         testMode: configuration.testMode,
-    //         verbose: configuration.verbose,
-    //         userId: f.replace(".json", "")
-    //       };
-
-    //       const response = await childSendAll({command: command});
-          
-    //     }
-    //   });
-    // });
-
     return;
   }
   catch(err){
@@ -3313,9 +3251,9 @@ async function loadConfigFile(params) {
 
     console.log(chalkInfo(MODULE_ID_PREFIX + " | LOADED CONFIG FILE: " + params.file + "\n" + jsonPrint(loadedConfigObj)));
 
-    if (loadedConfigObj.TNN_DATA_ROOT !== undefined) {
-      console.log(MODULE_ID_PREFIX + " | LOADED TNN_DATA_ROOT: " + loadedConfigObj.TNN_DATA_ROOT);
-      newConfiguration.defaultDataRoot = loadedConfigObj.TNN_DATA_ROOT;
+    if (loadedConfigObj.TNN_DATA_ROOT_FOLDER !== undefined) {
+      console.log(MODULE_ID_PREFIX + " | LOADED TNN_DATA_ROOT_FOLDER: " + loadedConfigObj.TNN_DATA_ROOT_FOLDER);
+      newConfiguration.defaultDataRoot = loadedConfigObj.TNN_DATA_ROOT_FOLDER;
     }
 
     if (loadedConfigObj.TNN_NETWORK_TECHNOLOGY !== undefined) {

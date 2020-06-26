@@ -1,4 +1,4 @@
-const DATA_ROOT_FOLDER = "/Volumes/nas3/data";
+const DATA_ROOT_FOLDER = "/Volumes/gDrive4TB/data";
 
 const DEFAULT_STAND_ALONE = false;
 const DEFAULT_TEST_MODE = false;
