@@ -865,7 +865,17 @@ function loadUsersFolder(params){
     const loadUserFileInterval = setInterval(async function(){
 
       if (folderStreamEnd && ready && userFileArray.length === 0) {
+
+        console.log(chalkBlue(MODULE_ID_PREFIX 
+          + " | +++ LOADING USERS FOLDER COMPLETE"
+          + " | " + getTimeStamp() 
+          + " | parallelLoadMax: " + parallelLoadMax
+          + " | updateDbUser: " + formatBoolean(updateDbUser)
+          + " | FOLDER: " + folder
+        ));
+
         clearInterval(loadUserFileInterval);
+
         resolve(statsObj.users.folder.total);
       }
       else if (ready && userFileArray.length > parallelLoadMax){
@@ -873,7 +883,7 @@ function loadUsersFolder(params){
         ready = false;
         loadUserFilePromiseArray.length = 0;
 
-        while (userFileArray.length > 0 && loadUserFilePromiseArray.length < parallelLoadMax){
+        while ((userFileArray.length > 0) && (loadUserFilePromiseArray.length < parallelLoadMax)){
 
           const fileObj = userFileArray.shift();
 
@@ -890,7 +900,9 @@ function loadUsersFolder(params){
         }
 
         try{
-          await Promise.all(loadUserFilePromiseArray);
+          if (loadUserFilePromiseArray.length > 0) { 
+            await Promise.all(loadUserFilePromiseArray);
+          }
           ready = true;
         }
         catch(err){
