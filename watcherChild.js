@@ -1,4 +1,4 @@
-const DATA_ROOT_FOLDER = "/Volumes/nas4/data";
+const DATA_ROOT_FOLDER = "/Volumes/nas3/data";
 
 const DEFAULT_STAND_ALONE = false;
 const DEFAULT_TEST_MODE = false;
@@ -919,7 +919,6 @@ async function connectDb(){
     console.log(chalk.green(MODULE_ID_PREFIX + " | +++ MONGOOSE DEFAULT CONNECTION OPEN"));
 
     statsObj.dbConnectionReady = true;
-
     return db;
 
   }
@@ -967,8 +966,6 @@ function initUserUpdateQueue(p){
           ));
           userUpdateQueueReady = true;
         }
-
-
       }
 
     }, interval);
@@ -996,11 +993,9 @@ function initWatchUserDataFolders(p){
     console.log(chalkBlue(MODULE_ID_PREFIX + " | +++ INIT WATCH USER DATA"
       + " | userDataFolder: " + folder
       + " | updateDbUser: " + updateDbUser
-      // + "\nINPUT PARAMS\n" + jsonPrint(params)
     ));
 
     const options = {
-      // ignoreInitial: true,
       usePolling: true,
       depth: 1,
       awaitWriteFinish: true,
@@ -1013,7 +1008,6 @@ function initWatchUserDataFolders(p){
       console.log(chalkAlert(MODULE_ID_PREFIX + " | +++ INIT WATCH USER DATA"
         + " | userDataFolder: " + folder
         + " | updateDbUser: " + updateDbUser
-        // + "\nINPUT PARAMS\n" + jsonPrint(params)
       ));
 
     }
@@ -1054,16 +1048,7 @@ function initWatchUserDataFolders(p){
           ));
         }
 
-        try{
-          // await delay({period: 30*ONE_SECOND});
-          // await loadUserFile({path: filePath, updateDbUser: updateDbUser});
-          userUpdateQueue.push(filePath);
-        }
-        catch(err){
-          console.log(chalkBlue(MODULE_ID_PREFIX 
-            + " | *** LOAD USER FILE CREATED ERROR | " + filePath + ": " + err
-          ));
-        }
+        userUpdateQueue.push(filePath);
       }
     });  
 
@@ -1075,15 +1060,7 @@ function initWatchUserDataFolders(p){
           console.log(chalkBlue(MODULE_ID_PREFIX + " | +++ USER FILE CHANGED: " + filePath));
         }
 
-        try{
-          // await delay({period: 30*ONE_SECOND});
-          userUpdateQueue.push(filePath);
-        }
-        catch(err){
-          console.log(chalkBlue(MODULE_ID_PREFIX 
-            + " | *** LOAD USER FILE CHANGED ERROR | " + filePath + ": " + err
-          ));
-        }
+        userUpdateQueue.push(filePath);
       }
     });  
 
@@ -1097,8 +1074,6 @@ setTimeout(async function(){
   try {
     await initFsmTickInterval(FSM_TICK_INTERVAL);
     await initUserUpdateQueue();
-    // await delay({period: 10*ONE_SECOND, verbose: true});
-    // fsm.fsm_init();
   }
   catch(err){
     console.log(chalkError(MODULE_ID_PREFIX + " | **** INIT CONFIG ERROR *****\n" + jsonPrint(err)));

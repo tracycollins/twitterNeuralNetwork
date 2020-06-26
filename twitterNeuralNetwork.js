@@ -153,7 +153,7 @@ else {
   DROPBOX_ROOT_FOLDER = "/Users/tc/Dropbox/Apps/wordAssociation";
 }
 
-const DEFAULT_DATA_ROOT = "/Volumes/nas4/data";
+const DEFAULT_DATA_ROOT = "/Volumes/nas3/data";
 
 const compactDateTimeFormat = "YYYYMMDD_HHmmss";
 
@@ -3313,6 +3313,11 @@ async function loadConfigFile(params) {
 
     console.log(chalkInfo(MODULE_ID_PREFIX + " | LOADED CONFIG FILE: " + params.file + "\n" + jsonPrint(loadedConfigObj)));
 
+    if (loadedConfigObj.TNN_DATA_ROOT !== undefined) {
+      console.log(MODULE_ID_PREFIX + " | LOADED TNN_DATA_ROOT: " + loadedConfigObj.TNN_DATA_ROOT);
+      newConfiguration.defaultDataRoot = loadedConfigObj.TNN_DATA_ROOT;
+    }
+
     if (loadedConfigObj.TNN_NETWORK_TECHNOLOGY !== undefined) {
       console.log(MODULE_ID_PREFIX + " | LOADED TNN_NETWORK_TECHNOLOGY: " + loadedConfigObj.TNN_NETWORK_TECHNOLOGY);
       newConfiguration.networkTechnology = loadedConfigObj.TNN_NETWORK_TECHNOLOGY;
@@ -5394,6 +5399,7 @@ async function watcherChildCreate(p){
     childInitParams.childId = childId;
     childInitParams.childIdShort = childIdShort;
     childInitParams.configuration = watcherChildConfiguration;
+    childInitParams.userDataFolder = configuration.userDataFolder;
     childInitParams.testMode = configuration.testMode;
     childInitParams.verbose = configuration.verbose;
 
@@ -5544,6 +5550,7 @@ async function childCreate(p){
     childInitParams.childIdShort = childIdShort;
     childInitParams.configuration = childConfiguration;
     childInitParams.trainingSetsFolder = configuration.trainingSetsFolder;
+    childInitParams.userDataFolder = configuration.userDataFolder;
     childInitParams.testMode = configuration.testMode;
     childInitParams.verbose = configuration.verbose;
 

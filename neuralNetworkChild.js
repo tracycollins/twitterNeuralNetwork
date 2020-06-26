@@ -6,6 +6,7 @@ const ONE_HOUR = 60*ONE_MINUTE;
 
 const DEFAULT_SEND_QUEUE_INTERVAL = 100;
 const DEFAULT_LOAD_USERS_FOLDER_ON_START = true;
+const DEFAULT_DATA_ROOT = "/Volumes/nas3/data";
 
 // const ONE_KILOBYTE = 1024;
 // const ONE_MEGABYTE = 1024 * ONE_KILOBYTE;
@@ -256,8 +257,7 @@ configuration.userTempArchiveFolder = configuration[HOST].userTempArchiveFolder;
 configuration.userArchivePath = configuration[HOST].userArchivePath;
 configuration.userTempArchivePath = configuration[HOST].userTempArchivePath;
 
-const defaultDataFolder = "/Volumes/nas4/data";
-configuration.userDataFolder = path.join(defaultDataFolder, "users");
+configuration.userDataFolder = path.join(DEFAULT_DATA_ROOT, "users");
 
 let preppedTrainingSet = [];
 let preppedTestSet = [];
