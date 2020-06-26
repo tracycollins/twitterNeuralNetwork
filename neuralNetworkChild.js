@@ -839,6 +839,7 @@ function loadUsersFolder(params){
       + " | " + getTimeStamp() 
       + " | parallelLoadMax: " + parallelLoadMax
       + " | updateDbUser: " + formatBoolean(updateDbUser)
+      + " | interval: " + interval + " ms"
       + " | FOLDER: " + folder
     ));
 
