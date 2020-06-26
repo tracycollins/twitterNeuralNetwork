@@ -7,6 +7,7 @@ const ONE_HOUR = 60*ONE_MINUTE;
 
 const DEFAULT_SEND_QUEUE_INTERVAL = 100;
 const DEFAULT_LOAD_USERS_FOLDER_ON_START = true;
+const DEFAULT_LOAD_USER_FILE_INTERVAL = 100;
 
 // const ONE_KILOBYTE = 1024;
 // const ONE_MEGABYTE = 1024 * ONE_KILOBYTE;
@@ -82,6 +83,7 @@ global.wordAssoDb = require("@threeceelabs/mongoose-twitter");
 
 let configuration = {};
 
+configuration.defaultLoadUserFileInterval = DEFAULT_LOAD_USER_FILE_INTERVAL;
 configuration.loadUsersFolderOnStart = DEFAULT_LOAD_USERS_FOLDER_ON_START;
 configuration.testMode = false;
 configuration.verbose = false;
@@ -825,6 +827,7 @@ function loadUsersFolder(params){
   return new Promise(function(resolve, reject){
 
     const updateDbUser = params.updateDbUser || true;
+    const interval = params.interval || configuration.defaultLoadUserFileInterval;
     const verbose = params.verbose || configuration.verbose;
     const folder = params.folder || configuration.userDataFolder;
     let folderStreamEnd = false;
@@ -857,14 +860,18 @@ function loadUsersFolder(params){
     }
 
     let ready = true;
+    const loadUserFilePromiseArray = [];
 
-    const userFileInterval = setInterval(async function(){
+    const loadUserFileInterval = setInterval(async function(){
 
-      const loadUserFilePromiseArray = [];
-
-      if (ready && userFileArray.length > 8){
+      if (folderStreamEnd && ready && userFileArray.length === 0) {
+        clearInterval(loadUserFileInterval);
+        resolve(statsObj.users.folder.total);
+      }
+      else if (ready && userFileArray.length > parallelLoadMax){
 
         ready = false;
+        loadUserFilePromiseArray.length = 0;
 
         while (userFileArray.length > 0 && loadUserFilePromiseArray.length < parallelLoadMax){
 
@@ -878,8 +885,8 @@ function loadUsersFolder(params){
               returnOnError: true, // don't throw error; just return on errors
               verbose: verbose
             }));
-
           }
+
         }
 
         try{
@@ -893,7 +900,6 @@ function loadUsersFolder(params){
           ));
           ready = true;
         }
-
       }
       else if (ready && userFileArray.length > 0){
 
@@ -918,12 +924,7 @@ function loadUsersFolder(params){
           ready = true;
         }
       }
-      else if (folderStreamEnd && ready && userFileArray.length === 0) {
-        clearInterval(userFileInterval);
-        resolve(statsObj.users.folder.total);
-      }
-
-    }, 100);
+    }, interval);
 
     let loadFileEnable = true;
     const folderStream = walker([folder]);
@@ -939,7 +940,7 @@ function loadUsersFolder(params){
           + " | *** LOAD USERS FOLDER ERROR: " + err
           + " | FOLDER: " + folder
         ));
-        clearInterval(userFileInterval);
+        clearInterval(loadUserFileInterval);
         return reject(err);
       }
     });
