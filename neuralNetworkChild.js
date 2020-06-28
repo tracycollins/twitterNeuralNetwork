@@ -28,8 +28,6 @@ const _ = require("lodash");
 const omit = require("object.omit");
 const path = require("path");
 const walker = require("folder-walker");
-// const watch = require("watch");
-// const chokidar = require("chokidar");
 const empty = require("is-empty");
 
 let hostname = os.hostname();
