@@ -440,6 +440,10 @@ async function initSlackRtmClient(){
 
   slackRtmClient.on("slack_event", async function(eventType, event){
     switch (eventType) {
+      case "abort evolve":
+        console.log(chalkLog("TNN | SLACK ABORT EVOLVE | " + getTimeStamp() + " | " + event.reply_to));
+        console.log("event\n", event);
+      break;
       case "pong":
         debug(chalkLog("TNN | SLACK RTM PONG | " + getTimeStamp() + " | " + event.reply_to));
       break;
