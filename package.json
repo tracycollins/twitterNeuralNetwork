@@ -42,7 +42,7 @@
     "folder-walker": "^3.2.0",
     "fs": "0.0.2",
     "fs-extra": "^9.0.1",
-    "get-urls": "^9.2.0",
+    "get-urls": "^9.2.1",
     "hashmap": "^2.4.0",
     "hashtag-regex": "^2.1.0",
     "is-empty": "^1.2.0",
