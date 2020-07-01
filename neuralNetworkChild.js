@@ -2387,7 +2387,6 @@ const fsmStates = {
           ));
 
           await processSend({op: "STATS", childId: configuration.childId, fsmStatus: statsObj.fsmStatus});
-          // await initWatchUserDataFolders();
           await initProcessSendQueue();
 
           fsm.fsm_ready();
