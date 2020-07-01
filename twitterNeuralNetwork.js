@@ -2758,7 +2758,6 @@ async function initWatchAllConfigFolders(p){
           await delay({period: 30*ONE_SECOND});
           await initZeroSuccessEvolveOptionsSet();
         }
-
       });
 
       monitorDefaultConfig.on("changed", async function(f){
@@ -2788,7 +2787,6 @@ async function initWatchAllConfigFolders(p){
           await delay({period: 30*ONE_SECOND});
           await initZeroSuccessEvolveOptionsSet();
         }
-
       });
 
       monitorDefaultConfig.on("removed", function (f) {
