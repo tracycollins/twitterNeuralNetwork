@@ -971,7 +971,7 @@ function loadUsersFolder(params){
 
     folderStream.on("data", async function (fileObj) {
 
-      loadFileEnable = (configuration.testMode) ? (Math.random() > 0.5) : true;
+      loadFileEnable = (configuration.testMode) ? (Math.random() < 0.25) : true;
 
       if (fileObj.basename.endsWith(".json") && loadFileEnable){
         userFileArray.push(fileObj);
@@ -1995,7 +1995,18 @@ async function evolve(params){
 
     childNetworkObj.meta.userProfileOnlyFlag = (inputsObj.meta.userProfileOnlyFlag !== undefined) ? inputsObj.meta.userProfileOnlyFlag : false;
 
-    if (childNetworkObj.inputsId !== configuration.userProfileCharCodesOnlyInputsId){
+    if (childNetworkObj.inputsId === configuration.userProfileCharCodesOnlyInputsId){
+
+      console.log(chalkAlert(MODULE_ID_PREFIX + " | +++ userProfileCharCodesOnlyFlag"
+        + " | ARCH: " + childNetworkObj.architecture
+        + " | TECH: " + childNetworkObj.networkTechnology
+        + " | NN: " + childNetworkObj.networkId
+        + " | IN: " + childNetworkObj.inputsId
+      ));
+
+      childNetworkObj.meta.userProfileCharCodesOnlyFlag = true;
+    }
+    else {
 
       console.log(chalkAlert(MODULE_ID_PREFIX + " | XXX userProfileCharCodesOnlyFlag"
         + " | ARCH: " + childNetworkObj.architecture
