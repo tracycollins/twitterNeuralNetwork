@@ -1040,27 +1040,41 @@ function initWatchUserDataFolders(p){
 
     watcher.on("add", async function(filePath){
       if (filePath.endsWith(".json")){
+
         statsObj.users.files.added += 1;
 
+        userUpdateQueue.push(filePath);
+
         if (verbose || statsObj.users.files.added % 1000 === 0){
+
           console.log(chalkBlue(MODULE_ID_PREFIX
-            + " [" + statsObj.users.files.added + "] +++ USER FILE CREATED: " + filePath
+            + " [ UUQ: " + userUpdateQueue.length + "]"
+            + " | ADDED: " + statsObj.users.files.added
+            + " | CHANGED: " + statsObj.users.files.changed
+            + " | +++ USER FILE ADDED: " + filePath
           ));
         }
 
-        userUpdateQueue.push(filePath);
       }
     });  
 
     watcher.on("change", async function(filePath){
       if (filePath.endsWith(".json")){
-        statsObj.users.files.added += 1;
 
-        if (verbose || statsObj.users.files.added % 100 === 0){
-          console.log(chalkBlue(MODULE_ID_PREFIX + " | +++ USER FILE CHANGED: " + filePath));
-        }
+        statsObj.users.files.changed += 1;
 
         userUpdateQueue.push(filePath);
+
+        if (verbose || statsObj.users.files.changed % 100 === 0){
+
+          console.log(chalkBlue(MODULE_ID_PREFIX
+            + " [ UUQ: " + userUpdateQueue.length + "]"
+            + " | ADDED: " + statsObj.users.files.added
+            + " | CHANGED: " + statsObj.users.files.changed
+            + " | +++ USER FILE CHANGED: " + filePath
+          ));
+        }
+
       }
     });  
 

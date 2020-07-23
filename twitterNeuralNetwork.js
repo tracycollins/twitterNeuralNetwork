@@ -145,7 +145,12 @@ const brainTrainOptionsPickArray = [
   "timeout",
 ];
 
-const combinedEvolveOptionsPickArray = _.union(defaultEvolveOptionsPickArray, carrotEvolveOptionsPickArray, neatapticEvolveOptionsPickArray, brainTrainOptionsPickArray);
+const combinedEvolveOptionsPickArray = _.union(
+  defaultEvolveOptionsPickArray, 
+  carrotEvolveOptionsPickArray, 
+  neatapticEvolveOptionsPickArray, 
+  brainTrainOptionsPickArray
+);
 
 let DROPBOX_ROOT_FOLDER;
 
