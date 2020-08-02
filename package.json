@@ -57,7 +57,7 @@
     "measured-core": "^2.0.0",
     "mentions-regex": "^2.0.3",
     "moment": "^2.27.0",
-    "mongoose": "^5.9.25",
+    "mongoose": "^5.9.27",
     "mongoose-paginate": "^5.0.3",
     "neataptic": "^1.4.7",
     "node-cache": "^5.1.2",
