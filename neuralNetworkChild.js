@@ -1,4 +1,5 @@
 const DEFAULT_DATA_ROOT = process.env.DATA_ROOT_FOLDER || "/Volumes/nas4/data";
+const DEFAULT_SKIP_DATABASE_HOST_LOAD_FOLDER = false;
 const TEST_MODE_LENGTH = 1000;
 
 const ONE_SECOND = 1000;
@@ -81,6 +82,7 @@ global.wordAssoDb = require("@threeceelabs/mongoose-twitter");
 
 let configuration = {};
 
+configuration.skipDatabaseHostLoadFolder = DEFAULT_SKIP_DATABASE_HOST_LOAD_FOLDER;
 configuration.defaultLoadUserFileInterval = DEFAULT_LOAD_USER_FILE_INTERVAL;
 configuration.loadUsersFolderOnStart = DEFAULT_LOAD_USERS_FOLDER_ON_START;
 configuration.testMode = false;
@@ -1198,13 +1200,12 @@ async function loadTrainingSet(p){
       ));
     }
 
-    if (hostname === DATABASE_HOST){
+    if (configuration.skipDatabaseHostLoadFolder && hostname === DATABASE_HOST){
       console.log(chalk.black.bold(MODULE_ID_PREFIX
         + " | loadTrainingSet | !!! SKIP LOAD USERS FOLDER | DATABASE_HOST: " + DATABASE_HOST
       ));
     }
-    else if (hostname !== DATABASE_HOST
-      && configuration.loadUsersFolderOnStart 
+    else if (configuration.loadUsersFolderOnStart 
       && !statsObj.usersFolderLoaded 
       && !statsObj.loadUsersFolderBusy
     ){
