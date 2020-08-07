@@ -162,7 +162,7 @@ const carrotEvolveOptionsPickArray = [
   "fitnessPopulation",
   "growth",
   "iterations",
-  "maxNodes",
+  // "maxNodes",
   "maxConns",
   "maxGates",
   "mutation",
@@ -1214,7 +1214,14 @@ async function loadTrainingSet(p){
       ));
       
       statsObj.loadUsersFolderBusy = true;
-      await initLoadUsersFolder({folder: configuration.userDataFolder});
+
+      if (configuration.testMode) { 
+        await initLoadUsersFolder({folder: configuration.userDataFolder + "/00000000"});
+      }
+      else{
+        await initLoadUsersFolder({folder: configuration.userDataFolder});
+      }
+
       statsObj.usersFolderLoaded = true;
       statsObj.loadUsersFolderBusy = false;
     }
@@ -1411,7 +1418,10 @@ function prepNetworkEvolve() {
     + " | NNID: " + statsObj.training.testRunId
   ));
 
+
   const options = childNetworkObj.evolve.options;
+
+  console.log(options)
   const schedStartTime = moment().valueOf();
 
   switch (childNetworkObj.networkTechnology){
@@ -1505,7 +1515,6 @@ function prepNetworkEvolve() {
         
         iterations: 1
       };
-
 
   }
 
@@ -1960,6 +1969,8 @@ const preppedSetsConfigPickArray = [
 
 async function evolve(params){
 
+  let preppedOptions;
+
   try {
 
     console.log(chalkLog(MODULE_ID_PREFIX + " | PREPARE NETWORK EVOLVE"
@@ -1968,6 +1979,8 @@ async function evolve(params){
       + " | SEED: " + childNetworkObj.seedNetworkId
       + " | IN: " + childNetworkObj.inputsId
     ));
+
+    console.log(childNetworkObj.evolve.options)
 
     if (childNetworkObj.meta === undefined) { childNetworkObj.meta = {}; }
 
@@ -2044,12 +2057,11 @@ async function evolve(params){
 
       preppedSetsConfig.setObj = testSetObj;
       preppedTestSet = await dataSetPrep(preppedSetsConfig);
-
     }
 
     const childNetworkRaw = await createNetwork();
 
-    const preppedOptions = await prepNetworkEvolve();
+    preppedOptions = await prepNetworkEvolve();
 
     let evolveResults;
 
@@ -2101,7 +2113,7 @@ async function evolve(params){
         preppedOptions.mutation_rate = preppedOptions.mutationRate;
         preppedOptions.mutation_amount = preppedOptions.mutationAmount;
         preppedOptions.fitness_population = preppedOptions.fitnessPopulation;
-        preppedOptions.max_nodes = preppedOptions.maxNodes;
+        // preppedOptions.max_nodes = preppedOptions.maxNodes;
       }
 
       console.log(chalkBlueBold(MODULE_ID_PREFIX + " | ==============================================="));
@@ -2162,6 +2174,10 @@ async function evolve(params){
   catch(err){
     console.log(chalkError(MODULE_ID_PREFIX + " | *** EVOLVE ERROR: " + err));
     console.trace(err);
+    console.log(chalkError(MODULE_ID_PREFIX + " | *** EVOLVE ERROR: params"));
+    console.log(params);
+    console.log(chalkError(MODULE_ID_PREFIX + " | *** EVOLVE ERROR: preppedOptions"));
+    console.log(preppedOptions);
     throw err;
   }
 }
@@ -2716,6 +2732,8 @@ async function configNetworkEvolve(params){
         "inputsId",
         "iterations",
         "learningRate",
+        // "max_nodes",
+        // "maxNodes",
         "momentum",
         "mutation", 
         "mutationAmount", 

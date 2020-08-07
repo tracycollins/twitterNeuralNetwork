@@ -97,6 +97,7 @@ exports.DEFAULT_EVOLVE_MOMENTUM_RANGE = { min: 0.05, max: 0.5 }; // brain only
 
 exports.DEFAULT_EVOLVE_EFFICIENT_MUTATION_PROBABILITY = 0.5; // carrot only
 exports.DEFAULT_EVOLVE_EFFICIENT_MUTATION = false; // carrot only
+// exports.DEFAULT_EVOLVE_MAX_NODES = 0; // carrot only
 exports.DEFAULT_EVOLVE_MUTATION = "FFW"; // carrot and neataptic, specifies an array of possible mutations
 exports.DEFAULT_EVOLVE_MUTATION_RATE = 0.4;
 exports.DEFAULT_EVOLVE_MUTATION_RATE_RANGE = { min: 0.3, max: 0.75 };

@@ -108,7 +108,8 @@ const carrotEvolveOptionsPickArray = [
   "fitness",
   "fitnessPopulation",
   "growth",
-  "max_nodes",
+  // "max_nodes",
+  // "maxNodes",
   "maxConns",
   "maxGates",
   "mutation",
@@ -647,6 +648,8 @@ configuration.evolve.growthRange = EVOVLE_DEFAULTS.DEFAULT_EVOLVE_GROWTH_RANGE;
 configuration.evolve.inputsToHiddenLayerSizeRatio = EVOVLE_DEFAULTS.DEFAULT_EVOLVE_INPUTS_TO_HIDDEN_LAYER_SIZE_RATIO;
 configuration.evolve.iterations = EVOVLE_DEFAULTS.DEFAULT_ITERATIONS;
 configuration.evolve.log = EVOVLE_DEFAULTS.DEFAULT_EVOLVE_LOG;
+// configuration.evolve.max_nodes = EVOVLE_DEFAULTS.DEFAULT_EVOLVE_MAX_NODES;
+// configuration.evolve.maxNodes = EVOVLE_DEFAULTS.DEFAULT_EVOLVE_MAX_NODES;
 configuration.evolve.momentum = EVOVLE_DEFAULTS.DEFAULT_EVOLVE_MOMENTUM;
 configuration.evolve.momentumRange = EVOVLE_DEFAULTS.DEFAULT_EVOLVE_MOMENTUM_RANGE;
 configuration.evolve.mutation = EVOVLE_DEFAULTS.DEFAULT_EVOLVE_MUTATION;
@@ -804,6 +807,8 @@ function printResultsHashmap(){
         networkObj.evolve.options.cost = "---";
         networkObj.evolve.options.growth = 0;
         networkObj.evolve.options.equal = "---";
+        // networkObj.evolve.options.max_nodes = Infinity;
+        // networkObj.evolve.options.maxNodes = Infinity;
         networkObj.evolve.options.mutationRate = 0;
         networkObj.evolve.options.efficientMutation = "---";
         networkObj.evolve.options.popsize = 0;
@@ -891,12 +896,9 @@ function printResultsHashmap(){
         formatBoolean(networkObj.evolve.options.efficientMutation),
         popsize,
         elitism,
-        // getTimeStamp(networkObj.evolve.startTime),
         msToTime(elapsed),
         iterations,
         secPerIteration.toFixed(1),
-        // error,
-        // fitness,
         successRate
       ];
 
@@ -2068,6 +2070,8 @@ async function generateEvolveOptions(params){
       config.iterations = configuration.evolve.iterations;
       config.learningRate = randomFloat(configuration.evolve.learningRateRange.min, configuration.evolve.learningRateRange.max);
       config.log = configuration.evolve.log;
+      // config.max_nodes = configuration.evolve.max_nodes;
+      // config.maxNodes = configuration.evolve.maxNodes;
       config.momentum = randomFloat(configuration.evolve.momentumRange.min, configuration.evolve.momentumRange.max);
       config.mutation = configuration.evolve.mutation;
       config.mutationAmount = 1;
@@ -2153,42 +2157,21 @@ async function generateRandomEvolveConfig(p){
   else if (config.networkTechnology === "brain"){
     config.userProfileCharCodesOnlyFlag = true;
     config.binaryMode = false;
-    // config.logScaleMode = false;
   }
   else{
 
     config.userProfileCharCodesOnlyFlag = (Math.random() <= configuration.userProfileCharCodesOnlyProbability);
     config.binaryMode = configuration.enableRandomBinaryMode && (Math.random() <= configuration.evolve.binaryModeProbability);
-    // config.logScaleMode = configuration.enableRandomLogScaleMode && (Math.random() <= configuration.evolve.logScaleModeProbability);
 
     if (config.userProfileCharCodesOnlyFlag) { 
       config.binaryMode = false;
-      // config.logScaleMode = false;
     }
     else{
       if (configuration.enableRandomBinaryMode){
-
-        // if (config.binaryMode) { config.logScaleMode = false; }
-
         console.log(chalkAlert(MODULE_ID_PREFIX + " | RANDOM BINARY MODE: " + config.binaryMode));
       }
-      // else if (configuration.enableRandomLogScaleMode){
-
-      //   // if (config.logScaleMode) { config.binaryMode = false; }
-
-      //   console.log(chalkAlert(MODULE_ID_PREFIX
-      //     + " | RANDOM LOG SCALE MODE PROBABILITY: " + configuration.evolve.logScaleModeProbability
-      //     + " | SCALE MODE: " + config.logScaleMode
-      //   ));
-      // }
       else{
         config.binaryMode = params.binaryMode || configuration.binaryMode;
-        // if (config.binaryMode) { 
-        //   config.logScaleMode = false;
-        // }
-        // else{
-        //   config.logScaleMode = params.logScaleMode || configuration.logScaleMode;
-        // }
       }
     }
   }
@@ -2196,7 +2179,6 @@ async function generateRandomEvolveConfig(p){
   console.log(chalkBlue(MODULE_ID_PREFIX + " | NETWORK TECHNOLOGY:      " + config.networkTechnology));
   console.log(chalkBlue(MODULE_ID_PREFIX + " | USER PROFILE CHAR CODES: " + config.userProfileCharCodesOnlyFlag));
   console.log(chalkBlue(MODULE_ID_PREFIX + " | BINARY MODE:             " + config.binaryMode));
-  // console.log(chalkBlue(MODULE_ID_PREFIX + " | LOG SCALE MODE:          " + config.logScaleMode));
 
   debug(chalkLog(MODULE_ID_PREFIX + " | NETWORK CREATE MODE: " + config.networkCreateMode));
 
