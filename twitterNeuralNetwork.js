@@ -2,6 +2,7 @@ const MODULE_NAME = "twitterNeuralNetwork";
 const MODULE_ID_PREFIX = "TNN";
 const CHILD_PREFIX = "tnc_node";
 const CHILD_PREFIX_SHORT = "NC";
+const DEFAULT_MAX_FRIENDS = 7500;
 
 const DEFAULT_PURGE_MIN = true; // applies only to parent
 const TEST_MODE = false; // applies only to parent
@@ -225,7 +226,7 @@ watcherChildConfiguration.primaryHost = configuration.primaryHost;
 watcherChildConfiguration.testMode = configuration.testMode;
 watcherChildConfiguration.updateUserDb = false;
 
-
+configuration.maxFriends = DEFAULT_MAX_FRIENDS;
 configuration.userProfileCharCodesOnlyProbability = EVOVLE_DEFAULTS.DEFAULT_USER_PROFILE_CHAR_CODES_ONLY_PROBABILITY;
 configuration.userProfileCharCodesOnlyFlag = EVOVLE_DEFAULTS.DEFAULT_USER_PROFILE_CHAR_CODES_ONLY_FLAG;
 configuration.userProfileCharCodesOnlyInputsId = EVOVLE_DEFAULTS.DEFAULT_USER_PROFILE_CHAR_CODES_ONLY_INPUTS_ID;
@@ -300,6 +301,7 @@ configuration.childIdPrefix = DEFAULT_CHILD_ID_PREFIX;
 configuration.childIndex = 0;
 
 
+childConfiguration.maxFriends = configuration.maxFriends;
 childConfiguration.primaryHost = configuration.primaryHost;
 childConfiguration.binaryMode = configuration.binaryMode;
 childConfiguration.userProfileCharCodesOnlyFlag = configuration.userProfileCharCodesOnlyFlag;
@@ -3277,6 +3279,12 @@ async function loadConfigFile(params) {
       }
 
       childConfiguration.userProfileCharCodesOnlyFlag = newConfiguration.userProfileCharCodesOnlyFlag;
+    }
+
+    if (loadedConfigObj.TNN_MAX_FRIENDS !== undefined) {
+      console.log(MODULE_ID_PREFIX + " | LOADED TNN_MAX_FRIENDS: " + loadedConfigObj.TNN_MAX_FRIENDS);
+      newConfiguration.maxFriends = loadedConfigObj.TNN_MAX_FRIENDS;
+      childConfiguration.maxFriends = newConfiguration.maxFriends;
     }
 
     if (loadedConfigObj.TNN_USER_PROFILE_CHAR_CODES_ONLY_PROBABILITY !== undefined) {

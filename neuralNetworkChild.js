@@ -1,6 +1,8 @@
 const DEFAULT_DATA_ROOT = process.env.DATA_ROOT_FOLDER || "/Volumes/nas4/data";
+const DEFAULT_MAX_FRIENDS = 7500;
 const DEFAULT_SKIP_DATABASE_HOST_LOAD_FOLDER = false;
 const TEST_MODE_LENGTH = 1000;
+
 
 const ONE_SECOND = 1000;
 const ONE_MINUTE = 60*ONE_SECOND;
@@ -82,6 +84,7 @@ global.wordAssoDb = require("@threeceelabs/mongoose-twitter");
 
 let configuration = {};
 
+configuration.maxFriends = DEFAULT_MAX_FRIENDS;
 configuration.skipDatabaseHostLoadFolder = DEFAULT_SKIP_DATABASE_HOST_LOAD_FOLDER;
 configuration.defaultLoadUserFileInterval = DEFAULT_LOAD_USER_FILE_INTERVAL;
 configuration.loadUsersFolderOnStart = DEFAULT_LOAD_USERS_FOLDER_ON_START;
@@ -1028,7 +1031,7 @@ async function cursorDataHandler(user){
     user.friends = [];
   }
   else{
-    user.friends = _.slice(user.friends, 0,5000);
+    user.friends = _.slice(user.friends, 0, configuration.maxFriends);
   }
 
   trainingSetUsersSet[user.category].add(user.nodeId);
