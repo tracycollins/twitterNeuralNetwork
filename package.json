@@ -6,7 +6,7 @@
   "dependencies": {
     "@davvo/drbx": "^2.1.0",
     "@google-cloud/vision": "^2.1.1",
-    "@liquid-carrot/carrot": "^0.3.18",
+    "@liquid-carrot/carrot": "0.3.18",
     "@slack/client": "^5.0.2",
     "@threeceelabs/histogram-parser": "^1.0.20",
     "@threeceelabs/mergehistograms": "^1.0.8",
