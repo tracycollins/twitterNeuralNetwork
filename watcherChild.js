@@ -983,6 +983,7 @@ function initUserUpdateQueue(p){
 
         try{
           await loadUserFile({path: filePath});
+          console.log(chalkLog(MODULE_ID_PREFIX + " | +++ LOADED & UPDATED USER | " + filePath));
           userUpdateQueueReady = true;
         }
         catch(err){
