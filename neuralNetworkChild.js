@@ -1039,6 +1039,7 @@ async function cursorDataHandler(user){
   categorizedUsers[user.category] += 1;
   statsObj.categorizedCount += 1;
 
+  statsObj.users.processed.total += 1;
 
   if (statsObj.categorizedCount > 0 && statsObj.categorizedCount % 1000 === 0){
     console.log(chalkInfo(MODULE_ID_PREFIX
@@ -1060,7 +1061,7 @@ function cursorDataHandlerPromise(user){
     cursorDataHandler(user)
     .then(function(){
 
-      statsObj.users.processed.total += 1;
+      statsObj.users.processed.grandTotal += 1;
       statsObj.users.processed.elapsed = (moment().valueOf() - statsObj.users.processed.startMoment.valueOf()); // mseconds
       statsObj.users.processed.rate = (statsObj.users.processed.total >0) ? statsObj.users.processed.elapsed/statsObj.users.processed.total : 0; // msecs/usersArchived
       statsObj.users.processed.remain = statsObj.users.grandTotal - (statsObj.users.processed.total + statsObj.users.processed.errors);
@@ -1203,32 +1204,32 @@ async function loadTrainingSet(p){
       ));
     }
 
-    if (configuration.skipDatabaseHostLoadFolder && hostname === DATABASE_HOST){
-      console.log(chalk.black.bold(MODULE_ID_PREFIX
-        + " | loadTrainingSet | !!! SKIP LOAD USERS FOLDER | DATABASE_HOST: " + DATABASE_HOST
-      ));
-    }
-    else if (configuration.loadUsersFolderOnStart 
-      && !statsObj.usersFolderLoaded 
-      && !statsObj.loadUsersFolderBusy
-    ){
+    // if (configuration.skipDatabaseHostLoadFolder && hostname === DATABASE_HOST){
+    //   console.log(chalk.black.bold(MODULE_ID_PREFIX
+    //     + " | loadTrainingSet | !!! SKIP LOAD USERS FOLDER | DATABASE_HOST: " + DATABASE_HOST
+    //   ));
+    // }
+    // else if (configuration.loadUsersFolderOnStart 
+    //   && !statsObj.usersFolderLoaded 
+    //   && !statsObj.loadUsersFolderBusy
+    // ){
 
-      console.log(chalk.black.bold(MODULE_ID_PREFIX
-        + " | loadTrainingSet | LOAD USERS FOLDER: " + configuration.userDataFolder
-      ));
+    //   console.log(chalk.black.bold(MODULE_ID_PREFIX
+    //     + " | loadTrainingSet | LOAD USERS FOLDER: " + configuration.userDataFolder
+    //   ));
       
-      statsObj.loadUsersFolderBusy = true;
+    //   statsObj.loadUsersFolderBusy = true;
 
-      if (configuration.testMode) { 
-        await initLoadUsersFolder({folder: configuration.userDataFolder + "/00000000"});
-      }
-      else{
-        await initLoadUsersFolder({folder: configuration.userDataFolder});
-      }
+    //   if (configuration.testMode) { 
+    //     await initLoadUsersFolder({folder: configuration.userDataFolder + "/00000000"});
+    //   }
+    //   else{
+    //     await initLoadUsersFolder({folder: configuration.userDataFolder});
+    //   }
 
-      statsObj.usersFolderLoaded = true;
-      statsObj.loadUsersFolderBusy = false;
-    }
+    //   statsObj.usersFolderLoaded = true;
+    //   statsObj.loadUsersFolderBusy = false;
+    // }
 
     console.log(chalk.black.bold(MODULE_ID_PREFIX
       + " | loadTrainingSet | LOAD TRAINING SET USERS FROM DB"
