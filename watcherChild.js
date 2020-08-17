@@ -415,27 +415,52 @@ async function quit(opts) {
   }, QUIT_WAIT_INTERVAL);
 }
 
+
+// ignored: { type: Boolean, default: false }, // ignored by threecee
+
 const defaultUserUpdatePropArray = [
   "ageDays",
+  "bannerImageAnalyzed",
+  "bannerImageUrl",
+  "categorized",
+  "categorizeNetwork",
   "category",
   "categoryAuto",
-  "categorizeNetwork",
+  "categoryMismatch",
+  "categoryVerified",
   "description",
+  "expandedUrl",
   "followersCount",
   "following",
   "friends",
   "friendsCount",
+  "geo",
+  "geoEnabled",
+  "geoValid",
+  "ignored",
+  "isBot",
   "lang",
   "languageAnalysis",
+  "languageAnalyzed",
+  "lastHistogramTweetId",
+  "lastTweetId",
   "location",
-  "name",
-  "profileHistograms",
-  "rate",
   "mentions",
+  "name",
+  "nodeType",
+  "profileHistograms",
+  "profileImageAnalyzed",
+  "profileImageUrl",
+  "profileUrl",
+  "rate",
   "screenName",
+  "status",
   "statusesCount",
   "tweetHistograms",
-  "tweetsPerDay"
+  "tweets",
+  "tweetsPerDay",
+  "url",
+  "verified"
 ];
 
 const defaultDbUpdateOptions = {
@@ -942,6 +967,8 @@ function initUserUpdateQueue(p){
   return new Promise(function(resolve){
 
     statsObj.status = "INIT USER UPDATE QUEUE";
+
+    console.log(chalkLog(MODULE_ID_PREFIX + " | INIT USER UPDATE QUEUE | " + interval + " MS"));
 
     clearInterval(userUpdateQueueInterval);
 
