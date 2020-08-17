@@ -119,6 +119,7 @@ let statsObjSmall = {};
 
 statsObj.userUpdateQueue = 0;
 statsObj.users = {};
+statsObj.users.updated = 0;
 statsObj.users.folder = {};
 statsObj.users.folder.total = 0;
 statsObj.users.files = {};
@@ -129,17 +130,6 @@ statsObj.users.grandTotal = 0;
 statsObj.users.notCategorized = 0;
 statsObj.users.notFound = 0;
 statsObj.users.screenNameUndefined = 0;
-statsObj.users.processed = {};
-statsObj.users.processed.total = 0;
-statsObj.users.processed.percent = 0;
-statsObj.users.processed.empty = 0;
-statsObj.users.processed.errors = 0;
-statsObj.users.processed.elapsed = 0;
-statsObj.users.processed.rate = 0;
-statsObj.users.processed.remain = 0;
-statsObj.users.processed.remainMS = 0;
-statsObj.users.processed.startMoment = 0;
-statsObj.users.processed.endMoment = moment();
 
 statsObj.pid = process.pid;
 statsObj.runId = MODULE_ID.toLowerCase() + "_" + getTimeStamp();
@@ -972,6 +962,8 @@ function initUserUpdateQueue(p){
 
     clearInterval(userUpdateQueueInterval);
 
+    let percentUpdated = 0;
+
     userUpdateQueueInterval = setInterval(async function(){
 
       if (userUpdateQueueReady && (userUpdateQueue.length > 0)){
@@ -983,7 +975,20 @@ function initUserUpdateQueue(p){
 
         try{
           await loadUserFile({path: filePath});
-          console.log(chalkLog(MODULE_ID_PREFIX + " | +++ LOADED & UPDATED USER | " + filePath));
+
+          statsObj.users.updated += 1;
+
+          percentUpdated = 100*(statsObj.users.updated/statsObj.userUpdateQueue)
+
+          if (statsObj.users.updated % 100 === 0){
+
+            console.log(chalkLog(MODULE_ID_PREFIX 
+              + " [ UPDATED: " + statsObj.users.updated + "/ UUQ: " + statsObj.userUpdateQueue + "(" + percentUpdated.toFixed(2) + "%) ]"
+              + " | +++ LOADED & UPDATED USER"
+              + " | " + filePath
+            ));
+          }
+
           userUpdateQueueReady = true;
         }
         catch(err){
