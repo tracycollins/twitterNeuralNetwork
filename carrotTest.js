@@ -1,5 +1,5 @@
 const neataptic = require("neataptic");
-const carrot = require("@liquid-carrot/carrot");
+const carrot = require("@liquid-carrot/carrot/src/index.js");
 
 async function main(){
 

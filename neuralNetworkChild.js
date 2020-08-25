@@ -215,7 +215,8 @@ console.log("=========================================");
 //=========================================================================
 const neataptic = require("neataptic");
 const brain = require("brain.js");
-const carrot = require("@liquid-carrot/carrot");
+// const carrot = require("@liquid-carrot/carrot");
+const carrot = require("@liquid-carrot/carrot/src/index.js");
 
 const moment = require("moment");
 const pick = require("object.pick");
