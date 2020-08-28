@@ -295,6 +295,7 @@ statsObj.users.files.deleted = 0;
 statsObj.users.grandTotal = 0;
 statsObj.users.notCategorized = 0;
 statsObj.users.notFound = 0;
+statsObj.users.notInDb = 0;
 statsObj.users.screenNameUndefined = 0;
 statsObj.users.processed = {};
 statsObj.users.processed.total = 0;
@@ -1588,6 +1589,7 @@ function dataSetPrep(params){
     const dataSet = [];
 
     let dataConverted = 0;
+    statsObj.users.notInDb = 0;
 
     const numCharInputs = configuration.userCharCountScreenName 
       + configuration.userCharCountName 
@@ -1611,7 +1613,12 @@ function dataSetPrep(params){
       const user = await global.wordAssoDb.User.findOne({nodeId: nodeId}).lean().exec();
 
       if (!user) {
-        console.log(chalkAlert(MODULE_ID_PREFIX + " | dataSetPrep | !!! USER NOT IN DB ... SKIPPING | NID: " + nodeId));
+        statsObj.users.notInDb += 1;
+        console.log(chalkAlert(MODULE_ID_PREFIX
+          + " [" + statsObj.users.notInDb + "] dataSetPrep"
+          + " | !!! USER NOT IN DB ... SKIPPING | NID: "
+          + nodeId
+        ));
         return;
       }
 
