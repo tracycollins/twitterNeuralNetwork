@@ -30,7 +30,7 @@ const fs = require("fs-extra");
 const _ = require("lodash");
 const omit = require("object.omit");
 const path = require("path");
-const walker = require("folder-walker");
+// const walker = require("folder-walker");
 const empty = require("is-empty");
 
 let hostname = os.hostname();
@@ -703,295 +703,295 @@ function updateTrainingSet(p){
   });
 }
 
-const defaultUserUpdatePropArray = [
-  "ageDays",
-  "category",
-  "categoryAuto",
-  "categorizeNetwork",
-  "description",
-  "followersCount",
-  "following",
-  "friends",
-  "friendsCount",
-  "lang",
-  "languageAnalysis",
-  "location",
-  "name",
-  "profileHistograms",
-  "rate",
-  "mentions",
-  "screenName",
-  "statusesCount",
-  "tweetHistograms",
-  "tweetsPerDay"
-];
+// const defaultUserUpdatePropArray = [
+//   "ageDays",
+//   "category",
+//   "categoryAuto",
+//   "categorizeNetwork",
+//   "description",
+//   "followersCount",
+//   "following",
+//   "friends",
+//   "friendsCount",
+//   "lang",
+//   "languageAnalysis",
+//   "location",
+//   "name",
+//   "profileHistograms",
+//   "rate",
+//   "mentions",
+//   "screenName",
+//   "statusesCount",
+//   "tweetHistograms",
+//   "tweetsPerDay"
+// ];
 
-const defaultDbUpdateOptions = {
-  new: true,
-  upsert: true
-};
+// const defaultDbUpdateOptions = {
+//   new: true,
+//   upsert: true
+// };
 
-async function loadUserFile(params){
+// async function loadUserFile(params){
 
-    const updateDbUser = params.updateDbUser || false;
-    const returnOnError = params.returnOnError || false;
-    const folder = params.folder || path.dirname(params.path);
-    const file = params.file || path.basename(params.path);
+//     const updateDbUser = params.updateDbUser || false;
+//     const returnOnError = params.returnOnError || false;
+//     const folder = params.folder || path.dirname(params.path);
+//     const file = params.file || path.basename(params.path);
 
-    const filePath = params.path || path.join(folder, file);
+//     const filePath = params.path || path.join(folder, file);
 
-    try{
-      let userObj = await fs.readJson(filePath);
+//     try{
+//       let userObj = await fs.readJson(filePath);
 
-      statsObj.users.folder.total += 1;
+//       statsObj.users.folder.total += 1;
 
-      if ((userObj.category === "left") || (userObj.category === "right") || (userObj.category === "neutral")) {
+//       if ((userObj.category === "left") || (userObj.category === "right") || (userObj.category === "neutral")) {
 
-        userObj.categorized = true;
+//         userObj.categorized = true;
 
-        if (updateDbUser){
+//         if (updateDbUser){
 
-          const update = pick(userObj, defaultUserUpdatePropArray);
+//           const update = pick(userObj, defaultUserUpdatePropArray);
 
-          const userDoc = await global.wordAssoDb.User.findOneAndUpdate(
-            {nodeId: userObj.nodeId}, 
-            update, 
-            defaultDbUpdateOptions
-          ).exec();
+//           const userDoc = await global.wordAssoDb.User.findOneAndUpdate(
+//             {nodeId: userObj.nodeId}, 
+//             update, 
+//             defaultDbUpdateOptions
+//           ).exec();
 
-          if (userDoc) {
-            userObj = userDoc.toObject();
-          }
-        }
+//           if (userDoc) {
+//             userObj = userDoc.toObject();
+//           }
+//         }
 
-        if (empty(userObj.tweetHistograms) || !userObj.tweetHistograms || userObj.tweetHistograms === undefined){
-          userObj.tweetHistograms = {};
-        }
+//         if (empty(userObj.tweetHistograms) || !userObj.tweetHistograms || userObj.tweetHistograms === undefined){
+//           userObj.tweetHistograms = {};
+//         }
         
-        if (empty(userObj.profileHistograms) || !userObj.profileHistograms || userObj.profileHistograms === undefined){
-          userObj.profileHistograms = {};
-        }
+//         if (empty(userObj.profileHistograms) || !userObj.profileHistograms || userObj.profileHistograms === undefined){
+//           userObj.profileHistograms = {};
+//         }
         
-        trainingSetUsersSet[userObj.category].add(userObj.nodeId);
+//         trainingSetUsersSet[userObj.category].add(userObj.nodeId);
 
-        if (((configuration.testMode || configuration.verbose) 
-          && (statsObj.users.folder.total % 100 === 0)) || (statsObj.users.folder.total % 1000 === 0)
-        ) {
+//         if (((configuration.testMode || configuration.verbose) 
+//           && (statsObj.users.folder.total % 100 === 0)) || (statsObj.users.folder.total % 1000 === 0)
+//         ) {
 
-          console.log(chalkLog(MODULE_ID_PREFIX
-            + " [" + statsObj.users.folder.total + "]"
-            + " USERS - L: " + trainingSetUsersSet.left.size
-            + " N: " + trainingSetUsersSet.neutral.size
-            + " R: " + trainingSetUsersSet.right.size
-            + " | " + userObj.userId
-            + " | @" + userObj.screenName
-            + " | " + userObj.name
-            + " | FLWRs: " + userObj.followersCount
-            + " | FRNDs: " + userObj.friendsCount
-            + " | FRNDs DB: " + userObj.friends.length
-            + " | CAT M: " + userObj.category + " A: " + userObj.categoryAuto
-          ));
-        }
+//           console.log(chalkLog(MODULE_ID_PREFIX
+//             + " [" + statsObj.users.folder.total + "]"
+//             + " USERS - L: " + trainingSetUsersSet.left.size
+//             + " N: " + trainingSetUsersSet.neutral.size
+//             + " R: " + trainingSetUsersSet.right.size
+//             + " | " + userObj.userId
+//             + " | @" + userObj.screenName
+//             + " | " + userObj.name
+//             + " | FLWRs: " + userObj.followersCount
+//             + " | FRNDs: " + userObj.friendsCount
+//             + " | FRNDs DB: " + userObj.friends.length
+//             + " | CAT M: " + userObj.category + " A: " + userObj.categoryAuto
+//           ));
+//         }
 
-        if (configuration.testMode && statsObj.users.folder.total >= TEST_MODE_LENGTH){
-          return;
-        }
-      }
-      else{
-        console.log(chalkAlert(MODULE_ID_PREFIX + " | ??? UNCAT UNZIPPED USER"
-          + " [" + statsObj.users.folder.total + "]"
-          + " USERS - L: " + trainingSetUsersSet.left.size
-          + " N: " + trainingSetUsersSet.neutral.size
-          + " R: " + trainingSetUsersSet.right.size
-          + " | " + userObj.userId
-          + " | @" + userObj.screenName
-          + " | " + userObj.name
-          + " | FLWRs: " + userObj.followersCount
-          + " | FRNDs: " + userObj.friendsCount
-          + " | CAT M: " + userObj.category + " A: " + userObj.categoryAuto
-        ));                      
-      }
-      return;
-    }
-    catch(err){
-      console.log(chalkError(MODULE_ID_PREFIX + " | *** loadUserFile USER"
-        + " | PATH: " + filePath
-        + " | ERROR: " + err
-      ));
+//         if (configuration.testMode && statsObj.users.folder.total >= TEST_MODE_LENGTH){
+//           return;
+//         }
+//       }
+//       else{
+//         console.log(chalkAlert(MODULE_ID_PREFIX + " | ??? UNCAT UNZIPPED USER"
+//           + " [" + statsObj.users.folder.total + "]"
+//           + " USERS - L: " + trainingSetUsersSet.left.size
+//           + " N: " + trainingSetUsersSet.neutral.size
+//           + " R: " + trainingSetUsersSet.right.size
+//           + " | " + userObj.userId
+//           + " | @" + userObj.screenName
+//           + " | " + userObj.name
+//           + " | FLWRs: " + userObj.followersCount
+//           + " | FRNDs: " + userObj.friendsCount
+//           + " | CAT M: " + userObj.category + " A: " + userObj.categoryAuto
+//         ));                      
+//       }
+//       return;
+//     }
+//     catch(err){
+//       console.log(chalkError(MODULE_ID_PREFIX + " | *** loadUserFile USER"
+//         + " | PATH: " + filePath
+//         + " | ERROR: " + err
+//       ));
 
-      if (returnOnError) {
-        return;
-      }
+//       if (returnOnError) {
+//         return;
+//       }
 
-      throw err;               
-    }
-}
+//       throw err;               
+//     }
+// }
 
-function loadUsersFolder(params){
+// function loadUsersFolder(params){
 
-  return new Promise(function(resolve, reject){
+//   return new Promise(function(resolve, reject){
 
-    const updateDbUser = params.updateDbUser || true;
-    const interval = params.interval || configuration.defaultLoadUserFileInterval;
-    const verbose = params.verbose || configuration.verbose;
-    const folder = params.folder || configuration.userDataFolder;
-    let folderStreamEnd = false;
-    const userFileArray = [];
-    const parallelLoadMax = params.parallelLoadMax || configuration.parallelLoadMax;
+//     const updateDbUser = params.updateDbUser || true;
+//     const interval = params.interval || configuration.defaultLoadUserFileInterval;
+//     const verbose = params.verbose || configuration.verbose;
+//     const folder = params.folder || configuration.userDataFolder;
+//     let folderStreamEnd = false;
+//     const userFileArray = [];
+//     const parallelLoadMax = params.parallelLoadMax || configuration.parallelLoadMax;
 
-    console.log(chalkLog(MODULE_ID_PREFIX 
-      + " | LOADING USERS FOLDER"
-      + " | " + getTimeStamp() 
-      + " | parallelLoadMax: " + parallelLoadMax
-      + " | updateDbUser: " + formatBoolean(updateDbUser)
-      + " | interval: " + interval + " ms"
-      + " | FOLDER: " + folder
-    ));
+//     console.log(chalkLog(MODULE_ID_PREFIX 
+//       + " | LOADING USERS FOLDER"
+//       + " | " + getTimeStamp() 
+//       + " | parallelLoadMax: " + parallelLoadMax
+//       + " | updateDbUser: " + formatBoolean(updateDbUser)
+//       + " | interval: " + interval + " ms"
+//       + " | FOLDER: " + folder
+//     ));
 
-    if (statsObj.users.folder === undefined) { 
-      statsObj.users.folder = {};
-      statsObj.users.folder.total = 0;
-      statsObj.users.folder.hits = 0;
-      statsObj.users.folder.misses = 0;
-    }
+//     if (statsObj.users.folder === undefined) { 
+//       statsObj.users.folder = {};
+//       statsObj.users.folder.total = 0;
+//       statsObj.users.folder.hits = 0;
+//       statsObj.users.folder.misses = 0;
+//     }
 
-    if (params.resetFlag){
-      trainingSetUsersSet.left.clear();
-      trainingSetUsersSet.neutral.clear();
-      trainingSetUsersSet.right.clear();
+//     if (params.resetFlag){
+//       trainingSetUsersSet.left.clear();
+//       trainingSetUsersSet.neutral.clear();
+//       trainingSetUsersSet.right.clear();
 
-      statsObj.users.folder.hits = 0;
-      statsObj.users.folder.misses = 0;
-      statsObj.users.folder.total = 0;
-    }
+//       statsObj.users.folder.hits = 0;
+//       statsObj.users.folder.misses = 0;
+//       statsObj.users.folder.total = 0;
+//     }
 
-    let ready = true;
-    const loadUserFilePromiseArray = [];
+//     let ready = true;
+//     const loadUserFilePromiseArray = [];
 
-    const loadUserFileInterval = setInterval(async function(){
+//     const loadUserFileInterval = setInterval(async function(){
 
-      if (folderStreamEnd && ready && userFileArray.length === 0) {
+//       if (folderStreamEnd && ready && userFileArray.length === 0) {
 
-        console.log(chalkBlue(MODULE_ID_PREFIX 
-          + " | +++ LOADING USERS FOLDER COMPLETE"
-          + " | " + getTimeStamp() 
-          + " | parallelLoadMax: " + parallelLoadMax
-          + " | updateDbUser: " + formatBoolean(updateDbUser)
-          + " | FOLDER: " + folder
-        ));
+//         console.log(chalkBlue(MODULE_ID_PREFIX 
+//           + " | +++ LOADING USERS FOLDER COMPLETE"
+//           + " | " + getTimeStamp() 
+//           + " | parallelLoadMax: " + parallelLoadMax
+//           + " | updateDbUser: " + formatBoolean(updateDbUser)
+//           + " | FOLDER: " + folder
+//         ));
 
-        clearInterval(loadUserFileInterval);
+//         clearInterval(loadUserFileInterval);
 
-        resolve(statsObj.users.folder.total);
-      }
-      else if (ready && userFileArray.length > parallelLoadMax){
+//         resolve(statsObj.users.folder.total);
+//       }
+//       else if (ready && userFileArray.length > parallelLoadMax){
 
-        ready = false;
-        loadUserFilePromiseArray.length = 0;
+//         ready = false;
+//         loadUserFilePromiseArray.length = 0;
 
-        while ((userFileArray.length > 0) && (loadUserFilePromiseArray.length < parallelLoadMax)){
+//         while ((userFileArray.length > 0) && (loadUserFilePromiseArray.length < parallelLoadMax)){
 
-          const fileObj = userFileArray.shift();
+//           const fileObj = userFileArray.shift();
 
-          if (fileObj){
-            loadUserFilePromiseArray.push(loadUserFile({
-              folder: fileObj.root, 
-              file: fileObj.relname,
-              updateDbUser: updateDbUser,
-              returnOnError: true, // don't throw error; just return on errors
-              verbose: verbose
-            }));
-          }
+//           if (fileObj){
+//             loadUserFilePromiseArray.push(loadUserFile({
+//               folder: fileObj.root, 
+//               file: fileObj.relname,
+//               updateDbUser: updateDbUser,
+//               returnOnError: true, // don't throw error; just return on errors
+//               verbose: verbose
+//             }));
+//           }
 
-        }
+//         }
 
-        try{
-          if (loadUserFilePromiseArray.length > 0) { 
-            await Promise.all(loadUserFilePromiseArray);
-          }
-          ready = true;
-        }
-        catch(err){
-          console.log(chalkLog(MODULE_ID_PREFIX 
-            + " | *** LOAD USER FILE ERROR"
-            + " | ERR: " + err
-          ));
-          ready = true;
-        }
-      }
-      else if (ready && userFileArray.length > 0){
+//         try{
+//           if (loadUserFilePromiseArray.length > 0) { 
+//             await Promise.all(loadUserFilePromiseArray);
+//           }
+//           ready = true;
+//         }
+//         catch(err){
+//           console.log(chalkLog(MODULE_ID_PREFIX 
+//             + " | *** LOAD USER FILE ERROR"
+//             + " | ERR: " + err
+//           ));
+//           ready = true;
+//         }
+//       }
+//       else if (ready && userFileArray.length > 0){
 
-        const fileObj = userFileArray.shift();
+//         const fileObj = userFileArray.shift();
 
-        try{
-          await loadUserFile({
-            folder: fileObj.root, 
-            file: fileObj.relname,
-            updateDbUser: updateDbUser,
-            returnOnError: true, // don't throw error; just return on errors
-            verbose: verbose
-          });
-          ready = true;
-        }
-        catch(err){
-          console.log(chalkLog(MODULE_ID_PREFIX 
-            + " | *** LOAD USER FILE ERROR"
-            + " | ERR: " + err
-            + " | fileObj\n: " + jsonPrint(fileObj)
-          ));
-          ready = true;
-        }
-      }
-    }, interval);
+//         try{
+//           await loadUserFile({
+//             folder: fileObj.root, 
+//             file: fileObj.relname,
+//             updateDbUser: updateDbUser,
+//             returnOnError: true, // don't throw error; just return on errors
+//             verbose: verbose
+//           });
+//           ready = true;
+//         }
+//         catch(err){
+//           console.log(chalkLog(MODULE_ID_PREFIX 
+//             + " | *** LOAD USER FILE ERROR"
+//             + " | ERR: " + err
+//             + " | fileObj\n: " + jsonPrint(fileObj)
+//           ));
+//           ready = true;
+//         }
+//       }
+//     }, interval);
 
-    let loadFileEnable = true;
-    const folderStream = walker([folder]);
+//     let loadFileEnable = true;
+//     const folderStream = walker([folder]);
 
-    folderStream.on("error", function (err) {
-      if (err.code === "ENOENT"){
-        console.log(chalkAlert(MODULE_ID_PREFIX
-          + " | ... LOAD USERS FOLDER | FILE NOT FOUND | SKIPPING | " + err.path
-        ));
-      }
-      else{
-        console.log(chalkError(MODULE_ID_PREFIX
-          + " | *** LOAD USERS FOLDER ERROR: " + err
-          + " | FOLDER: " + folder
-        ));
-        clearInterval(loadUserFileInterval);
-        return reject(err);
-      }
-    });
+//     folderStream.on("error", function (err) {
+//       if (err.code === "ENOENT"){
+//         console.log(chalkAlert(MODULE_ID_PREFIX
+//           + " | ... LOAD USERS FOLDER | FILE NOT FOUND | SKIPPING | " + err.path
+//         ));
+//       }
+//       else{
+//         console.log(chalkError(MODULE_ID_PREFIX
+//           + " | *** LOAD USERS FOLDER ERROR: " + err
+//           + " | FOLDER: " + folder
+//         ));
+//         clearInterval(loadUserFileInterval);
+//         return reject(err);
+//       }
+//     });
 
-    folderStream.on("end", function () {
+//     folderStream.on("end", function () {
 
-      debug(chalkBlue(MODULE_ID_PREFIX
-        + " [" + statsObj.users.folder.total + "]"
-        + " | LOAD USERS FOLDERS COMPLETE"
-        + " | L: " + trainingSetUsersSet.left.size
-        + " N: " + trainingSetUsersSet.neutral.size
-        + " R: " + trainingSetUsersSet.right.size
-      ));
+//       debug(chalkBlue(MODULE_ID_PREFIX
+//         + " [" + statsObj.users.folder.total + "]"
+//         + " | LOAD USERS FOLDERS COMPLETE"
+//         + " | L: " + trainingSetUsersSet.left.size
+//         + " N: " + trainingSetUsersSet.neutral.size
+//         + " R: " + trainingSetUsersSet.right.size
+//       ));
 
-      folderStreamEnd = true;
-    });
+//       folderStreamEnd = true;
+//     });
 
-    folderStream.on("data", async function (fileObj) {
+//     folderStream.on("data", async function (fileObj) {
 
-      loadFileEnable = (configuration.testMode) ? (Math.random() < 0.25) : true;
+//       loadFileEnable = (configuration.testMode) ? (Math.random() < 0.25) : true;
 
-      if (fileObj.basename.endsWith(".json") && loadFileEnable){
-        userFileArray.push(fileObj);
-      }
-    });
+//       if (fileObj.basename.endsWith(".json") && loadFileEnable){
+//         userFileArray.push(fileObj);
+//       }
+//     });
 
-  });
-}
+//   });
+// }
 
-async function initLoadUsersFolder(params){
-  await loadUsersFolder(params);
-  return;
-}
+// async function initLoadUsersFolder(params){
+//   await loadUsersFolder(params);
+//   return;
+// }
 
 async function cursorDataHandler(user){
 
