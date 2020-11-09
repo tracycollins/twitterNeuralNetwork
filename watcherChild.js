@@ -23,6 +23,7 @@ const debug = require("debug");
 const _ = require("lodash");
 const chokidar = require("chokidar");
 const empty = require("is-empty");
+const fileWalker = require("walker")
 
 let hostname = os.hostname();
 if (hostname.startsWith("mbp3")){
@@ -533,7 +534,6 @@ async function loadUserFile(params){
   return;
 }
 
-
 let processSendQueueInterval;
 const processSendQueue = [];
 let processSendQueueReady = true;
@@ -699,6 +699,7 @@ const fsmStates = {
 
           await initProcessSendQueue();
           await processSend({op: "STATS", childId: configuration.childId, fsmStatus: statsObj.fsmStatus});
+          await initFileWalker();
           await initWatchUserDataFolders();
 
           fsm.fsm_ready();
@@ -1013,10 +1014,47 @@ function initUserUpdateQueue(p){
 
 const directoriesAdded = new Set();
 
-function initWatchUserDataFolders(p){
+async function initFileWalker(p){
+  try{
+    const params = p || {};
+    const folder = params.folder || configuration.userDataFolder;
 
-  return new Promise(function(resolve){
+    const updateDbUser = (params.updateDbUser !== undefined) ? params.updateDbUser : configuration.updateDbUser;
+    // const verbose = (params.verbose !== undefined) ? params.verbose : configuration.verbose;
 
+    console.log(chalkBlue(MODULE_ID_PREFIX + " | +++ INIT FILE WALKER"
+      + " | userDataFolder: " + folder
+      + " | updateDbUser: " + updateDbUser
+    ));
+
+    fileWalker(folder)
+      .on('entry', function(entry, stat) {
+        console.log('Got entry: ' + entry)
+      })
+      .on('dir', function(dir, stat) {
+        console.log('Got directory: ' + dir)
+      })
+      .on('file', function(file, stat) {
+        console.log('Got file: ' + file)
+      })    
+      .on('error', function(er, entry, stat) {
+        console.log('Got error ' + er + ' on entry ' + entry)
+        throw er
+      })
+      .on('end', function() {
+        console.log('All files traversed.')
+        return;
+      })
+  }
+  catch(err){
+    console.log(chalkError(MODULE_ID_PREFIX + " | **** INIT FILE WALKER ERROR *****\n" + jsonPrint(err)));
+    throw err
+  }
+}
+
+async function initWatchUserDataFolders(p){
+
+  try{
     const params = p || {};
     let folder = params.folder || configuration.userDataFolder;
 
@@ -1030,7 +1068,8 @@ function initWatchUserDataFolders(p){
 
     const options = {
       usePolling: true,
-      depth: 1,
+      // depth: 1,
+      depth: 2,
       awaitWriteFinish: true,
       persistent: true
     };
@@ -1071,7 +1110,7 @@ function initWatchUserDataFolders(p){
       }
     });
 
-    watcher.on("add", async function(filePath){
+    watcher.on("add", function(filePath){
       if (filePath.endsWith(".json")){
 
         statsObj.users.files.added += 1;
@@ -1091,7 +1130,7 @@ function initWatchUserDataFolders(p){
       }
     });  
 
-    watcher.on("change", async function(filePath){
+    watcher.on("change", function(filePath){
       if (filePath.endsWith(".json")){
 
         statsObj.users.files.changed += 1;
@@ -1109,11 +1148,15 @@ function initWatchUserDataFolders(p){
         }
 
       }
-    });  
+    });
+    
+    return;
 
-    resolve();
-
-  });
+  }
+  catch(err){
+    console.log(chalkError(MODULE_ID_PREFIX + " | **** INIT WATCH USER DATA FOLDERS ERROR *****\n" + jsonPrint(err)));
+    throw err
+  }
 }
 
 setTimeout(async function(){

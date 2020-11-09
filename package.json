@@ -83,8 +83,8 @@
     "shelljs": "^0.8.4",
     "slack": "^11.0.2",
     "slack-node": "^0.1.8",
-    "socket.io": "^3.0.0",
-    "socket.io-client": "^3.0.0",
+    "socket.io": "^3.0.1",
+    "socket.io-client": "^3.0.1",
     "stately.js": "^2.0.0",
     "string": "^3.3.3",
     "text-table": "^0.2.0",
@@ -94,6 +94,7 @@
     "unzip": "^0.1.11",
     "util": "^0.12.3",
     "valid-url": "^1.0.9",
+    "walker": "^1.0.7",
     "watch": "^1.0.2",
     "write-json-file": "^4.3.0",
     "yauzl": "^2.10.0"
