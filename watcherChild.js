@@ -1,4 +1,4 @@
-const DEFAULT_DATA_ROOT = process.env.DATA_ROOT_FOLDER || "/Volumes/nas4/data";
+const DEFAULT_DATA_ROOT = process.env.DATA_ROOT_FOLDER || "/Volumes/RAID1/data";
 
 const DEFAULT_STAND_ALONE = false;
 const DEFAULT_TEST_MODE = false;
@@ -705,7 +705,7 @@ const fsmStates = {
 
           await initProcessSendQueue();
           await processSend({op: "STATS", childId: configuration.childId, fsmStatus: statsObj.fsmStatus});
-          await initFileWalker();
+          // await initFileWalker();
           await initWatchUserDataFolders();
 
           fsm.fsm_ready();

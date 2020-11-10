@@ -1,4 +1,4 @@
-const DEFAULT_DATA_ROOT = process.env.DATA_ROOT_FOLDER || "/Volumes/nas4/data";
+// const DEFAULT_DATA_ROOT = process.env.DATA_ROOT_FOLDER || "/Volumes/RAID1/data";
 const DEFAULT_MAX_FRIENDS = 7500;
 const DEFAULT_SKIP_DATABASE_HOST_LOAD_FOLDER = false;
 const TEST_MODE_LENGTH = 5000;
@@ -284,7 +284,7 @@ configuration.userTempArchiveFolder = configuration[HOST].userTempArchiveFolder;
 configuration.userArchivePath = configuration[HOST].userArchivePath;
 configuration.userTempArchivePath = configuration[HOST].userTempArchivePath;
 
-configuration.userDataFolder = path.join(DEFAULT_DATA_ROOT, "users");
+// configuration.userDataFolder = path.join(DEFAULT_DATA_ROOT, "users");
 
 let preppedTrainingSet = [];
 let preppedTestSet = [];
@@ -1420,33 +1420,6 @@ async function loadTrainingSet(p) {
         )
       );
     }
-
-    // if (configuration.skipDatabaseHostLoadFolder && hostname === DATABASE_HOST){
-    //   console.log(chalk.black.bold(MODULE_ID_PREFIX
-    //     + " | loadTrainingSet | !!! SKIP LOAD USERS FOLDER | DATABASE_HOST: " + DATABASE_HOST
-    //   ));
-    // }
-    // else if (configuration.loadUsersFolderOnStart
-    //   && !statsObj.usersFolderLoaded
-    //   && !statsObj.loadUsersFolderBusy
-    // ){
-
-    //   console.log(chalk.black.bold(MODULE_ID_PREFIX
-    //     + " | loadTrainingSet | LOAD USERS FOLDER: " + configuration.userDataFolder
-    //   ));
-
-    //   statsObj.loadUsersFolderBusy = true;
-
-    //   if (configuration.testMode) {
-    //     await initLoadUsersFolder({folder: configuration.userDataFolder + "/00000000"});
-    //   }
-    //   else{
-    //     await initLoadUsersFolder({folder: configuration.userDataFolder});
-    //   }
-
-    //   statsObj.usersFolderLoaded = true;
-    //   statsObj.loadUsersFolderBusy = false;
-    // }
 
     console.log(
       chalk.black.bold(
