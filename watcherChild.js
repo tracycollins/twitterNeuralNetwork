@@ -460,7 +460,9 @@ const defaultDbUpdateOptions = {
 };
 
 async function loadUserFile(params){
+
   try{
+
     const updateDbUser = params.updateDbUser || true;
     const folder = params.folder || path.dirname(params.path);
     const file = params.file || path.basename(params.path);
@@ -472,7 +474,6 @@ async function loadUserFile(params){
     statsObj.users.folder.total += 1;
 
     if ((userObj.category === "left") || (userObj.category === "right") || (userObj.category === "neutral")) {
-
 
       if (updateDbUser){
 
@@ -516,6 +517,8 @@ async function loadUserFile(params){
         ));
       }
 
+      return;
+
     }
     else{
       console.log(chalkAlert(MODULE_ID_PREFIX + " | ??? UNCAT UNZIPPED USER"
@@ -530,9 +533,9 @@ async function loadUserFile(params){
         + " | FRNDs: " + userObj.friendsCount
         + " | CAT M: " + userObj.category + " A: " + userObj.categoryAuto
       ));                      
+      return;
     }
 
-    return;
   }
   catch(err){
     console.log(chalkError(MODULE_ID_PREFIX + " | *** loadUserFile ERROR: " + err))
@@ -974,22 +977,21 @@ async function initUserUpdateQueue(p){
 
       if (userUpdateQueueReady && (userUpdateQueue.length > 0)){
 
-        userUpdateQueueReady = false;
-
-        const filePath = userUpdateQueue.shift();
-        statsObj.userUpdateQueue = userUpdateQueue.length;
-
+        
         try{
+          userUpdateQueueReady = false;
+  
+          const filePath = userUpdateQueue.shift();
+          statsObj.userUpdateQueue = userUpdateQueue.length;
+
           await loadUserFile({path: filePath});
 
           statsObj.users.updated += 1;
 
-          percentUpdated = 100*(statsObj.users.updated/statsObj.userUpdateQueue)
-
           if (statsObj.users.updated % 100 === 0){
 
             console.log(chalkLog(MODULE_ID_PREFIX 
-              + " [ UPDATED: " + statsObj.users.updated + "/ UUQ: " + statsObj.userUpdateQueue + "(" + percentUpdated.toFixed(2) + "%) ]"
+              + " [ UPDATED: " + statsObj.users.updated + "]"
               + " | +++ LOADED & UPDATED USER"
               + " | " + filePath
             ));
@@ -1113,11 +1115,11 @@ async function initWatchUserDataFolders(p){
     ));
 
     const options = {
-      usePolling: true,
-      depth: 1,
+      // usePolling: true,
+      // depth: 1,
       // depth: 2,
       awaitWriteFinish: true,
-      persistent: true
+      // persistent: true
     };
 
     if (configuration.testMode){ 
