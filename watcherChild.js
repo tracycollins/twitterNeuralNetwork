@@ -9,7 +9,7 @@ const ONE_SECOND = 1000;
 const ONE_MINUTE = 60*ONE_SECOND;
 const ONE_HOUR = 60*ONE_MINUTE;
 
-const DEFAULT_QUEUE_INTERVAL = 10;
+const DEFAULT_QUEUE_INTERVAL = 100;
 const DEFAULT_SEND_QUEUE_INTERVAL = 100;
 // const compactDateTimeFormat = "YYYYMMDD_HHmmss";
 
@@ -460,48 +460,65 @@ const defaultDbUpdateOptions = {
 };
 
 async function loadUserFile(params){
+  try{
+    const updateDbUser = params.updateDbUser || true;
+    const folder = params.folder || path.dirname(params.path);
+    const file = params.file || path.basename(params.path);
 
-  const updateDbUser = params.updateDbUser || true;
-  const folder = params.folder || path.dirname(params.path);
-  const file = params.file || path.basename(params.path);
+    const filePath = params.path || path.join(folder, file);
 
-  const filePath = params.path || path.join(folder, file);
+    let userObj = await fs.readJson(filePath);
 
-  let userObj = await fs.readJson(filePath);
+    statsObj.users.folder.total += 1;
 
-  statsObj.users.folder.total += 1;
-
-  if ((userObj.category === "left") || (userObj.category === "right") || (userObj.category === "neutral")) {
+    if ((userObj.category === "left") || (userObj.category === "right") || (userObj.category === "neutral")) {
 
 
-    if (updateDbUser){
+      if (updateDbUser){
 
-      const update = pick(userObj, defaultUserUpdatePropArray);
+        const update = pick(userObj, defaultUserUpdatePropArray);
 
-      const userDoc = await global.wordAssoDb.User.findOneAndUpdate(
-        {nodeId: userObj.nodeId}, 
-        update, 
-        defaultDbUpdateOptions
-      ).exec();
+        const userDoc = await global.wordAssoDb.User.findOneAndUpdate(
+          {nodeId: userObj.nodeId}, 
+          update, 
+          defaultDbUpdateOptions
+        );
 
-      if (userDoc) {
-        userObj = userDoc.toObject();
+        if (userDoc) {
+          userObj = userDoc.toObject();
+        }
       }
-    }
 
-    if (empty(userObj.tweetHistograms) || !userObj.tweetHistograms || userObj.tweetHistograms === undefined){
-      userObj.tweetHistograms = {};
-    }
-    
-    if (empty(userObj.profileHistograms) || !userObj.profileHistograms || userObj.profileHistograms === undefined){
-      userObj.profileHistograms = {};
-    }
-    
-    trainingSetUsersSet[userObj.category].add(userObj.nodeId);
+      if (empty(userObj.tweetHistograms) || !userObj.tweetHistograms || userObj.tweetHistograms === undefined){
+        userObj.tweetHistograms = {};
+      }
+      
+      if (empty(userObj.profileHistograms) || !userObj.profileHistograms || userObj.profileHistograms === undefined){
+        userObj.profileHistograms = {};
+      }
+      
+      trainingSetUsersSet[userObj.category].add(userObj.nodeId);
 
-    if (((configuration.testMode || configuration.verbose) && (statsObj.users.folder.total % 100 === 0)) || (statsObj.users.folder.total % 1000 === 0)) {
+      if (((configuration.testMode || configuration.verbose) && (statsObj.users.folder.total % 100 === 0)) || (statsObj.users.folder.total % 1000 === 0)) {
 
-      console.log(chalkLog(MODULE_ID_PREFIX
+        console.log(chalkLog(MODULE_ID_PREFIX
+          + " [" + statsObj.users.folder.total + "]"
+          + " USERS - L: " + trainingSetUsersSet.left.size
+          + " N: " + trainingSetUsersSet.neutral.size
+          + " R: " + trainingSetUsersSet.right.size
+          + " | " + userObj.userId
+          + " | @" + userObj.screenName
+          + " | " + userObj.name
+          + " | FLWRs: " + userObj.followersCount
+          + " | FRNDs: " + userObj.friendsCount
+          + " | FRNDs DB: " + userObj.friends.length
+          + " | CAT M: " + userObj.category + " A: " + userObj.categoryAuto
+        ));
+      }
+
+    }
+    else{
+      console.log(chalkAlert(MODULE_ID_PREFIX + " | ??? UNCAT UNZIPPED USER"
         + " [" + statsObj.users.folder.total + "]"
         + " USERS - L: " + trainingSetUsersSet.left.size
         + " N: " + trainingSetUsersSet.neutral.size
@@ -511,27 +528,16 @@ async function loadUserFile(params){
         + " | " + userObj.name
         + " | FLWRs: " + userObj.followersCount
         + " | FRNDs: " + userObj.friendsCount
-        + " | FRNDs DB: " + userObj.friends.length
         + " | CAT M: " + userObj.category + " A: " + userObj.categoryAuto
-      ));
+      ));                      
     }
 
+    return;
   }
-  else{
-    console.log(chalkAlert(MODULE_ID_PREFIX + " | ??? UNCAT UNZIPPED USER"
-      + " [" + statsObj.users.folder.total + "]"
-      + " USERS - L: " + trainingSetUsersSet.left.size
-      + " N: " + trainingSetUsersSet.neutral.size
-      + " R: " + trainingSetUsersSet.right.size
-      + " | " + userObj.userId
-      + " | @" + userObj.screenName
-      + " | " + userObj.name
-      + " | FLWRs: " + userObj.followersCount
-      + " | FRNDs: " + userObj.friendsCount
-      + " | CAT M: " + userObj.category + " A: " + userObj.categoryAuto
-    ));                      
+  catch(err){
+    console.log(chalkError(MODULE_ID_PREFIX + " | *** loadUserFile ERROR: " + err))
+    throw err;
   }
-  return;
 }
 
 let processSendQueueInterval;
@@ -949,13 +955,12 @@ let userUpdateQueueInterval;
 const userUpdateQueue = [];
 let userUpdateQueueReady = true;
 
-function initUserUpdateQueue(p){
+async function initUserUpdateQueue(p){
 
-  const params = p || {};
+  try{
+    const params = p || {};
 
-  const interval = (params.interval !== undefined) ? params.interval : DEFAULT_QUEUE_INTERVAL;
-
-  return new Promise(function(resolve){
+    const interval = (params.interval !== undefined) ? params.interval : DEFAULT_QUEUE_INTERVAL;
 
     statsObj.status = "INIT USER UPDATE QUEUE";
 
@@ -1006,9 +1011,13 @@ function initUserUpdateQueue(p){
 
     intervalsSet.add("userUpdateQueueInterval");
 
-    resolve();
+    return;
+  }
+  catch(err){
+    throw err;
+  }
 
-  });
+
 }
 
 
@@ -1020,29 +1029,66 @@ async function initFileWalker(p){
     const folder = params.folder || configuration.userDataFolder;
 
     const updateDbUser = (params.updateDbUser !== undefined) ? params.updateDbUser : configuration.updateDbUser;
-    // const verbose = (params.verbose !== undefined) ? params.verbose : configuration.verbose;
+    const verbose = (params.verbose !== undefined) ? params.verbose : configuration.verbose;
+
 
     console.log(chalkBlue(MODULE_ID_PREFIX + " | +++ INIT FILE WALKER"
       + " | userDataFolder: " + folder
       + " | updateDbUser: " + updateDbUser
     ));
+    
+    if (configuration.testMode){ 
+      folder += "/00000000"; 
 
+      console.log(chalkAlert(MODULE_ID_PREFIX + " | +++ INIT WATCH USER DATA"
+        + " | userDataFolder: " + folder
+        + " | updateDbUser: " + updateDbUser
+      ));
+
+    }
+    
     fileWalker(folder)
       .on('entry', function(entry, stat) {
-        console.log('Got entry: ' + entry)
+        debug('Got entry: ' + entry)
       })
       .on('dir', function(dir, stat) {
-        console.log('Got directory: ' + dir)
+        console.log(chalkInfo(MODULE_ID_PREFIX + " | +++ FILE WALKER"
+          + " | DIR: " + dir
+        ));
       })
       .on('file', function(file, stat) {
-        console.log('Got file: ' + file)
+        // console.log(chalkInfo(MODULE_ID_PREFIX + " | +++ FILE WALKER"
+        //   + " | FILE: " + file
+        // ));
+        if (file.endsWith(".json")){
+
+          statsObj.users.files.added += 1;
+
+          userUpdateQueue.push(file);
+
+          if (verbose || statsObj.users.files.added % 100 === 0){
+
+            console.log(chalkBlue(MODULE_ID_PREFIX + " | +++ FILE WALKER"
+              + " [ UUQ: " + userUpdateQueue.length + "]"
+              + " | ADDED: " + statsObj.users.files.added
+              + " | +++ USER FILE ADDED: " + file
+            ));
+          }
+
+        }
       })    
       .on('error', function(er, entry, stat) {
-        console.log('Got error ' + er + ' on entry ' + entry)
-        throw er
+        console.log(chalkError(MODULE_ID_PREFIX + " | *** FILE WALKER ERROR:"
+          + " | entry: " + entry
+          + " | stat: " + stat
+          + er
+        ));
+        // throw er
       })
       .on('end', function() {
-        console.log('All files traversed.')
+        console.log(chalkBlue(MODULE_ID_PREFIX + " | XXX END FILE WALKER"
+          + " | userDataFolder: " + folder
+        ));
         return;
       })
   }
@@ -1068,8 +1114,8 @@ async function initWatchUserDataFolders(p){
 
     const options = {
       usePolling: true,
-      // depth: 1,
-      depth: 2,
+      depth: 1,
+      // depth: 2,
       awaitWriteFinish: true,
       persistent: true
     };
