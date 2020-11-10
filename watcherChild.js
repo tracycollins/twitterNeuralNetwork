@@ -1002,7 +1002,6 @@ async function initUserUpdateQueue(p){
         catch(err){
           console.log(chalkError(MODULE_ID_PREFIX
             + " | *** LOAD USER FILE"
-            + " | PATH: " + filePath
             + " | ERROR: " + err
           ));
           userUpdateQueueReady = true;
