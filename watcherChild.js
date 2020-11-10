@@ -11,7 +11,6 @@ const ONE_HOUR = 60*ONE_MINUTE;
 
 const DEFAULT_QUEUE_INTERVAL = 100;
 const DEFAULT_SEND_QUEUE_INTERVAL = 100;
-// const compactDateTimeFormat = "YYYYMMDD_HHmmss";
 
 const util = require("util");
 const pick = require("object.pick");
@@ -58,11 +57,9 @@ configuration.userArchiveFileExistsMaxWaitTime = DEFAULT_USER_ARCHIVE_FILE_EXITS
 const ThreeceeUtilities = require("@threeceelabs/threecee-utilities");
 const tcUtils = new ThreeceeUtilities("NNC_TCU");
 
-// const delay = tcUtils.delay;
 const msToTime = tcUtils.msToTime;
 const jsonPrint = tcUtils.jsonPrint;
 const getTimeStamp = tcUtils.getTimeStamp;
-// const formatBoolean = tcUtils.formatBoolean;
 
 const MODULE_ID = MODULE_ID_PREFIX + "_" + hostname;
 
@@ -97,11 +94,6 @@ const chalkInfo = chalk.black;
 //=========================================================================
 // HOST
 //=========================================================================
-// const configDefaultFolder = path.join(DROPBOX_ROOT_FOLDER, "config/utility/default");
-// const configHostFolder = path.join(DROPBOX_ROOT_FOLDER, "config/utility", hostname);
-
-configuration.archiveFileUploadCompleteFlagFile = "usersZipUploadComplete.json";
-
 configuration.userDataFolder = path.join(DEFAULT_DATA_ROOT, "users");
 
 //=========================================================================
@@ -217,12 +209,10 @@ process.on("unhandledRejection", function(err, promise) {
   process.exit(1);
 });
 
-
 const trainingSetUsersSet = {};
 trainingSetUsersSet.left = new Set();
 trainingSetUsersSet.neutral = new Set();
 trainingSetUsersSet.right = new Set();
-
 
 function initConfig(cnf) {
 
@@ -405,7 +395,6 @@ async function quit(opts) {
 
   }, QUIT_WAIT_INTERVAL);
 }
-
 
 // ignored: { type: Boolean, default: false }, // ignored by threecee
 
@@ -953,7 +942,6 @@ async function connectDb(){
   }
 }
 
-
 let userUpdateQueueInterval;
 const userUpdateQueue = [];
 let userUpdateQueueReady = true;
@@ -1020,7 +1008,6 @@ async function initUserUpdateQueue(p){
 
 
 }
-
 
 const directoriesAdded = new Set();
 
