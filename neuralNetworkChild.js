@@ -1,3 +1,4 @@
+const DEFAULT_FORCE_LOAD_TRAINING_SET = false;
 const DEFAULT_MAX_FRIENDS = 7500;
 const DEFAULT_SKIP_DATABASE_HOST_LOAD_FOLDER = false;
 const TEST_MODE_LENGTH = 5000;
@@ -63,6 +64,7 @@ global.wordAssoDb = require("@threeceelabs/mongoose-twitter");
 
 let configuration = {};
 
+configuration.forceLoadTrainingSet = DEFAULT_FORCE_LOAD_TRAINING_SET;
 configuration.maxFriends = DEFAULT_MAX_FRIENDS;
 configuration.skipDatabaseHostLoadFolder = DEFAULT_SKIP_DATABASE_HOST_LOAD_FOLDER;
 configuration.defaultLoadUserFileInterval = DEFAULT_LOAD_USER_FILE_INTERVAL;
@@ -2708,6 +2710,7 @@ function networkEvolve(p) {
 // FSM
 //=========================================================================
 const Stately = require("stately.js");
+const { config } = require("process");
 const FSM_TICK_INTERVAL = ONE_SECOND;
 
 let fsmTickInterval;
@@ -2911,7 +2914,7 @@ const fsmStates = {
             fsmStatus: statsObj.fsmStatus,
           });
 
-          if (!statsObj.trainingSetReady) {
+          if (!statsObj.trainingSetReady || configuration.forceLoadTrainingSet) {
             await loadTrainingSet();
           }
 

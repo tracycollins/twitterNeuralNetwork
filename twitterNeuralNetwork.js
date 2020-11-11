@@ -17,6 +17,7 @@ const QUIT_WAIT_INTERVAL = 5*ONE_SECOND;
 const STATS_UPDATE_INTERVAL = 5*ONE_MINUTE;
 const DEFAULT_CHILD_PING_INTERVAL = ONE_MINUTE;
 
+const DEFAULT_FORCE_LOAD_TRAINING_SET = false;
 const DEFAULT_DISABLE_CREATE_TEST_SET = false;
 const DEFAULT_GLOBAL_MIN_SUCCESS_RATE = 90; // percent
 const DEFAULT_GLOBAL_VIABLE_SUCCESS_RATE = 90;
@@ -3247,6 +3248,16 @@ async function loadConfigFile(params) {
     if (loadedConfigObj.TNN_NETWORK_TECHNOLOGY !== undefined) {
       console.log(MODULE_ID_PREFIX + " | LOADED TNN_NETWORK_TECHNOLOGY: " + loadedConfigObj.TNN_NETWORK_TECHNOLOGY);
       newConfiguration.networkTechnology = loadedConfigObj.TNN_NETWORK_TECHNOLOGY;
+    }
+
+    if (loadedConfigObj.TNN_FORCE_LOAD_TRAINING_SET !== undefined) {
+      console.log(MODULE_ID_PREFIX + " | LOADED TNN_FORCE_LOAD_TRAINING_SET: " + loadedConfigObj.TNN_FORCE_LOAD_TRAINING_SET);
+      if ((loadedConfigObj.TNN_FORCE_LOAD_TRAINING_SET === true) || (loadedConfigObj.TNN_FORCE_LOAD_TRAINING_SET === "true")) {
+        newConfiguration.forceLoadTrainingSet = true;
+      }
+      if ((loadedConfigObj.TNN_FORCE_LOAD_TRAINING_SET === false) || (loadedConfigObj.TNN_FORCE_LOAD_TRAINING_SET === "false")) {
+        newConfiguration.forceLoadTrainingSet = false;
+      }
     }
 
     if (loadedConfigObj.TNN_EQUAL_CATEGORIES_FLAG !== undefined) {
