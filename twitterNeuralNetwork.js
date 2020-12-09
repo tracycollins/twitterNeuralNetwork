@@ -1,3 +1,13 @@
+const dotenv = require("dotenv");
+const envConfig = dotenv.config()
+
+if (envConfig.error) {
+  throw envConfig.error
+}
+ 
+console.log("TNN | ENV CONFIG")
+console.log(envConfig.parsed)
+
 const MODULE_NAME = "twitterNeuralNetwork";
 const MODULE_ID_PREFIX = "TNN";
 const CHILD_PREFIX = "tnc_node";
@@ -315,6 +325,13 @@ childConfiguration.updateUserDb = false;
 //=========================================================================
 // SLACK
 //=========================================================================
+const { WebClient } = require('@slack/web-api');
+
+console.log("process.env.SLACK_BOT_TOKEN: ", process.env.SLACK_BOT_TOKEN)
+const slackBotToken = process.env.SLACK_BOT_TOKEN;
+
+const slackWebClient = new WebClient(slackBotToken);
+
 
 const slackChannelFail = "nn-fail";
 const slackChannelError = "nn-error";
@@ -326,15 +343,11 @@ const slackChannel = "nn";
 let slackText = "";
 const channelsHashMap = new HashMap();
 
-const slackOAuthAccessToken = "xoxp-3708084981-3708084993-206468961315-ec62db5792cd55071a51c544acf0da55";
-const slackRtmToken = "xoxb-209434353623-bNIoT4Dxu1vv8JZNgu7CDliy";
-
-let slackRtmClient;
-let slackWebClient;
-
 let slackSendQueueInterval;
 let slackSendQueueReady = true;
 const slackSendQueue = [];
+
+
 
 async function initSlackSendQueue(){
 
@@ -356,33 +369,22 @@ async function initSlackSendQueue(){
 
   }, ONE_SECOND);
 
+  // await slackSendWebMessage({});
+
   return;
 }
 
 async function slackSendWebMessage(msgObj){
   try{
-    const token = msgObj.token || slackOAuthAccessToken;
+
     const channel = msgObj.channel || configuration.slackChannel.id;
     const text = msgObj.text || msgObj;
 
-    const message = {
-      token: token, 
+    const result = await slackWebClient.chat.postMessage({
+      text: text,
       channel: channel,
-      text: text
-    };
+    });
 
-    if (msgObj.attachments !== undefined) {
-      message.attachments = msgObj.attachments;
-    }
-
-    if (slackWebClient && slackWebClient !== undefined) {
-      const sendResponse = await slackWebClient.chat.postMessage(message);
-      return sendResponse;
-    }
-    else {
-      console.log(chalkAlert("TNN | SLACK WEB NOT CONFIGURED | SKIPPING SEND SLACK MESSAGE\n" + jsonPrint(message)));
-      return;
-    }
   }
   catch(err){
     console.log(chalkAlert(MODULE_ID_PREFIX + " | *** slackSendWebMessage ERROR: " + err));
@@ -390,13 +392,49 @@ async function slackSendWebMessage(msgObj){
   }
 }
 
+
+// async function slackSendWebMessage(msgObj){
+//   try{
+//     const token = msgObj.token || slackOAuthAccessToken;
+//     const channel = msgObj.channel || configuration.slackChannel.id;
+//     const text = msgObj.text || msgObj;
+
+//     const message = {
+//       token: token, 
+//       channel: channel,
+//       text: text
+//     };
+
+//     if (msgObj.attachments !== undefined) {
+//       message.attachments = msgObj.attachments;
+//     }
+
+//     if (slackWebClient && slackWebClient !== undefined) {
+//       const sendResponse = await slackWebClient.chat.postMessage(message);
+//       return sendResponse;
+//     }
+//     else {
+//       console.log(chalkAlert("TNN | SLACK WEB NOT CONFIGURED | SKIPPING SEND SLACK MESSAGE\n" + jsonPrint(message)));
+//       return;
+//     }
+//   }
+//   catch(err){
+//     console.log(chalkAlert(MODULE_ID_PREFIX + " | *** slackSendWebMessage ERROR: " + err));
+//     throw err;
+//   }
+// }
+
 async function initSlackWebClient(){
   try {
 
-    const { WebClient } = require("@slack/client");
-    slackWebClient = new WebClient(slackRtmToken);
+    console.log(chalkLog(MODULE_ID + " | INIT SLACK WEB CLIENT"))
 
-    const conversationsListResponse = await slackWebClient.conversations.list({token: slackOAuthAccessToken});
+    const authTestResponse = await slackWebClient.auth.test()
+
+    console.log({authTestResponse})
+
+    // const conversationsListResponse = await slackWebClient.conversations.list({token: slackOAuthAccessToken});
+    const conversationsListResponse = await slackWebClient.conversations.list();
 
     conversationsListResponse.channels.forEach(async function(channel){
 
@@ -406,7 +444,7 @@ async function initSlackWebClient(){
         configuration.slackChannel = channel;
 
         const message = {
-          token: slackOAuthAccessToken, 
+          // token: slackOAuthAccessToken, 
           channel: configuration.slackChannel.id,
           text: "OP"
         };
@@ -436,28 +474,28 @@ async function initSlackWebClient(){
   }
 }
 
-async function initSlackRtmClient(){
+// async function initSlackRtmClient(){
 
-  const { RTMClient } = require("@slack/client");
-  slackRtmClient = new RTMClient(slackRtmToken);
+//   const { RTMClient } = require("@slack/client");
+//   slackRtmClient = new RTMClient(slackRtmToken);
 
-  slackRtmClient.start();
+//   slackRtmClient.start();
 
-  slackRtmClient.on("slack_event", async function(eventType, event){
-    switch (eventType) {
-      case "abort evolve":
-        console.log(chalkLog("TNN | SLACK ABORT EVOLVE | " + getTimeStamp() + " | " + event.reply_to));
-        console.log("event\n", event);
-      break;
-      case "pong":
-        debug(chalkLog("TNN | SLACK RTM PONG | " + getTimeStamp() + " | " + event.reply_to));
-      break;
-      default: debug(chalkInfo("TNN | SLACK RTM EVENT | " + getTimeStamp() + " | " + eventType + "\n" + jsonPrint(event)));
-    }
-  });
+//   slackRtmClient.on("slack_event", async function(eventType, event){
+//     switch (eventType) {
+//       case "abort evolve":
+//         console.log(chalkLog("TNN | SLACK ABORT EVOLVE | " + getTimeStamp() + " | " + event.reply_to));
+//         console.log("event\n", event);
+//       break;
+//       case "pong":
+//         debug(chalkLog("TNN | SLACK RTM PONG | " + getTimeStamp() + " | " + event.reply_to));
+//       break;
+//       default: debug(chalkInfo("TNN | SLACK RTM EVENT | " + getTimeStamp() + " | " + eventType + "\n" + jsonPrint(event)));
+//     }
+//   });
 
-  return;
-}
+//   return;
+// }
 
 //=========================================================================
 // HOST
@@ -5221,155 +5259,155 @@ async function childMessageHandler(params){
   }
 }
 
-async function watcherChildCreate(p){
+// async function watcherChildCreate(p){
 
-  let config;
-  const options = {};
+//   let config;
+//   const options = {};
 
-  try {
+//   try {
 
-    statsObj.status = "WATCHER CHILD CREATE";
+//     statsObj.status = "WATCHER CHILD CREATE";
 
-    const params = p || {};
+//     const params = p || {};
 
-    const childId = "twc_" + hostname + "_" + process.pid;
-    const childIdShort = "WC0";
-    const appPath = path.join(configuration.cwd, "watcherChild.js");
+//     const childId = "twc_" + hostname + "_" + process.pid;
+//     const childIdShort = "WC0";
+//     const appPath = path.join(configuration.cwd, "watcherChild.js");
 
-    let env = {};
+//     let env = {};
 
-    env = configuration.DROPBOX;
-    env.DROPBOX_STATS_FILE = statsObj.runId + "_" + childId + ".json";
-    env.CHILD_ID = childId;
-    env.CHILD_ID_SHORT = childIdShort;
-    env.NODE_ENV = "production";
+//     env = configuration.DROPBOX;
+//     env.DROPBOX_STATS_FILE = statsObj.runId + "_" + childId + ".json";
+//     env.CHILD_ID = childId;
+//     env.CHILD_ID_SHORT = childIdShort;
+//     env.NODE_ENV = "production";
 
-    config = params.config || {};
+//     config = params.config || {};
 
-    let child = {};
+//     let child = {};
 
-    options.cwd = params.cwd || configuration.cwd;
+//     options.cwd = params.cwd || configuration.cwd;
 
-    statsObj.status = "WATCHER CHILD CREATE | CH ID: " + childId + " | APP: " + appPath;
+//     statsObj.status = "WATCHER CHILD CREATE | CH ID: " + childId + " | APP: " + appPath;
 
-    console.log(chalkBlueBold(MODULE_ID_PREFIX + " | CREATE WATCHER CHILD | " + childId));
+//     console.log(chalkBlueBold(MODULE_ID_PREFIX + " | CREATE WATCHER CHILD | " + childId));
 
-    if (env) {
-      options.env = env;
-    }
-    else {
-      options.env = {};
-      options.env = configuration.DROPBOX;
-      options.env.DROPBOX_STATS_FILE = statsObj.runId + "_" + childId + ".json";
-      options.env.CHILD_ID = childId;
-      options.env.NODE_ENV = "production";
-      options.env.DEFAULT_DATA_ROOT = configuration.defaultDataRoot;
-    }
+//     if (env) {
+//       options.env = env;
+//     }
+//     else {
+//       options.env = {};
+//       options.env = configuration.DROPBOX;
+//       options.env.DROPBOX_STATS_FILE = statsObj.runId + "_" + childId + ".json";
+//       options.env.CHILD_ID = childId;
+//       options.env.NODE_ENV = "production";
+//       options.env.DEFAULT_DATA_ROOT = configuration.defaultDataRoot;
+//     }
 
-    childHashMap[childId] = {};
-    childHashMap[childId].type = "WATCHER";
-    childHashMap[childId].status = "NEW";
-    childHashMap[childId].messageQueue = [];
+//     childHashMap[childId] = {};
+//     childHashMap[childId].type = "WATCHER";
+//     childHashMap[childId].status = "NEW";
+//     childHashMap[childId].messageQueue = [];
 
-    child = cp.fork(`${__dirname}/watcherChild.js`);
+//     child = cp.fork(`${__dirname}/watcherChild.js`);
 
-    childHashMap[childId].pid = child.pid;
+//     childHashMap[childId].pid = child.pid;
 
-    const childPidFile = await touchChildPidFile({ childId: childId, pid: child.pid });
+//     const childPidFile = await touchChildPidFile({ childId: childId, pid: child.pid });
 
-    childHashMap[childId].childPidFile = childPidFile;
-    childHashMap[childId].child = child;
+//     childHashMap[childId].childPidFile = childPidFile;
+//     childHashMap[childId].child = child;
 
-    childHashMap[childId].child.on("disconnect", function(){
+//     childHashMap[childId].child.on("disconnect", function(){
 
-      console.log(chalkAlert(MODULE_ID_PREFIX + " | *** WATCHER CHILD DISCONNECT | " + childId));
+//       console.log(chalkAlert(MODULE_ID_PREFIX + " | *** WATCHER CHILD DISCONNECT | " + childId));
 
-      shell.cd(childPidFolderLocal);
-      shell.rm(childPidFile);
+//       shell.cd(childPidFolderLocal);
+//       shell.rm(childPidFile);
 
-      delete childHashMap[childId];
-    });
+//       delete childHashMap[childId];
+//     });
 
-    childHashMap[childId].child.on("close", function(){
+//     childHashMap[childId].child.on("close", function(){
 
-      console.log(chalkAlert(MODULE_ID_PREFIX + " | *** WATCHER CHILD CLOSED | " + childId));
+//       console.log(chalkAlert(MODULE_ID_PREFIX + " | *** WATCHER CHILD CLOSED | " + childId));
 
-      shell.cd(childPidFolderLocal);
-      shell.rm(childPidFile);
+//       shell.cd(childPidFolderLocal);
+//       shell.rm(childPidFile);
 
-      delete childHashMap[childId];
-    });
+//       delete childHashMap[childId];
+//     });
 
-    childHashMap[childId].child.on("exit", function(){
+//     childHashMap[childId].child.on("exit", function(){
 
-      console.log(chalkAlert(MODULE_ID_PREFIX + " | *** WATCHER CHILD EXITED | " + childId));
+//       console.log(chalkAlert(MODULE_ID_PREFIX + " | *** WATCHER CHILD EXITED | " + childId));
 
-      shell.cd(childPidFolderLocal);
-      shell.rm(childPidFile);
+//       shell.cd(childPidFolderLocal);
+//       shell.rm(childPidFile);
 
-      delete childHashMap[childId];
+//       delete childHashMap[childId];
 
-      quit({cause: "WATCHER CHILD EXIT", force: true});
-    });
+//       quit({cause: "WATCHER CHILD EXIT", force: true});
+//     });
 
-    childHashMap[childId].child.on("error", function(err){
-      console.log(chalkError(MODULE_ID_PREFIX + " | *** WATCHER CHILD ERROR: " + err));
+//     childHashMap[childId].child.on("error", function(err){
+//       console.log(chalkError(MODULE_ID_PREFIX + " | *** WATCHER CHILD ERROR: " + err));
 
-      shell.cd(childPidFolderLocal);
-      shell.rm(childPidFile);
+//       shell.cd(childPidFolderLocal);
+//       shell.rm(childPidFile);
 
-      delete childHashMap[childId];
+//       delete childHashMap[childId];
 
-      quit({cause: "WATCHER CHILD ERROR: " + err});
-    })
+//       quit({cause: "WATCHER CHILD ERROR: " + err});
+//     })
 
-    childHashMap[childId].child.on("message", async function(message){
+//     childHashMap[childId].child.on("message", async function(message){
 
-      await childMessageHandler({
-        childId: childId, 
-        message: message
-      });
+//       await childMessageHandler({
+//         childId: childId, 
+//         message: message
+//       });
 
-      if (configuration.verbose) { 
-        console.log(chalkLog(MODULE_ID_PREFIX 
-          + " | <R MESSAGE | " + getTimeStamp()
-          + " | OP: " + message.op
-        )); 
-      }
-    });
+//       if (configuration.verbose) { 
+//         console.log(chalkLog(MODULE_ID_PREFIX 
+//           + " | <R MESSAGE | " + getTimeStamp()
+//           + " | OP: " + message.op
+//         )); 
+//       }
+//     });
 
-    if (quitFlag) {
-      console.log(chalkAlert(MODULE_ID_PREFIX
-        + " | KILL WATCHER CHILD IN CREATE ON QUIT FLAG"
-        + " | " + getTimeStamp()
-        + " | " + childId
-      ));
-      childHashMap[childId].child.kill();
-    }
+//     if (quitFlag) {
+//       console.log(chalkAlert(MODULE_ID_PREFIX
+//         + " | KILL WATCHER CHILD IN CREATE ON QUIT FLAG"
+//         + " | " + getTimeStamp()
+//         + " | " + childId
+//       ));
+//       childHashMap[childId].child.kill();
+//     }
 
-    const childInitParams = {};
-    childInitParams.childId = childId;
-    childInitParams.childIdShort = childIdShort;
-    childInitParams.configuration = watcherChildConfiguration;
-    childInitParams.userDataFolder = configuration.userDataFolder;
-    childInitParams.testMode = configuration.testMode;
-    childInitParams.verbose = configuration.verbose;
+//     const childInitParams = {};
+//     childInitParams.childId = childId;
+//     childInitParams.childIdShort = childIdShort;
+//     childInitParams.configuration = watcherChildConfiguration;
+//     childInitParams.userDataFolder = configuration.userDataFolder;
+//     childInitParams.testMode = configuration.testMode;
+//     childInitParams.verbose = configuration.verbose;
 
-    const initResponse = await childInit(childInitParams);
+//     const initResponse = await childInit(childInitParams);
 
-    console.log(chalkBlueBold(MODULE_ID_PREFIX + " | CREATE WATCHER CHILD | " + childId));
+//     console.log(chalkBlueBold(MODULE_ID_PREFIX + " | CREATE WATCHER CHILD | " + childId));
 
-    return initResponse;
-  }
-  catch(err){
-    console.log(chalkError(MODULE_ID_PREFIX + " | *** WATCHER CHILD INIT ERROR"
-      + " | ERR: " + err
-      + "\nCONFIG\n" + jsonPrint(config)
-      + "\nENV\n" + jsonPrint(options.env)
-    ));
-    throw err;
-  }
-}
+//     return initResponse;
+//   }
+//   catch(err){
+//     console.log(chalkError(MODULE_ID_PREFIX + " | *** WATCHER CHILD INIT ERROR"
+//       + " | ERR: " + err
+//       + "\nCONFIG\n" + jsonPrint(config)
+//       + "\nENV\n" + jsonPrint(options.env)
+//     ));
+//     throw err;
+//   }
+// }
 
 async function childCreate(p){
 
@@ -5685,9 +5723,9 @@ setTimeout(async function(){
       console.log(chalkAlert(MODULE_ID_PREFIX + " | defaultUserArchiveFlagFile: " + configuration.defaultUserArchiveFlagFile));
     }
 
-    await initSlackSendQueue();
-    await initSlackRtmClient();
     await initSlackWebClient();
+    await initSlackSendQueue();
+    // await initSlackRtmClient();
 
     try {
       dbConnection = await connectDb();
