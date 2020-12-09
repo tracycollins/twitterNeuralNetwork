@@ -390,38 +390,6 @@ async function slackSendWebMessage(msgObj){
   }
 }
 
-
-// async function slackSendWebMessage(msgObj){
-//   try{
-//     const token = msgObj.token || slackOAuthAccessToken;
-//     const channel = msgObj.channel || configuration.slackChannel.id;
-//     const text = msgObj.text || msgObj;
-
-//     const message = {
-//       token: token, 
-//       channel: channel,
-//       text: text
-//     };
-
-//     if (msgObj.attachments !== undefined) {
-//       message.attachments = msgObj.attachments;
-//     }
-
-//     if (slackWebClient && slackWebClient !== undefined) {
-//       const sendResponse = await slackWebClient.chat.postMessage(message);
-//       return sendResponse;
-//     }
-//     else {
-//       console.log(chalkAlert("TNN | SLACK WEB NOT CONFIGURED | SKIPPING SEND SLACK MESSAGE\n" + jsonPrint(message)));
-//       return;
-//     }
-//   }
-//   catch(err){
-//     console.log(chalkAlert(MODULE_ID_PREFIX + " | *** slackSendWebMessage ERROR: " + err));
-//     throw err;
-//   }
-// }
-
 async function initSlackWebClient(){
   try {
 
@@ -431,7 +399,6 @@ async function initSlackWebClient(){
 
     console.log({authTestResponse})
 
-    // const conversationsListResponse = await slackWebClient.conversations.list({token: slackOAuthAccessToken});
     const conversationsListResponse = await slackWebClient.conversations.list();
 
     conversationsListResponse.channels.forEach(async function(channel){
@@ -442,7 +409,6 @@ async function initSlackWebClient(){
         configuration.slackChannel = channel;
 
         const message = {
-          // token: slackOAuthAccessToken, 
           channel: configuration.slackChannel.id,
           text: "OP"
         };
@@ -471,29 +437,6 @@ async function initSlackWebClient(){
     throw err;
   }
 }
-
-// async function initSlackRtmClient(){
-
-//   const { RTMClient } = require("@slack/client");
-//   slackRtmClient = new RTMClient(slackRtmToken);
-
-//   slackRtmClient.start();
-
-//   slackRtmClient.on("slack_event", async function(eventType, event){
-//     switch (eventType) {
-//       case "abort evolve":
-//         console.log(chalkLog("TNN | SLACK ABORT EVOLVE | " + getTimeStamp() + " | " + event.reply_to));
-//         console.log("event\n", event);
-//       break;
-//       case "pong":
-//         debug(chalkLog("TNN | SLACK RTM PONG | " + getTimeStamp() + " | " + event.reply_to));
-//       break;
-//       default: debug(chalkInfo("TNN | SLACK RTM EVENT | " + getTimeStamp() + " | " + eventType + "\n" + jsonPrint(event)));
-//     }
-//   });
-
-//   return;
-// }
 
 //=========================================================================
 // HOST
