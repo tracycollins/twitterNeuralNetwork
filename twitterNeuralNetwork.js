@@ -27,7 +27,7 @@ const QUIT_WAIT_INTERVAL = 5*ONE_SECOND;
 const STATS_UPDATE_INTERVAL = 5*ONE_MINUTE;
 const DEFAULT_CHILD_PING_INTERVAL = ONE_MINUTE;
 
-const DEFAULT_FORCE_LOAD_TRAINING_SET = true;
+// const DEFAULT_FORCE_LOAD_TRAINING_SET = true;
 const DEFAULT_DISABLE_CREATE_TEST_SET = false;
 const DEFAULT_GLOBAL_MIN_SUCCESS_RATE = 90; // percent
 const DEFAULT_GLOBAL_VIABLE_SUCCESS_RATE = 90;
@@ -348,7 +348,6 @@ let slackSendQueueReady = true;
 const slackSendQueue = [];
 
 
-
 async function initSlackSendQueue(){
 
   clearInterval(slackSendQueueInterval);
@@ -380,7 +379,7 @@ async function slackSendWebMessage(msgObj){
     const channel = msgObj.channel || configuration.slackChannel.id;
     const text = msgObj.text || msgObj;
 
-    const result = await slackWebClient.chat.postMessage({
+    await slackWebClient.chat.postMessage({
       text: text,
       channel: channel,
     });
@@ -3705,7 +3704,7 @@ async function quit(opts) {
 
   const options = opts || false;
 
-  let slackText = "QUIT";
+  let slackText = hostname.toUpperCase() + " | QUIT";
   if (options) {
     slackText += " | " + options.cause;
   }
@@ -4716,7 +4715,7 @@ async function evolveErrorHandler(params){
 
     await printResultsHashmap();
 
-    let slackText = "\n*EVOLVE ERROR*";
+    let slackText = hostname.toUpperCase() + "\n*EVOLVE ERROR*";
     slackText = slackText + "\n" + jsonPrint(m.err);
 
     slackSendQueue.push({channel: slackChannelError, text: slackText});
@@ -4905,7 +4904,7 @@ async function evolveCompleteHandler(params){
           inputsViableSet.delete(nn.inputsId);
         }
 
-        slackText = "\n*GLOBAL BEST | " + nn.test.results.successRate.toFixed(2) + "%*";
+        slackText = hostname.toUpperCase() + "\n*GLOBAL BEST | " + nn.test.results.successRate.toFixed(2) + "%*";
         slackText = slackText + "\n" + nn.networkId;
         slackText = slackText + "\nTECH: " + nn.networkTechnology;
         slackText = slackText + "\nIN: " + nn.inputsId;
@@ -4942,7 +4941,7 @@ async function evolveCompleteHandler(params){
           inputsViableSet.delete(nn.inputsId);
         }
 
-        slackText = "\n*PASS LOCAL | " + nn.test.results.successRate.toFixed(2) + "%*";
+        slackText = hostname.toUpperCase() + "\n*PASS LOCAL | " + nn.test.results.successRate.toFixed(2) + "%*";
         slackText = slackText + "\n" + nn.networkId;
         slackText = slackText + "\nTECH: " + nn.networkTechnology;
         slackText = slackText + "\nIN: " + nn.inputsId;
@@ -4983,7 +4982,7 @@ async function evolveCompleteHandler(params){
           inputsViableSet.delete(nn.inputsId);
         }
 
-        slackText = "\n*PASS HOST | " + nn.test.results.successRate.toFixed(2) + "%*";
+        slackText = hostname.toUpperCase() + "\n*PASS HOST | " + nn.test.results.successRate.toFixed(2) + "%*";
         slackText = slackText + "\n" + nn.networkId;
         slackText = slackText + "\nTECH: " + nn.networkTechnology;
         slackText = slackText + "\nIN: " + nn.inputsId;
@@ -5066,7 +5065,7 @@ async function evolveCompleteHandler(params){
 
       }
 
-      slackText = "\n*FAIL | " + nn.test.results.successRate.toFixed(2) + "%*";
+      slackText = hostname.toUpperCase() + "\n*FAIL | " + nn.test.results.successRate.toFixed(2) + "%*";
       slackText = slackText + "\n" + nn.networkId;
       slackText = slackText + "\nTECH: " + nn.networkTechnology;
       slackText = slackText + "\nIN: " + nn.inputsId;
