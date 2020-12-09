@@ -1,5 +1,5 @@
 const dotenv = require("dotenv");
-const envConfig = dotenv.config()
+const envConfig = dotenv.config({path: '/Users/tc/Dropbox/Apps/wordAssociation/config/utility/default/env'})
 
 if (envConfig.error) {
   throw envConfig.error
@@ -331,7 +331,6 @@ console.log("process.env.SLACK_BOT_TOKEN: ", process.env.SLACK_BOT_TOKEN)
 const slackBotToken = process.env.SLACK_BOT_TOKEN;
 
 const slackWebClient = new WebClient(slackBotToken);
-
 
 const slackChannelFail = "nn-fail";
 const slackChannelError = "nn-error";
