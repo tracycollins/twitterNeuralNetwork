@@ -82,7 +82,7 @@
     "regex": "^0.1.1",
     "retry": "^0.12.0",
     "safe-json-parse": "^4.0.0",
-    "shell": "^0.8.3",
+    "shell": "^0.8.4",
     "shelljs": "^0.8.4",
     "slack": "^11.0.2",
     "slack-node": "^0.1.8",
