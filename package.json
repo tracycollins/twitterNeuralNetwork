@@ -18,7 +18,7 @@
     "@threeceelabs/tweet-server-controller": "^1.0.577",
     "@threeceelabs/twitter-image-parser": "^1.0.96",
     "@threeceelabs/twitter-text-parser": "^1.0.101",
-    "@threeceelabs/user-server-controller": "^1.0.527",
+    "@threeceelabs/user-server-controller": "^1.0.529",
     "archiver": "^5.1.0",
     "array-normalize": "^1.1.4",
     "array-slice": "^1.1.0",
