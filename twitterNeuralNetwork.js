@@ -12,7 +12,7 @@ const MODULE_NAME = "twitterNeuralNetwork";
 const MODULE_ID_PREFIX = "TNN";
 const CHILD_PREFIX = "tnc_node";
 const CHILD_PREFIX_SHORT = "NC";
-const DEFAULT_MAX_FRIENDS = 7500;
+const DEFAULT_MAX_FRIENDS = 10000;
 
 const DEFAULT_PURGE_MIN = true; // applies only to parent
 const TEST_MODE = false; // applies only to parent
