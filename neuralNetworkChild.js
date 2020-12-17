@@ -724,47 +724,27 @@ function updateTrainingSet(p) {
             testSetNodeIdArray
           );
 
-          console.log(
-            chalkLog(
-              MODULE_ID_PREFIX +
-                " | TRAINING SET | " +
-                category.toUpperCase() +
-                " | EQ CATEGORIES FLAG: " +
-                equalCategoriesFlag +
-                " | MIN CAT SIZE: " +
-                minCategorySize +
-                " | CAT SIZE: " +
-                categorySize +
-                " | TRAIN SIZE: " +
-                trainingSetSize +
-                " | TEST SIZE: " +
-                testSetSize +
-                " | TRAIN SET DATA SIZE: " +
-                trainingSetObj.nodeIdArray.length
-            )
-          );
+          console.log(chalkLog(MODULE_ID_PREFIX + " | TRAINING SET"
+            " | " + category.toUpperCase() +
+            " | EQ CATEGORIES FLAG: " + equalCategoriesFlag +
+            " | MIN CAT SIZE: " + minCategorySize +
+            " | CAT SIZE: " + categorySize +
+            " | TRAIN SIZE: " + trainingSetSize +
+            " | TEST SIZE: " + testSetSize +
+            " | TRAIN SET DATA SIZE: " + trainingSetObj.nodeIdArray.length
+          ));
 
           cb();
+
         },
         function (err) {
           if (err) {
-            console.log(
-              chalkError(
-                MODULE_ID_PREFIX + " | *** UPDATE TRAINING SET ERROR: " + err
-              )
-            );
+            console.log(chalkError(MODULE_ID_PREFIX + " | *** UPDATE TRAINING SET ERROR: " + err));
             return reject(err);
           }
 
           if (trainingSetObj.nodeIdArray.length === 0) {
-            console.log(
-              chalkError(
-                MODULE_ID_PREFIX +
-                  " | *** EMPTY TRAINING SET" +
-                  " | SIZE: " +
-                  trainingSetObj.nodeIdArray.length
-              )
-            );
+            console.log(chalkError(MODULE_ID_PREFIX + " | *** EMPTY TRAINING SET | SIZE: " + trainingSetObj.nodeIdArray.length));
             return reject(err);
           }
 
@@ -775,26 +755,13 @@ function updateTrainingSet(p) {
           testSetObj.meta.setSize = testSetObj.nodeIdArray.length;
 
           if (nnTools.getNormalization()) {
-            console.log(
-              chalkLog(
-                MODULE_ID_PREFIX +
-                  " | NORMALIZATION" +
-                  "\n" +
-                  jsonPrint(nnTools.getNormalization())
-              )
-            );
+            console.log(chalkLog(MODULE_ID_PREFIX + " | NORMALIZATION\n" + jsonPrint(nnTools.getNormalization())));
           }
 
-          console.log(
-            chalkLog(
-              MODULE_ID_PREFIX +
-                " | TRAINING SET" +
-                " | SIZE: " +
-                trainingSetObj.meta.setSize +
-                " | TEST SIZE: " +
-                testSetObj.meta.setSize
-            )
-          );
+          console.log(chalkLog(MODULE_ID_PREFIX +
+            " | TRAINING SET | SIZE: " + trainingSetObj.meta.setSize +
+            " | TEST SIZE: " + testSetObj.meta.setSize
+          ));
 
           resolve();
         }
@@ -808,70 +775,43 @@ function updateTrainingSet(p) {
   });
 }
 
-async function cursorDataHandler(user) {
-  if (!user.screenName) {
-    console.log(
-      chalkWarn(
-        MODULE_ID_PREFIX +
-          " | !!! USER SCREENNAME UNDEFINED\n" +
-          jsonPrint(user)
-      )
-    );
+function isValidUser(user){
+  if (!user || user === undefined || user === {} || typeof user !== "object") { return false; }
+  if (!user.screenName || user.screenName === undefined) { return false; }
+  if ((/[^\d]/).test(user.nodeId)) { return false; }
+  return true;
+}
+
+async function cursorDataHandler(user){
+  
+  if (!isValidUser(user)){
+    console.log(chalkWarn(MODULE_ID_PREFIX + " | !!! INVALID USER ... SKIPPING\n" + jsonPrint(user)));
     statsObj.users.processed.errors += 1;
     return;
   }
+  
+  if (empty(user.friends) && empty(user.profileHistograms) && empty(user.tweetHistograms)){
 
-  if (
-    empty(user.friends) &&
-    empty(user.profileHistograms) &&
-    empty(user.tweetHistograms)
-  ) {
     statsObj.users.processed.empty += 1;
 
-    if (statsObj.users.processed.empty % 100 === 0) {
-      console.log(
-        chalkWarn(
-          MODULE_ID_PREFIX +
-            " | --- EMPTY HISTOGRAMS" +
-            " | SKIPPING" +
-            " | PRCSD/REM/MT/ERR/TOT: " +
-            statsObj.users.processed.total +
-            "/" +
-            statsObj.users.processed.remain +
-            "/" +
-            statsObj.users.processed.empty +
-            "/" +
-            statsObj.users.processed.errors +
-            "/" +
-            statsObj.users.grandTotal +
-            " | @" +
-            user.screenName
-        )
-      );
+    if (statsObj.users.processed.empty % 100 === 0){
+      console.log(chalkWarn(MODULE_ID_PREFIX 
+        + " | --- EMPTY HISTOGRAMS"
+        + " | SKIPPING"
+        + " | PRCSD/REM/MT/ERR/TOT: " 
+        + statsObj.users.processed.total 
+        + "/" + statsObj.users.processed.remain 
+        + "/" + statsObj.users.processed.empty 
+        + "/" + statsObj.users.processed.errors
+        + "/" + statsObj.users.grandTotal
+        + " | @" + user.screenName 
+      )); 
     }
     return;
   }
 
-  if (
-    !user.profileHistograms ||
-    user.profileHistograms === undefined ||
-    empty(user.profileHistograms)
-  ) {
-    user.profileHistograms = {};
-  }
-
-  if (
-    !user.tweetHistograms ||
-    user.tweetHistograms === undefined ||
-    empty(user.tweetHistograms)
-  ) {
-    user.tweetHistograms = {};
-  }
-
-  if (!user.friends || user.friends == undefined) {
+  if (!user.friends || user.friends === undefined) {
     user.friends = [];
-  } else {
-    user.friends = _.slice(user.friends, 0, configuration.maxFriends);
   }
 
   trainingSetUsersSet[user.category].add(user.nodeId);
@@ -882,57 +822,54 @@ async function cursorDataHandler(user) {
   statsObj.users.processed.total += 1;
 
   if (statsObj.categorizedCount > 0 && statsObj.categorizedCount % 1000 === 0) {
-    console.log(
-      chalkInfo(
-        MODULE_ID_PREFIX +
-          " | cursorDataHandler" +
-          " | CATEGORIZED: " +
-          statsObj.categorizedCount +
-          " | L: " +
-          categorizedUsers.left +
-          " | N: " +
-          categorizedUsers.neutral +
-          " | R: " +
-          categorizedUsers.right
-      )
-    );
+    console.log(chalkInfo(MODULE_ID_PREFIX +
+      " | cursorDataHandler" +
+      " | CATEGORIZED: " + statsObj.categorizedCount +
+      " | L: " + categorizedUsers.left +
+      " | N: " + categorizedUsers.neutral +
+      " | R: " + categorizedUsers.right
+    ));
+  }
+
+  categorizedUsers[user.category] += 1;
+  statsObj.categorizedCount += 1;
+
+  if (statsObj.categorizedCount > 0 && statsObj.categorizedCount % 100 === 0){
+    console.log(chalkInfo(MODULE_ID_PREFIX
+      + " | CATEGORIZED: " + statsObj.categorizedCount
+      + " | L: " + categorizedUsers.left
+      + " | N: " + categorizedUsers.neutral
+      + " | R: " + categorizedUsers.right
+      + " | +: " + categorizedUsers.positive
+      + " | -: " + categorizedUsers.negative
+      + " | 0: " + categorizedUsers.none
+    ));
   }
 
   return;
 }
 
-function cursorDataHandlerPromise(user) {
-  return new Promise(function (resolve, reject) {
-    cursorDataHandler(user)
-      .then(function () {
-        statsObj.users.processed.grandTotal += 1;
-        statsObj.users.processed.elapsed =
-          moment().valueOf() - statsObj.users.processed.startMoment.valueOf(); // mseconds
-        statsObj.users.processed.rate =
-          statsObj.users.processed.total > 0
-            ? statsObj.users.processed.elapsed / statsObj.users.processed.total
-            : 0; // msecs/usersArchived
-        statsObj.users.processed.remain =
-          statsObj.users.grandTotal -
-          (statsObj.users.processed.total + statsObj.users.processed.errors);
-        statsObj.users.processed.remainMS =
-          statsObj.users.processed.remain * statsObj.users.processed.rate; // mseconds
-        statsObj.users.processed.endMoment = moment();
-        statsObj.users.processed.endMoment.add(
-          statsObj.users.processed.remainMS,
-          "ms"
-        );
-        statsObj.users.processed.percent =
-          (100 *
-            (statsObj.users.notCategorized + statsObj.users.processed.total)) /
-          statsObj.users.grandTotal;
+async function cursorDataHandlerPromise(user){
 
-        resolve();
-      })
-      .catch(function (err) {
-        reject(err);
-      });
-  });
+  try {
+
+    await cursorDataHandler(user);
+
+    statsObj.users.processed.total += 1;
+    statsObj.users.processed.elapsed = (moment().valueOf() - statsObj.users.processed.startMoment.valueOf()); // mseconds
+    statsObj.users.processed.rate = (statsObj.users.processed.total >0) ? statsObj.users.processed.elapsed/statsObj.users.processed.total : 0; // msecs/usersArchived
+    statsObj.users.processed.remain = statsObj.users.grandTotal - (statsObj.users.processed.total + statsObj.users.processed.errors);
+    statsObj.users.processed.remainMS = statsObj.users.processed.remain * statsObj.users.processed.rate; // mseconds
+    statsObj.users.processed.endMoment = moment();
+    statsObj.users.processed.endMoment.add(statsObj.users.processed.remainMS, "ms");
+    statsObj.users.processed.percent = 100 * (statsObj.users.notCategorized + statsObj.users.processed.total)/statsObj.users.grandTotal;
+
+    return;
+
+  }
+  catch(err){
+    console.log(chalkError(MODULE_ID_PREFIX + " | *** cursorDataHandlerPromise ERROR: " + err));
+  }
 }
 
 const categorizedUsers = {};
@@ -956,6 +893,7 @@ async function loadTrainingSetUsersFromDb(p) {
   const query = params.query || {
     category: { $in: ["left", "right", "neutral"] },
   };
+
   const batchSize = params.batchSize || 1000;
   const cursorParallel = params.cursorParallel || 8;
   const limit = params.limit || 1000;
@@ -966,20 +904,14 @@ async function loadTrainingSetUsersFromDb(p) {
 
   debug("MONGO DB SESSION\n" + session.id);
 
-  console.log(
-    chalkBlue(
-      MODULE_ID_PREFIX +
-        " | LOADING TRAINING SET FROM DB ..." +
-        " | batchSize: " +
-        batchSize +
-        " | cursorParallel: " +
-        cursorParallel
-    )
-  );
+  console.log(chalkBlue(MODULE_ID_PREFIX +
+    " | LOADING TRAINING SET FROM DB ..." +
+    " | batchSize: " + batchSize +
+    " | cursorParallel: " + cursorParallel
+  ));
 
   if (configuration.testMode) {
     cursor = global.wordAssoDb.User.find(query, { timeout: false })
-      // .find(query)
       .lean()
       .batchSize(batchSize)
       .limit(limit)
@@ -988,7 +920,6 @@ async function loadTrainingSetUsersFromDb(p) {
       .addCursorFlag("noCursorTimeout", true);
   } else {
     cursor = global.wordAssoDb.User.find(query, { timeout: false })
-      // .find(query)
       .lean()
       .batchSize(batchSize)
       .session(session)
@@ -997,30 +928,16 @@ async function loadTrainingSetUsersFromDb(p) {
   }
 
   cursor.on("end", function () {
-    console.log(
-      chalkAlert(
-        MODULE_ID_PREFIX + " | --- loadTrainingSetUsersFromDb CURSOR END"
-      )
-    );
+    console.log(chalkAlert(MODULE_ID_PREFIX + " | --- loadTrainingSetUsersFromDb CURSOR END"));
   });
 
   cursor.on("error", function (err) {
-    console.log(
-      chalkError(
-        MODULE_ID_PREFIX +
-          " | *** ERROR loadTrainingSetUsersFromDb: CURSOR ERROR: " +
-          err
-      )
-    );
+    console.log(chalkError(MODULE_ID_PREFIX + " | *** ERROR loadTrainingSetUsersFromDb: CURSOR ERROR: " + err));
     throw err;
   });
 
   cursor.on("close", function () {
-    console.log(
-      chalkAlert(
-        MODULE_ID_PREFIX + " | XXX loadTrainingSetUsersFromDb CURSOR CLOSE"
-      )
-    );
+    console.log(chalkAlert(MODULE_ID_PREFIX + " | XXX loadTrainingSetUsersFromDb CURSOR CLOSE"));
   });
 
   await cursor.eachAsync(
@@ -1031,25 +948,15 @@ async function loadTrainingSetUsersFromDb(p) {
     { parallel: cursorParallel }
   );
 
-  statsObj.trainingSet.total =
-    trainingSetUsersSet.left.size +
-    trainingSetUsersSet.neutral.size +
-    trainingSetUsersSet.right.size;
+  statsObj.trainingSet.total = trainingSetUsersSet.left.size + trainingSetUsersSet.neutral.size + trainingSetUsersSet.right.size;
 
-  console.log(
-    chalkBlueBold(
-      MODULE_ID_PREFIX +
-        " | +++ LOAD TRAINING SET FROM DB COMPLETE" +
-        " | SET SIZE - TOTAL: " +
-        statsObj.trainingSet.total +
-        " / L: " +
-        trainingSetUsersSet.left.size +
-        " / N: " +
-        trainingSetUsersSet.neutral.size +
-        " / R: " +
-        trainingSetUsersSet.right.size
-    )
-  );
+  console.log(chalkBlueBold(MODULE_ID_PREFIX +
+    " | +++ LOAD TRAINING SET FROM DB COMPLETE" +
+    " | SET SIZE - TOTAL: " + statsObj.trainingSet.total +
+    " / L: " + trainingSetUsersSet.left.size +
+    " / N: " + trainingSetUsersSet.neutral.size +
+    " / R: " + trainingSetUsersSet.right.size
+  ));
 
   return;
 }
@@ -2711,6 +2618,9 @@ function networkEvolve(p) {
 //=========================================================================
 const Stately = require("stately.js");
 const { config } = require("process");
+
+debug({config});
+
 const FSM_TICK_INTERVAL = ONE_SECOND;
 
 let fsmTickInterval;
