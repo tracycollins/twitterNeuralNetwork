@@ -724,7 +724,7 @@ function updateTrainingSet(p) {
             testSetNodeIdArray
           );
 
-          console.log(chalkLog(MODULE_ID_PREFIX + " | TRAINING SET"
+          console.log(chalkLog(MODULE_ID_PREFIX + " | TRAINING SET" +
             " | " + category.toUpperCase() +
             " | EQ CATEGORIES FLAG: " + equalCategoriesFlag +
             " | MIN CAT SIZE: " + minCategorySize +
