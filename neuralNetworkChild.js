@@ -44,7 +44,7 @@ hostname = hostname.replace(/word/g, "google");
 
 const MODULE_NAME = "tncChild";
 let MODULE_ID_PREFIX = "NNC";
-const DEFAULT_NETWORK_TECHNOLOGY = "carrot";
+const DEFAULT_NETWORK_TECHNOLOGY = "tensorflow";
 const DEFAULT_BINARY_MODE = true;
 const DEFAULT_TEST_RATIO = 0.25;
 const QUIT_WAIT_INTERVAL = ONE_SECOND;
@@ -116,6 +116,8 @@ const brainTrainOptionsPickArray = [
   "callbackPeriod",
   "timeout",
 ];
+const tensorflowEvolveOptionsPickArray = [
+];
 
 const neatapticEvolveOptionsPickArray = [
   "cost",
@@ -164,6 +166,7 @@ const carrotEvolveOptionsPickArray = [
   "threads",
 ];
 
+
 const ThreeceeUtilities = require("@threeceelabs/threecee-utilities");
 const tcUtils = new ThreeceeUtilities("NNC_TCU");
 
@@ -194,6 +197,7 @@ console.log("=========================================");
 //=========================================================================
 // MODULE REQUIRES
 //=========================================================================
+const tensorflow = require("@tensorflow/tfjs");
 const neataptic = require("neataptic");
 const brain = require("brain.js");
 // const carrot = require("@liquid-carrot/carrot");
@@ -220,15 +224,9 @@ const chalkWarn = chalk.red;
 //=========================================================================
 // HOST
 //=========================================================================
-const configDefaultFolder = path.join(
-  DROPBOX_ROOT_FOLDER,
-  "config/utility/default"
-);
-const configHostFolder = path.join(
-  DROPBOX_ROOT_FOLDER,
-  "config/utility",
-  hostname
-);
+const configDefaultFolder = path.join(DROPBOX_ROOT_FOLDER, "config/utility/default");
+
+const configHostFolder = path.join(DROPBOX_ROOT_FOLDER, "config/utility", hostname);
 
 configuration.archiveFileUploadCompleteFlagFile = "usersZipUploadComplete.json";
 configuration.trainingSetFile = "trainingSet.json";
@@ -1242,16 +1240,12 @@ function initProcessSendQueue(params) {
 }
 
 function prepNetworkEvolve() {
-  console.log(
-    chalkBlueBold(
-      MODULE_ID_PREFIX +
-        " | PREP NETWORK EVOLVE OPTIONS" +
-        " | " +
-        getTimeStamp() +
-        " | NNID: " +
-        statsObj.training.testRunId
-    )
-  );
+
+  console.log(chalkBlueBold(MODULE_ID_PREFIX +
+    " | PREP NETWORK EVOLVE OPTIONS" +
+    " | " + getTimeStamp() +
+    " | NNID: " + statsObj.training.testRunId
+  ));
 
   const options = childNetworkObj.evolve.options;
 
@@ -1259,6 +1253,45 @@ function prepNetworkEvolve() {
   const schedStartTime = moment().valueOf();
 
   switch (childNetworkObj.networkTechnology) {
+
+    case "tensorflow":
+      options.onEpochEnd = function (epoch, logs) {
+
+          const elapsedInt = moment().valueOf() - schedStartTime;
+          const iterationRate = elapsedInt / epoch;
+          const timeToComplete = iterationRate * (options.iterations - epoch);
+
+          const fitness = logs.fitness || 0;
+
+          statsObj.evolve.stats = logs;
+
+          const sObj = {
+            networkTechnology: childNetworkObj.networkTechnology,
+            binaryMode: childNetworkObj.binaryMode,
+            networkId: childNetworkObj.networkId,
+            seedNetworkId: childNetworkObj.seedNetworkId,
+            seedNetworkRes: childNetworkObj.seedNetworkRes,
+            numInputs: childNetworkObj.numInputs,
+            inputsId: childNetworkObj.inputsId,
+            evolveStart: schedStartTime,
+            evolveElapsed: elapsedInt,
+            totalIterations: childNetworkObj.evolve.options.iterations,
+            iteration: epoch,
+            iterationRate: iterationRate,
+            timeToComplete: timeToComplete,
+            error: schedParams.error.toFixed(5) || Infinity,
+            fitness: fitness.toFixed(5) || -Infinity,
+          };
+
+          processSendQueue.push({
+            op: "EVOLVE_SCHEDULE",
+            childId: configuration.childId,
+            childIdShort: configuration.childIdShort,
+            stats: sObj,
+          });
+        };
+      break;
+
     case "brain":
       options.error = options.error || options.errorThresh;
 
@@ -1284,34 +1317,17 @@ function prepNetworkEvolve() {
           totalIterations: options.iterations,
         };
 
-        console.log(
-          chalkLog(
-            MODULE_ID_PREFIX +
-              " | " +
-              sObj.networkId +
-              " | " +
-              sObj.networkTechnology.slice(0, 1).toUpperCase() +
-              " | " +
-              sObj.networkId +
-              " | " +
-              sObj.inputsId +
-              " | ERR " +
-              sObj.error +
-              " | R " +
-              msToTime(sObj.evolveElapsed) +
-              " | ETC " +
-              msToTime(sObj.timeToComplete) +
-              " " +
-              moment().add(sObj.timeToComplete).format(compactDateTimeFormat) +
-              " | " +
-              (sObj.iterationRate / 1000.0).toFixed(1) +
-              " spi" +
-              " | I " +
-              sObj.iteration +
-              "/" +
-              sObj.totalIterations
-          )
-        );
+        console.log(chalkLog(MODULE_ID_PREFIX +
+          " | " + sObj.networkId +
+          " | " + sObj.networkTechnology.slice(0, 1).toUpperCase() +
+          " | " + sObj.networkId +
+          " | " + sObj.inputsId +
+          " | ERR " + sObj.error +
+          " | R " + msToTime(sObj.evolveElapsed) +
+          " | ETC " + msToTime(sObj.timeToComplete) + " " + moment().add(sObj.timeToComplete).format(compactDateTimeFormat) +
+          " | " + (sObj.iterationRate / 1000.0).toFixed(1) + " spi" +
+          " | I " + sObj.iteration + "/" + sObj.totalIterations
+        ));
 
         processSendQueue.push({
           op: "EVOLVE_SCHEDULE",
@@ -1322,13 +1338,14 @@ function prepNetworkEvolve() {
       };
 
       break;
+
+
     default:
       options.schedule = {
         function: function (schedParams) {
           const elapsedInt = moment().valueOf() - schedStartTime;
           const iterationRate = elapsedInt / schedParams.iteration;
-          const timeToComplete =
-            iterationRate * (options.iterations - schedParams.iteration);
+          const timeToComplete = iterationRate * (options.iterations - schedParams.iteration);
 
           const fitness = schedParams.fitness || 0;
 
@@ -1366,6 +1383,10 @@ function prepNetworkEvolve() {
 
   let finalOptions;
 
+  if (childNetworkObj.networkTechnology === "tensorflow") {
+    finalOptions = pick(options, tensorflowEvolveOptionsPickArray);
+  }
+
   if (childNetworkObj.networkTechnology === "carrot") {
     finalOptions = pick(options, carrotEvolveOptionsPickArray);
   }
@@ -1393,43 +1414,22 @@ function prepNetworkEvolve() {
     options.activation !== undefined &&
     typeof options.activation === "string"
   ) {
-    console.log(
-      chalkBlueBold(
-        MODULE_ID_PREFIX +
-          " | EVOLVE OPTIONS | ACTIVATION: " +
-          options.activation
-      )
-    );
+    console.log(chalkBlueBold(MODULE_ID_PREFIX + " | EVOLVE OPTIONS | ACTIVATION: " + options.activation));
     finalOptions.activation = neataptic.methods.activation[options.activation];
   }
 
-  if (
-    options.selection !== undefined &&
-    typeof options.selection === "string"
-  ) {
-    console.log(
-      chalkBlueBold(
-        MODULE_ID_PREFIX + " | EVOLVE OPTIONS | SELECTION: " + options.selection
-      )
-    );
+  if (options.selection !== undefined && typeof options.selection === "string") {
+    console.log(chalkBlueBold(MODULE_ID_PREFIX + " | EVOLVE OPTIONS | SELECTION: " + options.selection));
     finalOptions.selection = neataptic.methods.selection[options.selection];
   }
 
   if (options.cost !== undefined && typeof options.cost === "string") {
-    console.log(
-      chalkBlueBold(
-        MODULE_ID_PREFIX + " | EVOLVE OPTIONS | COST: " + options.cost
-      )
-    );
+    console.log(chalkBlueBold(MODULE_ID_PREFIX + " | EVOLVE OPTIONS | COST: " + options.cost));
     finalOptions.cost = neataptic.methods.cost[options.cost];
   }
 
   if (options.mutation !== undefined && typeof options.mutation === "string") {
-    console.log(
-      chalkBlueBold(
-        MODULE_ID_PREFIX + " | EVOLVE OPTIONS | MUTATION: " + options.mutation
-      )
-    );
+    console.log(chalkBlueBold(MODULE_ID_PREFIX + " | EVOLVE OPTIONS | MUTATION: " + options.mutation));
     finalOptions.mutation = neataptic.methods.mutation[options.mutation];
   }
 
@@ -1438,8 +1438,7 @@ function prepNetworkEvolve() {
 
 function dataSetPrep(params) {
   return new Promise(function (resolve, reject) {
-    const maxParallel =
-      params.maxParallel || configuration.dataSetPrepMaxParallel;
+    const maxParallel = params.maxParallel || configuration.dataSetPrepMaxParallel;
 
     const nodeIdArray = params.setObj.nodeIdArray; // array
 
@@ -1726,232 +1725,155 @@ const ignoreKeyArray = [
   "popsize",
 ];
 
-function createNetwork() {
-  return new Promise(function (resolve, reject) {
+async function createNetwork() {
+
+  // return new Promise(function (resolve, reject) {
+  try{
+
     let networkRaw;
 
     const numInputs = childNetworkObj.numInputs;
 
     switch (childNetworkObj.architecture) {
-      case "seed":
-        console.log(
-          chalkBlueBold(
-            MODULE_ID_PREFIX +
-              " | " +
-              configuration.childId +
-              " | EVOLVE ARCH: LOADED | SEED: " +
-              childNetworkObj.seedNetworkId +
-              " | " +
-              childNetworkObj.networkTechnology.toUpperCase()
-          )
-        );
 
-        if (
-          !empty(childNetworkObj.networkRaw) &&
-          childNetworkObj.networkRaw.evolve !== undefined
-        ) {
-          console.log(
-            chalkLog(
-              MODULE_ID_PREFIX +
-                " | CHILD RAW NETWORK: " +
-                childNetworkObj.seedNetworkId
-            )
-          );
+      case "seed":
+
+        console.log(chalkBlueBold(MODULE_ID_PREFIX +
+          " | " + configuration.childId +
+          " | EVOLVE ARCH: LOADED | SEED: " + childNetworkObj.seedNetworkId +
+          " | " + childNetworkObj.networkTechnology.toUpperCase()
+        ));
+
+        if (!empty(childNetworkObj.networkRaw) && childNetworkObj.networkRaw.evolve !== undefined) {
+          console.log(chalkLog(MODULE_ID_PREFIX + " | CHILD RAW NETWORK: " + childNetworkObj.seedNetworkId));
           networkRaw = childNetworkObj.networkRaw;
-        } else if (
-          !empty(childNetworkObj.network) &&
-          childNetworkObj.network.evolve !== undefined
-        ) {
-          console.log(
-            chalkLog(
-              MODULE_ID_PREFIX +
-                " | CHILD RAW NETWORK: " +
-                childNetworkObj.seedNetworkId
-            )
-          );
+        } 
+        else if (!empty(childNetworkObj.network) && childNetworkObj.network.evolve !== undefined) {
+          console.log(chalkLog(MODULE_ID_PREFIX + " | CHILD RAW NETWORK: " + childNetworkObj.seedNetworkId));
           childNetworkObj.networkRaw = childNetworkObj.network;
           networkRaw = childNetworkObj.network;
           delete childNetworkObj.network;
-        } else {
-          // try {
-          if (childNetworkObj.networkTechnology === "carrot") {
+        } 
+        else {
+          if (childNetworkObj.networkTechnology === "tensorflow" && childNetworkObj.tensorflowModelPath) {
+              networkRaw = await tensorflow.loadLayersModel(childNetworkObj.tensorflowModelPath); // 'file://path/to/my-model/model.json'
+              console.log(chalkLog(MODULE_ID_PREFIX + " | CHILD RAW NETWORK: " + childNetworkObj.seedNetworkId));
+          } 
+          else if (childNetworkObj.networkTechnology === "carrot") {
             if (!empty(childNetworkObj.networkRaw)) {
               networkRaw = childNetworkObj.networkRaw;
-              console.log(
-                chalkLog(
-                  MODULE_ID_PREFIX +
-                    " | CHILD CARROT RAW NETWORK: " +
-                    childNetworkObj.seedNetworkId
-                )
-              );
-            } else if (!empty(childNetworkObj.network)) {
+              console.log(chalkLog(MODULE_ID_PREFIX + " | CHILD RAW NETWORK: " + childNetworkObj.seedNetworkId));
+            } 
+            else if (!empty(childNetworkObj.network)) {
               networkRaw = carrot.Network.fromJSON(childNetworkObj.network);
-              console.log(
-                chalkLog(
-                  MODULE_ID_PREFIX +
-                    " | CHILD CARROT RAW NETWORK: " +
-                    childNetworkObj.seedNetworkId
-                )
-              );
-            } else if (!empty(childNetworkObj.networkJson)) {
+              console.log(chalkLog(MODULE_ID_PREFIX + " | CHILD RAW NETWORK: " + childNetworkObj.seedNetworkId));
+            } 
+            else if (!empty(childNetworkObj.networkJson)) {
               networkRaw = carrot.Network.fromJSON(childNetworkObj.networkJson);
-              console.log(
-                chalkLog(
-                  MODULE_ID_PREFIX +
-                    " | CHILD CARROT RAW NETWORK: " +
-                    childNetworkObj.seedNetworkId
-                )
-              );
+              console.log(chalkLog(MODULE_ID_PREFIX + " | CHILD RAW NETWORK: " + childNetworkObj.seedNetworkId));
             }
-          } else if (childNetworkObj.networkTechnology === "neataptic") {
+          } 
+          else if (childNetworkObj.networkTechnology === "neataptic") {
             if (!empty(childNetworkObj.networkRaw)) {
               networkRaw = childNetworkObj.networkRaw;
-              console.log(
-                chalkLog(
-                  MODULE_ID_PREFIX +
-                    " | CHILD NEATAPTIC RAW NETWORK: " +
-                    childNetworkObj.seedNetworkId
-                )
-              );
-            } else if (!empty(childNetworkObj.network)) {
+              console.log(chalkLog(MODULE_ID_PREFIX + " | CHILD NEATAPTIC NETWORK: " + childNetworkObj.seedNetworkId));
+            } 
+            else if (!empty(childNetworkObj.network)) {
               networkRaw = neataptic.Network.fromJSON(childNetworkObj.network);
-              console.log(
-                chalkLog(
-                  MODULE_ID_PREFIX +
-                    " | CHILD NEATAPTIC RAW NETWORK: " +
-                    childNetworkObj.seedNetworkId
-                )
-              );
-            } else if (!empty(childNetworkObj.networkJson)) {
-              networkRaw = neataptic.Network.fromJSON(
-                childNetworkObj.networkJson
-              );
-              console.log(
-                chalkLog(
-                  MODULE_ID_PREFIX +
-                    " | CHILD NEATAPTIC RAW NETWORK: " +
-                    childNetworkObj.seedNetworkId
-                )
-              );
+              console.log(chalkLog(MODULE_ID_PREFIX + " | CHILD NEATAPTIC RAW NETWORK: " + childNetworkObj.seedNetworkId));
+            } 
+            else if (!empty(childNetworkObj.networkJson)) {
+              networkRaw = neataptic.Network.fromJSON(childNetworkObj.networkJson);
+              console.log(chalkLog(MODULE_ID_PREFIX + " | CHILD NEATAPTIC RAW NETWORK: " + childNetworkObj.seedNetworkId));
             }
-          } else if (childNetworkObj.networkTechnology === "brain") {
+          } 
+          else if (childNetworkObj.networkTechnology === "brain") {
             if (!empty(childNetworkObj.networkRaw)) {
               networkRaw = childNetworkObj.networkRaw;
-              console.log(
-                chalkLog(
-                  MODULE_ID_PREFIX +
-                    " | CHILD BRAIN RAW NETWORK: " +
-                    childNetworkObj.seedNetworkId
-                )
-              );
-            } else if (!empty(childNetworkObj.network)) {
+              console.log(chalkLog(MODULE_ID_PREFIX + " | CHILD BRAIN RAW NETWORK: " + childNetworkObj.seedNetworkId));
+            } 
+            else if (!empty(childNetworkObj.network)) {
               networkRaw = new brain.NeuralNetwork();
               networkRaw.fromJSON(childNetworkObj.network);
-              console.log(
-                chalkLog(
-                  MODULE_ID_PREFIX +
-                    " | CHILD BRAIN RAW NETWORK: " +
-                    childNetworkObj.seedNetworkId
-                )
-              );
-            } else if (!empty(childNetworkObj.networkJson)) {
+              console.log(chalkLog(MODULE_ID_PREFIX + " | CHILD BRAIN RAW NETWORK: " + childNetworkObj.seedNetworkId));
+            } 
+            else if (!empty(childNetworkObj.networkJson)) {
               networkRaw = new brain.NeuralNetwork();
               networkRaw.fromJSON(childNetworkObj.networkJson);
-              console.log(
-                chalkLog(
-                  MODULE_ID_PREFIX +
-                    " | CHILD BRAIN RAW NETWORK: " +
-                    childNetworkObj.seedNetworkId
-                )
-              );
+              console.log(chalkLog(MODULE_ID_PREFIX + " | CHILD BRAIN RAW NETWORK: " + childNetworkObj.seedNetworkId));
             }
-          } else {
-            console.log(
-              chalkError(
-                MODULE_ID_PREFIX +
-                  " | TECH: " +
-                  childNetworkObj.networkTechnology +
-                  " | *** CHILD NO RAW NETWORK: " +
-                  childNetworkObj.seedNetworkId
-              )
-            );
-            return reject(
-              new Error("NO RAW NETWORK: " + childNetworkObj.networkId)
-            );
+          } 
+          else {
+            console.log(chalkError(MODULE_ID_PREFIX +
+              " | TECH: " + childNetworkObj.networkTechnology +
+              " | *** CHILD NO RAW NETWORK: " + childNetworkObj.seedNetworkId
+            ));
+            throw new Error("NO RAW NETWORK: " + childNetworkObj.networkId);
           }
-          // }
-          // catch(err){
-          //   console.log(chalkError(MODULE_ID_PREFIX + " | *** ERROR CREATE NETWORK | " + childNetworkObj.networkTechnology + " fromJSON: " + err));
-          //   return reject(err);
-          // }
         }
 
-        console.log(
-          chalkBlueBold(
-            MODULE_ID_PREFIX +
-              " | " +
-              configuration.childId +
-              " | " +
-              childNetworkObj.networkTechnology.toUpperCase() +
-              " | EVOLVE ARCH | LOADED: " +
-              childNetworkObj.networkId +
-              " | IN: " +
-              numInputs +
-              " | OUT: " +
-              childNetworkObj.numOutputs
-          )
-        );
+        console.log(chalkBlueBold(MODULE_ID_PREFIX +
+          " | " + configuration.childId +
+          " | " + childNetworkObj.networkTechnology.toUpperCase() +
+          " | EVOLVE ARCH | LOADED: " + childNetworkObj.networkId +
+          " | IN: " + numInputs +
+          " | OUT: " + childNetworkObj.numOutputs
+        ));
 
-        resolve(networkRaw);
-        break;
+        return networkRaw;
 
       case "perceptron":
-        if (childNetworkObj.networkTechnology === "carrot") {
-          if (
-            childNetworkObj.hiddenLayerSize &&
-            childNetworkObj.hiddenLayerSize > 0
-          ) {
-            networkRaw = new carrot.architect.Perceptron(
-              numInputs,
-              childNetworkObj.hiddenLayerSize,
-              3
-            );
-          } else {
+
+        if (childNetworkObj.networkTechnology === "tensorflow") {
+
+          networkRaw = tensorflow.sequential();
+          networkRaw.add(tensorflow.layers.dense({inputShape: [numInputs], units: childNetworkObj.hiddenLayerSize, activation: 'relu'}));
+          networkRaw.add(tensorflow.layers.dense({units: trainingSetObj.meta.numOutputs, activation: 'softmax'}));
+
+          networkRaw.compile({
+            optimizer: 'sgd',
+            loss: 'categoricalCrossentropy',
+            metrics: ['accuracy']
+          });
+
+          console.log(chalkBlueBold( MODULE_ID_PREFIX +
+            " | " + configuration.childId +
+            " | " + childNetworkObj.networkTechnology.toUpperCase() +
+            " | " + childNetworkObj.architecture.toUpperCase() +
+            " | IN: " + numInputs +
+            " | OUT: " + trainingSetObj.meta.numOutputs +
+            " | HIDDEN LAYER NODES: " + childNetworkObj.hiddenLayerSize
+          ));
+
+          return networkRaw;
+        } 
+        else if (childNetworkObj.networkTechnology === "carrot") {
+          if (childNetworkObj.hiddenLayerSize && childNetworkObj.hiddenLayerSize > 0) {
+            networkRaw = new carrot.architect.Perceptron(numInputs, childNetworkObj.hiddenLayerSize,3);
+          } 
+          else {
             childNetworkObj.architecture = "random";
             networkRaw = new carrot.Network(numInputs, 3);
           }
 
           console.log(
-            chalkBlueBold(
-              MODULE_ID_PREFIX +
-                " | " +
-                configuration.childId +
-                " | " +
-                childNetworkObj.networkTechnology.toUpperCase() +
-                " | " +
-                childNetworkObj.architecture.toUpperCase() +
-                " | IN: " +
-                numInputs +
-                " | OUT: " +
-                trainingSetObj.meta.numOutputs +
-                " | HIDDEN LAYER NODES: " +
-                childNetworkObj.hiddenLayerSize
-            )
-          );
-          resolve(networkRaw);
-        } else if (childNetworkObj.networkTechnology === "brain") {
+            chalkBlueBold( MODULE_ID_PREFIX +
+              " | " + configuration.childId +
+              " | " + childNetworkObj.networkTechnology.toUpperCase() +
+              " | " + childNetworkObj.architecture.toUpperCase() +
+              " | IN: " + numInputs +
+              " | OUT: " + trainingSetObj.meta.numOutputs +
+              " | HIDDEN LAYER NODES: " + childNetworkObj.hiddenLayerSize
+            ));
+          return networkRaw;
+        } 
+        else if (childNetworkObj.networkTechnology === "brain") {
           if (childNetworkObj.hiddenLayerSize) {
-            childNetworkObj.hiddenLayerSize = Math.min(
-              configuration.brainHiddenLayerSize,
-              childNetworkObj.hiddenLayerSize
-            );
-            childNetworkObj.hiddenLayerSize = Math.max(
-              childNetworkObj.hiddenLayerSize,
-              trainingSetObj.meta.numOutputs
-            );
-          } else {
-            childNetworkObj.hiddenLayerSize =
-              configuration.brainHiddenLayerSize;
+            childNetworkObj.hiddenLayerSize = Math.min(configuration.brainHiddenLayerSize, childNetworkObj.hiddenLayerSize);
+            childNetworkObj.hiddenLayerSize = Math.max(childNetworkObj.hiddenLayerSize, trainingSetObj.meta.numOutputs);
+          } 
+          else {
+            childNetworkObj.hiddenLayerSize = configuration.brainHiddenLayerSize;
           }
 
           networkRaw = new brain.NeuralNetwork({
@@ -1959,38 +1881,24 @@ function createNetwork() {
             outputSize: trainingSetObj.meta.numOutputs,
           });
 
-          console.log(
-            chalkBlueBold(
-              MODULE_ID_PREFIX +
-                " | " +
-                configuration.childId +
-                " | " +
-                childNetworkObj.networkTechnology.toUpperCase() +
-                " | " +
-                childNetworkObj.architecture.toUpperCase() +
-                " | IN: " +
-                numInputs +
-                " | OUT: " +
-                trainingSetObj.meta.numOutputs +
-                " | HIDDEN LAYER NODES: " +
-                childNetworkObj.hiddenLayerSize
-            )
-          );
+          console.log(chalkBlueBold(MODULE_ID_PREFIX +
+            " | " +  configuration.childId +
+            " | " + childNetworkObj.networkTechnology.toUpperCase() +
+            " | " + childNetworkObj.architecture.toUpperCase() +
+            " | IN: " + numInputs +
+            " | OUT: " + trainingSetObj.meta.numOutputs +
+            " | HIDDEN LAYER NODES: " + childNetworkObj.hiddenLayerSize
+          ));
 
-          resolve(networkRaw);
-        } else {
+          return networkRaw;
+        } 
+        else {
           if (childNetworkObj.hiddenLayerSize) {
-            childNetworkObj.hiddenLayerSize = Math.min(
-              configuration.neatapticHiddenLayerSize,
-              childNetworkObj.hiddenLayerSize
-            );
-            childNetworkObj.hiddenLayerSize = Math.max(
-              childNetworkObj.hiddenLayerSize,
-              trainingSetObj.meta.numOutputs
-            );
-          } else {
-            childNetworkObj.hiddenLayerSize =
-              configuration.neatapticHiddenLayerSize;
+            childNetworkObj.hiddenLayerSize = Math.min( configuration.neatapticHiddenLayerSize, childNetworkObj.hiddenLayerSize);
+            childNetworkObj.hiddenLayerSize = Math.max( childNetworkObj.hiddenLayerSize, trainingSetObj.meta.numOutputs);
+          } 
+          else {
+            childNetworkObj.hiddenLayerSize = configuration.neatapticHiddenLayerSize;
           }
 
           networkRaw = new neataptic.architect.Perceptron(
@@ -1999,63 +1907,60 @@ function createNetwork() {
             3
           );
 
-          console.log(
-            chalkBlueBold(
-              MODULE_ID_PREFIX +
-                " | " +
-                configuration.childId +
-                " | " +
-                childNetworkObj.networkTechnology.toUpperCase() +
-                " | " +
-                childNetworkObj.architecture.toUpperCase() +
-                " | IN: " +
-                numInputs +
-                " | OUT: " +
-                trainingSetObj.meta.numOutputs +
-                " | HIDDEN LAYER NODES: " +
-                childNetworkObj.hiddenLayerSize
-            )
-          );
+           console.log(chalkBlueBold(MODULE_ID_PREFIX +
+            " | " +  configuration.childId +
+            " | " + childNetworkObj.networkTechnology.toUpperCase() +
+            " | " + childNetworkObj.architecture.toUpperCase() +
+            " | IN: " + numInputs +
+            " | OUT: " + trainingSetObj.meta.numOutputs +
+            " | HIDDEN LAYER NODES: " + childNetworkObj.hiddenLayerSize
+          ));
 
-          resolve(networkRaw);
+          return networkRaw;
         }
         break;
 
       default:
         childNetworkObj.architecture = "random";
 
-        console.log(
-          chalkBlueBold(
-            MODULE_ID_PREFIX +
-              " | EVOLVE ARCH" +
-              " | " +
-              configuration.childId +
-              " | " +
-              childNetworkObj.networkTechnology.toUpperCase() +
-              " | " +
-              childNetworkObj.architecture.toUpperCase() +
-              " | INPUTS: " +
-              numInputs +
-              " | OUTPUTS: " +
-              trainingSetObj.meta.numOutputs
-          )
-        );
+        console.log(chalkBlueBold(MODULE_ID_PREFIX +
+          " | EVOLVE ARCH" +
+          " | " + configuration.childId +
+          " | " + childNetworkObj.networkTechnology.toUpperCase() +
+          " | " + childNetworkObj.architecture.toUpperCase() +
+          " | INPUTS: " + numInputs +
+          " | OUTPUTS: " + trainingSetObj.meta.numOutputs
+        ));
+
+        if (childNetworkObj.networkTechnology === "tensorflow") {
+          networkRaw = tensorflow.sequential();
+          networkRaw.add(tensorflow.layers.dense({inputShape: [numInputs], units: childNetworkObj.hiddenLayerSize, activation: 'relu'}));
+          networkRaw.add(tensorflow.layers.dense({units: trainingSetObj.meta.numOutputs, activation: 'softmax'}));
+          return networkRaw;
+        } 
 
         if (childNetworkObj.networkTechnology === "brain") {
           networkRaw = new brain.NeuralNetwork({
             inputSize: numInputs,
             outputSize: 3,
           });
-          resolve(networkRaw);
-        } else if (childNetworkObj.networkTechnology === "carrot") {
+          return networkRaw;
+        } 
+
+        if (childNetworkObj.networkTechnology === "carrot") {
           networkRaw = new carrot.Network(numInputs, 3);
-          resolve(networkRaw);
-        } else {
-          networkRaw = new neataptic.Network(numInputs, 3);
-          resolve(networkRaw);
-        }
+          return networkRaw;
+        } 
+
+        networkRaw = new neataptic.Network(numInputs, 3);
+        return networkRaw;
     }
-  });
+  }
+  catch(err){
+    console.log(chalkError(MODULE_ID_PREFIX + " | *** createNetwork ERROR: " + err));
+    throw err;
+  }
+  // });
 }
 
 const setPrepRequired = function (preppedSetsConfig) {
@@ -2246,38 +2151,58 @@ async function evolve(params) {
 
     let evolveResults;
 
-    if (childNetworkObj.networkTechnology === "brain") {
+    if (childNetworkObj.networkTechnology === "tensorflow") {
+
       childNetworkObj.inputsId = inputsObj.inputsId;
       childNetworkObj.numInputs = inputsObj.meta.numInputs;
 
-      console.log(
-        chalkBlueBold(
-          MODULE_ID_PREFIX +
-            " | ==============================================="
-        )
-      );
-      console.log(
-        chalkBlueBold(
-          MODULE_ID_PREFIX +
-            " | >>> START NETWORK EVOLVE" +
-            " | TRAINING SET SIZE: " +
-            preppedTrainingSet.length +
-            " | ARCH: " +
-            childNetworkObj.architecture +
-            " | TECH: " +
-            childNetworkObj.networkTechnology +
-            " | NN: " +
-            childNetworkObj.networkId +
-            " | IN: " +
-            childNetworkObj.inputsId
-        )
-      );
-      console.log(
-        chalkBlueBold(
-          MODULE_ID_PREFIX +
-            " | ==============================================="
-        )
-      );
+      console.log(chalkBlueBold(MODULE_ID_PREFIX + " | ==============================================="));
+      console.log(chalkBlueBold(MODULE_ID_PREFIX + " | >>> START NETWORK EVOLVE" +
+        " | TRAINING SET SIZE: " + preppedTrainingSet.length +
+        " | ARCH: " + childNetworkObj.architecture +
+        " | TECH: " + childNetworkObj.networkTechnology +
+        " | NN: " + childNetworkObj.networkId +
+        " | IN: " + childNetworkObj.inputsId
+      ));
+      console.log(chalkBlueBold(MODULE_ID_PREFIX + " | ==============================================="));
+
+      evolveResults = await nnTools.fitDataset({
+        networkId: childNetworkObj.networkId,
+        options: preppedOptions,
+        network: childNetworkRaw,
+        trainingSet: preppedTrainingSet,
+      });
+
+      childNetworkObj.tensorflowModelPath = `file://${configHostFolder}/neuralNetworks/tensorflow/${childNetworkObj.networkId}`
+      await childNetworkRaw.save(childNetworkObj.tensorflowModelPath)
+
+      delete evolveResults.network;
+
+      statsObj.evolve.endTime = moment().valueOf();
+      statsObj.evolve.elapsed = moment().valueOf() - statsObj.evolve.startTime;
+      statsObj.evolve.results = evolveResults.stats;
+
+      childNetworkObj.evolve.results = {};
+      childNetworkObj.evolve.results = evolveResults.stats;
+
+      childNetworkObj.elapsed = statsObj.evolve.elapsed;
+      childNetworkObj.evolve.elapsed = statsObj.evolve.elapsed;
+      childNetworkObj.evolve.startTime = statsObj.evolve.startTime;
+      childNetworkObj.evolve.endTime = statsObj.evolve.endTime;
+    } 
+    else if (childNetworkObj.networkTechnology === "brain") {
+      childNetworkObj.inputsId = inputsObj.inputsId;
+      childNetworkObj.numInputs = inputsObj.meta.numInputs;
+
+      console.log(chalkBlueBold(MODULE_ID_PREFIX + " | ==============================================="));
+      console.log(chalkBlueBold(MODULE_ID_PREFIX + " | >>> START NETWORK EVOLVE" +
+        " | TRAINING SET SIZE: " + preppedTrainingSet.length +
+        " | ARCH: " + childNetworkObj.architecture +
+        " | TECH: " + childNetworkObj.networkTechnology +
+        " | NN: " + childNetworkObj.networkId +
+        " | IN: " + childNetworkObj.inputsId
+      ));
+      console.log(chalkBlueBold(MODULE_ID_PREFIX + " | ==============================================="));
 
       evolveResults = await nnTools.streamTrainNetwork({
         networkId: childNetworkObj.networkId,
@@ -2305,41 +2230,26 @@ async function evolve(params) {
       childNetworkObj.evolve.elapsed = statsObj.evolve.elapsed;
       childNetworkObj.evolve.startTime = statsObj.evolve.startTime;
       childNetworkObj.evolve.endTime = statsObj.evolve.endTime;
-    } else {
+    } 
+    else {
+
       if (childNetworkObj.networkTechnology === "carrot") {
         preppedOptions.population_size = preppedOptions.populationSize;
         preppedOptions.mutation_rate = preppedOptions.mutationRate;
         preppedOptions.mutation_amount = preppedOptions.mutationAmount;
         preppedOptions.fitness_population = preppedOptions.fitnessPopulation;
-        // preppedOptions.max_nodes = preppedOptions.maxNodes;
       }
 
-      console.log(
-        chalkBlueBold(
-          MODULE_ID_PREFIX +
-            " | ==============================================="
-        )
-      );
-      console.log(
-        chalkBlueBold(
-          MODULE_ID_PREFIX +
-            " | >>> START NETWORK EVOLVE" +
-            " | ARCH: " +
-            childNetworkObj.architecture +
-            " | TECH: " +
-            childNetworkObj.networkTechnology +
-            " | NN: " +
-            childNetworkObj.networkId +
-            " | IN: " +
-            childNetworkObj.inputsId
-        )
-      );
-      console.log(
-        chalkBlueBold(
-          MODULE_ID_PREFIX +
-            " | ==============================================="
-        )
-      );
+      console.log(chalkBlueBold(MODULE_ID_PREFIX + " | ==============================================="));
+      console.log(chalkBlueBold(MODULE_ID_PREFIX + " | >>> START NETWORK EVOLVE" +
+        " | TRAINING SET SIZE: " + preppedTrainingSet.length +
+        " | ARCH: " + childNetworkObj.architecture +
+        " | TECH: " + childNetworkObj.networkTechnology +
+        " | NN: " + childNetworkObj.networkId +
+        " | IN: " + childNetworkObj.inputsId
+      ));
+      console.log(chalkBlueBold(MODULE_ID_PREFIX + " | ==============================================="));
+
 
       evolveResults = await childNetworkRaw.evolve(
         preppedTrainingSet,
@@ -2365,59 +2275,34 @@ async function evolve(params) {
       childNetworkObj.evolve.endTime = statsObj.evolve.endTime;
     }
 
-    console.log(
-      chalkBlueBold(
-        "=======================================================\n" +
-          MODULE_ID_PREFIX +
-          " | EVOLVE COMPLETE" +
-          " | " +
-          configuration.childId +
-          " | " +
-          getTimeStamp() +
-          " | " +
-          "TECH: " +
-          childNetworkObj.networkTechnology +
-          " | " +
-          "INPUT ID: " +
-          childNetworkObj.inputsId +
-          " | " +
-          "INPUTS: " +
-          childNetworkObj.numInputs +
-          " | " +
-          "TIME: " +
-          evolveResults.time +
-          " | " +
-          "THREADS: " +
-          evolveResults.threads +
-          " | " +
-          "ITERATIONS: " +
-          evolveResults.iterations +
-          " | " +
-          "ERROR: " +
-          evolveResults.error +
-          " | " +
-          "ELAPSED: " +
-          msToTime(statsObj.evolve.elapsed) +
-          "\n======================================================="
-      )
-    );
+    console.log(chalkBlueBold(
+      "=======================================================\n" + MODULE_ID_PREFIX +
+      " | EVOLVE COMPLETE" +
+      " | " +  configuration.childId +
+      " | " + getTimeStamp() +
+      " | TECH: " + childNetworkObj.networkTechnology +
+      " | INPUT ID: " + childNetworkObj.inputsId +
+      " | INPUTS: " + childNetworkObj.numInputs +
+      " | TIME: " + evolveResults.time +
+      " | THREADS: " + evolveResults.threads +
+      " | ITERATIONS: " + evolveResults.iterations +
+      " | ERROR: " + evolveResults.error +
+      " | ELAPSED: " + msToTime(statsObj.evolve.elapsed) +
+      "\n======================================================="
+    ));
 
     if (
       childNetworkObj.networkTechnology !== "brain" &&
       evolveResults.iterations !== childNetworkObj.evolve.options.iterations
     ) {
-      console.log(
-        chalkError(
-          MODULE_ID_PREFIX +
-            " | *** EVOLVE ERROR: ITERATIONS" +
-            " | EXPECTED: " +
-            childNetworkObj.evolve.options.iterations +
-            " | ACTUAL: " +
-            evolveResults.iterations
-        )
-      );
+      console.log(chalkError(MODULE_ID_PREFIX +
+        " | *** EVOLVE ERROR: ITERATIONS" +
+        " | EXPECTED: " + childNetworkObj.evolve.options.iterations +
+        " | ACTUAL: " + evolveResults.iterations
+      ));
     }
     return;
+
   } catch (err) {
     console.log(chalkError(MODULE_ID_PREFIX + " | *** EVOLVE ERROR: " + err));
     console.trace(err);
@@ -2432,12 +2317,10 @@ async function evolve(params) {
 }
 
 function networkEvolve(p) {
+
   return new Promise(function (resolve, reject) {
-    console.log(
-      chalkBlueBold(
-        MODULE_ID_PREFIX + " | NETWORK EVOLVE | " + configuration.childId
-      )
-    );
+
+    console.log(chalkBlueBold(MODULE_ID_PREFIX + " | NETWORK EVOLVE | " + configuration.childId));
 
     const params = childNetworkObj.evolve.options;
 
@@ -2445,25 +2328,19 @@ function networkEvolve(p) {
 
     if (params.seedNetworkId) {
       params.architecture = "seed";
-      params.networkTechnology = params.networkTechnology
-        ? params.networkTechnology
-        : "neataptic";
-      debug(
-        chalkAlert(
-          MODULE_ID_PREFIX + " | START NETWORK DEFINED: " + params.networkId
-        )
-      );
+      params.networkTechnology = params.networkTechnology ? params.networkTechnology : "neataptic";
+      debug(chalkAlert(MODULE_ID_PREFIX + " | START NETWORK DEFINED: " + params.networkId));
     }
 
     if (!params.architecture || params.architecture === undefined) {
       params.architecture = "random";
     }
+
     if (!params.networkTechnology || params.networkTechnology === undefined) {
       params.networkTechnology = configuration.networkTechnology;
     }
 
-    const networkTech =
-      params.networkTechnology === "carrot" ? carrot : neataptic;
+    const networkTech = params.networkTechnology === "carrot" ? carrot : neataptic;
 
     statsObj.evolve.startTime = moment().valueOf();
     statsObj.evolve.elapsed = 0;
@@ -2476,109 +2353,67 @@ function networkEvolve(p) {
 
         switch (key) {
           case "networkObj":
-            console.log(
-              MODULE_ID_PREFIX +
-                " | " +
-                configuration.childId +
-                " | EVOLVE OPTION" +
-                " | NN ID: " +
-                key +
-                ": " +
-                params[key].networkId +
-                " | IN: " +
-                params[key].inputsId +
-                " | SR: " +
-                params[key].successRate.toFixed(2) +
-                "%"
+            console.log(MODULE_ID_PREFIX +
+              " | " + configuration.childId +
+              " | EVOLVE OPTION" +
+              " | NN ID: " + key + ": " + params[key].networkId +
+              " | IN: " + params[key].inputsId +
+              " | SR: " + params[key].successRate.toFixed(2) + "%"
             );
             break;
 
           case "network":
             if (!empty(params.network)) {
-              console.log(
-                MODULE_ID_PREFIX +
-                  " | " +
-                  configuration.childId +
-                  " | EVOLVE OPTION | " +
-                  key +
-                  "\n" +
-                  Object.keys(params[key])
+              console.log(MODULE_ID_PREFIX +
+                " | " + configuration.childId +
+                " | EVOLVE OPTION | " + key + "\n" + Object.keys(params[key])
               );
-            } else {
-              console.log(
-                MODULE_ID_PREFIX +
-                  " | " +
-                  configuration.childId +
-                  " | EVOLVE OPTION | " +
-                  key +
-                  ": " +
-                  params[key]
+            } 
+            else {
+              console.log(MODULE_ID_PREFIX +
+                " | " + configuration.childId +
+                " | EVOLVE OPTION | " + key + ": " + params[key]
               );
             }
             break;
 
           case "mutation":
-            console.log(
-              MODULE_ID_PREFIX +
-                " | " +
-                configuration.childId +
-                " | EVOLVE OPTION | " +
-                key +
-                ": " +
-                params[key]
+            console.log(MODULE_ID_PREFIX +
+              " | " + configuration.childId +
+              " | EVOLVE OPTION | " + key + ": " + params[key]
             );
             options.mutation = networkTech.methods.mutation[params[key]];
             break;
 
           case "selection":
-            console.log(
-              MODULE_ID_PREFIX +
-                " | " +
-                configuration.childId +
-                " | EVOLVE OPTION | " +
-                key +
-                ": " +
-                params[key]
+            console.log(MODULE_ID_PREFIX +
+              " | " + configuration.childId +
+              " | EVOLVE OPTION | " + key + ": " + params[key]
             );
             options.selection = networkTech.methods.selection[params[key]];
             break;
 
           case "cost":
-            console.log(
-              MODULE_ID_PREFIX +
-                " | " +
-                configuration.childId +
-                " | EVOLVE OPTION | " +
-                key +
-                ": " +
-                params[key]
+            console.log(MODULE_ID_PREFIX +
+              " | " + configuration.childId +
+              " | EVOLVE OPTION | " + key + ": " + params[key]
             );
             options.cost = networkTech.methods.cost[params[key]];
             break;
 
           case "activation":
-            console.log(
-              MODULE_ID_PREFIX +
-                " | " +
-                configuration.childId +
-                " | EVOLVE OPTION | " +
-                key +
-                ": " +
-                params[key]
+            console.log(MODULE_ID_PREFIX +
+              " | " + configuration.childId +
+              " | EVOLVE OPTION | " + key + ": " + params[key]
             );
             options.activation = networkTech.methods.activation[params[key]];
             break;
 
           default:
             if (!ignoreKeyArray.includes(key)) {
-              console.log(
-                MODULE_ID_PREFIX +
-                  " | " +
-                  configuration.childId +
-                  " | EVOLVE OPTION | " +
-                  key +
-                  ": " +
-                  params[key]
+              console.log(MODULE_ID_PREFIX +
+                " | " + configuration.childId +
+                " | EVOLVE OPTION | " + key + ": " + params[key]
               );
               options[key] = params[key];
             }

@@ -148,6 +148,9 @@ const neatapticEvolveOptionsPickArray = [
   "threads",
 ];
 
+const tensorflowEvolveOptionsPickArray = [
+];
+
 const brainTrainOptionsPickArray = [
   "learningRate",
   "momentum",
@@ -156,6 +159,7 @@ const brainTrainOptionsPickArray = [
 
 const combinedEvolveOptionsPickArray = _.union(
   defaultEvolveOptionsPickArray, 
+  tensorflowEvolveOptionsPickArray, 
   carrotEvolveOptionsPickArray, 
   neatapticEvolveOptionsPickArray, 
   brainTrainOptionsPickArray
@@ -502,6 +506,7 @@ const inputsIdTechHashMap = {};
 inputsIdTechHashMap.networkTechnology = {};
 inputsIdTechHashMap.networkTechnology.brain = {};
 inputsIdTechHashMap.networkTechnology.carrot = {};
+inputsIdTechHashMap.networkTechnology.tensorflow = {};
 inputsIdTechHashMap.networkTechnology.neataptic = {};
 
 const inputsViableSet = new Set();
@@ -604,6 +609,12 @@ configuration.evolve.activationArray = EVOVLE_DEFAULTS.DEFAULT_EVOLVE_ACTIVATION
 configuration.evolve.architecture = EVOVLE_DEFAULTS.DEFAULT_EVOLVE_ARCHITECTURE;
 configuration.evolve.binaryMode = EVOVLE_DEFAULTS.DEFAULT_BINARY_MODE;
 configuration.evolve.binaryModeProbability = EVOVLE_DEFAULTS.DEFAULT_BINARY_MODE_PROBABILITY;
+
+configuration.evolve.tensorflowInputActivationArray = EVOVLE_DEFAULTS.DEFAULT_TENSORFLOW_TRAIN_INPUT_ACTIVATION_ARRAY;
+configuration.evolve.tensorflowOutputActivationArray = EVOVLE_DEFAULTS.DEFAULT_TENSORFLOW_TRAIN_OUTPUT_ACTIVATION_ARRAY;
+configuration.evolve.tensorflowOptimizerArray = EVOVLE_DEFAULTS.DEFAULT_TENSORFLOW_TRAIN_OPTIMIZER_ARRAY
+configuration.evolve.tensorflowLossArray = EVOVLE_DEFAULTS.DEFAULT_TENSORFLOW_TRAIN_LOSS_ARRAY
+configuration.evolve.tensorflowMetricArray = EVOVLE_DEFAULTS.DEFAULT_TENSORFLOW_TRAIN_METRICS_ARRAY
 
 configuration.evolve.brainActivationArray = EVOVLE_DEFAULTS.DEFAULT_BRAIN_TRAIN_ACTIVATION_ARRAY;
 configuration.evolve.learningRate = EVOVLE_DEFAULTS.DEFAULT_EVOLVE_LEARNING_RATE;
@@ -1035,6 +1046,7 @@ function purgeInputs(inputsId){
         skipLoadInputsSet.add(inputsId);
         delete inputsIdTechHashMap.networkTechnology.brain[inputsId];
         delete inputsIdTechHashMap.networkTechnology.carrot[inputsId];
+        delete inputsIdTechHashMap.networkTechnology.tensorflow[inputsId];
         delete inputsIdTechHashMap.networkTechnology.neataptic[inputsId];
       }
       else {
@@ -1223,9 +1235,7 @@ async function loadNetworkFile(params){
     filePath = params.folder + "/" + params.file;
   }
 
-  console.log(chalkLog(MODULE_ID_PREFIX + " | <<< LOAD NN FILE"
-    + " | " + filePath
-  ));
+  console.log(chalkLog(MODULE_ID_PREFIX + " | <<< LOAD NN FILE" + " | " + filePath));
 
   const networkObj = await tcUtils.loadFile({folder: params.folder, file: params.file});
 
@@ -1999,7 +2009,14 @@ async function generateEvolveOptions(params){
 
       console.log(chalkLog(MODULE_ID_PREFIX + " | ... GENERATE EVOLVE OPTIONS ... | ATTEMPTS: " + attempts + " | KEY: " + key));
 
-      if (config.networkTechnology === "brain"){
+      if (config.networkTechnology === "tensorflow"){
+        config.tensorflowInputActivationArray = randomItem(configuration.evolve.tensorflowInputActivationArray);
+        config.tensorflowOutputActivationArray = randomItem(configuration.evolve.tensorflowOutputActivationArray);
+        config.optimizer = randomItem(configuration.evolve.tensorflowOptimizerArray);
+        config.loss = randomItem(configuration.evolve.tensorflowLossArray);
+        config.metrics = configuration.evolve.tensorflowMetricsArray;
+      }
+      else if (config.networkTechnology === "brain"){
 
         config.activation = randomItem(configuration.evolve.brainActivationArray);
 
@@ -2085,6 +2102,9 @@ function pickTechnologyOptions(config){
   switch (config.networkTechnology){
     case "brain": 
       pickArray = _.union(defaultEvolveOptionsPickArray, brainTrainOptionsPickArray);
+      break;
+    case "tensorflow": 
+      pickArray = _.union(defaultEvolveOptionsPickArray, tensorflowEvolveOptionsPickArray);
       break;
     case "carrot": 
       pickArray = _.union(defaultEvolveOptionsPickArray, carrotEvolveOptionsPickArray);
@@ -2336,11 +2356,14 @@ async function initNetworkCreate(params){
 
       childConf = configuration.previousChildConfig;
 
+      if (configuration.previousChildConfig.networkTechnology === "tensorflow") {
+        childConf.networkTechnology = "neataptic";
+      }
       if (configuration.previousChildConfig.networkTechnology === "neataptic") {
         childConf.networkTechnology = "carrot";
       }
       if (configuration.previousChildConfig.networkTechnology === "carrot") {
-        childConf.networkTechnology = "neataptic";
+        childConf.networkTechnology = "tensorflow";
       }
 
       console.log(chalkAlert("TNN | PREV CHILD CONF TECH: " + configuration.previousChildConfig.networkTechnology));
@@ -2388,6 +2411,21 @@ async function initNetworkCreate(params){
       + "\n" + MODULE_ID_PREFIX + " | ERROR:             " + messageObj.error
       + "\n" + MODULE_ID_PREFIX + " | ACTIVATION:        " + messageObj.activation
     ));
+
+    if (messageObj.networkTechnology === "tensorflow"){
+      //       network.compile({
+      //   optimizer: 'sgd',
+      //   loss: 'categoricalCrossentropy',
+      //   metrics: ['accuracy']
+      // });
+      console.log(chalkBlue(
+               MODULE_ID_PREFIX + " | OPTIMIZER:         " + messageObj.optimizer
+      + "\n" + MODULE_ID_PREFIX + " | INPUT ACTIVATION:  " + messageObj.inputActivation
+      + "\n" + MODULE_ID_PREFIX + " | OUTPUT ACTIVATION: " + messageObj.outputActivation
+      + "\n" + MODULE_ID_PREFIX + " | LOSS:              " + messageObj.loss
+      + "\n" + MODULE_ID_PREFIX + " | METRICS:           " + messageObj.metrics
+      ));
+    }
 
     if (messageObj.networkTechnology === "brain"){
       console.log(chalkBlue(
