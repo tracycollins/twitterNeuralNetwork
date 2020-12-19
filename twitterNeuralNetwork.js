@@ -149,6 +149,12 @@ const neatapticEvolveOptionsPickArray = [
 ];
 
 const tensorflowEvolveOptionsPickArray = [
+  "inputActivation",
+  "outputActivation",
+  "hiddenLayerSize",
+  "optimizer",
+  "loss",
+  "metrics"
 ];
 
 const brainTrainOptionsPickArray = [
@@ -614,7 +620,7 @@ configuration.evolve.tensorflowInputActivationArray = EVOVLE_DEFAULTS.DEFAULT_TE
 configuration.evolve.tensorflowOutputActivationArray = EVOVLE_DEFAULTS.DEFAULT_TENSORFLOW_TRAIN_OUTPUT_ACTIVATION_ARRAY;
 configuration.evolve.tensorflowOptimizerArray = EVOVLE_DEFAULTS.DEFAULT_TENSORFLOW_TRAIN_OPTIMIZER_ARRAY
 configuration.evolve.tensorflowLossArray = EVOVLE_DEFAULTS.DEFAULT_TENSORFLOW_TRAIN_LOSS_ARRAY
-configuration.evolve.tensorflowMetricArray = EVOVLE_DEFAULTS.DEFAULT_TENSORFLOW_TRAIN_METRICS_ARRAY
+configuration.evolve.tensorflowMetricsArray = EVOVLE_DEFAULTS.DEFAULT_TENSORFLOW_TRAIN_METRICS_ARRAY
 
 configuration.evolve.brainActivationArray = EVOVLE_DEFAULTS.DEFAULT_BRAIN_TRAIN_ACTIVATION_ARRAY;
 configuration.evolve.learningRate = EVOVLE_DEFAULTS.DEFAULT_EVOLVE_LEARNING_RATE;
@@ -771,12 +777,9 @@ function printResultsHashmap(){
       "ME",
       "POP",
       "EL",
-      // "START",
       "ELPSD",
       "ITRS",
       "SPI",
-      // "ERROR",
-      // "FIT",
       "RES %"
     ]);
 
@@ -796,8 +799,6 @@ function printResultsHashmap(){
         networkObj.evolve.options.cost = "---";
         networkObj.evolve.options.growth = 0;
         networkObj.evolve.options.equal = "---";
-        // networkObj.evolve.options.max_nodes = Infinity;
-        // networkObj.evolve.options.maxNodes = Infinity;
         networkObj.evolve.options.mutationRate = 0;
         networkObj.evolve.options.efficientMutation = "---";
         networkObj.evolve.options.popsize = 0;
@@ -814,7 +815,6 @@ function printResultsHashmap(){
       let nnTech = "";
       let status = "";
       let binaryMode = "F";
-      // let logScaleMode = "F";
       let snIdRes = 0;
       let iterations = 0;
       let secPerIteration = 0;
@@ -823,6 +823,7 @@ function printResultsHashmap(){
       let popsize = 0;
       let elitism = 0;
       let fitness = 0;
+      let activation = "";
       let successRate = 0;
       let elapsed = 0;
       let betterChild = "";
@@ -843,9 +844,11 @@ function printResultsHashmap(){
       seedNetworkId = (networkObj.seedNetworkId && networkObj.seedNetworkId !== undefined) ? networkObj.seedNetworkId : "---";
       iterations = (networkObj.evolve.results && networkObj.evolve.results !== undefined) ? networkObj.evolve.results.iterations : 0;
 
-      cost = (networkObj.networkTechnology !== "brain") ? networkObj.evolve.options.cost.slice(0,4) : "---";
-      popsize = (networkObj.networkTechnology !== "brain") ? networkObj.evolve.options.popsize : "---";
-      elitism = (networkObj.networkTechnology !== "brain") ? networkObj.evolve.options.elitism : "---";
+      cost = (networkObj.networkTechnology !== "tensorflow" && networkObj.networkTechnology !== "brain") ? networkObj.evolve.options.cost.slice(0,4) : "---";
+      popsize = (networkObj.networkTechnology !== "tensorflow" && networkObj.networkTechnology !== "brain") ? networkObj.evolve.options.popsize : "---";
+      elitism = (networkObj.networkTechnology !== "tensorflow" && networkObj.networkTechnology !== "brain") ? networkObj.evolve.options.elitism : "---";
+      // activation = (networkObj.networkTechnology === "tensorflow") ? networkObj.evolve.options.inputActivation.slice(0,6) : networkObj.evolve.options.activation.slice(0,6);
+      activation = (networkObj.networkTechnology === "tensorflow") ? networkObj.evolve.options.inputActivation : networkObj.evolve.options.activationq;
 
       error = ((networkObj.evolve.results && networkObj.evolve.results !== undefined) 
         && (networkObj.evolve.results.error !== undefined)
@@ -875,7 +878,8 @@ function printResultsHashmap(){
         snIdRes,
         hiddenLayerSize,
         shortInputsId(networkObj.inputsId),
-        networkObj.evolve.options.activation.slice(0,6),
+        // networkObj.evolve.options.activation.slice(0,6),
+        activation,
         formatBoolean(networkObj.evolve.options.clear),
         cost,
         selection,
@@ -2010,11 +2014,12 @@ async function generateEvolveOptions(params){
       console.log(chalkLog(MODULE_ID_PREFIX + " | ... GENERATE EVOLVE OPTIONS ... | ATTEMPTS: " + attempts + " | KEY: " + key));
 
       if (config.networkTechnology === "tensorflow"){
-        config.tensorflowInputActivationArray = randomItem(configuration.evolve.tensorflowInputActivationArray);
-        config.tensorflowOutputActivationArray = randomItem(configuration.evolve.tensorflowOutputActivationArray);
+        config.inputActivation = randomItem(configuration.evolve.tensorflowInputActivationArray);
+        config.outputActivation = randomItem(configuration.evolve.tensorflowOutputActivationArray);
         config.optimizer = randomItem(configuration.evolve.tensorflowOptimizerArray);
         config.loss = randomItem(configuration.evolve.tensorflowLossArray);
         config.metrics = configuration.evolve.tensorflowMetricsArray;
+        console.log({config})
       }
       else if (config.networkTechnology === "brain"){
 
@@ -2045,7 +2050,6 @@ async function generateEvolveOptions(params){
       config.clear = false;
 
       // neataptic doesn't have WAPE cost
-
       const costArray = (config.networkTechnology === "neataptic") 
         ? _.pull(configuration.evolve.costArray, "WAPE") 
         : configuration.evolve.costArray;
@@ -2263,7 +2267,6 @@ async function generateRandomEvolveConfig(p){
   // not seed network
   else { 
 
-    // if (config.seedInputsId && (config.seedInputsId !== undefined) && inputsSet.has(config.seedInputsId)) {
     if (config.seedInputsId && (config.seedInputsId !== undefined)) {
 
       console.log(chalkLog(MODULE_ID_PREFIX + " | USE SEED INPUTS ID | " + config.seedInputsId));
@@ -2278,16 +2281,13 @@ async function generateRandomEvolveConfig(p){
           console.log(chalkError(MODULE_ID_PREFIX + " | *** LOAD DB INPUTS ERROR | NOT FOUND"
             + " | INPUTS ID: " + config.seedInputsId
           ));
-          // throw new Error(config.seedInputsId + " NOT IN inputsSet");
           const file = config.seedInputsId + ".json";
 
           inputsObj = await loadInputsFile({folder: defaultInputsFolder, file: file});
         }
 
         if (!inputsObj) {
-          console.log(chalkError("TNN | *** LOAD FILE INPUTS ERROR | NOT FOUND"
-            + " | INPUTS ID: " + config.seedInputsId
-          ));
+          console.log(chalkError("TNN | *** LOAD FILE INPUTS ERROR | NOT FOUND | INPUTS ID: " + config.seedInputsId));
           throw new Error(config.seedInputsId + " NOT IN inputsSet");
         }
 
@@ -2297,15 +2297,14 @@ async function generateRandomEvolveConfig(p){
 
         if(config.inputsId === configuration.userProfileCharCodesOnlyInputsId){
           config.binaryMode = false;
-          // config.logScaleMode = false;
         }
         else if(inputsObj.meta.userProfileCharCodesOnlyFlag){
           config.binaryMode = false;
-          // config.logScaleMode = false;
         }
 
-        config.hiddenLayerSize = parseInt((configuration.inputsToHiddenLayerSizeRatio * inputsObj.meta.numInputs) + 3);
-        config.hiddenLayerSize = randomItem([0,config.hiddenLayerSize]);
+        config.hiddenLayerSize = Math.floor((configuration.evolve.inputsToHiddenLayerSizeRatio * inputsObj.meta.numInputs) + 3);
+        // tensorflow always has hidden layer
+        config.hiddenLayerSize = (config.networkTechnology === "tensorflow") ? config.hiddenLayerSize : randomItem([0, config.hiddenLayerSize]);
 
         config.architecture = (config.hiddenLayerSize > 0) ? "perceptron" : "random";
 
@@ -2399,18 +2398,20 @@ async function initNetworkCreate(params){
     console.log(chalkBlue("\nTNN | START NETWORK EVOLVE"));
 
     console.log(chalkBlue(
-               MODULE_ID_PREFIX + " | NN ID:             " + networkId
+              MODULE_ID_PREFIX + " | NN ID:             " + networkId
       + "\n" + MODULE_ID_PREFIX + " | TECHNOLOGY:        " + messageObj.networkTechnology
       + "\n" + MODULE_ID_PREFIX + " | BIN MODE:          " + messageObj.binaryMode
-      // + "\n" + MODULE_ID_PREFIX + " | LOG SCALE MODE:    " + messageObj.logScaleMode
       + "\n" + MODULE_ID_PREFIX + " | ARCHITECTURE:      " + messageObj.architecture
       + "\n" + MODULE_ID_PREFIX + " | INPUTS ID:         " + messageObj.inputsId
       + "\n" + MODULE_ID_PREFIX + " | INPUTS:            " + messageObj.numInputs
       + "\n" + MODULE_ID_PREFIX + " | HIDDEN LAYER SIZE: " + messageObj.hiddenLayerSize
       + "\n" + MODULE_ID_PREFIX + " | ITERATIONS:        " + messageObj.iterations
       + "\n" + MODULE_ID_PREFIX + " | ERROR:             " + messageObj.error
-      + "\n" + MODULE_ID_PREFIX + " | ACTIVATION:        " + messageObj.activation
     ));
+
+    if (messageObj.networkTechnology !== "tensorflow"){
+      console.log(chalkBlue(MODULE_ID_PREFIX + " | ACTIVATION:        " + messageObj.activation));
+    }
 
     if (messageObj.networkTechnology === "tensorflow"){
       //       network.compile({
@@ -2435,7 +2436,7 @@ async function initNetworkCreate(params){
       ));
     }
 
-    if (messageObj.networkTechnology !== "brain"){
+    if (messageObj.networkTechnology !== "tensorflow" && messageObj.networkTechnology !== "brain"){
       console.log(chalkBlue(
                  MODULE_ID_PREFIX + " | COST:              " + messageObj.cost
         + "\n" + MODULE_ID_PREFIX + " | SELECTION:         " + messageObj.selection
@@ -5079,7 +5080,7 @@ async function evolveCompleteHandler(params){
 
   }
   catch(err){
-    console.log(chalkError(MODULE_ID_PREFIX + "| *** EVOLVE_COMPLETE ERROR: " + err));
+    console.trace(chalkError(MODULE_ID_PREFIX + "| *** EVOLVE_COMPLETE ERROR: " + err));
     throw err;
   }
 }
@@ -5184,7 +5185,7 @@ async function childMessageHandler(params){
           }
         }
         catch(e){
-          console.log(chalkError(MODULE_ID_PREFIX 
+          console.trace(chalkError(MODULE_ID_PREFIX 
             + " | " + childId
             + " | *** EVOLVE_COMPLETE ERROR: " + e
           ));
