@@ -1256,13 +1256,13 @@ function prepNetworkEvolve() {
   switch (childNetworkObj.networkTechnology) {
 
     case "tensorflow":
-      options.onEpochEnd = function (epoch, logs) {
+      options.callbacks = {};
+      options.epochs = options.iterations;
+      options.callbacks.onEpochEnd = (epoch, logs) => {
 
         const elapsedInt = moment().valueOf() - schedStartTime;
         const iterationRate = elapsedInt / epoch;
         const timeToComplete = iterationRate * (options.iterations - epoch);
-
-        const fitness = logs.fitness || 0;
 
         statsObj.evolve.stats = logs;
 
@@ -1280,8 +1280,8 @@ function prepNetworkEvolve() {
           iteration: epoch,
           iterationRate: iterationRate,
           timeToComplete: timeToComplete,
-          // error: schedParams.error.toFixed(5) || Infinity,
-          fitness: fitness.toFixed(5) || -Infinity,
+          error: logs.loss.toFixed(5) || Infinity,
+          fitness: logs.acc.toFixed(5) || -Infinity,
         };
 
         processSendQueue.push({
