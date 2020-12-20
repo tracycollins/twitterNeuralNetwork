@@ -848,7 +848,7 @@ function printResultsHashmap(){
       popsize = (networkObj.networkTechnology !== "tensorflow" && networkObj.networkTechnology !== "brain") ? networkObj.evolve.options.popsize : "---";
       elitism = (networkObj.networkTechnology !== "tensorflow" && networkObj.networkTechnology !== "brain") ? networkObj.evolve.options.elitism : "---";
       // activation = (networkObj.networkTechnology === "tensorflow") ? networkObj.evolve.options.inputActivation.slice(0,6) : networkObj.evolve.options.activation.slice(0,6);
-      activation = (networkObj.networkTechnology === "tensorflow") ? networkObj.evolve.options.inputActivation : networkObj.evolve.options.activationq;
+      activation = (networkObj.networkTechnology === "tensorflow") ? networkObj.evolve.options.inputActivation : networkObj.evolve.options.activation;
 
       error = ((networkObj.evolve.results && networkObj.evolve.results !== undefined) 
         && (networkObj.evolve.results.error !== undefined)
