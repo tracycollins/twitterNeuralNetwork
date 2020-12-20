@@ -865,6 +865,10 @@ async function cursorDataHandlerPromise(user){
     statsObj.users.processed.endMoment.add(statsObj.users.processed.remainMS, "ms");
     statsObj.users.processed.percent = 100 * (statsObj.users.notCategorized + statsObj.users.processed.total)/statsObj.users.grandTotal;
 
+    if (statsObj.users.processed.total % 1000 === 0){
+      console.log(chalkLog(`${MODULE_ID_PREFIX} | USERS PROCESSED: ${statsObj.users.processed.total}`))
+    }
+
     return;
 
   }
