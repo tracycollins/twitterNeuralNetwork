@@ -117,9 +117,11 @@ const brainTrainOptionsPickArray = [
   "timeout",
 ];
 const tensorflowEvolveOptionsPickArray = [
+  "callbacks",
   "hiddenLayerSize",
   "inputActivation",
   "outputActivation",
+  "epochs",
   "iterations",
   "batchSize"
 ];
@@ -1260,8 +1262,9 @@ function prepNetworkEvolve() {
   switch (childNetworkObj.networkTechnology) {
 
     case "tensorflow":
-      options.callbacks = {};
+
       options.epochs = options.iterations;
+      options.callbacks = {};
       options.callbacks.onEpochEnd = (epoch, logs) => {
 
         const elapsedInt = moment().valueOf() - schedStartTime;
@@ -1671,7 +1674,12 @@ async function createNetwork() {
 
             const nnJson = JSON.parse(childNetworkObj.networkJson);
             const weightData = new Uint8Array(Buffer.from(nnJson.weightData, "base64")).buffer;
-            networkRaw = await tensorflow.loadLayersModel(tensorflow.io.fromMemory(nnJson.modelTopology, nnJson.weightSpecs, weightData));
+            // networkRaw = await tensorflow.loadLayersModel(tensorflow.io.fromMemory(nnJson.modelTopology, nnJson.weightSpecs, weightData));
+            networkRaw = await tensorflow.loadLayersModel(tensorflow.io.fromMemory({
+              modelTopology: nnJson.modelTopology,
+              weightSpecs: nnJson.weightSpecs,
+              weightData: weightData
+            }));
 
             console.log(chalkLog(MODULE_ID_PREFIX + " | CHILD RAW NETWORK: " + childNetworkObj.seedNetworkId));
           } 
@@ -1928,12 +1936,11 @@ const preppedSetsConfigPickArray = [
 ];
 
 async function evolve(params) {
+
   let preppedOptions;
 
   try {
-    console.log(
-      chalkLog(
-        MODULE_ID_PREFIX +
+    console.log(chalkLog( MODULE_ID_PREFIX +
           " | PREPARE NETWORK EVOLVE" +
           " | TECH: " +
           childNetworkObj.networkTechnology +
@@ -1943,8 +1950,7 @@ async function evolve(params) {
           childNetworkObj.seedNetworkId +
           " | IN: " +
           childNetworkObj.inputsId
-      )
-    );
+      ));
 
     console.log(childNetworkObj.evolve.options);
 
@@ -2056,7 +2062,6 @@ async function evolve(params) {
         options: preppedOptions,
         network: childNetworkRaw,
         trainingSet: preppedTrainingSet,
-        verbose: true
       });
 
       console.log(results.stats.params)
@@ -2265,7 +2270,7 @@ function networkEvolve(p) {
     console.log(chalkBlueBold(MODULE_ID_PREFIX + " | NETWORK EVOLVE | " + configuration.childId));
     
     const params = childNetworkObj.evolve.options;
-    console.log({params})
+    debug({params})
 
     const options = {};
 
@@ -2871,26 +2876,16 @@ async function configNetworkEvolve(params) {
       configuration.testSetRatio = params.testSetRatio;
     }
 
-    console.log(
-      chalkInfo(
-        MODULE_ID_PREFIX +
-          " | CONFIG EVOLVE" +
-          " | CHILD ID: " +
-          params.childId +
-          " | ARCH: " +
-          params.architecture +
-          " | TECH: " +
-          params.networkTechnology +
-          " | IN: " +
-          params.numInputs +
-          " | SEED: " +
-          params.seedNetworkId +
-          " | SEED RES: " +
-          params.seedNetworkRes +
-          " | TEST SET RATIO: " +
-          configuration.testSetRatio
-      )
-    );
+    console.log(chalkInfo(MODULE_ID_PREFIX +
+      " | CONFIG EVOLVE" +
+      " | CHILD ID: " + params.childId +
+      " | ARCH: " + params.architecture +
+      " | TECH: " + params.networkTechnology +
+      " | IN: " + params.numInputs +
+      " | SEED: " + params.seedNetworkId +
+      " | SEED RES: " + params.seedNetworkRes +
+      " | TEST SET RATIO: " + configuration.testSetRatio
+    ));
 
     configuration.childId = params.childId;
 
@@ -2899,12 +2894,8 @@ async function configNetworkEvolve(params) {
 
     newNetObj.networkId = params.testRunId;
     newNetObj.architecture = params.architecture;
-    newNetObj.seedNetworkId =
-      params.seedNetworkId &&
-      params.seedNetworkId !== undefined &&
-      params.seedNetworkId !== "false"
-        ? params.seedNetworkId
-        : false;
+    newNetObj.hiddenLayerSize = params.hiddenLayerSize || 0;
+    newNetObj.seedNetworkId = params.seedNetworkId && params.seedNetworkId !== undefined && params.seedNetworkId !== "false" ? params.seedNetworkId : false;
     newNetObj.seedNetworkRes = params.seedNetworkRes;
     newNetObj.networkCreateMode = "evolve";
     newNetObj.testRunId = params.testRunId;
@@ -2961,33 +2952,23 @@ async function configNetworkEvolve(params) {
     newNetObj.evolve.endTime = statsObj.evolve.endTime;
 
     if (newNetObj.evolve.options.seedNetworkId) {
-      let seedNetworkObj = await global.wordAssoDb.NeuralNetwork.findOne({
-        networkId: newNetObj.seedNetworkId,
-      }).exec();
+
+      let seedNetworkObj = await global.wordAssoDb.NeuralNetwork.findOne({networkId: newNetObj.seedNetworkId}).exec();
 
       if (!seedNetworkObj || seedNetworkObj === undefined) {
-        console.log(
-          chalkAlert(
-            MODULE_ID_PREFIX +
-              " | !!! SEED NETWORK NOT FOUND IN DB ... CHECK FOR FILE" +
-              " | SEED: " +
-              newNetObj.seedNetworkId
-          )
-        );
+
+        console.log(chalkAlert(MODULE_ID_PREFIX +
+          " | !!! SEED NETWORK NOT FOUND IN DB ... CHECK FOR FILE" +
+          " | SEED: " + newNetObj.seedNetworkId
+        ));
 
         const file = newNetObj.seedNetworkId + ".json";
-        const filePath = path.join(
-          "/Users/tc/Dropbox/Apps/wordAssociation/config/utility/best/neuralNetworks",
-          file
-        );
+        const filePath = path.join("/Users/tc/Dropbox/Apps/wordAssociation/config/utility/best/neuralNetworks", file);
 
         seedNetworkObj = await fs.readJson(filePath);
       }
 
-      if (
-        seedNetworkObj &&
-        seedNetworkObj.networkTechnology !== newNetObj.networkTechnology
-      ) {
+      if (seedNetworkObj && seedNetworkObj.networkTechnology !== newNetObj.networkTechnology) {
         console.log(
           chalkAlert(
             MODULE_ID_PREFIX +
@@ -3200,14 +3181,8 @@ process.on("message", async function (m) {
         break;
 
       case "CONFIG_EVOLVE":
-        console.log(chalkInfo(MODULE_ID_PREFIX +
-              " | CONFIG_EVOLVE" +
-              " | CHILD ID: " +
-              m.childId +
-              "\n" +
-              jsonPrint(m)
-          )
-        );
+
+        console.log(chalkInfo(`${MODULE_ID_PREFIX} | CONFIG_EVOLVE | CHILD ID: ${m.childId} \n${jsonPrint(m)}`));
 
         childNetworkObj = null;
         childNetworkObj = await configNetworkEvolve(m);

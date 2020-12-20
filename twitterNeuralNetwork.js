@@ -5147,11 +5147,11 @@ async function childMessageHandler(params){
           + " | " + m.stats.networkTechnology.slice(0,1).toUpperCase()
           + " | " + m.stats.networkId
           + " | " + m.stats.inputsId
-          + " | ERR " + error
-          + " | FIT " + fitness
+          + " | ERR " + error.toFixed(6)
+          + " | FIT " + fitness.toFixed(6)
           + " | R " + msToTime(m.stats.evolveElapsed)
           + " | ETC " + msToTime(m.stats.timeToComplete) + " " + moment().add(m.stats.timeToComplete).format(compactDateTimeFormat)
-          + " | " + (m.stats.iterationRate/1000.0).toFixed(1) + " spi"
+          + " | " + (m.stats.iterationRate/1000.0).toFixed(3) + " spi"
           + " | I " + m.stats.iteration + "/" + m.stats.totalIterations
         ));
 
