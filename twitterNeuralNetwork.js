@@ -69,7 +69,7 @@ const _ = require("lodash");
 const dotProp = require("dot-prop");
 
 const PRIMARY_HOST = process.env.PRIMARY_HOST || "google";
-const DATABASE_HOST = process.env.DATABASE_HOST || "macpro2";
+const DATABASE_HOST = process.env.DATABASE_HOST || "mms3";
 const DEFAULT_DATA_ROOT = process.env.DATA_ROOT_FOLDER || "/Volumes/RAID1/data";
 
 const HOST = (hostname === PRIMARY_HOST || hostname === DATABASE_HOST) ? "default" : "local";
