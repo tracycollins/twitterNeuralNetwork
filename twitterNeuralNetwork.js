@@ -5136,7 +5136,12 @@ async function childMessageHandler(params){
 
         _.set(resultsHashmap[m.stats.networkId], "evolve.results.iterations", m.stats.iteration);
 
-        error = (m.stats.error > 1000) ? expo(m.stats.error, 2) : Number.parseFloat(m.stats.error);
+        // console.log(`m.stats.error: ${m.stats.error}`)
+        // console.log(typeof m.stats.error)
+
+        error = Number.parseFloat(m.stats.error)
+
+        error = (error > 1000) ? expo(error, 2) : error.toFixed(6);
         fitness = (m.stats.fitness < -1000) ? expo(m.stats.fitness, 2) : Number.parseFloat(m.stats.fitness);
 
         _.set(resultsHashmap[m.stats.networkId], "evolve.results.error", error);
@@ -5147,7 +5152,7 @@ async function childMessageHandler(params){
           + " | " + m.stats.networkTechnology.slice(0,1).toUpperCase()
           + " | " + m.stats.networkId
           + " | " + m.stats.inputsId
-          + " | ERR " + error.toFixed(6)
+          + " | ERR " + error
           + " | FIT " + fitness.toFixed(6)
           + " | R " + msToTime(m.stats.evolveElapsed)
           + " | ETC " + msToTime(m.stats.timeToComplete) + " " + moment().add(m.stats.timeToComplete).format(compactDateTimeFormat)
