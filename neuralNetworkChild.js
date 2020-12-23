@@ -1061,14 +1061,11 @@ async function loadTrainingSet(p) {
 }
 
 async function testNetworkData(params) {
+
   const testSet = params.testSet;
 
-  const convertDatumFlag =
-    params.convertDatumFlag !== undefined ? params.convertDatumFlag : false;
-  const userProfileOnlyFlag =
-    params.userProfileOnlyFlag !== undefined
-      ? params.userProfileOnlyFlag
-      : configuration.userProfileOnlyFlag;
+  const convertDatumFlag = params.convertDatumFlag !== undefined ? params.convertDatumFlag : false;
+  const userProfileOnlyFlag = params.userProfileOnlyFlag !== undefined ? params.userProfileOnlyFlag : configuration.userProfileOnlyFlag;
 
   const verbose = params.verbose || false;
 
@@ -1089,12 +1086,9 @@ async function testNetworkData(params) {
 
     try {
       testOutput = await nnTools.activateSingleNetwork(activateParams);
-    } catch (err) {
-      console.log(
-        chalkError(
-          MODULE_ID_PREFIX + " | TEST NN ERROR " + "\n" + jsonPrint(err)
-        )
-      );
+    } 
+    catch (err) {
+      console.log(chalkError(MODULE_ID_PREFIX + " | TEST NN ERROR " + "\n" + jsonPrint(err)));
       throw err;
     }
 
@@ -1271,6 +1265,8 @@ function prepNetworkEvolve() {
         const iterationRate = elapsedInt / epoch;
         const timeToComplete = iterationRate * (options.iterations - epoch);
 
+        const error = logs.loss ? logs.loss.toFixed(5) : 999999999;
+
         statsObj.evolve.stats = logs;
 
         const sObj = {
@@ -1287,7 +1283,7 @@ function prepNetworkEvolve() {
           iteration: epoch,
           iterationRate: iterationRate,
           timeToComplete: timeToComplete,
-          error: logs.loss.toFixed(5) || Infinity,
+          error: error,
           fitness: logs.acc.toFixed(5) || -Infinity,
         };
 

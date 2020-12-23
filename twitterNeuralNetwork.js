@@ -3786,6 +3786,8 @@ const quitOnComplete = { name: "quitOnComplete", alias: "q", type: Boolean };
 const quitOnError = { name: "quitOnError", alias: "Q", type: Boolean, defaultValue: true };
 const verbose = { name: "verbose", alias: "v", type: Boolean };
 const testMode = { name: "testMode", alias: "X", type: Boolean};
+const binaryMode = { name: "binaryMode", alias: "b", type: Boolean};
+const scaleLogMode = { name: "scaleLogMode", alias: "l", type: Boolean};
 
 const userProfileCharCodesOnlyFlag = { name: "userProfileCharCodesOnlyFlag", alias: "C", type: Boolean, defaultValue: false};
 const forceNetworkTechnology = { name: "forceNetworkTechnology", alias: "c", type: String};
@@ -3799,7 +3801,7 @@ const networkCreateMode = { name: "networkCreateMode", alias: "n", type: String,
 const hiddenLayerSize = { name: "hiddenLayerSize", alias: "H", type: Number};
 const seedNetworkProbability = { name: "seedNetworkProbability", alias: "p", type: Number };
 const seedNetworkId = { name: "seedNetworkId", alias: "s", type: String };
-const useBestNetwork = { name: "useBestNetwork", alias: "b", type: Boolean };
+const useBestNetwork = { name: "useBestNetwork", alias: "B", type: Boolean };
 const evolveIterations = { name: "evolveIterations", alias: "I", type: Number};
 
 const optionDefinitions = [
@@ -3822,6 +3824,8 @@ const optionDefinitions = [
   verbose, 
   evolveIterations, 
   testMode,
+  binaryMode,
+  scaleLogMode,
   help
 ];
 
@@ -3870,6 +3874,19 @@ function loadCommandLineArgs(){
         configuration.enableRandomTechnology = false;
         console.log(MODULE_ID_PREFIX + " | --> COMMAND LINE CONFIG | " + arg + ": " + configuration.networkTechnology);
       }
+      else if (arg === "binaryMode"){
+        configuration[arg] = commandLineConfig[arg];
+        configuration.enableRandomBinaryMode = false;
+        configuration.scaleLogMode = !commandLineConfig[arg];
+        console.log(MODULE_ID_PREFIX + " | --> COMMAND LINE CONFIG | " + arg + ": " + configuration[arg]);
+      }
+      else if (arg === "scaleLogMode"){
+        // configuration[arg] = commandLineConfig[arg];
+        configuration.enableRandomBinaryMode = false;
+        configuration.binaryMode = !commandLineConfig[arg];
+        console.log(MODULE_ID_PREFIX + " | --> COMMAND LINE CONFIG | " + arg + " | binaryMode: " + configuration.binaryMode);
+      }
+
       else{
         configuration[arg] = commandLineConfig[arg];
         console.log(MODULE_ID_PREFIX + " | --> COMMAND LINE CONFIG | " + arg + ": " + configuration[arg]);
@@ -5139,10 +5156,14 @@ async function childMessageHandler(params){
         // console.log(`m.stats.error: ${m.stats.error}`)
         // console.log(typeof m.stats.error)
 
-        error = Number.parseFloat(m.stats.error)
+        // console.log(`m.stats.fitness: ${m.stats.fitness}`)
+        // console.log(typeof m.stats.fitness)
+
+        error = m.stats.error ? Number.parseFloat(m.stats.error) : 9999999;
+        fitness = m.stats.fitness ? Number.parseFloat(m.stats.fitness) : 9999999;
 
         error = (error > 1000) ? expo(error, 2) : error.toFixed(6);
-        fitness = (m.stats.fitness < -1000) ? expo(m.stats.fitness, 2) : Number.parseFloat(m.stats.fitness);
+        fitness = (fitness < -1000) ? expo(m.stats.fitness, 2) : fitness.toFixed(6);
 
         _.set(resultsHashmap[m.stats.networkId], "evolve.results.error", error);
         _.set(resultsHashmap[m.stats.networkId], "evolve.results.fitness", fitness);
@@ -5153,7 +5174,7 @@ async function childMessageHandler(params){
           + " | " + m.stats.networkId
           + " | " + m.stats.inputsId
           + " | ERR " + error
-          + " | FIT " + fitness.toFixed(6)
+          + " | FIT " + fitness
           + " | R " + msToTime(m.stats.evolveElapsed)
           + " | ETC " + msToTime(m.stats.timeToComplete) + " " + moment().add(m.stats.timeToComplete).format(compactDateTimeFormat)
           + " | " + (m.stats.iterationRate/1000.0).toFixed(3) + " spi"

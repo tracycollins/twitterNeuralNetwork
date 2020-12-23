@@ -1,6 +1,6 @@
 {
   "name": "@threeceelabs/twitterneuralnetwork",
-  "version": "1.0.26",
+  "version": "1.0.27",
   "description": "twitter neural network",
   "main": "twitterNeuralNetwork.js",
   "dependencies": {
@@ -13,8 +13,8 @@
     "@threeceelabs/histogram-parser": "^1.0.20",
     "@threeceelabs/mergehistograms": "^1.0.8",
     "@threeceelabs/mongoose-twitter": "^1.0.340",
-    "@threeceelabs/neural-network-tools": "^1.0.244",
-    "@threeceelabs/threecee-utilities": "^1.0.406",
+    "@threeceelabs/neural-network-tools": "^1.0.245",
+    "@threeceelabs/threecee-utilities": "^1.0.408",
     "@threeceelabs/tweet-server-controller": "^1.0.577",
     "@threeceelabs/twitter-image-parser": "^1.0.96",
     "@threeceelabs/twitter-text-parser": "^1.0.101",
