@@ -1668,14 +1668,16 @@ async function createNetwork() {
               + " | " + childNetworkObj.networkId
             ));
 
-            const nnJson = JSON.parse(childNetworkObj.networkJson);
-            const weightData = new Uint8Array(Buffer.from(nnJson.weightData, "base64")).buffer;
-            // networkRaw = await tensorflow.loadLayersModel(tensorflow.io.fromMemory(nnJson.modelTopology, nnJson.weightSpecs, weightData));
-            networkRaw = await tensorflow.loadLayersModel(tensorflow.io.fromMemory({
-              modelTopology: nnJson.modelTopology,
-              weightSpecs: nnJson.weightSpecs,
-              weightData: weightData
-            }));
+            networkRaw = await nnTools.loadNetwork({networkObj: childNetworkObj})
+
+            // const nnJson = JSON.parse(childNetworkObj.networkJson);
+            // const weightData = new Uint8Array(Buffer.from(nnJson.weightData, "base64")).buffer;
+            // // networkRaw = await tensorflow.loadLayersModel(tensorflow.io.fromMemory(nnJson.modelTopology, nnJson.weightSpecs, weightData));
+            // networkRaw = await tensorflow.loadLayersModel(tensorflow.io.fromMemory({
+            //   modelTopology: nnJson.modelTopology,
+            //   weightSpecs: nnJson.weightSpecs,
+            //   weightData: weightData
+            // }));
 
             console.log(chalkLog(MODULE_ID_PREFIX + " | CHILD RAW NETWORK: " + childNetworkObj.seedNetworkId));
           } 
@@ -1751,9 +1753,15 @@ async function createNetwork() {
           console.log(`childNetworkObj.evolve.options: ${jsonPrint(childNetworkObj.evolve.options)}`)
           console.log(`trainingSetObj.meta.numOutputs: ${trainingSetObj.meta.numOutputs}`)
 
-          networkRaw = tensorflow.sequential();
-          networkRaw.add(tensorflow.layers.dense({inputShape: [numInputs], units: childNetworkObj.evolve.options.hiddenLayerSize, activation: 'relu'}));
-          networkRaw.add(tensorflow.layers.dense({units: trainingSetObj.meta.numOutputs, activation: 'softmax'}));
+          networkRaw = await nnTools.createNetwork({
+            networkTechnology: "tensorflow",
+            numInputs: childNetworkObj.numInputs,
+            hiddenLayerSize: childNetworkObj.evolve.options.hiddenLayerSize
+          });
+
+          // networkRaw = tensorflow.sequential();
+          // networkRaw.add(tensorflow.layers.dense({inputShape: [numInputs], units: childNetworkObj.evolve.options.hiddenLayerSize, activation: 'relu'}));
+          // networkRaw.add(tensorflow.layers.dense({units: trainingSetObj.meta.numOutputs, activation: 'softmax'}));
 
           networkRaw.compile({
             optimizer: 'sgd',
@@ -2865,7 +2873,9 @@ async function networkDefaults(nnObj) {
 }
 
 async function configNetworkEvolve(params) {
+
   try {
+
     const newNetObj = {};
 
     if (params.testSetRatio !== undefined) {
@@ -2887,6 +2897,10 @@ async function configNetworkEvolve(params) {
 
     newNetObj.binaryMode = params.binaryMode;
     newNetObj.networkTechnology = params.networkTechnology || "neataptic";
+
+    if (newNetObj.networkTechnology === "tensorflow"){
+      nnTools.enableTensorflow();
+    }
 
     newNetObj.networkId = params.testRunId;
     newNetObj.architecture = params.architecture;

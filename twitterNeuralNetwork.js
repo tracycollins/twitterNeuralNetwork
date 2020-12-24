@@ -1255,6 +1255,31 @@ async function loadNetworkFile(params){
     networkObj.networkTechnology = networkObj.evolve.options.networkTechnology;
   }
 
+  if (configuration.forceNetworkTechnology && (networkObj.networkTechnology !== configuration.forceNetworkTechnology)){
+    
+    console.log(chalkInfo(MODULE_ID_PREFIX + " | --- NN TECH NOT FORCE NETWORK TECH ... SKIPPING"
+      + " | " + networkObj.networkId
+      + " | NN TECH: " + networkObj.networkTechnology
+      + " | FORCE TECH: " + configuration.forceNetworkTechnology
+      + " | " + filePath
+    ));
+
+    skipLoadNetworkSet.add(networkObj.networkId);
+    return;
+  }
+
+  if (!configuration.viableNetworkTechArray.includes(networkObj.networkTechnology)){
+    console.log(chalkInfo(MODULE_ID_PREFIX + " | --- NN TECH NOT VIABLE NETWORK TECH ... SKIPPING"
+      + " | VIABLE TECH: " + configuration.viableNetworkTechArray
+      + " | NN TECH: " + networkObj.networkTechnology
+      + " | " + networkObj.networkId
+    ));
+
+    skipLoadNetworkSet.add(networkObj.networkId);
+    return;
+  }
+
+
   if (dotProp.has(networkObj, "evolve.options.binaryMode")
     && networkObj.evolve.options.binaryMode !== networkObj.binaryMode
   ){
@@ -1281,30 +1306,6 @@ async function loadNetworkFile(params){
   const dbInputsObj = await updateDbInputs({inputsId: networkObj.inputsId, networkId: networkObj.networkId});
 
   const inputsObj = dbInputsObj.toObject();
-
-  if (configuration.forceNetworkTechnology && (networkObj.networkTechnology !== configuration.forceNetworkTechnology)){
-    console.log(chalkInfo(MODULE_ID_PREFIX + " | --- NN TECH NOT FORCE NETWORK TECH ... SKIPPING"
-      + " | " + networkObj.networkId
-      + " | NN TECH: " + networkObj.networkTechnology
-      + " | FORCE TECH: " + configuration.forceNetworkTechnology
-      + " | " + filePath
-    ));
-
-    skipLoadNetworkSet.add(networkObj.networkId);
-    return;
-  }
-
-  if (!configuration.viableNetworkTechArray.includes(networkObj.networkTechnology)){
-    console.log(chalkInfo(MODULE_ID_PREFIX + " | --- NN TECH NOT VIABLE NETWORK TECH ... SKIPPING"
-      + " | VIABLE TECH: " + configuration.viableNetworkTechArray
-      + " | NN TECH: " + networkObj.networkTechnology
-      + " | " + networkObj.networkId
-    ));
-
-    skipLoadNetworkSet.add(networkObj.networkId);
-    return;
-  }
-
 
   if (!configuration.inputsIdArray.includes(networkObj.inputsId)) {
 
