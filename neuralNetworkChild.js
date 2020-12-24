@@ -822,7 +822,7 @@ async function cursorDataHandler(user){
   categorizedUsers[user.category] += 1;
   statsObj.categorizedCount += 1;
 
-  statsObj.users.processed.total += 1;
+  // statsObj.users.processed.total += 1;
 
   if (statsObj.categorizedCount > 0 && statsObj.categorizedCount % 1000 === 0) {
     console.log(chalkInfo(MODULE_ID_PREFIX +
