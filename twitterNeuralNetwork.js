@@ -3564,9 +3564,10 @@ async function loadAllConfigFiles(){
     hostConfiguration = hostConfig;
     console.log(chalkLog(MODULE_ID_PREFIX + " | +++ RELOADED HOST CONFIG " + configHostFolder + "/" + configHostFile));
   }
-  
-  const defaultAndHostConfig = merge(defaultConfiguration, hostConfiguration); // host settings override defaults
-  const tempConfig = merge(configuration, defaultAndHostConfig); // any new settings override existing config
+
+  const overwriteMerge = (destinationArray, sourceArray) => sourceArray
+  const defaultAndHostConfig = merge(defaultConfiguration, hostConfiguration, { arrayMerge: overwriteMerge }); // host settings override defaults
+  const tempConfig = merge(configuration, defaultAndHostConfig, { arrayMerge: overwriteMerge }); // any new settings override existing config
 
   configuration = tempConfig;
 
