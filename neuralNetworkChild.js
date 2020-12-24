@@ -914,7 +914,8 @@ async function loadTrainingSetUsersFromDb(p) {
   console.log(chalkBlue(MODULE_ID_PREFIX +
     " | LOADING TRAINING SET FROM DB ..." +
     " | batchSize: " + batchSize +
-    " | cursorParallel: " + cursorParallel
+    " | cursorParallel: " + cursorParallel +
+    " | query\n" + jsonPrint(query)
   ));
 
   if (configuration.testMode) {
@@ -971,8 +972,7 @@ async function loadTrainingSetUsersFromDb(p) {
 async function loadTrainingSet(p) {
   try {
     const params = p || {};
-    const verbose =
-      params.verbose !== undefined ? params.verbose : configuration.verbose;
+    const verbose = params.verbose !== undefined ? params.verbose : configuration.verbose;
 
     console.log(
       chalkLog(
