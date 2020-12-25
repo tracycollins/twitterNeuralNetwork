@@ -4908,7 +4908,7 @@ async function evolveCompleteHandler(params){
         slackText = slackText + "\n" + nn.networkId;
         slackText = slackText + "\nTECH: " + nn.networkTechnology;
         slackText = slackText + "\nIN: " + nn.inputsId;
-        slackText = slackText + "\nINPUTS: " + nn.networkJson.input;
+        slackText = slackText + "\nINPUTS: " + nn.numInputs;
         slackText = slackText + "\nBETTER CHILD: " + nn.betterChild;
         slackText = slackText + "\nELAPSED: " + msToTime(nn.evolve.elapsed);
 
@@ -4945,7 +4945,8 @@ async function evolveCompleteHandler(params){
         slackText = slackText + "\n" + nn.networkId;
         slackText = slackText + "\nTECH: " + nn.networkTechnology;
         slackText = slackText + "\nIN: " + nn.inputsId;
-        slackText = slackText + "\nINPUTS: " + nn.networkJson.input;
+        // slackText = slackText + "\nINPUTS: " + nn.networkJson.input;
+        slackText = slackText + "\nINPUTS: " + nn.numInputs;
         slackText = slackText + "\nBETTER CHILD: " + nn.betterChild;
         slackText = slackText + "\nELAPSED: " + msToTime(nn.evolve.elapsed);
 
@@ -4986,7 +4987,7 @@ async function evolveCompleteHandler(params){
         slackText = slackText + "\n" + nn.networkId;
         slackText = slackText + "\nTECH: " + nn.networkTechnology;
         slackText = slackText + "\nIN: " + nn.inputsId;
-        slackText = slackText + "\nINPUTS: " + nn.networkJson.input;
+        slackText = slackText + "\nINPUTS: " + nn.numInputs;
         slackText = slackText + "\nBETTER CHILD: " + nn.betterChild;
         slackText = slackText + "\nELAPSED: " + msToTime(nn.evolve.elapsed);
 
@@ -5069,7 +5070,7 @@ async function evolveCompleteHandler(params){
       slackText = slackText + "\n" + nn.networkId;
       slackText = slackText + "\nTECH: " + nn.networkTechnology;
       slackText = slackText + "\nIN: " + nn.inputsId;
-      slackText = slackText + "\nINPUTS: " + nn.networkJson.input;
+      slackText = slackText + "\nINPUTS: " + nn.numInputs;
       slackText = slackText + "\nBETTER CHILD: " + nn.betterChild;
       slackText = slackText + "\nELAPSED: " + msToTime(nn.evolve.elapsed);
 

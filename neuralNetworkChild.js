@@ -1632,272 +1632,272 @@ const ignoreKeyArray = [
   "popsize",
 ];
 
-async function createNetwork() {
+// async function createNetwork() {
 
-  try{
+//   try{
 
-    let networkRaw;
+//     let networkRaw;
 
-    const numInputs = childNetworkObj.numInputs;
+//     const numInputs = childNetworkObj.numInputs;
 
-    switch (childNetworkObj.architecture) {
+//     switch (childNetworkObj.architecture) {
 
-      case "seed":
+//       case "seed":
 
-        console.log(chalkBlueBold(MODULE_ID_PREFIX +
-          " | " + configuration.childId +
-          " | EVOLVE ARCH: LOADED | SEED: " + childNetworkObj.seedNetworkId +
-          " | " + childNetworkObj.networkTechnology.toUpperCase()
-        ));
+//         console.log(chalkBlueBold(MODULE_ID_PREFIX +
+//           " | " + configuration.childId +
+//           " | EVOLVE ARCH: LOADED | SEED: " + childNetworkObj.seedNetworkId +
+//           " | " + childNetworkObj.networkTechnology.toUpperCase()
+//         ));
 
-        if (!empty(childNetworkObj.networkRaw) && childNetworkObj.networkRaw.evolve !== undefined) {
-          console.log(chalkLog(MODULE_ID_PREFIX + " | CHILD RAW NETWORK: " + childNetworkObj.seedNetworkId));
-          networkRaw = childNetworkObj.networkRaw;
-        } 
-        else if (!empty(childNetworkObj.network) && childNetworkObj.network.evolve !== undefined) {
-          console.log(chalkLog(MODULE_ID_PREFIX + " | CHILD RAW NETWORK: " + childNetworkObj.seedNetworkId));
-          childNetworkObj.networkRaw = childNetworkObj.network;
-          networkRaw = childNetworkObj.network;
-          delete childNetworkObj.network;
-        } 
-        else {
-          if (childNetworkObj.networkTechnology === "tensorflow" && childNetworkObj.networkJson) {
+//         if (!empty(childNetworkObj.networkRaw) && childNetworkObj.networkRaw.evolve !== undefined) {
+//           console.log(chalkLog(MODULE_ID_PREFIX + " | CHILD RAW NETWORK: " + childNetworkObj.seedNetworkId));
+//           networkRaw = childNetworkObj.networkRaw;
+//         } 
+//         else if (!empty(childNetworkObj.network) && childNetworkObj.network.evolve !== undefined) {
+//           console.log(chalkLog(MODULE_ID_PREFIX + " | CHILD RAW NETWORK: " + childNetworkObj.seedNetworkId));
+//           childNetworkObj.networkRaw = childNetworkObj.network;
+//           networkRaw = childNetworkObj.network;
+//           delete childNetworkObj.network;
+//         } 
+//         else {
+//           if (childNetworkObj.networkTechnology === "tensorflow" && childNetworkObj.networkJson) {
                   
-            console.log(chalkLog(MODULE_ID_PREFIX 
-              + " | ... LOAD NN FROM JSON | TECH: " + childNetworkObj.networkTechnology 
-              + " | " + childNetworkObj.networkId
-            ));
+//             console.log(chalkLog(MODULE_ID_PREFIX 
+//               + " | ... LOAD NN FROM JSON | TECH: " + childNetworkObj.networkTechnology 
+//               + " | " + childNetworkObj.networkId
+//             ));
 
-            networkRaw = await nnTools.loadNetwork({networkObj: childNetworkObj})
+//             networkRaw = await nnTools.loadNetwork({networkObj: childNetworkObj})
 
-            // const nnJson = JSON.parse(childNetworkObj.networkJson);
-            // const weightData = new Uint8Array(Buffer.from(nnJson.weightData, "base64")).buffer;
-            // // networkRaw = await tensorflow.loadLayersModel(tensorflow.io.fromMemory(nnJson.modelTopology, nnJson.weightSpecs, weightData));
-            // networkRaw = await tensorflow.loadLayersModel(tensorflow.io.fromMemory({
-            //   modelTopology: nnJson.modelTopology,
-            //   weightSpecs: nnJson.weightSpecs,
-            //   weightData: weightData
-            // }));
+//             // const nnJson = JSON.parse(childNetworkObj.networkJson);
+//             // const weightData = new Uint8Array(Buffer.from(nnJson.weightData, "base64")).buffer;
+//             // // networkRaw = await tensorflow.loadLayersModel(tensorflow.io.fromMemory(nnJson.modelTopology, nnJson.weightSpecs, weightData));
+//             // networkRaw = await tensorflow.loadLayersModel(tensorflow.io.fromMemory({
+//             //   modelTopology: nnJson.modelTopology,
+//             //   weightSpecs: nnJson.weightSpecs,
+//             //   weightData: weightData
+//             // }));
 
-            console.log(chalkLog(MODULE_ID_PREFIX + " | CHILD RAW NETWORK: " + childNetworkObj.seedNetworkId));
-          } 
-          else if (childNetworkObj.networkTechnology === "carrot") {
-            if (!empty(childNetworkObj.networkRaw)) {
-              networkRaw = childNetworkObj.networkRaw;
-              console.log(chalkLog(MODULE_ID_PREFIX + " | CHILD RAW NETWORK: " + childNetworkObj.seedNetworkId));
-            } 
-            else if (!empty(childNetworkObj.network)) {
-              networkRaw = carrot.Network.fromJSON(childNetworkObj.network);
-              console.log(chalkLog(MODULE_ID_PREFIX + " | CHILD RAW NETWORK: " + childNetworkObj.seedNetworkId));
-            } 
-            else if (!empty(childNetworkObj.networkJson)) {
-              networkRaw = carrot.Network.fromJSON(childNetworkObj.networkJson);
-              console.log(chalkLog(MODULE_ID_PREFIX + " | CHILD RAW NETWORK: " + childNetworkObj.seedNetworkId));
-            }
-          } 
-          else if (childNetworkObj.networkTechnology === "neataptic") {
-            if (!empty(childNetworkObj.networkRaw)) {
-              networkRaw = childNetworkObj.networkRaw;
-              console.log(chalkLog(MODULE_ID_PREFIX + " | CHILD NEATAPTIC NETWORK: " + childNetworkObj.seedNetworkId));
-            } 
-            else if (!empty(childNetworkObj.network)) {
-              networkRaw = neataptic.Network.fromJSON(childNetworkObj.network);
-              console.log(chalkLog(MODULE_ID_PREFIX + " | CHILD NEATAPTIC RAW NETWORK: " + childNetworkObj.seedNetworkId));
-            } 
-            else if (!empty(childNetworkObj.networkJson)) {
-              networkRaw = neataptic.Network.fromJSON(childNetworkObj.networkJson);
-              console.log(chalkLog(MODULE_ID_PREFIX + " | CHILD NEATAPTIC RAW NETWORK: " + childNetworkObj.seedNetworkId));
-            }
-          } 
-          else if (childNetworkObj.networkTechnology === "brain") {
-            if (!empty(childNetworkObj.networkRaw)) {
-              networkRaw = childNetworkObj.networkRaw;
-              console.log(chalkLog(MODULE_ID_PREFIX + " | CHILD BRAIN RAW NETWORK: " + childNetworkObj.seedNetworkId));
-            } 
-            else if (!empty(childNetworkObj.network)) {
-              networkRaw = new brain.NeuralNetwork();
-              networkRaw.fromJSON(childNetworkObj.network);
-              console.log(chalkLog(MODULE_ID_PREFIX + " | CHILD BRAIN RAW NETWORK: " + childNetworkObj.seedNetworkId));
-            } 
-            else if (!empty(childNetworkObj.networkJson)) {
-              networkRaw = new brain.NeuralNetwork();
-              networkRaw.fromJSON(childNetworkObj.networkJson);
-              console.log(chalkLog(MODULE_ID_PREFIX + " | CHILD BRAIN RAW NETWORK: " + childNetworkObj.seedNetworkId));
-            }
-          } 
-          else {
-            console.log(chalkError(MODULE_ID_PREFIX +
-              " | TECH: " + childNetworkObj.networkTechnology +
-              " | *** CHILD NO RAW NETWORK: " + childNetworkObj.seedNetworkId
-            ));
-            throw new Error("NO RAW NETWORK: " + childNetworkObj.networkId);
-          }
-        }
+//             console.log(chalkLog(MODULE_ID_PREFIX + " | CHILD RAW NETWORK: " + childNetworkObj.seedNetworkId));
+//           } 
+//           else if (childNetworkObj.networkTechnology === "carrot") {
+//             if (!empty(childNetworkObj.networkRaw)) {
+//               networkRaw = childNetworkObj.networkRaw;
+//               console.log(chalkLog(MODULE_ID_PREFIX + " | CHILD RAW NETWORK: " + childNetworkObj.seedNetworkId));
+//             } 
+//             else if (!empty(childNetworkObj.network)) {
+//               networkRaw = carrot.Network.fromJSON(childNetworkObj.network);
+//               console.log(chalkLog(MODULE_ID_PREFIX + " | CHILD RAW NETWORK: " + childNetworkObj.seedNetworkId));
+//             } 
+//             else if (!empty(childNetworkObj.networkJson)) {
+//               networkRaw = carrot.Network.fromJSON(childNetworkObj.networkJson);
+//               console.log(chalkLog(MODULE_ID_PREFIX + " | CHILD RAW NETWORK: " + childNetworkObj.seedNetworkId));
+//             }
+//           } 
+//           else if (childNetworkObj.networkTechnology === "neataptic") {
+//             if (!empty(childNetworkObj.networkRaw)) {
+//               networkRaw = childNetworkObj.networkRaw;
+//               console.log(chalkLog(MODULE_ID_PREFIX + " | CHILD NEATAPTIC NETWORK: " + childNetworkObj.seedNetworkId));
+//             } 
+//             else if (!empty(childNetworkObj.network)) {
+//               networkRaw = neataptic.Network.fromJSON(childNetworkObj.network);
+//               console.log(chalkLog(MODULE_ID_PREFIX + " | CHILD NEATAPTIC RAW NETWORK: " + childNetworkObj.seedNetworkId));
+//             } 
+//             else if (!empty(childNetworkObj.networkJson)) {
+//               networkRaw = neataptic.Network.fromJSON(childNetworkObj.networkJson);
+//               console.log(chalkLog(MODULE_ID_PREFIX + " | CHILD NEATAPTIC RAW NETWORK: " + childNetworkObj.seedNetworkId));
+//             }
+//           } 
+//           else if (childNetworkObj.networkTechnology === "brain") {
+//             if (!empty(childNetworkObj.networkRaw)) {
+//               networkRaw = childNetworkObj.networkRaw;
+//               console.log(chalkLog(MODULE_ID_PREFIX + " | CHILD BRAIN RAW NETWORK: " + childNetworkObj.seedNetworkId));
+//             } 
+//             else if (!empty(childNetworkObj.network)) {
+//               networkRaw = new brain.NeuralNetwork();
+//               networkRaw.fromJSON(childNetworkObj.network);
+//               console.log(chalkLog(MODULE_ID_PREFIX + " | CHILD BRAIN RAW NETWORK: " + childNetworkObj.seedNetworkId));
+//             } 
+//             else if (!empty(childNetworkObj.networkJson)) {
+//               networkRaw = new brain.NeuralNetwork();
+//               networkRaw.fromJSON(childNetworkObj.networkJson);
+//               console.log(chalkLog(MODULE_ID_PREFIX + " | CHILD BRAIN RAW NETWORK: " + childNetworkObj.seedNetworkId));
+//             }
+//           } 
+//           else {
+//             console.log(chalkError(MODULE_ID_PREFIX +
+//               " | TECH: " + childNetworkObj.networkTechnology +
+//               " | *** CHILD NO RAW NETWORK: " + childNetworkObj.seedNetworkId
+//             ));
+//             throw new Error("NO RAW NETWORK: " + childNetworkObj.networkId);
+//           }
+//         }
 
-        console.log(chalkBlueBold(MODULE_ID_PREFIX +
-          " | " + configuration.childId +
-          " | " + childNetworkObj.networkTechnology.toUpperCase() +
-          " | EVOLVE ARCH | LOADED: " + childNetworkObj.networkId +
-          " | IN: " + numInputs +
-          " | OUT: " + childNetworkObj.numOutputs
-        ));
+//         console.log(chalkBlueBold(MODULE_ID_PREFIX +
+//           " | " + configuration.childId +
+//           " | " + childNetworkObj.networkTechnology.toUpperCase() +
+//           " | EVOLVE ARCH | LOADED: " + childNetworkObj.networkId +
+//           " | IN: " + numInputs +
+//           " | OUT: " + childNetworkObj.numOutputs
+//         ));
 
-        return networkRaw;
+//         return networkRaw;
 
-      case "perceptron":
+//       case "perceptron":
 
-        if (childNetworkObj.networkTechnology === "tensorflow") {
+//         if (childNetworkObj.networkTechnology === "tensorflow") {
 
-          console.log(`numInputs: ${numInputs}`)
-          console.log(`childNetworkObj.hiddenLayerSize: ${childNetworkObj.hiddenLayerSize}`)
-          console.log(`childNetworkObj.evolve.options: ${jsonPrint(childNetworkObj.evolve.options)}`)
-          console.log(`trainingSetObj.meta.numOutputs: ${trainingSetObj.meta.numOutputs}`)
+//           console.log(`numInputs: ${numInputs}`)
+//           console.log(`childNetworkObj.hiddenLayerSize: ${childNetworkObj.hiddenLayerSize}`)
+//           console.log(`childNetworkObj.evolve.options: ${jsonPrint(childNetworkObj.evolve.options)}`)
+//           console.log(`trainingSetObj.meta.numOutputs: ${trainingSetObj.meta.numOutputs}`)
 
-          networkRaw = await nnTools.createNetwork({
-            networkTechnology: "tensorflow",
-            numInputs: childNetworkObj.numInputs,
-            hiddenLayerSize: childNetworkObj.evolve.options.hiddenLayerSize
-          });
+//           networkRaw = await nnTools.createNetwork({
+//             networkTechnology: "tensorflow",
+//             numInputs: childNetworkObj.numInputs,
+//             hiddenLayerSize: childNetworkObj.evolve.options.hiddenLayerSize
+//           });
 
-          // networkRaw = tensorflow.sequential();
-          // networkRaw.add(tensorflow.layers.dense({inputShape: [numInputs], units: childNetworkObj.evolve.options.hiddenLayerSize, activation: 'relu'}));
-          // networkRaw.add(tensorflow.layers.dense({units: trainingSetObj.meta.numOutputs, activation: 'softmax'}));
+//           // networkRaw = tensorflow.sequential();
+//           // networkRaw.add(tensorflow.layers.dense({inputShape: [numInputs], units: childNetworkObj.evolve.options.hiddenLayerSize, activation: 'relu'}));
+//           // networkRaw.add(tensorflow.layers.dense({units: trainingSetObj.meta.numOutputs, activation: 'softmax'}));
 
-          networkRaw.compile({
-            optimizer: 'sgd',
-            loss: 'categoricalCrossentropy',
-            metrics: ['accuracy']
-          });
+//           networkRaw.compile({
+//             optimizer: 'sgd',
+//             loss: 'categoricalCrossentropy',
+//             metrics: ['accuracy']
+//           });
 
-          console.log(chalkBlueBold( MODULE_ID_PREFIX +
-            " | " + configuration.childId +
-            " | " + childNetworkObj.networkTechnology.toUpperCase() +
-            " | " + childNetworkObj.architecture.toUpperCase() +
-            " | IN: " + numInputs +
-            " | OUT: " + trainingSetObj.meta.numOutputs +
-            " | HIDDEN LAYER NODES: " + childNetworkObj.hiddenLayerSize
-          ));
+//           console.log(chalkBlueBold( MODULE_ID_PREFIX +
+//             " | " + configuration.childId +
+//             " | " + childNetworkObj.networkTechnology.toUpperCase() +
+//             " | " + childNetworkObj.architecture.toUpperCase() +
+//             " | IN: " + numInputs +
+//             " | OUT: " + trainingSetObj.meta.numOutputs +
+//             " | HIDDEN LAYER NODES: " + childNetworkObj.hiddenLayerSize
+//           ));
 
-          return networkRaw;
-        } 
-        else if (childNetworkObj.networkTechnology === "carrot") {
-          if (childNetworkObj.hiddenLayerSize && childNetworkObj.hiddenLayerSize > 0) {
-            networkRaw = new carrot.architect.Perceptron(numInputs, childNetworkObj.hiddenLayerSize,3);
-          } 
-          else {
-            childNetworkObj.architecture = "random";
-            networkRaw = new carrot.Network(numInputs, 3);
-          }
+//           return networkRaw;
+//         } 
+//         else if (childNetworkObj.networkTechnology === "carrot") {
+//           if (childNetworkObj.hiddenLayerSize && childNetworkObj.hiddenLayerSize > 0) {
+//             networkRaw = new carrot.architect.Perceptron(numInputs, childNetworkObj.hiddenLayerSize,3);
+//           } 
+//           else {
+//             childNetworkObj.architecture = "random";
+//             networkRaw = new carrot.Network(numInputs, 3);
+//           }
 
-          console.log(
-            chalkBlueBold( MODULE_ID_PREFIX +
-              " | " + configuration.childId +
-              " | " + childNetworkObj.networkTechnology.toUpperCase() +
-              " | " + childNetworkObj.architecture.toUpperCase() +
-              " | IN: " + numInputs +
-              " | OUT: " + trainingSetObj.meta.numOutputs +
-              " | HIDDEN LAYER NODES: " + childNetworkObj.hiddenLayerSize
-            ));
-          return networkRaw;
-        } 
-        else if (childNetworkObj.networkTechnology === "brain") {
-          if (childNetworkObj.hiddenLayerSize) {
-            childNetworkObj.hiddenLayerSize = Math.min(configuration.brainHiddenLayerSize, childNetworkObj.hiddenLayerSize);
-            childNetworkObj.hiddenLayerSize = Math.max(childNetworkObj.hiddenLayerSize, trainingSetObj.meta.numOutputs);
-          } 
-          else {
-            childNetworkObj.hiddenLayerSize = configuration.brainHiddenLayerSize;
-          }
+//           console.log(
+//             chalkBlueBold( MODULE_ID_PREFIX +
+//               " | " + configuration.childId +
+//               " | " + childNetworkObj.networkTechnology.toUpperCase() +
+//               " | " + childNetworkObj.architecture.toUpperCase() +
+//               " | IN: " + numInputs +
+//               " | OUT: " + trainingSetObj.meta.numOutputs +
+//               " | HIDDEN LAYER NODES: " + childNetworkObj.hiddenLayerSize
+//             ));
+//           return networkRaw;
+//         } 
+//         else if (childNetworkObj.networkTechnology === "brain") {
+//           if (childNetworkObj.hiddenLayerSize) {
+//             childNetworkObj.hiddenLayerSize = Math.min(configuration.brainHiddenLayerSize, childNetworkObj.hiddenLayerSize);
+//             childNetworkObj.hiddenLayerSize = Math.max(childNetworkObj.hiddenLayerSize, trainingSetObj.meta.numOutputs);
+//           } 
+//           else {
+//             childNetworkObj.hiddenLayerSize = configuration.brainHiddenLayerSize;
+//           }
 
-          networkRaw = new brain.NeuralNetwork({
-            inputSize: numInputs,
-            outputSize: trainingSetObj.meta.numOutputs,
-          });
+//           networkRaw = new brain.NeuralNetwork({
+//             inputSize: numInputs,
+//             outputSize: trainingSetObj.meta.numOutputs,
+//           });
 
-          console.log(chalkBlueBold(MODULE_ID_PREFIX +
-            " | " + configuration.childId +
-            " | " + childNetworkObj.networkTechnology.toUpperCase() +
-            " | " + childNetworkObj.architecture.toUpperCase() +
-            " | IN: " + numInputs +
-            " | OUT: " + trainingSetObj.meta.numOutputs +
-            " | HIDDEN LAYER NODES: " + childNetworkObj.hiddenLayerSize
-          ));
+//           console.log(chalkBlueBold(MODULE_ID_PREFIX +
+//             " | " + configuration.childId +
+//             " | " + childNetworkObj.networkTechnology.toUpperCase() +
+//             " | " + childNetworkObj.architecture.toUpperCase() +
+//             " | IN: " + numInputs +
+//             " | OUT: " + trainingSetObj.meta.numOutputs +
+//             " | HIDDEN LAYER NODES: " + childNetworkObj.hiddenLayerSize
+//           ));
 
-          return networkRaw;
-        } 
-        else {
-          if (childNetworkObj.hiddenLayerSize) {
-            childNetworkObj.hiddenLayerSize = Math.min( configuration.neatapticHiddenLayerSize, childNetworkObj.hiddenLayerSize);
-            childNetworkObj.hiddenLayerSize = Math.max( childNetworkObj.hiddenLayerSize, trainingSetObj.meta.numOutputs);
-          } 
-          else {
-            childNetworkObj.hiddenLayerSize = configuration.neatapticHiddenLayerSize;
-          }
+//           return networkRaw;
+//         } 
+//         else {
+//           if (childNetworkObj.hiddenLayerSize) {
+//             childNetworkObj.hiddenLayerSize = Math.min( configuration.neatapticHiddenLayerSize, childNetworkObj.hiddenLayerSize);
+//             childNetworkObj.hiddenLayerSize = Math.max( childNetworkObj.hiddenLayerSize, trainingSetObj.meta.numOutputs);
+//           } 
+//           else {
+//             childNetworkObj.hiddenLayerSize = configuration.neatapticHiddenLayerSize;
+//           }
 
-          networkRaw = new neataptic.architect.Perceptron(
-            numInputs,
-            childNetworkObj.hiddenLayerSize,
-            3
-          );
+//           networkRaw = new neataptic.architect.Perceptron(
+//             numInputs,
+//             childNetworkObj.hiddenLayerSize,
+//             3
+//           );
 
-           console.log(chalkBlueBold(MODULE_ID_PREFIX +
-            " | " + configuration.childId +
-            " | " + childNetworkObj.networkTechnology.toUpperCase() +
-            " | " + childNetworkObj.architecture.toUpperCase() +
-            " | IN: " + numInputs +
-            " | OUT: " + trainingSetObj.meta.numOutputs +
-            " | HIDDEN LAYER NODES: " + childNetworkObj.hiddenLayerSize
-          ));
+//            console.log(chalkBlueBold(MODULE_ID_PREFIX +
+//             " | " + configuration.childId +
+//             " | " + childNetworkObj.networkTechnology.toUpperCase() +
+//             " | " + childNetworkObj.architecture.toUpperCase() +
+//             " | IN: " + numInputs +
+//             " | OUT: " + trainingSetObj.meta.numOutputs +
+//             " | HIDDEN LAYER NODES: " + childNetworkObj.hiddenLayerSize
+//           ));
 
-          return networkRaw;
-        }
+//           return networkRaw;
+//         }
 
-      default:
-        childNetworkObj.architecture = "random";
+//       default:
+//         childNetworkObj.architecture = "random";
 
-        console.log(chalkBlueBold(MODULE_ID_PREFIX +
-          " | EVOLVE ARCH" +
-          " | " + configuration.childId +
-          " | " + childNetworkObj.networkTechnology.toUpperCase() +
-          " | " + childNetworkObj.architecture.toUpperCase() +
-          " | INPUTS: " + numInputs +
-          " | OUTPUTS: " + trainingSetObj.meta.numOutputs
-        ));
+//         console.log(chalkBlueBold(MODULE_ID_PREFIX +
+//           " | EVOLVE ARCH" +
+//           " | " + configuration.childId +
+//           " | " + childNetworkObj.networkTechnology.toUpperCase() +
+//           " | " + childNetworkObj.architecture.toUpperCase() +
+//           " | INPUTS: " + numInputs +
+//           " | OUTPUTS: " + trainingSetObj.meta.numOutputs
+//         ));
 
-        if (childNetworkObj.networkTechnology === "tensorflow") {
-          console.log(`numInputs: ${numInputs}`)
-          console.log(`childNetworkObj.hiddenLayerSize: ${childNetworkObj.hiddenLayerSize}`)
-          console.log(`trainingSetObj.meta.numOutputs: ${trainingSetObj.meta.numOutputs}`)
+//         if (childNetworkObj.networkTechnology === "tensorflow") {
+//           console.log(`numInputs: ${numInputs}`)
+//           console.log(`childNetworkObj.hiddenLayerSize: ${childNetworkObj.hiddenLayerSize}`)
+//           console.log(`trainingSetObj.meta.numOutputs: ${trainingSetObj.meta.numOutputs}`)
 
-          networkRaw = tensorflow.sequential();
-          networkRaw.add(tensorflow.layers.dense({inputShape: [numInputs], units: childNetworkObj.hiddenLayerSize, activation: 'relu'}));
-          networkRaw.add(tensorflow.layers.dense({units: trainingSetObj.meta.numOutputs, activation: 'softmax'}));
-          return networkRaw;
-        } 
+//           networkRaw = tensorflow.sequential();
+//           networkRaw.add(tensorflow.layers.dense({inputShape: [numInputs], units: childNetworkObj.hiddenLayerSize, activation: 'relu'}));
+//           networkRaw.add(tensorflow.layers.dense({units: trainingSetObj.meta.numOutputs, activation: 'softmax'}));
+//           return networkRaw;
+//         } 
 
-        if (childNetworkObj.networkTechnology === "brain") {
-          networkRaw = new brain.NeuralNetwork({
-            inputSize: numInputs,
-            outputSize: 3,
-          });
-          return networkRaw;
-        } 
+//         if (childNetworkObj.networkTechnology === "brain") {
+//           networkRaw = new brain.NeuralNetwork({
+//             inputSize: numInputs,
+//             outputSize: 3,
+//           });
+//           return networkRaw;
+//         } 
 
-        if (childNetworkObj.networkTechnology === "carrot") {
-          networkRaw = new carrot.Network(numInputs, 3);
-          return networkRaw;
-        } 
+//         if (childNetworkObj.networkTechnology === "carrot") {
+//           networkRaw = new carrot.Network(numInputs, 3);
+//           return networkRaw;
+//         } 
 
-        networkRaw = new neataptic.Network(numInputs, 3);
-        return networkRaw;
-    }
-  }
-  catch(err){
-    console.log(chalkError(MODULE_ID_PREFIX + " | *** createNetwork ERROR: " + err));
-    throw err;
-  }
-  // });
-}
+//         networkRaw = new neataptic.Network(numInputs, 3);
+//         return networkRaw;
+//     }
+//   }
+//   catch(err){
+//     console.log(chalkError(MODULE_ID_PREFIX + " | *** createNetwork ERROR: " + err));
+//     throw err;
+//   }
+//   // });
+// }
 
 const setPrepRequired = function (preppedSetsConfig) {
   if (empty(statsObj.preppedSetsConfig)) {
@@ -2033,8 +2033,11 @@ async function evolve(params) {
       preppedSetsConfig.setObj = testSetObj;
       preppedTestSet = await dataSetPrep(preppedSetsConfig);
     }
-
-    const childNetworkRaw = await createNetwork();
+    const childNetworkRaw = await nnTools.createNetwork({
+      networkTechnology: "tensorflow",
+      numInputs: inputsObj.meta.numInputs,
+      hiddenLayerSize: childNetworkObj.hiddenLayerSize
+    })
 
     preppedOptions = await prepNetworkEvolve();
 
@@ -2070,41 +2073,6 @@ async function evolve(params) {
 
       console.log(results.stats.params)
 
-      // results: History {
-      //   validationData: null,
-      //   params: {
-      //     epochs: 100,
-      //     initialEpoch: 0,
-      //     samples: 1000,
-      //     steps: null,
-      //     batchSize: 20,
-      //     verbose: 1,
-      //     doValidation: false,
-      //     metrics: [Array]
-      //   },
-      //   epoch: [
-      //      0,  1,  2,  3,  4,  5,  6,  7,  8,  9, 10, 11,
-      //     12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23,
-      //     24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35,
-      //     36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47,
-      //     48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59,
-      //     60, 61, 62, 63, 64, 65, 66, 67, 68, 69, 70, 71,
-      //     72, 73, 74, 75, 76, 77, 78, 79, 80, 81, 82, 83,
-      //     84, 85, 86, 87, 88, 89, 90, 91, 92, 93, 94, 95,
-      //     96, 97, 98, 99
-      //   ],
-      //   history: { loss: [Array], acc: [Array] }
-      // }
-
-      // + "\nTNN | ITERTNS:          " + m.statsObj.iterations
-      // + "\nTNN | ERROR:            " + m.statsObj.error
-      // + "\nTNN | FITNESS:          " + m.statsObj.fitness
-      // + "\nTNN | INPUTS ID:        " + nn.inputsId
-      // + "\nTNN | INPUTS:           " + nn.networkJson.input
-      // + "\nTNN | HIDDEN:           " + nn.networkJson.hiddenLayerSize
-      // + "\nTNN | OUTPUTS:          " + nn.networkJson.output
-      // + "\nTNN | DROPOUT:          " + nn.networkJson.dropout
-
       evolveResults.threads = 1;
       evolveResults.iterations = results.stats.params.epochs;
       evolveResults.loss = results.stats.history.loss[results.stats.history.loss.length-1]
@@ -2119,13 +2087,15 @@ async function evolve(params) {
       // childNetworkObj.tensorflowModelPath = `file://${configHostFolder}/neuralNetworks/tensorflow/${childNetworkObj.networkId}`
       // await childNetworkRaw.save(childNetworkObj.tensorflowModelPath)
 
-      childNetworkObj.networkRaw = results.network;
+      childNetworkObj.network = results.network;
 
-      const networkSaveResult = await results.network.save(tensorflow.io.withSaveHandler(async (modelArtifacts) => modelArtifacts));
-      networkSaveResult.weightData = Buffer.from(networkSaveResult.weightData).toString("base64");
+      // const networkSaveResult = await results.network.save(tensorflow.io.withSaveHandler(async (modelArtifacts) => modelArtifacts));
+      // networkSaveResult.weightData = Buffer.from(networkSaveResult.weightData).toString("base64");
 
-      childNetworkObj.networkJson = {};
-      childNetworkObj.networkJson = deepcopy(JSON.stringify(networkSaveResult));
+      // childNetworkObj.networkJson = {};
+      // childNetworkObj.networkJson = deepcopy(JSON.stringify(networkSaveResult));
+
+      childNetworkObj = await nnTools.saveNetwork({networkObj: childNetworkObj})
       
       statsObj.evolve.endTime = moment().valueOf();
       statsObj.evolve.elapsed = moment().valueOf() - statsObj.evolve.startTime;
@@ -2165,8 +2135,8 @@ async function evolve(params) {
         trainingSet: preppedTrainingSet,
       });
 
-      childNetworkObj.networkRaw = evolveResults.network;
-      childNetworkObj.networkJson = childNetworkObj.networkRaw.toJSON();
+      childNetworkObj.network = evolveResults.network;
+      childNetworkObj.networkJson = evolveResults.network.toJSON();
 
       delete evolveResults.network;
 
@@ -2208,7 +2178,7 @@ async function evolve(params) {
       evolveResults = await childNetworkRaw.evolve(preppedTrainingSet, preppedOptions);
 
       childNetworkObj.networkJson = childNetworkRaw.toJSON();
-      childNetworkObj.networkRaw = childNetworkRaw;
+      childNetworkObj.network = childNetworkRaw;
 
       evolveResults.threads = preppedOptions.threads;
       evolveResults.fitness = statsObj.evolve.stats.fitness;
