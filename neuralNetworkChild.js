@@ -1214,7 +1214,8 @@ function prepNetworkEvolve() {
 
   const options = childNetworkObj.evolve.options;
 
-  console.log(options);
+  console.log({options});
+
   const schedStartTime = moment().valueOf();
 
   switch (childNetworkObj.networkTechnology) {
@@ -1262,6 +1263,7 @@ function prepNetworkEvolve() {
       break;
 
     default:
+
       options.schedule = {
         function: function (schedParams) {
           const elapsedInt = moment().valueOf() - schedStartTime;
@@ -1638,10 +1640,16 @@ async function evolve(params) {
       preppedSetsConfig.setObj = testSetObj;
       preppedTestSet = await dataSetPrep(preppedSetsConfig);
     }
+
+    // const childNetworkRaw = await nnTools.createNetwork({
+    //   networkTechnology: childNetworkObj.networkTechnology,
+    //   numInputs: inputsObj.meta.numInputs,
+    //   hiddenLayerSize: childNetworkObj.hiddenLayerSize
+    // })
+
     const childNetworkRaw = await nnTools.createNetwork({
-      networkTechnology: "tensorflow",
-      numInputs: inputsObj.meta.numInputs,
-      hiddenLayerSize: childNetworkObj.hiddenLayerSize
+      networkObj: childNetworkObj,
+      numInputs: inputsObj.meta.numInputs
     })
 
     preppedOptions = await prepNetworkEvolve();
@@ -1689,18 +1697,9 @@ async function evolve(params) {
         error: results.stats.history.loss[results.stats.history.loss.length-1]
       };
 
-      // childNetworkObj.tensorflowModelPath = `file://${configHostFolder}/neuralNetworks/tensorflow/${childNetworkObj.networkId}`
-      // await childNetworkRaw.save(childNetworkObj.tensorflowModelPath)
-
       childNetworkObj.network = results.network;
 
-      // const networkSaveResult = await results.network.save(tensorflow.io.withSaveHandler(async (modelArtifacts) => modelArtifacts));
-      // networkSaveResult.weightData = Buffer.from(networkSaveResult.weightData).toString("base64");
-
-      // childNetworkObj.networkJson = {};
-      // childNetworkObj.networkJson = deepcopy(JSON.stringify(networkSaveResult));
-
-      childNetworkObj.networkJson = await nnTools.tensorflowCreateJson({networkObj: childNetworkObj})
+      childNetworkObj.networkJson = await nnTools.createJson({networkObj: childNetworkObj})
       
       statsObj.evolve.endTime = moment().valueOf();
       statsObj.evolve.elapsed = moment().valueOf() - statsObj.evolve.startTime;
