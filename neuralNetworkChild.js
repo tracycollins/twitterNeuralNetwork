@@ -204,9 +204,9 @@ console.log("=========================================");
 //=========================================================================
 // MODULE REQUIRES
 //=========================================================================
-const tensorflow = require("@tensorflow/tfjs");
+// const tensorflow = require("@tensorflow/tfjs");
 const neataptic = require("neataptic");
-const brain = require("brain.js");
+// const brain = require("brain.js");
 // const carrot = require("@liquid-carrot/carrot");
 const carrot = require("@liquid-carrot/carrot/src/index.js");
 
@@ -1531,23 +1531,21 @@ function dataSetPrep(params) {
 
         if (results.datum.input.length !== childNetworkObj.numInputs) {
           console.log(chalkError(MODULE_ID_PREFIX +
-            " | *** ERROR DATA SET PREP ERROR" +
-            " | INPUT NUMBER MISMATCH" +
-            " | INPUTS NUM IN: " +
-            childNetworkObj.numInputs +
-            " | DATUM NUM IN: " +
-            results.datum.input.length
-            ));
+            " | *** ERROR DATA SET PREP ERROR | INPUT NUMBER MISMATCH" +
+            " | INPUTS NUM IN: " + childNetworkObj.numInputs +
+            " | DATUM NUM IN: " + results.datum.input.length +
+            " | @" + results.user.screenName
+          ));
           return new Error("INPUT NUMBER MISMATCH");
         }
 
         if (results.datum.output.length !== 3) {
           console.log(chalkError(MODULE_ID_PREFIX +
-                " | *** ERROR DATA SET PREP ERROR" +
-                " | OUTPUT NUMBER MISMATCH" +
-                " | OUTPUTS NUM IN: " + childNetworkObj.numOutputs +
-                " | DATUM NUM IN: " + results.datum.output.length
-            ));
+            " | *** ERROR DATA SET PREP ERROR" +
+            " | OUTPUT NUMBER MISMATCH" +
+            " | OUTPUTS NUM IN: " + childNetworkObj.numOutputs +
+            " | DATUM NUM IN: " + results.datum.output.length
+          ));
           return new Error("OUTPUT NUMBER MISMATCH");
         }
 
@@ -2095,7 +2093,7 @@ async function evolve(params) {
       // childNetworkObj.networkJson = {};
       // childNetworkObj.networkJson = deepcopy(JSON.stringify(networkSaveResult));
 
-      childNetworkObj = await nnTools.saveNetwork({networkObj: childNetworkObj})
+      childNetworkObj.networkJson = await nnTools.tensorflowCreateJson({networkObj: childNetworkObj})
       
       statsObj.evolve.endTime = moment().valueOf();
       statsObj.evolve.elapsed = moment().valueOf() - statsObj.evolve.startTime;
