@@ -26,7 +26,6 @@
     "async": "^3.2.0",
     "atob": "^2.1.2",
     "autolinker": "^3.14.2",
-    "brain.js": "^2.0.0-beta.2",
     "chalk": "^4.1.0",
     "child_process": "^1.0.2",
     "chokidar": "^3.4.3",
