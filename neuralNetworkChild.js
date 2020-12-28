@@ -968,21 +968,15 @@ async function loadTrainingSet(p) {
     const normalization = await fs.readJson(filePath);
 
     if (normalization) {
-      console.log(
-        chalk.black.bold(
-          MODULE_ID_PREFIX + " | loadTrainingSet | SET NORMALIZATION ..."
-        )
-      );
+      console.log(chalk.black.bold(MODULE_ID_PREFIX + " | loadTrainingSet | SET NORMALIZATION ..."));
 
       await nnTools.setNormalization(normalization);
-    } else {
-      console.log(chalkAlert(MODULE_ID_PREFIX +
-            " | loadTrainingSet | !!! NORMALIZATION NOT LOADED" +
-            " | " +
-            configuration.trainingSetsFolder +
-            "/normalization.json"
-        )
-      );
+
+    } 
+    else {
+      console.log(chalkAlert(MODULE_ID_PREFIX + " | loadTrainingSet | !!! NORMALIZATION NOT LOADED" +
+        " | " + configuration.trainingSetsFolder + "/normalization.json"
+      ));
     }
 
     console.log(
