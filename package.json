@@ -7,7 +7,7 @@
     "@liquid-carrot/carrot": "^0.3.20",
     "@slack/web-api": "^5.14.0",
     "@threeceelabs/mongoose-twitter": "^1.0.341",
-    "@threeceelabs/neural-network-tools": "^1.0.273",
+    "@threeceelabs/neural-network-tools": "^1.0.274",
     "@threeceelabs/threecee-utilities": "^1.0.414",
     "archiver": "^5.1.0",
     "array-normalize": "^2.0.0",
