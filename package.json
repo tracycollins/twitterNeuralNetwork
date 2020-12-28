@@ -7,7 +7,7 @@
     "@liquid-carrot/carrot": "^0.3.20",
     "@slack/web-api": "^5.14.0",
     "@threeceelabs/mongoose-twitter": "^1.0.341",
-    "@threeceelabs/neural-network-tools": "^1.0.272",
+    "@threeceelabs/neural-network-tools": "^1.0.273",
     "@threeceelabs/threecee-utilities": "^1.0.414",
     "archiver": "^5.1.0",
     "array-normalize": "^2.0.0",
@@ -90,9 +90,6 @@
     "watch": "^1.0.2",
     "write-json-file": "^4.3.0",
     "yauzl": "^2.10.0"
-  },
-  "devDependencies": {
-    "ndb": "^1.1.5"
   },
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
