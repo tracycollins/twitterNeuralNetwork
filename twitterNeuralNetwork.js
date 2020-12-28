@@ -242,6 +242,7 @@ watcherChildConfiguration.updateUserDb = false;
 
 configuration.maxFriends = DEFAULT_MAX_FRIENDS;
 
+configuration.zeroMinSuccess = EVOVLE_DEFAULTS.DEFAULT_ZERO_SUCCESS_MIN
 configuration.enableZeroSuccessEvolveOptions = EVOVLE_DEFAULTS.DEFAULT_ENABLE_ZERO_SUCCESS_EVOLVE_OPTIONS;
 configuration.viableNetworkTechArray = EVOVLE_DEFAULTS.DEFAULT_VIABLE_NETWORK_TECHNOLOGY_ARRAY;
 configuration.forceNetworkTechnology = EVOVLE_DEFAULTS.DEFAULT_FORCE_NETWORK_TECHNOLOGY;
@@ -4833,7 +4834,7 @@ async function evolveCompleteHandler(params){
       }
 
       // ZERO FAIL SET
-      if ((configuration.testMode && (nn.test.results.successRate < 50)) || (nn.test.results.successRate <= 1.0)){
+      if (!configuration.testMode && (nn.test.results.successRate < configuration.zeroMinSuccess)){
 
         const cost = nn.evolve.options.cost;
         const selection = nn.evolve.options.selection;
