@@ -1,6 +1,6 @@
 {
   "name": "@threeceelabs/twitterneuralnetwork",
-  "version": "1.0.30",
+  "version": "1.0.31",
   "description": "twitter neural network",
   "main": "twitterNeuralNetwork.js",
   "dependencies": {
