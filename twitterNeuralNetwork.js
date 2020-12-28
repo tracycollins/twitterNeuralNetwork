@@ -157,18 +157,11 @@ const tensorflowEvolveOptionsPickArray = [
   "metrics"
 ];
 
-const brainTrainOptionsPickArray = [
-  "learningRate",
-  "momentum",
-  "timeout",
-];
-
 const combinedEvolveOptionsPickArray = _.union(
   defaultEvolveOptionsPickArray, 
   tensorflowEvolveOptionsPickArray, 
   carrotEvolveOptionsPickArray, 
-  neatapticEvolveOptionsPickArray, 
-  brainTrainOptionsPickArray
+  neatapticEvolveOptionsPickArray
 );
 
 let DROPBOX_ROOT_FOLDER;
@@ -248,9 +241,6 @@ watcherChildConfiguration.testMode = configuration.testMode;
 watcherChildConfiguration.updateUserDb = false;
 
 configuration.maxFriends = DEFAULT_MAX_FRIENDS;
-configuration.userProfileCharCodesOnlyProbability = EVOVLE_DEFAULTS.DEFAULT_USER_PROFILE_CHAR_CODES_ONLY_PROBABILITY;
-configuration.userProfileCharCodesOnlyFlag = EVOVLE_DEFAULTS.DEFAULT_USER_PROFILE_CHAR_CODES_ONLY_FLAG;
-configuration.userProfileCharCodesOnlyInputsId = EVOVLE_DEFAULTS.DEFAULT_USER_PROFILE_CHAR_CODES_ONLY_INPUTS_ID;
 
 configuration.enableZeroSuccessEvolveOptions = EVOVLE_DEFAULTS.DEFAULT_ENABLE_ZERO_SUCCESS_EVOLVE_OPTIONS;
 configuration.viableNetworkTechArray = EVOVLE_DEFAULTS.DEFAULT_VIABLE_NETWORK_TECHNOLOGY_ARRAY;
@@ -325,9 +315,7 @@ configuration.childIndex = 0;
 childConfiguration.maxFriends = configuration.maxFriends;
 childConfiguration.primaryHost = configuration.primaryHost;
 childConfiguration.binaryMode = configuration.binaryMode;
-childConfiguration.userProfileCharCodesOnlyFlag = configuration.userProfileCharCodesOnlyFlag;
-childConfiguration.userProfileCharCodesOnlyInputsId = configuration.userProfileCharCodesOnlyInputsId;
-childConfiguration.userProfileCharCodesOnlyProbability = configuration.userProfileCharCodesOnlyProbability;
+
 childConfiguration.userProfileOnlyFlag = configuration.userProfileOnlyFlag;
 childConfiguration.testMode = configuration.testMode;
 childConfiguration.updateUserDb = false;
@@ -510,7 +498,6 @@ let zeroSuccessEvolveOptionsSet = new Set();
 
 const inputsIdTechHashMap = {};
 inputsIdTechHashMap.networkTechnology = {};
-inputsIdTechHashMap.networkTechnology.brain = {};
 inputsIdTechHashMap.networkTechnology.carrot = {};
 inputsIdTechHashMap.networkTechnology.tensorflow = {};
 inputsIdTechHashMap.networkTechnology.neataptic = {};
@@ -595,20 +582,6 @@ configuration.hostPurgeMinSuccessRate = DEFAULT_HOST_PURGE_MIN_SUCCESS_RATE;
 
 configuration.testSetRatio = DEFAULT_TEST_RATIO;
 
-// BRAIN
-// net.train(data, {
-//   // Defaults values --> expected validation
-//   iterations: 20000, // the maximum times to iterate the training data --> number greater than 0
-//   errorThresh: 0.005, // the acceptable error percentage from training data --> number between 0 and 1
-//   log: false, // true to use console.log, when a function is supplied it is used --> Either true or a function
-//   logPeriod: 10, // iterations between logging out --> number greater than 0
-//   learningRate: 0.3, // scales with delta to effect training rate --> number between 0 and 1
-//   momentum: 0.1, // scales with next layer's change value --> number between 0 and 1
-//   callback: null, // a periodic call back that can be triggered while training --> null or function
-//   callbackPeriod: 10, // the number of iterations through the training data between callback calls --> number greater than 0
-//   timeout: Infinity, // the max number of milliseconds to train for --> number greater than 0
-// })
-
 configuration.evolve = {};
 configuration.evolve.activation = EVOVLE_DEFAULTS.DEFAULT_EVOLVE_ACTIVATION;
 configuration.evolve.activationArray = EVOVLE_DEFAULTS.DEFAULT_EVOLVE_ACTIVATION_ARRAY;
@@ -622,10 +595,8 @@ configuration.evolve.tensorflowOptimizerArray = EVOVLE_DEFAULTS.DEFAULT_TENSORFL
 configuration.evolve.tensorflowLossArray = EVOVLE_DEFAULTS.DEFAULT_TENSORFLOW_TRAIN_LOSS_ARRAY
 configuration.evolve.tensorflowMetricsArray = EVOVLE_DEFAULTS.DEFAULT_TENSORFLOW_TRAIN_METRICS_ARRAY
 
-configuration.evolve.brainActivationArray = EVOVLE_DEFAULTS.DEFAULT_BRAIN_TRAIN_ACTIVATION_ARRAY;
 configuration.evolve.learningRate = EVOVLE_DEFAULTS.DEFAULT_EVOLVE_LEARNING_RATE;
 configuration.evolve.learningRateRange = EVOVLE_DEFAULTS.DEFAULT_EVOLVE_LEARNING_RATE_RANGE;
-configuration.evolve.brainTrainTimeout = EVOVLE_DEFAULTS.DEFAULT_BRAIN_TRAIN_TIMEOUT;
 configuration.evolve.cost = EVOVLE_DEFAULTS.DEFAULT_EVOLVE_COST;
 configuration.evolve.costArray = EVOVLE_DEFAULTS.DEFAULT_EVOLVE_COST_ARRAY;
 configuration.evolve.efficientMutation = EVOVLE_DEFAULTS.DEFAULT_EVOLVE_EFFICIENT_MUTATION;
@@ -643,8 +614,6 @@ configuration.evolve.growthRange = EVOVLE_DEFAULTS.DEFAULT_EVOLVE_GROWTH_RANGE;
 configuration.evolve.inputsToHiddenLayerSizeRatio = EVOVLE_DEFAULTS.DEFAULT_EVOLVE_INPUTS_TO_HIDDEN_LAYER_SIZE_RATIO;
 configuration.evolve.iterations = EVOVLE_DEFAULTS.DEFAULT_ITERATIONS;
 configuration.evolve.log = EVOVLE_DEFAULTS.DEFAULT_EVOLVE_LOG;
-// configuration.evolve.max_nodes = EVOVLE_DEFAULTS.DEFAULT_EVOLVE_MAX_NODES;
-// configuration.evolve.maxNodes = EVOVLE_DEFAULTS.DEFAULT_EVOLVE_MAX_NODES;
 configuration.evolve.momentum = EVOVLE_DEFAULTS.DEFAULT_EVOLVE_MOMENTUM;
 configuration.evolve.momentumRange = EVOVLE_DEFAULTS.DEFAULT_EVOLVE_MOMENTUM_RANGE;
 configuration.evolve.mutation = EVOVLE_DEFAULTS.DEFAULT_EVOLVE_MUTATION;
@@ -839,15 +808,13 @@ function printResultsHashmap(){
       snIdRes = (networkObj.seedNetworkRes && networkObj.seedNetworkRes !== undefined) ? networkObj.seedNetworkRes.toFixed(3) : "---";
       betterChild = (networkObj.betterChild && networkObj.betterChild !== undefined) ? formatBoolean(networkObj.betterChild) : "---";
       binaryMode = (networkObj.binaryMode && networkObj.binaryMode !== undefined) ? formatBoolean(networkObj.binaryMode) : "F";
-      // logScaleMode = (networkObj.logScaleMode && networkObj.logScaleMode !== undefined) ? formatBoolean(networkObj.logScaleMode) : "F";
       hiddenLayerSize = (networkObj.hiddenLayerSize && (networkObj.hiddenLayerSize !== undefined)) ? networkObj.hiddenLayerSize : "---";
       seedNetworkId = (networkObj.seedNetworkId && networkObj.seedNetworkId !== undefined) ? networkObj.seedNetworkId : "---";
       iterations = (networkObj.evolve.results && networkObj.evolve.results !== undefined) ? networkObj.evolve.results.iterations : 0;
 
-      cost = (networkObj.networkTechnology !== "tensorflow" && networkObj.networkTechnology !== "brain") ? networkObj.evolve.options.cost.slice(0,4) : "---";
-      popsize = (networkObj.networkTechnology !== "tensorflow" && networkObj.networkTechnology !== "brain") ? networkObj.evolve.options.popsize : "---";
-      elitism = (networkObj.networkTechnology !== "tensorflow" && networkObj.networkTechnology !== "brain") ? networkObj.evolve.options.elitism : "---";
-      // activation = (networkObj.networkTechnology === "tensorflow") ? networkObj.evolve.options.inputActivation.slice(0,6) : networkObj.evolve.options.activation.slice(0,6);
+      cost = (networkObj.networkTechnology !== "tensorflow") ? networkObj.evolve.options.cost.slice(0,4) : "---";
+      popsize = (networkObj.networkTechnology !== "tensorflow") ? networkObj.evolve.options.popsize : "---";
+      elitism = (networkObj.networkTechnology !== "tensorflow") ? networkObj.evolve.options.elitism : "---";
       activation = (networkObj.networkTechnology === "tensorflow") ? networkObj.evolve.options.inputActivation : networkObj.evolve.options.activation;
 
       error = ((networkObj.evolve.results && networkObj.evolve.results !== undefined) 
@@ -878,7 +845,6 @@ function printResultsHashmap(){
         snIdRes,
         hiddenLayerSize,
         shortInputsId(networkObj.inputsId),
-        // networkObj.evolve.options.activation.slice(0,6),
         activation,
         formatBoolean(networkObj.evolve.options.clear),
         cost,
@@ -1048,7 +1014,6 @@ function purgeInputs(inputsId){
         inputsSet.delete(inputsId);
         inputsViableSet.delete(inputsId);
         skipLoadInputsSet.add(inputsId);
-        delete inputsIdTechHashMap.networkTechnology.brain[inputsId];
         delete inputsIdTechHashMap.networkTechnology.carrot[inputsId];
         delete inputsIdTechHashMap.networkTechnology.tensorflow[inputsId];
         delete inputsIdTechHashMap.networkTechnology.neataptic[inputsId];
@@ -1828,33 +1793,7 @@ async function generateSeedInputsNetworkId(params){
 
       console.log(chalkLog(MODULE_ID_PREFIX + " | USING RANDOM SEED NETWORK | AVAIL SEED NNs: " + Object.keys(inputsIdTechHashMap.networkTechnology[randomTechnology]).length));
 
-      let randomInputsId;
-
-      if (config.userProfileCharCodesOnlyFlag){
-
-        randomInputsId = configuration.userProfileCharCodesOnlyInputsId;
-
-        if (empty(inputsIdTechHashMap.networkTechnology[randomTechnology][randomInputsId])){
-
-          console.log(chalkBlueBold(MODULE_ID_PREFIX
-            + " | generateSeedInputsNetworkId | NO RANDOM SEED NETWORKS WITH INPUTS ID " + randomInputsId + " IN SEED POOL"
-          ));
-
-          const inputsObj = await loadInputsFile({folder: defaultInputsFolder, file: configuration.userProfileCharCodesOnlyInputsId+".json"});
-          
-          config.numInputs = inputsObj.meta.numInputs;
-          config.seedInputsId = randomInputsId;
-          config.inputsId = randomInputsId;
-          config.binaryMode = false;
-          // config.logScaleMode = false;
-
-          return config;
-        }
-      }
-      else {
-        randomInputsId = randomItem(Object.keys(inputsIdTechHashMap.networkTechnology[randomTechnology]));
-      }
-
+      const randomInputsId = randomItem(Object.keys(inputsIdTechHashMap.networkTechnology[randomTechnology]));
       const randomNetworkIdSet = inputsIdTechHashMap.networkTechnology[randomTechnology][randomInputsId];
 
       console.log(chalkLog(MODULE_ID_PREFIX + " | RANDOM SEED: " + randomInputsId + " | INPUTS NN SET SIZE: " + randomNetworkIdSet.size));
@@ -1897,35 +1836,6 @@ async function generateSeedInputsNetworkId(params){
         return config;
       }
     }
-    else if (config.networkTechnology === "brain") {
-      config.binaryMode = false;
-      // config.logScaleMode = false;
-      config.inputsId = configuration.userProfileCharCodesOnlyInputsId;
-      config.seedInputsId = configuration.userProfileCharCodesOnlyInputsId;
-      const inputsObj = await loadInputsFile({folder: defaultInputsFolder, file: configuration.userProfileCharCodesOnlyInputsId+".json"});
-      config.numInputs = inputsObj.meta.numInputs;
-      console.log(chalkLog(MODULE_ID_PREFIX + " | BRAIN SEED INPUTS: " + config.seedInputsId));
-      return config;
-    }
-    else if (config.userProfileCharCodesOnlyFlag){
-
-      config.seedInputsId = configuration.userProfileCharCodesOnlyInputsId;
-      config.inputsId = config.seedInputsId;
-      config.binaryMode = false;
-      // config.logScaleMode = false;
-
-      console.log(chalkLog(MODULE_ID_PREFIX + " | SEED | CHAR CODES ONLY INPUTS ID: " + config.seedInputsId));
-
-      const inputsObj = await loadInputsFile({folder: defaultInputsFolder, file: configuration.userProfileCharCodesOnlyInputsId+".json"});
-      config.numInputs = inputsObj.meta.numInputs;
-
-      console.log(chalkBlueBold(MODULE_ID_PREFIX
-        + " | SEED | CHAR CODES ONLY INPUTS ID: " + config.seedInputsId
-        + " | NUM INPUTS: " + config.numInputs
-      ));
-
-      return config;
-    }
     else if (availableInputsIdArray.length > 0) {
 
       console.log(chalkLog(MODULE_ID_PREFIX + " | VIABLE NETWORKS INPUTS: " + availableInputsIdArray.length));
@@ -1934,11 +1844,6 @@ async function generateSeedInputsNetworkId(params){
 
       config.seedInputsId = availableInputsIdArray.pop(); // most recent input
       config.inputsId = config.seedInputsId;
-
-      if (config.seedInputsId === configuration.userProfileCharCodesOnlyInputsId){
-        config.binaryMode = false;
-        // config.logScaleMode = false;
-      }
 
       console.log(chalkBlue(MODULE_ID_PREFIX + " | SEED | AVAILABLE INPUTS ID: " + config.inputsId));
 
@@ -1977,11 +1882,6 @@ async function generateSeedInputsNetworkId(params){
     }
     else{
       config.seedInputsId = randomItem([...inputsSet]);
-
-      if (config.seedInputsId === configuration.userProfileCharCodesOnlyInputsId){
-        config.binaryMode = false;
-        // config.logScaleMode = false;
-      }
       
       const inputsObj = await global.wordAssoDb.NetworkInputs.findOne({inputsId: config.seedInputsId}).lean().exec();
       config.numInputs = inputsObj.meta.numInputs;
@@ -2022,28 +1922,6 @@ async function generateEvolveOptions(params){
         config.metrics = configuration.evolve.tensorflowMetricsArray;
         console.log({config})
       }
-      else if (config.networkTechnology === "brain"){
-
-        config.activation = randomItem(configuration.evolve.brainActivationArray);
-
-        switch (config.activation) {
-          case "SIGMOID":
-            config.activation = "sigmoid";
-            break;
-          case "RELU":
-            config.activation = "relu";
-            break;
-          case "LEAKY_RELU":
-            config.activation = "leaky-relu";
-            break;
-          case "TANH":
-            config.activation = "tahn";
-            break;
-          default:
-            console.log(chalkError(MODULE_ID_PREFIX + " | *** generateEvolveOptions ERROR | UNKNOWN BRAIN ACTIVATION: " + config.activation));
-            throw new Error("generateRandomEvolveConfig UNKNOWN BRAIN ACTIVATION: " + config.activation);
-        }
-      }
       else{
         config.activation = randomItem(configuration.evolve.activationArray);
       }
@@ -2055,12 +1933,7 @@ async function generateEvolveOptions(params){
         ? _.pull(configuration.evolve.costArray, "WAPE") 
         : configuration.evolve.costArray;
 
-      if (config.seedInputsId === configuration.userProfileCharCodesOnlyInputsId){
-        config.binaryMode = false;
-        // config.logScaleMode = false;
-      }
-
-      config.cost = (config.networkTechnology === "brain") ? "NONE" : randomItem(costArray);
+      config.cost = randomItem(costArray);
       config.efficientMutation = (Math.random() <= configuration.evolve.efficientMutationProbability)
       config.elitism = randomInt(configuration.evolve.elitismRange.min, configuration.evolve.elitismRange.max);
       config.equal = true;
@@ -2070,8 +1943,6 @@ async function generateEvolveOptions(params){
       config.iterations = configuration.evolve.iterations;
       config.learningRate = randomFloat(configuration.evolve.learningRateRange.min, configuration.evolve.learningRateRange.max);
       config.log = configuration.evolve.log;
-      // config.max_nodes = configuration.evolve.max_nodes;
-      // config.maxNodes = configuration.evolve.maxNodes;
       config.momentum = randomFloat(configuration.evolve.momentumRange.min, configuration.evolve.momentumRange.max);
       config.mutation = configuration.evolve.mutation;
       config.mutationAmount = 1;
@@ -2079,7 +1950,7 @@ async function generateEvolveOptions(params){
       config.popsize = configuration.evolve.popsize;
       config.populationSize = configuration.evolve.popsize;
       config.provenance = configuration.evolve.provenance;
-      config.selection = (config.networkTechnology === "brain") ? "NONE" : randomItem(configuration.evolve.selectionArray);
+      config.selection = randomItem(configuration.evolve.selectionArray);
       config.threads = configuration.evolve.threads;
       config.timeout = configuration.evolve.timeout;
 
@@ -2105,9 +1976,6 @@ function pickTechnologyOptions(config){
   let pickArray = [];
 
   switch (config.networkTechnology){
-    case "brain": 
-      pickArray = _.union(defaultEvolveOptionsPickArray, brainTrainOptionsPickArray);
-      break;
     case "tensorflow": 
       pickArray = _.union(defaultEvolveOptionsPickArray, tensorflowEvolveOptionsPickArray);
       break;
@@ -2152,35 +2020,16 @@ async function generateRandomEvolveConfig(p){
     }
   }
 
-  if (configuration.userProfileCharCodesOnlyFlag){
-    config.userProfileCharCodesOnlyFlag = true;
-    config.binaryMode = false;
-    // config.logScaleMode = false;
-  }
-  else if (config.networkTechnology === "brain"){
-    config.userProfileCharCodesOnlyFlag = true;
-    config.binaryMode = false;
+
+  if (configuration.enableRandomBinaryMode){
+    config.binaryMode = Math.random() <= configuration.evolve.binaryModeProbability;
+    console.log(chalkAlert(MODULE_ID_PREFIX + " | RANDOM BINARY MODE: " + config.binaryMode));
   }
   else{
-
-    config.userProfileCharCodesOnlyFlag = (Math.random() <= configuration.userProfileCharCodesOnlyProbability);
-    config.binaryMode = configuration.enableRandomBinaryMode && (Math.random() <= configuration.evolve.binaryModeProbability);
-
-    if (config.userProfileCharCodesOnlyFlag) { 
-      config.binaryMode = false;
-    }
-    else{
-      if (configuration.enableRandomBinaryMode){
-        console.log(chalkAlert(MODULE_ID_PREFIX + " | RANDOM BINARY MODE: " + config.binaryMode));
-      }
-      else{
-        config.binaryMode = params.binaryMode || configuration.binaryMode;
-      }
-    }
+    config.binaryMode = params.binaryMode || configuration.binaryMode;
   }
 
   console.log(chalkBlue(MODULE_ID_PREFIX + " | NETWORK TECHNOLOGY:      " + config.networkTechnology));
-  console.log(chalkBlue(MODULE_ID_PREFIX + " | USER PROFILE CHAR CODES: " + config.userProfileCharCodesOnlyFlag));
   console.log(chalkBlue(MODULE_ID_PREFIX + " | BINARY MODE:             " + config.binaryMode));
 
   debug(chalkLog(MODULE_ID_PREFIX + " | NETWORK CREATE MODE: " + config.networkCreateMode));
@@ -2212,7 +2061,6 @@ async function generateRandomEvolveConfig(p){
 
       config.architecture = "seed";
       config.binaryMode = dbNetworkObj.binaryMode;
-      // config.logScaleMode = dbNetworkObj.logScaleMode;
       config.inputsId = dbNetworkObj.inputsId;
       config.numInputs = dbNetworkObj.numInputs;
       config.seedNetworkId = dbNetworkObj.networkId;
@@ -2221,7 +2069,6 @@ async function generateRandomEvolveConfig(p){
       console.log(MODULE_ID_PREFIX + " | SEED NETWORK:      " + dbNetworkObj.networkId);
       console.log(MODULE_ID_PREFIX + " | SEED NETWORK TECH: " + dbNetworkObj.networkTechnology);
       console.log(MODULE_ID_PREFIX + " | SEED BINARY MODE:  " + dbNetworkObj.binaryMode);
-      // console.log(MODULE_ID_PREFIX + " | SEED LOG SCALE MODE:  " + dbNetworkObj.logScaleMode);
       console.log(MODULE_ID_PREFIX + " | SEED HIDDEN NODES: " + dbNetworkObj.hiddenLayerSize);
       console.log(MODULE_ID_PREFIX + " | SEED INPUTS ID:    " + dbNetworkObj.inputsId);
 
@@ -2295,13 +2142,6 @@ async function generateRandomEvolveConfig(p){
         inputsSet.add(inputsObj.inputsId);
 
         config.inputsId = inputsObj.inputsId;
-
-        if(config.inputsId === configuration.userProfileCharCodesOnlyInputsId){
-          config.binaryMode = false;
-        }
-        else if(inputsObj.meta.userProfileCharCodesOnlyFlag){
-          config.binaryMode = false;
-        }
 
         config.hiddenLayerSize = Math.floor((configuration.evolve.inputsToHiddenLayerSizeRatio * inputsObj.meta.numInputs) + 3);
         // tensorflow always has hidden layer
@@ -2429,15 +2269,7 @@ async function initNetworkCreate(params){
       ));
     }
 
-    if (messageObj.networkTechnology === "brain"){
-      console.log(chalkBlue(
-               MODULE_ID_PREFIX + " | TIMEOUT:           " + messageObj.timeout
-      + "\n" + MODULE_ID_PREFIX + " | MOMENTUM:          " + messageObj.momentum
-      + "\n" + MODULE_ID_PREFIX + " | LEARNING RATE:     " + messageObj.learningRate
-      ));
-    }
-
-    if (messageObj.networkTechnology !== "tensorflow" && messageObj.networkTechnology !== "brain"){
+    if (messageObj.networkTechnology !== "tensorflow"){
       console.log(chalkBlue(
                  MODULE_ID_PREFIX + " | COST:              " + messageObj.cost
         + "\n" + MODULE_ID_PREFIX + " | SELECTION:         " + messageObj.selection
@@ -3299,33 +3131,10 @@ async function loadConfigFile(params) {
       }
     }
 
-    if (loadedConfigObj.TNN_USER_PROFILE_CHAR_CODES_ONLY_FLAG !== undefined) {
-      console.log(MODULE_ID_PREFIX + " | LOADED TNN_USER_PROFILE_CHAR_CODES_ONLY_FLAG: " + loadedConfigObj.TNN_USER_PROFILE_CHAR_CODES_ONLY_FLAG);
-      if ((loadedConfigObj.TNN_USER_PROFILE_CHAR_CODES_ONLY_FLAG === true) || (loadedConfigObj.TNN_USER_PROFILE_CHAR_CODES_ONLY_FLAG === "true")) {
-        newConfiguration.userProfileCharCodesOnlyFlag = true;
-      }
-      if ((loadedConfigObj.TNN_USER_PROFILE_CHAR_CODES_ONLY_FLAG === false) || (loadedConfigObj.TNN_USER_PROFILE_CHAR_CODES_ONLY_FLAG === "false")) {
-        newConfiguration.userProfileCharCodesOnlyFlag = false;
-      }
-
-      childConfiguration.userProfileCharCodesOnlyFlag = newConfiguration.userProfileCharCodesOnlyFlag;
-    }
-
     if (loadedConfigObj.TNN_MAX_FRIENDS !== undefined) {
       console.log(MODULE_ID_PREFIX + " | LOADED TNN_MAX_FRIENDS: " + loadedConfigObj.TNN_MAX_FRIENDS);
       newConfiguration.maxFriends = loadedConfigObj.TNN_MAX_FRIENDS;
       childConfiguration.maxFriends = newConfiguration.maxFriends;
-    }
-
-    if (loadedConfigObj.TNN_USER_PROFILE_CHAR_CODES_ONLY_PROBABILITY !== undefined) {
-      console.log(MODULE_ID_PREFIX + " | LOADED TNN_USER_PROFILE_CHAR_CODES_ONLY_PROBABILITY: " + loadedConfigObj.TNN_USER_PROFILE_CHAR_CODES_ONLY_PROBABILITY);
-      newConfiguration.userProfileCharCodesOnlyProbability = loadedConfigObj.TNN_USER_PROFILE_CHAR_CODES_ONLY_PROBABILITY;
-      childConfiguration.userProfileCharCodesOnlyProbability = newConfiguration.userProfileCharCodesOnlyProbability;
-    }
-
-    if (loadedConfigObj.TNN_USER_PROFILE_CHAR_CODES_ONLY_INPUTS_ID !== undefined) {
-      console.log(MODULE_ID_PREFIX + " | LOADED TNN_USER_PROFILE_CHAR_CODES_ONLY_INPUTS_ID: " + loadedConfigObj.TNN_USER_PROFILE_CHAR_CODES_ONLY_INPUTS_ID);
-      newConfiguration.userProfileCharCodesOnlyInputsId = loadedConfigObj.TNN_USER_PROFILE_CHAR_CODES_ONLY_INPUTS_ID;
     }
 
     if (loadedConfigObj.TNN_ENABLE_RANDOM_NETWORK_TECHNOLOGY !== undefined) {
@@ -3791,7 +3600,6 @@ const testMode = { name: "testMode", alias: "X", type: Boolean};
 const binaryMode = { name: "binaryMode", alias: "b", type: Boolean};
 const scaleLogMode = { name: "scaleLogMode", alias: "l", type: Boolean};
 
-const userProfileCharCodesOnlyFlag = { name: "userProfileCharCodesOnlyFlag", alias: "C", type: Boolean, defaultValue: false};
 const forceNetworkTechnology = { name: "forceNetworkTechnology", alias: "c", type: String};
 const threads = { name: "threads", alias: "t", type: Number};
 const maxNumberChildren = { name: "maxNumberChildren", alias: "N", type: Number};
@@ -3807,7 +3615,6 @@ const useBestNetwork = { name: "useBestNetwork", alias: "B", type: Boolean };
 const evolveIterations = { name: "evolveIterations", alias: "I", type: Number};
 
 const optionDefinitions = [
-  userProfileCharCodesOnlyFlag,
   forceNetworkTechnology,
   threads,
   maxNumberChildren,
@@ -5028,8 +4835,8 @@ async function evolveCompleteHandler(params){
       // ZERO FAIL SET
       if ((configuration.testMode && (nn.test.results.successRate < 50)) || (nn.test.results.successRate <= 1.0)){
 
-        const cost = (nn.networkTechnology === "brain") ? "NONE" : nn.evolve.options.cost;
-        const selection = (nn.networkTechnology === "brain") ? "NONE" : nn.evolve.options.selection;
+        const cost = nn.evolve.options.cost;
+        const selection = nn.evolve.options.selection;
         const binaryMode = (nn.binaryMode) ? nn.binaryMode : false;
 
         const evolveOptionsCombination = nn.evolve.options.activation + ":" + cost + ":" + selection + ":" + binaryMode;
