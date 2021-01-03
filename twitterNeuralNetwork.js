@@ -5076,156 +5076,6 @@ async function childMessageHandler(params){
   }
 }
 
-// async function watcherChildCreate(p){
-
-//   let config;
-//   const options = {};
-
-//   try {
-
-//     statsObj.status = "WATCHER CHILD CREATE";
-
-//     const params = p || {};
-
-//     const childId = "twc_" + hostname + "_" + process.pid;
-//     const childIdShort = "WC0";
-//     const appPath = path.join(configuration.cwd, "watcherChild.js");
-
-//     let env = {};
-
-//     env = configuration.DROPBOX;
-//     env.DROPBOX_STATS_FILE = statsObj.runId + "_" + childId + ".json";
-//     env.CHILD_ID = childId;
-//     env.CHILD_ID_SHORT = childIdShort;
-//     env.NODE_ENV = "production";
-
-//     config = params.config || {};
-
-//     let child = {};
-
-//     options.cwd = params.cwd || configuration.cwd;
-
-//     statsObj.status = "WATCHER CHILD CREATE | CH ID: " + childId + " | APP: " + appPath;
-
-//     console.log(chalkBlueBold(MODULE_ID_PREFIX + " | CREATE WATCHER CHILD | " + childId));
-
-//     if (env) {
-//       options.env = env;
-//     }
-//     else {
-//       options.env = {};
-//       options.env = configuration.DROPBOX;
-//       options.env.DROPBOX_STATS_FILE = statsObj.runId + "_" + childId + ".json";
-//       options.env.CHILD_ID = childId;
-//       options.env.NODE_ENV = "production";
-//       options.env.DEFAULT_DATA_ROOT = configuration.defaultDataRoot;
-//     }
-
-//     childHashMap[childId] = {};
-//     childHashMap[childId].type = "WATCHER";
-//     childHashMap[childId].status = "NEW";
-//     childHashMap[childId].messageQueue = [];
-
-//     child = cp.fork(`${__dirname}/watcherChild.js`);
-
-//     childHashMap[childId].pid = child.pid;
-
-//     const childPidFile = await touchChildPidFile({ childId: childId, pid: child.pid });
-
-//     childHashMap[childId].childPidFile = childPidFile;
-//     childHashMap[childId].child = child;
-
-//     childHashMap[childId].child.on("disconnect", function(){
-
-//       console.log(chalkAlert(MODULE_ID_PREFIX + " | *** WATCHER CHILD DISCONNECT | " + childId));
-
-//       shell.cd(childPidFolderLocal);
-//       shell.rm(childPidFile);
-
-//       delete childHashMap[childId];
-//     });
-
-//     childHashMap[childId].child.on("close", function(){
-
-//       console.log(chalkAlert(MODULE_ID_PREFIX + " | *** WATCHER CHILD CLOSED | " + childId));
-
-//       shell.cd(childPidFolderLocal);
-//       shell.rm(childPidFile);
-
-//       delete childHashMap[childId];
-//     });
-
-//     childHashMap[childId].child.on("exit", function(){
-
-//       console.log(chalkAlert(MODULE_ID_PREFIX + " | *** WATCHER CHILD EXITED | " + childId));
-
-//       shell.cd(childPidFolderLocal);
-//       shell.rm(childPidFile);
-
-//       delete childHashMap[childId];
-
-//       quit({cause: "WATCHER CHILD EXIT", force: true});
-//     });
-
-//     childHashMap[childId].child.on("error", function(err){
-//       console.log(chalkError(MODULE_ID_PREFIX + " | *** WATCHER CHILD ERROR: " + err));
-
-//       shell.cd(childPidFolderLocal);
-//       shell.rm(childPidFile);
-
-//       delete childHashMap[childId];
-
-//       quit({cause: "WATCHER CHILD ERROR: " + err});
-//     })
-
-//     childHashMap[childId].child.on("message", async function(message){
-
-//       await childMessageHandler({
-//         childId: childId, 
-//         message: message
-//       });
-
-//       if (configuration.verbose) { 
-//         console.log(chalkLog(MODULE_ID_PREFIX 
-//           + " | <R MESSAGE | " + getTimeStamp()
-//           + " | OP: " + message.op
-//         )); 
-//       }
-//     });
-
-//     if (quitFlag) {
-//       console.log(chalkAlert(MODULE_ID_PREFIX
-//         + " | KILL WATCHER CHILD IN CREATE ON QUIT FLAG"
-//         + " | " + getTimeStamp()
-//         + " | " + childId
-//       ));
-//       childHashMap[childId].child.kill();
-//     }
-
-//     const childInitParams = {};
-//     childInitParams.childId = childId;
-//     childInitParams.childIdShort = childIdShort;
-//     childInitParams.configuration = watcherChildConfiguration;
-//     childInitParams.userDataFolder = configuration.userDataFolder;
-//     childInitParams.testMode = configuration.testMode;
-//     childInitParams.verbose = configuration.verbose;
-
-//     const initResponse = await childInit(childInitParams);
-
-//     console.log(chalkBlueBold(MODULE_ID_PREFIX + " | CREATE WATCHER CHILD | " + childId));
-
-//     return initResponse;
-//   }
-//   catch(err){
-//     console.log(chalkError(MODULE_ID_PREFIX + " | *** WATCHER CHILD INIT ERROR"
-//       + " | ERR: " + err
-//       + "\nCONFIG\n" + jsonPrint(config)
-//       + "\nENV\n" + jsonPrint(options.env)
-//     ));
-//     throw err;
-//   }
-// }
-
 async function childCreate(p){
 
   let config;
@@ -5310,7 +5160,7 @@ async function childCreate(p){
 
       delete childHashMap[childId];
 
-      quit({cause: "CHILD EXIT", force: true});
+      // quit({cause: "CHILD EXIT", force: true});
     });
 
     childHashMap[childId].child.on("error", function(err){
@@ -5321,7 +5171,7 @@ async function childCreate(p){
 
       delete childHashMap[childId];
 
-      quit({cause: "CHILD ERROR: " + err});
+      // quit({cause: "CHILD ERROR: " + err});
     })
 
     childHashMap[childId].child.on("message", async function(message){
