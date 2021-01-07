@@ -6,10 +6,10 @@
   "dependencies": {
     "@liquid-carrot/carrot": "^0.3.20",
     "@slack/web-api": "^5.15.0",
-    "@threeceelabs/mongoose-twitter": "^1.0.348",
+    "@threeceelabs/mongoose-twitter": "^1.0.349",
     "@threeceelabs/neural-network-tools": "^1.0.274",
     "@threeceelabs/threecee-utilities": "^1.0.418",
-    "archiver": "^5.1.0",
+    "archiver": "^5.2.0",
     "array-normalize": "^2.0.0",
     "array-slice": "^1.1.0",
     "array-unique": "^0.3.2",
