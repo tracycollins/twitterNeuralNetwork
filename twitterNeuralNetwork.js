@@ -812,6 +812,7 @@ function printResultsHashmap(){
       hiddenLayerSize = (networkObj.hiddenLayerSize && (networkObj.hiddenLayerSize !== undefined)) ? networkObj.hiddenLayerSize : "---";
       seedNetworkId = (networkObj.seedNetworkId && networkObj.seedNetworkId !== undefined) ? networkObj.seedNetworkId : "---";
       iterations = (networkObj.evolve.results && networkObj.evolve.results !== undefined) ? networkObj.evolve.results.iterations : 0;
+      iterations = iterations || 0;
 
       cost = (networkObj.networkTechnology !== "tensorflow") ? networkObj.evolve.options.cost.slice(0,4) : "---";
       popsize = (networkObj.networkTechnology !== "tensorflow") ? networkObj.evolve.options.popsize : "---";
@@ -865,6 +866,7 @@ function printResultsHashmap(){
       for(let i=0; i<tableEntry.length; i++){
         if (tableEntry[i] === undefined || tableEntry[i] === null) {
           console.log(chalkAlert(MODULE_ID_PREFIX + " | *** TABLE INDEX: " + i + " | " + tableEntry[i]));
+          tableEntry[i] = "NULL"
         }
       }
 
