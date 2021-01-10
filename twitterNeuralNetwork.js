@@ -22,6 +22,7 @@ const QUIT_ON_COMPLETE = false;
 const ONE_SECOND = 1000;
 const ONE_MINUTE = ONE_SECOND*60;
 
+const DEFAULT_EVOLVE_TIMEOUT_DURATION = 10*ONE_MINUTE;
 const SAVE_FILE_QUEUE_INTERVAL = 5*ONE_SECOND;
 const QUIT_WAIT_INTERVAL = 5*ONE_SECOND;
 const STATS_UPDATE_INTERVAL = 5*ONE_MINUTE;
@@ -73,7 +74,6 @@ const DATABASE_HOST = process.env.DATABASE_HOST || "mms3";
 const DEFAULT_DATA_ROOT = process.env.DATA_ROOT_FOLDER || "/Volumes/RAID1/data";
 
 const HOST = (hostname === PRIMARY_HOST || hostname === DATABASE_HOST) ? "default" : "local";
-
 
 console.log("=========================================");
 console.log("=========================================");
@@ -239,6 +239,8 @@ const watcherChildConfiguration = {};
 watcherChildConfiguration.primaryHost = configuration.primaryHost;
 watcherChildConfiguration.testMode = configuration.testMode;
 watcherChildConfiguration.updateUserDb = false;
+
+configuration.evolveTimeoutDuration = DEFAULT_EVOLVE_TIMEOUT_DURATION;
 
 configuration.maxFriends = DEFAULT_MAX_FRIENDS;
 
@@ -652,6 +654,9 @@ statsObj.users.unzipped = 0;
 statsObj.users.zipHashMapHit = 0;
 
 statsObj.errors = {};
+statsObj.errors.evolve = {};
+statsObj.errors.evolve.timeouts = 0;
+
 statsObj.errors.imageParse = {};
 statsObj.errors.users = {};
 statsObj.errors.users.findOne = 0;
@@ -3124,6 +3129,11 @@ async function loadConfigFile(params) {
       }
     }
 
+    if (loadedConfigObj.TNN_EVOLVE_TIMEOUT_DURATION !== undefined) {
+      console.log(MODULE_ID_PREFIX + " | LOADED TNN_EVOLVE_TIMEOUT_DURATION: " + loadedConfigObj.TNN_EVOLVE_TIMEOUT_DURATION);
+      newConfiguration.evolveTimeoutDuration = loadedConfigObj.TNN_EVOLVE_TIMEOUT_DURATION;
+    }
+
     if (loadedConfigObj.TNN_ENABLE_ZERO_SUCCESS_EVOLVE_OPTIONS !== undefined) {
       console.log(MODULE_ID_PREFIX + " | LOADED TNN_ENABLE_ZERO_SUCCESS_EVOLVE_OPTIONS: " + loadedConfigObj.TNN_ENABLE_ZERO_SUCCESS_EVOLVE_OPTIONS);
       if ((loadedConfigObj.TNN_ENABLE_ZERO_SUCCESS_EVOLVE_OPTIONS === true) || (loadedConfigObj.TNN_ENABLE_ZERO_SUCCESS_EVOLVE_OPTIONS === "true")) {
@@ -4297,6 +4307,7 @@ function getNewNetworkId(p){
 
 async function startNetworkCreate(params){
 
+  const binaryMode = (params.binaryMode !== undefined) ? params.binaryMode : configuration.binaryMode;
   const compareTech = (params.compareTech !== undefined) ? params.compareTech : configuration.compareTech;
   const networkId = getNewNetworkId();
 
@@ -4306,6 +4317,8 @@ async function startNetworkCreate(params){
   ));
 
   childHashMap[params.childId].currentNetworkId = networkId;
+  childHashMap[params.childId].binaryMode = binaryMode;
+  childHashMap[params.childId].compareTech = compareTech;
 
   await initNetworkCreate({childId: params.childId, networkId: networkId, compareTech: compareTech});
 
@@ -4915,6 +4928,38 @@ async function evolveCompleteHandler(params){
   }
 }
 
+const clearEvolveTimeout = (childId) => {
+  console.log(chalkAlert(`${MODULE_ID_PREFIX} | CLEAR EVOLVE TIMEOUT | CHILD: ${childId} | TIMEOUTS: ${statsObj.errors.evolve.timeouts}`))
+  clearTimeout(childHashMap[childId].evolveTimeout)
+}
+
+let inEvolveTimeout = false;
+
+const resetEvolveTimeout = (childId) => {
+
+  if (inEvolveTimeout) {
+    return;
+  }
+
+  inEvolveTimeout = true;
+
+  clearTimeout(childHashMap[childId].evolveTimeout)
+
+  childHashMap[childId].evolveTimeout = setTimeout(async () => {
+
+    statsObj.errors.evolve.timeouts += 1
+    console.log(chalkAlert(`${MODULE_ID_PREFIX} | !!! EVOLVE TIMEOUT | DUR: ${configuration.evolveTimeoutDuration} | CHILD: ${childId} | TIMEOUTS: ${statsObj.errors.evolve.timeouts}`))
+
+    await childSend({command: {childId: childId, op: "ABORT"}});
+
+    await delay({period: 15*ONE_SECOND});
+
+    inEvolveTimeout = false;
+
+  }, configuration.evolveTimeoutDuration);
+
+}
+
 async function childMessageHandler(params){
 
   try{
@@ -4922,7 +4967,6 @@ async function childMessageHandler(params){
     const childId = params.childId;
     const m = params.message;
     const binaryMode = params.binaryMode;
-    // const logScaleMode = params.logScaleMode;
     const compareTech = params.compareTech;
 
     let error = 0;
@@ -4960,17 +5004,13 @@ async function childMessageHandler(params){
       case "STATS":
         childHashMap[childId].status = m.fsmStatus;
         objectPath.set(statsObj, ["children", childId, "status"], childHashMap[childId].status);
-        return;
+      return;
 
       case "EVOLVE_SCHEDULE":
 
+        await resetEvolveTimeout(childId);
+
         _.set(resultsHashmap[m.stats.networkId], "evolve.results.iterations", m.stats.iteration);
-
-        // console.log(`m.stats.error: ${m.stats.error}`)
-        // console.log(typeof m.stats.error)
-
-        // console.log(`m.stats.fitness: ${m.stats.fitness}`)
-        // console.log(typeof m.stats.fitness)
 
         error = m.stats.error ? Number.parseFloat(m.stats.error) : 9999999;
         fitness = m.stats.fitness ? Number.parseFloat(m.stats.fitness) : 9999999;
@@ -5013,6 +5053,9 @@ async function childMessageHandler(params){
 
       case "EVOLVE_COMPLETE":
         try{
+
+          clearEvolveTimeout(childId);
+
           await evolveCompleteHandler({m: m, childId: childId});
           if (!configuration.quitOnComplete) {
             await startNetworkCreate({
@@ -5033,6 +5076,9 @@ async function childMessageHandler(params){
 
       case "EVOLVE_ERROR":
         try{
+
+          clearEvolveTimeout(childId);
+
           console.log(chalkError(MODULE_ID_PREFIX 
             + " | " + childId
             + " | *** EVOLVE_ERROR ***"
@@ -5043,7 +5089,6 @@ async function childMessageHandler(params){
             await startNetworkCreate({
               childId: childId, 
               binaryMode: binaryMode, 
-              // logScaleMode: logScaleMode, 
               compareTech: compareTech
             });
           }
@@ -5063,6 +5108,7 @@ async function childMessageHandler(params){
       case "PONG":
       case "READY":
       case "RESET":
+        if (m.op !== "PONG") { clearEvolveTimeout(childId); }
         childHashMap[childId].status = m.fsmStatus;
         objectPath.set(statsObj, ["children", childId, "status"], childHashMap[childId].status);
       return;
@@ -5106,7 +5152,6 @@ async function childCreate(p){
 
     console.log(chalkBlueBold(MODULE_ID_PREFIX + " | CREATE CHILD | " + childId));
 
-
     if (env) {
       options.env = env;
     }
@@ -5119,10 +5164,13 @@ async function childCreate(p){
     }
 
     childHashMap[childId] = {};
+    childHashMap[childId].childId = childId;
+    childHashMap[childId].childIdShort = childIdShort;
     childHashMap[childId].type = "EVOLVE";
     childHashMap[childId].status = "NEW";
     childHashMap[childId].currentNetworkId = false;
     childHashMap[childId].messageQueue = [];
+    childHashMap[childId].evolveTimeout = null;
 
     child = cp.fork(`${__dirname}/neuralNetworkChild.js`);
 
@@ -5134,46 +5182,31 @@ async function childCreate(p){
     childHashMap[childId].child = child;
 
     childHashMap[childId].child.on("disconnect", function(){
-
       console.log(chalkAlert(MODULE_ID_PREFIX + " | *** CHILD DISCONNECT | " + childId));
-
       shell.cd(childPidFolderLocal);
       shell.rm(childPidFile);
-
       delete childHashMap[childId];
     });
 
     childHashMap[childId].child.on("close", function(){
-
       console.log(chalkAlert(MODULE_ID_PREFIX + " | *** CHILD CLOSED | " + childId));
-
       shell.cd(childPidFolderLocal);
       shell.rm(childPidFile);
-
       delete childHashMap[childId];
     });
 
     childHashMap[childId].child.on("exit", function(){
-
       console.log(chalkAlert(MODULE_ID_PREFIX + " | *** CHILD EXITED | " + childId));
-
       shell.cd(childPidFolderLocal);
       shell.rm(childPidFile);
-
       delete childHashMap[childId];
-
-      // quit({cause: "CHILD EXIT", force: true});
     });
 
     childHashMap[childId].child.on("error", function(err){
       console.log(chalkError(MODULE_ID_PREFIX + " | *** CHILD ERROR: " + err));
-
       shell.cd(childPidFolderLocal);
       shell.rm(childPidFile);
-
       delete childHashMap[childId];
-
-      // quit({cause: "CHILD ERROR: " + err});
     })
 
     childHashMap[childId].child.on("message", async function(message){
@@ -5182,7 +5215,6 @@ async function childCreate(p){
         childId: childId, 
         message: message, 
         binaryMode: binaryMode, 
-        // logScaleMode: logScaleMode, 
         compareTech: compareTech
       });
 
@@ -5206,7 +5238,7 @@ async function childCreate(p){
 
     const childInitParams = {};
     childInitParams.childId = childId;
-    childInitParams.childIdShort = childIdShort;
+    childInitParams.childIdShort = childHashMap[childId].childIdShort;
     childInitParams.configuration = childConfiguration;
     childInitParams.trainingSetsFolder = configuration.trainingSetsFolder;
     childInitParams.userDataFolder = configuration.userDataFolder;

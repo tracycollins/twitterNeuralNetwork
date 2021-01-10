@@ -9,6 +9,7 @@
       "env": {
         "FORCE_COLOR": 1,
         "NODE_ENV": "production",
+        "TNN_EVOLVE_TIMEOUT_DURATION": 600000,
         "TNN_KEEPALIVE_INTERVAL": 30000,
         "TNN_STATS_UPDATE_INTERVAL": 60000,
         "TNN_LOAD_TRAINING_SET_FROM_FILE": true,

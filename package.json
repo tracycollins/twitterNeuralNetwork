@@ -1,13 +1,13 @@
 {
   "name": "@threeceelabs/twitterneuralnetwork",
-  "version": "1.0.33",
+  "version": "1.0.34",
   "description": "twitter neural network",
   "main": "twitterNeuralNetwork.js",
   "dependencies": {
     "@liquid-carrot/carrot": "^0.3.20",
     "@slack/web-api": "^5.15.0",
     "@threeceelabs/mongoose-twitter": "^1.0.349",
-    "@threeceelabs/neural-network-tools": "^1.0.275",
+    "@threeceelabs/neural-network-tools": "^1.0.278",
     "@threeceelabs/threecee-utilities": "^1.0.422",
     "archiver": "^5.2.0",
     "array-normalize": "^2.0.0",

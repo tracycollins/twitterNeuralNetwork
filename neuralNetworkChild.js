@@ -1292,6 +1292,8 @@ function prepNetworkEvolve() {
             childIdShort: configuration.childIdShort,
             stats: sObj,
           });
+
+          return { test: "hey" }
         },
 
         iterations: 1,
@@ -1731,7 +1733,14 @@ async function evolve(params) {
       console.log(chalkBlueBold(MODULE_ID_PREFIX + " | ==============================================="));
 
 
-      evolveResults = await childNetworkRaw.evolve(preppedTrainingSet, preppedOptions);
+      // evolveResults = await childNetworkRaw.evolve(preppedTrainingSet, preppedOptions);
+
+      evolveResults = await nnTools.evolve({
+        networkId: childNetworkObj.networkId,
+        options: preppedOptions,
+        network: childNetworkRaw,
+        trainingSet: preppedTrainingSet,
+      });
 
       childNetworkObj.networkJson = childNetworkRaw.toJSON();
       childNetworkObj.network = childNetworkRaw;
@@ -1958,10 +1967,17 @@ function reporter(event, oldState, newState) {
 
 const fsmStates = {
   RESET: {
-    onEnter: function (event, oldState, newState) {
+
+    onEnter: async function (event, oldState, newState) {
+
       if (event !== "fsm_tick") {
+
         reporter(event, oldState, newState);
         statsObj.fsmStatus = "RESET";
+
+        await nnTools.abortFit();
+        await nnTools.abortEvolve()
+
       }
     },
 
@@ -2263,6 +2279,7 @@ const fsmStates = {
     fsm_init: "INIT",
     fsm_exit: "EXIT",
     fsm_error: "ERROR",
+    fsm_abort: "EVOLVE_COMPLETE",
     fsm_reset: "RESET",
     fsm_evolve_complete: "EVOLVE_COMPLETE",
   },
@@ -2617,6 +2634,13 @@ process.on("message", async function (m) {
       case "RESET":
         console.log(chalkInfo(MODULE_ID_PREFIX + " | RESET" + " | CHILD ID: " + m.childId));
         fsm.fsm_reset();
+        break;
+
+      case "ABORT":
+        console.log(chalkInfo(MODULE_ID_PREFIX + " | ABORT" + " | CHILD ID: " + m.childId));
+        await nnTools.abortFit();
+        await nnTools.abortEvolve()
+        fsm.fsm_abort();
         break;
 
       case "VERBOSE":
