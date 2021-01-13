@@ -5,8 +5,8 @@
   "main": "twitterNeuralNetwork.js",
   "dependencies": {
     "@liquid-carrot/carrot": "^0.3.20",
-    "@slack/web-api": "^5.15.0",
-    "@threeceelabs/mongoose-twitter": "^1.0.350",
+    "@slack/web-api": "^6.0.0",
+    "@threeceelabs/mongoose-twitter": "^1.0.351",
     "@threeceelabs/neural-network-tools": "^1.0.279",
     "@threeceelabs/threecee-utilities": "^1.0.423",
     "archiver": "^5.2.0",
