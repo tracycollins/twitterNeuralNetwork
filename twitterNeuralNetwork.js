@@ -4941,11 +4941,11 @@ const resetEvolveTimeout = (childId) => {
     return;
   }
 
-  inEvolveTimeout = true;
-
   clearTimeout(childHashMap[childId].evolveTimeout)
 
   childHashMap[childId].evolveTimeout = setTimeout(async () => {
+
+    inEvolveTimeout = true;
 
     statsObj.errors.evolve.timeouts += 1
     console.log(chalkAlert(`${MODULE_ID_PREFIX} | !!! EVOLVE TIMEOUT | DUR: ${configuration.evolveTimeoutDuration} | CHILD: ${childId} | TIMEOUTS: ${statsObj.errors.evolve.timeouts}`))
