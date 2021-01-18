@@ -276,7 +276,7 @@ configuration.minPassRatio = EVOVLE_DEFAULTS.DEFAULT_MIN_PASS_RATIO;
 configuration.quitOnComplete = DEFAULT_QUIT_ON_COMPLETE;
 
 configuration.processName = process.env.TNN_PROCESS_NAME || "tnn_node";
-configuration.networkCreateMode = "evole";
+configuration.networkCreateMode = "evolve";
 
 configuration.childPingAllInterval = DEFAULT_CHILD_PING_INTERVAL;
 
@@ -2151,15 +2151,19 @@ async function generateRandomEvolveConfig(p){
 
         config.inputsId = inputsObj.inputsId;
 
-        config.hiddenLayerSize = Math.floor((configuration.evolve.inputsToHiddenLayerSizeRatio * inputsObj.meta.numInputs) + 3);
+        const hiddenLayerSizeMax = Math.floor((configuration.evolve.inputsToHiddenLayerSizeRatio * inputsObj.meta.numInputs) + 3);
+
+        console.log(`inputsObj.meta.numInputs: ${inputsObj.meta.numInputs}`)
+        console.log(`configuration.evolve.inputsToHiddenLayerSizeRatio: ${configuration.evolve.inputsToHiddenLayerSizeRatio}`)
+        console.log(`hiddenLayerSizeMax: ${hiddenLayerSizeMax}`)
+
         // tensorflow always has hidden layer
-        config.hiddenLayerSize = (config.networkTechnology === "tensorflow") ? config.hiddenLayerSize : randomItem([0, config.hiddenLayerSize]);
+        config.hiddenLayerSize = (config.networkTechnology === "tensorflow") ? randomInt(3, hiddenLayerSizeMax) : randomInt(0, hiddenLayerSizeMax);
 
         config.architecture = (config.hiddenLayerSize > 0) ? "perceptron" : "random";
-
         config.inputsId = config.seedInputsId;
 
-        console.log(MODULE_ID_PREFIX + " | " + config.architecture.toUpperCase() + " ARCH | SEED INPUTS ID: " + config.seedInputsId);
+        console.log(`${MODULE_ID_PREFIX} | ${config.architecture.toUpperCase()} ARCH | SEED INPUTS ID: ${config.seedInputsId} | HIDDEN LAYERS: ${config.hiddenLayerSize}`);
 
         config = pickTechnologyOptions(config);
         return config;
@@ -3207,7 +3211,6 @@ async function loadConfigFile(params) {
     if (loadedConfigObj.TNN_BINARY_MODE_PROBABILITY !== undefined){
       console.log(MODULE_ID_PREFIX + " | LOADED TNN_BINARY_MODE_PROBABILITY: " + loadedConfigObj.TNN_BINARY_MODE_PROBABILITY);
       newConfiguration.evolve.binaryModeProbability = loadedConfigObj.TNN_BINARY_MODE_PROBABILITY;
-
     }
 
     if (loadedConfigObj.TNN_COMPARE_TECH !== undefined) {
@@ -3336,6 +3339,11 @@ async function loadConfigFile(params) {
     if (loadedConfigObj.TNN_RANDOM_EVOLVE_TECH_ARRAY !== undefined) {
       console.log(MODULE_ID_PREFIX + " | LOADED TNN_RANDOM_EVOLVE_TECH_ARRAY: " + loadedConfigObj.TNN_RANDOM_EVOLVE_TECH_ARRAY);
       newConfiguration.evolve.randomEvolveTechArray = loadedConfigObj.TNN_RANDOM_EVOLVE_TECH_ARRAY;
+    }
+
+    if (loadedConfigObj.TNN_EVOLVE_INPUTS_TO_HIDDEN_LAYER_SIZE_RATIO !== undefined) {
+      console.log(MODULE_ID_PREFIX + " | LOADED TNN_EVOLVE_INPUTS_TO_HIDDEN_LAYER_SIZE_RATIO: " + loadedConfigObj.TNN_EVOLVE_INPUTS_TO_HIDDEN_LAYER_SIZE_RATIO);
+      newConfiguration.evolve.inputsToHiddenLayerSizeRatio = loadedConfigObj.TNN_EVOLVE_INPUTS_TO_HIDDEN_LAYER_SIZE_RATIO;
     }
 
     if (loadedConfigObj.TNN_EVOLVE_POPSIZE !== undefined){
@@ -4594,10 +4602,10 @@ async function evolveCompleteHandler(params){
       + "\nTNN | ERROR:            " + m.statsObj.error
       + "\nTNN | FITNESS:          " + m.statsObj.fitness
       + "\nTNN | INPUTS ID:        " + nn.inputsId
-      + "\nTNN | INPUTS:           " + nn.networkJson.input
-      + "\nTNN | HIDDEN:           " + nn.networkJson.hiddenLayerSize
-      + "\nTNN | OUTPUTS:          " + nn.networkJson.output
-      + "\nTNN | DROPOUT:          " + nn.networkJson.dropout
+      + "\nTNN | INPUTS:           " + nn.numInputs
+      + "\nTNN | HIDDEN:           " + nn.hiddenLayerSize
+      + "\nTNN | OUTPUTS:          " + nn.numOutputs
+      // + "\nTNN | DROPOUT:          " + nn.networkJson.dropout
       + "\nTNN | ========================================================\n"
     ));
 
