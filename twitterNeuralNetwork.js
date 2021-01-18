@@ -41,7 +41,7 @@ const DEFAULT_MAX_NEURAL_NETWORK_CHILDREN = 1;
 const DEFAULT_QUIT_ON_COMPLETE = false;
 const DEFAULT_SEED_RANDOMIZE_OPTIONS = false;
 const DEFAULT_SEED_NETWORK_PROBABILITY = 0.5;
-const DEFAULT_TEST_RATIO = 0.25;
+const DEFAULT_TEST_SET_RATIO = 0.25;
 const DEFAULT_USE_LOCAL_TRAINING_SETS = false;
 
 const DEFAULT_LOAD_ALL_INPUTS = false;
@@ -583,7 +583,7 @@ configuration.hostMinSuccessRate = DEFAULT_HOST_MIN_SUCCESS_RATE;
 configuration.hostMinSuccessRateMSE = DEFAULT_HOST_MIN_SUCCESS_RATE_MSE;
 configuration.hostPurgeMinSuccessRate = DEFAULT_HOST_PURGE_MIN_SUCCESS_RATE;
 
-configuration.testSetRatio = DEFAULT_TEST_RATIO;
+configuration.testSetRatio = DEFAULT_TEST_SET_RATIO;
 
 configuration.evolve = {};
 configuration.evolve.activation = EVOVLE_DEFAULTS.DEFAULT_EVOLVE_ACTIVATION;
@@ -3260,6 +3260,11 @@ async function loadConfigFile(params) {
       }
     }
 
+    if (loadedConfigObj.TNN_TEST_SET_RATIO !== undefined){
+      console.log(MODULE_ID_PREFIX + " | LOADED TNN_TEST_SET_RATIO: " + loadedConfigObj.TNN_TEST_SET_RATIO);
+      newConfiguration.testSetRatio = loadedConfigObj.TNN_TEST_SET_RATIO;
+    }
+
     if (loadedConfigObj.TNN_VIABLE_NETWORK_TECHNOLOGY_ARRAY !== undefined) {
       console.log(MODULE_ID_PREFIX + " | LOADED TNN_VIABLE_NETWORK_TECHNOLOGY_ARRAY: " + loadedConfigObj.TNN_VIABLE_NETWORK_TECHNOLOGY_ARRAY);
       newConfiguration.viableNetworkTechArray = loadedConfigObj.TNN_VIABLE_NETWORK_TECHNOLOGY_ARRAY;
@@ -4451,6 +4456,7 @@ async function childInit(p){
 
     const childId = params.childId;
     const childIdShort = params.childIdShort;
+    const testSetRatio = params.testSetRatio || configuration.testSetRatio;
     const verbose = params.verbose || false;
     const testMode = params.testMode || false;
     const config = params.configuration || childConfiguration;
@@ -4462,6 +4468,7 @@ async function childInit(p){
       moduleIdPrefix: childIdShort,
       childId: childId,
       childIdShort: childIdShort,
+      testSetRatio: testSetRatio,
       testMode: testMode,
       verbose: verbose,
       configuration: config
