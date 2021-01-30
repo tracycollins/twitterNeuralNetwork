@@ -1,3 +1,6 @@
+const MODULE_NAME = "tncChild";
+let MODULE_ID_PREFIX = "NNC";
+
 const DEFAULT_FORCE_LOAD_TRAINING_SET = false;
 const DEFAULT_MAX_FRIENDS = 10000;
 const DEFAULT_SKIP_DATABASE_HOST_LOAD_FOLDER = false;
@@ -38,8 +41,8 @@ hostname = hostname.replace(/word0-instance-1/g, "google");
 hostname = hostname.replace(/word-1/g, "google");
 hostname = hostname.replace(/word/g, "google");
 
-const MODULE_NAME = "tncChild";
-let MODULE_ID_PREFIX = "NNC";
+const MODULE_ID = MODULE_ID_PREFIX + "_" + hostname;
+
 const DEFAULT_NETWORK_TECHNOLOGY = "tensorflow";
 const DEFAULT_BINARY_MODE = true;
 const DEFAULT_TEST_RATIO = 0.25;
@@ -54,9 +57,16 @@ if (hostname === "google") {
   DROPBOX_ROOT_FOLDER = "/Users/tc/Dropbox/Apps/wordAssociation";
 }
 
-let dbConnection;
-
+let mongooseDb;
 global.wordAssoDb = require("@threeceelabs/mongoose-twitter");
+
+const mguAppName = "MGU_" + MODULE_ID;
+const MongooseUtilities = require("@threeceelabs/mongoose-utilities");
+const mgUtils = new MongooseUtilities(mguAppName);
+
+mgUtils.on("ready", async () => {
+  console.log(`${MODULE_ID_PREFIX} | +++ MONGOOSE UTILS READY: ${mguAppName}`);
+})
 
 let configuration = {};
 
@@ -151,8 +161,6 @@ const formatBoolean = tcUtils.formatBoolean;
 
 const NeuralNetworkTools = require("@threeceelabs/neural-network-tools");
 const nnTools = new NeuralNetworkTools("NNC_NNT");
-
-const MODULE_ID = MODULE_ID_PREFIX + "_" + hostname;
 
 const PRIMARY_HOST = process.env.PRIMARY_HOST || "google";
 const DATABASE_HOST = process.env.DATABASE_HOST || "mms3";
@@ -589,11 +597,11 @@ async function quit(opts) {
         );
       }
 
-      if (!dbConnection) {
+      if (!mongooseDb) {
         process.exit();
       } else {
         setTimeout(function () {
-          dbConnection.close(async function () {
+          mongooseDb.close(async function () {
             console.log(
               chalkBlue(
                 MODULE_ID_PREFIX +
@@ -871,7 +879,7 @@ async function loadTrainingSetUsersFromDb(p) {
 
   let cursor;
 
-  const session = await dbConnection.startSession();
+  const session = await mongooseDb.startSession();
 
   debug("MONGO DB SESSION\n" + session.id);
 
@@ -1024,21 +1032,23 @@ async function testNetworkData(params) {
 
   const convertDatumFlag = params.convertDatumFlag !== undefined ? params.convertDatumFlag : false;
   const userProfileOnlyFlag = params.userProfileOnlyFlag !== undefined ? params.userProfileOnlyFlag : configuration.userProfileOnlyFlag;
-
+  const useDatumCacheFlag = params.useDatumCacheFlag !== undefined ? params.useDatumCacheFlag : true;
   const verbose = params.verbose || false;
 
   let numTested = 0;
   let numPassed = 0;
   let successRate = 0;
 
-  for (const datum of testSet) {
-    const activateParams = {
-      user: datum.user,
-      datum: datum, // user, input, output
-      convertDatumFlag: convertDatumFlag,
-      userProfileOnlyFlag: userProfileOnlyFlag,
-      verbose: verbose,
-    };
+  const defaultActiveParams = {
+    convertDatumFlag: convertDatumFlag,
+    useDatumCacheFlag: useDatumCacheFlag,
+    userProfileOnlyFlag: userProfileOnlyFlag,
+    verbose: verbose
+  }
+
+  for (const dataObj of testSet) {
+
+    const activateParams = Object.assign({}, defaultActiveParams, {dataObj: dataObj})
 
     let testOutput;
 
@@ -1055,7 +1065,7 @@ async function testNetworkData(params) {
     let match = "FAIL";
     let currentChalk = chalkAlert;
 
-    if (testOutput.categoryAuto === datum.user.category) {
+    if (testOutput.categoryAuto === dataObj.user.category) {
       match = "PASS";
       numPassed += 1;
       currentChalk = chalkGreenBold;
@@ -1080,13 +1090,13 @@ async function testNetworkData(params) {
             "/" +
             numTested +
             " | CAT M: " +
-            datum.user.category[0].toUpperCase() +
+            dataObj.user.category[0].toUpperCase() +
             " A: " +
             testOutput.categoryAuto[0].toUpperCase() +
             " | MATCH: " +
             match +
             " | @" +
-            datum.user.screenName
+            dataObj.user.screenName
         )
       );
     }
@@ -1479,10 +1489,10 @@ function dataSetPrep(params) {
 
         dataSet.push({
           user: results.user,
-          screenName: user.screenName,
-          name: results.datum.name,
-          input: results.datum.input,
-          output: results.datum.output,
+          datum: {
+            input: results.datum.input,
+            output: results.datum.output,
+          },
           inputHits: results.inputHits,
           inputMisses: results.inputMisses,
           inputHitRate: results.inputHitRate,
@@ -1769,7 +1779,7 @@ async function evolve(params) {
       " | TECH: " + childNetworkObj.networkTechnology +
       " | INPUT ID: " + childNetworkObj.inputsId +
       " | INPUTS: " + childNetworkObj.numInputs +
-      " | TIME: " + evolveResults.time +
+      // " | TIME: " + evolveResults.time +
       " | THREADS: " + evolveResults.threads +
       " | ITERATIONS: " + evolveResults.iterations +
       " | ERROR: " + evolveResults.error +
@@ -2047,7 +2057,7 @@ const fsmStates = {
           const cnf = await initConfig(configuration);
           configuration = deepcopy(cnf);
 
-          dbConnection = await connectDb();
+          mongooseDb = await mgUtils.connectDb();
 
           statsObj.status = "START";
 
@@ -2791,115 +2801,6 @@ process.on("message", async function (m) {
     );
   }
 });
-
-async function connectDb() {
-  try {
-    statsObj.status = "CONNECTING MONGO DB";
-
-    console.log(chalkBlueBold(MODULE_ID_PREFIX + " | CONNECT MONGO DB ..."));
-
-    const db = await global.wordAssoDb.connect(MODULE_ID + "_" + process.pid);
-
-    db.on("error", async function (err) {
-      statsObj.status = "MONGO ERROR";
-      statsObj.dbConnectionReady = false;
-      console.log(
-        chalkError(
-          MODULE_ID_PREFIX +
-            " | " +
-            getTimeStamp() +
-            " | *** MONGO DB CONNECTION ERROR: " +
-            err
-        )
-      );
-    });
-
-    db.on("close", async function () {
-      statsObj.status = "MONGO CLOSED";
-      statsObj.dbConnectionReady = false;
-      console.log(chalkAlert(MODULE_ID_PREFIX +
-            " | " +
-            getTimeStamp() +
-            " | XXX MONGO DB CONNECTION CLOSED"
-        )
-      );
-    });
-
-    db.on("connecting", async function () {
-      statsObj.status = "MONGO CONNECTED";
-      statsObj.dbConnectionReady = true;
-      console.log(
-        chalkBlue(
-          MODULE_ID_PREFIX +
-            " | " +
-            getTimeStamp() +
-            " | --> MONGO DB CONNECTING ..."
-        )
-      );
-    });
-
-    db.on("connected", async function () {
-      statsObj.status = "MONGO CONNECTED";
-      statsObj.dbConnectionReady = true;
-      console.log(
-        chalkGreen(
-          MODULE_ID_PREFIX +
-            " | " +
-            getTimeStamp() +
-            " | +++ MONGO DB CONNECTED"
-        )
-      );
-    });
-
-    db.on("reconnected", async function () {
-      statsObj.status = "MONGO RECONNECTED";
-      statsObj.dbConnectionReady = true;
-      console.log(
-        chalkGreen(
-          MODULE_ID_PREFIX +
-            " | " +
-            getTimeStamp() +
-            " | -+- MONGO DB RECONNECTED"
-        )
-      );
-    });
-
-    db.on("disconnecting", async function () {
-      statsObj.status = "MONGO DISCONNECTING";
-      statsObj.dbConnectionReady = false;
-      console.log(chalkAlert(MODULE_ID_PREFIX +
-            " | " +
-            getTimeStamp() +
-            " | !!! MONGO DB DISCONNECTING ..."
-        )
-      );
-    });
-
-    db.on("disconnected", async function () {
-      statsObj.status = "MONGO DISCONNECTED";
-      statsObj.dbConnectionReady = false;
-      console.log(chalkAlert(MODULE_ID_PREFIX +
-            " | " +
-            getTimeStamp() +
-            " | !!! MONGO DB DISCONNECTED"
-        )
-      );
-    });
-
-    console.log(
-      chalk.green(MODULE_ID_PREFIX + " | +++ MONGOOSE DEFAULT CONNECTION OPEN")
-    );
-
-    statsObj.dbConnectionReady = true;
-
-    return db;
-  } catch (err) {
-    console.log(
-      chalkError(MODULE_ID_PREFIX + " | *** MONGO DB CONNECT ERROR: " + err)
-    );
-    throw err;
-  }
-}
 
 // !!!KLUDGE !!!BUG??? watch fucks up loading user data and I don't know why! :(
 // const directoriesAdded = new Set();

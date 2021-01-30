@@ -86,8 +86,16 @@ console.log("=========================================");
 
 const MODULE_ID = MODULE_ID_PREFIX + "_node_" + hostname;
 
+let mongooseDb;
 global.wordAssoDb = require("@threeceelabs/mongoose-twitter");
-let dbConnection;
+
+const mguAppName = "MGU_" + MODULE_ID;
+const MongooseUtilities = require("@threeceelabs/mongoose-utilities");
+const mgUtils = new MongooseUtilities(mguAppName);
+
+mgUtils.on("ready", async () => {
+  console.log(`${MODULE_ID_PREFIX} | +++ MONGOOSE UTILS READY: ${mguAppName}`);
+})
 
 const defaultEvolveOptionsPickArray = [
   "activation",
@@ -2733,47 +2741,6 @@ async function initConfig(cnf) {
   }
 }
 
-async function connectDb(){
-
-  try {
-
-    statsObj.status = "CONNECTING MONGO DB";
-
-    console.log(chalkBlueBold(MODULE_ID_PREFIX + " | CONNECT MONGO DB ..."));
-
-    const db = await global.wordAssoDb.connect(MODULE_ID + "_" + process.pid);
-
-    db.on("error", async function(err){
-      statsObj.status = "MONGO ERROR";
-      statsObj.dbConnectionReady = false;
-      console.log(chalkError(MODULE_ID_PREFIX + " | *** MONGO DB CONNECTION ERROR: " + err));
-    });
-
-    db.on("close", async function(){
-      statsObj.status = "MONGO CLOSED";
-      statsObj.dbConnectionReady = false;
-      console.log(chalkError(MODULE_ID_PREFIX + " | *** MONGO DB CONNECTION CLOSED"));
-    });
-
-    db.on("disconnected", async function(){
-      statsObj.status = "MONGO DISCONNECTED";
-      statsObj.dbConnectionReady = false;
-      console.log(chalkAlert(MODULE_ID_PREFIX + " | *** MONGO DB DISCONNECTED"));
-    });
-
-    console.log(chalk.green(MODULE_ID_PREFIX + " | MONGOOSE DEFAULT CONNECTION OPEN"));
-
-    statsObj.dbConnectionReady = true;
-
-    return db;
-
-  }
-  catch(err){
-    console.log(chalkError(MODULE_ID_PREFIX + " | *** MONGO DB CONNECT ERROR: " + err));
-    throw err;
-  }
-}
-
 //=========================================================================
 // MISC FUNCTIONS (own module?)
 //=========================================================================
@@ -3584,13 +3551,13 @@ async function quit(opts) {
         shell.rm(configuration.childIdPrefix + "*");
       });
 
-      if (!dbConnection) {
+      if (!mongooseDb) {
         process.exit();
       }
       else {
         setTimeout(function() {
 
-          dbConnection.close(async function () {
+          mongooseDb.close(async function () {
             console.log(chalkBlue(
                 MODULE_ID_PREFIX + " | ==========================\n"
               + MODULE_ID_PREFIX + " | MONGO DB CONNECTION CLOSED\n"
@@ -5444,7 +5411,7 @@ setTimeout(async function(){
     // await initSlackRtmClient();
 
     try {
-      dbConnection = await connectDb();
+      mongooseDb = await mgUtils.connectDb();
       await initZeroSuccessEvolveOptionsSet();
       await initFsmTickInterval(FSM_TICK_INTERVAL);
       // await initWatch({rootFolder: configuration.userArchiveFolder});
