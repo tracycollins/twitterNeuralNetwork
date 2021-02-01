@@ -1,12 +1,11 @@
 const dotenv = require("dotenv");
-const envConfig = dotenv.config({path: '/Users/tc/Dropbox/Apps/wordAssociation/config/utility/default/env'})
+const envConfig = dotenv.config({ path: process.env.WORD_ENV_VARS_FILE })
 
 if (envConfig.error) {
   throw envConfig.error
 }
  
-console.log("TNN | ENV CONFIG")
-console.log(envConfig.parsed)
+console.log("WAS | +++ ENV CONFIG LOADED")
 
 const MODULE_NAME = "twitterNeuralNetwork";
 const MODULE_ID_PREFIX = "TNN";
