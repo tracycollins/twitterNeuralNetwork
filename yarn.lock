@@ -296,7 +296,7 @@
     "@threeceelabs/mongoose-twitter" "^1.1.0"
     eventemitter3 "^4.0.7"
 
-"@threeceelabs/neural-network-tools@^1.0.296":
+"@threeceelabs/neural-network-tools@^1.1.1":
   version "1.1.1"
   resolved "https://registry.yarnpkg.com/@threeceelabs/neural-network-tools/-/neural-network-tools-1.1.1.tgz#66036c6f3fb8ce6d7e4587eb8a207f8a60939f27"
   integrity sha512-3CyE2pApzMLvOKKR+JMjoaBM2lAbteTg84JeYRab5ffr853AoVNyDmOgL9g85tzzGIs7iKhvySJmx0zkClaIOg==
