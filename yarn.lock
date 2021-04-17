@@ -297,9 +297,9 @@
     eventemitter3 "^4.0.7"
 
 "@threeceelabs/neural-network-tools@^1.0.296":
-  version "1.1.0"
-  resolved "https://registry.yarnpkg.com/@threeceelabs/neural-network-tools/-/neural-network-tools-1.1.0.tgz#491d60abb8cc267271bc9e7134738179b6ac8cb1"
-  integrity sha512-3Z+UzMJgD5uKQbG5A47IsENKGkswZrKDfM6C+8ZBEAiMKfGlI50TbE87q1W21i4rGS04K7Jf5xfAr8zrXFWwJg==
+  version "1.1.1"
+  resolved "https://registry.yarnpkg.com/@threeceelabs/neural-network-tools/-/neural-network-tools-1.1.1.tgz#66036c6f3fb8ce6d7e4587eb8a207f8a60939f27"
+  integrity sha512-3CyE2pApzMLvOKKR+JMjoaBM2lAbteTg84JeYRab5ffr853AoVNyDmOgL9g85tzzGIs7iKhvySJmx0zkClaIOg==
   dependencies:
     "@liquid-carrot/carrot" "^0.3.20"
     "@mapbox/node-pre-gyp" "^1.0.3"
@@ -316,6 +316,7 @@
     neataptic "^1.4.7"
     node-cache "^5.1.2"
     random-item "^4.0.0"
+    seedrandom "^3.0.5"
     shuffle-array "^1.0.1"
     text-table "^0.2.0"
 
