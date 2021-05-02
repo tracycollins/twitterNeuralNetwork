@@ -1,33 +1,33 @@
-const dotenv = require("dotenv");
+import dotenv from "dotenv";
 const envConfig = dotenv.config({ path: process.env.WORD_ENV_VARS_FILE });
 
 if (envConfig.error) {
   throw envConfig.error;
 }
 
-console.log("WAS | +++ ENV CONFIG LOADED");
-
 const MODULE_NAME = "twitterNeuralNetwork";
-const MODULE_ID_PREFIX = "TNN";
-const CHILD_PREFIX = "tnc_node";
-const CHILD_PREFIX_SHORT = "NC";
-const DEFAULT_MAX_FRIENDS = 10000;
+const PF = "TNN";
 
-const DEFAULT_PURGE_MIN = true; // applies only to parent
-const TEST_MODE = false; // applies only to parent
-const GLOBAL_TEST_MODE = false; // applies to parent and all children
-const QUIT_ON_COMPLETE = false;
+console.log(`${PF} | +++ ENV CONFIG LOADED`);
 
 const ONE_SECOND = 1000;
 const ONE_MINUTE = ONE_SECOND * 60;
 
-const DEFAULT_EVOLVE_TIMEOUT_DURATION = 10 * ONE_MINUTE;
+const CHILD_PREFIX = "tnc_node";
+const CHILD_PREFIX_SHORT = "NC";
+
+const TEST_MODE = false; // applies only to parent
+const GLOBAL_TEST_MODE = false; // applies to parent and all children
+const QUIT_ON_COMPLETE = false;
+
 const SAVE_FILE_QUEUE_INTERVAL = 5 * ONE_SECOND;
 const QUIT_WAIT_INTERVAL = 5 * ONE_SECOND;
 const STATS_UPDATE_INTERVAL = 5 * ONE_MINUTE;
-const DEFAULT_CHILD_PING_INTERVAL = ONE_MINUTE;
 
-// const DEFAULT_FORCE_LOAD_TRAINING_SET = true;
+const DEFAULT_MAX_FRIENDS = 10000;
+const DEFAULT_PURGE_MIN = true; // applies only to parent
+const DEFAULT_EVOLVE_TIMEOUT_DURATION = 10 * ONE_MINUTE;
+const DEFAULT_CHILD_PING_INTERVAL = ONE_MINUTE;
 const DEFAULT_DISABLE_CREATE_TEST_SET = false;
 const DEFAULT_GLOBAL_MIN_SUCCESS_RATE = 90; // percent
 const DEFAULT_GLOBAL_VIABLE_SUCCESS_RATE = 90;
@@ -49,9 +49,9 @@ const DEFAULT_ARCHIVE_NOT_IN_INPUTS_ID_ARRAY = true;
 const DEFAULT_DELETE_NOT_IN_INPUTS_ID_ARRAY = false;
 const DEFAULT_CHILD_ID_PREFIX = "tnc_node_";
 
-const EVOVLE_DEFAULTS = require("./config/evolveConfig.js");
+import { EVOVLE_DEFAULTS } from "./config/evolveConfig.js";
 
-const os = require("os");
+import os from "os";
 let hostname = os.hostname();
 if (hostname.startsWith("mbp3")) {
   hostname = "mbp3";
@@ -66,8 +66,8 @@ hostname = hostname.replace(/word0-instance-1/g, "google");
 hostname = hostname.replace(/word-1/g, "google");
 hostname = hostname.replace(/word/g, "google");
 
-const _ = require("lodash");
-const dotProp = require("dot-prop");
+import _ from "lodash";
+import dotProp from "dot-prop";
 
 const PRIMARY_HOST = process.env.PRIMARY_HOST || "google";
 const DATABASE_HOST = process.env.DATABASE_HOST || "mms3";
@@ -85,17 +85,18 @@ console.log("HOST NAME:    " + hostname);
 console.log("=========================================");
 console.log("=========================================");
 
-const MODULE_ID = MODULE_ID_PREFIX + "_node_" + hostname;
+const MODULE_ID = PF + "_node_" + hostname;
 
 let mongooseDb;
-global.wordAssoDb = require("@threeceelabs/mongoose-twitter");
+import mgt from "@threeceelabs/mongoose-twitter";
+global.wordAssoDb = mgt;
 
 const mguAppName = "MGU_" + MODULE_ID;
-const MongooseUtilities = require("@threeceelabs/mongoose-utilities");
+import MongooseUtilities from "@threeceelabs/mongoose-utilities";
 const mgUtils = new MongooseUtilities(mguAppName);
 
 mgUtils.on("ready", async () => {
-  console.log(`${MODULE_ID_PREFIX} | +++ MONGOOSE UTILS READY: ${mguAppName}`);
+  console.log(`${PF} | +++ MONGOOSE UTILS READY: ${mguAppName}`);
 });
 
 const defaultEvolveOptionsPickArray = [
@@ -185,8 +186,8 @@ const compactDateTimeFormat = "YYYYMMDD_HHmmss";
 
 const OFFLINE_MODE = false;
 
-const tcuChildName = MODULE_ID_PREFIX + "_TCU";
-const ThreeceeUtilities = require("@threeceelabs/threecee-utilities");
+const tcuChildName = PF + "_TCU";
+import ThreeceeUtilities from "@threeceelabs/threecee-utilities";
 const tcUtils = new ThreeceeUtilities(tcuChildName);
 
 const delay = tcUtils.delay;
@@ -195,36 +196,34 @@ const formatBoolean = tcUtils.formatBoolean;
 const jsonPrint = tcUtils.jsonPrint;
 const getTimeStamp = tcUtils.getTimeStamp;
 
-const empty = require("is-empty");
-const path = require("path");
-const watch = require("watch");
-const moment = require("moment");
-const HashMap = require("hashmap").HashMap;
-const pick = require("object.pick");
-const shell = require("shelljs");
-const touch = require("touch");
-const kill = require("tree-kill");
-const objectPath = require("object-path");
-const merge = require("deepmerge");
-const table = require("text-table");
-// const _.sample = require("random-item");
-// const randomFloat = require("random-float");
-// const randomInt = require("random-int");
-const fs = require("fs");
-const { promisify } = require("util");
+import empty from "is-empty";
+import path from "path";
+const __dirname = path.dirname(new URL(import.meta.url).pathname);
+import watch from "watch";
+import moment from "moment";
+import HashMap from "hashmap";
+import pick from "object.pick";
+import shell from "shelljs";
+import touch from "touch";
+import kill from "tree-kill";
+import objectPath from "object-path";
+import merge from "deepmerge";
+import table from "text-table";
+import fs from "fs";
+import { promisify } from "util";
 const renameFileAsync = promisify(fs.rename);
 const unlinkFileAsync = promisify(fs.unlink);
-const debug = require("debug")("TNN");
-const util = require("util");
-const deepcopy = require("deep-copy");
-const async = require("async");
-const omit = require("object.omit");
-const omitDeep = require("omit-deep-lodash");
+import debug from "debug";
+import util from "util";
+import deepcopy from "deep-copy";
+import async from "async";
+import omit from "object.omit";
+import omitDeep from "omit-deep-lodash";
 
-const cp = require("child_process");
+import cp from "child_process";
 const childHashMap = {};
 
-const chalk = require("chalk");
+import chalk from "chalk";
 const chalkNetwork = chalk.blue;
 const chalkBlueBold = chalk.blue.bold;
 const chalkTwitter = chalk.blue;
@@ -342,7 +341,7 @@ childConfiguration.updateUserDb = false;
 //=========================================================================
 // SLACK
 //=========================================================================
-const { WebClient } = require("@slack/web-api");
+import { WebClient } from "@slack/web-api";
 
 console.log("process.env.SLACK_BOT_TOKEN: ", process.env.SLACK_BOT_TOKEN);
 const slackBotToken = process.env.SLACK_BOT_TOKEN;
@@ -395,9 +394,7 @@ async function slackSendWebMessage(msgObj) {
       channel: channel,
     });
   } catch (err) {
-    console.log(
-      chalkAlert(MODULE_ID_PREFIX + " | *** slackSendWebMessage ERROR: " + err)
-    );
+    console.log(chalkAlert(PF + " | *** slackSendWebMessage ERROR: " + err));
     throw err;
   }
 }
@@ -832,7 +829,7 @@ function printResultsHashmap() {
     const tableArray = [];
 
     tableArray.push([
-      MODULE_ID_PREFIX + " | NNID",
+      PF + " | NNID",
       "TECH",
       "STATUS",
       "BTR",
@@ -1015,7 +1012,7 @@ function printResultsHashmap() {
         }
 
         const tableEntry = [
-          MODULE_ID_PREFIX + " | " + networkId,
+          PF + " | " + networkId,
           nnTech,
           status,
           betterChild,
@@ -1044,11 +1041,7 @@ function printResultsHashmap() {
           if (tableEntry[i] === undefined || tableEntry[i] === null) {
             console.log(
               chalkAlert(
-                MODULE_ID_PREFIX +
-                  " | *** TABLE INDEX: " +
-                  i +
-                  " | " +
-                  tableEntry[i]
+                PF + " | *** TABLE INDEX: " + i + " | " + tableEntry[i]
               )
             );
             tableEntry[i] = "NULL";
@@ -1120,14 +1113,14 @@ function printResultsHashmap() {
 
         console.log(
           chalkLog(
-            MODULE_ID_PREFIX +
+            PF +
               " | === NETWORK RESULTS ========================================================================================================================"
           )
         );
         console.log(chalkLog(t));
         console.log(
           chalkLog(
-            MODULE_ID_PREFIX +
+            PF +
               " | ============================================================================================================================================"
           )
         );
@@ -1152,7 +1145,7 @@ async function initZeroSuccessEvolveOptionsSet(p) {
 
   console.log(
     chalkBlue(
-      MODULE_ID_PREFIX +
+      PF +
         " | INIT ZERO SUCCESS EVOLVE OPTIONS SET" +
         " | " +
         folder +
@@ -1173,8 +1166,7 @@ async function initZeroSuccessEvolveOptionsSet(p) {
       if (params.overwrite) {
         console.log(
           chalkAlert(
-            MODULE_ID_PREFIX +
-              " | !!! OVERWRITE INIT ZERO SUCCESS EVOLVE OPTIONS SET"
+            PF + " | !!! OVERWRITE INIT ZERO SUCCESS EVOLVE OPTIONS SET"
           )
         );
         zeroSuccessEvolveOptionsSet = result;
@@ -1182,10 +1174,7 @@ async function initZeroSuccessEvolveOptionsSet(p) {
         zeroSuccessEvolveOptionsSet.delete(" ");
       } else {
         console.log(
-          chalkInfo(
-            MODULE_ID_PREFIX +
-              " | ... MERGE INIT ZERO SUCCESS EVOLVE OPTIONS SET"
-          )
+          chalkInfo(PF + " | ... MERGE INIT ZERO SUCCESS EVOLVE OPTIONS SET")
         );
         zeroSuccessEvolveOptionsSet = new Set([
           ...result,
@@ -1198,7 +1187,7 @@ async function initZeroSuccessEvolveOptionsSet(p) {
 
     console.log(
       chalkLog(
-        MODULE_ID_PREFIX +
+        PF +
           " | LOADED ZERO SUCCESS EVOLVE OPTIONS FILE" +
           " | " +
           zeroSuccessEvolveOptionsSet.size +
@@ -1214,9 +1203,7 @@ async function initZeroSuccessEvolveOptionsSet(p) {
   } catch (err) {
     console.log(
       chalkError(
-        MODULE_ID_PREFIX +
-          " | *** INIT ZERO SUCCESS EVOLVE OPTIONS SET ERROR: " +
-          err
+        PF + " | *** INIT ZERO SUCCESS EVOLVE OPTIONS SET ERROR: " + err
       )
     );
     throw err;
@@ -1224,9 +1211,7 @@ async function initZeroSuccessEvolveOptionsSet(p) {
 }
 
 function purgeNetwork(networkId) {
-  console.log(
-    chalkAlert(MODULE_ID_PREFIX + " | XXX PURGE NETWORK: " + networkId)
-  );
+  console.log(chalkAlert(PF + " | XXX PURGE NETWORK: " + networkId));
 
   viableNetworkIdSet.delete(networkId);
   betterChildSeedNetworkIdSet.delete(networkId);
@@ -1241,9 +1226,7 @@ function purgeInputs(inputsId) {
   return new Promise(function (resolve, reject) {
     try {
       if (!configuration.inputsIdArray.includes(inputsId)) {
-        console.log(
-          chalkInfo(MODULE_ID_PREFIX + " | XXX PURGE INPUTS: " + inputsId)
-        );
+        console.log(chalkInfo(PF + " | XXX PURGE INPUTS: " + inputsId));
         inputsSet.delete(inputsId);
         inputsViableSet.delete(inputsId);
         skipLoadInputsSet.add(inputsId);
@@ -1253,7 +1236,7 @@ function purgeInputs(inputsId) {
       } else {
         console.log(
           chalkInfo(
-            MODULE_ID_PREFIX +
+            PF +
               " | --- NO PURGE INPUTS ... IN CONFIGURATION INPUTS ID ARRAY" +
               " | INPUTS ID: " +
               inputsId
@@ -1263,7 +1246,7 @@ function purgeInputs(inputsId) {
         if (configuration.verbose) {
           console.log(
             chalkInfo(
-              MODULE_ID_PREFIX +
+              PF +
                 " | CONFIGURATION INPUTS ID ARRAY\n" +
                 jsonPrint(configuration.inputsIdArray)
             )
@@ -1432,7 +1415,7 @@ async function updateInputsViabilitySet(p) {
 
     console.log(
       chalkGreen(
-        MODULE_ID_PREFIX +
+        PF +
           " | +++ VIABLE INPUTS [" +
           inputsViableSet.size +
           "]" +
@@ -1459,7 +1442,7 @@ async function updateInputsViabilitySet(p) {
 
     console.log(
       chalkInfo(
-        MODULE_ID_PREFIX +
+        PF +
           " | XXX NOT VIABLE INPUTS [" +
           inputsViableSet.size +
           "]" +
@@ -1497,9 +1480,7 @@ async function loadNetworkFile(params) {
     filePath = params.folder + "/" + params.file;
   }
 
-  console.log(
-    chalkLog(MODULE_ID_PREFIX + " | <<< LOAD NN FILE" + " | " + filePath)
-  );
+  console.log(chalkLog(PF + " | <<< LOAD NN FILE" + " | " + filePath));
 
   const networkObj = await tcUtils.loadFile({
     folder: params.folder,
@@ -1514,7 +1495,7 @@ async function loadNetworkFile(params) {
   ) {
     console.log(
       chalkAlert(
-        MODULE_ID_PREFIX +
+        PF +
           " | !!! INCORRECT NETWORK TECH | CHANGE " +
           networkObj.networkTechnology +
           " <-- " +
@@ -1532,7 +1513,7 @@ async function loadNetworkFile(params) {
   ) {
     console.log(
       chalkInfo(
-        MODULE_ID_PREFIX +
+        PF +
           " | --- NN TECH NOT FORCE NETWORK TECH ... SKIPPING" +
           " | " +
           networkObj.networkId +
@@ -1554,7 +1535,7 @@ async function loadNetworkFile(params) {
   ) {
     console.log(
       chalkInfo(
-        MODULE_ID_PREFIX +
+        PF +
           " | --- NN TECH NOT VIABLE NETWORK TECH ... SKIPPING" +
           " | VIABLE TECH: " +
           configuration.viableNetworkTechArray +
@@ -1575,7 +1556,7 @@ async function loadNetworkFile(params) {
   ) {
     console.log(
       chalkAlert(
-        MODULE_ID_PREFIX +
+        PF +
           " | !!! INCORRECT BINARY MODE | CHANGE " +
           networkObj.binaryMode +
           " <-- " +
@@ -1592,7 +1573,7 @@ async function loadNetworkFile(params) {
   // if (dotProp.has(networkObj, "evolve.options.logScaleMode")
   //   && networkObj.evolve.options.logScaleMode !== networkObj.logScaleMode
   // ){
-  //   console.log(chalkAlert(MODULE_ID_PREFIX
+  //   console.log(chalkAlert(PF
   //     + " | !!! INCORRECT LOGSCALE MODE | CHANGE " + networkObj.logScaleMode + " <-- " + networkObj.evolve.options.logScaleMode
   //     + " | " + networkObj.networkId
   //   ));
@@ -1613,7 +1594,7 @@ async function loadNetworkFile(params) {
     ) {
       console.log(
         chalkInfo(
-          MODULE_ID_PREFIX +
+          PF +
             " | 000 HOST BEST NN INPUTS NOT IN INPUTS ID ARRAY ... ARCHIVING" +
             " | NUM INPUTS: " +
             networkObj.numInputs +
@@ -1635,7 +1616,7 @@ async function loadNetworkFile(params) {
     ) {
       console.log(
         chalkInfo(
-          MODULE_ID_PREFIX +
+          PF +
             " | XXX HOST BEST NN INPUTS NOT IN INPUTS ID ARRAY ... DELETING" +
             " | NUM INPUTS: " +
             networkObj.numInputs +
@@ -1651,7 +1632,7 @@ async function loadNetworkFile(params) {
 
     console.log(
       chalkInfo(
-        MODULE_ID_PREFIX +
+        PF +
           " | --- HOST BEST NN INPUTS NOT IN INPUTS ID ARRAY ... SKIPPING" +
           " | NUM INPUTS: " +
           networkObj.numInputs +
@@ -1696,7 +1677,7 @@ async function loadNetworkFile(params) {
 
     console.log(
       chalkGreen(
-        MODULE_ID_PREFIX +
+        PF +
           " | ### MOVE NN FROM LOCAL TO GLOBAL BEST" +
           " | " +
           params.folder +
@@ -1706,7 +1687,7 @@ async function loadNetworkFile(params) {
     );
 
     printNetworkObj(
-      MODULE_ID_PREFIX + " | LOCAL > GLOBAL" + " | " + params.folder,
+      PF + " | LOCAL > GLOBAL" + " | " + params.folder,
       networkObj,
       chalkGreen
     );
@@ -1749,7 +1730,7 @@ async function loadNetworkFile(params) {
     ].add(networkObj.networkId);
 
     printNetworkObj(
-      MODULE_ID_PREFIX + " | +++ VIABLE NN [" + viableNetworkIdSet.size + "]",
+      PF + " | +++ VIABLE NN [" + viableNetworkIdSet.size + "]",
       networkObj
     );
 
@@ -1761,11 +1742,7 @@ async function loadNetworkFile(params) {
         networkObj.successRate > currentBestNetwork.successRate)
     ) {
       currentBestNetwork = networkObj;
-      printNetworkObj(
-        MODULE_ID_PREFIX + " | ===> NEW BEST NN <===",
-        networkObj,
-        chalkGreen
-      );
+      printNetworkObj(PF + " | ===> NEW BEST NN <===", networkObj, chalkGreen);
     }
 
     //========================
@@ -1817,11 +1794,7 @@ async function loadNetworkFile(params) {
         nnDb.overallMatchRate > currentBestNetwork.overallMatchRate
       ) {
         currentBestNetwork = nnDb;
-        printNetworkObj(
-          MODULE_ID_PREFIX + " | *** NEW BEST NN (DB)",
-          nnDb,
-          chalkGreen
-        );
+        printNetworkObj(PF + " | *** NEW BEST NN (DB)", nnDb, chalkGreen);
       }
 
       viableNetworkIdSet.add(nnDb.networkId);
@@ -1857,7 +1830,7 @@ async function loadNetworkFile(params) {
       params.folder.toLowerCase() === hostBestNetworkFolder.toLowerCase())
   ) {
     printNetworkObj(
-      MODULE_ID_PREFIX +
+      PF +
         " | XXX DELETING NN [" +
         viableNetworkIdSet.size +
         " IN SET]" +
@@ -1875,7 +1848,7 @@ async function loadNetworkFile(params) {
   }
 
   printNetworkObj(
-    MODULE_ID_PREFIX +
+    PF +
       " | --- NN HASH MAP [" +
       viableNetworkIdSet.size +
       " IN SET]" +
@@ -1884,7 +1857,7 @@ async function loadNetworkFile(params) {
       " | FOLDER: " +
       params.folder +
       "\n" +
-      MODULE_ID_PREFIX +
+      PF +
       " | --- NN HASH MAP [" +
       viableNetworkIdSet.size +
       " IN SET]",
@@ -1904,9 +1877,7 @@ async function loadInputsFile(params) {
 
     if (empty(inputsObj)) {
       console.log(
-        chalkError(
-          MODULE_ID_PREFIX + " | INPUTS LOAD FILE ERROR | JSON UNDEFINED ??? "
-        )
+        chalkError(PF + " | INPUTS LOAD FILE ERROR | JSON UNDEFINED ??? ")
       );
       throw new Error("JSON UNDEFINED");
     }
@@ -1933,7 +1904,7 @@ async function loadInputsFile(params) {
 
     console.log(
       chalkLog(
-        MODULE_ID_PREFIX +
+        PF +
           " | +++ INPUTS [" +
           inputsSet.size +
           "]" +
@@ -1949,9 +1920,7 @@ async function loadInputsFile(params) {
 
     return inputsObj;
   } catch (err) {
-    console.log(
-      chalkError(MODULE_ID_PREFIX + " | INPUTS LOAD FILE ERROR: " + err)
-    );
+    console.log(chalkError(PF + " | INPUTS LOAD FILE ERROR: " + err));
     throw err;
   }
 }
@@ -1962,10 +1931,7 @@ async function updateDbNetwork(params) {
 
     if (configuration.verbose) {
       printNetworkObj(
-        MODULE_ID_PREFIX +
-          " | [" +
-          viableNetworkIdSet.size +
-          "] >>> UPDATE NN DB",
+        PF + " | [" + viableNetworkIdSet.size + "] >>> UPDATE NN DB",
         params.networkObj
       )
         .then(function () {})
@@ -2051,10 +2017,7 @@ async function updateDbNetwork(params) {
         }
 
         if (verbose) {
-          printNetworkObj(
-            MODULE_ID_PREFIX + " | +++ NN DB UPDATED",
-            nnDbUpdated
-          );
+          printNetworkObj(PF + " | +++ NN DB UPDATED", nnDbUpdated);
         }
 
         const nnObj = nnDbUpdated.toObject();
@@ -2098,7 +2061,7 @@ async function loadBestNetworkFolders(p) {
 
   console.log(
     chalkNetwork(
-      MODULE_ID_PREFIX +
+      PF +
         " | ... LOADING BEST NN FOLDERS" +
         " | " +
         params.folders.length +
@@ -2115,25 +2078,19 @@ async function loadBestNetworkFolders(p) {
   }
 
   console.log(
-    chalkNetwork(
-      MODULE_ID_PREFIX + " | ... FOUND " + files.length + " FILES IN NN FOLDERS"
-    )
+    chalkNetwork(PF + " | ... FOUND " + files.length + " FILES IN NN FOLDERS")
   );
 
   for (const fileObj of files) {
     if (
       fileObj.file.toLowerCase() === bestRuntimeNetworkFileName.toLowerCase()
     ) {
-      console.log(
-        chalkInfo(MODULE_ID_PREFIX + " | ... SKIPPING LOAD OF " + fileObj.file)
-      );
+      console.log(chalkInfo(PF + " | ... SKIPPING LOAD OF " + fileObj.file));
       continue;
     }
 
     if (!fileObj.file.endsWith(".json")) {
-      console.log(
-        chalkInfo(MODULE_ID_PREFIX + " | ... SKIPPING LOAD OF " + fileObj.file)
-      );
+      console.log(chalkInfo(PF + " | ... SKIPPING LOAD OF " + fileObj.file));
       continue;
     }
 
@@ -2143,7 +2100,7 @@ async function loadBestNetworkFolders(p) {
     if (skipLoadNetworkSet.has(networkId)) {
       console.log(
         chalkInfo(
-          MODULE_ID_PREFIX +
+          PF +
             " | NN IN SKIP SET | SKIPPING ..." +
             " | " +
             fileObj.path +
@@ -2156,14 +2113,7 @@ async function loadBestNetworkFolders(p) {
 
     if (configuration.verbose) {
       console.log(
-        chalkInfo(
-          MODULE_ID_PREFIX +
-            " | NN FOUND" +
-            " | " +
-            fileObj.path +
-            " | " +
-            networkId
-        )
+        chalkInfo(PF + " | NN FOUND" + " | " + fileObj.path + " | " + networkId)
       );
     }
 
@@ -2176,7 +2126,7 @@ async function loadBestNetworkFolders(p) {
     } catch (err) {
       console.log(
         chalkError(
-          MODULE_ID_PREFIX +
+          PF +
             " | *** LOAD NN ENTRY ERROR: " +
             err +
             " | " +
@@ -2198,7 +2148,7 @@ async function loadInputsFolders(p) {
 
   console.log(
     chalkNetwork(
-      MODULE_ID_PREFIX +
+      PF +
         " | ... LOADING INPUTS FOLDERS" +
         " | " +
         params.folders.length +
@@ -2214,9 +2164,7 @@ async function loadInputsFolders(p) {
     try {
       if (!fileObj.file.endsWith(".json")) {
         console.log(
-          chalkInfo(
-            MODULE_ID_PREFIX + " | ... SKIPPING INPUTS LOAD OF " + fileObj.path
-          )
+          chalkInfo(PF + " | ... SKIPPING INPUTS LOAD OF " + fileObj.path)
         );
         continue;
       }
@@ -2227,10 +2175,7 @@ async function loadInputsFolders(p) {
       if (!configuration.inputsIdArray.includes(inputsId)) {
         console.log(
           chalkInfo(
-            MODULE_ID_PREFIX +
-              " | --- INPUTS ... NOT IN INPUTS ARRAY" +
-              " | " +
-              fileObj.path
+            PF + " | --- INPUTS ... NOT IN INPUTS ARRAY" + " | " + fileObj.path
           )
         );
         continue;
@@ -2239,12 +2184,7 @@ async function loadInputsFolders(p) {
       if (configuration.verbose) {
         console.log(
           chalkInfo(
-            MODULE_ID_PREFIX +
-              " | INPUTS FOUND" +
-              " | " +
-              inputsId +
-              " | " +
-              fileObj.path
+            PF + " | INPUTS FOUND" + " | " + inputsId + " | " + fileObj.path
           )
         );
       }
@@ -2259,7 +2199,7 @@ async function loadInputsFolders(p) {
       } catch (e) {
         console.log(
           chalkError(
-            MODULE_ID_PREFIX +
+            PF +
               " | *** LOAD INPUTS FILE ERROR | ... SKIPPING: " +
               fileObj.folder +
               "/" +
@@ -2273,11 +2213,11 @@ async function loadInputsFolders(p) {
 
       if (inputsObj.inputsId || inputsObj.inputsId !== undefined) {
         inputsSet.add(inputsObj.inputsId);
-        // printInputsObj(MODULE_ID_PREFIX + " | +++ INPUTS DB UPDATED", inputsObj);
+        // printInputsObj(PF + " | +++ INPUTS DB UPDATED", inputsObj);
       } else {
         console.log(
           chalkError(
-            MODULE_ID_PREFIX +
+            PF +
               " | *** INPUTS OBJ ERROR | UNDEFINED INPUTS ID\n" +
               jsonPrint(inputsObj)
           )
@@ -2285,9 +2225,7 @@ async function loadInputsFolders(p) {
         continue;
       }
     } catch (err) {
-      console.log(
-        chalkError(MODULE_ID_PREFIX + " | *** LOAD INPUTS FILE ERROR: " + err)
-      );
+      console.log(chalkError(PF + " | *** LOAD INPUTS FILE ERROR: " + err));
       throw err;
     }
   }
@@ -2297,9 +2235,7 @@ async function loadInputsFolders(p) {
 
 async function generateSeedInputsNetworkId(params) {
   try {
-    console.log(
-      chalkLog(MODULE_ID_PREFIX + " | ... GENERATE SEED INPUTS/NETWORK ...")
-    );
+    console.log(chalkLog(PF + " | ... GENERATE SEED INPUTS/NETWORK ..."));
 
     const config = params.config || {};
 
@@ -2310,7 +2246,7 @@ async function generateSeedInputsNetworkId(params) {
     if (betterChildSeedNetworkIdSet.size > 0) {
       console.log(
         chalkLog(
-          MODULE_ID_PREFIX +
+          PF +
             " | USING BETTER CHILD SEED NETWORK | AVAIL BETTER CHILDREN: " +
             betterChildSeedNetworkIdSet.size
         )
@@ -2320,7 +2256,7 @@ async function generateSeedInputsNetworkId(params) {
 
       console.log(
         chalkLog(
-          MODULE_ID_PREFIX +
+          PF +
             " | ... SEARCH DB FOR BETTER CHILD SEED NETWORK: " +
             config.seedNetworkId
         )
@@ -2335,7 +2271,7 @@ async function generateSeedInputsNetworkId(params) {
       if (!networkObj) {
         console.log(
           chalkError(
-            MODULE_ID_PREFIX +
+            PF +
               " | *** BETTER CHILD SEED NETWORK ERROR: NN NOT IN DB | SEED NN ID: " +
               config.seedNetworkId
           )
@@ -2345,9 +2281,7 @@ async function generateSeedInputsNetworkId(params) {
 
       console.log(
         chalkLog(
-          MODULE_ID_PREFIX +
-            " | FOUND DB BETTER CHILD SEED NETWORK: " +
-            networkObj.networkId
+          PF + " | FOUND DB BETTER CHILD SEED NETWORK: " + networkObj.networkId
         )
       );
 
@@ -2363,7 +2297,7 @@ async function generateSeedInputsNetworkId(params) {
 
       console.log(
         chalkBlueBold(
-          MODULE_ID_PREFIX +
+          PF +
             " | USING BETTER CHILD SEED [" +
             betterChildSeedNetworkIdSet.size +
             " REMAINING NNs IN BETTER CHILD POOL]" +
@@ -2411,7 +2345,7 @@ async function generateSeedInputsNetworkId(params) {
     ) {
       console.log(
         chalkLog(
-          MODULE_ID_PREFIX +
+          PF +
             " | USING RANDOM SEED NETWORK | AVAIL SEED NNs: " +
             Object.keys(inputsIdTechHashMap.networkTechnology[randomTechnology])
               .length
@@ -2426,7 +2360,7 @@ async function generateSeedInputsNetworkId(params) {
 
       console.log(
         chalkLog(
-          MODULE_ID_PREFIX +
+          PF +
             " | RANDOM SEED: " +
             randomInputsId +
             " | INPUTS NN SET SIZE: " +
@@ -2446,7 +2380,7 @@ async function generateSeedInputsNetworkId(params) {
         if (!networkObj) {
           console.log(
             chalkError(
-              MODULE_ID_PREFIX +
+              PF +
                 " | *** GENERATE SEED INPUTS NETWORK ID ERROR: NN NOT IN DB | RANDOM NN ID: " +
                 randomNetworkId
             )
@@ -2466,7 +2400,7 @@ async function generateSeedInputsNetworkId(params) {
 
         console.log(
           chalkBlueBold(
-            MODULE_ID_PREFIX +
+            PF +
               " | USE RANDOM SEED NETWORK [" +
               randomNetworkIdSet.size +
               " NNs IN SEED POOL]" +
@@ -2486,7 +2420,7 @@ async function generateSeedInputsNetworkId(params) {
       } else {
         console.log(
           chalkBlueBold(
-            MODULE_ID_PREFIX +
+            PF +
               " | generateSeedInputsNetworkId | NO RANDOM SEED NETWORKS [" +
               randomNetworkIdSet.size +
               " NNs IN SEED POOL]"
@@ -2497,9 +2431,7 @@ async function generateSeedInputsNetworkId(params) {
     } else if (availableInputsIdArray.length > 0) {
       console.log(
         chalkLog(
-          MODULE_ID_PREFIX +
-            " | VIABLE NETWORKS INPUTS: " +
-            availableInputsIdArray.length
+          PF + " | VIABLE NETWORKS INPUTS: " + availableInputsIdArray.length
         )
       );
 
@@ -2509,9 +2441,7 @@ async function generateSeedInputsNetworkId(params) {
       config.inputsId = config.seedInputsId;
 
       console.log(
-        chalkBlue(
-          MODULE_ID_PREFIX + " | SEED | AVAILABLE INPUTS ID: " + config.inputsId
-        )
+        chalkBlue(PF + " | SEED | AVAILABLE INPUTS ID: " + config.inputsId)
       );
 
       const inputsObj = await global.wordAssoDb.NetworkInputs.findOne({
@@ -2523,7 +2453,7 @@ async function generateSeedInputsNetworkId(params) {
       if (!inputsObj) {
         console.log(
           chalkError(
-            MODULE_ID_PREFIX +
+            PF +
               " | *** INPUTS NOT FOUND IN DB" +
               " | INPUTS ID: " +
               config.inputsId
@@ -2536,7 +2466,7 @@ async function generateSeedInputsNetworkId(params) {
 
       console.log(
         chalkBlueBold(
-          MODULE_ID_PREFIX +
+          PF +
             " | VIABLE INPUT" +
             " | VIABLE INPUTS: " +
             inputsViableSet.size +
@@ -2556,9 +2486,7 @@ async function generateSeedInputsNetworkId(params) {
       //
 
       console.log(
-        chalkError(
-          MODULE_ID_PREFIX + " | *** EMPTY INPUTS SET [" + inputsSet.size + "]"
-        )
+        chalkError(PF + " | *** EMPTY INPUTS SET [" + inputsSet.size + "]")
       );
       throw new Error("EMPTY INPUTS SET");
     } else {
@@ -2573,7 +2501,7 @@ async function generateSeedInputsNetworkId(params) {
 
       console.log(
         chalkLog(
-          MODULE_ID_PREFIX +
+          PF +
             " | RANDOM INPUT [" +
             inputsSet.size +
             "]" +
@@ -2588,11 +2516,7 @@ async function generateSeedInputsNetworkId(params) {
     }
   } catch (err) {
     console.log(
-      chalkError(
-        MODULE_ID_PREFIX +
-          " | *** GENERATE SEED INPUTS NETWORK ID ERROR: " +
-          err
-      )
+      chalkError(PF + " | *** GENERATE SEED INPUTS NETWORK ID ERROR: " + err)
     );
     throw err;
   }
@@ -2608,7 +2532,7 @@ async function generateEvolveOptions(params) {
     do {
       console.log(
         chalkLog(
-          MODULE_ID_PREFIX +
+          PF +
             " | ... GENERATE EVOLVE OPTIONS ... | ATTEMPTS: " +
             attempts +
             " | KEY: " +
@@ -2696,9 +2620,7 @@ async function generateEvolveOptions(params) {
     return config;
   } catch (err) {
     console.log(
-      chalkError(
-        MODULE_ID_PREFIX + " | *** GENERATE EVOLVE OPTIONS ERROR: " + err
-      )
+      chalkError(PF + " | *** GENERATE EVOLVE OPTIONS ERROR: " + err)
     );
     throw err;
   }
@@ -2729,7 +2651,7 @@ function pickTechnologyOptions(config) {
     default:
       console.log(
         chalkError(
-          MODULE_ID_PREFIX +
+          PF +
             " | *** generateRandomEvolveConfig ERROR | UNKNOWN NETWORK TECHNOLOGY: " +
             config.networkTechnology
         )
@@ -2747,7 +2669,7 @@ async function generateRandomEvolveConfig(p) {
 
   statsObj.status = "GENERATE EVOLVE CONFIG";
 
-  console.log(chalkBlue(MODULE_ID_PREFIX + " | GENERATE RANDOM EVOLVE CONFIG"));
+  console.log(chalkBlue(PF + " | GENERATE RANDOM EVOLVE CONFIG"));
 
   let config = {};
 
@@ -2761,9 +2683,7 @@ async function generateRandomEvolveConfig(p) {
     config.forceNetworkTechnology = configuration.forceNetworkTechnology;
     console.log(
       chalkBlue(
-        MODULE_ID_PREFIX +
-          " | FORCE NETWORK TECHNOLOGY | " +
-          config.networkTechnology
+        PF + " | FORCE NETWORK TECHNOLOGY | " + config.networkTechnology
       )
     );
   } else {
@@ -2773,18 +2693,14 @@ async function generateRandomEvolveConfig(p) {
       );
       console.log(
         chalkBlue(
-          MODULE_ID_PREFIX +
-            " | RANDOM NETWORK TECHNOLOGY | " +
-            config.networkTechnology
+          PF + " | RANDOM NETWORK TECHNOLOGY | " + config.networkTechnology
         )
       );
     } else {
       config.networkTechnology = configuration.networkTechnology;
       console.log(
         chalkBlue(
-          MODULE_ID_PREFIX +
-            " | DEFAULT NETWORK TECHNOLOGY | " +
-            config.networkTechnology
+          PF + " | DEFAULT NETWORK TECHNOLOGY | " + config.networkTechnology
         )
       );
     }
@@ -2793,33 +2709,19 @@ async function generateRandomEvolveConfig(p) {
   if (configuration.enableRandomBinaryMode) {
     config.binaryMode =
       Math.random() <= configuration.evolve.binaryModeProbability;
-    console.log(
-      chalkAlert(
-        MODULE_ID_PREFIX + " | RANDOM BINARY MODE: " + config.binaryMode
-      )
-    );
+    console.log(chalkAlert(PF + " | RANDOM BINARY MODE: " + config.binaryMode));
   } else {
     config.binaryMode = params.binaryMode || configuration.binaryMode;
   }
 
   console.log(
-    chalkBlue(
-      MODULE_ID_PREFIX +
-        " | NETWORK TECHNOLOGY:      " +
-        config.networkTechnology
-    )
+    chalkBlue(PF + " | NETWORK TECHNOLOGY:      " + config.networkTechnology)
   );
   console.log(
-    chalkBlue(
-      MODULE_ID_PREFIX + " | BINARY MODE:             " + config.binaryMode
-    )
+    chalkBlue(PF + " | BINARY MODE:             " + config.binaryMode)
   );
 
-  debug(
-    chalkLog(
-      MODULE_ID_PREFIX + " | NETWORK CREATE MODE: " + config.networkCreateMode
-    )
-  );
+  debug(chalkLog(PF + " | NETWORK CREATE MODE: " + config.networkCreateMode));
 
   config = await generateSeedInputsNetworkId({ config: config });
   config = await generateEvolveOptions({ config: config });
@@ -2842,18 +2744,14 @@ async function generateRandomEvolveConfig(p) {
       if (!networkObj) {
         console.log(
           chalkError(
-            MODULE_ID_PREFIX +
-              " | *** DB FIND SEED NN ERROR | " +
-              config.seedNetworkId
+            PF + " | *** DB FIND SEED NN ERROR | " + config.seedNetworkId
           )
         );
         throw new Error("SEED NN not found: " + config.seedNetworkId);
       }
 
       console.log(
-        chalkInfo(
-          MODULE_ID_PREFIX + " | +++ DB FIND SEED NN | " + networkObj.networkId
-        )
+        chalkInfo(PF + " | +++ DB FIND SEED NN | " + networkObj.networkId)
       );
 
       const dbNetworkObj = await networkDefaults(networkObj);
@@ -2871,32 +2769,18 @@ async function generateRandomEvolveConfig(p) {
       config.seedNetworkId = dbNetworkObj.networkId;
       config.seedNetworkRes = dbNetworkObj.successRate;
 
+      console.log(PF + " | SEED NETWORK:      " + dbNetworkObj.networkId);
       console.log(
-        MODULE_ID_PREFIX + " | SEED NETWORK:      " + dbNetworkObj.networkId
+        PF + " | SEED NETWORK TECH: " + dbNetworkObj.networkTechnology
       );
-      console.log(
-        MODULE_ID_PREFIX +
-          " | SEED NETWORK TECH: " +
-          dbNetworkObj.networkTechnology
-      );
-      console.log(
-        MODULE_ID_PREFIX + " | SEED BINARY MODE:  " + dbNetworkObj.binaryMode
-      );
-      console.log(
-        MODULE_ID_PREFIX +
-          " | SEED HIDDEN NODES: " +
-          dbNetworkObj.hiddenLayerSize
-      );
-      console.log(
-        MODULE_ID_PREFIX + " | SEED INPUTS ID:    " + dbNetworkObj.inputsId
-      );
+      console.log(PF + " | SEED BINARY MODE:  " + dbNetworkObj.binaryMode);
+      console.log(PF + " | SEED HIDDEN NODES: " + dbNetworkObj.hiddenLayerSize);
+      console.log(PF + " | SEED INPUTS ID:    " + dbNetworkObj.inputsId);
 
       if (configuration.randomizeSeedOptions) {
         console.log(
           chalkLog(
-            MODULE_ID_PREFIX +
-              " | RANDOMIZE SEED NETWORK OPTIONS | " +
-              config.seedNetworkId
+            PF + " | RANDOMIZE SEED NETWORK OPTIONS | " + config.seedNetworkId
           )
         );
         config.activation = _.sample([
@@ -2952,11 +2836,7 @@ async function generateRandomEvolveConfig(p) {
         ]);
       } else {
         console.log(
-          chalkLog(
-            MODULE_ID_PREFIX +
-              " | USE SEED NETWORK OPTIONS | " +
-              config.seedNetworkId
-          )
+          chalkLog(PF + " | USE SEED NETWORK OPTIONS | " + config.seedNetworkId)
         );
         config.activation = dbNetworkObj.evolve.options.activation;
         config.cost = dbNetworkObj.evolve.options.cost;
@@ -2983,7 +2863,7 @@ async function generateRandomEvolveConfig(p) {
     } catch (err) {
       console.log(
         chalkError(
-          MODULE_ID_PREFIX +
+          PF +
             " | *** SEED NETWORK ERROR | " +
             config.seedNetworkId +
             " | ERROR: " +
@@ -2997,9 +2877,7 @@ async function generateRandomEvolveConfig(p) {
   else {
     if (config.seedInputsId && config.seedInputsId !== undefined) {
       console.log(
-        chalkLog(
-          MODULE_ID_PREFIX + " | USE SEED INPUTS ID | " + config.seedInputsId
-        )
+        chalkLog(PF + " | USE SEED INPUTS ID | " + config.seedInputsId)
       );
 
       try {
@@ -3014,7 +2892,7 @@ async function generateRandomEvolveConfig(p) {
         if (!inputsObj) {
           console.log(
             chalkError(
-              MODULE_ID_PREFIX +
+              PF +
                 " | *** LOAD DB INPUTS ERROR | NOT FOUND" +
                 " | INPUTS ID: " +
                 config.seedInputsId
@@ -3065,7 +2943,7 @@ async function generateRandomEvolveConfig(p) {
         config.inputsId = config.seedInputsId;
 
         console.log(
-          `${MODULE_ID_PREFIX} | ${config.architecture.toUpperCase()} ARCH | SEED INPUTS ID: ${
+          `${PF} | ${config.architecture.toUpperCase()} ARCH | SEED INPUTS ID: ${
             config.seedInputsId
           } | HIDDEN LAYERS: ${config.hiddenLayerSize}`
         );
@@ -3075,7 +2953,7 @@ async function generateRandomEvolveConfig(p) {
       } catch (err) {
         console.log(
           chalkError(
-            MODULE_ID_PREFIX +
+            PF +
               " | *** LOAD INPUTS ERROR" +
               " | INPUTS ID: " +
               config.seedInputsId +
@@ -3087,7 +2965,7 @@ async function generateRandomEvolveConfig(p) {
       }
     } else {
       console.log(
-        MODULE_ID_PREFIX +
+        PF +
           " | *** ERROR *** | PERCEPTRON ARCH | seedInputsId " +
           config.seedInputsId +
           " NOT IN inputsSet"
@@ -3110,7 +2988,7 @@ async function initNetworkCreate(params) {
 
     console.log(
       chalkLog(
-        MODULE_ID_PREFIX +
+        PF +
           " | INIT NETWORK CREATE" +
           " | CHILD " +
           childId +
@@ -3196,39 +3074,39 @@ async function initNetworkCreate(params) {
 
     console.log(
       chalkBlue(
-        MODULE_ID_PREFIX +
+        PF +
           " | NN ID:             " +
           networkId +
           "\n" +
-          MODULE_ID_PREFIX +
+          PF +
           " | TECHNOLOGY:        " +
           messageObj.networkTechnology +
           "\n" +
-          MODULE_ID_PREFIX +
+          PF +
           " | BIN MODE:          " +
           messageObj.binaryMode +
           "\n" +
-          MODULE_ID_PREFIX +
+          PF +
           " | ARCHITECTURE:      " +
           messageObj.architecture +
           "\n" +
-          MODULE_ID_PREFIX +
+          PF +
           " | INPUTS ID:         " +
           messageObj.inputsId +
           "\n" +
-          MODULE_ID_PREFIX +
+          PF +
           " | INPUTS:            " +
           messageObj.numInputs +
           "\n" +
-          MODULE_ID_PREFIX +
+          PF +
           " | HIDDEN LAYER SIZE: " +
           messageObj.hiddenLayerSize +
           "\n" +
-          MODULE_ID_PREFIX +
+          PF +
           " | ITERATIONS:        " +
           messageObj.iterations +
           "\n" +
-          MODULE_ID_PREFIX +
+          PF +
           " | ERROR:             " +
           messageObj.error
       )
@@ -3236,9 +3114,7 @@ async function initNetworkCreate(params) {
 
     if (messageObj.networkTechnology !== "tensorflow") {
       console.log(
-        chalkBlue(
-          MODULE_ID_PREFIX + " | ACTIVATION:        " + messageObj.activation
-        )
+        chalkBlue(PF + " | ACTIVATION:        " + messageObj.activation)
       );
     }
 
@@ -3250,23 +3126,23 @@ async function initNetworkCreate(params) {
       // });
       console.log(
         chalkBlue(
-          MODULE_ID_PREFIX +
+          PF +
             " | OPTIMIZER:         " +
             messageObj.optimizer +
             "\n" +
-            MODULE_ID_PREFIX +
+            PF +
             " | INPUT ACTIVATION:  " +
             messageObj.inputActivation +
             "\n" +
-            MODULE_ID_PREFIX +
+            PF +
             " | OUTPUT ACTIVATION: " +
             messageObj.outputActivation +
             "\n" +
-            MODULE_ID_PREFIX +
+            PF +
             " | LOSS:              " +
             messageObj.loss +
             "\n" +
-            MODULE_ID_PREFIX +
+            PF +
             " | METRICS:           " +
             messageObj.metrics
         )
@@ -3276,15 +3152,15 @@ async function initNetworkCreate(params) {
     if (messageObj.networkTechnology !== "tensorflow") {
       console.log(
         chalkBlue(
-          MODULE_ID_PREFIX +
+          PF +
             " | COST:              " +
             messageObj.cost +
             "\n" +
-            MODULE_ID_PREFIX +
+            PF +
             " | SELECTION:         " +
             messageObj.selection +
             "\n" +
-            MODULE_ID_PREFIX +
+            PF +
             " | EFF MUTATION:      " +
             messageObj.efficientMutation
         )
@@ -3294,7 +3170,7 @@ async function initNetworkCreate(params) {
     if (messageObj.seedNetworkId) {
       console.log(
         chalkBlue(
-          MODULE_ID_PREFIX +
+          PF +
             " | SEED:                " +
             messageObj.seedNetworkId +
             " | SR: " +
@@ -3304,13 +3180,11 @@ async function initNetworkCreate(params) {
       );
       console.log(
         chalkBlue(
-          MODULE_ID_PREFIX +
-            " | BETTER CHILD SEED:   " +
-            messageObj.isBetterChildSeed
+          PF + " | BETTER CHILD SEED:   " + messageObj.isBetterChildSeed
         )
       );
     } else {
-      console.log(chalkBlue(MODULE_ID_PREFIX + " | SEED:                ----"));
+      console.log(chalkBlue(PF + " | SEED:                ----"));
     }
 
     resultsHashmap[messageObj.testRunId] = {};
@@ -3347,24 +3221,24 @@ async function initNetworkCreate(params) {
     await printResultsHashmap();
     await childSend({ command: messageObj });
 
-    console.log(chalkInfo(MODULE_ID_PREFIX + " | END initNetworkCreate"));
+    console.log(chalkInfo(PF + " | END initNetworkCreate"));
     return;
   } catch (err) {
-    console.log(MODULE_ID_PREFIX + " | INIT CREATE NETWORK ERROR ", err);
+    console.log(PF + " | INIT CREATE NETWORK ERROR ", err);
     throw err;
   }
 }
 
 //=========================================================================
 //=========================================================================
-//const MODULE_ID = MODULE_ID_PREFIX + "_node_" + hostname;
+//const MODULE_ID = PF + "_node_" + hostname;
 
 process.title = MODULE_ID.toLowerCase() + "_" + process.pid;
 
 process.on("exit", function (code, signal) {
   console.log(
     chalkAlert(
-      MODULE_ID_PREFIX +
+      PF +
         " | PROCESS EXIT" +
         " | " +
         getTimeStamp() +
@@ -3379,7 +3253,7 @@ process.on("exit", function (code, signal) {
 process.on("close", function (code, signal) {
   console.log(
     chalkAlert(
-      MODULE_ID_PREFIX +
+      PF +
         " | PROCESS CLOSE" +
         " | " +
         getTimeStamp() +
@@ -3394,7 +3268,7 @@ process.on("close", function (code, signal) {
 process.on("SIGHUP", function (code, signal) {
   console.log(
     chalkAlert(
-      MODULE_ID_PREFIX +
+      PF +
         " | PROCESS SIGHUP" +
         " | " +
         getTimeStamp() +
@@ -3410,7 +3284,7 @@ process.on("SIGHUP", function (code, signal) {
 process.on("SIGINT", function (code, signal) {
   console.log(
     chalkAlert(
-      MODULE_ID_PREFIX +
+      PF +
         " | PROCESS SIGINT" +
         " | " +
         getTimeStamp() +
@@ -3425,7 +3299,7 @@ process.on("SIGINT", function (code, signal) {
 
 process.on("unhandledRejection", function (err, promise) {
   console.log(
-    MODULE_ID_PREFIX + " | *** Unhandled rejection (promise: ",
+    PF + " | *** Unhandled rejection (promise: ",
     promise,
     ", reason: ",
     err,
@@ -3448,11 +3322,7 @@ async function initWatchAllConfigFolders(p) {
     const params = p || {};
 
     console.log(
-      chalkBlue(
-        MODULE_ID_PREFIX +
-          " | INIT WATCH ALL CONFIG FILES\n" +
-          jsonPrint(params)
-      )
+      chalkBlue(PF + " | INIT WATCH ALL CONFIG FILES\n" + jsonPrint(params))
     );
 
     await loadAllConfigFiles();
@@ -3477,7 +3347,7 @@ async function initWatchAllConfigFolders(p) {
       function (monitorNetworks) {
         console.log(
           chalkBlue(
-            MODULE_ID_PREFIX +
+            PF +
               " | INIT WATCH GLOBAL NETWORKS FOLDER: " +
               globalBestNetworkFolder
           )
@@ -3491,9 +3361,7 @@ async function initWatchAllConfigFolders(p) {
             file.endsWith(".json") &&
             !file.startsWith("bestRuntimeNetwork")
           ) {
-            console.log(
-              chalkBlue(MODULE_ID_PREFIX + " | +++ NETWORK FILE CREATED: " + f)
-            );
+            console.log(chalkBlue(PF + " | +++ NETWORK FILE CREATED: " + f));
             try {
               await delay({ period: 30 * ONE_SECOND });
               await loadNetworkFile({
@@ -3503,7 +3371,7 @@ async function initWatchAllConfigFolders(p) {
             } catch (err) {
               console.log(
                 chalkBlue(
-                  MODULE_ID_PREFIX +
+                  PF +
                     " | *** LOAD NETWORK FILE CREATED ERROR | " +
                     f +
                     ": " +
@@ -3522,9 +3390,7 @@ async function initWatchAllConfigFolders(p) {
             file.endsWith(".json") &&
             !file.startsWith("bestRuntimeNetwork")
           ) {
-            console.log(
-              chalkBlue(MODULE_ID_PREFIX + " | -/- NETWORK FILE CHANGED: " + f)
-            );
+            console.log(chalkBlue(PF + " | -/- NETWORK FILE CHANGED: " + f));
             try {
               await delay({ period: 30 * ONE_SECOND });
               await loadNetworkFile({
@@ -3534,7 +3400,7 @@ async function initWatchAllConfigFolders(p) {
             } catch (err) {
               console.log(
                 chalkBlue(
-                  MODULE_ID_PREFIX +
+                  PF +
                     " | *** LOAD NETWORK FILE CREATED ERROR | " +
                     f +
                     ": " +
@@ -3553,7 +3419,7 @@ async function initWatchAllConfigFolders(p) {
           );
           console.log(
             chalkAlert(
-              MODULE_ID_PREFIX +
+              PF +
                 " | XXX NETWORK FILE DELETED | " +
                 getTimeStamp() +
                 " | " +
@@ -3577,7 +3443,7 @@ async function initWatchAllConfigFolders(p) {
       function (monitorNetworks) {
         console.log(
           chalkBlue(
-            MODULE_ID_PREFIX +
+            PF +
               " | INIT WATCH LOCAL NETWORKS FOLDER: " +
               localBestNetworkFolder
           )
@@ -3592,9 +3458,7 @@ async function initWatchAllConfigFolders(p) {
             !file.startsWith("bestRuntimeNetwork")
           ) {
             console.log(
-              chalkBlue(
-                MODULE_ID_PREFIX + " | +++ LOCAl NETWORK FILE CREATED: " + f
-              )
+              chalkBlue(PF + " | +++ LOCAl NETWORK FILE CREATED: " + f)
             );
             try {
               await delay({ period: 30 * ONE_SECOND });
@@ -3605,7 +3469,7 @@ async function initWatchAllConfigFolders(p) {
             } catch (err) {
               console.log(
                 chalkBlue(
-                  MODULE_ID_PREFIX +
+                  PF +
                     " | *** LOAD LOCAL NETWORK FILE CREATED ERROR | " +
                     f +
                     ": " +
@@ -3625,9 +3489,7 @@ async function initWatchAllConfigFolders(p) {
             !file.startsWith("bestRuntimeNetwork")
           ) {
             console.log(
-              chalkBlue(
-                MODULE_ID_PREFIX + " | -/- LOCAL NETWORK FILE CHANGED: " + f
-              )
+              chalkBlue(PF + " | -/- LOCAL NETWORK FILE CHANGED: " + f)
             );
             try {
               await delay({ period: 30 * ONE_SECOND });
@@ -3638,7 +3500,7 @@ async function initWatchAllConfigFolders(p) {
             } catch (err) {
               console.log(
                 chalkBlue(
-                  MODULE_ID_PREFIX +
+                  PF +
                     " | *** LOAD LOCAL NETWORK FILE CREATED ERROR | " +
                     f +
                     ": " +
@@ -3657,7 +3519,7 @@ async function initWatchAllConfigFolders(p) {
           );
           console.log(
             chalkAlert(
-              MODULE_ID_PREFIX +
+              PF +
                 " | XXX LOCAL NETWORK FILE DELETED | " +
                 getTimeStamp() +
                 " | " +
@@ -3679,9 +3541,7 @@ async function initWatchAllConfigFolders(p) {
     watch.createMonitor(defaultInputsFolder, options, function (monitorInputs) {
       console.log(
         chalkBlue(
-          MODULE_ID_PREFIX +
-            " | INIT WATCH INPUTS CONFIG FOLDER: " +
-            defaultInputsFolder
+          PF + " | INIT WATCH INPUTS CONFIG FOLDER: " + defaultInputsFolder
         )
       );
 
@@ -3689,20 +3549,14 @@ async function initWatchAllConfigFolders(p) {
         const fileNameArray = f.split("/");
         const file = fileNameArray[fileNameArray.length - 1];
         if (file.startsWith("inputs_")) {
-          console.log(
-            chalkBlue(MODULE_ID_PREFIX + " | +++ INPUTS FILE CREATED: " + f)
-          );
+          console.log(chalkBlue(PF + " | +++ INPUTS FILE CREATED: " + f));
           try {
             await delay({ period: 30 * ONE_SECOND });
             await loadInputsFile({ folder: defaultInputsFolder, file: file });
           } catch (err) {
             console.log(
               chalkBlue(
-                MODULE_ID_PREFIX +
-                  " | *** LOAD INPUTS FILE CREATED ERROR | " +
-                  f +
-                  ": " +
-                  err
+                PF + " | *** LOAD INPUTS FILE CREATED ERROR | " + f + ": " + err
               )
             );
           }
@@ -3713,20 +3567,14 @@ async function initWatchAllConfigFolders(p) {
         const fileNameArray = f.split("/");
         const file = fileNameArray[fileNameArray.length - 1];
         if (file.startsWith("inputs_")) {
-          console.log(
-            chalkBlue(MODULE_ID_PREFIX + " | -/- INPUTS FILE CHANGED: " + f)
-          );
+          console.log(chalkBlue(PF + " | -/- INPUTS FILE CHANGED: " + f));
           try {
             await delay({ period: 30 * ONE_SECOND });
             await loadInputsFile({ folder: defaultInputsFolder, file: file });
           } catch (err) {
             console.log(
               chalkBlue(
-                MODULE_ID_PREFIX +
-                  " | *** LOAD INPUTS FILE CHANGED ERROR | " +
-                  f +
-                  ": " +
-                  err
+                PF + " | *** LOAD INPUTS FILE CHANGED ERROR | " + f + ": " + err
               )
             );
           }
@@ -3741,7 +3589,7 @@ async function initWatchAllConfigFolders(p) {
         );
         console.log(
           chalkLog(
-            MODULE_ID_PREFIX +
+            PF +
               " | XXX INPUTS FILE DELETED | " +
               getTimeStamp() +
               " | " +
@@ -3764,9 +3612,7 @@ async function initWatchAllConfigFolders(p) {
       function (monitorDefaultConfig) {
         console.log(
           chalkBlue(
-            MODULE_ID_PREFIX +
-              " | INIT WATCH DEFAULT CONFIG FOLDER: " +
-              configDefaultFolder
+            PF + " | INIT WATCH DEFAULT CONFIG FOLDER: " + configDefaultFolder
           )
         );
 
@@ -3841,11 +3687,7 @@ async function initWatchAllConfigFolders(p) {
         monitorDefaultConfig.on("removed", function (f) {
           debug(
             chalkInfo(
-              MODULE_ID_PREFIX +
-                " | XXX FILE DELETED | " +
-                getTimeStamp() +
-                " | " +
-                f
+              PF + " | XXX FILE DELETED | " + getTimeStamp() + " | " + f
             )
           );
         });
@@ -3862,9 +3704,7 @@ async function initWatchAllConfigFolders(p) {
       function (monitorHostConfig) {
         console.log(
           chalkBlue(
-            MODULE_ID_PREFIX +
-              " | INIT WATCH HOST CONFIG FOLDER: " +
-              configHostFolder
+            PF + " | INIT WATCH HOST CONFIG FOLDER: " + configHostFolder
           )
         );
 
@@ -3885,11 +3725,7 @@ async function initWatchAllConfigFolders(p) {
         monitorHostConfig.on("removed", function (f) {
           debug(
             chalkInfo(
-              MODULE_ID_PREFIX +
-                " | XXX FILE DELETED | " +
-                getTimeStamp() +
-                " | " +
-                f
+              PF + " | XXX FILE DELETED | " + getTimeStamp() + " | " + f
             )
           );
         });
@@ -3899,9 +3735,7 @@ async function initWatchAllConfigFolders(p) {
     return;
   } catch (err) {
     console.log(
-      chalkError(
-        MODULE_ID_PREFIX + " | *** INIT LOAD ALL CONFIG INTERVAL ERROR: " + err
-      )
+      chalkError(PF + " | *** INIT LOAD ALL CONFIG INTERVAL ERROR: " + err)
     );
     throw err;
   }
@@ -3911,7 +3745,7 @@ async function initConfig(cnf) {
   try {
     statsObj.status = "INIT CONFIG";
 
-    console.log(chalkBlue(MODULE_ID_PREFIX + " | INIT CONFIG"));
+    console.log(chalkBlue(PF + " | INIT CONFIG"));
 
     if (debug.enabled) {
       console.log(
@@ -3940,7 +3774,7 @@ async function initConfig(cnf) {
     configArgs.forEach(function (arg) {
       if (arg === "inputsIdArray") {
         console.log(
-          MODULE_ID_PREFIX +
+          PF +
             " | _FINAL CONFIG | " +
             arg +
             ": " +
@@ -3949,7 +3783,7 @@ async function initConfig(cnf) {
         );
       } else if (_.isObject(configuration[arg])) {
         console.log(
-          MODULE_ID_PREFIX +
+          PF +
             " | _FINAL CONFIG | " +
             arg +
             "\n" +
@@ -3957,11 +3791,7 @@ async function initConfig(cnf) {
         );
       } else {
         console.log(
-          MODULE_ID_PREFIX +
-            " | _FINAL CONFIG | " +
-            arg +
-            ": " +
-            configuration[arg]
+          PF + " | _FINAL CONFIG | " + arg + ": " + configuration[arg]
         );
       }
     });
@@ -3976,9 +3806,7 @@ async function initConfig(cnf) {
 
     return configuration;
   } catch (err) {
-    console.log(
-      chalkError(MODULE_ID_PREFIX + " | *** CONFIG LOAD ERROR: " + err)
-    );
+    console.log(chalkError(PF + " | *** CONFIG LOAD ERROR: " + err));
     throw err;
   }
 }
@@ -4005,9 +3833,7 @@ function touchChildPidFile(params) {
 
       touch.sync(path, { force: true });
 
-      console.log(
-        chalkBlue(MODULE_ID_PREFIX + " | TOUCH CHILD PID FILE: " + path)
-      );
+      console.log(chalkBlue(PF + " | TOUCH CHILD PID FILE: " + path));
       resolve(path);
     } catch (err) {
       return reject(err);
@@ -4068,7 +3894,7 @@ function getChildProcesses() {
 
           console.log(
             chalkInfo(
-              MODULE_ID_PREFIX +
+              PF +
                 " | FOUND CHILD" +
                 " [ " +
                 childPidArray.length +
@@ -4090,14 +3916,12 @@ function getChildProcesses() {
 
           if (empty(childHashMap[childId])) {
             console.log(
-              chalkAlert(
-                MODULE_ID_PREFIX + " | *** CHILD NOT IN HM" + " | " + childId
-              )
+              chalkAlert(PF + " | *** CHILD NOT IN HM" + " | " + childId)
             );
           } else if (childHashMap[childId].pid !== childPid) {
             console.log(
               chalkAlert(
-                MODULE_ID_PREFIX +
+                PF +
                   " | *** CHILD PID HM MISMATCH" +
                   " | " +
                   childId +
@@ -4111,7 +3935,7 @@ function getChildProcesses() {
 
           console.log(
             chalkAlert(
-              MODULE_ID_PREFIX +
+              PF +
                 " | *** CHILD ZOMBIE" +
                 " | " +
                 childId +
@@ -4121,9 +3945,7 @@ function getChildProcesses() {
 
           kill(childPid, function (err) {
             if (err) {
-              console.log(
-                chalkError(MODULE_ID_PREFIX + " | *** KILL ZOMBIE ERROR: ", err)
-              );
+              console.log(chalkError(PF + " | *** KILL ZOMBIE ERROR: ", err));
               return cb(err);
             }
 
@@ -4134,7 +3956,7 @@ function getChildProcesses() {
 
             console.log(
               chalkAlert(
-                MODULE_ID_PREFIX +
+                PF +
                   " | XXX CHILD ZOMBIE" +
                   " [ " +
                   childPidArray.length +
@@ -4202,7 +4024,7 @@ async function killAll() {
           .then(function () {
             console.log(
               chalkAlert(
-                MODULE_ID_PREFIX +
+                PF +
                   " | KILL ALL | KILLED | PID: " +
                   childObj.pid +
                   " | CH ID: " +
@@ -4214,7 +4036,7 @@ async function killAll() {
           .catch(function (err) {
             console.log(
               chalkError(
-                MODULE_ID_PREFIX +
+                PF +
                   " | *** KILL CHILD ERROR" +
                   " | PID: " +
                   childObj.pid +
@@ -4234,7 +4056,7 @@ async function killAll() {
       }
     );
   } else {
-    console.log(chalkBlue(MODULE_ID_PREFIX + " | KILL ALL | NO CHILDREN"));
+    console.log(chalkBlue(PF + " | KILL ALL | NO CHILDREN"));
     return childPidArray;
   }
 }
@@ -4252,13 +4074,13 @@ async function showStats(options) {
   statsObjSmall = pick(statsObj, statsPickArray);
 
   if (options) {
-    console.log(MODULE_ID_PREFIX + " | STATS\n" + jsonPrint(statsObjSmall));
+    console.log(PF + " | STATS\n" + jsonPrint(statsObjSmall));
     return;
   } else {
     Object.keys(childHashMap).forEach(function (childId) {
       console.log(
         chalkLog(
-          MODULE_ID_PREFIX +
+          PF +
             " | STATUS CHILD" +
             " | CHILD ID: " +
             childId +
@@ -4276,7 +4098,7 @@ async function showStats(options) {
 
     console.log(
       chalkLog(
-        MODULE_ID_PREFIX +
+        PF +
           " | STATUS" +
           " | FSM: " +
           fsm.getMachineState() +
@@ -4298,7 +4120,7 @@ function initStatsUpdate() {
     try {
       console.log(
         chalkLog(
-          MODULE_ID_PREFIX +
+          PF +
             " | INIT STATS UPDATE INTERVAL | " +
             msToTime(configuration.statsUpdateIntervalTime)
         )
@@ -4325,17 +4147,13 @@ function initStatsUpdate() {
         try {
           await showStats();
         } catch (err) {
-          console.log(
-            chalkError(MODULE_ID_PREFIX + " | *** SHOW STATS ERROR: " + err)
-          );
+          console.log(chalkError(PF + " | *** SHOW STATS ERROR: " + err));
         }
       }, configuration.statsUpdateIntervalTime);
 
       resolve();
     } catch (err) {
-      console.log(
-        chalkError(MODULE_ID_PREFIX + " | *** initStatsUpdate ERROR:", err)
-      );
+      console.log(chalkError(PF + " | *** initStatsUpdate ERROR:", err));
       reject(err);
     }
   });
@@ -4365,7 +4183,7 @@ async function loadConfigFile(params) {
       if (params.noErrorNotFound) {
         console.log(
           chalkAlert(
-            MODULE_ID_PREFIX +
+            PF +
               " | ... SKIP LOAD CONFIG FILE: " +
               params.folder +
               "/" +
@@ -4376,8 +4194,7 @@ async function loadConfigFile(params) {
       } else {
         console.log(
           chalkError(
-            MODULE_ID_PREFIX +
-              " | *** DROPBOX CONFIG LOAD FILE ERROR | JSON UNDEFINED ??? "
+            PF + " | *** DROPBOX CONFIG LOAD FILE ERROR | JSON UNDEFINED ??? "
           )
         );
         throw new Error("JSON UNDEFINED");
@@ -4387,16 +4204,14 @@ async function loadConfigFile(params) {
     if (loadedConfigObj instanceof Error) {
       console.log(
         chalkError(
-          MODULE_ID_PREFIX +
-            " | *** DROPBOX CONFIG LOAD FILE ERROR: " +
-            loadedConfigObj
+          PF + " | *** DROPBOX CONFIG LOAD FILE ERROR: " + loadedConfigObj
         )
       );
     }
 
     console.log(
       chalkInfo(
-        MODULE_ID_PREFIX +
+        PF +
           " | LOADED CONFIG FILE: " +
           params.file +
           "\n" +
@@ -4406,7 +4221,7 @@ async function loadConfigFile(params) {
 
     if (loadedConfigObj.TNN_DATA_ROOT_FOLDER !== undefined) {
       console.log(
-        MODULE_ID_PREFIX +
+        PF +
           " | LOADED TNN_DATA_ROOT_FOLDER: " +
           loadedConfigObj.TNN_DATA_ROOT_FOLDER
       );
@@ -4415,7 +4230,7 @@ async function loadConfigFile(params) {
 
     if (loadedConfigObj.TNN_NETWORK_TECHNOLOGY !== undefined) {
       console.log(
-        MODULE_ID_PREFIX +
+        PF +
           " | LOADED TNN_NETWORK_TECHNOLOGY: " +
           loadedConfigObj.TNN_NETWORK_TECHNOLOGY
       );
@@ -4425,7 +4240,7 @@ async function loadConfigFile(params) {
 
     if (loadedConfigObj.TNN_FORCE_LOAD_TRAINING_SET !== undefined) {
       console.log(
-        MODULE_ID_PREFIX +
+        PF +
           " | LOADED TNN_FORCE_LOAD_TRAINING_SET: " +
           loadedConfigObj.TNN_FORCE_LOAD_TRAINING_SET
       );
@@ -4445,7 +4260,7 @@ async function loadConfigFile(params) {
 
     if (loadedConfigObj.TNN_EQUAL_CATEGORIES_FLAG !== undefined) {
       console.log(
-        MODULE_ID_PREFIX +
+        PF +
           " | LOADED TNN_EQUAL_CATEGORIES_FLAG: " +
           loadedConfigObj.TNN_EQUAL_CATEGORIES_FLAG
       );
@@ -4465,7 +4280,7 @@ async function loadConfigFile(params) {
 
     if (loadedConfigObj.TNN_EVOLVE_TIMEOUT_DURATION !== undefined) {
       console.log(
-        MODULE_ID_PREFIX +
+        PF +
           " | LOADED TNN_EVOLVE_TIMEOUT_DURATION: " +
           loadedConfigObj.TNN_EVOLVE_TIMEOUT_DURATION
       );
@@ -4475,7 +4290,7 @@ async function loadConfigFile(params) {
 
     if (loadedConfigObj.TNN_ENABLE_ZERO_SUCCESS_EVOLVE_OPTIONS !== undefined) {
       console.log(
-        MODULE_ID_PREFIX +
+        PF +
           " | LOADED TNN_ENABLE_ZERO_SUCCESS_EVOLVE_OPTIONS: " +
           loadedConfigObj.TNN_ENABLE_ZERO_SUCCESS_EVOLVE_OPTIONS
       );
@@ -4495,9 +4310,7 @@ async function loadConfigFile(params) {
 
     if (loadedConfigObj.TNN_MAX_FRIENDS !== undefined) {
       console.log(
-        MODULE_ID_PREFIX +
-          " | LOADED TNN_MAX_FRIENDS: " +
-          loadedConfigObj.TNN_MAX_FRIENDS
+        PF + " | LOADED TNN_MAX_FRIENDS: " + loadedConfigObj.TNN_MAX_FRIENDS
       );
       newConfiguration.maxFriends = loadedConfigObj.TNN_MAX_FRIENDS;
       childConfiguration.maxFriends = newConfiguration.maxFriends;
@@ -4505,7 +4318,7 @@ async function loadConfigFile(params) {
 
     if (loadedConfigObj.TNN_ENABLE_RANDOM_NETWORK_TECHNOLOGY !== undefined) {
       console.log(
-        MODULE_ID_PREFIX +
+        PF +
           " | LOADED TNN_ENABLE_RANDOM_NETWORK_TECHNOLOGY: " +
           loadedConfigObj.TNN_ENABLE_RANDOM_NETWORK_TECHNOLOGY
       );
@@ -4527,7 +4340,7 @@ async function loadConfigFile(params) {
       loadedConfigObj.TNN_REMOVE_SEED_FROM_VIABLE_NN_SET_ON_FAIL !== undefined
     ) {
       console.log(
-        MODULE_ID_PREFIX +
+        PF +
           " | LOADED TNN_REMOVE_SEED_FROM_VIABLE_NN_SET_ON_FAIL: " +
           loadedConfigObj.TNN_REMOVE_SEED_FROM_VIABLE_NN_SET_ON_FAIL
       );
@@ -4547,7 +4360,7 @@ async function loadConfigFile(params) {
 
     if (loadedConfigObj.TNN_USER_PROFILE_ONLY_FLAG !== undefined) {
       console.log(
-        MODULE_ID_PREFIX +
+        PF +
           " | LOADED TNN_USER_PROFILE_ONLY_FLAG: " +
           loadedConfigObj.TNN_USER_PROFILE_ONLY_FLAG
       );
@@ -4570,9 +4383,7 @@ async function loadConfigFile(params) {
 
     if (loadedConfigObj.TNN_BINARY_MODE !== undefined) {
       console.log(
-        MODULE_ID_PREFIX +
-          " | LOADED TNN_BINARY_MODE: " +
-          loadedConfigObj.TNN_BINARY_MODE
+        PF + " | LOADED TNN_BINARY_MODE: " + loadedConfigObj.TNN_BINARY_MODE
       );
       if (
         loadedConfigObj.TNN_BINARY_MODE === true ||
@@ -4592,7 +4403,7 @@ async function loadConfigFile(params) {
 
     if (loadedConfigObj.TNN_ENABLE_RANDOM_BINARY_MODE !== undefined) {
       console.log(
-        MODULE_ID_PREFIX +
+        PF +
           " | LOADED TNN_ENABLE_RANDOM_BINARY_MODE: " +
           loadedConfigObj.TNN_ENABLE_RANDOM_BINARY_MODE
       );
@@ -4612,7 +4423,7 @@ async function loadConfigFile(params) {
 
     if (loadedConfigObj.TNN_BINARY_MODE_PROBABILITY !== undefined) {
       console.log(
-        MODULE_ID_PREFIX +
+        PF +
           " | LOADED TNN_BINARY_MODE_PROBABILITY: " +
           loadedConfigObj.TNN_BINARY_MODE_PROBABILITY
       );
@@ -4622,9 +4433,7 @@ async function loadConfigFile(params) {
 
     if (loadedConfigObj.TNN_COMPARE_TECH !== undefined) {
       console.log(
-        MODULE_ID_PREFIX +
-          " | LOADED TNN_COMPARE_TECH: " +
-          loadedConfigObj.TNN_COMPARE_TECH
+        PF + " | LOADED TNN_COMPARE_TECH: " + loadedConfigObj.TNN_COMPARE_TECH
       );
       if (
         loadedConfigObj.TNN_COMPARE_TECH === true ||
@@ -4642,9 +4451,7 @@ async function loadConfigFile(params) {
 
     if (loadedConfigObj.TNN_TEST_MODE !== undefined) {
       console.log(
-        MODULE_ID_PREFIX +
-          " | LOADED TNN_TEST_MODE: " +
-          loadedConfigObj.TNN_TEST_MODE
+        PF + " | LOADED TNN_TEST_MODE: " + loadedConfigObj.TNN_TEST_MODE
       );
       if (
         loadedConfigObj.TNN_TEST_MODE === true ||
@@ -4662,7 +4469,7 @@ async function loadConfigFile(params) {
 
     if (loadedConfigObj.TNN_QUIT_ON_COMPLETE !== undefined) {
       console.log(
-        MODULE_ID_PREFIX +
+        PF +
           " | LOADED TNN_QUIT_ON_COMPLETE: " +
           loadedConfigObj.TNN_QUIT_ON_COMPLETE
       );
@@ -4682,9 +4489,7 @@ async function loadConfigFile(params) {
 
     if (loadedConfigObj.TNN_PURGE_MIN !== undefined) {
       console.log(
-        MODULE_ID_PREFIX +
-          " | LOADED TNN_PURGE_MIN: " +
-          loadedConfigObj.TNN_PURGE_MIN
+        PF + " | LOADED TNN_PURGE_MIN: " + loadedConfigObj.TNN_PURGE_MIN
       );
       if (
         loadedConfigObj.TNN_PURGE_MIN === true ||
@@ -4701,9 +4506,7 @@ async function loadConfigFile(params) {
     }
 
     if (loadedConfigObj.VERBOSE !== undefined) {
-      console.log(
-        MODULE_ID_PREFIX + " | LOADED VERBOSE: " + loadedConfigObj.VERBOSE
-      );
+      console.log(PF + " | LOADED VERBOSE: " + loadedConfigObj.VERBOSE);
       if (
         loadedConfigObj.VERBOSE === true ||
         loadedConfigObj.VERBOSE === "true"
@@ -4720,7 +4523,7 @@ async function loadConfigFile(params) {
 
     if (loadedConfigObj.TNN_TEST_SET_RATIO !== undefined) {
       console.log(
-        MODULE_ID_PREFIX +
+        PF +
           " | LOADED TNN_TEST_SET_RATIO: " +
           loadedConfigObj.TNN_TEST_SET_RATIO
       );
@@ -4729,7 +4532,7 @@ async function loadConfigFile(params) {
 
     if (loadedConfigObj.TNN_VIABLE_NETWORK_TECHNOLOGY_ARRAY !== undefined) {
       console.log(
-        MODULE_ID_PREFIX +
+        PF +
           " | LOADED TNN_VIABLE_NETWORK_TECHNOLOGY_ARRAY: " +
           loadedConfigObj.TNN_VIABLE_NETWORK_TECHNOLOGY_ARRAY
       );
@@ -4739,16 +4542,14 @@ async function loadConfigFile(params) {
 
     if (loadedConfigObj.ENABLE_STDIN !== undefined) {
       console.log(
-        MODULE_ID_PREFIX +
-          " | LOADED ENABLE_STDIN: " +
-          loadedConfigObj.ENABLE_STDIN
+        PF + " | LOADED ENABLE_STDIN: " + loadedConfigObj.ENABLE_STDIN
       );
       newConfiguration.enableStdin = loadedConfigObj.ENABLE_STDIN;
     }
 
     if (loadedConfigObj.TNN_MAX_NEURAL_NETWORK_CHILDREN !== undefined) {
       console.log(
-        MODULE_ID_PREFIX +
+        PF +
           " | LOADED TNN_MAX_NEURAL_NETWORK_CHILDREN: " +
           loadedConfigObj.TNN_MAX_NEURAL_NETWORK_CHILDREN
       );
@@ -4758,7 +4559,7 @@ async function loadConfigFile(params) {
 
     if (loadedConfigObj.TNN_MIN_PASS_RATIO !== undefined) {
       console.log(
-        MODULE_ID_PREFIX +
+        PF +
           " | LOADED TNN_MIN_PASS_RATIO: " +
           loadedConfigObj.TNN_MIN_PASS_RATIO
       );
@@ -4767,7 +4568,7 @@ async function loadConfigFile(params) {
 
     if (loadedConfigObj.TNN_MAX_FAIL_NETWORKS !== undefined) {
       console.log(
-        MODULE_ID_PREFIX +
+        PF +
           " | LOADED TNN_MAX_FAIL_NETWORKS: " +
           loadedConfigObj.TNN_MAX_FAIL_NETWORKS
       );
@@ -4776,7 +4577,7 @@ async function loadConfigFile(params) {
 
     if (loadedConfigObj.TNN_SEED_NETWORK_PROBABILITY !== undefined) {
       console.log(
-        MODULE_ID_PREFIX +
+        PF +
           " | LOADED TNN_SEED_NETWORK_PROBABILITY: " +
           loadedConfigObj.TNN_SEED_NETWORK_PROBABILITY
       );
@@ -4786,7 +4587,7 @@ async function loadConfigFile(params) {
 
     if (loadedConfigObj.TNN_GLOBAL_VIABLE_SUCCESS_RATE !== undefined) {
       console.log(
-        MODULE_ID_PREFIX +
+        PF +
           " | LOADED TNN_GLOBAL_VIABLE_SUCCESS_RATE: " +
           loadedConfigObj.TNN_GLOBAL_VIABLE_SUCCESS_RATE
       );
@@ -4796,7 +4597,7 @@ async function loadConfigFile(params) {
 
     if (loadedConfigObj.TNN_GLOBAL_MIN_SUCCESS_RATE !== undefined) {
       console.log(
-        MODULE_ID_PREFIX +
+        PF +
           " | LOADED TNN_GLOBAL_MIN_SUCCESS_RATE: " +
           loadedConfigObj.TNN_GLOBAL_MIN_SUCCESS_RATE
       );
@@ -4806,7 +4607,7 @@ async function loadConfigFile(params) {
 
     if (loadedConfigObj.TNN_LOCAL_MIN_SUCCESS_RATE !== undefined) {
       console.log(
-        MODULE_ID_PREFIX +
+        PF +
           " | LOADED TNN_LOCAL_MIN_SUCCESS_RATE: " +
           loadedConfigObj.TNN_LOCAL_MIN_SUCCESS_RATE
       );
@@ -4816,7 +4617,7 @@ async function loadConfigFile(params) {
 
     if (loadedConfigObj.TNN_HOST_MIN_SUCCESS_RATE !== undefined) {
       console.log(
-        MODULE_ID_PREFIX +
+        PF +
           " | LOADED TNN_HOST_MIN_SUCCESS_RATE: " +
           loadedConfigObj.TNN_HOST_MIN_SUCCESS_RATE
       );
@@ -4826,7 +4627,7 @@ async function loadConfigFile(params) {
 
     if (loadedConfigObj.TNN_HOST_MIN_SUCCESS_RATE_MSE !== undefined) {
       console.log(
-        MODULE_ID_PREFIX +
+        PF +
           " | LOADED TNN_HOST_MIN_SUCCESS_RATE_MSE: " +
           loadedConfigObj.TNN_HOST_MIN_SUCCESS_RATE_MSE
       );
@@ -4836,7 +4637,7 @@ async function loadConfigFile(params) {
 
     if (loadedConfigObj.TNN_HOST_PURGE_MIN_SUCCESS_RATE !== undefined) {
       console.log(
-        MODULE_ID_PREFIX +
+        PF +
           " | LOADED TNN_HOST_PURGE_MIN_SUCCESS_RATE: " +
           loadedConfigObj.TNN_HOST_PURGE_MIN_SUCCESS_RATE
       );
@@ -4846,9 +4647,7 @@ async function loadConfigFile(params) {
 
     if (loadedConfigObj.TNN_INPUTS_IDS !== undefined) {
       console.log(
-        MODULE_ID_PREFIX +
-          " | LOADED TNN_INPUTS_IDS: " +
-          loadedConfigObj.TNN_INPUTS_IDS
+        PF + " | LOADED TNN_INPUTS_IDS: " + loadedConfigObj.TNN_INPUTS_IDS
       );
       newConfiguration.inputsIdArray = loadedConfigObj.TNN_INPUTS_IDS;
     }
@@ -4857,7 +4656,7 @@ async function loadConfigFile(params) {
 
     if (loadedConfigObj.TNN_RANDOM_EVOLVE_TECH_ARRAY !== undefined) {
       console.log(
-        MODULE_ID_PREFIX +
+        PF +
           " | LOADED TNN_RANDOM_EVOLVE_TECH_ARRAY: " +
           loadedConfigObj.TNN_RANDOM_EVOLVE_TECH_ARRAY
       );
@@ -4869,7 +4668,7 @@ async function loadConfigFile(params) {
       loadedConfigObj.TNN_EVOLVE_INPUTS_TO_HIDDEN_LAYER_SIZE_RATIO !== undefined
     ) {
       console.log(
-        MODULE_ID_PREFIX +
+        PF +
           " | LOADED TNN_EVOLVE_INPUTS_TO_HIDDEN_LAYER_SIZE_RATIO: " +
           loadedConfigObj.TNN_EVOLVE_INPUTS_TO_HIDDEN_LAYER_SIZE_RATIO
       );
@@ -4879,7 +4678,7 @@ async function loadConfigFile(params) {
 
     if (loadedConfigObj.TNN_EVOLVE_POPSIZE !== undefined) {
       console.log(
-        MODULE_ID_PREFIX +
+        PF +
           " | LOADED TNN_EVOLVE_POPSIZE: " +
           loadedConfigObj.TNN_EVOLVE_POPSIZE
       );
@@ -4888,7 +4687,7 @@ async function loadConfigFile(params) {
 
     if (loadedConfigObj.TNN_EVOLVE_COST_ARRAY !== undefined) {
       console.log(
-        MODULE_ID_PREFIX +
+        PF +
           " | LOADED TNN_EVOLVE_COST_ARRAY: " +
           loadedConfigObj.TNN_EVOLVE_COST_ARRAY
       );
@@ -4897,7 +4696,7 @@ async function loadConfigFile(params) {
 
     if (loadedConfigObj.TNN_EVOLVE_SELECTION_ARRAY !== undefined) {
       console.log(
-        MODULE_ID_PREFIX +
+        PF +
           " | LOADED TNN_EVOLVE_SELECTION_ARRAY: " +
           loadedConfigObj.TNN_EVOLVE_SELECTION_ARRAY
       );
@@ -4907,7 +4706,7 @@ async function loadConfigFile(params) {
 
     if (loadedConfigObj.TNN_EVOLVE_THREADS !== undefined) {
       console.log(
-        MODULE_ID_PREFIX +
+        PF +
           " | LOADED TNN_EVOLVE_THREADS: " +
           loadedConfigObj.TNN_EVOLVE_THREADS
       );
@@ -4916,7 +4715,7 @@ async function loadConfigFile(params) {
 
     if (loadedConfigObj.TNN_EVOLVE_ITERATIONS !== undefined) {
       console.log(
-        MODULE_ID_PREFIX +
+        PF +
           " | LOADED TNN_EVOLVE_ITERATIONS: " +
           loadedConfigObj.TNN_EVOLVE_ITERATIONS
       );
@@ -4931,11 +4730,7 @@ async function loadConfigFile(params) {
   } catch (err) {
     console.log(
       chalkError(
-        MODULE_ID_PREFIX +
-          " | ERROR LOAD DROPBOX CONFIG: " +
-          fullPath +
-          "\n" +
-          jsonPrint(err)
+        PF + " | ERROR LOAD DROPBOX CONFIG: " + fullPath + "\n" + jsonPrint(err)
       )
     );
     throw err;
@@ -4954,7 +4749,7 @@ async function loadAllConfigFiles() {
     defaultConfiguration = defaultConfig;
     console.log(
       chalkLog(
-        MODULE_ID_PREFIX +
+        PF +
           " | +++ RELOADED DEFAULT CONFIG " +
           configDefaultFolder +
           "/" +
@@ -4972,7 +4767,7 @@ async function loadAllConfigFiles() {
     hostConfiguration = hostConfig;
     console.log(
       chalkLog(
-        MODULE_ID_PREFIX +
+        PF +
           " | +++ RELOADED HOST CONFIG " +
           configHostFolder +
           "/" +
@@ -5011,18 +4806,18 @@ statsObj.queues.saveFileQueue.size = 0;
 
 // if(empty(saveCacheTtl)) { saveCacheTtl = SAVE_CACHE_DEFAULT_TTL; }
 
-// console.log(MODULE_ID_PREFIX + " | SAVE CACHE TTL: " + saveCacheTtl + " SECONDS");
+// console.log(PF + " | SAVE CACHE TTL: " + saveCacheTtl + " SECONDS");
 
 // let saveCacheCheckPeriod = process.env.SAVE_CACHE_CHECK_PERIOD;
 
 // if(empty(saveCacheCheckPeriod)) { saveCacheCheckPeriod = 10; }
 
-// console.log(MODULE_ID_PREFIX + " | SAVE CACHE CHECK PERIOD: " + saveCacheCheckPeriod + " SECONDS");
+// console.log(PF + " | SAVE CACHE CHECK PERIOD: " + saveCacheCheckPeriod + " SECONDS");
 
 function initSaveFileQueue(cnf) {
   console.log(
     chalkLog(
-      MODULE_ID_PREFIX +
+      PF +
         " | INIT DROPBOX SAVE FILE INTERVAL | " +
         msToTime(cnf.saveFileQueueInterval)
     )
@@ -5043,7 +4838,7 @@ function initSaveFileQueue(cnf) {
         await tcUtils.saveFile(saveFileObj);
         console.log(
           chalkLog(
-            MODULE_ID_PREFIX +
+            PF +
               " | SAVED FILE" +
               " [Q: " +
               saveFileQueue.length +
@@ -5057,7 +4852,7 @@ function initSaveFileQueue(cnf) {
       } catch (err) {
         console.log(
           chalkError(
-            MODULE_ID_PREFIX +
+            PF +
               " | *** SAVE FILE ERROR ... RETRY" +
               " | ERROR: " +
               err +
@@ -5084,9 +4879,7 @@ function clearAllIntervals() {
   return new Promise(function (resolve, reject) {
     try {
       [...intervalsSet].forEach(function (intervalHandle) {
-        console.log(
-          chalkInfo(MODULE_ID_PREFIX + " | CLEAR INTERVAL | " + intervalHandle)
-        );
+        console.log(chalkInfo(PF + " | CLEAR INTERVAL | " + intervalHandle));
         clearInterval(intervalHandle);
       });
       resolve();
@@ -5109,13 +4902,9 @@ function readyToQuit() {
 
 async function quit(opts) {
   if (quitFlag) {
-    console.log(chalkInfo(MODULE_ID_PREFIX + " | ALREADY IN QUIT"));
+    console.log(chalkInfo(PF + " | ALREADY IN QUIT"));
     if (opts) {
-      console.log(
-        chalkInfo(
-          MODULE_ID_PREFIX + " | REDUNDANT QUIT INFO\n" + jsonPrint(opts)
-        )
-      );
+      console.log(chalkInfo(PF + " | REDUNDANT QUIT INFO\n" + jsonPrint(opts)));
     }
     return;
   }
@@ -5142,11 +4931,11 @@ async function quit(opts) {
     await killAll();
     await showStats(true);
   } catch (err) {
-    console.log(MODULE_ID_PREFIX + " | *** QUIT ERROR: " + err);
+    console.log(PF + " | *** QUIT ERROR: " + err);
   }
 
   if (options) {
-    console.log(MODULE_ID_PREFIX + " | QUIT INFO\n" + jsonPrint(options));
+    console.log(PF + " | QUIT INFO\n" + jsonPrint(options));
   }
 
   setInterval(async function () {
@@ -5156,7 +4945,7 @@ async function quit(opts) {
       if (forceQuitFlag) {
         console.log(
           chalkAlert(
-            MODULE_ID_PREFIX +
+            PF +
               " | *** FORCE QUIT" +
               " | SAVE FILE BUSY: " +
               statsObj.queues.saveFileQueue.busy +
@@ -5167,7 +4956,7 @@ async function quit(opts) {
       } else {
         console.log(
           chalkBlueBold(
-            MODULE_ID_PREFIX +
+            PF +
               " | ALL PROCESSES COMPLETE ... QUITTING" +
               " | SAVE FILE BUSY: " +
               statsObj.queues.saveFileQueue.busy +
@@ -5182,7 +4971,7 @@ async function quit(opts) {
       shell.exec(command, function (code, stdout, stderr) {
         console.log(
           chalkAlert(
-            MODULE_ID_PREFIX +
+            PF +
               " | KILL ALL CHILD" +
               "\nCOMMAND: " +
               command +
@@ -5206,11 +4995,11 @@ async function quit(opts) {
           mongooseDb.close(async function () {
             console.log(
               chalkBlue(
-                MODULE_ID_PREFIX +
+                PF +
                   " | ==========================\n" +
-                  MODULE_ID_PREFIX +
+                  PF +
                   " | MONGO DB CONNECTION CLOSED\n" +
-                  MODULE_ID_PREFIX +
+                  PF +
                   " | ==========================\n"
               )
             );
@@ -5229,7 +5018,7 @@ async function quit(opts) {
 let stdin;
 let abortCursor = false;
 
-const cla = require("command-line-args");
+import cla from "command-line-args";
 
 const help = { name: "help", alias: "h", type: Boolean };
 
@@ -5313,9 +5102,7 @@ const optionDefinitions = [
 const commandLineConfig = cla(optionDefinitions);
 
 console.log(
-  chalkInfo(
-    MODULE_ID_PREFIX + " | COMMAND LINE CONFIG\n" + jsonPrint(commandLineConfig)
-  )
+  chalkInfo(PF + " | COMMAND LINE CONFIG\n" + jsonPrint(commandLineConfig))
 );
 
 if (commandLineConfig.targetServer === "LOCAL") {
@@ -5326,9 +5113,7 @@ if (commandLineConfig.targetServer === "REMOTE") {
 }
 
 if (Object.keys(commandLineConfig).includes("help")) {
-  console.log(
-    MODULE_ID_PREFIX + " |optionDefinitions\n" + jsonPrint(optionDefinitions)
-  );
+  console.log(PF + " |optionDefinitions\n" + jsonPrint(optionDefinitions));
   quit({ cause: "help" });
 }
 
@@ -5346,7 +5131,7 @@ function loadCommandLineArgs() {
         if (arg === "threads") {
           configuration.evolve.threads = commandLineConfig[arg];
           console.log(
-            MODULE_ID_PREFIX +
+            PF +
               " | --> COMMAND LINE CONFIG | " +
               arg +
               ": " +
@@ -5355,7 +5140,7 @@ function loadCommandLineArgs() {
         } else if (arg === "evolveIterations") {
           configuration.evolve.iterations = commandLineConfig[arg];
           console.log(
-            MODULE_ID_PREFIX +
+            PF +
               " | --> COMMAND LINE CONFIG | " +
               arg +
               ": " +
@@ -5366,7 +5151,7 @@ function loadCommandLineArgs() {
           configuration.forceNetworkTechnology = commandLineConfig[arg];
           configuration.enableRandomTechnology = false;
           console.log(
-            MODULE_ID_PREFIX +
+            PF +
               " | --> COMMAND LINE CONFIG | " +
               arg +
               ": " +
@@ -5377,7 +5162,7 @@ function loadCommandLineArgs() {
           configuration.enableRandomBinaryMode = false;
           configuration.scaleLogMode = !commandLineConfig[arg];
           console.log(
-            MODULE_ID_PREFIX +
+            PF +
               " | --> COMMAND LINE CONFIG | " +
               arg +
               ": " +
@@ -5388,7 +5173,7 @@ function loadCommandLineArgs() {
           configuration.enableRandomBinaryMode = false;
           configuration.binaryMode = !commandLineConfig[arg];
           console.log(
-            MODULE_ID_PREFIX +
+            PF +
               " | --> COMMAND LINE CONFIG | " +
               arg +
               " | binaryMode: " +
@@ -5397,7 +5182,7 @@ function loadCommandLineArgs() {
         } else {
           configuration[arg] = commandLineConfig[arg];
           console.log(
-            MODULE_ID_PREFIX +
+            PF +
               " | --> COMMAND LINE CONFIG | " +
               arg +
               ": " +
@@ -5421,7 +5206,7 @@ async function loadNetworkInputsConfig(params) {
 
     console.log(
       chalkLog(
-        MODULE_ID_PREFIX +
+        PF +
           " | LOAD NETWORK INPUTS CONFIG FILE: " +
           configDefaultFolder +
           "/" +
@@ -5441,7 +5226,7 @@ async function loadNetworkInputsConfig(params) {
 
     console.log(
       chalkNetwork(
-        MODULE_ID_PREFIX +
+        PF +
           " | LOADED NETWORK INPUTS ARRAY" +
           " | " +
           networkInputsObj.INPUTS_IDS.length +
@@ -5457,11 +5242,7 @@ async function loadNetworkInputsConfig(params) {
     return;
   } catch (err) {
     console.log(
-      chalkError(
-        MODULE_ID_PREFIX +
-          " | *** NETWORK INPUTS CONFIG FILE LOAD ERROR: " +
-          err
-      )
+      chalkError(PF + " | *** NETWORK INPUTS CONFIG FILE LOAD ERROR: " + err)
     );
     statsObj.networkInputsSetReady = false;
     throw err;
@@ -5482,9 +5263,7 @@ function initChildPingAllInterval(params) {
       try {
         await childPingAll();
       } catch (err) {
-        console.log(
-          chalkAlert(MODULE_ID_PREFIX + " | *** CHILD PING ALL ERROR: " + err)
-        );
+        console.log(chalkAlert(PF + " | *** CHILD PING ALL ERROR: " + err));
       }
     }, interval);
 
@@ -5497,7 +5276,7 @@ function initChildPingAllInterval(params) {
 //=========================================================================
 // FSM
 //=========================================================================
-const Stately = require("stately.js");
+import Stately from "stately.js";
 const FSM_TICK_INTERVAL = ONE_SECOND;
 
 let fsmTickInterval;
@@ -5514,9 +5293,9 @@ function reporter(event, oldState, newState) {
 
   console.log(
     chalkLog(
-      MODULE_ID_PREFIX +
+      PF +
         " | --------------------------------------------------------\n" +
-        MODULE_ID_PREFIX +
+        PF +
         " | << FSM >> MAIN" +
         " | " +
         event +
@@ -5533,7 +5312,7 @@ const fsmStates = {
   RESET: {
     onEnter: async function (event, oldState, newState) {
       if (event !== "fsm_tick") {
-        console.log(chalkTwitter(MODULE_ID_PREFIX + " | FSM RESET"));
+        console.log(chalkTwitter(PF + " | FSM RESET"));
 
         reporter(event, oldState, newState);
         statsObj.status = "FSM RESET";
@@ -5543,7 +5322,7 @@ const fsmStates = {
           await killAll();
           await showStats(true);
         } catch (err) {
-          console.log(MODULE_ID_PREFIX + " | *** QUIT ERROR: " + err);
+          console.log(PF + " | *** QUIT ERROR: " + err);
         }
       }
     },
@@ -5559,18 +5338,14 @@ const fsmStates = {
             })
             .catch(function (err) {
               killAllInProgress = false;
-              console.log(
-                chalkError(MODULE_ID_PREFIX + " | KILL ALL CHILD ERROR: " + err)
-              );
+              console.log(chalkError(PF + " | KILL ALL CHILD ERROR: " + err));
             });
         }
       } else {
         checkChildState({ checkState: "RESET", noChildrenTrue: true })
           .then(function (allChildrenReset) {
             console.log(
-              chalkTwitter(
-                MODULE_ID_PREFIX + " | ALL CHILDREN RESET: " + allChildrenReset
-              )
+              chalkTwitter(PF + " | ALL CHILDREN RESET: " + allChildrenReset)
             );
             if (!killAllInProgress && allChildrenReset) {
               fsm.fsm_resetEnd();
@@ -5578,9 +5353,7 @@ const fsmStates = {
           })
           .catch(function (err) {
             console.log(
-              chalkError(
-                MODULE_ID_PREFIX + " | *** ALL CHILDREN RESET ERROR: " + err
-              )
+              chalkError(PF + " | *** ALL CHILDREN RESET ERROR: " + err)
             );
             fsm.fsm_error();
           });
@@ -5600,16 +5373,12 @@ const fsmStates = {
         checkChildState({ checkState: "IDLE", noChildrenTrue: true })
           .then(function (allChildrenIdle) {
             console.log(
-              chalkTwitter(
-                MODULE_ID_PREFIX + " | ALL CHILDREN IDLE: " + allChildrenIdle
-              )
+              chalkTwitter(PF + " | ALL CHILDREN IDLE: " + allChildrenIdle)
             );
           })
           .catch(function (err) {
             console.log(
-              chalkError(
-                MODULE_ID_PREFIX + " | *** ALL CHILDREN IDLE ERROR: " + err
-              )
+              chalkError(PF + " | *** ALL CHILDREN IDLE ERROR: " + err)
             );
             fsm.fsm_error();
           });
@@ -5626,9 +5395,7 @@ const fsmStates = {
         })
         .catch(function (err) {
           console.log(
-            chalkError(
-              MODULE_ID_PREFIX + " | *** ALL CHILDREN IDLE ERROR: " + err
-            )
+            chalkError(PF + " | *** ALL CHILDREN IDLE ERROR: " + err)
           );
           fsm.fsm_error();
         });
@@ -5689,23 +5456,21 @@ const fsmStates = {
           //   await watcherChildCreate();
           // }
           // else{
-          //   console.log(chalkAlert(MODULE_ID_PREFIX
+          //   console.log(chalkAlert(PF
           //     + " | !!! DATABASE_HOST ... SKIP CREATE USER DATA WATCHER CHILD"
           //   ));
           // }
 
           console.log(
             chalkBlue(
-              MODULE_ID_PREFIX +
+              PF +
                 " | CREATED ALL CHILDREN: " +
                 Object.keys(childHashMap).length
             )
           );
         } catch (err) {
           console.log(
-            chalkError(
-              MODULE_ID_PREFIX + " | *** CREATE ALL CHILDREN ERROR: " + err
-            )
+            chalkError(PF + " | *** CREATE ALL CHILDREN ERROR: " + err)
           );
           fsm.fsm_error();
         }
@@ -5722,9 +5487,7 @@ const fsmStates = {
         })
         .catch(function (err) {
           console.log(
-            chalkError(
-              MODULE_ID_PREFIX + " | *** ALL CHILDREN READY ERROR: " + err
-            )
+            chalkError(PF + " | *** ALL CHILDREN READY ERROR: " + err)
           );
           fsm.fsm_error();
         });
@@ -5745,15 +5508,11 @@ const fsmStates = {
 
         checkChildState({ checkState: "READY", noChildrenTrue: false })
           .then(function (allChildrenReady) {
-            console.log(
-              MODULE_ID_PREFIX + " | ALL CHILDREN READY: " + allChildrenReady
-            );
+            console.log(PF + " | ALL CHILDREN READY: " + allChildrenReady);
           })
           .catch(function (err) {
             console.log(
-              chalkError(
-                MODULE_ID_PREFIX + " | *** ALL CHILDREN READY ERROR: " + err
-              )
+              chalkError(PF + " | *** ALL CHILDREN READY ERROR: " + err)
             );
             fsm.fsm_error();
           });
@@ -5770,9 +5529,7 @@ const fsmStates = {
         })
         .catch(function (err) {
           console.log(
-            chalkError(
-              MODULE_ID_PREFIX + " | *** ALL CHILDREN READY ERROR: " + err
-            )
+            chalkError(PF + " | *** ALL CHILDREN READY ERROR: " + err)
           );
           fsm.fsm_error();
         });
@@ -5811,9 +5568,7 @@ const fsmStates = {
 
           await childStartAll();
         } catch (err) {
-          console.log(
-            chalkError(MODULE_ID_PREFIX + " | *** RUN ERROR: " + err)
-          );
+          console.log(chalkError(PF + " | *** RUN ERROR: " + err));
         }
       }
     },
@@ -5828,25 +5583,21 @@ const fsmStates = {
             );
 
             if (allChildrenComplete) {
-              console.log(
-                chalkLog(MODULE_ID_PREFIX + " | ALL CHILDREN COMPLETE")
-              );
+              console.log(chalkLog(PF + " | ALL CHILDREN COMPLETE"));
               // sentAllChildrenCompleteFlag = false;
               fsm.fsm_complete();
             }
           })
           .catch(function (err) {
             console.log(
-              chalkError(
-                MODULE_ID_PREFIX + " | *** ALL CHILDREN COMPLETE ERROR: " + err
-              )
+              chalkError(PF + " | *** ALL CHILDREN COMPLETE ERROR: " + err)
             );
             fsm.fsm_error();
           });
       } else if (!maxChildren()) {
         console.log(
           chalkLog(
-            MODULE_ID_PREFIX +
+            PF +
               " | LESS THAN MAX CHILDREN: " +
               getNumberOfChildren() +
               " | MAX: " +
@@ -5861,9 +5612,7 @@ const fsmStates = {
             .then(function (childIdArray) {
               console.log(
                 chalkBlue(
-                  MODULE_ID_PREFIX +
-                    " | CREATED ALL CHILDREN: " +
-                    childIdArray.length
+                  PF + " | CREATED ALL CHILDREN: " + childIdArray.length
                 )
               );
               childIdArray.forEach(async function (childId) {
@@ -5878,9 +5627,7 @@ const fsmStates = {
             })
             .catch(function (err) {
               console.log(
-                chalkError(
-                  MODULE_ID_PREFIX + " | *** CREATE ALL CHILDREN ERROR: " + err
-                )
+                chalkError(PF + " | *** CREATE ALL CHILDREN ERROR: " + err)
               );
               createChildrenInProgress = false;
               fsm.fsm_error();
@@ -5902,9 +5649,7 @@ const fsmStates = {
 
         statsObj.status = "FSM COMPLETE";
 
-        console.log(
-          chalkBlueBold(MODULE_ID_PREFIX + " | FSM COMPLETE | QUITTING ...")
-        );
+        console.log(chalkBlueBold(PF + " | FSM COMPLETE | QUITTING ..."));
 
         quit({ cause: "FSM_COMPLETE" });
       }
@@ -5914,19 +5659,14 @@ const fsmStates = {
       checkChildState({ checkState: "RESET", noChildrenTrue: true })
         .then(function (allChildrenReset) {
           console.log(
-            MODULE_ID_PREFIX +
-              " | RESET TICK" +
-              " | ALL CHILDREN RESET: " +
-              allChildrenReset
+            PF + " | RESET TICK" + " | ALL CHILDREN RESET: " + allChildrenReset
           );
           if (allChildrenReset) {
             fsm.fsm_resetEnd();
           }
         })
         .catch(function (err) {
-          console.log(
-            chalkError(MODULE_ID_PREFIX + " | *** checkChildState ERROR:", err)
-          );
+          console.log(chalkError(PF + " | *** checkChildState ERROR:", err));
           fsm.fsm_error();
         });
     },
@@ -5944,9 +5684,7 @@ const fsm = Stately.machine(fsmStates);
 
 async function initFsmTickInterval(interval) {
   console.log(
-    chalkLog(
-      MODULE_ID_PREFIX + " | INIT FSM TICK INTERVAL | " + msToTime(interval)
-    )
+    chalkLog(PF + " | INIT FSM TICK INTERVAL | " + msToTime(interval))
   );
 
   clearInterval(fsmTickInterval);
@@ -5973,7 +5711,7 @@ function getNumberOfChildren() {
 
 function childCreateAll(p) {
   return new Promise(function (resolve, reject) {
-    console.log(chalkBlue(MODULE_ID_PREFIX + " | CREATING ALL CHILDREN"));
+    console.log(chalkBlue(PF + " | CREATING ALL CHILDREN"));
 
     const params = p || {};
 
@@ -6041,9 +5779,7 @@ function childCreateAll(p) {
             })
             .catch(function (err) {
               console.log(
-                chalkError(
-                  MODULE_ID_PREFIX + " | *** ERROR CHILD CREATE ERROR: " + err
-                )
+                chalkError(PF + " | *** ERROR CHILD CREATE ERROR: " + err)
               );
               return cb(err);
             });
@@ -6053,9 +5789,7 @@ function childCreateAll(p) {
       function (err) {
         if (err) {
           console.log(
-            chalkError(
-              MODULE_ID_PREFIX + " | *** ERROR CREATE ALL CHILDREN: " + err
-            )
+            chalkError(PF + " | *** ERROR CREATE ALL CHILDREN: " + err)
           );
           return reject(err);
         }
@@ -6100,7 +5834,7 @@ async function startNetworkCreate(params) {
   console.log(
     chalkBlueBold(
       "\n========================================================================================\n" +
-        MODULE_ID_PREFIX +
+        PF +
         " | " +
         params.childId +
         " | >>> START NETWORK CREATE | " +
@@ -6137,7 +5871,7 @@ function childStartAll(p) {
 
     console.log(
       chalkBlue(
-        MODULE_ID_PREFIX +
+        PF +
           " | START EVOLVE ALL CHILDREN: compareTech: " +
           compareTech +
           " | NUM CH: " +
@@ -6162,11 +5896,7 @@ function childStartAll(p) {
             return;
           } else {
             console.log(
-              chalkAlert(
-                MODULE_ID_PREFIX +
-                  " | *** CHILD NOT IN childHashMap: " +
-                  childId
-              )
+              chalkAlert(PF + " | *** CHILD NOT IN childHashMap: " + childId)
             );
             return;
           }
@@ -6176,11 +5906,7 @@ function childStartAll(p) {
       },
       function (err) {
         if (err) {
-          console.log(
-            chalkError(
-              MODULE_ID_PREFIX + " | *** CHILD START ALL ERROR: " + err
-            )
-          );
+          console.log(chalkError(PF + " | *** CHILD START ALL ERROR: " + err));
           return reject(err);
         }
         resolve();
@@ -6213,17 +5939,13 @@ function childSend(p) {
 
     statsObj.status = "SEND CHILD | CH ID: " + childId + " | " + command.op;
 
-    if (configuration.verbose || configuration.testMode) {
-      console.log(
-        chalkLog(
-          MODULE_ID_PREFIX +
-            " | >T MESSAGE | " +
-            getTimeStamp() +
-            " | OP: " +
-            command.op
-        )
-      );
-    }
+    // if (configuration.verbose || configuration.testMode) {
+    console.log(
+      chalkLog(
+        PF + " | >T MESSAGE | " + getTimeStamp() + " | OP: " + command.op
+      )
+    );
+    // }
 
     if (
       empty(childHashMap[childId]) ||
@@ -6232,7 +5954,7 @@ function childSend(p) {
     ) {
       console.log(
         chalkAlert(
-          MODULE_ID_PREFIX +
+          PF +
             " | XXX CHILD SEND ABORTED | CHILD NOT CONNECTED OR UNDEFINED | " +
             childId
         )
@@ -6282,11 +6004,13 @@ async function childInit(p) {
   try {
     const params = p || {};
 
+    console.log(`${PF} | childInit\n${jsonPrint(params)}`);
+
     const childId = params.childId;
     const childIdShort = params.childIdShort;
     const testSetRatio = params.testSetRatio || configuration.testSetRatio;
-    const verbose = params.verbose || false;
-    const testMode = params.testMode || false;
+    const verbose = params.verbose !== undefined ? params.verbose : false;
+    const testMode = params.testMode !== undefined ? params.testMode : false;
     const config = params.configuration || childConfiguration;
 
     statsObj.status = "INIT CHILD | CH ID: " + childId;
@@ -6302,12 +6026,14 @@ async function childInit(p) {
       configuration: config,
     };
 
+    console.log(`${PF} | childInit\ncommand\n${jsonPrint(command)}`);
+
     const response = await childSend({ childId: childId, command: command });
     return response;
   } catch (err) {
     console.log(
       chalkError(
-        MODULE_ID_PREFIX +
+        PF +
           " | *** CHILD SEND INIT ERROR" +
           " | ERR: " +
           err +
@@ -6570,7 +6296,7 @@ async function evolveCompleteHandler(params) {
 
         console.log(
           chalk.green(
-            MODULE_ID_PREFIX +
+            PF +
               " | +++ BETTER CHILD" +
               " [" +
               betterChildSeedNetworkIdSet.size +
@@ -6615,7 +6341,7 @@ async function evolveCompleteHandler(params) {
 
         console.log(
           chalkGreen(
-            MODULE_ID_PREFIX +
+            PF +
               " | +++ ADD LOCAL SUCCESS TO BETTER CHILD SET" +
               " [" +
               betterChildSeedNetworkIdSet.size +
@@ -6641,7 +6367,7 @@ async function evolveCompleteHandler(params) {
 
       console.log(
         chalkLog(
-          MODULE_ID_PREFIX +
+          PF +
             " | INPUTS ID" +
             " | " +
             nn.inputsId +
@@ -6660,7 +6386,7 @@ async function evolveCompleteHandler(params) {
       ) {
         console.log(
           chalkInfo(
-            MODULE_ID_PREFIX +
+            PF +
               " | ### SAVING NN FILE TO DROPBOX GLOBAL BEST" +
               " | " +
               globalBestNetworkFolder +
@@ -6706,7 +6432,7 @@ async function evolveCompleteHandler(params) {
           text: slackText,
         });
 
-        printNetworkObj(MODULE_ID_PREFIX + " | " + nn.networkId, nn);
+        printNetworkObj(PF + " | " + nn.networkId, nn);
 
         saveFileQueue.push({
           folder: globalBestNetworkFolder,
@@ -6721,7 +6447,7 @@ async function evolveCompleteHandler(params) {
       ) {
         console.log(
           chalkInfo(
-            MODULE_ID_PREFIX +
+            PF +
               " | ### SAVING NN FILE TO DROPBOX LOCAL BEST" +
               " | " +
               localBestNetworkFolder +
@@ -6768,7 +6494,7 @@ async function evolveCompleteHandler(params) {
           text: slackText,
         });
 
-        printNetworkObj(MODULE_ID_PREFIX + " | " + nn.networkId, nn);
+        printNetworkObj(PF + " | " + nn.networkId, nn);
 
         saveFileQueue.push({
           folder: localBestNetworkFolder,
@@ -6795,7 +6521,7 @@ async function evolveCompleteHandler(params) {
 
         console.log(
           chalkLog(
-            MODULE_ID_PREFIX +
+            PF +
               " | ... SAVING NN FILE TO DROPBOX HOST BEST" +
               " | " +
               hostBestNetworkFolder +
@@ -6849,7 +6575,7 @@ async function evolveCompleteHandler(params) {
     else {
       console.log(
         chalkInfo(
-          MODULE_ID_PREFIX +
+          PF +
             " | XXX | NOT SAVING NN GLOBAL or LOCAL DROPBOX ... LESS THAN GLOBAL and LOCAL MIN SUCCESS *OR* NOT BETTER THAN SEED" +
             " | " +
             nn.networkId +
@@ -6869,7 +6595,7 @@ async function evolveCompleteHandler(params) {
         viableNetworkIdSet.delete(nn.seedNetworkId);
         console.log(
           chalkLog(
-            MODULE_ID_PREFIX +
+            PF +
               " | XXX REMOVED SEED NN FROM VIABLE NN SET [" +
               viableNetworkIdSet.size +
               "] | " +
@@ -6894,7 +6620,7 @@ async function evolveCompleteHandler(params) {
         inputsFailedSet.add(nn.inputsId);
         console.log(
           chalkInfo(
-            MODULE_ID_PREFIX +
+            PF +
               " | +++ FAILED INPUTS ID TO SET" +
               " [" +
               inputsFailedSet.size +
@@ -6927,7 +6653,7 @@ async function evolveCompleteHandler(params) {
 
         console.log(
           chalkAlert(
-            MODULE_ID_PREFIX +
+            PF +
               " | XXX ZERO SUCCESS RATE - ADDED EVOLVE OPTIONS TO ZERO FAIL SET" +
               " [" +
               zeroSuccessEvolveOptionsSet.size +
@@ -6948,7 +6674,7 @@ async function evolveCompleteHandler(params) {
         ].sort()) {
           console.log(
             chalkAlert(
-              MODULE_ID_PREFIX +
+              PF +
                 " | XXX ZERO SUCCESS ACT/COST/SEL" +
                 " | " +
                 evolveOptionsCombination
@@ -7002,7 +6728,7 @@ async function evolveCompleteHandler(params) {
 
         console.log(
           chalkLog(
-            MODULE_ID_PREFIX +
+            PF +
               " | ... SAVING NN FILE TO DROPBOX LOCAL FAIL" +
               " | " +
               localFailNetworkFolder +
@@ -7022,14 +6748,12 @@ async function evolveCompleteHandler(params) {
     statsObj.evolveStats.results[nn.networkId] = {};
     statsObj.evolveStats.results[nn.networkId] = resultsHashmap[nn.networkId];
 
-    printNetworkObj(MODULE_ID_PREFIX + " | " + nn.networkId, nn);
+    printNetworkObj(PF + " | " + nn.networkId, nn);
     await printResultsHashmap();
 
     return;
   } catch (err) {
-    console.trace(
-      chalkError(MODULE_ID_PREFIX + "| *** EVOLVE_COMPLETE ERROR: " + err)
-    );
+    console.trace(chalkError(PF + "| *** EVOLVE_COMPLETE ERROR: " + err));
     throw err;
   }
 }
@@ -7037,7 +6761,7 @@ async function evolveCompleteHandler(params) {
 const clearEvolveTimeout = (childId) => {
   console.log(
     chalkAlert(
-      `${MODULE_ID_PREFIX} | CLEAR EVOLVE TIMEOUT | CHILD: ${childId} | TIMEOUTS: ${statsObj.errors.evolve.timeouts}`
+      `${PF} | CLEAR EVOLVE TIMEOUT | CHILD: ${childId} | TIMEOUTS: ${statsObj.errors.evolve.timeouts}`
     )
   );
   clearTimeout(childHashMap[childId].evolveTimeout);
@@ -7058,7 +6782,7 @@ const resetEvolveTimeout = (childId) => {
     statsObj.errors.evolve.timeouts += 1;
     console.log(
       chalkAlert(
-        `${MODULE_ID_PREFIX} | !!! EVOLVE TIMEOUT | DUR: ${configuration.evolveTimeoutDuration} | CHILD: ${childId} | TIMEOUTS: ${statsObj.errors.evolve.timeouts}`
+        `${PF} | !!! EVOLVE TIMEOUT | DUR: ${configuration.evolveTimeoutDuration} | CHILD: ${childId} | TIMEOUTS: ${statsObj.errors.evolve.timeouts}`
       )
     );
 
@@ -7081,19 +6805,13 @@ async function childMessageHandler(params) {
     let fitness = 0;
 
     if (configuration.verbose) {
-      console.log(
-        chalkLog(
-          MODULE_ID_PREFIX + " | <R MSG | CHILD " + childId + " | " + m.op
-        )
-      );
+      console.log(chalkLog(PF + " | <R MSG | CHILD " + childId + " | " + m.op));
     }
 
     switch (m.op) {
       case "ERROR":
         try {
-          console.log(
-            chalkError(MODULE_ID_PREFIX + " | " + childId + " | *** ERROR ***")
-          );
+          console.log(chalkError(PF + " | " + childId + " | *** ERROR ***"));
           console.error(m.err);
           await evolveErrorHandler({ m: m, childId: childId });
           if (!configuration.quitOnComplete) {
@@ -7106,13 +6824,7 @@ async function childMessageHandler(params) {
           }
         } catch (e) {
           console.log(
-            chalkError(
-              MODULE_ID_PREFIX +
-                " | " +
-                childId +
-                " | *** EVOLVE_ERROR ERROR: " +
-                e
-            )
+            chalkError(PF + " | " + childId + " | *** EVOLVE_ERROR ERROR: " + e)
           );
         }
         return;
@@ -7153,7 +6865,7 @@ async function childMessageHandler(params) {
 
         console.log(
           chalkLog(
-            MODULE_ID_PREFIX +
+            PF +
               " | " +
               m.childIdShort +
               " | " +
@@ -7231,11 +6943,7 @@ async function childMessageHandler(params) {
         } catch (e) {
           console.trace(
             chalkError(
-              MODULE_ID_PREFIX +
-                " | " +
-                childId +
-                " | *** EVOLVE_COMPLETE ERROR: " +
-                e
+              PF + " | " + childId + " | *** EVOLVE_COMPLETE ERROR: " + e
             )
           );
         }
@@ -7246,9 +6954,7 @@ async function childMessageHandler(params) {
           clearEvolveTimeout(childId);
 
           console.log(
-            chalkError(
-              MODULE_ID_PREFIX + " | " + childId + " | *** EVOLVE_ERROR ***"
-            )
+            chalkError(PF + " | " + childId + " | *** EVOLVE_ERROR ***")
           );
           console.error(m.err);
           await evolveErrorHandler({ m: m, childId: childId });
@@ -7261,13 +6967,7 @@ async function childMessageHandler(params) {
           }
         } catch (e) {
           console.log(
-            chalkError(
-              MODULE_ID_PREFIX +
-                " | " +
-                childId +
-                " | *** EVOLVE_ERROR ERROR: " +
-                e
-            )
+            chalkError(PF + " | " + childId + " | *** EVOLVE_ERROR ERROR: " + e)
           );
         }
         return;
@@ -7293,7 +6993,7 @@ async function childMessageHandler(params) {
       default:
         console.log(
           chalkError(
-            MODULE_ID_PREFIX +
+            PF +
               " | CHILD " +
               childId +
               " | *** ERROR childMessageHandler UNKNOWN OP: " +
@@ -7303,9 +7003,7 @@ async function childMessageHandler(params) {
         throw new Error("UNKNOWN CHILD MESSAGE OP: " + m.op);
     }
   } catch (err) {
-    console.log(
-      chalkError(MODULE_ID_PREFIX + " | *** childMessageHandler ERROR: " + err)
-    );
+    console.log(chalkError(PF + " | *** childMessageHandler ERROR: " + err));
     throw err;
   }
 }
@@ -7340,9 +7038,7 @@ async function childCreate(p) {
 
     statsObj.status = "CHILD CREATE | CH ID: " + childId + " | APP: " + appPath;
 
-    console.log(
-      chalkBlueBold(MODULE_ID_PREFIX + " | CREATE CHILD | " + childId)
-    );
+    console.log(chalkBlueBold(PF + " | CREATE CHILD | " + childId));
 
     if (env) {
       options.env = env;
@@ -7376,34 +7072,28 @@ async function childCreate(p) {
     childHashMap[childId].child = child;
 
     childHashMap[childId].child.on("disconnect", function () {
-      console.log(
-        chalkAlert(MODULE_ID_PREFIX + " | *** CHILD DISCONNECT | " + childId)
-      );
+      console.log(chalkAlert(PF + " | *** CHILD DISCONNECT | " + childId));
       shell.cd(childPidFolderLocal);
       shell.rm(childPidFile);
       delete childHashMap[childId];
     });
 
     childHashMap[childId].child.on("close", function () {
-      console.log(
-        chalkAlert(MODULE_ID_PREFIX + " | *** CHILD CLOSED | " + childId)
-      );
+      console.log(chalkAlert(PF + " | *** CHILD CLOSED | " + childId));
       shell.cd(childPidFolderLocal);
       shell.rm(childPidFile);
       delete childHashMap[childId];
     });
 
     childHashMap[childId].child.on("exit", function () {
-      console.log(
-        chalkAlert(MODULE_ID_PREFIX + " | *** CHILD EXITED | " + childId)
-      );
+      console.log(chalkAlert(PF + " | *** CHILD EXITED | " + childId));
       shell.cd(childPidFolderLocal);
       shell.rm(childPidFile);
       delete childHashMap[childId];
     });
 
     childHashMap[childId].child.on("error", function (err) {
-      console.log(chalkError(MODULE_ID_PREFIX + " | *** CHILD ERROR: " + err));
+      console.log(chalkError(PF + " | *** CHILD ERROR: " + err));
       shell.cd(childPidFolderLocal);
       shell.rm(childPidFile);
       delete childHashMap[childId];
@@ -7420,11 +7110,7 @@ async function childCreate(p) {
       if (configuration.verbose) {
         console.log(
           chalkLog(
-            MODULE_ID_PREFIX +
-              " | <R MESSAGE | " +
-              getTimeStamp() +
-              " | OP: " +
-              message.op
+            PF + " | <R MESSAGE | " + getTimeStamp() + " | OP: " + message.op
           )
         );
       }
@@ -7433,7 +7119,7 @@ async function childCreate(p) {
     if (quitFlag) {
       console.log(
         chalkAlert(
-          MODULE_ID_PREFIX +
+          PF +
             " | KILL CHILD IN CREATE ON QUIT FLAG" +
             " | " +
             getTimeStamp() +
@@ -7459,7 +7145,7 @@ async function childCreate(p) {
   } catch (err) {
     console.log(
       chalkError(
-        MODULE_ID_PREFIX +
+        PF +
           " | *** CHILD INIT ERROR" +
           " | ERR: " +
           err +
@@ -7518,7 +7204,7 @@ function checkChildState(params) {
     if (configuration.verbose) {
       console.log(
         chalkLog(
-          MODULE_ID_PREFIX +
+          PF +
             " | MAIN: " +
             fsm.getMachineState() +
             " | ALL CHILDREN CHECKSTATE: " +
@@ -7552,21 +7238,17 @@ async function childPingAll(p) {
 function toggleVerbose() {
   configuration.verbose = !configuration.verbose;
 
-  console.log(
-    chalkLog(MODULE_ID_PREFIX + " | VERBOSE: " + configuration.verbose)
-  );
+  console.log(chalkLog(PF + " | VERBOSE: " + configuration.verbose));
 
   childSendAll({ command: { op: "VERBOSE", verbose: configuration.verbose } })
     .then(function () {})
     .catch(function (err) {
-      console.log(
-        chalkError(MODULE_ID_PREFIX + " | *** ERROR VERBOSE: " + err)
-      );
+      console.log(chalkError(PF + " | *** ERROR VERBOSE: " + err));
     });
 }
 
 function initStdIn() {
-  console.log(MODULE_ID_PREFIX + " | STDIN ENABLED");
+  console.log(PF + " | STDIN ENABLED");
   stdin = process.stdin;
   if (stdin.setRawMode !== undefined) {
     stdin.setRawMode(true);
@@ -7577,9 +7259,7 @@ function initStdIn() {
     switch (key) {
       case "a":
         abortCursor = true;
-        console.log(
-          chalkLog(MODULE_ID_PREFIX + " | STDIN | ABORT: " + abortCursor)
-        );
+        console.log(chalkLog(PF + " | STDIN | ABORT: " + abortCursor));
         break;
 
       case "K":
@@ -7597,9 +7277,7 @@ function initStdIn() {
           await showStats(key === "S");
           await printResultsHashmap();
         } catch (err) {
-          console.log(
-            chalkError(MODULE_ID_PREFIX + " | *** SHOW STATS ERROR: " + err)
-          );
+          console.log(chalkError(PF + " | *** SHOW STATS ERROR: " + err));
         }
         break;
 
@@ -7627,7 +7305,7 @@ function initStdIn() {
 console.log(
   chalkBlueBold(
     "\n=======================================================================\n" +
-      MODULE_ID_PREFIX +
+      PF +
       " | " +
       MODULE_ID +
       " STARTED | " +
@@ -7636,17 +7314,17 @@ console.log(
   )
 );
 
-console.log(MODULE_ID_PREFIX + " | =================================");
-console.log(MODULE_ID_PREFIX + " | HOST:          " + hostname);
-console.log(MODULE_ID_PREFIX + " | PROCESS TITLE: " + process.title);
-console.log(MODULE_ID_PREFIX + " | PROCESS ID:    " + process.pid);
-console.log(MODULE_ID_PREFIX + " | RUN ID:        " + statsObj.runId);
+console.log(PF + " | =================================");
+console.log(PF + " | HOST:          " + hostname);
+console.log(PF + " | PROCESS TITLE: " + process.title);
+console.log(PF + " | PROCESS ID:    " + process.pid);
+console.log(PF + " | RUN ID:        " + statsObj.runId);
 console.log(
-  MODULE_ID_PREFIX +
+  PF +
     " | PROCESS ARGS   " +
     util.inspect(process.argv, { showHidden: false, depth: 1 })
 );
-console.log(MODULE_ID_PREFIX + " | =================================");
+console.log(PF + " | =================================");
 
 setTimeout(async function () {
   try {
@@ -7661,17 +7339,15 @@ setTimeout(async function () {
       configuration.trainingSetFile = "trainingSet_test.json";
       configuration.defaultUserArchiveFlagFile =
         "usersZipUploadComplete_test.json";
-      console.log(chalkAlert(MODULE_ID_PREFIX + " | TEST MODE"));
+      console.log(chalkAlert(PF + " | TEST MODE"));
       console.log(
         chalkAlert(
-          MODULE_ID_PREFIX +
-            " | trainingSetFile:            " +
-            configuration.trainingSetFile
+          PF + " | trainingSetFile:            " + configuration.trainingSetFile
         )
       );
       console.log(
         chalkAlert(
-          MODULE_ID_PREFIX +
+          PF +
             " | defaultUserArchiveFlagFile: " +
             configuration.defaultUserArchiveFlagFile
         )
@@ -7690,19 +7366,14 @@ setTimeout(async function () {
     } catch (err) {
       console.log(
         chalkError(
-          MODULE_ID_PREFIX +
-            " | *** MONGO DB CONNECT ERROR: " +
-            err +
-            " | QUITTING ***"
+          PF + " | *** MONGO DB CONNECT ERROR: " + err + " | QUITTING ***"
         )
       );
       quit({ cause: "MONGO DB CONNECT ERROR" });
     }
   } catch (err) {
     console.log(
-      chalkError(
-        MODULE_ID_PREFIX + " | **** INIT CONFIG ERROR *****\n" + jsonPrint(err)
-      )
+      chalkError(PF + " | **** INIT CONFIG ERROR *****\n" + jsonPrint(err))
     );
     if (err.code !== 404) {
       quit({ cause: "INIT CONFIG ERROR" });
