@@ -5939,13 +5939,13 @@ function childSend(p) {
 
     statsObj.status = "SEND CHILD | CH ID: " + childId + " | " + command.op;
 
-    // if (configuration.verbose || configuration.testMode) {
-    console.log(
-      chalkLog(
-        PF + " | >T MESSAGE | " + getTimeStamp() + " | OP: " + command.op
-      )
-    );
-    // }
+    if (configuration.verbose || configuration.testMode) {
+      console.log(
+        chalkLog(
+          PF + " | >T MESSAGE | " + getTimeStamp() + " | OP: " + command.op
+        )
+      );
+    }
 
     if (
       empty(childHashMap[childId]) ||
@@ -7061,6 +7061,8 @@ async function childCreate(p) {
 
     child = cp.fork(`${__dirname}/neuralNetworkChild.js`);
 
+    console.log(chalkBlueBold(`${PF} | +++ CREATED CHILD | PID: ${child.pid}`));
+
     childHashMap[childId].pid = child.pid;
 
     const childPidFile = await touchChildPidFile({
@@ -7139,9 +7141,12 @@ async function childCreate(p) {
     childInitParams.testMode = configuration.testMode;
     childInitParams.verbose = configuration.verbose;
 
-    const initResponse = await childInit(childInitParams);
+    // KLUDGE!! need to insure child is ready before sending INIT command
 
-    return initResponse;
+    setTimeout(async () => {
+      const initResponse = await childInit(childInitParams);
+      return initResponse;
+    }, 5000);
   } catch (err) {
     console.log(
       chalkError(

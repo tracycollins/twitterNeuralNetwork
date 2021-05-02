@@ -1875,12 +1875,6 @@ async function evolve(params) {
       preppedTestSet = await dataSetPrep(preppedSetsConfig);
     }
 
-    // const childNetworkRaw = await nnTools.createNetwork({
-    //   networkTechnology: childNetworkObj.networkTechnology,
-    //   numInputs: inputsObj.meta.numInputs,
-    //   hiddenLayerSize: childNetworkObj.hiddenLayerSize
-    // })
-
     const childNetworkRaw = await nnTools.createNetwork({
       networkObj: childNetworkObj,
       numInputs: inputsObj.meta.numInputs,
@@ -2081,7 +2075,7 @@ function networkEvolve(p) {
       params.architecture = "seed";
       params.networkTechnology = params.networkTechnology
         ? params.networkTechnology
-        : "neataptic";
+        : "tensorflow";
       debug(chalkAlert(PF + " | START NETWORK DEFINED: " + params.networkId));
     }
 
@@ -2251,7 +2245,7 @@ const FSM_TICK_INTERVAL = ONE_SECOND;
 let fsmTickInterval;
 let fsmPreviousState = "IDLE";
 
-statsObj.fsmState = "---";
+statsObj.fsmState = "IDLE";
 
 function reporter(event, oldState, newState) {
   statsObj.fsmState = newState;
@@ -2647,7 +2641,7 @@ async function initFsmTickInterval(interval) {
 
   fsmTickInterval = setInterval(function () {
     fsm.fsm_tick();
-  }, FSM_TICK_INTERVAL);
+  }, interval);
 
   return;
 }
@@ -2953,11 +2947,11 @@ async function configNetworkEvolve(params) {
 
 process.on("message", async function (m) {
   try {
-    // if (configuration.verbose) {
-    console.log(
-      chalkLog(PF + " | <R MESSAGE | " + getTimeStamp() + " | OP: " + m.op)
-    );
-    // }
+    if (configuration.verbose) {
+      console.log(
+        chalkLog(PF + " | <R MESSAGE | " + getTimeStamp() + " | OP: " + m.op)
+      );
+    }
 
     switch (m.op) {
       case "RESET":
@@ -3135,4 +3129,4 @@ setTimeout(async function () {
       quit({ cause: new Error("INIT CONFIG ERROR") });
     }
   }
-}, 1000);
+}, 10);
