@@ -1,7 +1,7 @@
 {
   "name": "@threeceelabs/twitterneuralnetwork",
   "type": "module",
-  "version": "3.0.0",
+  "version": "3.0.1",
   "description": "twitter neural network",
   "main": "twitterNeuralNetwork.js",
   "dependencies": {
