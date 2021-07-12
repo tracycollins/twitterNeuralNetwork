@@ -336,17 +336,17 @@
     eventemitter3 "^4.0.7"
     treeify "^1.1.0"
 
-"@threeceelabs/neural-network-tools@^3.1.4":
-  version "3.1.4"
-  resolved "https://registry.npmjs.org/@threeceelabs/neural-network-tools/-/neural-network-tools-3.1.4.tgz#3232b21cd59ef31b6d88ac6c6e9a15bfc37a4f4b"
-  integrity sha512-hoRLTIGZD6ddnUw1JmphoxarGf66/ptbYItzVfAZkfjsYeFvoxV3r3e9I4T6O8LO6k5iSTALqbH3tlJnr7gzEA==
+"@threeceelabs/neural-network-tools@^3.1.5":
+  version "3.1.5"
+  resolved "https://registry.npmjs.org/@threeceelabs/neural-network-tools/-/neural-network-tools-3.1.5.tgz#8199f831ea90672721d8c6d8e617d0ad06aec10e"
+  integrity sha512-94ZlwBxAR4aqWI30wvd3yNwqcMsU3eOwAlWeyb7rSjnpbegwykpRKKEfPkzCcaw3VoPYvKp77xWgYg4o+IqrLA==
   dependencies:
     "@liquid-carrot/carrot" "^0.3.20"
     "@mapbox/node-pre-gyp" "^1.0.5"
     "@tensorflow/tfjs-node" "^3.7.0"
     "@threeceelabs/mongoose-twitter" "^2.0.1"
     "@threeceelabs/mongoose-utilities" "^3.0.0"
-    "@threeceelabs/threeceeutilities" "^5.2.1"
+    "@threeceelabs/threeceeutilities" "^5.2.8"
     async "^3.2.0"
     deepcopy "^2.1.0"
     fsevents "^2.3.2"
@@ -405,10 +405,10 @@
     url-parse "^1.5.1"
     write-json-file "^4.3.0"
 
-"@threeceelabs/threeceeutilities@^5.2.1":
-  version "5.2.1"
-  resolved "https://registry.npmjs.org/@threeceelabs/threeceeutilities/-/threeceeutilities-5.2.1.tgz#0527640a8c5aae3084b28c8935be52b688092b26"
-  integrity sha512-Y5NS1ZQUrAG+AOgga2mTqL8IKV1ysZ2ZpHxgvT0a0eJzY/vlmCurVy5UrFNJXVZ5Vr3zj1Z28LGPWv6Wr/DKgQ==
+"@threeceelabs/threeceeutilities@^5.2.8":
+  version "5.2.8"
+  resolved "https://registry.npmjs.org/@threeceelabs/threeceeutilities/-/threeceeutilities-5.2.8.tgz#bbf671c48ffd97945fd8e6d75355b57baccd1d29"
+  integrity sha512-ft07Hf5VHzHu2w5LTw2y5RSDRXRaNrFVFd6SuGaPNAc8i2QXpX5T3Nz+2lTnineI99r4X2JjR8Jx6l12cORmqg==
   dependencies:
     "@google-cloud/language" "^4.2.6"
     "@googlemaps/google-maps-services-js" "^3.1.16"
@@ -428,7 +428,7 @@
     ioredis "^4.27.6"
     is-empty "^1.2.0"
     isurl "^4.0.2"
-    limiter "2.1.0"
+    limiter "2.0.1"
     lodash "^4.17.21"
     object-path "^0.11.5"
     object-sizeof "^1.6.1"
@@ -2904,10 +2904,10 @@ jsprim@^1.2.2:
     json-schema "0.2.3"
     verror "1.10.0"
 
-just-performance@4.3.0:
-  version "4.3.0"
-  resolved "https://registry.npmjs.org/just-performance/-/just-performance-4.3.0.tgz#cc2bc8c9227f09e97b6b1df4cd0de2df7ae16db1"
-  integrity sha512-L7RjvtJsL0QO8xFs5wEoDDzzJwoiowRw6Rn/GnvldlchS2JQr9wFYPiwZcDfrbbujEKqKN0tvENdbjXdYhDp5Q==
+just-performance@4.2.0:
+  version "4.2.0"
+  resolved "https://registry.npmjs.org/just-performance/-/just-performance-4.2.0.tgz#5509e348febde87072665d8325781573e2129f85"
+  integrity sha512-4TikKSf+Gb+Et5SnA4ppyrxLSf9qWFq+SqfdDdrgHE1KLwSch/Zi1AQB0TrE4ppYjZdUrHnwdx+6dyx0cx/HyA==
 
 jwa@^2.0.0:
   version "2.0.0"
@@ -2977,12 +2977,12 @@ lex@1.7.4:
   resolved "https://registry.npmjs.org/lex/-/lex-1.7.4.tgz#33dd66b980a38d77a6c424d7173e6f40d602c0c5"
   integrity sha1-M91muYCjjXemxCTXFz5vQNYCwMU=
 
-limiter@2.1.0:
-  version "2.1.0"
-  resolved "https://registry.npmjs.org/limiter/-/limiter-2.1.0.tgz#d38d7c5b63729bb84fb0c4d8594b7e955a5182a2"
-  integrity sha512-361TYz6iay6n+9KvUUImqdLuFigK+K79qrUtBsXhJTLdH4rIt/r1y8r1iozwh8KbZNpujbFTSh74mJ7bwbAMOw==
+limiter@2.0.1:
+  version "2.0.1"
+  resolved "https://registry.npmjs.org/limiter/-/limiter-2.0.1.tgz#030464e800c031b7f706e27e18f77d2b04e8a4e4"
+  integrity sha512-OhORJ29edCj2WVLYEou3AVRYZmobyTOy2A9yvDuwL68teu+vWLLlnJxEBMH4gDXIKlkyCTBL9JDEygSPOiwfMg==
   dependencies:
-    just-performance "4.3.0"
+    just-performance "4.2.0"
 
 limiter@^1.1.5:
   version "1.1.5"
@@ -3539,9 +3539,9 @@ object-hash@^2.1.1:
   integrity sha512-gScRMn0bS5fH+IuwyIFgnh9zBdo4DV+6GhygmWM9HyNJSgS0hScp1f5vjtm7oIIOiT9trXrShAkLFSc2IqKNgw==
 
 object-inspect@^1.10.3:
-  version "1.10.3"
-  resolved "https://registry.npmjs.org/object-inspect/-/object-inspect-1.10.3.tgz#c2aa7d2d09f50c99375704f7a0adf24c5782d369"
-  integrity sha512-e5mCJlSH7poANfC8z8S9s9S2IN5/4Zb3aZ33f5s8YqoazCFzNLloLU8r5VCG+G7WoqLvAAZoVMcy3tp/3X0Plw==
+  version "1.11.0"
+  resolved "https://registry.npmjs.org/object-inspect/-/object-inspect-1.11.0.tgz#9dceb146cedd4148a0d9e51ab88d34cf509922b1"
+  integrity sha512-jp7ikS6Sd3GxQfZJPyH3cjcbJF6GZPClgdV+EFygjFLQ5FmW/dRUnTd9PQ9k0JhoNDabWFbpF1yCdSWCC6gexg==
 
 object-keys@^1.0.11, object-keys@^1.0.12, object-keys@^1.1.1:
   version "1.1.1"

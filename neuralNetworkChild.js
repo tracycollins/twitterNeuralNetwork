@@ -60,7 +60,7 @@ import mgt from "@threeceelabs/mongoose-twitter";
 global.wordAssoDb = mgt;
 
 const mguAppName = "MGU_" + MODULE_ID;
-import MongooseUtilities from "@threeceelabs/mongoose-utilities";
+import { MongooseUtilities } from "@threeceelabs/mongoose-utilities";
 const mgUtils = new MongooseUtilities(mguAppName);
 
 mgUtils.on("ready", async () => {
@@ -71,7 +71,8 @@ let configuration = {};
 
 configuration.forceLoadTrainingSet = DEFAULT_FORCE_LOAD_TRAINING_SET;
 configuration.maxFriends = DEFAULT_MAX_FRIENDS;
-configuration.skipDatabaseHostLoadFolder = DEFAULT_SKIP_DATABASE_HOST_LOAD_FOLDER;
+configuration.skipDatabaseHostLoadFolder =
+  DEFAULT_SKIP_DATABASE_HOST_LOAD_FOLDER;
 configuration.defaultLoadUserFileInterval = DEFAULT_LOAD_USER_FILE_INTERVAL;
 configuration.loadUsersFolderOnStart = DEFAULT_LOAD_USERS_FOLDER_ON_START;
 configuration.testMode = false;
@@ -86,7 +87,8 @@ configuration.userCharCountDescription = 160;
 configuration.userCharCountLocation = 30;
 
 configuration.maxNetworkJsonSizeMB = DEFAULT_MAX_NETWORK_JSON_SIZE_MB;
-configuration.userArchiveFileExistsMaxWaitTime = DEFAULT_USER_ARCHIVE_FILE_EXITS_MAX_WAIT_TIME;
+configuration.userArchiveFileExistsMaxWaitTime =
+  DEFAULT_USER_ARCHIVE_FILE_EXITS_MAX_WAIT_TIME;
 configuration.testSetRatio = DEFAULT_TEST_RATIO;
 configuration.binaryMode = DEFAULT_BINARY_MODE;
 configuration.neatapticHiddenLayerSize = DEFAULT_NEATAPTIC_HIDDEN_LAYER_SIZE;
@@ -692,9 +694,8 @@ function updateTrainingSet(p) {
           trainingSetObj.nodeIdArray = trainingSetObj.nodeIdArray.concat(
             trainingSetNodeIdArray
           );
-          testSetObj.nodeIdArray = testSetObj.nodeIdArray.concat(
-            testSetNodeIdArray
-          );
+          testSetObj.nodeIdArray =
+            testSetObj.nodeIdArray.concat(testSetNodeIdArray);
 
           console.log(
             chalkLog(

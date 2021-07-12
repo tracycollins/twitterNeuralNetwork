@@ -92,7 +92,7 @@ import mgt from "@threeceelabs/mongoose-twitter";
 global.wordAssoDb = mgt;
 
 const mguAppName = "MGU_" + MODULE_ID;
-import MongooseUtilities from "@threeceelabs/mongoose-utilities";
+import { MongooseUtilities } from "@threeceelabs/mongoose-utilities";
 const mgUtils = new MongooseUtilities(mguAppName);
 
 mgUtils.on("ready", async () => {
@@ -294,7 +294,8 @@ configuration.networkCreateMode = "evolve";
 
 configuration.childPingAllInterval = DEFAULT_CHILD_PING_INTERVAL;
 
-configuration.archiveNotInInputsIdArray = DEFAULT_ARCHIVE_NOT_IN_INPUTS_ID_ARRAY;
+configuration.archiveNotInInputsIdArray =
+  DEFAULT_ARCHIVE_NOT_IN_INPUTS_ID_ARRAY;
 configuration.deleteNotInInputsIdArray = DEFAULT_DELETE_NOT_IN_INPUTS_ID_ARRAY;
 
 configuration.disableCreateTestSet = DEFAULT_DISABLE_CREATE_TEST_SET;
@@ -6900,9 +6901,8 @@ async function childMessageHandler(params) {
           statsObj.networkResults[m.stats.networkId] = {};
           statsObj.networkResults[m.stats.networkId].networkObj = {};
           statsObj.networkResults[m.stats.networkId].networkObj.evolve = {};
-          statsObj.networkResults[
-            m.stats.networkId
-          ].networkObj.evolve.options = {};
+          statsObj.networkResults[m.stats.networkId].networkObj.evolve.options =
+            {};
         }
 
         statsObj.networkResults[m.stats.networkId].startTime = getTimeStamp(
@@ -6918,9 +6918,7 @@ async function childMessageHandler(params) {
         statsObj.networkResults[m.stats.networkId].rate = (
           m.stats.iterationRate / 1000.0
         ).toFixed(1);
-        statsObj.networkResults[
-          m.stats.networkId
-        ].timeToComplete = moment()
+        statsObj.networkResults[m.stats.networkId].timeToComplete = moment()
           .add(m.stats.timeToComplete)
           .format(compactDateTimeFormat);
         statsObj.networkResults[m.stats.networkId].error = m.stats.error;
