@@ -49,6 +49,11 @@ const DEFAULT_ARCHIVE_NOT_IN_INPUTS_ID_ARRAY = true;
 const DEFAULT_DELETE_NOT_IN_INPUTS_ID_ARRAY = false;
 const DEFAULT_CHILD_ID_PREFIX = "tnc_node_";
 
+import StatsD from "hot-shots";
+const dogstatsd = new StatsD();
+
+dogstatsd.increment("tnn.starts");
+
 import { EVOVLE_DEFAULTS } from "./config/evolveConfig.js";
 
 import os from "os";
