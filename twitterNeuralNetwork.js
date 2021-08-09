@@ -5779,7 +5779,7 @@ function childCreateAll(p) {
             .then(function () {
               childrenCreatedArray.push(childId);
               childIndex += 1;
-              dogstatsd.gauge("tnn.child.index");
+              dogstatsd.gauge("tnn.child.index", childIndex);
               configuration.childIndex = childIndex;
               statsObj.childIndex = childIndex;
               cb();
@@ -5824,7 +5824,7 @@ function getNewNetworkId(p) {
   params.prefix = params.prefix || configuration.networkIdPrefix;
   const networkId = params.prefix + "_" + networkIndex;
   networkIndex += 1;
-  dogstatsd.gauge("tnn.network.index");
+  dogstatsd.gauge("tnn.network.index", networkIndex);
   return networkId;
 }
 
