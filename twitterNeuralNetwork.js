@@ -5779,6 +5779,7 @@ function childCreateAll(p) {
             .then(function () {
               childrenCreatedArray.push(childId);
               childIndex += 1;
+              dogstatsd.gauge("tnn.child.index");
               configuration.childIndex = childIndex;
               statsObj.childIndex = childIndex;
               cb();
@@ -5823,6 +5824,7 @@ function getNewNetworkId(p) {
   params.prefix = params.prefix || configuration.networkIdPrefix;
   const networkId = params.prefix + "_" + networkIndex;
   networkIndex += 1;
+  dogstatsd.gauge("tnn.network.index");
   return networkId;
 }
 
@@ -6153,6 +6155,7 @@ async function evolveCompleteHandler(params) {
 
     m.statsObj.fitness = statsObj.networkResults[nn.networkId].fitness;
     statsObj.evolveStats.total += 1;
+    dogstatsd.increment("tnn.network.evolve.total");
 
     const snIdRes =
       nn.seedNetworkId && nn.seedNetworkRes && nn.seedNetworkRes !== undefined
@@ -6404,6 +6407,7 @@ async function evolveCompleteHandler(params) {
         resultsHashmap[nn.networkId].status = "GLOBAL";
 
         statsObj.evolveStats.passGlobal += 1;
+        dogstatsd.increment("tnn.network.evolve.global");
 
         inputsFailedSet.delete(nn.inputsId);
 
@@ -6465,6 +6469,7 @@ async function evolveCompleteHandler(params) {
         resultsHashmap[nn.networkId].status = "LOCAL";
 
         statsObj.evolveStats.passLocal += 1;
+        dogstatsd.increment("tnn.network.evolve.local");
 
         inputsFailedSet.delete(nn.inputsId);
 
@@ -6541,6 +6546,7 @@ async function evolveCompleteHandler(params) {
         inputsFailedSet.delete(nn.inputsId);
 
         statsObj.evolveStats.passLocal += 1;
+        dogstatsd.increment("tnn.network.evolve.local");
 
         if (inputsViableSet.has(nn.inputsId)) {
           console.log(
@@ -6728,6 +6734,7 @@ async function evolveCompleteHandler(params) {
       slackSendQueue.push({ channel: slackChannelFail, text: slackText });
 
       statsObj.evolveStats.fail += 1;
+      dogstatsd.increment("tnn.network.evolve.fail");
 
       if (!configuration.testMode) {
         hostBestNetworkFile = nn.networkId + ".json";
@@ -6786,6 +6793,7 @@ const resetEvolveTimeout = (childId) => {
     inEvolveTimeout = true;
 
     statsObj.errors.evolve.timeouts += 1;
+    dogstatsd.increment("tnn.network.evolve.timouts");
     console.log(
       chalkAlert(
         `${PF} | !!! EVOLVE TIMEOUT | DUR: ${configuration.evolveTimeoutDuration} | CHILD: ${childId} | TIMEOUTS: ${statsObj.errors.evolve.timeouts}`
