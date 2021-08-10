@@ -49,6 +49,9 @@ const DEFAULT_ARCHIVE_NOT_IN_INPUTS_ID_ARRAY = true;
 const DEFAULT_DELETE_NOT_IN_INPUTS_ID_ARRAY = false;
 const DEFAULT_CHILD_ID_PREFIX = "tnc_node_";
 
+import ddTrace from "dd-trace";
+const ddTracer = ddTrace.init();
+
 import StatsD from "hot-shots";
 const dogstatsd = new StatsD();
 

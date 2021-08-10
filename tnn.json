@@ -7,6 +7,8 @@
       "node_args": "--max-old-space-size=8192",
       "exp_backoff_restart_delay": 100,
       "env": {
+        "DD_ENV": "production",
+        "DD_LOGS_INJECTION": 1,
         "FORCE_COLOR": 1,
         "NODE_ENV": "production",
         "TNN_EVOLVE_TIMEOUT_DURATION": 600000,
