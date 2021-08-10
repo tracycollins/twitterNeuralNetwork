@@ -17,8 +17,8 @@ import winston from "winston";
 
 const logger = winston.createLogger({
   level: "debug",
-  format: winston.format.json(),
-  defaultMeta: { service: "tnn" },
+  // format: winston.format.json(),
+  // defaultMeta: { service: "tnn" },
   transports: [
     //
     // - Write all logs with level `error` and below to `error.log`
@@ -38,12 +38,6 @@ if (process.env.NODE_ENV !== "production") {
 }
 import ddTrace from "dd-trace";
 const ddTracer = ddTrace.init();
-
-import StatsD from "hot-shots";
-const dogstatsd = new StatsD();
-
-dogstatsd.increment("tnn.starts");
-dogstatsd.event(`${PF} | START`, `APP_VERSION: ${APP_VERSION}`);
 
 logger.info(`${PF} | +++ ENV CONFIG LOADED`);
 
@@ -102,6 +96,13 @@ hostname = hostname.replace(/.fios-router.home/g, "");
 hostname = hostname.replace(/word0-instance-1/g, "google");
 hostname = hostname.replace(/word-1/g, "google");
 hostname = hostname.replace(/word/g, "google");
+
+import StatsD from "hot-shots";
+const dogstatsd = new StatsD();
+
+const DDPF = `${hostname.toUpperCase()} | ${PF}`;
+dogstatsd.increment("tnn.starts");
+dogstatsd.event(`${DDPF} | START`, `APP_VERSION: ${APP_VERSION}`);
 
 import _ from "lodash";
 import dotProp from "dot-prop";
@@ -4662,6 +4663,7 @@ async function quit(opts) {
   const forceQuitFlag = options.force || false;
 
   try {
+    dogstatsd.event(`${DDPF} | QUIT`, `opts: ${opts}`);
     slackSendQueue.push({ channel: slackChannel, text: slackText });
     fsm.fsm_quit();
     await childQuitAll();
@@ -5010,6 +5012,8 @@ function reporter(event, oldState, newState) {
   statsObj.fsmState = newState;
 
   fsmPreviousState = oldState;
+
+  dogstatsd.event(`${DDPF} | FSM | ${event}`, `${oldState} -> ${newState}`);
 
   logger.info(
     PF +
@@ -5912,6 +5916,12 @@ async function evolveCompleteHandler(params) {
     ) {
       // It's a Keeper!!
 
+      dogstatsd.event(
+        `${DDPF} | PASSED`,
+        `SR: ${nn.test.results.successRate.toFixed(3)} %` +
+          ` | ${nn.evolve.results.iterations} iterations` +
+          ` | ELPSD: ${msToTime(nn.evolve.elapsed)}`
+      );
       await updateDbInputs({ inputsId: nn.inputsId, networkId: nn.networkId });
 
       bestNetworkFile = nn.networkId + ".json";
@@ -6210,6 +6220,13 @@ async function evolveCompleteHandler(params) {
     }
     // FAILED
     else {
+      dogstatsd.event(
+        `${DDPF} | FAILED`,
+        `SR: ${nn.test.results.successRate.toFixed(3)} %` +
+          ` | ${nn.evolve.results.iterations} iterations` +
+          ` | ELPSD: ${msToTime(nn.evolve.elapsed)}`
+      );
+
       logger.info(
         PF +
           " | XXX | NOT SAVING NN GLOBAL or LOCAL DROPBOX ... LESS THAN GLOBAL and LOCAL MIN SUCCESS *OR* NOT BETTER THAN SEED" +
@@ -6379,6 +6396,7 @@ async function evolveCompleteHandler(params) {
 
     return;
   } catch (err) {
+    dogstatsd.event(`${DDPF} | EVOLVE_COMPLETE ERROR`, `ERROR: ${err}`);
     logger.error(PF + "| *** EVOLVE_COMPLETE ERROR: " + err);
     throw err;
   }

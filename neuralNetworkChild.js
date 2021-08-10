@@ -1,6 +1,9 @@
 const MODULE_NAME = "tncChild";
 let PF = "NNC";
 
+import packageJson from "./package.json";
+const APP_VERSION = packageJson.version || null;
+
 const DEFAULT_FORCE_LOAD_TRAINING_SET = false;
 const DEFAULT_MAX_FRIENDS = 10000;
 const DEFAULT_SKIP_DATABASE_HOST_LOAD_FOLDER = false;
@@ -39,11 +42,13 @@ hostname = hostname.replace(/word0-instance-1/g, "google");
 hostname = hostname.replace(/word-1/g, "google");
 hostname = hostname.replace(/word/g, "google");
 
+const DDPF = `${hostname.toUpperCase()} | ${PF}`;
+
 import StatsD from "hot-shots";
 const dogstatsd = new StatsD();
 
 dogstatsd.increment("nnc.starts");
-dogstatsd.event(`${PF} | START`, `APP_VERSION: ${APP_VERSION}`);
+dogstatsd.event(`${DDPF} | START`, `APP_VERSION: ${APP_VERSION}`);
 
 const MODULE_ID = PF + "_" + hostname;
 
@@ -568,7 +573,7 @@ function readyToQuit() {
 
 async function quit(opts) {
   dogstatsd.increment("tnn.quits");
-  dogstatsd.event(`${PF} | QUIT`, opts);
+  dogstatsd.event(`${DDPF} | QUIT`, opts);
 
   const options = opts || {};
 
@@ -2262,6 +2267,8 @@ function reporter(event, oldState, newState) {
 
   fsmPreviousState = oldState;
 
+  dogstatsd.event(`${DDPF} | FSM | ${event}`, `${oldState} -> ${newState}`);
+
   console.log(
     chalkLog(
       PF +
@@ -2288,7 +2295,6 @@ const fsmStates = {
     onEnter: async function (event, oldState, newState) {
       if (event !== "fsm_tick") {
         dogstatsd.increment("nnc.fsm.reset");
-        dogstatsd.event(`${PF} | RESET`);
         reporter(event, oldState, newState);
         statsObj.fsmStatus = "RESET";
 
@@ -2324,7 +2330,6 @@ const fsmStates = {
   EXIT: {
     onEnter: function (event, oldState, newState) {
       dogstatsd.increment("nnc.fsm.exit");
-      dogstatsd.event(`${PF} | EXIT`, `PREV STATE: ${oldState}`);
       reporter(event, oldState, newState);
       statsObj.fsmStatus = "EXIT";
     },
@@ -2333,10 +2338,6 @@ const fsmStates = {
   ERROR: {
     onEnter: async function (event, oldState, newState) {
       dogstatsd.increment("nnc.fsm.error");
-      dogstatsd.event(
-        `${PF} | ERROR`,
-        `ERROR: ${statsObj.error} | PREV STATE: ${oldState}`
-      );
       reporter(event, oldState, newState);
 
       statsObj.fsmStatus = "ERROR";
@@ -2374,6 +2375,10 @@ const fsmStates = {
           statsObj.status = "START";
 
           if (configuration.testMode) {
+            dogstatsd.event(
+              `${DDPF} | *** TEST MODE ***`,
+              `CHILD ID: ${configuration.childId}`
+            );
             configuration.trainingSetFile = "trainingSet_test.json";
             configuration.defaultUserArchiveFlagFile =
               "usersZipUploadComplete_test.json";
@@ -2417,10 +2422,6 @@ const fsmStates = {
           fsm.fsm_ready();
         } catch (err) {
           dogstatsd.increment("nnc.errors");
-          dogstatsd.event(
-            `${PF} | ERROR`,
-            `ERROR: ${err} | PREV STATE: ${oldState}`
-          );
           console.log(PF + " | *** INIT ERROR: " + err);
           statsObj.error = err;
           fsm.fsm_error();
@@ -2460,7 +2461,6 @@ const fsmStates = {
       if (event !== "fsm_tick") {
         try {
           dogstatsd.increment("nnc.fsm.configEvolve");
-          dogstatsd.event(`${PF} | CONFIG EVOLVE`, ``);
           reporter(event, oldState, newState);
           statsObj.fsmStatus = "CONFIG_EVOLVE";
 
@@ -2493,7 +2493,7 @@ const fsmStates = {
           fsm.fsm_evolve();
         } catch (err) {
           dogstatsd.increment("nnc.errors");
-          dogstatsd.event(`${PF} | ERROR`, `${err}`);
+          dogstatsd.event(`${DDPF} | ERROR`, `${err}`);
           console.log(chalkError(PF + " | *** CONFIG_EVOLVE ERROR: " + err));
           statsObj.error = err;
           fsm.fsm_error();
@@ -2513,10 +2513,7 @@ const fsmStates = {
       if (event !== "fsm_tick") {
         try {
           dogstatsd.increment("nnc.fsm.evolve");
-          dogstatsd.event(
-            `${PF} | EVOLVE`,
-            `NNID: ${childNetworkObj.networkId}`
-          );
+
           reporter(event, oldState, newState);
 
           statsObj.fsmStatus = "EVOLVE";
@@ -2558,7 +2555,7 @@ const fsmStates = {
             await nnDoc.save();
           } catch (err) {
             dogstatsd.increment("nnc.errors");
-            dogstatsd.event(`${PF} | NN DB SAVE ERROR`, `ERROR: ${err}`);
+            dogstatsd.event(`${DDPF} | NN DB SAVE ERROR`, `ERROR: ${err}`);
             console.trace(PF + " | *** NN DB SAVE ERROR: ", err);
             throw err;
           }
@@ -2592,7 +2589,7 @@ const fsmStates = {
           delete childNetworkObj.evolve.options.network;
           delete childNetworkObj.evolve.options.schedule;
           dogstatsd.increment("nnc.errors");
-          dogstatsd.event(`${PF} | EVOLVE ERROR`, `ERROR: ${err}`);
+          dogstatsd.event(`${DDPF} | EVOLVE ERROR`, `ERROR: ${err}`);
 
           const messageObj = {
             op: "EVOLVE_ERROR",
@@ -2641,10 +2638,7 @@ const fsmStates = {
     onEnter: async function (event, oldState, newState) {
       if (event !== "fsm_tick") {
         dogstatsd.increment("nnc.fsm.evolveComplete");
-        dogstatsd.event(
-          `${PF} | EVOLVE COMPLETE`,
-          `CHID: ${configuration.childId}`
-        );
+
         reporter(event, oldState, newState);
         statsObj.fsmStatus = "EVOLVE_COMPLETE";
 
@@ -3029,7 +3023,6 @@ process.on("message", async function (m) {
 
       case "INIT":
         PF = m.moduleIdPrefix || PF;
-        dogstatsd.event(`${PF} | INIT`, `CHILD ID: ${m.childId}`);
 
         console.log(
           chalkBlueBold(
