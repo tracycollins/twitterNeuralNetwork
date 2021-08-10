@@ -6014,6 +6014,7 @@ async function childInit(p) {
   try {
     const params = p || {};
 
+    console.log(chalkInfo(`${PF} | INIT CHILD` + ` | NOW: ${getTimeStamp()}`));
     console.log(`${PF} | childInit\n${jsonPrint(params)}`);
 
     const childId = params.childId;
@@ -7157,7 +7158,11 @@ async function childCreate(p) {
     // KLUDGE!! need to insure child is ready before sending INIT command
 
     console.log(
-      chalkInfo(`${PF} | WAIT CHILD RESET | DELAY: ${msToTime(10000)}`)
+      chalkInfo(
+        `${PF} | WAIT CHILD RESET` +
+          ` | DELAY: ${msToTime(10000)}` +
+          ` | NOW: ${getTimeStamp()}`
+      )
     );
 
     setTimeout(async () => {
