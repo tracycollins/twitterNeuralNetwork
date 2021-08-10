@@ -3005,6 +3005,8 @@ async function initNetworkCreate(params) {
       )
     );
 
+    console.log(params);
+
     let messageObj;
     let networkCreateObj = {};
 
@@ -7154,10 +7156,14 @@ async function childCreate(p) {
 
     // KLUDGE!! need to insure child is ready before sending INIT command
 
+    console.log(
+      chalkInfo(`${PF} | WAIT CHILD RESET | DELAY: ${msToTime(10000)}`)
+    );
+
     setTimeout(async () => {
       const initResponse = await childInit(childInitParams);
       return initResponse;
-    }, 5000);
+    }, 10000);
   } catch (err) {
     console.log(
       chalkError(

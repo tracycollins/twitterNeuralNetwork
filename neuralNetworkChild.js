@@ -39,6 +39,11 @@ hostname = hostname.replace(/word0-instance-1/g, "google");
 hostname = hostname.replace(/word-1/g, "google");
 hostname = hostname.replace(/word/g, "google");
 
+import StatsD from "hot-shots";
+const dogstatsd = new StatsD();
+
+dogstatsd.increment("nnc.starts");
+
 const MODULE_ID = PF + "_" + hostname;
 
 const DEFAULT_NETWORK_TECHNOLOGY = "tensorflow";
@@ -68,7 +73,7 @@ mgUtils.on("ready", async () => {
 });
 
 let configuration = {};
-
+configuration.childId = PF;
 configuration.forceLoadTrainingSet = DEFAULT_FORCE_LOAD_TRAINING_SET;
 configuration.maxFriends = DEFAULT_MAX_FRIENDS;
 configuration.skipDatabaseHostLoadFolder =
@@ -561,6 +566,8 @@ function readyToQuit() {
 }
 
 async function quit(opts) {
+  dogstatsd.increment("tnn.quits");
+
   const options = opts || {};
 
   statsObj.elapsed = getElapsedTimeStamp();
@@ -2278,6 +2285,7 @@ const fsmStates = {
   RESET: {
     onEnter: async function (event, oldState, newState) {
       if (event !== "fsm_tick") {
+        dogstatsd.increment("nnc.fsm.reset");
         reporter(event, oldState, newState);
         statsObj.fsmStatus = "RESET";
 
@@ -2297,6 +2305,7 @@ const fsmStates = {
   IDLE: {
     onEnter: function (event, oldState, newState) {
       if (event !== "fsm_tick") {
+        dogstatsd.increment("nnc.fsm.idle");
         reporter(event, oldState, newState);
         statsObj.fsmStatus = "IDLE";
       }
@@ -2311,6 +2320,7 @@ const fsmStates = {
 
   EXIT: {
     onEnter: function (event, oldState, newState) {
+      dogstatsd.increment("nnc.fsm.exit");
       reporter(event, oldState, newState);
       statsObj.fsmStatus = "EXIT";
     },
@@ -2318,6 +2328,7 @@ const fsmStates = {
 
   ERROR: {
     onEnter: async function (event, oldState, newState) {
+      dogstatsd.increment("nnc.fsm.error");
       reporter(event, oldState, newState);
 
       statsObj.fsmStatus = "ERROR";
@@ -2344,6 +2355,7 @@ const fsmStates = {
       if (event !== "fsm_tick") {
         try {
           reporter(event, oldState, newState);
+          dogstatsd.increment("nnc.fsm.init");
           statsObj.fsmStatus = "INIT";
 
           const cnf = await initConfig(configuration);
@@ -2396,6 +2408,7 @@ const fsmStates = {
 
           fsm.fsm_ready();
         } catch (err) {
+          dogstatsd.increment("nnc.errors");
           console.log(PF + " | *** INIT ERROR: " + err);
           statsObj.error = err;
           fsm.fsm_error();
@@ -2412,6 +2425,7 @@ const fsmStates = {
   READY: {
     onEnter: async function (event, oldState, newState) {
       if (event !== "fsm_tick") {
+        dogstatsd.increment("nnc.fsm.ready");
         reporter(event, oldState, newState);
         statsObj.fsmStatus = "READY";
         await processSend({
@@ -2433,6 +2447,7 @@ const fsmStates = {
     onEnter: async function (event, oldState, newState) {
       if (event !== "fsm_tick") {
         try {
+          dogstatsd.increment("nnc.fsm.configEvolve");
           reporter(event, oldState, newState);
           statsObj.fsmStatus = "CONFIG_EVOLVE";
 
@@ -2464,6 +2479,7 @@ const fsmStates = {
 
           fsm.fsm_evolve();
         } catch (err) {
+          dogstatsd.increment("nnc.errors");
           console.log(chalkError(PF + " | *** CONFIG_EVOLVE ERROR: " + err));
           statsObj.error = err;
           fsm.fsm_error();
@@ -2482,6 +2498,7 @@ const fsmStates = {
     onEnter: async function (event, oldState, newState) {
       if (event !== "fsm_tick") {
         try {
+          dogstatsd.increment("nnc.fsm.evolve");
           reporter(event, oldState, newState);
 
           statsObj.fsmStatus = "EVOLVE";
@@ -2522,6 +2539,7 @@ const fsmStates = {
 
             await nnDoc.save();
           } catch (e) {
+            dogstatsd.increment("nnc.errors");
             console.trace(PF + " | *** NN DB SAVE ERROR: ", e);
             throw e;
           }
@@ -2554,6 +2572,7 @@ const fsmStates = {
           delete childNetworkObj.networkRaw;
           delete childNetworkObj.evolve.options.network;
           delete childNetworkObj.evolve.options.schedule;
+          dogstatsd.increment("nnc.errors");
 
           const messageObj = {
             op: "EVOLVE_ERROR",
@@ -2601,6 +2620,7 @@ const fsmStates = {
   EVOLVE_COMPLETE: {
     onEnter: async function (event, oldState, newState) {
       if (event !== "fsm_tick") {
+        dogstatsd.increment("nnc.fsm.evolveComplete");
         reporter(event, oldState, newState);
         statsObj.fsmStatus = "EVOLVE_COMPLETE";
 

@@ -724,7 +724,7 @@ __metadata:
     measured-core: ^2.0.0
     mentions-regex: ^2.0.3
     moment: ^2.29.1
-    mongoose: ^5.13.5
+    mongoose: ^5.13.6
     mongoose-paginate: ^5.0.3
     neataptic: ^1.4.7
     node-cache: ^5.1.2
@@ -4852,9 +4852,9 @@ fsevents@~2.1.1:
   languageName: node
   linkType: hard
 
-"mongodb@npm:3.6.10":
-  version: 3.6.10
-  resolution: "mongodb@npm:3.6.10"
+"mongodb@npm:3.6.11":
+  version: 3.6.11
+  resolution: "mongodb@npm:3.6.11"
   dependencies:
     bl: ^2.2.1
     bson: ^1.1.4
@@ -4878,7 +4878,7 @@ fsevents@~2.1.1:
       optional: true
     snappy:
       optional: true
-  checksum: 9dcf5d26b189f899f4eb31225971c84abaacf8f62d6158a4851baaf758c716779c08085ff09b510a0c627e172b8080bffe093f37bc06d2990a7b48c625b0818d
+  checksum: cf63caec18d3685a0cd16798ca4373ce4c445083889d6e6f998c7a1fe0532f34eaa466cf2b86dd2d8e64f61875abf7f2ad8d8c9cbdbc4982fd32c288c019be61
   languageName: node
   linkType: hard
 
@@ -4951,14 +4951,14 @@ fsevents@~2.1.1:
   languageName: node
   linkType: hard
 
-"mongoose@npm:5.13.5, mongoose@npm:^5.13.5":
-  version: 5.13.5
-  resolution: "mongoose@npm:5.13.5"
+"mongoose@npm:5.13.6, mongoose@npm:^5.13.6":
+  version: 5.13.6
+  resolution: "mongoose@npm:5.13.6"
   dependencies:
     "@types/mongodb": ^3.5.27
     bson: ^1.1.4
     kareem: 2.3.2
-    mongodb: 3.6.10
+    mongodb: 3.6.11
     mongoose-legacy-pluralize: 1.0.2
     mpath: 0.8.3
     mquery: 3.2.5
@@ -4968,7 +4968,7 @@ fsevents@~2.1.1:
     safe-buffer: 5.2.1
     sift: 13.5.2
     sliced: 1.0.1
-  checksum: 392a9ee0ffb0d1cc609c97e50bfc876f6f5c47033f9cc96825c969df73daa06ce308c41fd6b4c113f3af78be40184a0053972c921eae40b633cbb533a58a645c
+  checksum: 21886d06eaf9504b516efb28bcdd44ca7d4dc0f8970f832239d05310a40a98a0e813610926249882a8f082863219c255f3f9f3f8579dd7cee2a2fabe5de25b12
   languageName: node
   linkType: hard
 
