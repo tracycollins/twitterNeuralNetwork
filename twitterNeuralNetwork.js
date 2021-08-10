@@ -5,6 +5,11 @@ if (envConfig.error) {
   throw envConfig.error;
 }
 
+const MODULE_NAME = "twitterNeuralNetwork";
+const PF = "TNN";
+import packageJson from "./package.json";
+const APP_VERSION = packageJson.version || null;
+
 const errorLogFile = "/usr/local/var/log/tnn/error.log";
 const combinedLogFile = "/usr/local/var/log/tnn/combined.log";
 
@@ -31,10 +36,15 @@ if (process.env.NODE_ENV !== "production") {
     })
   );
 }
-const MODULE_NAME = "twitterNeuralNetwork";
-const PF = "TNN";
+import ddTrace from "dd-trace";
+const ddTracer = ddTrace.init();
 
-logger.info(`${PF} | +++ ENV CONFIG LOADED`);
+import StatsD from "hot-shots";
+const dogstatsd = new StatsD();
+
+dogstatsd.increment("tnn.starts");
+dogstatsd.event(`${PF} | START`, `APP_VERSION: ${APP_VERSION}`);
+
 logger.info(`${PF} | +++ ENV CONFIG LOADED`);
 
 const ONE_SECOND = 1000;
@@ -76,14 +86,6 @@ const DEFAULT_ARCHIVE_NOT_IN_INPUTS_ID_ARRAY = true;
 const DEFAULT_DELETE_NOT_IN_INPUTS_ID_ARRAY = false;
 const DEFAULT_CHILD_ID_PREFIX = "tnc_node_";
 
-import ddTrace from "dd-trace";
-const ddTracer = ddTrace.init();
-
-import StatsD from "hot-shots";
-const dogstatsd = new StatsD();
-
-dogstatsd.increment("tnn.starts");
-
 import { EVOVLE_DEFAULTS } from "./config/evolveConfig.js";
 
 import os from "os";
@@ -114,6 +116,7 @@ const HOST =
 logger.info("=========================================");
 logger.info("=========================================");
 logger.info("MODULE_NAME:  " + MODULE_NAME);
+logger.info("VERSION:      " + APP_VERSION);
 logger.info("PRIMARY_HOST: " + PRIMARY_HOST);
 logger.info("HOST:         " + HOST);
 logger.info("HOST NAME:    " + hostname);

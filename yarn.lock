@@ -52,6 +52,22 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@datadog/datadog-api-client@npm:^1.0.0-beta.4":
+  version: 1.0.0-beta.4
+  resolution: "@datadog/datadog-api-client@npm:1.0.0-beta.4"
+  dependencies:
+    "@types/node": "*"
+    "@types/node-fetch": ^2.5.7
+    btoa: ^1.2.1
+    durations: ^3.4.2
+    es6-promise: ^4.2.4
+    form-data: ^3.0.0
+    node-fetch: ^2.6.0
+    url-parse: ^1.4.3
+  checksum: 680cbc0628efa9bb2e667ea35688b9e3a0bb41e1891bd4d52306e804cdcfedb725e5434434f33663fc4df3b0f9a7c25eab455729fd1aa9aa92ec439eff5c3254
+  languageName: node
+  linkType: hard
+
 "@datadog/sketches-js@npm:^1.0.4":
   version: 1.0.4
   resolution: "@datadog/sketches-js@npm:1.0.4"
@@ -688,6 +704,7 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@threeceelabs/twitterneuralnetwork@workspace:."
   dependencies:
+    "@datadog/datadog-api-client": ^1.0.0-beta.4
     "@liquid-carrot/carrot": ^0.3.20
     "@slack/web-api": ^6.3.0
     "@threeceelabs/mongoose-twitter": ^2.0.1
@@ -874,6 +891,16 @@ __metadata:
     "@types/node": "*"
     form-data: ^3.0.0
   checksum: a52ee9a205ce3130404a1c8eb0a163aa013fb94c5c93150735dda55bd4d21a556713834b11f6f031721ad7c82d9d7f77d45436010cefc11e851f518dfeeaca3e
+  languageName: node
+  linkType: hard
+
+"@types/node-fetch@npm:^2.5.7":
+  version: 2.5.12
+  resolution: "@types/node-fetch@npm:2.5.12"
+  dependencies:
+    "@types/node": "*"
+    form-data: ^3.0.0
+  checksum: ad63c85ba6a9477b8e057ec8682257738130d98e8ece4e31141789bd99df9d9147985cc8bc0cb5c8983ed5aa6bb95d46df23d1e055f4ad5cf8b82fc69cf626c7
   languageName: node
   linkType: hard
 
@@ -2514,6 +2541,13 @@ __metadata:
   languageName: node
   linkType: hard
 
+"durations@npm:^3.4.2":
+  version: 3.4.2
+  resolution: "durations@npm:3.4.2"
+  checksum: 40904f7e7621a3f6302648fd003dfedab6bf700e7b54bc79821c47c321e7f212fdecf01e8021ba07fe99e7b1ff862042c21c0b583de2303800fa959e3df56699
+  languageName: node
+  linkType: hard
+
 "easy-table@npm:1.1.0":
   version: 1.1.0
   resolution: "easy-table@npm:1.1.0"
@@ -2720,7 +2754,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"es6-promise@npm:^4.0.3":
+"es6-promise@npm:^4.0.3, es6-promise@npm:^4.2.4":
   version: 4.2.8
   resolution: "es6-promise@npm:4.2.8"
   checksum: 95614a88873611cb9165a85d36afa7268af5c03a378b35ca7bda9508e1d4f1f6f19a788d4bc755b3fd37c8ebba40782018e02034564ff24c9d6fa37e959ad57d
@@ -7341,6 +7375,16 @@ resolve@^1.1.6:
   dependencies:
     punycode: ^2.1.0
   checksum: 7167432de6817fe8e9e0c9684f1d2de2bb688c94388f7569f7dbdb1587c9f4ca2a77962f134ec90be0cc4d004c939ff0d05acc9f34a0db39a3c797dada262633
+  languageName: node
+  linkType: hard
+
+"url-parse@npm:^1.4.3":
+  version: 1.5.3
+  resolution: "url-parse@npm:1.5.3"
+  dependencies:
+    querystringify: ^2.1.1
+    requires-port: ^1.0.0
+  checksum: c6b32fff835e43f3b1b4150239f459744f0ab1a908841dbfecbfc79bf67f4d6c8d9af1841d0c6d814d45bfa08525cc29312a0bef31db7aa894306b3db07e4ee0
   languageName: node
   linkType: hard
 

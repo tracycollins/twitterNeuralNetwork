@@ -43,6 +43,7 @@ import StatsD from "hot-shots";
 const dogstatsd = new StatsD();
 
 dogstatsd.increment("nnc.starts");
+dogstatsd.event(`${PF} | START`, `APP_VERSION: ${APP_VERSION}`);
 
 const MODULE_ID = PF + "_" + hostname;
 
@@ -567,6 +568,7 @@ function readyToQuit() {
 
 async function quit(opts) {
   dogstatsd.increment("tnn.quits");
+  dogstatsd.event(`${PF} | QUIT`, opts);
 
   const options = opts || {};
 
@@ -2286,6 +2288,7 @@ const fsmStates = {
     onEnter: async function (event, oldState, newState) {
       if (event !== "fsm_tick") {
         dogstatsd.increment("nnc.fsm.reset");
+        dogstatsd.event(`${PF} | RESET`);
         reporter(event, oldState, newState);
         statsObj.fsmStatus = "RESET";
 
@@ -2321,6 +2324,7 @@ const fsmStates = {
   EXIT: {
     onEnter: function (event, oldState, newState) {
       dogstatsd.increment("nnc.fsm.exit");
+      dogstatsd.event(`${PF} | EXIT`, `PREV STATE: ${oldState}`);
       reporter(event, oldState, newState);
       statsObj.fsmStatus = "EXIT";
     },
@@ -2329,6 +2333,10 @@ const fsmStates = {
   ERROR: {
     onEnter: async function (event, oldState, newState) {
       dogstatsd.increment("nnc.fsm.error");
+      dogstatsd.event(
+        `${PF} | ERROR`,
+        `ERROR: ${statsObj.error} | PREV STATE: ${oldState}`
+      );
       reporter(event, oldState, newState);
 
       statsObj.fsmStatus = "ERROR";
@@ -2409,6 +2417,10 @@ const fsmStates = {
           fsm.fsm_ready();
         } catch (err) {
           dogstatsd.increment("nnc.errors");
+          dogstatsd.event(
+            `${PF} | ERROR`,
+            `ERROR: ${err} | PREV STATE: ${oldState}`
+          );
           console.log(PF + " | *** INIT ERROR: " + err);
           statsObj.error = err;
           fsm.fsm_error();
@@ -2448,6 +2460,7 @@ const fsmStates = {
       if (event !== "fsm_tick") {
         try {
           dogstatsd.increment("nnc.fsm.configEvolve");
+          dogstatsd.event(`${PF} | CONFIG EVOLVE`, ``);
           reporter(event, oldState, newState);
           statsObj.fsmStatus = "CONFIG_EVOLVE";
 
@@ -2480,6 +2493,7 @@ const fsmStates = {
           fsm.fsm_evolve();
         } catch (err) {
           dogstatsd.increment("nnc.errors");
+          dogstatsd.event(`${PF} | ERROR`, `${err}`);
           console.log(chalkError(PF + " | *** CONFIG_EVOLVE ERROR: " + err));
           statsObj.error = err;
           fsm.fsm_error();
@@ -2499,6 +2513,10 @@ const fsmStates = {
       if (event !== "fsm_tick") {
         try {
           dogstatsd.increment("nnc.fsm.evolve");
+          dogstatsd.event(
+            `${PF} | EVOLVE`,
+            `NNID: ${childNetworkObj.networkId}`
+          );
           reporter(event, oldState, newState);
 
           statsObj.fsmStatus = "EVOLVE";
@@ -2538,10 +2556,11 @@ const fsmStates = {
             );
 
             await nnDoc.save();
-          } catch (e) {
+          } catch (err) {
             dogstatsd.increment("nnc.errors");
-            console.trace(PF + " | *** NN DB SAVE ERROR: ", e);
-            throw e;
+            dogstatsd.event(`${PF} | NN DB SAVE ERROR`, `ERROR: ${err}`);
+            console.trace(PF + " | *** NN DB SAVE ERROR: ", err);
+            throw err;
           }
 
           console.log(
@@ -2573,6 +2592,7 @@ const fsmStates = {
           delete childNetworkObj.evolve.options.network;
           delete childNetworkObj.evolve.options.schedule;
           dogstatsd.increment("nnc.errors");
+          dogstatsd.event(`${PF} | EVOLVE ERROR`, `ERROR: ${err}`);
 
           const messageObj = {
             op: "EVOLVE_ERROR",
@@ -2621,6 +2641,10 @@ const fsmStates = {
     onEnter: async function (event, oldState, newState) {
       if (event !== "fsm_tick") {
         dogstatsd.increment("nnc.fsm.evolveComplete");
+        dogstatsd.event(
+          `${PF} | EVOLVE COMPLETE`,
+          `CHID: ${configuration.childId}`
+        );
         reporter(event, oldState, newState);
         statsObj.fsmStatus = "EVOLVE_COMPLETE";
 
@@ -3005,6 +3029,7 @@ process.on("message", async function (m) {
 
       case "INIT":
         PF = m.moduleIdPrefix || PF;
+        dogstatsd.event(`${PF} | INIT`, `CHILD ID: ${m.childId}`);
 
         console.log(
           chalkBlueBold(

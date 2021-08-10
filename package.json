@@ -5,6 +5,7 @@
   "description": "twitter neural network",
   "main": "twitterNeuralNetwork.js",
   "dependencies": {
+    "@datadog/datadog-api-client": "^1.0.0-beta.4",
     "@liquid-carrot/carrot": "^0.3.20",
     "@slack/web-api": "^6.3.0",
     "@threeceelabs/mongoose-twitter": "^2.0.1",
