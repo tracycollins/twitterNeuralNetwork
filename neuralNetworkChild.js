@@ -1526,9 +1526,12 @@ function dataSetPrep(params) {
       nodeIdArray,
       maxParallel,
       async function (nodeId) {
-        const user = await global.wordAssoDb.User.findOne({ nodeId: nodeId })
-          .lean()
-          .exec();
+        // const user = await global.wordAssoDb.User.findOne({ nodeId: nodeId })
+        //   .lean()
+        //   .exec();
+        const user = await global.wordAssoDb.User.findOne({
+          nodeId: nodeId,
+        }).lean();
 
         if (!user) {
           statsObj.users.notInDb += 1;
