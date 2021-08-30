@@ -107,5 +107,6 @@
   "bugs": {
     "url": "https://github.com/tracycollins/twitterNeuralNetwork/issues"
   },
-  "homepage": "https://github.com/tracycollins/twitterNeuralNetwork#readme"
+  "homepage": "https://github.com/tracycollins/twitterNeuralNetwork#readme",
+  "packageManager": "yarn@3.0.1"
 }
