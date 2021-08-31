@@ -635,6 +635,44 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@threeceelabs/threeceeutilities@npm:^5.2.23":
+  version: 5.2.23
+  resolution: "@threeceelabs/threeceeutilities@npm:5.2.23"
+  dependencies:
+    "@google-cloud/language": ^4.3.0
+    "@googlemaps/google-maps-services-js": ^3.1.16
+    "@threeceelabs/mongoose-twitter": ^2.0.1
+    "@threeceelabs/twitter-image-parser": ^2.1.2
+    "@threeceelabs/twitter-text-parser": ^2.1.4
+    async: ^3.2.1
+    atob: ^2.1.2
+    btoa: ^1.2.1
+    d3-scale: ^4.0.0
+    deep-copy: ^1.4.2
+    deepmerge: ^4.2.2
+    dot-prop: ^6.0.1
+    dotenv: ^10.0.0
+    eventemitter3: ^4.0.7
+    fs-extra: ^10.0.0
+    hashmap: ^2.4.0
+    ioredis: ^4.27.9
+    is-empty: ^1.2.0
+    isurl: ^4.0.2
+    limiter: 2.0.1
+    lodash: ^4.17.21
+    object-path: ^0.11.7
+    object-sizeof: ^1.6.1
+    object.defaults: ^1.1.0
+    parse-json: ^5.2.0
+    retry: ^0.13.1
+    treeify: ^1.1.0
+    twit: ^2.2.11
+    url-parse: ^1.5.3
+    write-json-file: ^5.0.0
+  checksum: 135ed34e1158f7115e7622c2a9c80ca97933525033d7046ffe36769a669b66fb00c53a1a3f9aa0d4eea66a55bdd628b02a3f5bfba643f15f1a308485865965b1
+  languageName: node
+  linkType: hard
+
 "@threeceelabs/tweet-server-controller@npm:^1.0.586":
   version: 1.0.586
   resolution: "@threeceelabs/tweet-server-controller@npm:1.0.586"
@@ -753,7 +791,7 @@ __metadata:
     "@threeceelabs/mongoose-twitter": ^2.0.1
     "@threeceelabs/neural-network-tools": ^3.1.8
     "@threeceelabs/threecee-utilities": ^1.2.10
-    "@threeceelabs/threeceeutilities": ^5.2.22
+    "@threeceelabs/threeceeutilities": ^5.2.23
     archiver: ^5.3.0
     array-normalize: ^2.0.0
     array-slice: ^1.1.0
@@ -791,6 +829,7 @@ __metadata:
     jsonfile: ^6.1.0
     jsonpack: ^1.1.5
     keyword-extractor: 0.0.20
+    limiter: 2.0.1
     lockfile: ^1.0.4
     lodash: ^4.17.21
     measured-core: ^2.0.0
@@ -4542,6 +4581,13 @@ fsevents@~2.1.1:
   languageName: node
   linkType: hard
 
+"just-performance@npm:4.2.0":
+  version: 4.2.0
+  resolution: "just-performance@npm:4.2.0"
+  checksum: 88a52ea28fddb43673f5dbcf323513d0661ff481f416e3aa22b68ebaba228f22426687017ee50363d9a34401fb1617c2de50042a3e1d9fbc12cbbee31c7bc237
+  languageName: node
+  linkType: hard
+
 "just-performance@npm:4.3.0":
   version: 4.3.0
   resolution: "just-performance@npm:4.3.0"
@@ -4648,6 +4694,15 @@ fsevents@~2.1.1:
   version: 1.7.4
   resolution: "lex@npm:1.7.4"
   checksum: 0ae74ed4705be091948f17f9d41fe755b79760b5ad33bdda91a803f4799344e3106083c2519dd51ce529434cf8d4ce61ea985b5da955b8451a73e656c810cf1b
+  languageName: node
+  linkType: hard
+
+"limiter@npm:2.0.1":
+  version: 2.0.1
+  resolution: "limiter@npm:2.0.1"
+  dependencies:
+    just-performance: 4.2.0
+  checksum: 3ef63820e5bb29e37d23bf9d28247a7451f17467b0a57cad092caf8d2d68a2d0e0476d79e6b5aac7436fde1b169185934b43ceffffa49fcc3ad86109b589d52d
   languageName: node
   linkType: hard
 
