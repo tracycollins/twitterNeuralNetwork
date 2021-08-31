@@ -1,13 +1,15 @@
 {
   "name": "@threeceelabs/twitterneuralnetwork",
   "type": "module",
-  "version": "3.1.1",
+  "version": "3.1.2",
   "description": "twitter neural network",
   "main": "twitterNeuralNetwork.js",
   "dependencies": {
     "@datadog/datadog-api-client": "^1.0.0-beta.5",
     "@liquid-carrot/carrot": "^0.3.20",
     "@slack/web-api": "^6.4.0",
+    "@tensorflow/tfjs": "^3.9.0",
+    "@tensorflow/tfjs-data": "^3.9.0",
     "@threeceelabs/mongoose-twitter": "^2.0.1",
     "@threeceelabs/neural-network-tools": "^3.1.8",
     "@threeceelabs/threecee-utilities": "^1.2.10",
