@@ -524,21 +524,22 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@threeceelabs/neural-network-tools@npm:^3.1.8":
-  version: 3.1.8
-  resolution: "@threeceelabs/neural-network-tools@npm:3.1.8"
+"@threeceelabs/neural-network-tools@npm:^3.1.10":
+  version: 3.1.10
+  resolution: "@threeceelabs/neural-network-tools@npm:3.1.10"
   dependencies:
     "@liquid-carrot/carrot": ^0.3.20
     "@mapbox/node-pre-gyp": ^1.0.5
     "@tensorflow/tfjs-node": ^3.9.0
     "@threeceelabs/mongoose-twitter": ^2.0.1
     "@threeceelabs/mongoose-utilities": ^3.0.0
-    "@threeceelabs/threeceeutilities": ^5.2.22
+    "@threeceelabs/threeceeutilities": ^5.2.23
     async: ^3.2.1
     deepcopy: ^2.1.0
     fsevents: ^2.3.2
     hashmap: ^2.4.0
     is-empty: ^1.2.0
+    limiter: 2.0.1
     lodash: ^4.17.21
     moment: ^2.29.1
     neataptic: ^1.4.7
@@ -547,7 +548,7 @@ __metadata:
     seedrandom: ^3.0.5
     shuffle-array: ^1.0.1
     text-table: ^0.2.0
-  checksum: ad0432e5199667aa0364120c5899ad418a98e5d58945c140f4a8a462b775a1b2d6bd4cfa58ab2354be2fa3ced30adc52fabb0c48e0ee93bca69adb81cef5f0d4
+  checksum: 7d4008d2d8df9063a915938d66d0c599890d595f87f858d3d1868efe2f53af0c5a11b60d7195d75785ca4760ae563761142a3fd993cb41c375016d81673d1c5a
   languageName: node
   linkType: hard
 
@@ -594,44 +595,6 @@ __metadata:
     url-parse: ^1.5.1
     write-json-file: ^4.3.0
   checksum: 0cd1fde2e77818efc6008722709dfa1fb0f7e503c9a908365656eba476be5c0c0725dc9df8636f42cfa6aa0a1d1cf0db68e9bed39dae887b9f46d2a31680dcb5
-  languageName: node
-  linkType: hard
-
-"@threeceelabs/threeceeutilities@npm:^5.2.22":
-  version: 5.2.22
-  resolution: "@threeceelabs/threeceeutilities@npm:5.2.22"
-  dependencies:
-    "@google-cloud/language": ^4.3.0
-    "@googlemaps/google-maps-services-js": ^3.1.16
-    "@threeceelabs/mongoose-twitter": ^2.0.1
-    "@threeceelabs/twitter-image-parser": ^2.1.2
-    "@threeceelabs/twitter-text-parser": ^2.1.4
-    async: ^3.2.1
-    atob: ^2.1.2
-    btoa: ^1.2.1
-    d3-scale: ^4.0.0
-    deep-copy: ^1.4.2
-    deepmerge: ^4.2.2
-    dot-prop: ^6.0.1
-    dotenv: ^10.0.0
-    eventemitter3: ^4.0.7
-    fs-extra: ^10.0.0
-    hashmap: ^2.4.0
-    ioredis: ^4.27.9
-    is-empty: ^1.2.0
-    isurl: ^4.0.2
-    limiter: 2.1.0
-    lodash: ^4.17.21
-    object-path: ^0.11.7
-    object-sizeof: ^1.6.1
-    object.defaults: ^1.1.0
-    parse-json: ^5.2.0
-    retry: ^0.13.1
-    treeify: ^1.1.0
-    twit: ^2.2.11
-    url-parse: ^1.5.3
-    write-json-file: ^5.0.0
-  checksum: 4192296b7172ec06c279784fef1e5b0499bae4db1f94761563cb0f1072a7258450c8acc9ce91492b5a8959eb516722b95167547c2270124bb61f0dd4c42b111c
   languageName: node
   linkType: hard
 
@@ -789,7 +752,7 @@ __metadata:
     "@tensorflow/tfjs": ^3.9.0
     "@tensorflow/tfjs-data": ^3.9.0
     "@threeceelabs/mongoose-twitter": ^2.0.1
-    "@threeceelabs/neural-network-tools": ^3.1.8
+    "@threeceelabs/neural-network-tools": ^3.1.10
     "@threeceelabs/threecee-utilities": ^1.2.10
     "@threeceelabs/threeceeutilities": ^5.2.23
     archiver: ^5.3.0
@@ -4588,13 +4551,6 @@ fsevents@~2.1.1:
   languageName: node
   linkType: hard
 
-"just-performance@npm:4.3.0":
-  version: 4.3.0
-  resolution: "just-performance@npm:4.3.0"
-  checksum: 37e226e308689b27ad7e0cdb2b2181c8be85f28cb0026db4b68c189f4894828a2865ea4a7a5f3488f4e3390bac1f9428fc6e40a554c068b08e5992e26920e376
-  languageName: node
-  linkType: hard
-
 "jwa@npm:^2.0.0":
   version: 2.0.0
   resolution: "jwa@npm:2.0.0"
@@ -4703,15 +4659,6 @@ fsevents@~2.1.1:
   dependencies:
     just-performance: 4.2.0
   checksum: 3ef63820e5bb29e37d23bf9d28247a7451f17467b0a57cad092caf8d2d68a2d0e0476d79e6b5aac7436fde1b169185934b43ceffffa49fcc3ad86109b589d52d
-  languageName: node
-  linkType: hard
-
-"limiter@npm:2.1.0":
-  version: 2.1.0
-  resolution: "limiter@npm:2.1.0"
-  dependencies:
-    just-performance: 4.3.0
-  checksum: 989092bfdafeefb37bd139f6451f165d449a628cd6fbe9308ed5147a9af24631f031e16466a3e48283418e0bea45c06aa1710f8f8945bc56ea7ef01f94ed5c65
   languageName: node
   linkType: hard
 
