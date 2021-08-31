@@ -783,7 +783,7 @@ __metadata:
     measured-core: ^2.0.0
     mentions-regex: ^2.0.3
     moment: ^2.29.1
-    mongoose: ^6.0.2
+    mongoose: ^6.0.3
     mongoose-paginate: ^5.0.3
     neataptic: ^1.4.7
     node-cache: ^5.1.2
@@ -5221,9 +5221,9 @@ fsevents@~2.1.1:
   languageName: node
   linkType: hard
 
-"mongoose@npm:^6.0.2":
-  version: 6.0.2
-  resolution: "mongoose@npm:6.0.2"
+"mongoose@npm:^6.0.3":
+  version: 6.0.3
+  resolution: "mongoose@npm:6.0.3"
   dependencies:
     bson: ^4.2.2
     kareem: 2.3.2
@@ -5234,7 +5234,7 @@ fsevents@~2.1.1:
     regexp-clone: 1.0.0
     sift: 13.5.2
     sliced: 1.0.1
-  checksum: 114c7c169a6cc70fd4e4191e8eec72ebf064b70c80e924451ef4dfb4c64145a52f6e875806430b712ef6cf4a95ba95e2a0b3ba0a2eb3d29e63b0401b4132ffb5
+  checksum: 2ccaa2bb7a8b30dbdb171968657e61e19620aa435235b7eda21c2928e2f0ca8fdd71dfba73343f10caa588aead6f139dab63fc158611e261020e729dee39aa0f
   languageName: node
   linkType: hard
 
