@@ -108,12 +108,21 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@google-cloud/language@npm:^4.2.1, @google-cloud/language@npm:^4.2.6":
+"@google-cloud/language@npm:^4.2.1":
   version: 4.2.6
   resolution: "@google-cloud/language@npm:4.2.6"
   dependencies:
     google-gax: ^2.17.0
   checksum: 42a9695944042f210472d6326e46d95a752fb0722002a054cab155249d77ad0e29f691aa085cde0beb22bbdd28020fef25940a49eff5ce2afa4b3bfb1bdc62b4
+  languageName: node
+  linkType: hard
+
+"@google-cloud/language@npm:^4.3.0":
+  version: 4.3.0
+  resolution: "@google-cloud/language@npm:4.3.0"
+  dependencies:
+    google-gax: ^2.24.1
+  checksum: da5c0e4732b646c53b69da83c37a64cabe2b6e8405c055c335e0a084faa401d8828254dc05b9fc2c8457fc85ca6e74fabe1ee62b1c9bbc19194fa8476a5c8845
   languageName: node
   linkType: hard
 
@@ -345,46 +354,46 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@tensorflow/tfjs-backend-cpu@npm:3.7.0":
-  version: 3.7.0
-  resolution: "@tensorflow/tfjs-backend-cpu@npm:3.7.0"
+"@tensorflow/tfjs-backend-cpu@npm:3.9.0":
+  version: 3.9.0
+  resolution: "@tensorflow/tfjs-backend-cpu@npm:3.9.0"
   dependencies:
     "@types/seedrandom": 2.4.27
     seedrandom: 2.4.3
   peerDependencies:
-    "@tensorflow/tfjs-core": 3.7.0
-  checksum: 4af2a4961c5cf0bf9414c64e14f60c685c212caab91843a4a789439e1aefcd2dc64073e0657383e47d445a95b269a6be291356fa8854bf8df17adcff4e0b7fba
+    "@tensorflow/tfjs-core": 3.9.0
+  checksum: 625e3d3cf4d26587c10c1d9ab9007be84a9b8dccd41050720189c6112674f2ec6f3522520e3171cb84eb43fd78052b4052e9a42ba2a2033a874b2a2fc3a84d20
   languageName: node
   linkType: hard
 
-"@tensorflow/tfjs-backend-webgl@npm:3.7.0":
-  version: 3.7.0
-  resolution: "@tensorflow/tfjs-backend-webgl@npm:3.7.0"
+"@tensorflow/tfjs-backend-webgl@npm:3.9.0":
+  version: 3.9.0
+  resolution: "@tensorflow/tfjs-backend-webgl@npm:3.9.0"
   dependencies:
-    "@tensorflow/tfjs-backend-cpu": 3.7.0
+    "@tensorflow/tfjs-backend-cpu": 3.9.0
     "@types/offscreencanvas": ~2019.3.0
     "@types/seedrandom": 2.4.27
     "@types/webgl-ext": 0.0.30
     "@types/webgl2": 0.0.5
     seedrandom: 2.4.3
   peerDependencies:
-    "@tensorflow/tfjs-core": 3.7.0
-  checksum: 44d9e6a5dddea4136063827b933eac399e513d7e8dc829ff8ad570db8d9d24f45f48ce93745e21d10e5f5f4bf11dd3b5616124af49d25680f1cf77071d168bb9
+    "@tensorflow/tfjs-core": 3.9.0
+  checksum: 5120c8d5af0ceaac87660078adfdd7c455d7046b60b801b6da82c073b0fadfcabac75ac5d9fb90a585a8f6350081f344e26e90e8ae2e6b4c4554bbdf23f1a85b
   languageName: node
   linkType: hard
 
-"@tensorflow/tfjs-converter@npm:3.7.0":
-  version: 3.7.0
-  resolution: "@tensorflow/tfjs-converter@npm:3.7.0"
+"@tensorflow/tfjs-converter@npm:3.9.0":
+  version: 3.9.0
+  resolution: "@tensorflow/tfjs-converter@npm:3.9.0"
   peerDependencies:
-    "@tensorflow/tfjs-core": 3.7.0
-  checksum: cb4df8e0f6127ee787881360dfa4be4554e0f288328000ee2bac8600d0f6fa9c562b16c3bc154b888b57322e0e2a6ad5031063c6140b1d2e631991b2ef83931d
+    "@tensorflow/tfjs-core": 3.9.0
+  checksum: 97e7fa9c4fdcd497ef990349b5a705610582afb08a757c44f3fc429d8a0ae22f8590b2537c50cbbbcd8f53f8e6db622aded292db4dc0d61314361426ba50cb8e
   languageName: node
   linkType: hard
 
-"@tensorflow/tfjs-core@npm:3.7.0":
-  version: 3.7.0
-  resolution: "@tensorflow/tfjs-core@npm:3.7.0"
+"@tensorflow/tfjs-core@npm:3.9.0":
+  version: 3.9.0
+  resolution: "@tensorflow/tfjs-core@npm:3.9.0"
   dependencies:
     "@types/long": ^4.0.1
     "@types/offscreencanvas": ~2019.3.0
@@ -393,58 +402,58 @@ __metadata:
     long: 4.0.0
     node-fetch: ~2.6.1
     seedrandom: 2.4.3
-  checksum: fcf1e81e6b085e485b61dc60409c1c9b1ad72ef276d9ba21d321b015e4e3aa591400236f476d35b6aad0338579e14739a9841d559a12043d192b2bff382cf50b
+  checksum: 4e6178d4abb2691a53ad4e785476d858a59eaaef58683e645a394a2d4e3c3a0736417f3397d12efbc8dfc7e1037998fb02bb23841d1d416c133a8e359558d075
   languageName: node
   linkType: hard
 
-"@tensorflow/tfjs-data@npm:3.7.0":
-  version: 3.7.0
-  resolution: "@tensorflow/tfjs-data@npm:3.7.0"
+"@tensorflow/tfjs-data@npm:3.9.0":
+  version: 3.9.0
+  resolution: "@tensorflow/tfjs-data@npm:3.9.0"
   dependencies:
     "@types/node-fetch": ^2.1.2
     node-fetch: ~2.6.1
   peerDependencies:
-    "@tensorflow/tfjs-core": 3.7.0
+    "@tensorflow/tfjs-core": 3.9.0
     seedrandom: ~2.4.3
-  checksum: 4c49c5c72cf0b15a3f907620e467b5eee009063465c135892174a6523312e956725f6d4f6362ad62f357e4bf0b82f212f361c08d9524360416b6b60cc2bbe31a
+  checksum: 8fddc0d0a175d926e45f8d898262325ce9f6aea41aedcfa82dfde065c55976ccebb023cc244db688f5822859b8757630d4a33917dd2b3607d5f6423e69d24922
   languageName: node
   linkType: hard
 
-"@tensorflow/tfjs-layers@npm:3.7.0":
-  version: 3.7.0
-  resolution: "@tensorflow/tfjs-layers@npm:3.7.0"
+"@tensorflow/tfjs-layers@npm:3.9.0":
+  version: 3.9.0
+  resolution: "@tensorflow/tfjs-layers@npm:3.9.0"
   peerDependencies:
-    "@tensorflow/tfjs-core": 3.7.0
-  checksum: 264d9ec3b42928acab0afd553f5d577701fdd7e07b1d9a91d0bc2ed3e36ffb5921878d786544af13ad57a994e47ed4a68fccb1c81b1076949b20898c47e36dc5
+    "@tensorflow/tfjs-core": 3.9.0
+  checksum: 423989744a7e5cad361cdf31c738d14f4d160a6bac7ec1b04523265c1320a4d51e90cfe447c6057d0cf6dd036302afdd3756117e733a61616367af316b4b0de6
   languageName: node
   linkType: hard
 
-"@tensorflow/tfjs-node@npm:^3.7.0":
-  version: 3.7.0
-  resolution: "@tensorflow/tfjs-node@npm:3.7.0"
+"@tensorflow/tfjs-node@npm:^3.9.0":
+  version: 3.9.0
+  resolution: "@tensorflow/tfjs-node@npm:3.9.0"
   dependencies:
     "@mapbox/node-pre-gyp": 1.0.4
-    "@tensorflow/tfjs": 3.7.0
-    adm-zip: ^0.4.11
+    "@tensorflow/tfjs": 3.9.0
+    adm-zip: ^0.5.2
     google-protobuf: ^3.9.2
     https-proxy-agent: ^2.2.1
     progress: ^2.0.0
     rimraf: ^2.6.2
     tar: ^4.4.6
-  checksum: fef85ddda013185818c7be815188b835968d07d8bdd49f454acd7a20a1aa72f682280448bf809f7942a037251dd80afe3753022749b6ff6c29ef216e747335ba
+  checksum: 7921b94810bbfbf4623447fbf4ba50fb3d3f593e9c121b8e8b51b5bc677e43c34e4e4ac45448682856fef2eef21a4ab410bfa9e5786dfccf8c2f12054ac4a28c
   languageName: node
   linkType: hard
 
-"@tensorflow/tfjs@npm:3.7.0":
-  version: 3.7.0
-  resolution: "@tensorflow/tfjs@npm:3.7.0"
+"@tensorflow/tfjs@npm:3.9.0":
+  version: 3.9.0
+  resolution: "@tensorflow/tfjs@npm:3.9.0"
   dependencies:
-    "@tensorflow/tfjs-backend-cpu": 3.7.0
-    "@tensorflow/tfjs-backend-webgl": 3.7.0
-    "@tensorflow/tfjs-converter": 3.7.0
-    "@tensorflow/tfjs-core": 3.7.0
-    "@tensorflow/tfjs-data": 3.7.0
-    "@tensorflow/tfjs-layers": 3.7.0
+    "@tensorflow/tfjs-backend-cpu": 3.9.0
+    "@tensorflow/tfjs-backend-webgl": 3.9.0
+    "@tensorflow/tfjs-converter": 3.9.0
+    "@tensorflow/tfjs-core": 3.9.0
+    "@tensorflow/tfjs-data": 3.9.0
+    "@tensorflow/tfjs-layers": 3.9.0
     argparse: ^1.0.10
     chalk: ^4.1.0
     core-js: 3
@@ -452,7 +461,7 @@ __metadata:
     yargs: ^16.0.3
   bin:
     tfjs-custom-module: dist/tools/custom_module/cli.js
-  checksum: 4d913ced9af9fc5961bd58ade620d747d847a621a65193dae091a85b1cd28cdaae46f2be67552f1f4540d32ebc7ace449dd70a0431867b723fa9ead43dd50842
+  checksum: c8f0391ec5dd9229a408aba56c6a14972142b917b1c3b31b6411be3bf0b19b8ecf4be966e4715bfc47a7df6a9e6222c16c7758d24ce130d855c438a50a1bab98
   languageName: node
   linkType: hard
 
@@ -515,17 +524,17 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@threeceelabs/neural-network-tools@npm:^3.1.6":
-  version: 3.1.6
-  resolution: "@threeceelabs/neural-network-tools@npm:3.1.6"
+"@threeceelabs/neural-network-tools@npm:^3.1.8":
+  version: 3.1.8
+  resolution: "@threeceelabs/neural-network-tools@npm:3.1.8"
   dependencies:
     "@liquid-carrot/carrot": ^0.3.20
     "@mapbox/node-pre-gyp": ^1.0.5
-    "@tensorflow/tfjs-node": ^3.7.0
+    "@tensorflow/tfjs-node": ^3.9.0
     "@threeceelabs/mongoose-twitter": ^2.0.1
     "@threeceelabs/mongoose-utilities": ^3.0.0
-    "@threeceelabs/threeceeutilities": ^5.2.8
-    async: ^3.2.0
+    "@threeceelabs/threeceeutilities": ^5.2.22
+    async: ^3.2.1
     deepcopy: ^2.1.0
     fsevents: ^2.3.2
     hashmap: ^2.4.0
@@ -538,7 +547,7 @@ __metadata:
     seedrandom: ^3.0.5
     shuffle-array: ^1.0.1
     text-table: ^0.2.0
-  checksum: efa9001ceb80ef4f764207c4cee3f071601795d412f98eac97d17ac25b65f50a447482d9501b0e2664916ae431205f3a7ae40c372559e46c68833c29240bb481
+  checksum: ad0432e5199667aa0364120c5899ad418a98e5d58945c140f4a8a462b775a1b2d6bd4cfa58ab2354be2fa3ced30adc52fabb0c48e0ee93bca69adb81cef5f0d4
   languageName: node
   linkType: hard
 
@@ -588,40 +597,41 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@threeceelabs/threeceeutilities@npm:^5.2.8":
-  version: 5.2.8
-  resolution: "@threeceelabs/threeceeutilities@npm:5.2.8"
+"@threeceelabs/threeceeutilities@npm:^5.2.22":
+  version: 5.2.22
+  resolution: "@threeceelabs/threeceeutilities@npm:5.2.22"
   dependencies:
-    "@google-cloud/language": ^4.2.6
+    "@google-cloud/language": ^4.3.0
     "@googlemaps/google-maps-services-js": ^3.1.16
     "@threeceelabs/mongoose-twitter": ^2.0.1
-    "@threeceelabs/twitter-image-parser": ^2.1.1
+    "@threeceelabs/twitter-image-parser": ^2.1.2
     "@threeceelabs/twitter-text-parser": ^2.1.4
-    async: ^3.2.0
+    async: ^3.2.1
     atob: ^2.1.2
     btoa: ^1.2.1
     d3-scale: ^4.0.0
     deep-copy: ^1.4.2
     deepmerge: ^4.2.2
+    dot-prop: ^6.0.1
     dotenv: ^10.0.0
     eventemitter3: ^4.0.7
     fs-extra: ^10.0.0
     hashmap: ^2.4.0
-    ioredis: ^4.27.6
+    ioredis: ^4.27.9
     is-empty: ^1.2.0
     isurl: ^4.0.2
-    limiter: 2.0.1
+    limiter: 2.1.0
     lodash: ^4.17.21
-    object-path: ^0.11.5
+    object-path: ^0.11.7
     object-sizeof: ^1.6.1
     object.defaults: ^1.1.0
     parse-json: ^5.2.0
     retry: ^0.13.1
     treeify: ^1.1.0
     twit: ^2.2.11
-    url-parse: ^1.5.1
-    write-json-file: ^4.3.0
-  checksum: b1bb8b0e87d1c33fad7c570b8cf075b6ff44b908c5ea82d7f7b8c4be7c1475c26b0e2695f6042ea62374822dfd6112d931ce52313870e68bfdc3beb5e4612186
+    url-parse: ^1.5.3
+    write-json-file: ^5.0.0
+  checksum: 4192296b7172ec06c279784fef1e5b0499bae4db1f94761563cb0f1072a7258450c8acc9ce91492b5a8959eb516722b95167547c2270124bb61f0dd4c42b111c
   languageName: node
   linkType: hard
 
@@ -666,9 +676,9 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@threeceelabs/twitter-image-parser@npm:^2.1.1":
-  version: 2.1.1
-  resolution: "@threeceelabs/twitter-image-parser@npm:2.1.1"
+"@threeceelabs/twitter-image-parser@npm:^2.1.2":
+  version: 2.1.2
+  resolution: "@threeceelabs/twitter-image-parser@npm:2.1.2"
   dependencies:
     "@google-cloud/vision": ^2.3.5
     "@threeceelabs/mergehistograms": ^1.1.3
@@ -676,7 +686,7 @@ __metadata:
     keyword-extractor: 0.0.20
     lodash: ^4.17.21
     moment: ^2.29.1
-  checksum: faea853ab2f6e99f170a80476b472ea95bb6283e26cff10c4e6084a5bbdfc316bd51e66f71f4f974c47b15b15cb95f04f56bc91941b6d594ba6b928ddf22f39d
+  checksum: c49edcaecdbd4b34e94efda60d04137e2ddf17a79df3768e07901f75f934370104d3d0fdbc11e45f5755165509c3f24d1cbc058e734ce21366458639bfce46af
   languageName: node
   linkType: hard
 
@@ -739,8 +749,9 @@ __metadata:
     "@liquid-carrot/carrot": ^0.3.20
     "@slack/web-api": ^6.4.0
     "@threeceelabs/mongoose-twitter": ^2.0.1
-    "@threeceelabs/neural-network-tools": ^3.1.6
+    "@threeceelabs/neural-network-tools": ^3.1.8
     "@threeceelabs/threecee-utilities": ^1.2.10
+    "@threeceelabs/threeceeutilities": ^5.2.22
     archiver: ^5.3.0
     array-normalize: ^2.0.0
     array-slice: ^1.1.0
@@ -1048,10 +1059,10 @@ __metadata:
   languageName: node
   linkType: hard
 
-"adm-zip@npm:^0.4.11":
-  version: 0.4.16
-  resolution: "adm-zip@npm:0.4.16"
-  checksum: 5ea46664d8b3b073fffeb7f934705fea288708745e708cffc1dd732ce3d2672cecd476b243f9d051892fd12952db2b6bd061975e1ff40057246f6d0cb6534a50
+"adm-zip@npm:^0.5.2":
+  version: 0.5.5
+  resolution: "adm-zip@npm:0.5.5"
+  checksum: b4edd91e109fe240690f5124456eff839d515d6837c6689dc17379f41f2f5223a982c6a53d5c64197a7669c8b93e75dd1fece78812a0b610d734936caa4e86b0
   languageName: node
   linkType: hard
 
@@ -3498,6 +3509,23 @@ fsevents@~2.1.1:
   languageName: node
   linkType: hard
 
+"google-auth-library@npm:^7.6.1":
+  version: 7.8.0
+  resolution: "google-auth-library@npm:7.8.0"
+  dependencies:
+    arrify: ^2.0.0
+    base64-js: ^1.3.0
+    ecdsa-sig-formatter: ^1.0.11
+    fast-text-encoding: ^1.0.0
+    gaxios: ^4.0.0
+    gcp-metadata: ^4.2.0
+    gtoken: ^5.0.4
+    jws: ^4.0.0
+    lru-cache: ^6.0.0
+  checksum: 527ebb6ed4d6e46df6bd5f8c0a4b8ac982cbb5f13222dd915ae314f536a5cf07aa475c7f71fa3709f55ae6f77e6fcbca1412107c784a44e868579863a863a408
+  languageName: node
+  linkType: hard
+
 "google-gax@npm:^2.17.0":
   version: 2.17.1
   resolution: "google-gax@npm:2.17.1"
@@ -3517,6 +3545,29 @@ fsevents@~2.1.1:
   bin:
     compileProtos: build/tools/compileProtos.js
   checksum: ca0a02cda1a4823e1039e423faf1782af2522533a9ae92b7ff1e01587858c7a724e792a541d2d77876183dda621c959ea0757f303de77a76cf7c6a19e8d6fad4
+  languageName: node
+  linkType: hard
+
+"google-gax@npm:^2.24.1":
+  version: 2.24.2
+  resolution: "google-gax@npm:2.24.2"
+  dependencies:
+    "@grpc/grpc-js": ~1.3.0
+    "@grpc/proto-loader": ^0.6.1
+    "@types/long": ^4.0.0
+    abort-controller: ^3.0.0
+    duplexify: ^4.0.0
+    fast-text-encoding: ^1.0.3
+    google-auth-library: ^7.6.1
+    is-stream-ended: ^0.1.4
+    node-fetch: ^2.6.1
+    object-hash: ^2.1.1
+    proto3-json-serializer: ^0.1.1
+    protobufjs: 6.11.2
+    retry-request: ^4.0.0
+  bin:
+    compileProtos: build/tools/compileProtos.js
+  checksum: 19e5d3bebc40b554ce403f2a313f529555b25ba21fba7da743a586d059921857fcbd8cee9034415b4c3cad9985f0c2e6ec702b6d73b1a5657a920d65cf964a47
   languageName: node
   linkType: hard
 
@@ -3889,7 +3940,7 @@ fsevents@~2.1.1:
   languageName: node
   linkType: hard
 
-"ioredis@npm:^4.23.0, ioredis@npm:^4.27.6":
+"ioredis@npm:^4.23.0":
   version: 4.27.6
   resolution: "ioredis@npm:4.27.6"
   dependencies:
@@ -3904,6 +3955,25 @@ fsevents@~2.1.1:
     redis-parser: ^3.0.0
     standard-as-callback: ^2.1.0
   checksum: 5ec6d6f3869fd63dfa9773b82e19ecb685f4a29af70c5172e400c534b77f3950806f551c88233be2795e803a7a68da0c24c92feb7e8ce07e70aed6fd0c85d513
+  languageName: node
+  linkType: hard
+
+"ioredis@npm:^4.27.9":
+  version: 4.27.9
+  resolution: "ioredis@npm:4.27.9"
+  dependencies:
+    cluster-key-slot: ^1.1.0
+    debug: ^4.3.1
+    denque: ^1.1.0
+    lodash.defaults: ^4.2.0
+    lodash.flatten: ^4.4.0
+    lodash.isarguments: ^3.1.0
+    p-map: ^2.1.0
+    redis-commands: 1.7.0
+    redis-errors: ^1.2.0
+    redis-parser: ^3.0.0
+    standard-as-callback: ^2.1.0
+  checksum: 0472f20366759fe17c71c42105869dbaba99ad54e3fc14428cd6e1d28f8767ff1aea03bfc0228b29bf6030d7ae1ac856941ab6698c850a9b27fd8a17328e7f9f
   languageName: node
   linkType: hard
 
@@ -4470,10 +4540,10 @@ fsevents@~2.1.1:
   languageName: node
   linkType: hard
 
-"just-performance@npm:4.2.0":
-  version: 4.2.0
-  resolution: "just-performance@npm:4.2.0"
-  checksum: 88a52ea28fddb43673f5dbcf323513d0661ff481f416e3aa22b68ebaba228f22426687017ee50363d9a34401fb1617c2de50042a3e1d9fbc12cbbee31c7bc237
+"just-performance@npm:4.3.0":
+  version: 4.3.0
+  resolution: "just-performance@npm:4.3.0"
+  checksum: 37e226e308689b27ad7e0cdb2b2181c8be85f28cb0026db4b68c189f4894828a2865ea4a7a5f3488f4e3390bac1f9428fc6e40a554c068b08e5992e26920e376
   languageName: node
   linkType: hard
 
@@ -4579,12 +4649,12 @@ fsevents@~2.1.1:
   languageName: node
   linkType: hard
 
-"limiter@npm:2.0.1":
-  version: 2.0.1
-  resolution: "limiter@npm:2.0.1"
+"limiter@npm:2.1.0":
+  version: 2.1.0
+  resolution: "limiter@npm:2.1.0"
   dependencies:
-    just-performance: 4.2.0
-  checksum: 3ef63820e5bb29e37d23bf9d28247a7451f17467b0a57cad092caf8d2d68a2d0e0476d79e6b5aac7436fde1b169185934b43ceffffa49fcc3ad86109b589d52d
+    just-performance: 4.3.0
+  checksum: 989092bfdafeefb37bd139f6451f165d449a628cd6fbe9308ed5147a9af24631f031e16466a3e48283418e0bea45c06aa1710f8f8945bc56ea7ef01f94ed5c65
   languageName: node
   linkType: hard
 
@@ -4662,6 +4732,13 @@ fsevents@~2.1.1:
   version: 4.4.0
   resolution: "lodash.flatten@npm:4.4.0"
   checksum: 0ac34a393d4b795d4b7421153d27c13ae67e08786c9cbb60ff5b732210d46f833598eee3fb3844bb10070e8488efe390ea53bb567377e0cb47e9e630bf0811cb
+  languageName: node
+  linkType: hard
+
+"lodash.isarguments@npm:^3.1.0":
+  version: 3.1.0
+  resolution: "lodash.isarguments@npm:3.1.0"
+  checksum: ae1526f3eb5c61c77944b101b1f655f846ecbedcb9e6b073526eba6890dc0f13f09f72e11ffbf6540b602caee319af9ac363d6cdd6be41f4ee453436f04f13b5
   languageName: node
   linkType: hard
 
@@ -6053,21 +6130,14 @@ fsevents@~2.1.1:
   languageName: node
   linkType: hard
 
-"protobufjs@npm:^5.0.3":
-  version: 5.0.3
-  resolution: "protobufjs@npm:5.0.3"
-  dependencies:
-    ascli: ~1
-    bytebuffer: ~5
-    glob: ^7.0.5
-    yargs: ^3.10.0
-  bin:
-    pbjs: ./bin/pbjs
-  checksum: 3ffb785028696efc642555c8fb7c56b5ecbbe2db42da71997a7d637b15bd555bca0a93b7bc8dd542e1369da214d0a5e669f2ad34ac191c80c1e7e8edc25406c0
+"proto3-json-serializer@npm:^0.1.1":
+  version: 0.1.3
+  resolution: "proto3-json-serializer@npm:0.1.3"
+  checksum: d1941fadc1d7efe1cbe965b4e19b29f40857ab6cceb0b82d5de672475092c35ef4e62e39e8fe39c9040dd76853bde4d0b47cfac3d2b04680a3d4019e98993cf4
   languageName: node
   linkType: hard
 
-"protobufjs@npm:^6.10.0, protobufjs@npm:^6.10.2, protobufjs@npm:~6.11.0":
+"protobufjs@npm:6.11.2, protobufjs@npm:^6.10.0, protobufjs@npm:^6.10.2, protobufjs@npm:~6.11.0":
   version: 6.11.2
   resolution: "protobufjs@npm:6.11.2"
   dependencies:
@@ -6088,6 +6158,20 @@ fsevents@~2.1.1:
     pbjs: bin/pbjs
     pbts: bin/pbts
   checksum: 80e9d9610c3eb66f9eae4e44a1ae30381cedb721b7d5f635d781fe4c507e2c77bb7c879addcd1dda79733d3ae589d9e66fd18d42baf99b35df7382a0f9920795
+  languageName: node
+  linkType: hard
+
+"protobufjs@npm:^5.0.3":
+  version: 5.0.3
+  resolution: "protobufjs@npm:5.0.3"
+  dependencies:
+    ascli: ~1
+    bytebuffer: ~5
+    glob: ^7.0.5
+    yargs: ^3.10.0
+  bin:
+    pbjs: ./bin/pbjs
+  checksum: 3ffb785028696efc642555c8fb7c56b5ecbbe2db42da71997a7d637b15bd555bca0a93b7bc8dd542e1369da214d0a5e669f2ad34ac191c80c1e7e8edc25406c0
   languageName: node
   linkType: hard
 
@@ -7583,7 +7667,7 @@ resolve@^1.1.6:
   languageName: node
   linkType: hard
 
-"url-parse@npm:^1.4.3":
+"url-parse@npm:^1.4.3, url-parse@npm:^1.5.3":
   version: 1.5.3
   resolution: "url-parse@npm:1.5.3"
   dependencies:
