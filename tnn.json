@@ -5,7 +5,6 @@
       "script": "twitterNeuralNetwork.js",
       "cwd": "/Volumes/RAID1/projects/twitterNeuralNetwork",
       "node_args": "--max-old-space-size=8192 --experimental-json-modules",
-      "exp_backoff_restart_delay": 100,
       "env": {
         "DD_ENV": "dev",
         "DD_LOGS_INJECTION": 1,

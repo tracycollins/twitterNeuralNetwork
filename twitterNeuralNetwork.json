@@ -5,7 +5,6 @@
       "script": "twitterNeuralNetwork.js",
       "cwd": "/home/tc/twitterNeuralNetwork",
       "node_args": "--max-old-space-size=24576 --experimental-json-modules",
-      "exp_backoff_restart_delay": 100,
       "env": {
         "FORCE_COLOR": 1,
         "NODE_ENV": "production",
