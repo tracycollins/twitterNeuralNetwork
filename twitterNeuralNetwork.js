@@ -262,8 +262,6 @@ import omitDeep from "omit-deep-lodash";
 import cp from "child_process";
 const childHashMap = {};
 
-// import // const // const // const // const // const // const // const // const // const //=========================================================================
-
 const statsObj = {};
 let statsObjSmall = {};
 let configuration = {};
@@ -276,9 +274,7 @@ watcherChildConfiguration.testMode = configuration.testMode;
 watcherChildConfiguration.updateUserDb = false;
 
 configuration.evolveTimeoutDuration = DEFAULT_EVOLVE_TIMEOUT_DURATION;
-
 configuration.maxFriends = DEFAULT_MAX_FRIENDS;
-
 configuration.zeroMinSuccess = EVOVLE_DEFAULTS.DEFAULT_ZERO_SUCCESS_MIN;
 configuration.enableZeroSuccessEvolveOptions =
   EVOVLE_DEFAULTS.DEFAULT_ENABLE_ZERO_SUCCESS_EVOLVE_OPTIONS;
@@ -407,8 +403,6 @@ async function initSlackSendQueue() {
       slackSendQueueReady = true;
     }
   }, ONE_SECOND);
-
-  // await slackSendWebMessage({});
 
   return;
 }
